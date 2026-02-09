@@ -22,8 +22,9 @@ export async function sendLeadNotification(lead: {
     }
 
     try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
         await resend.emails.send({
-            from: 'Coral Website <onboarding@resend.dev>', // Resend default for unverified domains
+            from: `Coral Remodeling <${fromEmail}>`,
             to: RECIPIENT_EMAIL,
             subject: `New Lead: ${lead.name} - ${lead.service}`,
             html: `
@@ -57,8 +58,9 @@ export async function sendBookingNotification(booking: {
     }
 
     try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
         await resend.emails.send({
-            from: 'Coral Website <onboarding@resend.dev>',
+            from: `Coral Remodeling <${fromEmail}>`,
             to: RECIPIENT_EMAIL,
             subject: `Visit Confirmed: ${booking.clientName} - ${booking.date.toLocaleDateString()}`,
             html: `

@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  service   String   // e.g., "Kitchen", "Bathroom", "Addition"
+  message   String?
+  status    String   @default("NEW") // NEW, CONTACTED, CONVERTED, ARCHIVED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  clientName  String
+  clientEmail String
+  serviceType String
+  date        DateTime
+  timeSlot    String
+  status      String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ClientPortal {
+  id          String          @id @default(cuid())
+  clientName  String
+  clientEmail String
+  slug        String          @unique
+  status      String          @default("ACTIVE") // ACTIVE, COMPLETED
+  updates     ProjectUpdate[]
+  tasks       Task[]
+  documents   Document[]
+  media       ProjectMedia[]
+  messages    Message[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ProjectUpdate {
+  id        String       @id @default(cuid())
+  portalId  String
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  title     String
+  content   String
+  imageUrl  String?
+  createdAt DateTime     @default(now())
+}
+
+model Task {
+  id        String       @id @default(cuid())
+  portalId  String
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  title     String
+  status    String       @default("TODO") // TODO, IN_PROGRESS, DONE
+  createdAt DateTime     @default(now())
+}
+
+model Document {
+  id        String       @id @default(cuid())
+  portalId  String
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  name      String
+  url       String
+  type      String       // PDF, IMG, etc.
+  createdAt DateTime     @default(now())
+}
+
+model ProjectMedia {
+  id        String       @id @default(cuid())
+  portalId  String
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  url       String
+  caption   String?
+  type      String       @default("IMAGE")
+  createdAt DateTime     @default(now())
+}
+
+model Message {
+  id        String       @id @default(cuid())
+  portalId  String
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  content   String
+  sender    String       // ADMIN or CLIENT
+  createdAt DateTime     @default(now())
+}

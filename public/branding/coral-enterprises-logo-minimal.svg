@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Stylized C -->
+  <path d="M400 130C375 100 330 80 280 80C180.589 80 100 158.35 100 256C100 353.65 180.589 432 280 432C330 432 375 412 400 382" stroke="white" stroke-width="40" stroke-linecap="round"/>
+  
+  <!-- Rhombus (Diamond) -->
+  <path d="M280 170L340 256L280 342L220 256L280 170Z" fill="white"/>
+</svg>

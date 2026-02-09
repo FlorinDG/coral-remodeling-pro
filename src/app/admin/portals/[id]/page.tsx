@@ -52,7 +52,14 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
                         <div className="h-[400px]">
                             <TaskManager portalId={portal.id} initialTasks={portal.tasks} />
                         </div>
-                        <ChatBox portalId={portal.id} initialMessages={portal.messages} currentUserType="ADMIN" />
+                        <ChatBox
+                            portalId={portal.id}
+                            initialMessages={portal.messages.map(msg => ({
+                                ...msg,
+                                createdAt: msg.createdAt.toISOString()
+                            }))}
+                            currentUserType="ADMIN"
+                        />
                     </div>
 
                     {/* Column 2: Updates & Docs */}
@@ -74,7 +81,13 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
 
                     {/* Column 3: Media & Timeline */}
                     <div className="space-y-6">
-                        <MediaManager portalId={portal.id} initialMedia={portal.media} />
+                        <MediaManager
+                            portalId={portal.id}
+                            initialMedia={portal.media.map(m => ({
+                                ...m,
+                                caption: m.caption ?? undefined
+                            }))}
+                        />
 
                         <div className="glass-morphism p-6 rounded-3xl border border-white/10">
                             <h3 className="text-xl font-bold mb-6">Recent Updates</h3>

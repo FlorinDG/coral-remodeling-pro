@@ -64,7 +64,14 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                             </div>
                         </div>
 
-                        <MediaManager portalId={portal.id} initialMedia={portal.media} readOnly={true} />
+                        <MediaManager
+                            portalId={portal.id}
+                            initialMedia={portal.media.map(m => ({
+                                ...m,
+                                caption: m.caption ?? undefined
+                            }))}
+                            readOnly={true}
+                        />
                     </div>
 
                     {/* Column 2: Documents & Tasks */}
@@ -79,7 +86,14 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
 
                     {/* Column 3: Chat */}
                     <div className="space-y-6">
-                        <ChatBox portalId={portal.id} initialMessages={portal.messages} currentUserType="CLIENT" />
+                        <ChatBox
+                            portalId={portal.id}
+                            initialMessages={portal.messages.map(msg => ({
+                                ...msg,
+                                createdAt: msg.createdAt.toISOString()
+                            }))}
+                            currentUserType="CLIENT"
+                        />
 
                         {/* Contact Card */}
                         <div className="glass-morphism p-6 rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent">

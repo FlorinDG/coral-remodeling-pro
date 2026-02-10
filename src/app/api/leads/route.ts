@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma, { dbRetry } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -7,7 +7,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, email, phone, service, message } = body;
 
-        const lead = await prisma.lead.create({
+        const lead = await dbRetry(() => prisma.lead.create({
             data: {
                 name,
                 email,
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
                 service,
                 message,
             },
-        });
+        }));
 
         // Fire and forget email notification to avoid blocking the response
         sendLeadNotification(lead).catch(err => console.error("Email notification failed:", err));

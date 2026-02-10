@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import prisma, { dbRetry } from "@/lib/prisma";
 import { sendBookingNotification } from "@/lib/email";
 
 export async function POST(request: Request) {
@@ -7,7 +7,7 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { clientName, clientEmail, serviceType, date, timeSlot } = body;
 
-        const booking = await prisma.booking.create({
+        const booking = await dbRetry(() => prisma.booking.create({
             data: {
                 clientName,
                 clientEmail,
@@ -15,7 +15,7 @@ export async function POST(request: Request) {
                 date: new Date(date),
                 timeSlot,
             },
-        });
+        }));
 
         // Fire and forget email notification to avoid blocking the response
         sendBookingNotification(booking).catch(err => console.error("Email notification failed:", err));

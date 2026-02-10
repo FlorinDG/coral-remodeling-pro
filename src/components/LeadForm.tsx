@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfToday } from 'date-fns';
+import { Check } from 'lucide-react';
 
 const TIMESLOTS = ["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"];
 
@@ -21,6 +22,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         message: ''
     });
     const [loading, setLoading] = useState(false);
+    const [sent, setSent] = useState(false); // New state for button animation
     const [inquirySuccess, setInquirySuccess] = useState(false);
     const [showBookingUpsell, setShowBookingUpsell] = useState(false);
 
@@ -42,12 +44,18 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                 body: JSON.stringify(formData),
             });
             if (res.ok) {
-                setInquirySuccess(true);
-                setShowBookingUpsell(true);
+                setSent(true);
+                setTimeout(() => {
+                    setInquirySuccess(true);
+                    setShowBookingUpsell(true);
+                    setSent(false); // Reset for next time if needed
+                    setLoading(false);
+                }, 1500); // Wait for "Sent!" animation
+            } else {
+                setLoading(false);
             }
         } catch (err) {
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };
@@ -67,10 +75,18 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     timeSlot: selectedSlot
                 }),
             });
-            if (res.ok) setBookingSuccess(true);
+            if (res.ok) {
+                setSent(true);
+                setTimeout(() => {
+                    setBookingSuccess(true);
+                    setSent(false);
+                    setLoading(false);
+                }, 1500);
+            } else {
+                setLoading(false);
+            }
         } catch (err) {
             console.error(err);
-        } finally {
             setLoading(false);
         }
     };
@@ -178,12 +194,20 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     value={formData.message}
                                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                                 />
-                                <button
+                                <motion.button
                                     disabled={loading}
-                                    className="w-full bg-[#d35400] text-white font-bold py-4 rounded-xl hover:bg-[#a04000] transition-colors disabled:opacity-50 shadow-lg shadow-[#d35400]/20 mt-auto"
+                                    className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 shadow-lg mt-auto flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
+                                    animate={sent ? { scale: [1, 1.05, 1] } : {}}
                                 >
-                                    {loading ? 'SENDING...' : 'REQUEST CONSULTATION'}
-                                </button>
+                                    {sent ? (
+                                        <>
+                                            <Check className="w-5 h-5" />
+                                            SENT!
+                                        </>
+                                    ) : (
+                                        loading ? 'SENDING...' : 'REQUEST CONSULTATION'
+                                    )}
+                                </motion.button>
                             </form>
                         )}
                     </motion.div>
@@ -256,13 +280,21 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 </div>
                                 <div className="flex gap-3 mt-auto">
                                     <button onClick={() => setBookingStep(1)} className="flex-1 bg-white/5 border border-white/10 py-3 rounded-xl font-bold">BACK</button>
-                                    <button
-                                        disabled={!selectedDate || !selectedSlot}
+                                    <motion.button
+                                        disabled={!selectedDate || !selectedSlot || loading}
                                         onClick={handleBookingSubmit}
-                                        className="flex-[2] bg-[#d35400] text-white py-3 rounded-xl font-bold disabled:opacity-50"
+                                        className={`flex-[2] py-3 rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white'}`}
+                                        animate={sent ? { scale: [1, 1.05, 1] } : {}}
                                     >
-                                        {loading ? 'CONFIRMING...' : 'CONFIRM VISIT'}
-                                    </button>
+                                        {sent ? (
+                                            <>
+                                                <Check className="w-5 h-5" />
+                                                CONFIRMED!
+                                            </>
+                                        ) : (
+                                            loading ? 'CONFIRMING...' : 'CONFIRM VISIT'
+                                        )}
+                                    </motion.button>
                                 </div>
                             </div>
                         )}

@@ -23,6 +23,10 @@
   --ring: 240 4.9% 83.9%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));

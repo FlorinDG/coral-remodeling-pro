@@ -82,6 +82,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             className="absolute inset-0 bg-black/60 backdrop-blur-md"
+                            style={{ willChange: "opacity" }}
                             onClick={() => setIsOpen(false)}
                         />
 
@@ -89,6 +90,8 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                         <motion.div
                             layoutId={`card-${title}`}
                             className="relative w-full h-full md:w-[95vw] md:h-[90vh] bg-neutral-900/40 rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex flex-col md:flex-row z-10"
+                            style={{ willChange: "transform" }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25, mass: 0.5 }}
                         >
 
                             {/* Close Button */}

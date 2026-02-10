@@ -21,7 +21,7 @@ export default function Navbar({ onBookClick }: NavbarProps) {
             <div className="hidden md:flex gap-8 text-sm font-medium">
                 <Link href="#services" className="hover:text-[#d35400] transition-colors">Services</Link>
                 <Link href="#projects" className="hover:text-[#d35400] transition-colors">Projects</Link>
-                <Link href="#contact" className="hover:text-[#d35400] transition-colors">Contact</Link>
+                <Link href="/" className="hover:text-[#d35400] transition-colors">Home</Link>
             </div>
             <button
                 onClick={onBookClick}

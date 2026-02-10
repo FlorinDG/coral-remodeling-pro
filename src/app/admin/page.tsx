@@ -21,11 +21,27 @@ export default function AdminDashboard() {
                     fetch('/api/bookings'),
                     fetch('/api/portals')
                 ]);
-                setLeads(await leadsRes.json());
-                setBookings(await bookingsRes.json());
-                setPortals(await portalsRes.json());
+
+                // Helper to safely parse JSON or return empty array
+                const parseSafe = async (res: Response) => {
+                    if (!res.ok) {
+                        console.error(`API Error ${res.url}: ${res.status}`);
+                        return [];
+                    }
+                    try {
+                        return await res.json();
+                    } catch (e) {
+                        console.error(`JSON Parse Error ${res.url}:`, e);
+                        return [];
+                    }
+                };
+
+                setLeads(await parseSafe(leadsRes));
+                setBookings(await parseSafe(bookingsRes));
+                setPortals(await parseSafe(portalsRes));
             } catch (error) {
                 console.error("Failed to fetch admin data", error);
+                // Ensure UI doesn't crash by keeping empty arrays (default state)
             } finally {
                 setLoading(false);
             }

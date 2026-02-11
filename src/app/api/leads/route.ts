@@ -17,8 +17,20 @@ export async function POST(request: Request) {
             },
         }));
 
-        // Fire and forget email notification to avoid blocking the response
-        sendLeadNotification(lead).catch(err => console.error("Email notification failed:", err));
+        console.log("Lead created in DB:", lead.id);
+        console.log("DB Host used:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || "Unknown");
+
+        // Await email to ensure it sends before function termination
+        try {
+            if (process.env.RESEND_API_KEY) {
+                await sendLeadNotification(lead);
+                console.log("Email notification sent successfully.");
+            } else {
+                console.warn("RESEND_API_KEY missing, skipping email.");
+            }
+        } catch (emailError) {
+            console.error("Email notification failed:", emailError);
+        }
 
         return NextResponse.json(lead, { status: 201 });
     } catch (error) {

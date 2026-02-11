@@ -17,8 +17,18 @@ export async function POST(request: Request) {
             },
         }));
 
-        // Fire and forget email notification to avoid blocking the response
-        sendBookingNotification(booking).catch(err => console.error("Email notification failed:", err));
+        console.log("Booking created in DB:", booking.id);
+        // Await email to ensure it sends before function termination
+        try {
+            if (process.env.RESEND_API_KEY) {
+                await sendBookingNotification(booking);
+                console.log("Booking email sent successfully.");
+            } else {
+                console.warn("RESEND_API_KEY missing, skipping email.");
+            }
+        } catch (emailError) {
+            console.error("Booking email failed:", emailError);
+        }
 
         return NextResponse.json(booking, { status: 201 });
     } catch (error) {

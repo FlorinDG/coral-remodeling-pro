@@ -21,10 +21,10 @@ export async function POST(request: Request) {
                 },
             }));
             console.log("Booking created in DB:", booking.id);
-        } catch (dbError) {
+        } catch (dbError: any) {
             console.error("Database error while creating booking:", dbError);
             return NextResponse.json(
-                { error: "Failed to save booking to database. Please try again later." },
+                { error: `Database error: ${dbError.message || 'Unknown database error'}` },
                 { status: 500 }
             );
         }

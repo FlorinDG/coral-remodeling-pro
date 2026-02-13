@@ -21,10 +21,10 @@ export async function POST(request: Request) {
                 },
             }));
             console.log("Lead created in DB:", lead.id);
-        } catch (dbError) {
-            console.error("Database error while creating lead:", dbError);
+        } catch (dbError: any) {
+            console.error("Database error while creating booking:", dbError);
             return NextResponse.json(
-                { error: "Failed to save lead to database. Please try again later." },
+                { error: `Database error: ${dbError.message || 'Unknown database error'}` },
                 { status: 500 }
             );
         }

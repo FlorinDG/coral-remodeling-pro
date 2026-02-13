@@ -22,6 +22,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         message: ''
     });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false); // New state for button animation
     const [inquirySuccess, setInquirySuccess] = useState(false);
     const [showBookingUpsell, setShowBookingUpsell] = useState(false);
@@ -37,12 +38,14 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
     const handleInquirySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError(null);
         try {
             const res = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
+
             if (res.ok) {
                 setSent(true);
                 setTimeout(() => {
@@ -52,10 +55,13 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     setLoading(false);
                 }, 1500); // Wait for "Sent!" animation
             } else {
+                const data = await res.json();
+                setError(data.error || 'Something went wrong. Please try again.');
                 setLoading(false);
             }
         } catch (err) {
             console.error(err);
+            setError('Failed to reach the server. Please check your connection.');
             setLoading(false);
         }
     };
@@ -63,6 +69,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
     const handleBookingSubmit = async () => {
         if (!selectedDate || !selectedSlot) return;
         setLoading(true);
+        setError(null);
         try {
             const res = await fetch('/api/bookings', {
                 method: 'POST',
@@ -83,10 +90,13 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     setLoading(false);
                 }, 1500);
             } else {
+                const data = await res.json();
+                setError(data.error || 'Failed to confirm booking. Please try again.');
                 setLoading(false);
             }
         } catch (err) {
             console.error(err);
+            setError('Failed to reach the server. Please check your connection.');
             setLoading(false);
         }
     };
@@ -159,7 +169,10 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     required
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
                                     value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, name: e.target.value });
+                                        setError(null);
+                                    }}
                                 />
                                 <div className="grid grid-cols-2 gap-4">
                                     <input
@@ -168,20 +181,29 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         required
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
                                         value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, email: e.target.value });
+                                            setError(null);
+                                        }}
                                     />
                                     <input
                                         type="tel"
                                         placeholder="Phone"
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
                                         value={formData.phone}
-                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, phone: e.target.value });
+                                            setError(null);
+                                        }}
                                     />
                                 </div>
                                 <select
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
                                     value={formData.service}
-                                    onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, service: e.target.value });
+                                        setError(null);
+                                    }}
                                 >
                                     <option value="Kitchen">Kitchen Remodeling</option>
                                     <option value="Bathroom">Bathroom Remodeling</option>
@@ -192,8 +214,14 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     rows={2}
                                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1"
                                     value={formData.message}
-                                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, message: e.target.value });
+                                        setError(null);
+                                    }}
                                 />
+                                {error && (
+                                    <p className="text-red-500 text-xs text-center font-medium animate-pulse">{error}</p>
+                                )}
                                 <motion.button
                                     disabled={loading}
                                     className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 shadow-lg mt-auto flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
@@ -280,21 +308,26 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 </div>
                                 <div className="flex gap-3 mt-auto">
                                     <button onClick={() => setBookingStep(1)} className="flex-1 bg-white/5 border border-white/10 py-3 rounded-xl font-bold">BACK</button>
-                                    <motion.button
-                                        disabled={!selectedDate || !selectedSlot || loading}
-                                        onClick={handleBookingSubmit}
-                                        className={`flex-[2] py-3 rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white'}`}
-                                        animate={sent ? { scale: [1, 1.05, 1] } : {}}
-                                    >
-                                        {sent ? (
-                                            <>
-                                                <Check className="w-5 h-5" />
-                                                CONFIRMED!
-                                            </>
-                                        ) : (
-                                            loading ? 'CONFIRMING...' : 'CONFIRM VISIT'
+                                    <div className="flex-[2] flex flex-col gap-2">
+                                        {error && (
+                                            <p className="text-red-500 text-[10px] text-center font-medium">{error}</p>
                                         )}
-                                    </motion.button>
+                                        <motion.button
+                                            disabled={!selectedDate || !selectedSlot || loading}
+                                            onClick={handleBookingSubmit}
+                                            className={`w-full py-3 rounded-xl font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white'}`}
+                                            animate={sent ? { scale: [1, 1.05, 1] } : {}}
+                                        >
+                                            {sent ? (
+                                                <>
+                                                    <Check className="w-5 h-5" />
+                                                    CONFIRMED!
+                                                </>
+                                            ) : (
+                                                loading ? 'CONFIRMING...' : 'CONFIRM VISIT'
+                                            )}
+                                        </motion.button>
+                                    </div>
                                 </div>
                             </div>
                         )}

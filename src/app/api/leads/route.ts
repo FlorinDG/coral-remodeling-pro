@@ -7,18 +7,27 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, email, phone, service, message } = body;
 
-        const lead = await dbRetry(() => prisma.lead.create({
-            data: {
-                name,
-                email,
-                phone,
-                service,
-                message,
-            },
-        }));
+        console.log(`Processing lead for: ${name} (${email})`);
 
-        console.log("Lead created in DB:", lead.id);
-        console.log("DB Host used:", process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || "Unknown");
+        let lead;
+        try {
+            lead = await dbRetry(() => prisma.lead.create({
+                data: {
+                    name,
+                    email,
+                    phone,
+                    service,
+                    message,
+                },
+            }));
+            console.log("Lead created in DB:", lead.id);
+        } catch (dbError) {
+            console.error("Database error while creating lead:", dbError);
+            return NextResponse.json(
+                { error: "Failed to save lead to database. Please try again later." },
+                { status: 500 }
+            );
+        }
 
         // Await email to ensure it sends before function termination
         try {
@@ -30,13 +39,14 @@ export async function POST(request: Request) {
             }
         } catch (emailError) {
             console.error("Email notification failed:", emailError);
+            // We don't return 500 here because the lead WAS saved to DB
         }
 
         return NextResponse.json(lead, { status: 201 });
     } catch (error) {
-        console.error("Error creating lead:", error);
+        console.error("Critical error in POST /api/leads:", error);
         return NextResponse.json(
-            { error: "Failed to create lead" },
+            { error: "A server error occurred. Please try again." },
             { status: 500 }
         );
     }

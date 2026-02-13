@@ -7,17 +7,28 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { clientName, clientEmail, serviceType, date, timeSlot } = body;
 
-        const booking = await dbRetry(() => prisma.booking.create({
-            data: {
-                clientName,
-                clientEmail,
-                serviceType,
-                date: new Date(date),
-                timeSlot,
-            },
-        }));
+        console.log(`Processing booking for: ${clientName} (${clientEmail}) on ${date}`);
 
-        console.log("Booking created in DB:", booking.id);
+        let booking;
+        try {
+            booking = await dbRetry(() => prisma.booking.create({
+                data: {
+                    clientName,
+                    clientEmail,
+                    serviceType,
+                    date: new Date(date),
+                    timeSlot,
+                },
+            }));
+            console.log("Booking created in DB:", booking.id);
+        } catch (dbError) {
+            console.error("Database error while creating booking:", dbError);
+            return NextResponse.json(
+                { error: "Failed to save booking to database. Please try again later." },
+                { status: 500 }
+            );
+        }
+
         // Await email to ensure it sends before function termination
         try {
             if (process.env.RESEND_API_KEY) {
@@ -32,9 +43,9 @@ export async function POST(request: Request) {
 
         return NextResponse.json(booking, { status: 201 });
     } catch (error) {
-        console.error("Error creating booking:", error);
+        console.error("Critical error in POST /api/bookings:", error);
         return NextResponse.json(
-            { error: "Failed to create booking" },
+            { error: "A server error occurred. Please try again." },
             { status: 500 }
         );
     }

@@ -1,0 +1,39 @@
+{
+    "Navbar": {
+        "home": "Home",
+        "services": "Services",
+        "projects": "Projects",
+        "book": "BOOK NOW",
+        "back": "BACK"
+    },
+    "Services": {
+        "title": "Our Expertise",
+        "kitchen": {
+            "title": "Kitchen Design",
+            "subtitle": "Culinary Excellence",
+            "description": "Bespoke culinary spaces tailored to your lifestyle."
+        },
+        "bath": {
+            "title": "Bath Restoration",
+            "subtitle": "Personal Sanctuaries",
+            "description": "Transform your daily routine into a spa experience."
+        },
+        "additions": {
+            "title": "Custom Additions",
+            "subtitle": "Expand Your Horizons",
+            "description": "Seamless home extensions that blend perfectly."
+        },
+        "wholeHome": {
+            "title": "Whole Home",
+            "subtitle": "Complete Transformation",
+            "description": "Reimagine your entire living space from the ground up."
+        },
+        "explore": "EXPLORE DETAILS"
+    },
+    "Hero": {
+        "title": "Redefining",
+        "subtitle": "Aligned. Bespoke. Professional.",
+        "tagline": "ALIGNED. BESPOKE. PROFESSIONAL.",
+        "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services."
+    }
+}

@@ -33,7 +33,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [bookingSuccess, setBookingSuccess] = useState(false);
 
-    const dates = Array.from({ length: 7 }, (_, i) => addDays(startOfToday(), i + 1));
+    const dates = Array.from({ length: 14 }, (_, i) => addDays(startOfToday(), i + 1));
 
     const handleInquirySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -106,13 +106,13 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
             <div className="flex gap-4 mb-8">
                 <button
                     onClick={() => setActiveTab('inquiry')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-white/5 border-white/10 text-neutral-500 hover:border-white/40 hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     Inquiry
                 </button>
                 <button
                     onClick={() => setActiveTab('booking')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-white/5 border-white/10 text-neutral-500 hover:border-white/40 hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     Book Visit
                 </button>
@@ -143,7 +143,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             </button>
                                             <button
                                                 onClick={() => setShowBookingUpsell(false)}
-                                                className="flex-1 bg-white/5 border border-white/10 font-bold py-3 rounded-xl hover:bg-white/10 transition-colors"
+                                                className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 font-bold py-3 rounded-xl hover:bg-white/10 transition-colors"
                                             >
                                                 LATER
                                             </button>
@@ -156,7 +156,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         <p className="text-neutral-400">Our team will be in touch shortly.</p>
                                         <button onClick={() => setInquirySuccess(false)} className="text-sm underline opacity-50">Send another inquiry</button>
                                         {onClose && (
-                                            <button onClick={onClose} className="mt-4 w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold">CLOSE</button>
+                                            <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">CLOSE</button>
                                         )}
                                     </div>
                                 )}
@@ -167,7 +167,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     type="text"
                                     placeholder="Full Name"
                                     required
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.name}
                                     onChange={(e) => {
                                         setFormData({ ...formData, name: e.target.value });
@@ -179,7 +179,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         type="email"
                                         placeholder="Email"
                                         required
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                         value={formData.email}
                                         onChange={(e) => {
                                             setFormData({ ...formData, email: e.target.value });
@@ -189,7 +189,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     <input
                                         type="tel"
                                         placeholder="Phone"
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                         value={formData.phone}
                                         onChange={(e) => {
                                             setFormData({ ...formData, phone: e.target.value });
@@ -198,7 +198,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     />
                                 </div>
                                 <select
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.service}
                                     onChange={(e) => {
                                         setFormData({ ...formData, service: e.target.value });
@@ -212,7 +212,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 <textarea
                                     placeholder="Tell us about your project..."
                                     rows={2}
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1"
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.message}
                                     onChange={(e) => {
                                         setFormData({ ...formData, message: e.target.value });
@@ -254,7 +254,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 <p className="text-neutral-400">Scheduled for {selectedDate && format(selectedDate, 'PPP')} at {selectedSlot}.</p>
                                 <button onClick={() => { setBookingSuccess(false); setBookingStep(1); }} className="mt-6 text-sm underline opacity-50">Schedule another visit</button>
                                 {onClose && (
-                                    <button onClick={onClose} className="mt-4 w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold">CLOSE</button>
+                                    <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">CLOSE</button>
                                 )}
                             </div>
                         ) : bookingStep === 1 ? (
@@ -262,14 +262,14 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 <input
                                     type="text"
                                     placeholder="Your Name"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                                 <input
                                     type="email"
                                     placeholder="Your Email"
-                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all"
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 />
@@ -283,17 +283,28 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col justify-center space-y-6">
-                                <div className="flex gap-2 overflow-x-auto pb-2">
-                                    {dates.map((d) => (
-                                        <button
-                                            key={d.toISOString()}
-                                            onClick={() => setSelectedDate(d)}
-                                            className={`flex-shrink-0 w-16 h-16 rounded-xl border flex flex-col items-center justify-center transition-all ${selectedDate && format(selectedDate, 'P') === format(d, 'P') ? 'bg-[#d35400] border-[#d35400]' : 'border-white/10 bg-white/5 hover:border-white/30'}`}
-                                        >
-                                            <span className="text-[8px] uppercase">{format(d, 'EEE')}</span>
-                                            <span className="text-lg font-bold">{format(d, 'd')}</span>
-                                        </button>
-                                    ))}
+                                <div className="grid grid-cols-7 gap-2 pb-2">
+                                    {dates.map((d) => {
+                                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                                        return (
+                                            <button
+                                                key={d.toISOString()}
+                                                onClick={() => !isWeekend && setSelectedDate(d)}
+                                                disabled={isWeekend}
+                                                className={`
+                                                    flex-shrink-0 w-full h-16 rounded-xl border flex flex-col items-center justify-center transition-all
+                                                    ${selectedDate && format(selectedDate, 'P') === format(d, 'P')
+                                                        ? 'bg-[#d35400] border-[#d35400] text-white'
+                                                        : isWeekend
+                                                            ? 'border-white/5 bg-white/2 opacity-30 cursor-not-allowed'
+                                                            : 'border-white/10 bg-white/5 hover:border-white/30'}
+                                                `}
+                                            >
+                                                <span className="text-[8px] uppercase">{format(d, 'EEE')}</span>
+                                                <span className="text-lg font-bold">{format(d, 'd')}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                                 <div className="grid grid-cols-2 gap-2">
                                     {TIMESLOTS.map((slot) => (
@@ -307,7 +318,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     ))}
                                 </div>
                                 <div className="flex gap-3 mt-auto">
-                                    <button onClick={() => setBookingStep(1)} className="flex-1 bg-white/5 border border-white/10 py-3 rounded-xl font-bold">BACK</button>
+                                    <button onClick={() => setBookingStep(1)} className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 py-3 rounded-xl font-bold">BACK</button>
                                     <div className="flex-[2] flex flex-col gap-2">
                                         {error && (
                                             <p className="text-red-500 text-[10px] text-center font-medium">{error}</p>

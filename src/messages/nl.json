@@ -1,0 +1,39 @@
+{
+    "Navbar": {
+        "home": "Home",
+        "services": "Diensten",
+        "projects": "Projecten",
+        "book": "BOEK NU",
+        "back": "TERUG"
+    },
+    "Services": {
+        "title": "Onze Expertise",
+        "kitchen": {
+            "title": "Keuken Ontwerp",
+            "subtitle": "Culinaire Uitmuntendheid",
+            "description": "Op maat gemaakte culinaire ruimtes."
+        },
+        "bath": {
+            "title": "Badkamer Renovatie",
+            "subtitle": "Persoonlijke Heiligdommen",
+            "description": "Transformeer uw routine in een spa-ervaring."
+        },
+        "additions": {
+            "title": "Aanbouw op Maat",
+            "subtitle": "Verbreed uw Horizon",
+            "description": "Naadloze huisuitbreidingen."
+        },
+        "wholeHome": {
+            "title": "Complete Woning",
+            "subtitle": "Volledige Transformatie",
+            "description": "Woonruimte volledig opnieuw uitgevonden."
+        },
+        "explore": "BEKIJK DETAILS"
+    },
+    "Hero": {
+        "title": "Herdefinieer",
+        "subtitle": "Afgesteemd. Op Maat. Professioneel.",
+        "tagline": "AFGESTEMD. OP MAAT. PROFESSIONEEL.",
+        "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten."
+    }
+}

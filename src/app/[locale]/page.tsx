@@ -6,44 +6,35 @@ import Hero from "@/components/Hero";
 import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
 import ProjectGallery from "@/components/ProjectGallery";
+import ServiceExpander from "@/components/ServiceExpander";
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
       <Navbar onBookClick={() => setIsModalOpen(true)} />
       <BookingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <Hero />
 
       {/* Services Section */}
-      <section id="services" className="py-24 px-8 md:px-16 container mx-auto">
-        <div className="mb-16">
-          <h2 className="text-4xl font-bold tracking-tight mb-4">Our Expertise</h2>
-          <div className="w-20 h-1 bg-white" />
-        </div>
+      <section id="services" className="py-24 bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white">
+        <div className="container mx-auto px-8 md:px-16">
+          <div className="mb-16">
+            <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">Our Expertise</h2>
+            <div className="w-20 h-1 bg-neutral-900 dark:bg-white" />
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            { title: "Kitchen Design", desc: "Bespoke culinary spaces tailored to your lifestyle.", icon: "🍳" },
-            { title: "Bath Restoration", desc: "Transform your daily routine into a spa experience.", icon: "🛁" },
-            { title: "Custom Additions", desc: "Expanding your horizons with seamless home extensions.", icon: "🏠" },
-          ].map((service, i) => (
-            <div key={i} className="glass-morphism p-8 rounded-3xl border border-white/5 hover:border-white/20 transition-all">
-              <div className="text-4xl mb-6">{service.icon}</div>
-              <h3 className="text-xl font-bold mb-4">{service.title}</h3>
-              <p className="text-neutral-500 text-sm leading-relaxed">{service.desc}</p>
-            </div>
-          ))}
+          <ServiceExpander />
         </div>
       </section>
 
       {/* Projects Section */}
-      <section id="projects" className="py-24 px-8 md:px-16 bg-neutral-900/20">
+      <section id="projects" className="py-24 px-8 md:px-16 bg-neutral-100 text-neutral-900 dark:bg-neutral-900 dark:text-white">
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-16">
             <div>
-              <h2 className="text-4xl font-bold tracking-tight mb-4">Recent Portfolio</h2>
+              <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">Recent Portfolio</h2>
               <p className="text-neutral-500 uppercase tracking-widest text-xs font-bold">A glimpse into luxury</p>
             </div>
           </div>
@@ -90,7 +81,7 @@ export default function Home() {
       </section>
 
 
-      <footer id="contact" className="py-12 border-t border-white/5 text-center">
+      <footer id="contact" className="py-12 border-t border-neutral-200 dark:border-white/5 text-center">
         <p className="text-xs text-neutral-600 uppercase tracking-[0.3em]">
           &copy; 2026 CORAL ENTERPRISES. ALL RIGHTS RESERVED.
         </p>

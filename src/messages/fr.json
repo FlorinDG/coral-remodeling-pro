@@ -1,0 +1,39 @@
+{
+    "Navbar": {
+        "home": "Accueil",
+        "services": "Services",
+        "projects": "Projets",
+        "book": "RÉSERVER",
+        "back": "RETOUR"
+    },
+    "Services": {
+        "title": "Notre Expertise",
+        "kitchen": {
+            "title": "Cuisine Design",
+            "subtitle": "Excellence Culinaire",
+            "description": "Espaces culinaires sur mesure adaptés à votre style de vie."
+        },
+        "bath": {
+            "title": "Restauration de Bain",
+            "subtitle": "Sanctuaires Personnels",
+            "description": "Transformez votre routine quotidienne en expérience spa."
+        },
+        "additions": {
+            "title": "Extensions Sur Mesure",
+            "subtitle": "Élargissez Vos Horizons",
+            "description": "Extensions de maison transparentes qui s'intègrent parfaitement."
+        },
+        "wholeHome": {
+            "title": "Maison Complète",
+            "subtitle": "Transformation Totale",
+            "description": "Réinventez votre espace de vie entier depuis la base."
+        },
+        "explore": "DÉCOUVRIR"
+    },
+    "Hero": {
+        "title": "Redéfinir",
+        "subtitle": "Aligné. Sur Mesure. Professionnel.",
+        "tagline": "ALIGNÉ. SUR MESURE. PROFESSIONNEL.",
+        "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme."
+    }
+}

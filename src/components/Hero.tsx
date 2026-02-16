@@ -2,7 +2,11 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import LeadForm from './LeadForm';
 
+import { useTranslations } from 'next-intl';
+
 export default function Hero() {
+    const t = useTranslations('Hero');
+
     return (
         <section className="relative min-h-screen flex items-center pt-20 px-8 md:px-16 overflow-hidden">
             {/* Background Images with Cinematic Animation */}
@@ -23,22 +27,23 @@ export default function Hero() {
                     className="object-cover"
                     priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black" />
+                <div className="absolute inset-0 bg-white/90 dark:bg-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-white/50 dark:from-black dark:to-black/50" />
             </motion.div>
 
             <div className="container mx-auto grid md:grid-cols-2 gap-12 items-center z-10">
                 <div className="flex flex-col items-end text-right">
-                    <h1 className="text-4xl md:text-7xl font-bold tracking-tighter leading-tight mb-6">
+                    <h1 className="text-4xl md:text-7xl font-bold tracking-tighter leading-tight mb-6 text-neutral-950 dark:text-white">
                         Luxury. <br />
-                        Redefined.
+                        <span className="text-[#d35400]">Redefined.</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-neutral-400 max-w-md mb-4 leading-relaxed font-normal">
-                        Specializing in high-end kitchen and bathroom transformations. We don't just remodel; we elevate.
+                    <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-md mb-8 leading-relaxed font-normal">
+                        {t('description')}
                     </p>
-                    <p className="text-lg font-semibold tracking-[0.2em] text-[#d35400] uppercase mb-8">
-                        Tailored. Bespoke. Professional.
+                    <p className="text-[#d35400] font-bold tracking-[0.3em] uppercase mb-12 text-sm md:text-base">
+                        {t('tagline')}
                     </p>
-                    <div className="flex gap-6">
+                    <div className="flex gap-6 text-neutral-950 dark:text-white">
                         <div className="flex flex-col items-end">
                             <span className="text-2xl font-bold">150+</span>
                             <span className="text-[10px] text-neutral-500 tracking-[0.2em]">PROJECTS DONE</span>

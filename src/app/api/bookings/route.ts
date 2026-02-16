@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         } catch (dbError: any) {
             console.error("Database error while creating booking:", dbError);
             return NextResponse.json(
-                { error: `Database error: ${dbError.message || 'Unknown database error'}` },
+                { error: "Failed to save booking to database. Please try again later." },
                 { status: 500 }
             );
         }

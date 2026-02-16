@@ -1,0 +1,39 @@
+{
+    "Navbar": {
+        "home": "Acasă",
+        "services": "Servicii",
+        "projects": "Proiecte",
+        "book": "REZERVĂ ACUM",
+        "back": "ÎNAPOI"
+    },
+    "Services": {
+        "title": "Expertiza Noastră",
+        "kitchen": {
+            "title": "Design Bucătărie",
+            "subtitle": "Excelență Culinară",
+            "description": "Spații culinare personalizate adaptate stilului tău de viață."
+        },
+        "bath": {
+            "title": "Restaurare Baie",
+            "subtitle": "Sanctuare Personale",
+            "description": "Transformă rutina zilnică într-o experiență spa."
+        },
+        "additions": {
+            "title": "Extensii Personalizate",
+            "subtitle": "Extinde Orizonturile",
+            "description": "Extensii care se integrează perfect cu casa ta."
+        },
+        "wholeHome": {
+            "title": "Renovare Completă",
+            "subtitle": "Transformare Totală",
+            "description": "Reinventează întregul spațiu de locuit de la zero."
+        },
+        "explore": "DETALII"
+    },
+    "Hero": {
+        "title": "Redefinind",
+        "subtitle": "Aliniat. Personalizat. Profesionist.",
+        "tagline": "ALINIAT. PERSONALIZAT. PROFESIONIST.",
+        "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare bucătării și băi."
+    }
+}

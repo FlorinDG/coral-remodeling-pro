@@ -51,7 +51,7 @@
 }
 
 .light {
-  --background: 0 0% 100%;
+  --background: 240 5% 98%;
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
@@ -90,7 +90,7 @@ body {
 }
 
 .light .glass-morphism {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 

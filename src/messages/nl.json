@@ -1,32 +1,70 @@
 {
+    "Metadata": {
+        "title": "Coral Enterprises | Premium Verbouwingen",
+        "description": "Luxe keuken- en badkamerrenovaties."
+    },
     "Navbar": {
         "home": "Home",
         "services": "Diensten",
         "projects": "Projecten",
         "book": "BOEK NU",
-        "back": "TERUG"
+        "back": "TERUG",
+        "logoTitle": "Coral Enterprises Logo",
+        "logoAria": "Coral Enterprises Logo"
     },
     "Services": {
         "title": "Onze Expertise",
         "kitchen": {
             "title": "Keuken Ontwerp",
             "subtitle": "Culinaire Uitmuntendheid",
-            "description": "Op maat gemaakte culinaire ruimtes."
+            "description": "Op maat gemaakte culinaire ruimtes.",
+            "fullDescription": "Onze Keuken Ontwerp service is gewijd aan het creëren van op maat gemaakte culinaire ruimtes die niet alleen visueel prachtig zijn, maar ook uiterst functioneel.\n\nWij geloven dat de keuken het hart van het huis is, een plek waar herinneringen worden gemaakt en culinaire meesterwerken worden geboren.\n\nOns proces begint met het begrijpen van uw unieke levensstijl en kookgewoonten. Of u nu een professionele chef bent die industriële apparatuur en workflow nodig heeft, of een gezin dat behoefte heeft aan een duurzame, gastvrije plek voor ontbijt en huiswerk, we passen elk detail aan u aan.",
+            "features": [
+                "Maatwerk Kastwerk & Interieurbouw",
+                "Integratie van High-End Apparatuur",
+                "Ergonomische Layout Optimalisatie",
+                "Premium Stenen Werkbladen (Marmer, Kwarts, Graniet)",
+                "Gespecialiseerde Verlichtingsplannen"
+            ]
         },
         "bath": {
             "title": "Badkamer Renovatie",
             "subtitle": "Persoonlijke Heiligdommen",
-            "description": "Transformeer uw routine in een spa-ervaring."
+            "description": "Transformeer uw routine in een spa-ervaring.",
+            "fullDescription": "Transformeer uw dagelijkse routine in een luxueuze spa-ervaring met onze Badkamer Renovatie service. Wij veranderen gewone badkamers in privé-heiligdommen van ontspanning en verjonging.\n\nVan master en-suites tot gastentoiletten, wij brengen een element van verfijnde elegantie naar elke natte ruimte. Onze ontwerpen richten zich op rust, met gebruik van kalmerende paletten, natuurlijke materialen en geavanceerde armaturen.",
+            "features": [
+                "Vrijstaande Ligbaden",
+                "Regendouches met Stoomopties",
+                "Vloerverwarming & Handdoekwarmers",
+                "Maatwerk Wastafels met Geïntegreerde Opbergruimte",
+                "Sfeerverlichting & Ambiance Controle"
+            ]
         },
         "additions": {
             "title": "Aanbouw op Maat",
             "subtitle": "Verbreed uw Horizon",
-            "description": "Naadloze huisuitbreidingen."
+            "description": "Naadloze huisuitbreidingen.",
+            "fullDescription": "Onze Aanbouw op Maat service stelt u in staat uw leefruimte uit te breiden zonder de architecturale integriteit van uw woning aan te tasten. Wij zijn gespecialiseerd in naadloze uitbreidingen die eruitzien en voelen alsof ze altijd al deel uitmaakten van de originele structuur.\n\nOf u nu behoefte heeft aan een nieuwe master suite, een serre, een thuiskantoor of een uitgebreide entertainmentruimte, wij beheren het gehele proces van architecturale planning tot de laatste verflaag.",
+            "features": [
+                "Opbouw van een Tweede Verdieping",
+                "Garage Verbouwingen",
+                "Serres & Conservatoria",
+                "Kangoeroewoningen (ADU's)",
+                "Uitgebreide Woonkamers & Eetgedeelten"
+            ]
         },
         "wholeHome": {
             "title": "Complete Woning",
             "subtitle": "Volledige Transformatie",
-            "description": "Woonruimte volledig opnieuw uitgevonden."
+            "description": "Woonruimte volledig opnieuw uitgevonden.",
+            "fullDescription": "Voor degenen die een volledige heruitvinding van hun leefomgeving zoeken, biedt onze Complete Woning Renovatie service een allesomvattende oplossing. Dit is voor de huiseigenaar die van hun locatie houdt, maar een woning nodig heeft die hun huidige smaak en levensstijl beter weerspiegelt.\n\nWe strippen de lagen terug en herinterpreteren de stroom, functie en esthetiek van uw gehele eigendom. Dit is een holistische benadering die zorgt voor een consistente designtaal in elke kamer.",
+            "features": [
+                "Structurele Wijzigingen & Open Plattegronden",
+                "Volledige Revisie van Elektra & Loodgieterswerk",
+                "Vloeren, Wandafwerking & Timmerwerk",
+                "Smart Home Integratie",
+                "Gevelrenovatie & Curb Appeal"
+            ]
         },
         "explore": "BEKIJK DETAILS"
     },
@@ -34,6 +72,198 @@
         "title": "Herdefinieer",
         "subtitle": "Afgesteemd. Op Maat. Professioneel.",
         "tagline": "AFGESTEMD. OP MAAT. PROFESSIONEEL.",
-        "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten."
+        "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten.",
+        "stats": {
+            "projects": "PROJECTEN VOLTOOID",
+            "projectsCount": "150+",
+            "experience": "JAAR ERVARING",
+            "experienceCount": "12+"
+        }
+    },
+    "LeadForm": {
+        "tabs": {
+            "inquiry": "Aanvraag",
+            "booking": "Bezoek Plannen"
+        },
+        "placeholders": {
+            "name": "Volledige Naam",
+            "email": "E-mailadres",
+            "phone": "Telefoonnummer",
+            "service": "Kies een dienst",
+            "message": "Vertel ons over uw project...",
+            "yourName": "Uw Naam",
+            "yourEmail": "Uw E-mail"
+        },
+        "services": {
+            "kitchen": "Keukenrenovatie",
+            "bathroom": "Badkamerrenovatie",
+            "addition": "Aanbouw"
+        },
+        "buttons": {
+            "submit": "AANVRAAG VERSTUREN",
+            "sending": "VERZENDEN...",
+            "sent": "VERZONDEN!",
+            "chooseDate": "KIES DATUM & TIJD",
+            "confirm": "BEVESTIG BEZOEK",
+            "confirming": "BEVESTIGEN...",
+            "confirmed": "BEVESTIGD!",
+            "back": "TERUG",
+            "close": "SLUITEN",
+            "yesBook": "JA, BOEK NU",
+            "later": "LATER"
+        },
+        "success": {
+            "inquiryTitle": "Aanvraag Ontvangen!",
+            "inquirySub": "Wilt u ook direct een professioneel locatiebezoek inplannen?",
+            "allSet": "Alles Geregeld!",
+            "touchShortly": "Ons team neemt binnenkort contact met u op.",
+            "anotherInquiry": "Nog een aanvraag versturen",
+            "visitConfirmed": "Bezoek Bevestigd!",
+            "scheduledFor": "Gepland op {date} om {time}.",
+            "anotherVisit": "Nog een bezoek plannen"
+        },
+        "errors": {
+            "generic": "Er is iets misgegaan. Probeer het opnieuw.",
+            "connection": "Kan de server niet bereiken. Controleer uw verbinding.",
+            "required": "Dit veld is verplicht"
+        },
+        "timeFormat": "HH:mm"
+    },
+    "Sections": {
+        "expertise": {
+            "title": "Onze Expertise"
+        },
+        "portfolio": {
+            "title": "Recent Portfolio",
+            "tagline": "Een blik op luxe"
+        }
+    },
+    "Projects": {
+        "kitchenLoft": {
+            "title": "Patriciërswoning Keuken",
+            "location": "Sint-Martens-Latem, BE",
+            "caption1": "Gidshoek-overzicht van de open indeling.",
+            "caption2": "Detail van het marmeren kookeiland en matte kasten.",
+            "caption3": "Maatwerk verlichting die de texturen accentueert."
+        },
+        "masterBath": {
+            "title": "Zoute Wellness Badkamer",
+            "location": "Knokke-Heist, BE",
+            "caption1": "Vrijstaand ligbad met panoramisch uitzicht.",
+            "caption2": "Dubbele wastafel met geïntegreerd natuursteen.",
+            "caption3": "Regendouche met frameloos glas."
+        },
+        "contemporaryKitchen": {
+            "title": "Begijnhof Chef's Keuken",
+            "location": "Gent, BE",
+            "caption1": "Professionele apparatuur in een huiselijke setting.",
+            "caption2": "Geïntegreerde wijnopslag en koffiestation.",
+            "caption3": "Ergonomische indeling ontworpen voor serieus koken."
+        },
+        "masterSuite": {
+            "title": "Herenhuis Suite",
+            "location": "Antwerpen, BE",
+            "caption1": "Spa-geïnspireerd natte cel ontwerp.",
+            "caption2": "Vloerverwarming en handdoekwarmers voor comfort.",
+            "caption3": "Sfeerverlichting voor optimale ontspanning."
+        }
+    },
+    "ProjectGallery": {
+        "viewProject": "Bekijk Project",
+        "details": "Project Details",
+        "tooltips": {
+            "whatsapp": "WhatsApp",
+            "email": "E-mail",
+            "location": "Locatie"
+        },
+        "fallbackCaption": "Ervaar luxe wonen met onze op maat gemaakte ontwerpoplossingen. Elk detail is samengesteld om uw levensstijl te verbeteren, waarbij functionaliteit wordt gecombineerd met tijdloze esthetiek."
+    },
+    "BookingModal": {
+        "title": "Bezoek Inplannen",
+        "subtitle": "Boek een professioneel locatiebezoek voor uw renovatieproject."
+    },
+    "ServiceDetail": {
+        "back": "TERUG NAAR DIENSTEN",
+        "ready": "Klaar om te Beginnen?",
+        "schedule": "Plan een consultatie met ons ontwerpteam om uw {service} project te bespreken.",
+        "bookConsultation": "BOEK CONSULTATIE",
+        "notFound": "Dienst niet gevonden",
+        "specializeIn": "Wij zijn gespecialiseerd in:",
+        "keyFeatures": "Belangrijkste kenmerken zijn vaak:"
+    },
+    "Portal": {
+        "header": "KLANTPORTAAL",
+        "navTitle": "Projectoverzicht",
+        "welcome": "Welkom, {name}",
+        "trackProgress": "Volg de voortgang van uw renovatie, beheer taken en communiceer met ons team—alles op één plek.",
+        "latestUpdates": "Laatste Updates",
+        "noUpdates": "Nog geen updates geplaatst.",
+        "projectManager": "Project Manager",
+        "tasks": "Project Taken",
+        "remaining": "{count} Resterend",
+        "noTasks": "Geen actieve taken.",
+        "addTask": "Nieuwe taak toevoegen...",
+        "documents": "Documenten",
+        "noDocs": "Geen documenten.",
+        "addDocPrompt": "Document Naam:",
+        "addUrlPrompt": "Document URL (bijv. Dropbox/Google Drive link):",
+        "projectMedia": "Project Media",
+        "noMedia": "Geen media.",
+        "directMessage": "Direct Bericht",
+        "noMessages": "Nog geen berichten. Start het gesprek!",
+        "typeMessage": "Typ een bericht..."
+    },
+    "Admin": {
+        "loading": "Systeemgegevens laden...",
+        "failedCreate": "Aanmaken van portal mislukt",
+        "namePrompt": "Naam Klant:",
+        "emailPrompt": "E-mail Klant:",
+        "header": {
+            "title": "Beheer Dashboard",
+            "subtitle": "Beheer leads, boekingen en klantportalen.",
+            "logout": "Uitloggen",
+            "viewLive": "Live Site Bekijken"
+        },
+        "portals": {
+            "title": "Klantportalen",
+            "create": "Nieuw Portal",
+            "view": "Bekijk Portal",
+            "back": "Terug naar Dashboard",
+            "clientView": "Klantweergave",
+            "postUpdate": "Update Plaatsen",
+            "recentUpdates": "Recente Updates",
+            "form": {
+                "title": "Titel",
+                "details": "Details...",
+                "post": "Plaatsen"
+            }
+        },
+        "leads": {
+            "title": "Recente Leads",
+            "noLeads": "Geen leads gevonden."
+        },
+        "bookings": {
+            "title": "Recente Boekingen",
+            "noBookings": "Geen boekingen gevonden."
+        },
+        "filter": {
+            "all": "Alle Statussen",
+            "search": "Zoeken...",
+            "searchClient": "Klant Zoeken..."
+        },
+        "status": {
+            "NEW": "Nieuw",
+            "CONTACTED": "Gecontacteerd",
+            "CONVERTED": "Geconverteerd",
+            "ARCHIVED": "Gearchiveerd",
+            "PENDING": "In afwachting",
+            "CONFIRMED": "Bevestigd",
+            "CANCELLED": "Geannuleerd",
+            "ACTIVE": "Actief",
+            "COMPLETED": "Voltooid"
+        }
+    },
+    "Footer": {
+        "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN."
     }
 }

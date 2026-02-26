@@ -1,32 +1,70 @@
 {
+    "Metadata": {
+        "title": "Coral Enterprises | Premium Remodeling",
+        "description": "Luxury kitchen and bathroom transformations."
+    },
     "Navbar": {
         "home": "Home",
         "services": "Services",
         "projects": "Projects",
         "book": "BOOK NOW",
-        "back": "BACK"
+        "back": "BACK",
+        "logoTitle": "Coral Enterprises Logo",
+        "logoAria": "Coral Enterprises Logo"
     },
     "Services": {
         "title": "Our Expertise",
         "kitchen": {
             "title": "Kitchen Design",
             "subtitle": "Culinary Excellence",
-            "description": "Bespoke culinary spaces tailored to your lifestyle."
+            "description": "Bespoke culinary spaces meticulously crafted for elite living.",
+            "fullDescription": "Our Kitchen Design service is dedicated to creating bespoke culinary spaces that are not only visually stunning but also highly functional.\n\nWe believe the kitchen is the heart of the home, a place where memories are made and culinary masterpieces are born.\n\nOur process begins with understanding your unique lifestyle and cooking habits. Whether you're a professional chef needing industrial-grade appliances and workflow, or a family needing a durable, welcoming space for breakfast and homework, we tailor every detail to you.",
+            "features": [
+                "Custom Cabinetry & Joinery",
+                "High-End Appliance Integration",
+                "Ergonomic Layout Optimization",
+                "Premium Stone Countertops (Marble, Quartz, Granite)",
+                "Specialized Lighting Schemes"
+            ]
         },
         "bath": {
             "title": "Bath Restoration",
             "subtitle": "Personal Sanctuaries",
-            "description": "Transform your daily routine into a spa experience."
+            "description": "Transform your daily ritual into a restorative spa experience.",
+            "fullDescription": "Transform your daily routine into a luxurious spa experience with our Bath Restoration service. We turn ordinary bathrooms into private sanctuaries of relaxation and rejuvenation.\n\nFrom master en-suites to guest powder rooms, we bring an element of refined elegance to every wet area. Our designs focus on tranquility, using calming palettes, natural materials, and advanced fixtures.",
+            "features": [
+                "Freestanding Soaking Tubs",
+                "Rainfall Showers with Steam Capabilities",
+                "Heated Floors & Towel Warmers",
+                "Custom Vanities with Integrated Storage",
+                "Mood Lighting & Ambience Control"
+            ]
         },
         "additions": {
             "title": "Custom Additions",
             "subtitle": "Expand Your Horizons",
-            "description": "Seamless home extensions that blend perfectly."
+            "description": "Seamless home extensions that blend perfectly.",
+            "fullDescription": "Our Custom Additions service allows you to expand your living space without compromising the architectural integrity of your home. We specialize in seamless extensions that look and feel like they were always part of the original structure.\n\nWhether you need a new master suite, a sunroom, a home office, or an expanded entertainment area, we manage the entire process from architectural planning to the final coat of paint.",
+            "features": [
+                "Second-Story Additions",
+                "Garage Conversions",
+                "Sunrooms & Conservatories",
+                "In-Law Suites (ADUs)",
+                "Expanded Living Rooms & Dining Areas"
+            ]
         },
         "wholeHome": {
             "title": "Whole Home",
             "subtitle": "Complete Transformation",
-            "description": "Reimagine your entire living space from the ground up."
+            "description": "Reimagine your entire living space from the ground up.",
+            "fullDescription": "For those seeking a complete reinvention of their living environment, our Whole Home Renovation service offers a comprehensive solution. This is for the homeowner who loves their location but needs a home that better reflects their current taste and lifestyle.\n\nWe strip back the layers and reimagine the flow, function, and aesthetic of your entire property. This is a holistic approach ensuring consistent design language throughout every room.",
+            "features": [
+                "Structural Alterations & Open Floor Plans",
+                "Complete Electrical & Plumbing Overhauls",
+                "Flooring, Wall Treatments & Millwork",
+                "Smart Home Integration",
+                "Exterior Facelifts & Curb Appeal"
+            ]
         },
         "explore": "EXPLORE DETAILS"
     },
@@ -34,6 +72,198 @@
         "title": "Redefining",
         "subtitle": "Aligned. Bespoke. Professional.",
         "tagline": "ALIGNED. BESPOKE. PROFESSIONAL.",
-        "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services."
+        "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services.",
+        "stats": {
+            "projects": "PROJECTS COMPLETED",
+            "projectsCount": "150+",
+            "experience": "YEARS OF EXPERIENCE",
+            "experienceCount": "12+"
+        }
+    },
+    "LeadForm": {
+        "tabs": {
+            "inquiry": "Inquiry",
+            "booking": "Book Visit"
+        },
+        "placeholders": {
+            "name": "Full Name",
+            "email": "Email",
+            "phone": "Phone",
+            "service": "Choose a service",
+            "message": "Tell us about your project...",
+            "yourName": "Your Name",
+            "yourEmail": "Your Email"
+        },
+        "services": {
+            "kitchen": "Kitchen Remodeling",
+            "bathroom": "Bathroom Remodeling",
+            "addition": "Home Addition"
+        },
+        "buttons": {
+            "submit": "REQUEST CONSULTATION",
+            "sending": "SENDING...",
+            "sent": "SENT!",
+            "chooseDate": "CHOOSE DATE & TIME",
+            "confirm": "CONFIRM VISIT",
+            "confirming": "CONFIRMING...",
+            "confirmed": "CONFIRMED!",
+            "back": "BACK",
+            "close": "CLOSE",
+            "yesBook": "YES, BOOK NOW",
+            "later": "LATER"
+        },
+        "success": {
+            "inquiryTitle": "Inquiry Received!",
+            "inquirySub": "Would you also like to schedule a professional site visit right now?",
+            "allSet": "All Set!",
+            "touchShortly": "Our team will be in touch shortly.",
+            "anotherInquiry": "Send another inquiry",
+            "visitConfirmed": "Visit Confirmed!",
+            "scheduledFor": "Scheduled for {date} at {time}.",
+            "anotherVisit": "Schedule another visit"
+        },
+        "errors": {
+            "generic": "Something went wrong. Please try again.",
+            "connection": "Failed to reach the server. Please check your connection.",
+            "required": "This field is required"
+        },
+        "timeFormat": "hh:mm a"
+    },
+    "Sections": {
+        "expertise": {
+            "title": "Our Expertise"
+        },
+        "portfolio": {
+            "title": "Recent Portfolio",
+            "tagline": "A glimpse into luxury"
+        }
+    },
+    "Projects": {
+        "kitchenLoft": {
+            "title": "Patrician House Kitchen",
+            "location": "Sint-Martens-Latem, BE",
+            "caption1": "Wide angle view showing the open concept layout.",
+            "caption2": "Detail of the honed marble island and matte cabinetry.",
+            "caption3": "Custom lighting fixtures highlighting the texture."
+        },
+        "masterBath": {
+            "title": "Zoute Wellness Bathroom",
+            "location": "Knokke-Heist, BE",
+            "caption1": "Freestanding soaking tub with panoramic views.",
+            "caption2": "Dual vanity with custom stone integration.",
+            "caption3": "Rainfall shower enclosure with frameless glass."
+        },
+        "contemporaryKitchen": {
+            "title": "Beguinage Chef's Kitchen",
+            "location": "Ghent, BE",
+            "caption1": "Professional grade appliances in a home setting.",
+            "caption2": "Integrated wine storage and coffee station.",
+            "caption3": "Ergonomic layout designed for serious cooking."
+        },
+        "masterSuite": {
+            "title": "Manor House Suite",
+            "location": "Antwerp, BE",
+            "caption1": "Spa-inspired wet room design.",
+            "caption2": "Heated floors and towel warmers for comfort.",
+            "caption3": "Ambient lighting integration for relaxation."
+        }
+    },
+    "ProjectGallery": {
+        "viewProject": "View Project",
+        "details": "Project Details",
+        "tooltips": {
+            "whatsapp": "WhatsApp",
+            "email": "Email",
+            "location": "Location"
+        },
+        "fallbackCaption": "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics."
+    },
+    "BookingModal": {
+        "title": "Schedule Your Visit",
+        "subtitle": "Book a professional site consultation for your remodeling project."
+    },
+    "ServiceDetail": {
+        "back": "BACK TO SERVICES",
+        "ready": "Ready to Start?",
+        "schedule": "Schedule a consultation with our design team to discuss your {service} project.",
+        "bookConsultation": "BOOK CONSULTATION",
+        "notFound": "Service not found",
+        "specializeIn": "We specialize in:",
+        "keyFeatures": "Key features often include:"
+    },
+    "Portal": {
+        "header": "CLIENT PORTAL",
+        "navTitle": "Project Dashboard",
+        "welcome": "Welcome, {name}",
+        "trackProgress": "Track your renovation progress, manage tasks, and communicate with our team—all in one place.",
+        "latestUpdates": "Latest Updates",
+        "noUpdates": "No updates posted yet.",
+        "projectManager": "Project Manager",
+        "tasks": "Project Tasks",
+        "remaining": "{count} Remaining",
+        "noTasks": "No active tasks.",
+        "addTask": "Add a new task...",
+        "documents": "Documents",
+        "noDocs": "No documents.",
+        "addDocPrompt": "Document Name:",
+        "addUrlPrompt": "Document URL (e.g., Dropbox/Google Drive link):",
+        "projectMedia": "Project Media",
+        "noMedia": "No media.",
+        "directMessage": "Direct Message",
+        "noMessages": "No messages yet. Start the conversation!",
+        "typeMessage": "Type a message..."
+    },
+    "Admin": {
+        "loading": "Loading System Data...",
+        "failedCreate": "Failed to create portal",
+        "namePrompt": "Client Name:",
+        "emailPrompt": "Client Email:",
+        "header": {
+            "title": "Admin Dashboard",
+            "subtitle": "Manage leads, bookings, and client portals.",
+            "logout": "Logout",
+            "viewLive": "View Live Site"
+        },
+        "portals": {
+            "title": "Client Portals",
+            "create": "New Portal",
+            "view": "View Portal",
+            "back": "Back to Dashboard",
+            "clientView": "Client View",
+            "postUpdate": "Post Update",
+            "recentUpdates": "Recent Updates",
+            "form": {
+                "title": "Title",
+                "details": "Details...",
+                "post": "Post"
+            }
+        },
+        "leads": {
+            "title": "Recent Leads",
+            "noLeads": "No leads found."
+        },
+        "bookings": {
+            "title": "Recent Bookings",
+            "noBookings": "No bookings found."
+        },
+        "filter": {
+            "all": "All Status",
+            "search": "Search...",
+            "searchClient": "Search Client..."
+        },
+        "status": {
+            "NEW": "New",
+            "CONTACTED": "Contacted",
+            "CONVERTED": "Converted",
+            "ARCHIVED": "Archived",
+            "PENDING": "Pending",
+            "CONFIRMED": "Confirmed",
+            "CANCELLED": "Cancelled",
+            "ACTIVE": "Active",
+            "COMPLETED": "Completed"
+        }
+    },
+    "Footer": {
+        "copy": "&copy; 2026 CORAL ENTERPRISES. ALL RIGHTS RESERVED."
     }
 }

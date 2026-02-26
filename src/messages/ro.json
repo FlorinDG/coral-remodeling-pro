@@ -1,39 +1,268 @@
 {
+    "Metadata": {
+        "title": "Coral Enterprises | Renovări Premium",
+        "description": "Renovări de lux pentru bucătării și băi."
+    },
     "Navbar": {
         "home": "Acasă",
         "services": "Servicii",
         "projects": "Proiecte",
-        "book": "REZERVĂ ACUM",
-        "back": "ÎNAPOI"
+        "book": "RESERVĂ",
+        "back": "ÎNAPOI",
+        "logoTitle": "Logo Coral Enterprises",
+        "logoAria": "Logo Coral Enterprises"
     },
     "Services": {
         "title": "Expertiza Noastră",
         "kitchen": {
             "title": "Design Bucătărie",
             "subtitle": "Excelență Culinară",
-            "description": "Spații culinare personalizate adaptate stilului tău de viață."
+            "description": "Spații culinare personalizate adaptate stilului tău de viață.",
+            "fullDescription": "Serviciul nostru de Design de Bucătărie este dedicat creării de spații culinare personalizate care nu sunt doar superbe vizual, ci și extrem de funcționale.\n\nCredem că bucătăria este inima casei, un loc unde se creează amintiri și unde iau naștere capodopere culinare.\n\nProcesul nostru începe prin înțelegerea stilului tău unic de viață și a obiceiurilor tale culinare. Fie că ești un bucătar profesionist care are nevoie de echipamente industriale, fie o familie care are nevoie de un spațiu durabil și primitor, adaptăm fiecare detaliu nevoilor tale.",
+            "features": [
+                "Mobilier la Comandă & Tâmplărie de Interior",
+                "Integrare Echipamente High-End",
+                "Optimizare Ergonomică a Fluxului",
+                "Blaturi din Piatră Premium (Marmură, Cuarț, Granit)",
+                "Planuri de Iluminat Specializate"
+            ]
         },
         "bath": {
-            "title": "Restaurare Baie",
+            "title": "Renovare Baie",
             "subtitle": "Sanctuare Personale",
-            "description": "Transformă rutina zilnică într-o experiență spa."
+            "description": "Transformă-ți rutina zilnică într-o experiență spa.",
+            "fullDescription": "Transformă-ți rutina zilnică într-o experiență spa luxoasă cu serviciul nostru de Renovare Baie. Transformăm băile obișnuite în sanctuare private de relaxare și reîinerire.\n\nDe la băi matrimoniale la toalete de serviciu, aducem un element de eleganță rafinată în fiecare spațiu. Design-urile noastre se concentrează pe liniște, utilizând palete calmante, materiale naturale și instalații de ultimă generație.",
+            "features": [
+                "Căzi de Baie de sine stătătoare (Freestanding)",
+                "Dușuri de tip Rain-Shower cu opțiuni de abur",
+                "Încălzire în Pardoseală & Încălzitoare de Prosoape",
+                "Gheridoane la Comandă cu Depozitare Integrată",
+                "Iluminat Ambiental & Controlul Atmosferei"
+            ]
         },
         "additions": {
-            "title": "Extensii Personalizate",
-            "subtitle": "Extinde Orizonturile",
-            "description": "Extensii care se integrează perfect cu casa ta."
+            "title": "Extensii la Comandă",
+            "subtitle": "Extinde-ți Orizonturile",
+            "description": "Extensii de casă care se integrează perfect.",
+            "fullDescription": "Serviciul nostru de Extensii la Comandă îți permite să îți mărești spațiul de locuit fără a compromite integritatea arhitecturală a casei tale. Suntem specializați în extensii fluide care par să fi făcut întotdeauna parte din structura originală.\n\nFie că ai nevoie de un nou dormitor matrimonial, de o verandă, un birou de acasă sau un spațiu de divertisment extins, gestionăm întregul proces, de la planificarea arhitecturală până la ultimul strat de vopsea.",
+            "features": [
+                "Construcție Etaj Suplimentar",
+                "Conversii de Garaj",
+                "Verande & Conservatoare",
+                "Unități Locative Accesorii (ADU)",
+                "Sufragerii & Zone de Dining Extinse"
+            ]
         },
         "wholeHome": {
-            "title": "Renovare Completă",
+            "title": "Casă Completă",
             "subtitle": "Transformare Totală",
-            "description": "Reinventează întregul spațiu de locuit de la zero."
+            "description": "Spațiul tău de locuit reinventat de la zero.",
+            "fullDescription": "Pentru cei care caută o reinventare completă a mediului lor de viață, serviciul nostru de Renovare Casă Completă oferă o soluție globală. Este pentru proprietarul care își iubește locația, dar are nevoie de o casă care să reflecte mai bine gusturile și stilul său de viață actual.\n\nReinterpretăm fluxul, funcția și estetica întregii proprietăți. Este o abordare holistică ce asigură un limbaj de design coerent în fiecare cameră.",
+            "features": [
+                "Modificări Structurale & Planuri Deschise",
+                "Revizie Completă Electrică & Instalații Sanitare",
+                "Pardoseli, Finisaje de Pereți & Tâmplărie",
+                "Integrare Smart Home",
+                "Renovare Fațadă & Design Exterior (Curb Appeal)"
+            ]
         },
         "explore": "DETALII"
     },
     "Hero": {
-        "title": "Redefinind",
-        "subtitle": "Aliniat. Personalizat. Profesionist.",
-        "tagline": "ALINIAT. PERSONALIZAT. PROFESIONIST.",
-        "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare bucătării și băi."
+        "title": "Redefinește",
+        "subtitle": "Aliniat. Personalizat. Profesional.",
+        "tagline": "ALINIAT. PERSONALIZAT. PROFESIONAL.",
+        "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare pentru bucătării și băi.",
+        "stats": {
+            "projects": "PROIECTE FINALIZATE",
+            "experience": "ANI DE EXPERIENȚĂ",
+            "projectsCount": "150+",
+            "experienceCount": "12+"
+        }
+    },
+    "LeadForm": {
+        "tabs": {
+            "inquiry": "Solicitare",
+            "booking": "Programare Vizită"
+        },
+        "placeholders": {
+            "name": "Nume Complet",
+            "email": "Adresă de E-mail",
+            "phone": "Număr de Telefon",
+            "service": "Alege un serviciu",
+            "message": "Spune-ne despre proiectul tău...",
+            "yourName": "Numele Tău",
+            "yourEmail": "E-mail-ul Tău"
+        },
+        "services": {
+            "kitchen": "Renovare Bucătărie",
+            "bathroom": "Renovare Baie",
+            "addition": "Extensie"
+        },
+        "buttons": {
+            "submit": "TRIMITE SOLICITAREA",
+            "sending": "SE TRIMITE...",
+            "sent": "TRIMIS!",
+            "chooseDate": "ALEGE DATA ȘI ORA",
+            "confirm": "CONFIRMĂ VIZITA",
+            "confirming": "SE CONFIRMĂ...",
+            "confirmed": "CONFIRMAT!",
+            "back": "ÎNAPOI",
+            "close": "ÎNCHIDE",
+            "yesBook": "DA, REZERVĂ ACUM",
+            "later": "MAI TÂRZIU"
+        },
+        "success": {
+            "inquiryTitle": "Solicitare Primită!",
+            "inquirySub": "Dorești să programezi și o vizită profesională la locație?",
+            "allSet": "Totul este pregătit!",
+            "touchShortly": "Echipa noastră te va contacta în curând.",
+            "anotherInquiry": "Trimite o altă solicitare",
+            "visitConfirmed": "Vizită Confirmată!",
+            "scheduledFor": "Programat pe {date} la ora {time}.",
+            "anotherVisit": "Programează o altă vizită"
+        },
+        "errors": {
+            "generic": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
+            "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea."
+        },
+        "timeFormat": "HH:mm"
+    },
+    "Sections": {
+        "expertise": {
+            "title": "Expertiza Noastră"
+        },
+        "portfolio": {
+            "title": "Portofoliu Recent",
+            "tagline": "O privire asupra luxului"
+        }
+    },
+    "Projects": {
+        "kitchenLoft": {
+            "title": "Bucătărie Casă Patriciană",
+            "location": "Sint-Martens-Latem, BE",
+            "caption1": "Vedere de ansamblu a configurației deschise.",
+            "caption2": "Detalii ale insulei de marmură și dulapurilor mate.",
+            "caption3": "Iluminat personalizat care accentuează texturile."
+        },
+        "masterBath": {
+            "title": "Baie Wellness Zoute",
+            "location": "Knokke-Heist, BE",
+            "caption1": "Cadă de baie freestanding cu vedere panoramică.",
+            "caption2": "Gheridon dublu cu piatră naturală integrată.",
+            "caption3": "Duș de tip rain-shower cu sticlă fără cadru."
+        },
+        "contemporaryKitchen": {
+            "title": "Bucătărie Chef Begijnhof",
+            "location": "Gent, BE",
+            "caption1": "Echipamente profesionale într-un cadru primitor.",
+            "caption2": "Depozitare vin integrată și stație de cafea.",
+            "caption3": "Configurație ergonomică concepută pentru gătit serios."
+        },
+        "masterSuite": {
+            "title": "Suită Casă Boierească",
+            "location": "Anvers, BE",
+            "caption1": "Design spa inspirat de zona umedă.",
+            "caption2": "Încălzire în pardoseală pentru confort optim.",
+            "caption3": "Iluminat ambiental pentru relaxare totală."
+        }
+    },
+    "ProjectGallery": {
+        "viewProject": "Vezi Proiectul",
+        "details": "Detalii Proiect",
+        "tooltips": {
+            "whatsapp": "WhatsApp",
+            "email": "E-mail",
+            "location": "Locație"
+        },
+        "fallbackCaption": "Experimentați viața de lux cu soluțiile noastre de design personalizate. Fiecare detaliu este curatoriat pentru a vă îmbunătăți stilul de viață, îmbinând funcționalitatea cu estetica atemporală."
+    },
+    "BookingModal": {
+        "title": "Programează o Vizită",
+        "subtitle": "Rezervă o vizită profesională pentru proiectul tău de renovare."
+    },
+    "ServiceDetail": {
+        "back": "ÎNAPOI LA SERVICII",
+        "ready": "Pregătit să Începi?",
+        "schedule": "Programează o consultație pentru a discuta despre proiectul tău de {service}.",
+        "bookConsultation": "RESERVĂ CONSULTAȚIE",
+        "notFound": "Serviciul nu a fost găsit",
+        "specializeIn": "Suntem specializați în:",
+        "keyFeatures": "Caracteristicile cheie includ:"
+    },
+    "Portal": {
+        "header": "PORTAL CLIENT",
+        "navTitle": "Prezentare Proiect",
+        "welcome": "Bun venit, {name}",
+        "trackProgress": "Urmărește progresul renovării tale și comunică cu echipa noastră.",
+        "latestUpdates": "Ultimele Noutăți",
+        "noUpdates": "Nicio noutate postată momentan.",
+        "projectManager": "Manager de Proiect",
+        "tasks": "Sarcini Proiect",
+        "remaining": "{count} Rămase",
+        "noTasks": "Nicio sarcină activă.",
+        "addTask": "Adaugă o sarcină nouă...",
+        "documents": "Documente",
+        "noDocs": "Niciun document.",
+        "addDocPrompt": "Nume Document:",
+        "addUrlPrompt": "URL Document:",
+        "projectMedia": "Media Proiect",
+        "noMedia": "Niciun element media.",
+        "directMessage": "Mesaj Direct",
+        "noMessages": "Niciun mesaj încă. Începe conversația!",
+        "typeMessage": "Scrie un mesaj..."
+    },
+    "Admin": {
+        "loading": "Se încarcă datele...",
+        "failedCreate": "Crearea portalului a eșuat",
+        "namePrompt": "Nume Client:",
+        "emailPrompt": "E-mail Client:",
+        "header": {
+            "title": "Panou de Administrare",
+            "subtitle": "Gestionează lead-uri, rezervări și portaluri clienți.",
+            "logout": "Deconectare",
+            "viewLive": "Vezi Site-ul"
+        },
+        "portals": {
+            "title": "Portaluri Clienți",
+            "create": "Portal Nou",
+            "view": "Vezi Portalul",
+            "back": "Înapoi la Panou",
+            "clientView": "Vizualizare Client",
+            "postUpdate": "Postează Noutate",
+            "recentUpdates": "Noutăți Recente",
+            "form": {
+                "title": "Titlu",
+                "details": "Detalii...",
+                "post": "Postează"
+            }
+        },
+        "leads": {
+            "title": "Lead-uri Recente",
+            "noLeads": "Niciun lead găsit."
+        },
+        "bookings": {
+            "title": "Rezervări Recente",
+            "noBookings": "Nicio rezervare găsită."
+        },
+        "filter": {
+            "all": "Toate Statusurile",
+            "search": "Caută...",
+            "searchClient": "Caută Client..."
+        },
+        "status": {
+            "NEW": "Nou",
+            "CONTACTED": "Contactat",
+            "CONVERTED": "Convertit",
+            "ARCHIVED": "Arhivat",
+            "PENDING": "În așteptare",
+            "CONFIRMED": "Confirmat",
+            "CANCELLED": "Anulat",
+            "ACTIVE": "Activ",
+            "COMPLETED": "Finalizat"
+        }
+    },
+    "Footer": {
+        "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE."
     }
 }

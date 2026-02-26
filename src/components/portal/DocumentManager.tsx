@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { FileText, Download, Plus, File } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface Document {
     id: string;
@@ -17,12 +18,13 @@ interface DocumentManagerProps {
 }
 
 export default function DocumentManager({ portalId, initialDocs, readOnly = false }: DocumentManagerProps) {
+    const t = useTranslations('Portal');
     const [docs, setDocs] = useState(initialDocs);
 
     const handleAddDoc = async () => {
-        const name = prompt("Document Name:");
+        const name = prompt(t('addDocPrompt'));
         if (!name) return;
-        const url = prompt("Document URL (e.g., Dropbox/Google Drive link):");
+        const url = prompt(t('addUrlPrompt'));
         if (!url) return;
 
         // Simple type inference
@@ -38,30 +40,30 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
     };
 
     return (
-        <div className="glass-morphism p-6 rounded-3xl border border-white/10 h-full flex flex-col">
+        <div className="glass-morphism p-6 rounded-3xl border border-neutral-200 dark:border-white/10 h-full flex flex-col">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold flex items-center gap-2">Documents</h3>
+                <h3 className="text-xl font-bold flex items-center gap-2 text-neutral-900 dark:text-white">{t('documents')}</h3>
                 {!readOnly && (
-                    <button onClick={handleAddDoc} className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-colors">
+                    <button onClick={handleAddDoc} className="p-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-full transition-colors text-neutral-600 dark:text-white">
                         <Plus className="w-4 h-4" />
                     </button>
                 )}
             </div>
 
             <div className="grid grid-cols-2 gap-4 overflow-y-auto custom-scrollbar pr-2">
-                {docs.length === 0 && <p className="col-span-2 text-neutral-500 italic text-sm text-center py-4">No documents.</p>}
+                {docs.length === 0 && <p className="col-span-2 text-neutral-500 italic text-sm text-center py-4">{t('noDocs')}</p>}
                 {docs.map(doc => (
                     <a
                         key={doc.id}
                         href={doc.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-4 bg-black/20 rounded-2xl border border-white/5 hover:border-white/20 transition-all flex flex-col items-center text-center gap-3 group"
+                        className="p-4 bg-white/80 dark:bg-black/20 rounded-2xl border border-neutral-200 dark:border-white/5 hover:border-[#d35400]/20 dark:hover:border-white/20 transition-all flex flex-col items-center text-center gap-3 group shadow-sm dark:shadow-none"
                     >
                         <div className="w-10 h-10 rounded-full bg-[#d35400]/10 flex items-center justify-center group-hover:bg-[#d35400] transition-colors">
                             <FileText className="w-5 h-5 text-[#d35400] group-hover:text-white transition-colors" />
                         </div>
-                        <span className="text-xs font-bold truncate w-full">{doc.name}</span>
+                        <span className="text-xs font-bold truncate w-full text-neutral-900 dark:text-white">{doc.name}</span>
                     </a>
                 ))}
             </div>

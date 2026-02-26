@@ -7,9 +7,11 @@ import Navbar from "@/components/Navbar";
 import BookingModal from "@/components/BookingModal";
 import ProjectGallery from "@/components/ProjectGallery";
 import ServiceExpander from "@/components/ServiceExpander";
+import { useTranslations } from 'next-intl';
 
 export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const t = useTranslations();
 
   return (
     <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
@@ -21,7 +23,7 @@ export default function Home() {
       <section id="services" className="py-24 bg-white text-neutral-900 dark:bg-neutral-950 dark:text-white">
         <div className="container mx-auto px-8 md:px-16">
           <div className="mb-16">
-            <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">Our Expertise</h2>
+            <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">{t('Sections.expertise.title')}</h2>
             <div className="w-20 h-1 bg-neutral-900 dark:bg-white" />
           </div>
 
@@ -34,46 +36,46 @@ export default function Home() {
         <div className="container mx-auto">
           <div className="flex justify-between items-end mb-16">
             <div>
-              <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">Recent Portfolio</h2>
-              <p className="text-neutral-500 uppercase tracking-widest text-xs font-bold">A glimpse into luxury</p>
+              <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">{t('Sections.portfolio.title')}</h2>
+              <p className="text-neutral-500 uppercase tracking-widest text-xs font-bold">{t('Sections.portfolio.tagline')}</p>
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             <ProjectGallery
-              title="Minimalist Loft Kitchen"
-              location="Manhattan, NY"
+              title={t('Projects.kitchenLoft.title')}
+              location={t('Projects.kitchenLoft.location')}
               images={[
-                { src: "/images/kitchen-hero.png", caption: "Wide angle view showing the open concept layout." },
-                { src: "/images/kitchen-hero.png", caption: "Detail of the honed marble island and matte cabinetry." },
-                { src: "/images/kitchen-hero.png", caption: "Custom lighting fixtures highlighting the texture." }
+                { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption1') },
+                { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption2') },
+                { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption3') }
               ]}
             />
             <ProjectGallery
-              title="Serenity Master Bath"
-              location="Greenwich, CT"
+              title={t('Projects.masterBath.title')}
+              location={t('Projects.masterBath.location')}
               images={[
-                { src: "/images/bathroom-hero.png", caption: "Freestanding soaking tub with panoramic views." },
-                { src: "/images/bathroom-hero.png", caption: "Dual vanity with custom stone integration." },
-                { src: "/images/bathroom-hero.png", caption: "Rainfall shower enclosure with frameless glass." }
+                { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption1') },
+                { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption2') },
+                { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption3') }
               ]}
             />
             <ProjectGallery
-              title="Chef's Contemporary Space"
-              location="Scarsdale, NY"
+              title={t('Projects.contemporaryKitchen.title')}
+              location={t('Projects.contemporaryKitchen.location')}
               images={[
-                { src: "/images/kitchen-portfolio-2.png", caption: "Professional grade appliances in a home setting." },
-                { src: "/images/kitchen-portfolio-2.png", caption: "Integrated wine storage and coffee station." },
-                { src: "/images/kitchen-portfolio-2.png", caption: "Ergonomic layout designed for serious cooking." }
+                { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption1') },
+                { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption2') },
+                { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption3') }
               ]}
             />
             <ProjectGallery
-              title="Oasis Master Suite"
-              location="Westport, CT"
+              title={t('Projects.masterSuite.title')}
+              location={t('Projects.masterSuite.location')}
               images={[
-                { src: "/images/bathroom-portfolio-2.png", caption: "Spa-inspired wet room design." },
-                { src: "/images/bathroom-portfolio-2.png", caption: "Heated floors and towel warmers for comfort." },
-                { src: "/images/bathroom-portfolio-2.png", caption: "Ambient lighting integration for relaxation." }
+                { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption1') },
+                { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption2') },
+                { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption3') }
               ]}
             />
           </div>
@@ -83,7 +85,7 @@ export default function Home() {
 
       <footer id="contact" className="py-12 border-t border-neutral-200 dark:border-white/5 text-center">
         <p className="text-xs text-neutral-600 uppercase tracking-[0.3em]">
-          &copy; 2026 CORAL ENTERPRISES. ALL RIGHTS RESERVED.
+          {t('Footer.copy')}
         </p>
       </footer>
     </main>

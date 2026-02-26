@@ -45,13 +45,13 @@ export default function Hero() {
                     </p>
                     <div className="flex gap-6 text-neutral-950 dark:text-white">
                         <div className="flex flex-col items-end">
-                            <span className="text-2xl font-bold">150+</span>
-                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">PROJECTS DONE</span>
+                            <span className="text-2xl font-bold">{t('stats.projectsCount')}</span>
+                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">{t('stats.projects')}</span>
                         </div>
                         <div className="w-[1px] h-10 bg-neutral-800" />
                         <div className="flex flex-col items-end">
-                            <span className="text-2xl font-bold">12+</span>
-                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">YEARS EXP</span>
+                            <span className="text-2xl font-bold">{t('stats.experienceCount')}</span>
+                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">{t('stats.experience')}</span>
                         </div>
                     </div>
                 </div>

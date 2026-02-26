@@ -60,35 +60,35 @@ export default function ServiceExpander() {
                         <motion.div
                             key={service.id}
                             onHoverStart={() => setActiveId(service.id)}
-                            className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-500 ease-in-out border border-black dark:border-white/10 dark:border-white/10 ${isActive ? 'flex-[4]' : 'flex-[1]'}`}
+                            className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 ease-in-out border border-black dark:border-white/10 ${isActive ? 'flex-[4]' : 'flex-[1]'}`}
                         >
                             <Image
                                 src={service.image}
                                 alt={service.title}
                                 fill
-                                className={`object-cover transition-transform duration-700 ${isActive ? 'scale-110' : 'scale-100 grayscale opacity-50'}`}
+                                className={`object-cover transition-transform duration-400 ${isActive ? 'scale-110' : 'scale-100 grayscale opacity-50'}`}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
                             <div className="absolute inset-0 p-8 flex flex-col justify-end">
                                 <div className="space-y-4">
                                     <h3
-                                        className={`font-bold text-white transition-all duration-500 ease-in-out origin-left ${isActive ? 'text-3xl translate-y-0' : 'text-xl rotate-[-90deg] translate-y-8 opacity-80'
+                                        className={`font-bold text-white transition-all duration-300 ease-in-out origin-left ${isActive ? 'text-3xl translate-y-0' : 'text-xl rotate-[-90deg] translate-y-8 opacity-80'
                                             }`}
                                     >
                                         {service.title}
                                     </h3>
 
                                     <div
-                                        className={`overflow-hidden transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0'
+                                        className={`overflow-hidden transition-all duration-400 ease-in-out ${isActive ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0'
                                             }`}
                                     >
                                         <div className="min-w-[300px] pt-4">
-                                            <p className="text-xl text-orange-500 font-medium mb-2 transform transition-all duration-500 delay-100 translate-x-0">{service.subtitle}</p>
-                                            <p className="text-neutral-300 mb-6 max-w-md transform transition-all duration-500 delay-200 translate-x-0">{service.description}</p>
+                                            <p className="text-xl text-orange-500 font-medium mb-2 transform transition-all duration-300 translate-x-0">{service.subtitle}</p>
+                                            <p className="text-neutral-300 mb-6 max-w-md transform transition-all duration-300 delay-75 translate-x-0">{service.description}</p>
                                             <Link
                                                 href={`/services/${service.id}`}
-                                                className="inline-flex items-center gap-2 bg-neutral-900 border border-white/20 text-white px-6 py-3 rounded-full font-bold hover:bg-[#d35400] hover:border-[#d35400] transition-all transform transition-all duration-500 delay-300 translate-y-0"
+                                                className="inline-flex items-center gap-2 bg-neutral-900 border border-white/20 text-white px-6 py-3 rounded-full font-bold hover:bg-[#d35400] hover:border-[#d35400] transition-all transform transition-all duration-300 delay-150 translate-y-0"
                                             >
                                                 {t('explore')} <ArrowRight className="w-4 h-4" />
                                             </Link>

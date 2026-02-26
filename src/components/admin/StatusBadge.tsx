@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 
 interface StatusBadgeProps {
     status: string;
@@ -17,11 +18,12 @@ const statusColors: Record<string, string> = {
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {
+    const t = useTranslations('Admin.status');
     const colorClass = statusColors[status] || 'bg-white/10 text-white border-white/20';
 
     return (
         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${colorClass}`}>
-            {status}
+            {t(status as any)}
         </span>
     );
 }

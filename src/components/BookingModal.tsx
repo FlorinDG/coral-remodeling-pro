@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import LeadForm from './LeadForm';
+import { useTranslations } from 'next-intl';
 
 interface BookingModalProps {
     isOpen: boolean;
@@ -9,6 +10,7 @@ interface BookingModalProps {
 }
 
 export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
+    const t = useTranslations('BookingModal');
     return (
         <AnimatePresence>
             {isOpen && (
@@ -41,8 +43,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                             </button>
 
                             <div className="mb-6">
-                                <h3 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Schedule Your Visit</h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400">Book a professional site consultation for your remodeling project.</p>
+                                <h3 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">{t('title')}</h3>
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('subtitle')}</p>
                             </div>
 
                             <LeadForm initialTab="booking" onClose={onClose} />

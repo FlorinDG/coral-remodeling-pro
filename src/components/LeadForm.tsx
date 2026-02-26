@@ -4,8 +4,12 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfToday } from 'date-fns';
 import { Check } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { nl, enUS, fr } from 'date-fns/locale';
 
-const TIMESLOTS = ["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"];
+const localeMap: Record<string, any> = { nl, en: enUS, fr };
+
+const RAW_TIMESLOTS = [9, 11, 13, 15, 17];
 
 interface LeadFormProps {
     initialTab?: 'inquiry' | 'booking';
@@ -13,6 +17,16 @@ interface LeadFormProps {
 }
 
 export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormProps) {
+    const t = useTranslations('LeadForm');
+    const locale = useLocale();
+    const currentLocale = localeMap[locale] || enUS;
+
+    const TIMESLOTS = RAW_TIMESLOTS.map(hour => {
+        const d = new Date();
+        d.setHours(hour, 0, 0, 0);
+        return format(d, t('timeFormat'));
+    });
+
     const [activeTab, setActiveTab] = useState<'inquiry' | 'booking'>(initialTab);
     const [formData, setFormData] = useState({
         name: '',
@@ -56,12 +70,12 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                 }, 1500); // Wait for "Sent!" animation
             } else {
                 const data = await res.json();
-                setError(data.error || 'Something went wrong. Please try again.');
+                setError(data.error || t('errors.generic'));
                 setLoading(false);
             }
         } catch (err) {
             console.error(err);
-            setError('Failed to reach the server. Please check your connection.');
+            setError(t('errors.connection'));
             setLoading(false);
         }
     };
@@ -91,12 +105,12 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                 }, 1500);
             } else {
                 const data = await res.json();
-                setError(data.error || 'Failed to confirm booking. Please try again.');
+                setError(data.error || t('errors.generic'));
                 setLoading(false);
             }
         } catch (err) {
             console.error(err);
-            setError('Failed to reach the server. Please check your connection.');
+            setError(t('errors.connection'));
             setLoading(false);
         }
     };
@@ -108,13 +122,13 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     onClick={() => setActiveTab('inquiry')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
-                    Inquiry
+                    {t('tabs.inquiry')}
                 </button>
                 <button
                     onClick={() => setActiveTab('booking')}
                     className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
-                    Book Visit
+                    {t('tabs.booking')}
                 </button>
             </div>
 
@@ -132,31 +146,31 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 {showBookingUpsell ? (
                                     <div className="space-y-6">
                                         <div className="text-4xl mb-4">✨</div>
-                                        <h4 className="text-xl font-bold">Inquiry Received!</h4>
-                                        <p className="text-neutral-400 text-sm">Would you also like to schedule a professional site visit right now?</p>
+                                        <h4 className="text-xl font-bold">{t('success.inquiryTitle')}</h4>
+                                        <p className="text-neutral-400 text-sm">{t('success.inquirySub')}</p>
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={() => { setActiveTab('booking'); setShowBookingUpsell(false); }}
                                                 className="flex-1 bg-[#d35400] text-white font-bold py-3 rounded-xl hover:bg-[#a04000] transition-colors"
                                             >
-                                                YES, BOOK NOW
+                                                {t('buttons.yesBook')}
                                             </button>
                                             <button
                                                 onClick={() => setShowBookingUpsell(false)}
                                                 className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 font-bold py-3 rounded-xl hover:bg-white/10 transition-colors"
                                             >
-                                                LATER
+                                                {t('buttons.later')}
                                             </button>
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
                                         <div className="text-4xl mb-4">✅</div>
-                                        <h4 className="text-xl font-bold">All Set!</h4>
-                                        <p className="text-neutral-400">Our team will be in touch shortly.</p>
-                                        <button onClick={() => setInquirySuccess(false)} className="text-sm underline opacity-50">Send another inquiry</button>
+                                        <h4 className="text-xl font-bold">{t('success.allSet')}</h4>
+                                        <p className="text-neutral-400">{t('success.touchShortly')}</p>
+                                        <button onClick={() => setInquirySuccess(false)} className="text-sm underline opacity-50">{t('success.anotherInquiry')}</button>
                                         {onClose && (
-                                            <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">CLOSE</button>
+                                            <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">{t('buttons.close')}</button>
                                         )}
                                     </div>
                                 )}
@@ -165,7 +179,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                             <form onSubmit={handleInquirySubmit} className="space-y-4 flex-1 flex flex-col">
                                 <input
                                     type="text"
-                                    placeholder="Full Name"
+                                    placeholder={t('placeholders.name')}
                                     required
                                     className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.name}
@@ -177,7 +191,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 <div className="grid grid-cols-2 gap-4">
                                     <input
                                         type="email"
-                                        placeholder="Email"
+                                        placeholder={t('placeholders.email')}
                                         required
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                         value={formData.email}
@@ -188,7 +202,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     />
                                     <input
                                         type="tel"
-                                        placeholder="Phone"
+                                        placeholder={t('placeholders.phone')}
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                         value={formData.phone}
                                         onChange={(e) => {
@@ -205,12 +219,12 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         setError(null);
                                     }}
                                 >
-                                    <option value="Kitchen">Kitchen Remodeling</option>
-                                    <option value="Bathroom">Bathroom Remodeling</option>
-                                    <option value="Addition">Home Addition</option>
+                                    <option value="Kitchen">{t('services.kitchen')}</option>
+                                    <option value="Bathroom">{t('services.bathroom')}</option>
+                                    <option value="Addition">{t('services.addition')}</option>
                                 </select>
                                 <textarea
-                                    placeholder="Tell us about your project..."
+                                    placeholder={t('placeholders.message')}
                                     rows={2}
                                     className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.message}
@@ -230,10 +244,10 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     {sent ? (
                                         <>
                                             <Check className="w-5 h-5" />
-                                            SENT!
+                                            {t('buttons.sent')}
                                         </>
                                     ) : (
-                                        loading ? 'SENDING...' : 'REQUEST CONSULTATION'
+                                        loading ? t('buttons.sending') : t('buttons.submit')
                                     )}
                                 </motion.button>
                             </form>
@@ -250,25 +264,30 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                         {bookingSuccess ? (
                             <div className="flex-1 flex flex-col justify-center py-12 text-center">
                                 <div className="text-4xl mb-4">📅</div>
-                                <h4 className="text-xl font-bold">Visit Confirmed!</h4>
-                                <p className="text-neutral-400">Scheduled for {selectedDate && format(selectedDate, 'PPP')} at {selectedSlot}.</p>
-                                <button onClick={() => { setBookingSuccess(false); setBookingStep(1); }} className="mt-6 text-sm underline opacity-50">Schedule another visit</button>
+                                <h4 className="text-xl font-bold">{t('success.visitConfirmed')}</h4>
+                                <p className="text-neutral-400">
+                                    {selectedDate && t('success.scheduledFor', {
+                                        date: format(selectedDate, 'PPP', { locale: currentLocale }),
+                                        time: selectedSlot || ''
+                                    })}
+                                </p>
+                                <button onClick={() => { setBookingSuccess(false); setBookingStep(1); }} className="mt-6 text-sm underline opacity-50">{t('success.anotherVisit')}</button>
                                 {onClose && (
-                                    <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">CLOSE</button>
+                                    <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">{t('buttons.close')}</button>
                                 )}
                             </div>
                         ) : bookingStep === 1 ? (
                             <div className="flex-1 flex flex-col justify-center space-y-4">
                                 <input
                                     type="text"
-                                    placeholder="Your Name"
+                                    placeholder={t('placeholders.yourName')}
                                     className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
                                 <input
                                     type="email"
-                                    placeholder="Your Email"
+                                    placeholder={t('placeholders.yourEmail')}
                                     className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -278,7 +297,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     disabled={!formData.name || !formData.email}
                                     className="w-full bg-[#d35400] text-white font-bold py-4 rounded-xl hover:bg-[#a04000] transition-colors shadow-lg shadow-[#d35400]/20 disabled:opacity-50"
                                 >
-                                    CHOOSE DATE & TIME
+                                    {t('buttons.chooseDate')}
                                 </button>
                             </div>
                         ) : (
@@ -300,7 +319,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                                             : 'border-white/10 bg-white/5 hover:border-white/30'}
                                                 `}
                                             >
-                                                <span className="text-[8px] uppercase">{format(d, 'EEE')}</span>
+                                                <span className="text-[8px] uppercase">{format(d, 'EEE', { locale: currentLocale })}</span>
                                                 <span className="text-lg font-bold">{format(d, 'd')}</span>
                                             </button>
                                         );
@@ -318,7 +337,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     ))}
                                 </div>
                                 <div className="flex gap-3 mt-auto">
-                                    <button onClick={() => setBookingStep(1)} className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 py-3 rounded-xl font-bold">BACK</button>
+                                    <button onClick={() => setBookingStep(1)} className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 py-3 rounded-xl font-bold">{t('buttons.back')}</button>
                                     <div className="flex-[2] flex flex-col gap-2">
                                         {error && (
                                             <p className="text-red-500 text-[10px] text-center font-medium">{error}</p>
@@ -332,10 +351,10 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             {sent ? (
                                                 <>
                                                     <Check className="w-5 h-5" />
-                                                    CONFIRMED!
+                                                    {t('buttons.confirmed')}
                                                 </>
                                             ) : (
-                                                loading ? 'CONFIRMING...' : 'CONFIRM VISIT'
+                                                loading ? t('buttons.confirming') : t('buttons.confirm')
                                             )}
                                         </motion.button>
                                     </div>

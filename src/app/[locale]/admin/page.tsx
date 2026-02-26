@@ -5,9 +5,10 @@ import AdminHeader from '@/components/admin/AdminHeader';
 import LeadList from '@/components/admin/LeadList';
 import BookingList from '@/components/admin/BookingList';
 import PortalGrid from '@/components/admin/PortalGrid';
-import { Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export default function AdminDashboard() {
+    const t = useTranslations('Admin');
     const [leads, setLeads] = useState([]);
     const [bookings, setBookings] = useState([]);
     const [portals, setPortals] = useState([]);
@@ -50,31 +51,32 @@ export default function AdminDashboard() {
     }, []);
 
     const handleCreatePortal = async () => {
-        const name = prompt("Client Name:");
+        const name = prompt(t('namePrompt'));
         if (!name) return;
-        const email = prompt("Client Email:");
+        const email = prompt(t('emailPrompt'));
         if (!email) return;
 
         try {
-            await fetch('/api/portals', {
+            const res = await fetch('/api/portals', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ clientName: name, clientEmail: email })
             });
+            if (!res.ok) throw new Error();
             window.location.reload();
         } catch (error) {
-            alert("Failed to create portal");
+            alert(t('failedCreate'));
         }
     };
 
     if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-black text-white">
-            <div className="animate-pulse">Loading System Data...</div>
+        <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-neutral-900 dark:text-white">
+            <div className="animate-pulse">{t('loading')}</div>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-[#d35400] selection:text-white pb-12">
+        <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-white selection:bg-[#d35400] selection:text-white pb-12">
             <AdminHeader />
 
             <main className="container mx-auto px-4 md:px-8 pt-28 space-y-8">

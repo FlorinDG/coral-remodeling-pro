@@ -1,32 +1,70 @@
 {
+    "Metadata": {
+        "title": "Coral Enterprises | Rénovations Premium",
+        "description": "Rénovations de luxe pour cuisines et salles de bain."
+    },
     "Navbar": {
-        "home": "Accueil",
+        "home": "Acceuil",
         "services": "Services",
         "projects": "Projets",
         "book": "RÉSERVER",
-        "back": "RETOUR"
+        "back": "RETOUR",
+        "logoTitle": "Logo de Coral Enterprises",
+        "logoAria": "Logo de Coral Enterprises"
     },
     "Services": {
         "title": "Notre Expertise",
         "kitchen": {
             "title": "Cuisine Design",
             "subtitle": "Excellence Culinaire",
-            "description": "Espaces culinaires sur mesure adaptés à votre style de vie."
+            "description": "Espaces culinaires sur mesure adaptés à votre style de vie.",
+            "fullDescription": "Notre service de Design de Cuisine est dédié à la création d'espaces culinaires sur mesure qui sont non seulement visuellement superbes, mais aussi extrêmement fonctionnels.\n\nNous croyons que la cuisine est le cœur de la maison, un lieu où les souvenirs se créent et où les chefs-d'œuvre culinaires voient le jour.\n\nNotre processus commence par la compréhension de votre style de vie unique et de vos habitudes culinaires. Que vous soyez un chef professionnel ayant besoin d'équipements industriels, ou une famille ayant besoin d'un espace durable et accueillant, nous adaptons chaque détail à vos besoins.",
+            "features": [
+                "Armoires sur mesure & Menuiserie d'intérieur",
+                "Intégration d'appareils haut de gamme",
+                "Optimisation de l'agencement ergonomique",
+                "Plans de travail en pierre premium (Marbre, Quartz, Granit)",
+                "Plans d'éclairage spécialisés"
+            ]
         },
         "bath": {
-            "title": "Restauration de Bain",
+            "title": "Rénovation de Bain",
             "subtitle": "Sanctuaires Personnels",
-            "description": "Transformez votre routine quotidienne en expérience spa."
+            "description": "Transformez votre routine quotidienne en expérience spa.",
+            "fullDescription": "Transformez votre routine quotidienne en une expérience spa luxueuse avec notre service de Rénovation de Salle de Bain. Nous transformons les salles de bain ordinaires en sanctuaires privés de détente et de rajeunissement.\n\nDes suites parentales aux salles d'eau pour invités, nous apportons un élément d'élégance raffinée à chaque espace. Nos designs se concentrent sur la tranquillité, utilisant des palettes apaisantes, des matériaux naturels et des installations de pointe.",
+            "features": [
+                "Baignoires îlots",
+                "Douches à effet de pluie avec options vapeur",
+                "Chauffage au sol & Sèche-serviette",
+                "Vanités sur mesure avec rangement intégré",
+                "Éclairage d'ambiance & Contrôle de l'atmosphère"
+            ]
         },
         "additions": {
             "title": "Extensions Sur Mesure",
             "subtitle": "Élargissez Vos Horizons",
-            "description": "Extensions de maison transparentes qui s'intègrent parfaitement."
+            "description": "Extensions de maison transparentes qui s'intègrent parfaitement.",
+            "fullDescription": "Notre service d'Extension sur Mesure vous permet d'agrandir votre espace de vie sans compromettre l'intégrité architecturale de votre maison. Nous nous spécialisons dans les extensions fluides qui semblent avoir toujours fait partie de la structure originale.\n\nQue vous ayez besoin d'une nouvelle suite parentale, d'une véranda, d'un bureau à domicile ou d'un espace de divertissement étendu, nous gérons tout le processus, de la planification architecturale à la dernière couche de peinture.",
+            "features": [
+                "Construction d'un deuxième étage",
+                "Conversions de garage",
+                "Vérandas & Conservatoires",
+                "Unités d'habitation accessoires (ADU)",
+                "Salons & Salles à manger agrandis"
+            ]
         },
         "wholeHome": {
             "title": "Maison Complète",
             "subtitle": "Transformation Totale",
-            "description": "Réinventez votre espace de vie entier depuis la base."
+            "description": "Réinventez votre espace de vie entier depuis la base.",
+            "fullDescription": "Pour ceux qui cherchent une réinvention complète de leur environnement de vie, notre service de Rénovation de Maison Complète offre une solution globale. C'est pour le propriétaire qui aime son emplacement mais qui a besoin d'une maison qui reflète mieux ses goûts et son style de vie actuels.\n\nNous réinterprétons le flux, la fonction et l'esthétique de l'ensemble de votre propriété. C'est une approche holistique qui assure un langage de design cohérent dans chaque pièce.",
+            "features": [
+                "Modifications structurelles & Plans ouverts",
+                "Révision complète de l'électricité & de la plomberie",
+                "Sols, finitions murales & menuiserie",
+                "Intégration Maison Intelligente (Smart Home)",
+                "Rénovation de façade & Attrait extérieur"
+            ]
         },
         "explore": "DÉCOUVRIR"
     },
@@ -34,6 +72,198 @@
         "title": "Redéfinir",
         "subtitle": "Aligné. Sur Mesure. Professionnel.",
         "tagline": "ALIGNÉ. SUR MESURE. PROFESSIONNEL.",
-        "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme."
+        "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme.",
+        "stats": {
+            "projects": "PROJETS RÉALISÉS",
+            "projectsCount": "150+",
+            "experience": "ANNÉES D'EXPÉRIENCE",
+            "experienceCount": "12+"
+        }
+    },
+    "LeadForm": {
+        "tabs": {
+            "inquiry": "Demande",
+            "booking": "Planifier Visite"
+        },
+        "placeholders": {
+            "name": "Nom Complet",
+            "email": "Adresse E-mail",
+            "phone": "Numéro de Téléphone",
+            "service": "Choisir un service",
+            "message": "Parlez-nous de votre projet...",
+            "yourName": "Votre Nom",
+            "yourEmail": "Votre E-mail"
+        },
+        "services": {
+            "kitchen": "Rénovation Cuisine",
+            "bathroom": "Rénovation Salle de Bain",
+            "addition": "Extension"
+        },
+        "buttons": {
+            "submit": "ENVOYER LA DEMANDE",
+            "sending": "ENVOI EN COURS...",
+            "sent": "ENVOYÉ !",
+            "chooseDate": "CHOISIR DATE & HEURE",
+            "confirm": "CONFIRMER LA VISITE",
+            "confirming": "CONFIRMATION...",
+            "confirmed": "CONFIRMÉ !",
+            "back": "RETOUR",
+            "close": "FERMER",
+            "yesBook": "OUI, RÉSERVER",
+            "later": "PLUS TARD"
+        },
+        "success": {
+            "inquiryTitle": "Demande Reçue !",
+            "inquirySub": "Souhaitez-vous également planifier une visite professionnelle sur place ?",
+            "allSet": "Tout est prêt !",
+            "touchShortly": "Notre équipe vous contactera sous peu.",
+            "anotherInquiry": "Envoyer une autre demande",
+            "visitConfirmed": "Visite Confirmée !",
+            "scheduledFor": "Prévu le {date} à {time}.",
+            "anotherVisit": "Planifier une autre visite"
+        },
+        "errors": {
+            "generic": "Une erreur est survenue. Veuillez réessayer.",
+            "connection": "Échec de la connexion au serveur. Veuillez vérifier votre connexion.",
+            "required": "Ce champ est obligatoire"
+        },
+        "timeFormat": "HH:mm"
+    },
+    "Sections": {
+        "expertise": {
+            "title": "Notre Expertise"
+        },
+        "portfolio": {
+            "title": "Portfolio Récent",
+            "tagline": "Un aperçu du luxe"
+        }
+    },
+    "Projects": {
+        "kitchenLoft": {
+            "title": "Cuisine Maison Patricienne",
+            "location": "Sint-Martens-Latem, BE",
+            "caption1": "Vue d'ensemble de l'agencement ouvert.",
+            "caption2": "Détails de l'îlot en marbre et des armoires mates.",
+            "caption3": "Éclairage sur mesure accentuant les textures."
+        },
+        "masterBath": {
+            "title": "Salle de Bain Bien-être Zoute",
+            "location": "Knokke-Heist, BE",
+            "caption1": "Baignoire îlot avec vue panoramique.",
+            "caption2": "Double vanité avec pierre naturelle intégrée.",
+            "caption3": "Douche à effet de pluie avec verre sans cadre."
+        },
+        "contemporaryKitchen": {
+            "title": "Cuisine de Chef du Béguinage",
+            "location": "Gand, BE",
+            "caption1": "Appareils professionnels dans un cadre chaleureux.",
+            "caption2": "Cave à vin intégrée et station café.",
+            "caption3": "Agencement ergonomique conçu pour la cuisine sérieuse."
+        },
+        "masterSuite": {
+            "title": "Suite Maison de Maitre",
+            "location": "Anvers, BE",
+            "caption1": "Design de salle d'eau inspiré du spa.",
+            "caption2": "Chauffage au sol pour un confort optimal.",
+            "caption3": "Éclairage d'ambiance pour une détente totale."
+        }
+    },
+    "ProjectGallery": {
+        "viewProject": "Voir le Projet",
+        "details": "Détails du Projet",
+        "tooltips": {
+            "whatsapp": "WhatsApp",
+            "email": "E-mail",
+            "location": "Emplacement"
+        },
+        "fallbackCaption": "Découvrez l'élégance de nos solutions de design sur mesure. Chaque détail est soigné pour améliorer votre style de vie, alliant fonctionnalité et esthétique intemporelle."
+    },
+    "BookingModal": {
+        "title": "Planifier une Visite",
+        "subtitle": "Réservez une visite professionnelle pour votre projet de rénovation."
+    },
+    "ServiceDetail": {
+        "back": "RETOUR AUX SERVICES",
+        "ready": "Prêt à Commencer ?",
+        "schedule": "Planifiez une consultation pour discuter de votre projet de {service}.",
+        "bookConsultation": "RÉSERVER CONSULTATION",
+        "notFound": "Service non trouvé",
+        "specializeIn": "Nous nous spécialisons dans :",
+        "keyFeatures": "Les caractéristiques clés incluent :"
+    },
+    "Portal": {
+        "header": "PORTAIL CLIENT",
+        "navTitle": "Aperçu du Projet",
+        "welcome": "Bienvenue, {name}",
+        "trackProgress": "Suivez l'avancement de votre rénovation et communiquez avec notre équipe.",
+        "latestUpdates": "Dernières Mises à jour",
+        "noUpdates": "Aucune mise à jour pour le moment.",
+        "projectManager": "Chef de Projet",
+        "tasks": "Tâches du Projet",
+        "remaining": "{count} restantes",
+        "noTasks": "Aucune tâche active.",
+        "addTask": "Ajouter une nouvelle tâche...",
+        "documents": "Documents",
+        "noDocs": "Aucun document.",
+        "addDocPrompt": "Nom du document :",
+        "addUrlPrompt": "URL du document :",
+        "projectMedia": "Médias du Projet",
+        "noMedia": "Aucun média.",
+        "directMessage": "Message Direct",
+        "noMessages": "Pas encore de messages. Commencez la conversation !",
+        "typeMessage": "Tapez un message..."
+    },
+    "Admin": {
+        "loading": "Chargement des données...",
+        "failedCreate": "Échec de la création du portail",
+        "namePrompt": "Nom du Client :",
+        "emailPrompt": "E-mail du Client :",
+        "header": {
+            "title": "Tableau de Bord Admin",
+            "subtitle": "Gérez les leads, les réservations et les portails clients.",
+            "logout": "Déconnexion",
+            "viewLive": "Voir le Site"
+        },
+        "portals": {
+            "title": "Portails Clients",
+            "create": "Nouveau Portail",
+            "view": "Voir le Portail",
+            "back": "Retour au Tableau de Bord",
+            "clientView": "Vue Client",
+            "postUpdate": "Publier une Mise à jour",
+            "recentUpdates": "Mises à jour Récentes",
+            "form": {
+                "title": "Titre",
+                "details": "Détails...",
+                "post": "Publier"
+            }
+        },
+        "leads": {
+            "title": "Leads Récents",
+            "noLeads": "Aucun lead trouvé."
+        },
+        "bookings": {
+            "title": "Réservations Récentes",
+            "noBookings": "Aucune réservation trouvée."
+        },
+        "filter": {
+            "all": "Tous les statuts",
+            "search": "Rechercher...",
+            "searchClient": "Rechercher un client..."
+        },
+        "status": {
+            "NEW": "Nouveau",
+            "CONTACTED": "Contacté",
+            "CONVERTED": "Converti",
+            "ARCHIVED": "Archivé",
+            "PENDING": "En attente",
+            "CONFIRMED": "Confirmé",
+            "CANCELLED": "Annulé",
+            "ACTIVE": "Actif",
+            "COMPLETED": "Terminé"
+        }
+    },
+    "Footer": {
+        "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS."
     }
 }

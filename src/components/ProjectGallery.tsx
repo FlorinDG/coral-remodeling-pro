@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronUp, ChevronDown, X, Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 
 interface ProjectImage {
     src: string;
@@ -17,8 +18,17 @@ interface ProjectGalleryProps {
 }
 
 export default function ProjectGallery({ title, location, images }: ProjectGalleryProps) {
+    const t = useTranslations('ProjectGallery');
     const [isOpen, setIsOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Prevent scrolling when modal is open
     useEffect(() => {
@@ -66,7 +76,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
 
                         {/* Ghost Button */}
                         <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#d35400] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            View Project <ArrowRight className="w-4 h-4" />
+                            {t('viewProject')} <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
                 </div>
@@ -114,13 +124,13 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                 transition={{ delay: 0.3 }}
                                 className="hidden md:flex absolute left-[33.33333%] top-1/2 -translate-y-1/2 -translate-x-1/2 z-[60] flex-col items-center justify-center gap-4 p-4 bg-[#d35400] rounded-full shadow-xl shadow-black/20 w-16"
                             >
-                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="WhatsApp">
+                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-5 h-5 fill-current" />
                                 </a>
-                                <a href="mailto:contact@coral-enterprises.com" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="Email">
+                                <a href="mailto:contact@coral-enterprises.com" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-5 h-5" />
                                 </a>
-                                <a href="#map" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="Location">
+                                <a href="#map" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
                                     <MapPin className="w-5 h-5 fill-current" />
                                 </a>
                             </motion.div>
@@ -133,19 +143,38 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                 transition={{ delay: 0.3 }}
                                 className="flex md:hidden absolute right-4 bottom-8 z-[60] flex-row gap-2 p-2 bg-[#d35400] rounded-full shadow-xl shadow-black/20"
                             >
-                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="WhatsApp">
+                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-4 h-4 fill-current" />
                                 </a>
-                                <a href="mailto:contact@coral-enterprises.com" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="Email">
+                                <a href="mailto:contact@coral-enterprises.com" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-4 h-4" />
                                 </a>
-                                <a href="#map" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title="Location">
+                                <a href="#map" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
                                     <MapPin className="w-4 h-4 fill-current" />
                                 </a>
                             </motion.div>
 
-                            {/* Left Column: Article Content */}
-                            <div className="w-full md:w-1/3 p-8 md:p-12 flex flex-col justify-center bg-black/60 backdrop-blur-md relative border-r border-white/5">
+                            {/* Mobile Header: Title and Location (Top on Mobile) */}
+                            <div className="md:hidden p-8 pb-4 bg-black/60 backdrop-blur-md relative border-b border-white/5 z-20 order-1 text-white">
+                                <span className="text-[#d35400] font-bold tracking-widest text-[10px] uppercase mb-2 block">
+                                    {t('details')}
+                                </span>
+                                <motion.h2 layoutId={isMobile ? `title-${title}` : undefined} className="text-3xl font-black mb-1">{title}</motion.h2>
+                                <motion.p layoutId={isMobile ? `loc-${title}` : undefined} className="text-sm text-white/60 font-medium">{location}</motion.p>
+                            </div>
+
+                            {/* Left Column: Article Content (Bottom on Mobile, Left on Desktop) */}
+                            <div className="w-full md:w-1/3 p-8 md:p-12 flex flex-col justify-center bg-black/60 backdrop-blur-md relative md:border-r border-white/5 order-3 md:order-1">
+                                {/* Desktop version of Header */}
+                                <div className="hidden md:block text-white">
+                                    <span className="text-[#d35400] font-bold tracking-widest text-xs uppercase mb-4 block">
+                                        {t('details')}
+                                    </span>
+                                    <motion.h2 layoutId={!isMobile ? `title-${title}` : undefined} className="text-3xl md:text-5xl font-black mb-4 leading-tight">{title}</motion.h2>
+                                    <motion.p layoutId={!isMobile ? `loc-${title}` : undefined} className="text-lg text-white/80 font-medium mb-6">{location}</motion.p>
+                                    <div className="w-12 h-1 bg-[#d35400] mb-8" />
+                                </div>
+
                                 {/* Text Fade Transition */}
                                 <AnimatePresence mode="wait">
                                     <motion.div
@@ -155,17 +184,12 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                         exit={{ opacity: 0, y: -10 }}
                                         transition={{ duration: 0.7 }}
                                     >
-                                        <span className="text-[#d35400] font-bold tracking-widest text-xs uppercase mb-4 block">
-                                            Project Details
-                                        </span>
-                                        <motion.h2 layoutId={`title-${title}`} className="text-3xl md:text-5xl font-black mb-4 leading-tight">{title}</motion.h2>
-                                        <motion.p layoutId={`loc-${title}`} className="text-lg text-white/80 font-medium mb-6">{location}</motion.p>
-                                        <div className="w-12 h-1 bg-[#d35400] mb-8" />
+                                        <div className="md:hidden w-12 h-1 bg-[#d35400] mb-6" />
 
                                         <p className="text-neutral-400 leading-relaxed text-sm md:text-base">
-                                            {images[currentIndex].caption || "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics."}
+                                            {images[currentIndex].caption || t('fallbackCaption')}
                                             <br /><br />
-                                            This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance.
+                                            <span className="hidden md:inline">This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance.</span>
                                         </p>
                                     </motion.div>
                                 </AnimatePresence>
@@ -181,8 +205,8 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                 </div>
                             </div>
 
-                            {/* Right Column: Vertical Image Slider */}
-                            <div className="w-full md:w-2/3 h-[50vh] md:h-full relative bg-neutral-900 group">
+                            {/* Right Column: Vertical Image Slider (Center on Mobile, Right on Desktop) */}
+                            <div className="w-full md:w-2/3 h-[45vh] md:h-full relative bg-neutral-900 group order-2 md:order-2">
                                 {/* Images Stack */}
                                 <AnimatePresence initial={false} custom={currentIndex}>
                                     <motion.div

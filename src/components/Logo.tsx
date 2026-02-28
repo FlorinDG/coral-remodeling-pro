@@ -20,8 +20,14 @@ export default function Logo({ className = "" }: { className?: string }) {
                 strokeLinecap="round"
             />
 
-            {/* Rhombus (Diamond) */}
-            <path d="M280 170L340 256L280 342L220 256L280 170Z" fill="currentColor" />
+            {/* Stylized Coral */}
+            <path
+                d="M280 350V210M280 300C250 300 240 280 240 250M280 270C310 270 320 250 320 220"
+                stroke="currentColor"
+                strokeWidth="20"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            />
         </svg>
     );
 }

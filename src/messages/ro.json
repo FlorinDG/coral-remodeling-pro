@@ -126,7 +126,13 @@
             "generic": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
             "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea."
         },
-        "timeFormat": "HH:mm"
+        "timeFormat": "HH:mm",
+        "directContact": {
+            "title": "Sau contactați-ne direct:",
+            "whatsapp": "WhatsApp",
+            "call": "Sună",
+            "email": "E-mail"
+        }
     },
     "Sections": {
         "expertise": {

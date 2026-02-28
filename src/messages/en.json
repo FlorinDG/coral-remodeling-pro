@@ -127,7 +127,13 @@
             "connection": "Failed to reach the server. Please check your connection.",
             "required": "This field is required"
         },
-        "timeFormat": "hh:mm a"
+        "timeFormat": "hh:mm a",
+        "directContact": {
+            "title": "Or contact us directly:",
+            "whatsapp": "WhatsApp",
+            "call": "Call",
+            "email": "Email"
+        }
     },
     "Sections": {
         "expertise": {

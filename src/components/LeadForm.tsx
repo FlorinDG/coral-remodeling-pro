@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfToday } from 'date-fns';
-import { Check } from 'lucide-react';
+import { Check, MessageCircle, Phone, Mail } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { nl, enUS, fr } from 'date-fns/locale';
 
@@ -176,81 +176,122 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 )}
                             </div>
                         ) : (
-                            <form onSubmit={handleInquirySubmit} className="space-y-4 flex-1 flex flex-col">
-                                <input
-                                    type="text"
-                                    placeholder={t('placeholders.name')}
-                                    required
-                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                    value={formData.name}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, name: e.target.value });
-                                        setError(null);
-                                    }}
-                                />
-                                <div className="grid grid-cols-2 gap-4">
+                            <>
+                                <form onSubmit={handleInquirySubmit} className="space-y-4 flex-1 flex flex-col">
                                     <input
-                                        type="email"
-                                        placeholder={t('placeholders.email')}
+                                        type="text"
+                                        placeholder={t('placeholders.name')}
                                         required
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                        value={formData.email}
+                                        value={formData.name}
                                         onChange={(e) => {
-                                            setFormData({ ...formData, email: e.target.value });
+                                            setFormData({ ...formData, name: e.target.value });
                                             setError(null);
                                         }}
                                     />
-                                    <input
-                                        type="tel"
-                                        placeholder={t('placeholders.phone')}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input
+                                            type="email"
+                                            placeholder={t('placeholders.email')}
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                            value={formData.email}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, email: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                        <input
+                                            type="tel"
+                                            placeholder={t('placeholders.phone')}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                            value={formData.phone}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, phone: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                    </div>
+                                    <select
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                        value={formData.phone}
+                                        value={formData.service}
                                         onChange={(e) => {
-                                            setFormData({ ...formData, phone: e.target.value });
+                                            setFormData({ ...formData, service: e.target.value });
+                                            setError(null);
+                                        }}
+                                    >
+                                        <option value="Kitchen">{t('services.kitchen')}</option>
+                                        <option value="Bathroom">{t('services.bathroom')}</option>
+                                        <option value="Addition">{t('services.addition')}</option>
+                                    </select>
+                                    <textarea
+                                        placeholder={t('placeholders.message')}
+                                        rows={2}
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                        value={formData.message}
+                                        onChange={(e) => {
+                                            setFormData({ ...formData, message: e.target.value });
                                             setError(null);
                                         }}
                                     />
-                                </div>
-                                <select
-                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                    value={formData.service}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, service: e.target.value });
-                                        setError(null);
-                                    }}
-                                >
-                                    <option value="Kitchen">{t('services.kitchen')}</option>
-                                    <option value="Bathroom">{t('services.bathroom')}</option>
-                                    <option value="Addition">{t('services.addition')}</option>
-                                </select>
-                                <textarea
-                                    placeholder={t('placeholders.message')}
-                                    rows={2}
-                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                    value={formData.message}
-                                    onChange={(e) => {
-                                        setFormData({ ...formData, message: e.target.value });
-                                        setError(null);
-                                    }}
-                                />
-                                {error && (
-                                    <p className="text-red-500 text-xs text-center font-medium animate-pulse">{error}</p>
-                                )}
-                                <motion.button
-                                    disabled={loading}
-                                    className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 shadow-lg mt-auto flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
-                                    animate={sent ? { scale: [1, 1.05, 1] } : {}}
-                                >
-                                    {sent ? (
-                                        <>
-                                            <Check className="w-5 h-5" />
-                                            {t('buttons.sent')}
-                                        </>
-                                    ) : (
-                                        loading ? t('buttons.sending') : t('buttons.submit')
+                                    {error && (
+                                        <p className="text-red-500 text-xs text-center font-medium animate-pulse">{error}</p>
                                     )}
-                                </motion.button>
-                            </form>
+                                    <motion.button
+                                        type="submit"
+                                        disabled={loading}
+                                        className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 shadow-lg flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
+                                        animate={sent ? { scale: [1, 1.05, 1] } : {}}
+                                    >
+                                        {sent ? (
+                                            <>
+                                                <Check className="w-5 h-5" />
+                                                {t('buttons.sent')}
+                                            </>
+                                        ) : (
+                                            loading ? t('buttons.sending') : t('buttons.submit')
+                                        )}
+                                    </motion.button>
+                                </form>
+
+                                {/* Direct Contact Links */}
+                                <div className="mt-auto pt-6 border-t border-neutral-200 dark:border-white/10">
+                                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-bold uppercase tracking-widest mb-4 text-center">
+                                        {t('directContact.title')}
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <a
+                                            href="https://wa.me/32486777000"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
+                                        >
+                                            <MessageCircle className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                                {t('directContact.whatsapp')}
+                                            </span>
+                                        </a>
+                                        <a
+                                            href="tel:+32486777000"
+                                            className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
+                                        >
+                                            <Phone className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                                {t('directContact.call')}
+                                            </span>
+                                        </a>
+                                        <a
+                                            href="mailto:contact@coral-enterprises.com"
+                                            className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
+                                        >
+                                            <Mail className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                                {t('directContact.email')}
+                                            </span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </>
                         )}
                     </motion.div>
                 ) : (
@@ -364,6 +405,6 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }

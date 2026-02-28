@@ -127,7 +127,13 @@
             "connection": "Kan de server niet bereiken. Controleer uw verbinding.",
             "required": "Dit veld is verplicht"
         },
-        "timeFormat": "HH:mm"
+        "timeFormat": "HH:mm",
+        "directContact": {
+            "title": "Of neem direct contact op:",
+            "whatsapp": "WhatsApp",
+            "call": "Bellen",
+            "email": "E-mail"
+        }
     },
     "Sections": {
         "expertise": {

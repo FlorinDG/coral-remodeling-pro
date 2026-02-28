@@ -127,7 +127,13 @@
             "connection": "Échec de la connexion au serveur. Veuillez vérifier votre connexion.",
             "required": "Ce champ est obligatoire"
         },
-        "timeFormat": "HH:mm"
+        "timeFormat": "HH:mm",
+        "directContact": {
+            "title": "Ou contactez-nous directement:",
+            "whatsapp": "WhatsApp",
+            "call": "Appeler",
+            "email": "E-mail"
+        }
     },
     "Sections": {
         "expertise": {

@@ -261,7 +261,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     </p>
                                     <div className="grid grid-cols-3 gap-3">
                                         <a
-                                            href="https://wa.me/32486777000"
+                                            href="https://wa.me/32472741025"
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
@@ -272,7 +272,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             </span>
                                         </a>
                                         <a
-                                            href="tel:+32486777000"
+                                            href="tel:+32472741025"
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
                                         >
                                             <Phone className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />

@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
+import Topbar from './Topbar';
 import { Phone, MessageCircle, Mail, ArrowLeft } from 'lucide-react';
 
 interface NavbarProps {
@@ -15,17 +16,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50">
-            {/* Top Bar - Fast Interventions */}
-            {!backLink && (
-                <div className="bg-black border-b border-white/5 h-10 flex items-center justify-center px-8">
-                    <div className="flex items-center gap-4 text-xs font-bold tracking-[0.2em] uppercase">
-                        <span className="text-neutral-400 italic">{t('fastInterventions.label')}:</span>
-                        <a href={`tel:${t('fastInterventions.number')}`} className="text-white hover:text-[#d35400] transition-colors">
-                            {t('fastInterventions.number')}
-                        </a>
-                    </div>
-                </div>
-            )}
+            <Topbar />
 
             <div className="glass-morphism backdrop-blur-md h-20 flex items-center justify-between px-8 md:px-16">
                 {/* Logo Section - Left Half Start */}

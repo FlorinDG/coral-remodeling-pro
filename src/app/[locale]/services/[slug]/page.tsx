@@ -3,6 +3,7 @@
 import { notFound, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import BookingModal from '@/components/BookingModal';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -40,7 +41,7 @@ export default function ServiceDetail() {
     const image = SERVICE_IMAGES[slug as string];
 
     return (
-        <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
+        <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white pt-10">
             <Navbar
                 onBookClick={() => setIsModalOpen(true)}
                 backLink={{ href: "/#services", label: td('back') }}
@@ -102,6 +103,8 @@ export default function ServiceDetail() {
                     </div>
                 </div>
             </div>
+
+            <Footer />
         </main>
     );
 }

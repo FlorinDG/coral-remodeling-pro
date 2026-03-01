@@ -33,34 +33,30 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                     )}
                 </div>
 
-                {!backLink && (
-                    <>
-                        {/* Navigation Links - Middle of Left Half */}
-                        <div className="hidden lg:flex flex-1 justify-center max-w-[40%] text-[11px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white/90">
-                            <div className="flex gap-12">
-                                <Link href="/" className="hover:text-[#d35400] transition-colors">{t('home')}</Link>
-                                <Link href="#services" className="hover:text-[#d35400] transition-colors">{t('services')}</Link>
-                                <Link href="#projects" className="hover:text-[#d35400] transition-colors">{t('projects')}</Link>
-                            </div>
-                        </div>
+                {/* Navigation Links - Middle of Left Half */}
+                <div className="hidden lg:flex flex-1 justify-center max-w-[40%] text-[11px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white/90">
+                    <div className="flex gap-12">
+                        <Link href="/" className="hover:text-[#d35400] transition-colors">{t('home')}</Link>
+                        <Link href="/#services" className="hover:text-[#d35400] transition-colors">{t('services')}</Link>
+                        <Link href="/#projects" className="hover:text-[#d35400] transition-colors">{t('projects')}</Link>
+                    </div>
+                </div>
 
-                        {/* Contact Shortcuts - Right Half */}
-                        <div className="hidden md:flex gap-8 items-center flex-1 justify-center border-l border-neutral-200 dark:border-white/5 ml-8 h-10">
-                            <a href={`tel:${t('fastInterventions.number')}`} className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <Phone className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.call')}</span>
-                            </a>
-                            <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <MessageCircle className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.whatsapp')}</span>
-                            </a>
-                            <a href="mailto:contact@coral-remodeling.pro" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <Mail className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.email')}</span>
-                            </a>
-                        </div>
-                    </>
-                )}
+                {/* Contact Shortcuts - Right Half */}
+                <div className="hidden md:flex gap-8 items-center flex-1 justify-center border-l border-neutral-200 dark:border-white/5 ml-8 h-10">
+                    <a href={`tel:${t('fastInterventions.number')}`} className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
+                        <Phone className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                        <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.call')}</span>
+                    </a>
+                    <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
+                        <MessageCircle className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                        <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.whatsapp')}</span>
+                    </a>
+                    <a href="mailto:contact@coral-remodeling.pro" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
+                        <Mail className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                        <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.email')}</span>
+                    </a>
+                </div>
 
                 {/* Actions - Right End */}
                 <div className="flex items-center gap-6 min-w-[200px] justify-end">

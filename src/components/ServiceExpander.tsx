@@ -85,7 +85,7 @@ export default function ServiceExpander() {
                                     >
                                         <div className="min-w-[300px] pt-4">
                                             <p className="text-xl text-orange-500 font-medium mb-2 transform transition-all duration-300 translate-x-0">{service.subtitle}</p>
-                                            <p className="text-neutral-300 mb-6 max-w-md transform transition-all duration-300 delay-75 translate-x-0">{service.description}</p>
+                                            <p className="text-neutral-200 mb-6 max-w-md transform transition-all duration-300 delay-75 translate-x-0">{service.description}</p>
                                             <Link
                                                 href={`/services/${service.id}`}
                                                 className="inline-flex items-center gap-2 bg-neutral-900 border border-white/20 text-white px-6 py-3 rounded-full font-bold hover:bg-[#d35400] hover:border-[#d35400] transition-all transform transition-all duration-300 delay-150 translate-y-0"
@@ -124,7 +124,7 @@ export default function ServiceExpander() {
                             <div className="absolute bottom-0 left-0 right-0 p-8">
                                 <h3 className="text-3xl font-bold mb-2">{service.title}</h3>
                                 <p className="text-orange-500 font-medium mb-2 text-lg">{service.subtitle}</p>
-                                <p className="text-neutral-300 mb-6 text-sm">{service.description}</p>
+                                <p className="text-neutral-200 mb-6 text-sm">{service.description}</p>
                                 <Link
                                     href={`/services/${service.id}`}
                                     className="w-full block text-center bg-white text-black px-6 py-4 rounded-xl font-bold"

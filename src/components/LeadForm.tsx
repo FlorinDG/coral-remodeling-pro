@@ -120,13 +120,13 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
             <div className="flex gap-4 mb-8">
                 <button
                     onClick={() => setActiveTab('inquiry')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     {t('tabs.inquiry')}
                 </button>
                 <button
                     onClick={() => setActiveTab('booking')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-600 dark:text-neutral-500 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     {t('tabs.booking')}
                 </button>
@@ -147,7 +147,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     <div className="space-y-6">
                                         <div className="text-4xl mb-4">✨</div>
                                         <h4 className="text-xl font-bold">{t('success.inquiryTitle')}</h4>
-                                        <p className="text-neutral-400 text-sm">{t('success.inquirySub')}</p>
+                                        <p className="text-neutral-300 text-sm">{t('success.inquirySub')}</p>
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={() => { setActiveTab('booking'); setShowBookingUpsell(false); }}
@@ -167,7 +167,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     <div className="space-y-4">
                                         <div className="text-4xl mb-4">✅</div>
                                         <h4 className="text-xl font-bold">{t('success.allSet')}</h4>
-                                        <p className="text-neutral-400">{t('success.touchShortly')}</p>
+                                        <p className="text-neutral-300">{t('success.touchShortly')}</p>
                                         <button onClick={() => setInquirySuccess(false)} className="text-sm underline opacity-50">{t('success.anotherInquiry')}</button>
                                         {onClose && (
                                             <button onClick={onClose} className="mt-4 w-full py-3 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl font-bold">{t('buttons.close')}</button>
@@ -182,7 +182,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         type="text"
                                         placeholder={t('placeholders.name')}
                                         required
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                         value={formData.name}
                                         onChange={(e) => {
                                             setFormData({ ...formData, name: e.target.value });
@@ -194,7 +194,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             type="email"
                                             placeholder={t('placeholders.email')}
                                             required
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                             value={formData.email}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, email: e.target.value });
@@ -204,7 +204,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         <input
                                             type="tel"
                                             placeholder={t('placeholders.phone')}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                             value={formData.phone}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, phone: e.target.value });
@@ -213,7 +213,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         />
                                     </div>
                                     <select
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                         value={formData.service}
                                         onChange={(e) => {
                                             setFormData({ ...formData, service: e.target.value });
@@ -227,7 +227,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     <textarea
                                         placeholder={t('placeholders.message')}
                                         rows={2}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-500"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                         value={formData.message}
                                         onChange={(e) => {
                                             setFormData({ ...formData, message: e.target.value });
@@ -256,7 +256,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
 
                                 {/* Direct Contact Links */}
                                 <div className="mt-auto pt-6 border-t border-neutral-200 dark:border-white/10">
-                                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-bold uppercase tracking-widest mb-4 text-center">
+                                    <p className="text-[10px] text-neutral-400 dark:text-neutral-300 font-bold uppercase tracking-widest mb-4 text-center">
                                         {t('directContact.title')}
                                     </p>
                                     <div className="grid grid-cols-3 gap-3">
@@ -267,7 +267,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
                                         >
                                             <MessageCircle className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-500 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
                                                 {t('directContact.whatsapp')}
                                             </span>
                                         </a>
@@ -276,7 +276,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
                                         >
                                             <Phone className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-500 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
                                                 {t('directContact.call')}
                                             </span>
                                         </a>
@@ -285,7 +285,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
                                         >
                                             <Mail className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
-                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-600 dark:text-neutral-400 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
+                                            <span className="text-[10px] font-bold uppercase tracking-tighter text-neutral-500 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white truncate px-1 text-center font-oxanium">
                                                 {t('directContact.email')}
                                             </span>
                                         </a>

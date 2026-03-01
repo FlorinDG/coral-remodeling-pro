@@ -17,10 +17,10 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
         <nav className="fixed top-0 left-0 right-0 z-50">
             {/* Top Bar - Fast Interventions */}
             {!backLink && (
-                <div className="bg-neutral-900 border-b border-white/5 h-10 flex items-center justify-center px-8">
-                    <div className="flex items-center gap-4 text-[10px] font-bold tracking-[0.2em] uppercase">
-                        <span className="text-neutral-500 italic">{t('fastInterventions.label')}:</span>
-                        <a href={`tel:${t('fastInterventions.number')}`} className="text-[#d35400] hover:text-white transition-colors">
+                <div className="bg-black border-b border-white/5 h-10 flex items-center justify-center px-8">
+                    <div className="flex items-center gap-4 text-xs font-bold tracking-[0.2em] uppercase">
+                        <span className="text-neutral-400 italic">{t('fastInterventions.label')}:</span>
+                        <a href={`tel:${t('fastInterventions.number')}`} className="text-white hover:text-[#d35400] transition-colors">
                             {t('fastInterventions.number')}
                         </a>
                     </div>
@@ -45,7 +45,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                 {!backLink && (
                     <>
                         {/* Navigation Links - Middle of Left Half */}
-                        <div className="hidden lg:flex flex-1 justify-center max-w-[40%] text-[11px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white/70">
+                        <div className="hidden lg:flex flex-1 justify-center max-w-[40%] text-[11px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white/90">
                             <div className="flex gap-12">
                                 <Link href="/" className="hover:text-[#d35400] transition-colors">{t('home')}</Link>
                                 <Link href="#services" className="hover:text-[#d35400] transition-colors">{t('services')}</Link>
@@ -56,16 +56,16 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                         {/* Contact Shortcuts - Right Half */}
                         <div className="hidden md:flex gap-8 items-center flex-1 justify-center border-l border-neutral-200 dark:border-white/5 ml-8 h-10">
                             <a href={`tel:${t('fastInterventions.number')}`} className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <Phone className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400]" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100">{t('contact.call')}</span>
+                                <Phone className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.call')}</span>
                             </a>
                             <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <MessageCircle className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400]" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100">{t('contact.whatsapp')}</span>
+                                <MessageCircle className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.whatsapp')}</span>
                             </a>
                             <a href="mailto:contact@coral-remodeling.pro" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
-                                <Mail className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400]" />
-                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100">{t('contact.email')}</span>
+                                <Mail className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
+                                <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.email')}</span>
                             </a>
                         </div>
                     </>

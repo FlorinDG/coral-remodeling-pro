@@ -38,7 +38,7 @@ export default function Home() {
           <div className="flex justify-between items-end mb-16">
             <div>
               <h2 className="text-4xl font-bold tracking-tight mb-4 text-neutral-900 dark:text-white">{t('Sections.portfolio.title')}</h2>
-              <p className="text-neutral-500 uppercase tracking-widest text-xs font-bold">{t('Sections.portfolio.tagline')}</p>
+              <p className="text-neutral-400 uppercase tracking-widest text-xs font-bold">{t('Sections.portfolio.tagline')}</p>
             </div>
           </div>
 

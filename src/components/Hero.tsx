@@ -37,7 +37,7 @@ export default function Hero() {
                         Luxury. <br />
                         <span className="text-[#d35400]">Redefined.</span>
                     </h1>
-                    <p className="text-lg md:text-xl text-neutral-600 dark:text-neutral-400 max-w-md mb-8 leading-relaxed font-normal">
+                    <p className="text-lg md:text-xl text-neutral-500 dark:text-neutral-300 max-w-md mb-8 leading-relaxed font-normal">
                         {t('description')}
                     </p>
                     <p className="text-[#d35400] font-bold tracking-[0.3em] uppercase mb-12 text-sm md:text-base">
@@ -46,12 +46,12 @@ export default function Hero() {
                     <div className="flex gap-6 text-neutral-950 dark:text-white">
                         <div className="flex flex-col items-end">
                             <span className="text-2xl font-bold">{t('stats.projectsCount')}</span>
-                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">{t('stats.projects')}</span>
+                            <span className="text-[10px] text-neutral-400 dark:text-neutral-300 tracking-[0.2em]">{t('stats.projects')}</span>
                         </div>
                         <div className="w-[1px] h-10 bg-neutral-800" />
                         <div className="flex flex-col items-end">
                             <span className="text-2xl font-bold">{t('stats.experienceCount')}</span>
-                            <span className="text-[10px] text-neutral-500 tracking-[0.2em]">{t('stats.experience')}</span>
+                            <span className="text-[10px] text-neutral-400 dark:text-neutral-300 tracking-[0.2em]">{t('stats.experience')}</span>
                         </div>
                     </div>
                 </div>

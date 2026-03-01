@@ -27,7 +27,7 @@ export default function Footer() {
                                 Coral <span className="text-[#d35400]">Enterprises</span>
                             </span>
                         </div>
-                        <p className="text-neutral-400 text-sm leading-relaxed max-w-xs">
+                        <p className="text-neutral-300 text-sm leading-relaxed max-w-xs">
                             {t('description')}
                         </p>
                     </div>
@@ -38,9 +38,9 @@ export default function Footer() {
                             {t('quickLinks')}
                         </h4>
                         <ul className="space-y-4 text-sm font-medium">
-                            <li><Link href="/" className="text-neutral-400 hover:text-white transition-colors">{nt('home')}</Link></li>
-                            <li><Link href="#services" className="text-neutral-400 hover:text-white transition-colors">{nt('services')}</Link></li>
-                            <li><Link href="#projects" className="text-neutral-400 hover:text-white transition-colors">{nt('projects')}</Link></li>
+                            <li><Link href="/" className="text-neutral-300 hover:text-white transition-colors">{nt('home')}</Link></li>
+                            <li><Link href="#services" className="text-neutral-300 hover:text-white transition-colors">{nt('services')}</Link></li>
+                            <li><Link href="#projects" className="text-neutral-300 hover:text-white transition-colors">{nt('projects')}</Link></li>
                         </ul>
                     </div>
 
@@ -51,19 +51,19 @@ export default function Footer() {
                         </h4>
                         <ul className="space-y-4 text-sm">
                             <li>
-                                <a href="tel:+32472741025" className="flex items-center gap-3 text-neutral-400 hover:text-white transition-colors group">
+                                <a href="tel:+32472741025" className="flex items-center gap-3 text-neutral-300 hover:text-white transition-colors group">
                                     <Phone className="w-4 h-4 text-[#d35400]" />
                                     <span>+32 472 74 10 25</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-neutral-400 hover:text-white transition-colors">
+                                <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-neutral-300 hover:text-white transition-colors">
                                     <MessageCircle className="w-4 h-4 text-[#d35400]" />
                                     <span>WhatsApp</span>
                                 </a>
                             </li>
                             <li>
-                                <a href="mailto:contact@coral-remodeling.pro" className="flex items-center gap-3 text-neutral-400 hover:text-white transition-colors">
+                                <a href="mailto:contact@coral-remodeling.pro" className="flex items-center gap-3 text-neutral-300 hover:text-white transition-colors">
                                     <Mail className="w-4 h-4 text-[#d35400]" />
                                     <span>Email Us</span>
                                 </a>
@@ -86,7 +86,7 @@ export default function Footer() {
                         <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-[#d35400]">
                             {t('office')}
                         </h4>
-                        <ul className="space-y-4 text-sm text-neutral-400">
+                        <ul className="space-y-4 text-sm text-neutral-300">
                             <li className="flex items-start gap-3">
                                 <MapPin className="w-4 h-4 mt-0.5 text-[#d35400]" />
                                 <span>{t('address')}</span>
@@ -105,10 +105,10 @@ export default function Footer() {
 
                 {/* Bottom Bar */}
                 <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-[0.3em]">
+                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.3em]">
                         {t('copy')}
                     </p>
-                    <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                    <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                         <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
                         <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
                     </div>

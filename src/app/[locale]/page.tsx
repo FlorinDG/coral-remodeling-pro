@@ -47,8 +47,8 @@ export default function Home() {
               location={t('Projects.kitchenLoft.location')}
               images={[
                 { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption1') },
-                { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption2') },
-                { src: "/images/project-loft-kitchen.png", caption: t('Projects.kitchenLoft.caption3') }
+                { src: "/images/project-loft-kitchen-angle2.png", caption: t('Projects.kitchenLoft.caption2') },
+                { src: "/images/project-loft-kitchen-before.png", caption: t('Projects.kitchenLoft.captionBefore') }
               ]}
             />
             <ProjectGallery
@@ -56,8 +56,8 @@ export default function Home() {
               location={t('Projects.masterBath.location')}
               images={[
                 { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption1') },
-                { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption2') },
-                { src: "/images/project-serenity-bath.png", caption: t('Projects.masterBath.caption3') }
+                { src: "/images/project-serenity-bath-angle2.png", caption: t('Projects.masterBath.caption2') },
+                { src: "/images/project-serenity-bath-before.png", caption: t('Projects.masterBath.captionBefore') }
               ]}
             />
             <ProjectGallery
@@ -65,8 +65,8 @@ export default function Home() {
               location={t('Projects.contemporaryKitchen.location')}
               images={[
                 { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption1') },
-                { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption2') },
-                { src: "/images/project-chef-kitchen.png", caption: t('Projects.contemporaryKitchen.caption3') }
+                { src: "/images/project-chef-kitchen-angle2.png", caption: t('Projects.contemporaryKitchen.caption2') },
+                { src: "/images/project-chef-kitchen-before.png", caption: t('Projects.contemporaryKitchen.captionBefore') }
               ]}
             />
             <ProjectGallery
@@ -74,8 +74,8 @@ export default function Home() {
               location={t('Projects.masterSuite.location')}
               images={[
                 { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption1') },
-                { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption2') },
-                { src: "/images/project-oasis-suite.png", caption: t('Projects.masterSuite.caption3') }
+                { src: "/images/project-oasis-suite-angle2.png", caption: t('Projects.masterSuite.caption2') },
+                { src: "/images/project-oasis-suite-before.png", caption: t('Projects.masterSuite.captionBefore') }
               ]}
             />
           </div>

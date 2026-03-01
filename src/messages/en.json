@@ -148,30 +148,30 @@
         "kitchenLoft": {
             "title": "Patrician House Kitchen",
             "location": "Sint-Martens-Latem, BE",
-            "caption1": "Wide angle view showing the open concept layout.",
-            "caption2": "Detail of the honed marble island and matte cabinetry.",
-            "caption3": "Custom lighting fixtures highlighting the texture."
+            "caption1": "Primary view of the fully renovated open-concept kitchen.",
+            "caption2": "Secondary perspective showing the custom marble island and integrated appliances.",
+            "captionBefore": "The original outdated 90s kitchen before the full luxury transformation."
         },
         "masterBath": {
             "title": "Zoute Wellness Bathroom",
             "location": "Knokke-Heist, BE",
-            "caption1": "Freestanding soaking tub with panoramic views.",
-            "caption2": "Dual vanity with custom stone integration.",
-            "caption3": "Rainfall shower enclosure with frameless glass."
+            "caption1": "The main spa area featuring a freestanding tub and panoramic views.",
+            "caption2": "A view of the rainfall shower with frameless glass and natural stone.",
+            "captionBefore": "The original cramped bathroom with dated blue tiles and limited space."
         },
         "contemporaryKitchen": {
             "title": "Beguinage Chef's Kitchen",
             "location": "Ghent, BE",
-            "caption1": "Professional grade appliances in a home setting.",
-            "caption2": "Integrated wine storage and coffee station.",
-            "caption3": "Ergonomic layout designed for serious cooking."
+            "caption1": "Professional grade chef's kitchen tailored for home excellence.",
+            "caption2": "Detailed view of the integrated wine storage and custom coffee station.",
+            "captionBefore": "The basic, uninspired kitchen before being reimagined for a gourmand."
         },
         "masterSuite": {
             "title": "Manor House Suite",
             "location": "Antwerp, BE",
-            "caption1": "Spa-inspired wet room design.",
-            "caption2": "Heated floors and towel warmers for comfort.",
-            "caption3": "Ambient lighting integration for relaxation."
+            "caption1": "The completed spa-inspired wet room in the master suite.",
+            "caption2": "Alternative view showcasing the freestanding tub and natural wood accents.",
+            "captionBefore": "The original unused, dusty attic space before its conversion into a luxury suite."
         }
     },
     "ProjectGallery": {

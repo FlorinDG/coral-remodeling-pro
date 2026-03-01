@@ -147,30 +147,30 @@
         "kitchenLoft": {
             "title": "Bucătărie Casă Patriciană",
             "location": "Sint-Martens-Latem, BE",
-            "caption1": "Vedere de ansamblu a configurației deschise.",
-            "caption2": "Detalii ale insulei de marmură și dulapurilor mate.",
-            "caption3": "Iluminat personalizat care accentuează texturile."
+            "caption1": "Vedere principală a bucătăriei open-concept complet renovate.",
+            "caption2": "Perspectivă secundară cu insula de marmură și aparate integrate.",
+            "captionBefore": "Bucătăria originală învechită din anii '90 înainte de transformarea de lux."
         },
         "masterBath": {
             "title": "Baie Wellness Zoute",
             "location": "Knokke-Heist, BE",
-            "caption1": "Cadă de baie freestanding cu vedere panoramică.",
-            "caption2": "Gheridon dublu cu piatră naturală integrată.",
-            "caption3": "Duș de tip rain-shower cu sticlă fără cadru."
+            "caption1": "Zona principală de spa cu cadă freestanding și vedere panoramică.",
+            "caption2": "Vedere a dușului cu efect de ploaie, sticlă fără ramă și piatră naturală.",
+            "captionBefore": "Baia originală înghesuită, cu gresie albastră demodată."
         },
         "contemporaryKitchen": {
-            "title": "Bucătărie Chef Begijnhof",
-            "location": "Gent, BE",
-            "caption1": "Echipamente profesionale într-un cadru primitor.",
-            "caption2": "Depozitare vin integrată și stație de cafea.",
-            "caption3": "Configurație ergonomică concepută pentru gătit serios."
+            "title": "Bucătărie Chef Beguinage",
+            "location": "Ghent, BE",
+            "caption1": "Bucătărie profesională adaptată pentru excelență domestică.",
+            "caption2": "Vedere detaliată a cramei integrate și a stației de cafea.",
+            "captionBefore": "Bucătăria de bază înainte de a fi reimaginată pentru un expert culinar."
         },
         "masterSuite": {
             "title": "Suită Casă Boierească",
             "location": "Anvers, BE",
-            "caption1": "Design spa inspirat de zona umedă.",
-            "caption2": "Încălzire în pardoseală pentru confort optim.",
-            "caption3": "Iluminat ambiental pentru relaxare totală."
+            "caption1": "Zona de spa finalizată în suita matrimonială.",
+            "caption2": "Vedere alternativă cu cada freestanding și accente de lemn natural.",
+            "captionBefore": "Podul nefolosit și prăfuit înainte de conversia într-o suită de lux."
         }
     },
     "ProjectGallery": {

@@ -148,30 +148,30 @@
         "kitchenLoft": {
             "title": "Patriciërswoning Keuken",
             "location": "Sint-Martens-Latem, BE",
-            "caption1": "Gidshoek-overzicht van de open indeling.",
-            "caption2": "Detail van het marmeren kookeiland en matte kasten.",
-            "caption3": "Maatwerk verlichting die de texturen accentueert."
+            "caption1": "Hoofdaanzicht van de volledig gerenoveerde open keuken.",
+            "caption2": "Secundair perspectief met het marmeren eiland en geïntegreerde apparatuur.",
+            "captionBefore": "De originele verouderde keuken uit de jaren 90 voor de luxe transformatie."
         },
         "masterBath": {
             "title": "Zoute Wellness Badkamer",
             "location": "Knokke-Heist, BE",
-            "caption1": "Vrijstaand ligbad met panoramisch uitzicht.",
-            "caption2": "Dubbele wastafel met geïntegreerd natuursteen.",
-            "caption3": "Regendouche met frameloos glas."
+            "caption1": "De belangrijkste spa-ruimte met een vrijstaand bad en panoramisch uitzicht.",
+            "caption2": "Een zicht op de regendouche met frameloos glas en natuursteen.",
+            "captionBefore": "De originele krappe badkamer met verouderde blauwe tegels en beperkte ruimte."
         },
         "contemporaryKitchen": {
             "title": "Begijnhof Chef's Keuken",
             "location": "Gent, BE",
-            "caption1": "Professionele apparatuur in een huiselijke setting.",
-            "caption2": "Geïntegreerde wijnopslag en koffiestation.",
-            "caption3": "Ergonomische indeling ontworpen voor serieus koken."
+            "caption1": "Professionele chef-kok keuken op maat gemaakt voor uitmuntendheid.",
+            "caption2": "Gedetailleerd zicht op de wijnopslag en het koffiestation.",
+            "captionBefore": "De eenvoudige keuken voordat deze werd heringericht voor een fijnproever."
         },
         "masterSuite": {
             "title": "Herenhuis Suite",
             "location": "Antwerpen, BE",
-            "caption1": "Spa-geïnspireerd natte cel ontwerp.",
-            "caption2": "Vloerverwarming en handdoekwarmers voor comfort.",
-            "caption3": "Sfeerverlichting voor optimale ontspanning."
+            "caption1": "De voltooide spa-geïnspireerde natte cel in de master suite.",
+            "caption2": "Alternatief zicht met het vrijstaande bad en natuurlijke houtaccenten.",
+            "captionBefore": "De originele ongebruikte zolderruimte voor de transformatie naar een luxe suite."
         }
     },
     "ProjectGallery": {

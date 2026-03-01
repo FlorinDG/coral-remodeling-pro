@@ -146,32 +146,32 @@
     },
     "Projects": {
         "kitchenLoft": {
-            "title": "Cuisine Maison Patricienne",
+            "title": "Cuisine de Maison Patricienne",
             "location": "Sint-Martens-Latem, BE",
-            "caption1": "Vue d'ensemble de l'agencement ouvert.",
-            "caption2": "Détails de l'îlot en marbre et des armoires mates.",
-            "caption3": "Éclairage sur mesure accentuant les textures."
+            "caption1": "Vue principale de la cuisine à aire ouverte entièrement rénovée.",
+            "caption2": "Perspective secondaire montrant l'îlot en marbre et les appareils intégrés.",
+            "captionBefore": "La cuisine originale des années 90 avant la transformation complète."
         },
         "masterBath": {
-            "title": "Salle de Bain Bien-être Zoute",
+            "title": "Salle de Bain Wellness Zoute",
             "location": "Knokke-Heist, BE",
-            "caption1": "Baignoire îlot avec vue panoramique.",
-            "caption2": "Double vanité avec pierre naturelle intégrée.",
-            "caption3": "Douche à effet de pluie avec verre sans cadre."
+            "caption1": "L'espace spa principal avec baignoire îlot et vue panoramique.",
+            "caption2": "Vue de la douche à effet pluie avec verre sans cadre et pierre naturelle.",
+            "captionBefore": "La salle de bain originale exiguë avec carrelage bleu démodé."
         },
         "contemporaryKitchen": {
             "title": "Cuisine de Chef du Béguinage",
             "location": "Gand, BE",
-            "caption1": "Appareils professionnels dans un cadre chaleureux.",
-            "caption2": "Cave à vin intégrée et station café.",
-            "caption3": "Agencement ergonomique conçu pour la cuisine sérieuse."
+            "caption1": "Cuisine de chef professionnelle conçue pour l'excellence domestique.",
+            "caption2": "Vue détaillée de la cave à vin intégrée et de la station café.",
+            "captionBefore": "La cuisine de base avant d'être réimaginée pour un gourmet."
         },
         "masterSuite": {
-            "title": "Suite Maison de Maitre",
+            "title": "Suite de Maison de Maître",
             "location": "Anvers, BE",
-            "caption1": "Design de salle d'eau inspiré du spa.",
-            "caption2": "Chauffage au sol pour un confort optimal.",
-            "caption3": "Éclairage d'ambiance pour une détente totale."
+            "caption1": "La salle d'eau d'inspiration spa terminée dans la suite parentale.",
+            "caption2": "Vue alternative montrant la baignoire îlot et les accents en bois naturel.",
+            "captionBefore": "Les combles inutilisés et poussiéreux avant la conversion en suite de luxe."
         }
     },
     "ProjectGallery": {

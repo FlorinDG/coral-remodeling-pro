@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from "next/image";
 import Hero from "@/components/Hero";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import BookingModal from "@/components/BookingModal";
 import ProjectGallery from "@/components/ProjectGallery";
 import ServiceExpander from "@/components/ServiceExpander";
@@ -14,7 +15,7 @@ export default function Home() {
   const t = useTranslations();
 
   return (
-    <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
+    <main className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white pt-10">
       <Navbar onBookClick={() => setIsModalOpen(true)} />
       <BookingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <Hero />
@@ -82,12 +83,7 @@ export default function Home() {
         </div>
       </section>
 
-
-      <footer id="contact" className="py-12 border-t border-neutral-200 dark:border-white/5 text-center">
-        <p className="text-xs text-neutral-600 uppercase tracking-[0.3em]">
-          {t('Footer.copy')}
-        </p>
-      </footer>
+      <Footer />
     </main>
   );
 }

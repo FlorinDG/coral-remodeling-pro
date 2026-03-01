@@ -4,13 +4,22 @@
         "description": "Rénovations de luxe pour cuisines et salles de bain."
     },
     "Navbar": {
-        "home": "Acceuil",
+        "home": "Accueil",
         "services": "Services",
         "projects": "Projets",
         "book": "RÉSERVER",
         "back": "RETOUR",
         "logoTitle": "Logo de Coral Enterprises",
-        "logoAria": "Logo de Coral Enterprises"
+        "logoAria": "Logo de Coral Enterprises",
+        "fastInterventions": {
+            "label": "Interventions Rapides 24/7",
+            "number": "+32 472 74 10 25"
+        },
+        "contact": {
+            "call": "Appelez-nous",
+            "whatsapp": "WhatsApp",
+            "email": "E-mail"
+        }
     },
     "Services": {
         "title": "Notre Expertise",
@@ -270,6 +279,14 @@
         }
     },
     "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS."
+        "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS.",
+        "description": "Espaces culinaires sur mesure et sanctuaires personnels méticuleusement conçus pour un art de vivre d'exception.",
+        "address": "Avenue Louise 54, 1050 Bruxelles, Belgique",
+        "vat": "BE 0742.741.025",
+        "quickLinks": "Liens Rapides",
+        "contact": "Contactez-nous",
+        "office": "Bureau",
+        "legal": "Mentions Légales",
+        "fastInterventions": "Interventions Rapides"
     }
 }

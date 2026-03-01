@@ -10,7 +10,16 @@
         "book": "BOEK NU",
         "back": "TERUG",
         "logoTitle": "Coral Enterprises Logo",
-        "logoAria": "Coral Enterprises Logo"
+        "logoAria": "Coral Enterprises Logo",
+        "fastInterventions": {
+            "label": "Snelle Interventies 24/7",
+            "number": "+32 472 74 10 25"
+        },
+        "contact": {
+            "call": "Bel Ons",
+            "whatsapp": "WhatsApp",
+            "email": "E-mail"
+        }
     },
     "Services": {
         "title": "Onze Expertise",
@@ -270,6 +279,14 @@
         }
     },
     "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN."
+        "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN.",
+        "description": "Op maat gemaakte culinaire ruimtes en persoonlijke heiligdommen, zorgvuldig vervaardigd voor een elite levensstijl.",
+        "address": "Louizalaan 54, 1050 Brussel, België",
+        "vat": "BE 0742.741.025",
+        "quickLinks": "Snelle Links",
+        "contact": "Contact",
+        "office": "Kantoor",
+        "legal": "Juridisch",
+        "fastInterventions": "Snelle Interventies"
     }
 }

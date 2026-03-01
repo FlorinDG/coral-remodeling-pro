@@ -10,7 +10,16 @@
         "book": "RESERVĂ",
         "back": "ÎNAPOI",
         "logoTitle": "Logo Coral Enterprises",
-        "logoAria": "Logo Coral Enterprises"
+        "logoAria": "Logo Coral Enterprises",
+        "fastInterventions": {
+            "label": "Intervenții Rapide 24/7",
+            "number": "+32 472 74 10 25"
+        },
+        "contact": {
+            "call": "Sună-ne",
+            "whatsapp": "WhatsApp",
+            "email": "E-mail"
+        }
     },
     "Services": {
         "title": "Expertiza Noastră",
@@ -269,6 +278,14 @@
         }
     },
     "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE."
+        "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE.",
+        "description": "Spații culinare personalizate și sanctuare personale create meticulos pentru un stil de viață de elită.",
+        "address": "Avenue Louise 54, 1050 Bruxelles, Belgia",
+        "vat": "BE 0742.741.025",
+        "quickLinks": "Link-uri Rapide",
+        "contact": "Contact",
+        "office": "Birou",
+        "legal": "Legal",
+        "fastInterventions": "Intervenții Rapide"
     }
 }

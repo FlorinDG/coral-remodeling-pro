@@ -6,13 +6,21 @@ export default function Topbar() {
     const t = useTranslations('Navbar');
 
     return (
-        <div className="bg-black border-b border-white/5 h-10 flex items-center justify-center px-8 w-full">
-            <div className="flex items-center gap-4 text-sm font-bold tracking-[0.2em] uppercase">
-                <span className="text-neutral-400 italic">{t('fastInterventions.label')}:</span>
+        <div className="bg-black border-b border-white/5 h-10 flex items-center px-8 w-full max-w-[1920px] mx-auto overflow-hidden">
+            <div className="flex-1 hidden md:flex">
+                <span className="text-xs font-bold tracking-[0.4em] uppercase text-white/30 whitespace-nowrap">
+                    Luxury. Redefined.
+                </span>
+            </div>
+
+            <div className="flex items-center gap-4 text-sm font-bold tracking-[0.2em] uppercase mx-auto md:mx-0">
+                <span className="text-neutral-400 italic font-medium">{t('fastInterventions.label')}:</span>
                 <a href={`tel:${t('fastInterventions.number')}`} className="text-white hover:text-[#d35400] transition-colors">
                     {t('fastInterventions.number')}
                 </a>
             </div>
+
+            <div className="flex-1 hidden md:block" />
         </div>
     );
 }

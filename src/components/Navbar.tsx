@@ -22,7 +22,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                 {/* Logo Section - Left Half Start */}
                 <div className="flex items-center min-w-[120px]">
                     {backLink ? (
-                        <Link href={backLink.href as any} className="flex items-center gap-2 text-neutral-900/80 dark:text-white/80 hover:text-[#d35400] transition-colors">
+                        <Link href={backLink.href} className="flex items-center gap-2 text-neutral-900/80 dark:text-white/80 hover:text-[#d35400] transition-colors">
                             <ArrowLeft className="w-5 h-5" />
                             <span className="font-bold text-sm tracking-widest">{t('back')}</span>
                         </Link>

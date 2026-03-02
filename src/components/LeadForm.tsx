@@ -7,7 +7,7 @@ import { Check, MessageCircle, Phone, Mail } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { nl, enUS, fr } from 'date-fns/locale';
 
-const localeMap: Record<string, any> = { nl, en: enUS, fr };
+const localeMap: Record<string, import('date-fns').Locale> = { nl, en: enUS, fr };
 
 const RAW_TIMESLOTS = [9, 11, 13, 15, 17];
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendBookingNotification } from "@/lib/email";
+import { syncBookingToNotion } from "@/lib/notion";
 
 export async function POST(request: Request) {
     try {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
                 },
             }));
             console.log("Booking created in DB:", booking.id);
-        } catch (dbError: any) {
+        } catch (dbError) {
             console.error("Database error while creating booking:", dbError);
             return NextResponse.json(
                 { error: "Failed to save booking to database. Please try again later." },
@@ -41,6 +42,9 @@ export async function POST(request: Request) {
             console.error("Booking email failed:", emailError);
         }
 
+        // Sync to Notion (non-blocking)
+        syncBookingToNotion(booking).catch((err) => console.error("Notion sync failed:", err));
+
         return NextResponse.json(booking, { status: 201 });
     } catch (error) {
         console.error("Critical error in POST /api/bookings:", error);
@@ -57,7 +61,7 @@ export async function GET() {
             orderBy: { date: "asc" },
         });
         return NextResponse.json(bookings);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch bookings" },
             { status: 500 }

@@ -62,7 +62,7 @@ export default function PortalGrid({ portals, onCreateClick }: PortalGridProps) 
 
                 {portals.length === 0 && (
                     <div className="col-span-2 p-12 text-center border border-neutral-200 dark:border-white/5 border-dashed rounded-2xl text-neutral-500 dark:text-neutral-400">
-                        No active portals. Click "{t('create')}" to get started.
+                        No active portals. Click &quot;{t('create')}&quot; to get started.
                     </div>
                 )}
             </div>

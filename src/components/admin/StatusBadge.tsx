@@ -23,7 +23,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
 
     return (
         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${colorClass}`}>
-            {t(status as any)}
+            {t(status)}
         </span>
     );
 }

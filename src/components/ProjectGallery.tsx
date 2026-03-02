@@ -189,7 +189,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                         <p className="text-neutral-400 leading-relaxed text-sm md:text-base">
                                             {images[currentIndex].caption || t('fallbackCaption')}
                                             <br /><br />
-                                            <span className="hidden md:inline">This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance.</span>
+                                            <span className="hidden md:inline">{t('perspective')}</span>
                                         </p>
                                     </motion.div>
                                 </AnimatePresence>

@@ -63,6 +63,7 @@ model Task {
   title     String
   status    String       @default("TODO") // TODO, IN_PROGRESS, DONE
   createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
 }
 
 model Document {
@@ -92,4 +93,122 @@ model Message {
   content   String
   sender    String       // ADMIN or CLIENT
   createdAt DateTime     @default(now())
+}
+
+// NextAuth Models
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // For Credentials provider
+  role          String    @default("ADMIN")
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// CMS Models
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique // e.g., "Hero.title"
+  valueEn   String   @db.Text
+  valueNl   String?  @db.Text
+  valueFr   String?  @db.Text
+  valueRo   String?  @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model CMS_Service {
+  id               String   @id @default(cuid())
+  slug             String   @unique
+  titleEn          String
+  titleNl          String?
+  titleFr          String?
+  titleRo          String?
+  subtitleEn       String?
+  subtitleNl       String?
+  subtitleFr       String?
+  subtitleRo       String?
+  descriptionEn    String   @db.Text
+  descriptionNl    String?  @db.Text
+  descriptionFr    String?  @db.Text
+  descriptionRo    String?  @db.Text
+  fullDescriptionEn String   @db.Text
+  fullDescriptionNl String?  @db.Text
+  fullDescriptionFr String?  @db.Text
+  fullDescriptionRo String?  @db.Text
+  image            String
+  icon             String
+  featuresEn       String[]
+  featuresNl       String[]
+  featuresFr       String[]
+  featuresRo       String[]
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CMS_Project {
+  id          String   @id @default(cuid())
+  titleEn     String
+  titleNl     String?
+  titleFr     String?
+  titleRo     String?
+  locationEn  String
+  locationNl  String?
+  locationFr  String?
+  locationRo  String?
+  images      CMS_ProjectImage[]
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model CMS_ProjectImage {
+  id        String      @id @default(cuid())
+  projectId String
+  project   CMS_Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  captionEn String?
+  captionNl String?
+  captionFr String?
+  captionRo String?
+  isBefore  Boolean     @default(false)
+  order     Int         @default(0)
 }

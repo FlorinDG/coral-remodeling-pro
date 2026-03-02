@@ -78,7 +78,7 @@
         "explore": "BEKIJK DETAILS"
     },
     "Hero": {
-        "title": "Herdefinieer",
+        "title": "Luxury. Redefined.",
         "subtitle": "Afgesteemd. Op Maat. Professioneel.",
         "tagline": "AFGESTEMD. OP MAAT. PROFESSIONEEL.",
         "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten.",
@@ -191,7 +191,8 @@
             "email": "E-mail",
             "location": "Locatie"
         },
-        "fallbackCaption": "Ervaar luxe wonen met onze op maat gemaakte ontwerpoplossingen. Elk detail is samengesteld om uw levensstijl te verbeteren, waarbij functionaliteit wordt gecombineerd met tijdloze esthetiek."
+        "fallbackCaption": "Ervaar luxe wonen met onze op maat gemaakte ontwerpoplossingen. Elk detail is samengesteld om uw levensstijl te verbeteren, waarbij functionaliteit wordt gecombineerd met tijdloze esthetiek.",
+        "perspective": "Dit perspectief benadrukt de nauwgezette aandacht voor materiaalkeuze en lichtintegratie, wat een sfeer van verfijnde elegantie creëert."
     },
     "BookingModal": {
         "title": "Bezoek Inplannen",

@@ -1,28 +1,25 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
-  return new PrismaClient();
-};
+  return new PrismaClient()
+}
 
 declare global {
-  var prisma: undefined | ReturnType<typeof prismaClientSingleton>;
+  var prisma: undefined | ReturnType<typeof prismaClientSingleton>
 }
 
-const prisma = globalThis.prisma ?? prismaClientSingleton();
+const prisma = globalThis.prisma ?? prismaClientSingleton()
 
-export default prisma;
+export default prisma
 
-if (process.env.NODE_ENV !== "production") globalThis.prisma = prisma;
-
-export async function dbRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      return await operation();
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      console.warn(`Database operation failed (attempt ${i + 1}/${retries}). Retrying in ${delay}ms...`, error);
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
+export async function dbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return dbRetry(fn, retries - 1, delay * 2);
   }
-  throw new Error("Unreachable");
 }
+
+if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma

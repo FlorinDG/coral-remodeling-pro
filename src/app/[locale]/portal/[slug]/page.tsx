@@ -1,6 +1,5 @@
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import TaskManager from '@/components/portal/TaskManager';
 import DocumentManager from '@/components/portal/DocumentManager';
 import MediaManager from '@/components/portal/MediaManager';

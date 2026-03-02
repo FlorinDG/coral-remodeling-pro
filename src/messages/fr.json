@@ -78,7 +78,7 @@
         "explore": "DÉCOUVRIR"
     },
     "Hero": {
-        "title": "Redéfinir",
+        "title": "Luxury. Redefined.",
         "subtitle": "Aligné. Sur Mesure. Professionnel.",
         "tagline": "ALIGNÉ. SUR MESURE. PROFESSIONNEL.",
         "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme.",
@@ -191,7 +191,8 @@
             "email": "E-mail",
             "location": "Emplacement"
         },
-        "fallbackCaption": "Découvrez l'élégance de nos solutions de design sur mesure. Chaque détail est soigné pour améliorer votre style de vie, alliant fonctionnalité et esthétique intemporelle."
+        "fallbackCaption": "Découvrez l'élégance de nos solutions de design sur mesure. Chaque détail est soigné pour améliorer votre style de vie, alliant fonctionnalité et esthétique intemporelle.",
+        "perspective": "Cette perspective souligne l'attention méticuleuse portée à la sélection des matériaux et à l'intégration de l'éclairage, créant une atmosphère d'élégance raffinée."
     },
     "BookingModal": {
         "title": "Planifier une Visite",

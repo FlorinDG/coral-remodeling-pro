@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Image as ImageIcon, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface Media {

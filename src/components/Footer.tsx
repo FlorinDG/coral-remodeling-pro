@@ -23,9 +23,14 @@ export default function Footer() {
                             <div className="w-10 h-10">
                                 <Logo className="w-full h-full text-[#d35400]" />
                             </div>
-                            <span className="text-xl font-bold tracking-tighter uppercase italic">
-                                Coral <span className="text-[#d35400]">Enterprises</span>
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-xl font-bold tracking-tighter uppercase italic leading-none">
+                                    Coral <span className="text-[#d35400]">Enterprises</span>
+                                </span>
+                                <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#d35400] mt-1">
+                                    Luxury. Redefined.
+                                </span>
+                            </div>
                         </div>
                         <p className="text-neutral-300 text-sm leading-relaxed max-w-xs">
                             {t('description')}

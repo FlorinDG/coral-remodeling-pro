@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
+import { syncLeadToNotion } from "@/lib/notion";
 
 export async function POST(request: Request) {
     try {
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
                 },
             }));
             console.log("Lead created in DB:", lead.id);
-        } catch (dbError: any) {
+        } catch (dbError) {
             console.error("Database error while creating lead:", dbError);
             return NextResponse.json(
                 { error: "Failed to save lead to database. Please try again later." },
@@ -42,6 +43,9 @@ export async function POST(request: Request) {
             // We don't return 500 here because the lead WAS saved to DB
         }
 
+        // Sync to Notion (non-blocking)
+        syncLeadToNotion(lead).catch((err) => console.error("Notion sync failed:", err));
+
         return NextResponse.json(lead, { status: 201 });
     } catch (error) {
         console.error("Critical error in POST /api/leads:", error);
@@ -58,7 +62,7 @@ export async function GET() {
             orderBy: { createdAt: "desc" },
         });
         return NextResponse.json(leads);
-    } catch (error) {
+    } catch {
         return NextResponse.json(
             { error: "Failed to fetch leads" },
             { status: 500 }

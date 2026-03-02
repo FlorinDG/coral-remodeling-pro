@@ -29,7 +29,7 @@ export default function FilterBar({ onSearch, onFilterChange, statuses, placehol
             >
                 <option value="ALL">{t('all')}</option>
                 {statuses.map(status => (
-                    <option key={status} value={status}>{ts(status as any)}</option>
+                    <option key={status} value={status}>{ts(status)}</option>
                 ))}
             </select>
         </div>

@@ -4,7 +4,6 @@ import { useTranslations } from 'next-intl';
 
 export default function AdminHeader() {
     const t = useTranslations('Admin.header');
-    const tb = useTranslations('Navbar');
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass-morphism border-b border-white/5">
             <div className="container mx-auto px-8 h-20 flex items-center justify-between">

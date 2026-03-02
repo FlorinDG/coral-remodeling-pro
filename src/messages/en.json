@@ -78,7 +78,7 @@
         "explore": "EXPLORE DETAILS"
     },
     "Hero": {
-        "title": "Redefining",
+        "title": "Luxury. Redefined.",
         "subtitle": "Aligned. Bespoke. Professional.",
         "tagline": "ALIGNED. BESPOKE. PROFESSIONAL.",
         "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services.",
@@ -191,7 +191,8 @@
             "email": "Email",
             "location": "Location"
         },
-        "fallbackCaption": "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics."
+        "fallbackCaption": "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics.",
+        "perspective": "This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance."
     },
     "BookingModal": {
         "title": "Schedule Your Visit",

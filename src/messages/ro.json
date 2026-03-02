@@ -78,7 +78,7 @@
         "explore": "DETALII"
     },
     "Hero": {
-        "title": "Redefinește",
+        "title": "Luxury. Redefined.",
         "subtitle": "Aliniat. Personalizat. Profesional.",
         "tagline": "ALINIAT. PERSONALIZAT. PROFESIONAL.",
         "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare pentru bucătării și băi.",
@@ -190,7 +190,8 @@
             "email": "E-mail",
             "location": "Locație"
         },
-        "fallbackCaption": "Experimentați viața de lux cu soluțiile noastre de design personalizate. Fiecare detaliu este curatoriat pentru a vă îmbunătăți stilul de viață, îmbinând funcționalitatea cu estetica atemporală."
+        "fallbackCaption": "Experimentați viața de lux cu soluțiile noastre de design personalizate. Fiecare detaliu este curatoriat pentru a vă îmbunătăți stilul de viață, îmbinând funcționalitatea cu estetica atemporală.",
+        "perspective": "Această perspectivă evidențiază atenția meticuloasă acordată selecției materialelor și integrării iluminatului, creând o atmosferă de eleganță rafinată."
     },
     "BookingModal": {
         "title": "Programează o Vizită",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { FileText, Download, Plus, File } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface Document {

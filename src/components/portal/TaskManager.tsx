@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { CheckCircle, Circle, Plus } from 'lucide-react';
+import { CheckCircle, Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface Task {

@@ -64,7 +64,7 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-colors text-white"
-                                placeholder="admin@coral-remodeling.pro"
+                                placeholder="admin@coral-group.be"
                                 required
                             />
                         </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
                 </div>
 
                 <p className="mt-8 text-center text-neutral-600 text-[10px] uppercase tracking-widest">
-                    &copy; {new Date().getFullYear()} Coral Remodeling Pro. Protected Access.
+                    &copy; {new Date().getFullYear()} Coral Group. Protected Access.
                 </p>
             </div>
         </div>

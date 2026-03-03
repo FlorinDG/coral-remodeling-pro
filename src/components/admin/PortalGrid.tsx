@@ -7,6 +7,8 @@ interface Portal {
     id: string;
     clientName: string;
     clientEmail: string;
+    projectTitle?: string | null;
+    serviceId?: string | null;
     slug: string;
     status: string;
 }
@@ -44,7 +46,10 @@ export default function PortalGrid({ portals, onCreateClick }: PortalGridProps) 
 
                         <div className="mb-4">
                             <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{portal.clientName}</h3>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">{portal.clientEmail}</p>
+                            {portal.projectTitle && (
+                                <p className="text-xs font-bold text-[#d35400] uppercase tracking-widest mt-0.5">{portal.projectTitle}</p>
+                            )}
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{portal.clientEmail}</p>
                         </div>
 
                         <div className="flex justify-between items-end">

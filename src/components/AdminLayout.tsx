@@ -83,8 +83,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                     </button>
 
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="text-xs font-bold uppercase tracking-widest text-[#d35400] hover:text-[#e67e22] transition-colors">
+                    <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Notion Connected</span>
+                        </div>
+                        <Link href="/" className="text-xs font-bold uppercase tracking-widest text-[#d35400] hover:text-[#e67e22] transition-colors border-l border-neutral-200 dark:border-white/10 pl-6">
                             View Website
                         </Link>
                     </div>

@@ -143,3 +143,38 @@ export async function deleteProject(id: string) {
     revalidatePath("/[locale]", "layout");
     return { success: true };
 }
+
+export async function updateBanner(data: { textEn: string; textNl?: string | null; isActive: boolean }) {
+    const banner = await prisma.promotionalBanner.findFirst();
+    if (banner) {
+        await prisma.promotionalBanner.update({
+            where: { id: banner.id },
+            data
+        });
+    } else {
+        await prisma.promotionalBanner.create({
+            data: {
+                ...data,
+                id: 'banner_1'
+            }
+        });
+    }
+    revalidatePath("/[locale]", "layout");
+    return { success: true };
+}
+
+export async function createService(data: any) {
+    const service = await prisma.cMS_Service.create({
+        data
+    });
+    revalidatePath("/[locale]/admin/services");
+    return { success: true, service };
+}
+
+export async function deleteService(id: string) {
+    await prisma.cMS_Service.delete({
+        where: { id }
+    });
+    revalidatePath("/[locale]/admin/services");
+    return { success: true };
+}

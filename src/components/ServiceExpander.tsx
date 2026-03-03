@@ -30,8 +30,8 @@ export default function ServiceExpander({ cmsServices, locale }: ServiceExpander
             title: (service[`title${suffix}`] as string) || s.titleEn,
             subtitle: (service[`subtitle${suffix}`] as string) || s.subtitleEn,
             description: (service[`description${suffix}`] as string) || s.descriptionEn,
-            image: s.image,
-            icon: s.icon
+            image: s.image || "/images/kitchen-hero.png",
+            icon: s.icon || "✨"
         };
     }) || defaultServices;
 

@@ -64,28 +64,62 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                         {groupName} Section
                     </h3>
                     <div className="grid gap-6">
-                        {keys.map((key) => (
-                            <div key={key} className="glass-morphism p-6 rounded-3xl border border-neutral-200 dark:border-white/10 space-y-4">
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-neutral-400">
-                                    {key.replace(`${groupName}.`, '')}
-                                </label>
-                                {key.includes('description') ? (
-                                    <textarea
-                                        value={formData[key]?.[activeLang] || ''}
-                                        onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                        rows={4}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#d35400] transition-all resize-none font-medium"
-                                    />
-                                ) : (
-                                    <input
-                                        type="text"
-                                        value={formData[key]?.[activeLang] || ''}
-                                        onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 h-14 outline-none focus:border-[#d35400] transition-all font-bold"
-                                    />
-                                )}
-                            </div>
-                        ))}
+                        {keys.map((key) => {
+                            const isImage = key.toLowerCase().includes('image') || key.toLowerCase().includes('url') || key.toLowerCase().includes('logo') || key.toLowerCase().includes('bg');
+                            const isLarge = key.toLowerCase().includes('description') || key.toLowerCase().includes('content') || key.toLowerCase().includes('address');
+
+                            return (
+                                <div key={key} className="glass-morphism p-6 rounded-3xl border border-neutral-200 dark:border-white/10 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#d35400]">
+                                            {key.split('.').pop()}
+                                            <span className="text-neutral-400 ml-2 lowercase font-medium">({key})</span>
+                                        </label>
+                                    </div>
+
+                                    {isImage ? (
+                                        <div className="flex gap-6 items-center">
+                                            <div className="w-24 h-24 rounded-2xl bg-black border border-white/10 overflow-hidden relative flex-shrink-0 group">
+                                                {formData[key]?.[activeLang] ? (
+                                                    <img src={formData[key]?.[activeLang]} alt="Preview" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-neutral-700">
+                                                        <Globe className="w-8 h-8" />
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <p className="text-[8px] font-bold text-white uppercase">Preview</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 space-y-2">
+                                                <input
+                                                    type="text"
+                                                    value={formData[key]?.[activeLang] || ''}
+                                                    onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                                    placeholder="Paste Image URL here..."
+                                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 h-12 outline-none focus:border-[#d35400] transition-all font-mono text-xs"
+                                                />
+                                                <p className="text-[10px] text-neutral-500 italic">Recommended: 1920x1080 for Hero, 800x800 for cards.</p>
+                                            </div>
+                                        </div>
+                                    ) : isLarge ? (
+                                        <textarea
+                                            value={formData[key]?.[activeLang] || ''}
+                                            onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                            rows={4}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#d35400] transition-all resize-none font-medium leading-relaxed"
+                                        />
+                                    ) : (
+                                        <input
+                                            type="text"
+                                            value={formData[key]?.[activeLang] || ''}
+                                            onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 h-14 outline-none focus:border-[#d35400] transition-all font-bold"
+                                        />
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             ))}

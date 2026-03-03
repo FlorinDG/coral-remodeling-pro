@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
 import Script from "next/script";
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import "../globals.css";
 
@@ -12,21 +12,67 @@ const oxanium = Oxanium({
     weight: ["300", "400", "500", "600", "700", "800"],
 });
 
+const baseUrl = 'https://coral-group.be';
+
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;
-    // We can't use getTranslations here easily without a request context usually,
-    // but in Next.js 13+ app router with next-intl, there's a specific pattern.
-    // For now, I'll use a simple mapping or just use the Locale-based titles if available.
-    // Actually, let's keep it simple and just use the metadata from the messages if possible,
-    // but metadata export is static here.
+    const t = await getTranslations({ locale, namespace: 'Metadata' });
 
-    // I will use a simple switch for now or just keep it as is if it's not a priority, 
-    // but the user said ALL text.
     return {
-        title: locale === 'nl' ? "Coral Enterprises | Premium Verbouwingen" : "Coral Enterprises | Premium Remodeling",
-        description: locale === 'nl' ? "Luxe keuken- en badkamerrenovaties." : "Luxury kitchen and bathroom transformations.",
+        metadataBase: new URL(baseUrl),
+        title: {
+            default: t('title'),
+            template: `%s | ${t('title')}`
+        },
+        description: t('description'),
+        keywords: ["renovatie", "verbouwing", "keuken op maat", "badkamerrenovatie", "totaalrenovatie", "België", "Brussel", "luxueus", "remodeling", "luxury kitchen", "bathroom renovation"],
+        alternates: {
+            canonical: `${baseUrl}/${locale}`,
+            languages: {
+                'en': `${baseUrl}/en`,
+                'nl': `${baseUrl}/nl`,
+                'fr': `${baseUrl}/fr`,
+                'ro': `${baseUrl}/ro`,
+                'x-default': `${baseUrl}/en`,
+            },
+        },
+        openGraph: {
+            title: t('title'),
+            description: t('description'),
+            url: baseUrl,
+            siteName: 'Coral Enterprises',
+            locale: locale,
+            type: 'website',
+            images: [
+                {
+                    url: '/images/kitchen-hero.png',
+                    width: 1200,
+                    height: 630,
+                    alt: 'Coral Enterprises Premium Remodeling',
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: t('title'),
+            description: t('description'),
+            images: ['/images/kitchen-hero.png'],
+        },
+        robots: {
+            index: true,
+            follow: true,
+            googleBot: {
+                index: true,
+                follow: true,
+                'max-video-preview': -1,
+                'max-image-preview': 'large',
+                'max-snippet': -1,
+            },
+        },
     };
 }
+
+import PromotionalBanner from "@/components/PromotionalBanner";
 
 export default async function RootLayout({
     children,
@@ -55,6 +101,7 @@ export default async function RootLayout({
                         enableSystem
                         disableTransitionOnChange
                     >
+                        <PromotionalBanner locale={locale} />
                         {children}
                     </ThemeProvider>
                 </NextIntlClientProvider>

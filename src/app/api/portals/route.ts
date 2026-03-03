@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { clientName, clientEmail } = body;
+        const { clientName, clientEmail, projectTitle, serviceId } = body;
 
         const slug = nanoid(10); // Simple 10-char slug
 
@@ -13,6 +13,8 @@ export async function POST(request: Request) {
             data: {
                 clientName,
                 clientEmail,
+                projectTitle,
+                serviceId,
                 slug,
             },
         });

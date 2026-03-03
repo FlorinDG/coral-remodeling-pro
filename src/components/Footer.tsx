@@ -68,7 +68,7 @@ export default function Footer() {
                                 </a>
                             </li>
                             <li>
-                                <a href="mailto:contact@coral-remodeling.pro" className="flex items-center gap-3 text-neutral-300 hover:text-white transition-colors">
+                                <a href="mailto:contact@coral-group.be" className="flex items-center gap-3 text-neutral-300 hover:text-white transition-colors">
                                     <Mail className="w-4 h-4 text-[#d35400]" />
                                     <span>Email Us</span>
                                 </a>

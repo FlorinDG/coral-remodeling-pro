@@ -12,9 +12,9 @@ model Lead {
   name      String
   email     String
   phone     String?
-  service   String   // e.g., "Kitchen", "Bathroom", "Addition"
+  service   String
   message   String?
-  status    String   @default("NEW") // NEW, CONTACTED, CONVERTED, ARCHIVED
+  status    String   @default("NEW")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -26,91 +26,92 @@ model Booking {
   serviceType String
   date        DateTime
   timeSlot    String
-  status      String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
 
 model ClientPortal {
-  id          String          @id @default(cuid())
-  clientName  String
-  clientEmail String
-  slug        String          @unique
-  status      String          @default("ACTIVE") // ACTIVE, COMPLETED
-  updates     ProjectUpdate[]
-  tasks       Task[]
-  documents   Document[]
-  media       ProjectMedia[]
-  messages    Message[]
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  id           String          @id @default(cuid())
+  clientName   String
+  clientEmail  String
+  slug         String          @unique
+  status       String          @default("ACTIVE")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  projectTitle String?
+  serviceId    String?
+  service      CMS_Service?    @relation(fields: [serviceId], references: [id])
+  documents    Document[]
+  messages     Message[]
+  media        ProjectMedia[]
+  updates      ProjectUpdate[]
+  tasks        Task[]
 }
 
 model ProjectUpdate {
   id        String       @id @default(cuid())
   portalId  String
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
   title     String
   content   String
   imageUrl  String?
   createdAt DateTime     @default(now())
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
 }
 
 model Task {
   id        String       @id @default(cuid())
   portalId  String
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
   title     String
-  status    String       @default("TODO") // TODO, IN_PROGRESS, DONE
+  status    String       @default("TODO")
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
 }
 
 model Document {
   id        String       @id @default(cuid())
   portalId  String
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
   name      String
   url       String
-  type      String       // PDF, IMG, etc.
+  type      String
   createdAt DateTime     @default(now())
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
 }
 
 model ProjectMedia {
   id        String       @id @default(cuid())
   portalId  String
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
   url       String
   caption   String?
   type      String       @default("IMAGE")
   createdAt DateTime     @default(now())
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
 }
 
 model Message {
   id        String       @id @default(cuid())
   portalId  String
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
   content   String
-  sender    String       // ADMIN or CLIENT
+  sender    String
   createdAt DateTime     @default(now())
+  portal    ClientPortal @relation(fields: [portalId], references: [id])
 }
 
-// NextAuth Models
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  @db.Text
-  access_token       String?  @db.Text
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?  @db.Text
-  session_state      String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -129,7 +130,7 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String?   // For Credentials provider
+  password      String?
   role          String    @default("ADMIN")
   accounts      Account[]
   sessions      Session[]
@@ -143,67 +144,66 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// CMS Models
 model SiteContent {
   id        String   @id @default(cuid())
-  key       String   @unique // e.g., "Hero.title"
-  valueEn   String   @db.Text
-  valueNl   String?  @db.Text
-  valueFr   String?  @db.Text
-  valueRo   String?  @db.Text
+  key       String   @unique
+  valueEn   String
+  valueNl   String?
+  valueFr   String?
+  valueRo   String?
   updatedAt DateTime @updatedAt
 }
 
 model CMS_Service {
-  id               String   @id @default(cuid())
-  slug             String   @unique
-  titleEn          String
-  titleNl          String?
-  titleFr          String?
-  titleRo          String?
-  subtitleEn       String?
-  subtitleNl       String?
-  subtitleFr       String?
-  subtitleRo       String?
-  descriptionEn    String   @db.Text
-  descriptionNl    String?  @db.Text
-  descriptionFr    String?  @db.Text
-  descriptionRo    String?  @db.Text
-  fullDescriptionEn String   @db.Text
-  fullDescriptionNl String?  @db.Text
-  fullDescriptionFr String?  @db.Text
-  fullDescriptionRo String?  @db.Text
-  image            String
-  icon             String
-  featuresEn       String[]
-  featuresNl       String[]
-  featuresFr       String[]
-  featuresRo       String[]
-  order            Int      @default(0)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String         @id @default(cuid())
+  slug              String         @unique
+  titleEn           String
+  titleNl           String?
+  titleFr           String?
+  titleRo           String?
+  subtitleEn        String?
+  subtitleNl        String?
+  subtitleFr        String?
+  subtitleRo        String?
+  descriptionEn     String
+  descriptionNl     String?
+  descriptionFr     String?
+  descriptionRo     String?
+  fullDescriptionEn String
+  fullDescriptionNl String?
+  fullDescriptionFr String?
+  fullDescriptionRo String?
+  image             String
+  icon              String
+  featuresEn        String[]
+  featuresNl        String[]
+  featuresFr        String[]
+  featuresRo        String[]
+  order             Int            @default(0)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  portals           ClientPortal[]
 }
 
 model CMS_Project {
-  id          String   @id @default(cuid())
-  titleEn     String
-  titleNl     String?
-  titleFr     String?
-  titleRo     String?
-  locationEn  String
-  locationNl  String?
-  locationFr  String?
-  locationRo  String?
-  images      CMS_ProjectImage[]
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String             @id @default(cuid())
+  titleEn    String
+  titleNl    String?
+  titleFr    String?
+  titleRo    String?
+  locationEn String
+  locationNl String?
+  locationFr String?
+  locationRo String?
+  order      Int                @default(0)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  images     CMS_ProjectImage[]
 }
 
 model CMS_ProjectImage {
   id        String      @id @default(cuid())
   projectId String
-  project   CMS_Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   url       String
   captionEn String?
   captionNl String?
@@ -211,4 +211,15 @@ model CMS_ProjectImage {
   captionRo String?
   isBefore  Boolean     @default(false)
   order     Int         @default(0)
+  project   CMS_Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model PromotionalBanner {
+  id        String   @id @default(cuid())
+  textEn    String
+  textNl    String?
+  textFr    String?
+  textRo    String?
+  isActive  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
 }

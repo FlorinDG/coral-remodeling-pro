@@ -27,14 +27,43 @@ async function testConnection() {
             const response = await notion.databases.retrieve({ database_id: id });
             console.log(`✅ Success! Title: ${response.title?.[0]?.plain_text || "No Title"}`);
 
-            console.log("Properties found:");
-            Object.keys(response.properties).forEach(prop => {
-                console.log(`  - ${prop} (${response.properties[prop].type})`);
-            });
+            if (response.data_sources && response.data_sources.length > 0) {
+                const dsId = response.data_sources[0].id;
+                console.log(`Found Data Source: ${dsId}`);
+                try {
+                    // Try to list property information using an internal or raw request if possible
+                    // Since it's a sync database, properties might be under the data source
+                    const dsResponse = await (notion).request({
+                        path: `data_sources/${dsId}`,
+                        method: "GET"
+                    });
+                    console.log("Data Source Details:", JSON.stringify(dsResponse, null, 2));
+                } catch (e) {
+                    console.log("Could not fetch data source details.");
+                }
+            }
 
-            // Test query to check permissions further
-            const query = await notion.databases.query({ database_id: id, page_size: 1 });
-            console.log(`✅ Query successful. Found ${query.results.length} items.`);
+            if (name === "LEADS") {
+                console.log("Databases Methods:", Object.keys(notion.databases));
+            }
+
+            // Attempt to query to find properties from a page
+            try {
+                const query = await notion.databases.query({ database_id: id, page_size: 1 });
+                console.log(`✅ Query successful. Found ${query.results.length} items.`);
+                if (query.results.length > 0) {
+                    console.log("Sample Properties (from result):");
+                    const props = query.results[0].properties;
+                    for (const key in props) {
+                        console.log(`  - "${key}" (${props[key].type})`);
+                    }
+                }
+            } catch (qError) {
+                console.log(`❌ Query failed: ${qError.message}`);
+                if (qError.body) {
+                    console.error("Query Error Body:", qError.body);
+                }
+            }
         } catch (error) {
             console.error(`❌ Failed: ${error.message}`);
             if (error.body) {

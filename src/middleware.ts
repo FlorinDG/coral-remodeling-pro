@@ -30,5 +30,6 @@ export default auth((req) => {
 
 export const config = {
     // Matcher for next-intl + next-auth
-    matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+    // Skip all internal paths (_next) and static assets (images, etc)
+    matcher: ["/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|manifest.json|sw.js).*)"],
 }

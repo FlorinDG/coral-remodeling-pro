@@ -1,9 +1,11 @@
 import prisma from "@/lib/prisma";
 import ContentForm from "./ContentForm";
 import { SiteContentMap } from "@/lib/cms";
+import PromotionalBannerEditor from "@/components/admin/PromotionalBannerEditor";
 
 export default async function ContentEditor() {
     const contents = await prisma.siteContent.findMany();
+    const banner = await prisma.promotionalBanner.findFirst();
 
     // Map to a more usable object structure
     const contentMap = contents.reduce((acc: SiteContentMap, curr) => {
@@ -17,19 +19,33 @@ export default async function ContentEditor() {
     }, {});
 
     const groups = {
-        Hero: ["Hero.title", "Hero.description"],
-        Stats: ["Hero.stats.projects", "Hero.stats.experience"],
+        "Hero": ["Hero.title", "Hero.subtitle", "Hero.tagline", "Hero.description", "Hero.image"],
+        "Navbar": ["Navbar.home", "Navbar.services", "Navbar.projects", "Navbar.book", "Navbar.fastInterventions.label", "Navbar.fastInterventions.number"],
+        "Services Section": ["Services.title", "Services.explore"],
+        "Sections": ["Sections.expertise.title", "Sections.portfolio.title", "Sections.portfolio.tagline"],
+        "Footer": ["Footer.description", "Footer.address", "Footer.vat", "Footer.quickLinks", "Footer.contact", "Footer.office", "Footer.legal", "Footer.fastInterventions"],
+        "Metadata": ["Metadata.title", "Metadata.description"]
     };
 
     return (
-        <div className="space-y-8 max-w-5xl">
-            <div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">Editor</h2>
-                <h1 className="text-4xl font-bold tracking-tight">Site Content</h1>
-                <p className="text-neutral-500 mt-2">Manage all the static text content across the website from one place.</p>
+        <div className="space-y-12 max-w-5xl">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">Editor</h2>
+                    <h1 className="text-4xl font-bold tracking-tight">Site Content</h1>
+                    <p className="text-neutral-500 mt-2">Manage all the static text content across the website from one place.</p>
+                </div>
             </div>
 
-            <ContentForm initialData={contentMap} groups={groups} />
+            <section className="space-y-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Marketing & Alerts</h3>
+                <PromotionalBannerEditor initialData={banner || undefined} />
+            </section>
+
+            <section className="space-y-6">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Core Page Content</h3>
+                <ContentForm initialData={contentMap} groups={groups} />
+            </section>
         </div>
     );
 }

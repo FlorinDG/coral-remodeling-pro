@@ -81,7 +81,7 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                     <div className="glass-morphism p-8 rounded-3xl border border-neutral-200 dark:border-white/10 sticky top-8">
                         <h3 className="text-2xl font-bold mb-4 text-neutral-900 dark:text-white">{translations.ready}</h3>
                         <p className="text-neutral-500 dark:text-neutral-400 mb-8">
-                            {translations.schedule.replace('{service}', service.title.toLowerCase())}
+                            {translations.schedule}
                         </p>
                         <button
                             onClick={() => setIsModalOpen(true)}

@@ -30,6 +30,16 @@ export async function syncLeadToNotion(lead: any) {
         return;
     }
 
+    // Map service to match Notion select options
+    const serviceMap: Record<string, string> = {
+        "Kitchen": "Kitchen",
+        "Bathroom": "Bathroom",
+        "Addition": "Full House", // Fallback to Full House
+        "WholeHome": "Full House"
+    };
+
+    const serviceName = serviceMap[lead.service] || "Full House";
+
     try {
         console.log(`Syncing lead ${lead.id} to Notion database ${databaseId.substring(0, 5)}...`);
         const response = await notion.pages.create({
@@ -38,10 +48,10 @@ export async function syncLeadToNotion(lead: any) {
                 "id": { title: [{ text: { content: lead.id } }] },
                 "Name": { rich_text: [{ text: { content: lead.name } }] },
                 "Email": { email: lead.email },
-                "Phone": { phone_number: lead.phone || "" },
-                "Service": { select: { name: lead.service } },
+                "Phone": { phone_number: lead.phone || null },
+                "Service": { select: { name: serviceName } },
                 "Message": { rich_text: [{ text: { content: lead.message || "" } }] },
-                "Status": { select: { name: lead.status } },
+                "Status": { select: { name: lead.status?.toUpperCase() === "NEW" ? "NEW" : "NEW" } }, // Always "NEW" for new leads
                 "Created At": { date: { start: lead.createdAt.toISOString() } },
             },
         });

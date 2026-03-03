@@ -45,3 +45,5 @@ final_lint.txt
 next-env.d.ts
 
 /src/generated/prisma
+*.db
+*.db-journal

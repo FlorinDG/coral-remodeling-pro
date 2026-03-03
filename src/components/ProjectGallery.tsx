@@ -127,7 +127,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                 <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-5 h-5 fill-current" />
                                 </a>
-                                <a href="mailto:contact@coral-enterprises.com" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
+                                <a href="mailto:contact@coral-group.be" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-5 h-5" />
                                 </a>
                                 <a href="#map" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
@@ -146,7 +146,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
                                 <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-4 h-4 fill-current" />
                                 </a>
-                                <a href="mailto:contact@coral-enterprises.com" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
+                                <a href="mailto:contact@coral-group.be" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-4 h-4" />
                                 </a>
                                 <a href="#map" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>

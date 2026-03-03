@@ -43,8 +43,8 @@ export async function POST(request: Request) {
             // We don't return 500 here because the lead WAS saved to DB
         }
 
-        // Sync to Notion (non-blocking)
-        syncLeadToNotion(lead).catch((err) => console.error("Notion sync failed:", err));
+        // Sync to Notion
+        await syncLeadToNotion(lead);
 
         return NextResponse.json(lead, { status: 201 });
     } catch (error) {

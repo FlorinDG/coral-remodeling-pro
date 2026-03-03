@@ -42,8 +42,8 @@ export async function POST(request: Request) {
             console.error("Booking email failed:", emailError);
         }
 
-        // Sync to Notion (non-blocking)
-        syncBookingToNotion(booking).catch((err) => console.error("Notion sync failed:", err));
+        // Sync to Notion
+        await syncBookingToNotion(booking);
 
         return NextResponse.json(booking, { status: 201 });
     } catch (error) {

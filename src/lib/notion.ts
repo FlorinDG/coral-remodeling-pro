@@ -31,7 +31,8 @@ export async function syncLeadToNotion(lead: any) {
     }
 
     try {
-        await notion.pages.create({
+        console.log(`Syncing lead ${lead.id} to Notion database ${databaseId.substring(0, 5)}...`);
+        const response = await notion.pages.create({
             parent: { database_id: databaseId },
             properties: {
                 "id": { title: [{ text: { content: lead.id } }] },
@@ -44,9 +45,14 @@ export async function syncLeadToNotion(lead: any) {
                 "Created at": { date: { start: lead.createdAt.toISOString() } },
             },
         });
-        console.log(`Lead ${lead.id} synced to Notion.`);
-    } catch (error) {
-        console.error("Failed to sync lead to Notion:", error);
+        console.log(`Lead ${lead.id} successfully synced to Notion. Page ID: ${response.id}`);
+    } catch (error: any) {
+        console.error("Failed to sync lead to Notion:");
+        if (error.body) {
+            console.error("Notion API Error Body:", JSON.parse(error.body));
+        } else {
+            console.error("Error Message:", error.message || error);
+        }
     }
 }
 
@@ -58,7 +64,8 @@ export async function syncBookingToNotion(booking: any) {
     }
 
     try {
-        await notion.pages.create({
+        console.log(`Syncing booking ${booking.id} to Notion database ${databaseId.substring(0, 5)}...`);
+        const response = await notion.pages.create({
             parent: { database_id: databaseId },
             properties: {
                 "id": { title: [{ text: { content: booking.id } }] },
@@ -71,9 +78,14 @@ export async function syncBookingToNotion(booking: any) {
                 "Created At": { date: { start: booking.createdAt.toISOString() } },
             },
         });
-        console.log(`Booking ${booking.id} synced to Notion.`);
-    } catch (error) {
-        console.error("Failed to sync booking to Notion:", error);
+        console.log(`Booking ${booking.id} successfully synced to Notion. Page ID: ${response.id}`);
+    } catch (error: any) {
+        console.error("Failed to sync booking to Notion:");
+        if (error.body) {
+            console.error("Notion API Error Body:", JSON.parse(error.body));
+        } else {
+            console.error("Error Message:", error.message || error);
+        }
     }
 }
 

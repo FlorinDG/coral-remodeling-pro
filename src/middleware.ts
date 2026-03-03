@@ -1,9 +1,12 @@
-import { auth } from "./auth"
+import NextAuth from "next-auth"
+import { authConfig } from "./auth.config"
 import { NextResponse } from "next/server"
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
     const isLoggedIn = !!req.auth
@@ -14,10 +17,6 @@ export default auth((req) => {
     const isLoginPage = pathname.includes("/admin/login");
 
     if (isProtectedPath && !isLoginPage && !isLoggedIn) {
-        // Redirect to localized login. 
-        // We can manually prefix or let intlMiddleware handle it later, 
-        // but a direct redirect here is cleaner for NextAuth.
-
         const parts = pathname.split('/');
         const locale = parts[1];
         const hasLocale = ['en', 'nl', 'fr', 'ro'].includes(locale);

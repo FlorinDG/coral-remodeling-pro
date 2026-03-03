@@ -4,6 +4,24 @@ const notion = new Client({
     auth: process.env.NOTION_TOKEN as string,
 });
 
+/**
+ * Sync Databases (Notion Data Sources) often have a different Internal ID
+ * for querying than their public Database ID. This helper tries to resolve it.
+ */
+async function resolveDataSourceId(databaseId: string) {
+    try {
+        const db = await notion.databases.retrieve({ database_id: databaseId });
+        if ((db as any).data_sources?.length > 0) {
+            const dsId = (db as any).data_sources[0].id;
+            console.log(`Resolved Data Source ID for ${databaseId.substring(0, 5)}: ${dsId.substring(0, 5)}`);
+            return dsId;
+        }
+    } catch (e) {
+        console.warn(`Could not resolve Data Source ID for ${databaseId}, using as-is.`);
+    }
+    return databaseId;
+}
+
 export interface NotionPortal {
     notionId: string;
     id: string;
@@ -42,24 +60,30 @@ export async function syncLeadToNotion(lead: any) {
 
     try {
         console.log(`Syncing lead ${lead.id} to Notion database ${databaseId.substring(0, 5)}...`);
-        const response = await notion.pages.create({
+        const payload = {
             parent: { database_id: databaseId },
             properties: {
-                "id": { title: [{ text: { content: lead.id } }] },
-                "Name": { rich_text: [{ text: { content: lead.name } }] },
-                "Email": { email: lead.email },
+                "id": { title: [{ text: { content: String(lead.id) } }] },
+                "Name": { rich_text: [{ text: { content: String(lead.name || "Unknown") } }] },
+                "Email": { email: lead.email || null },
                 "Phone": { phone_number: lead.phone || null },
                 "Service": { select: { name: serviceName } },
-                "Message": { rich_text: [{ text: { content: lead.message || "" } }] },
-                "Status": { select: { name: lead.status?.toUpperCase() === "NEW" ? "NEW" : "NEW" } }, // Always "NEW" for new leads
-                "Created At": { date: { start: lead.createdAt.toISOString() } },
+                "Message": { rich_text: [{ text: { content: String(lead.message || "") } }] },
+                "Status": { select: { name: "NEW" } },
+                "Created At": { date: { start: new Date(lead.createdAt).toISOString() } },
             },
-        });
+        };
+
+        const response = await notion.pages.create(payload);
         console.log(`Lead ${lead.id} successfully synced to Notion. Page ID: ${response.id}`);
     } catch (error: any) {
-        console.error("Failed to sync lead to Notion:");
+        console.error("Failed to sync lead to Notion. Payload attempted:", JSON.stringify(lead, null, 2));
         if (error.body) {
-            console.error("Notion API Error Body:", JSON.parse(error.body));
+            try {
+                console.error("Notion API Error Body:", JSON.parse(error.body));
+            } catch (e) {
+                console.error("Notion API Error Body (raw):", error.body);
+            }
         } else {
             console.error("Error Message:", error.message || error);
         }
@@ -75,24 +99,30 @@ export async function syncBookingToNotion(booking: any) {
 
     try {
         console.log(`Syncing booking ${booking.id} to Notion database ${databaseId.substring(0, 5)}...`);
-        const response = await notion.pages.create({
+        const payload = {
             parent: { database_id: databaseId },
             properties: {
-                "id": { title: [{ text: { content: booking.id } }] },
-                "Client Name": { rich_text: [{ text: { content: booking.clientName } }] },
-                "Client Email": { email: booking.clientEmail },
-                "Service Type": { select: { name: booking.serviceType } },
-                "Date": { date: { start: booking.date.toISOString() } },
-                "Time Slot": { rich_text: [{ text: { content: booking.timeSlot } }] },
-                "Status": { select: { name: booking.status } },
-                "Created At": { date: { start: booking.createdAt.toISOString() } },
+                "id": { title: [{ text: { content: String(booking.id) } }] },
+                "Client Name": { rich_text: [{ text: { content: String(booking.clientName || "Unknown") } }] },
+                "Client Email": { email: booking.clientEmail || null },
+                "Service Type": { select: { name: booking.serviceType || "Kitchen" } },
+                "Date": { date: { start: new Date(booking.date).toISOString() } },
+                "Time Slot": { rich_text: [{ text: { content: String(booking.timeSlot || "") } }] },
+                "Status": { select: { name: "CONFIRMED" } },
+                "Created At": { date: { start: new Date(booking.createdAt).toISOString() } },
             },
-        });
+        };
+
+        const response = await notion.pages.create(payload);
         console.log(`Booking ${booking.id} successfully synced to Notion. Page ID: ${response.id}`);
     } catch (error: any) {
-        console.error("Failed to sync booking to Notion:");
+        console.error("Failed to sync booking to Notion. Payload attempted:", JSON.stringify(booking, null, 2));
         if (error.body) {
-            console.error("Notion API Error Body:", JSON.parse(error.body));
+            try {
+                console.error("Notion API Error Body:", JSON.parse(error.body));
+            } catch (e) {
+                console.error("Notion API Error Body (raw):", error.body);
+            }
         } else {
             console.error("Error Message:", error.message || error);
         }
@@ -103,8 +133,9 @@ export async function getServicesFromNotion() {
     const databaseId = process.env.NOTION_SERVICES_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) return [];
 
+    const dataSourceId = await resolveDataSourceId(databaseId);
     const response = await (notion as any).dataSources.query({
-        data_source_id: databaseId,
+        data_source_id: dataSourceId,
     });
 
     return response.results.map((page: any) => {
@@ -172,8 +203,9 @@ export async function getPortalsFromNotion(): Promise<NotionPortal[]> {
     const databaseId = process.env.NOTION_PORTALS_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) return [];
 
+    const dataSourceId = await resolveDataSourceId(databaseId);
     const response = await (notion as any).dataSources.query({
-        data_source_id: databaseId,
+        data_source_id: dataSourceId,
     });
 
     return response.results.map((page: any) => ({
@@ -191,8 +223,9 @@ export async function getTasksFromNotion(): Promise<NotionTask[]> {
     const databaseId = process.env.NOTION_TASKS_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) return [];
 
+    const dataSourceId = await resolveDataSourceId(databaseId);
     const response = await (notion as any).dataSources.query({
-        data_source_id: databaseId,
+        data_source_id: dataSourceId,
     });
 
     return response.results.map((page: any) => ({

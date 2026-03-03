@@ -10,7 +10,7 @@ async function main() {
     // Delete services
     await prisma.cMS_Service.deleteMany({});
 
-    console.log('Seeding fresh localized services with absolute image URLs...');
+    console.log('Seeding fresh localized services with absolute image URLs and Coral Enterprises branding...');
 
     // 1. Whole Home
     await prisma.cMS_Service.create({
@@ -152,7 +152,7 @@ async function main() {
         }
     });
 
-    console.log('Full Database Clean Refresh with Absolute URLs Completed Successfully');
+    console.log('Full Database Clean Refresh with Absolute URLs and Correct Branding Completed Successfully');
 }
 
 main()

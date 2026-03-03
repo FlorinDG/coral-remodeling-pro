@@ -2,21 +2,19 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-    const baseUrl = 'https://www.coral-group.be';
-
     console.log('Cleaning up existing projects and services...');
     // Delete projects first (and their images due to Cascade)
     await prisma.cMS_Project.deleteMany({});
     // Delete services
     await prisma.cMS_Service.deleteMany({});
 
-    console.log('Seeding fresh localized services with absolute image URLs and Coral Enterprises branding...');
+    console.log('Seeding fresh localized services with ROOT-RELATIVE image URLs and Coral Enterprises branding...');
 
     // 1. Whole Home
     await prisma.cMS_Service.create({
         data: {
             slug: 'whole-home',
-            image: `${baseUrl}/images/kitchen-hero.png`,
+            image: '/images/kitchen-hero.png',
             icon: 'Home',
             titleEn: 'Whole Home Transformation',
             titleNl: 'Exclusieve Totaalrenovatie',
@@ -42,7 +40,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'kitchen-design',
-            image: `${baseUrl}/images/kitchen-portfolio-2.png`,
+            image: '/images/kitchen-portfolio-2.png',
             icon: 'ChefHat',
             titleEn: 'Luxury Kitchen Design',
             titleNl: 'Luxueuze Keukens op Maat',
@@ -68,7 +66,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'bath-restoration',
-            image: `${baseUrl}/images/bathroom-portfolio-2.png`,
+            image: '/images/bathroom-portfolio-2.png',
             icon: 'Bath',
             titleEn: 'Wellness Bathrooms',
             titleNl: 'Wellness Badkamers',
@@ -94,7 +92,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'custom-additions',
-            image: `${baseUrl}/images/bathroom-hero.png`,
+            image: '/images/bathroom-hero.png',
             icon: 'Maximize',
             titleEn: 'Custom Home Additions',
             titleNl: 'Aanbouw op Maat',
@@ -102,7 +100,7 @@ async function main() {
             titleRo: 'Extinderi de Locuințe la Comandă',
             descriptionEn: 'Expand your living space with a seamless and stylish addition.',
             descriptionNl: 'Vergroot uw leefruimte met een naadloze en stijlvolle aanbouw.',
-            descriptionFr: 'Agrandissez votre espace de vie avec une extension harmonieuse.',
+            descriptionFr: 'Agrandissez votre espace de vie with une extension harmonieuse.',
             fullDescriptionEn: 'Need more space? Our addition service offers a seamless extension...',
             fullDescriptionNl: 'Heeft u meer ruimte nodig? Onze aanbouw service biedt een naadloze uitbreiding...',
             featuresEn: ['Seamless architecture', 'Modern extensions'],
@@ -116,7 +114,7 @@ async function main() {
         }
     });
 
-    console.log('Seeding fresh projects with absolute image URLs...');
+    console.log('Seeding fresh projects with root-relative image URLs...');
 
     // Project 1
     await prisma.cMS_Project.create({
@@ -128,8 +126,8 @@ async function main() {
             order: 1,
             images: {
                 create: [
-                    { url: `${baseUrl}/images/project-oasis-suite.png`, order: 1, captionEn: 'Primary View' },
-                    { url: `${baseUrl}/images/project-serenity-bath.png`, order: 2, captionEn: 'Secondary View' }
+                    { url: '/images/project-oasis-suite.png', order: 1, captionEn: 'Primary View' },
+                    { url: '/images/project-serenity-bath.png', order: 2, captionEn: 'Secondary View' }
                 ]
             }
         }
@@ -145,14 +143,14 @@ async function main() {
             order: 2,
             images: {
                 create: [
-                    { url: `${baseUrl}/images/project-chef-kitchen.png`, order: 1, captionEn: 'Primary View' },
-                    { url: `${baseUrl}/images/project-loft-kitchen.png`, order: 2, captionEn: 'Secondary View' }
+                    { url: '/images/project-chef-kitchen.png', order: 1, captionEn: 'Primary View' },
+                    { url: '/images/project-loft-kitchen.png', order: 2, captionEn: 'Secondary View' }
                 ]
             }
         }
     });
 
-    console.log('Full Database Clean Refresh with Absolute URLs and Correct Branding Completed Successfully');
+    console.log('Full Database Clean Refresh with ROOT-RELATIVE URLs and Correct Branding Completed Successfully');
 }
 
 main()

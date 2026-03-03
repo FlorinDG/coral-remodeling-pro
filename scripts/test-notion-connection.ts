@@ -32,9 +32,13 @@ async function testConnection() {
             const response: any = await notion.databases.retrieve({ database_id: id });
             console.log(`✅ Success! Title: ${response.title?.[0]?.plain_text || "No Title"}`);
 
-            // Test query to check permissions further
-            const query = await notion.databases.query({ database_id: id, page_size: 1 });
-            console.log(`✅ Query successful. Found ${query.results.length} items.`);
+            // Test query - using any because of the non-standard dataSources usage seen in codebase
+            try {
+                const query = await (notion as any).databases.query({ database_id: id, page_size: 1 });
+                console.log(`✅ Query successful. Found ${query.results.length} items.`);
+            } catch (qError: any) {
+                console.warn(`⚠️ Query failed but retrieve worked: ${qError.message}`);
+            }
         } catch (error: any) {
             console.error(`❌ Failed: ${error.message}`);
             if (error.body) {

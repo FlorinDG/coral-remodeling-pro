@@ -52,7 +52,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                         <MessageCircle className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
                         <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.whatsapp')}</span>
                     </a>
-                    <a href="mailto:contact@coral-group.be" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
+                    <a href="mailto:info@coral-group.be" className="flex flex-col items-center gap-1 group hover:text-[#d35400] transition-colors">
                         <Mail className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] dark:text-neutral-300" />
                         <span className="text-[9px] font-bold uppercase tracking-tighter leading-none opacity-60 group-hover:opacity-100 dark:text-white/80">{t('contact.email')}</span>
                     </a>

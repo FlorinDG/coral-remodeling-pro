@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const RECIPIENT_EMAIL = 'contact@coral-group.be';
+const RECIPIENT_EMAIL = 'info@coral-group.be';
 
 function getResend() {
     const apiKey = process.env.RESEND_API_KEY;

@@ -108,7 +108,7 @@ export default async function ClientPortal({ params }: { params: Promise<{ slug:
                                 </div>
                                 <div>
                                     <p className="font-bold">Florin M</p>
-                                    <a href="mailto:contact@coral-group.be" className="text-xs text-neutral-400 hover:text-white transition-colors">contact@coral-group.be</a>
+                                    <a href="mailto:info@coral-group.be" className="text-xs text-neutral-400 hover:text-white transition-colors">info@coral-group.be</a>
                                 </div>
                             </div>
                         </div>

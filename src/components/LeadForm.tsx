@@ -281,7 +281,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             </span>
                                         </a>
                                         <a
-                                            href="mailto:contact@coral-group.be"
+                                            href="mailto:info@coral-group.be"
                                             className="flex flex-col items-center justify-center gap-2 py-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 hover:border-[#d35400] transition-colors group"
                                         >
                                             <Mail className="w-5 h-5 text-neutral-400 group-hover:text-[#d35400] transition-colors" />

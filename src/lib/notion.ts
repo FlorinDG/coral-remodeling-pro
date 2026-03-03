@@ -4,6 +4,25 @@ const notion = new Client({
     auth: process.env.NOTION_TOKEN as string,
 });
 
+export interface NotionPortal {
+    notionId: string;
+    id: string;
+    clientName: string;
+    clientEmail: string;
+    slug: string;
+    status: string;
+    updatedAt: Date;
+}
+
+export interface NotionTask {
+    notionId: string;
+    id: string;
+    title: string;
+    status: string;
+    portalNotionId: string;
+    updatedAt: Date;
+}
+
 export async function syncLeadToNotion(lead: any) {
     const databaseId = process.env.NOTION_LEADS_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) {
@@ -127,7 +146,7 @@ export async function syncTaskToNotion(task: any, portalPageId?: string) {
     }
 }
 
-export async function getPortalsFromNotion() {
+export async function getPortalsFromNotion(): Promise<NotionPortal[]> {
     const databaseId = process.env.NOTION_PORTALS_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) return [];
 
@@ -137,16 +156,16 @@ export async function getPortalsFromNotion() {
 
     return response.results.map((page: any) => ({
         notionId: page.id,
-        id: page.properties.id?.title[0]?.plain_text,
-        clientName: page.properties["Client Name"]?.rich_text[0]?.plain_text,
-        clientEmail: page.properties["Client Email"]?.email,
-        slug: page.properties["Slug"]?.rich_text[0]?.plain_text,
-        status: page.properties["Status"]?.select?.name,
+        id: page.properties.id?.title[0]?.plain_text || "",
+        clientName: page.properties["Client Name"]?.rich_text[0]?.plain_text || "",
+        clientEmail: page.properties["Client Email"]?.email || "",
+        slug: page.properties["Slug"]?.rich_text[0]?.plain_text || "",
+        status: page.properties["Status"]?.select?.name || "ACTIVE",
         updatedAt: new Date(page.properties["Updated At"]?.date?.start || page.last_edited_time),
     }));
 }
 
-export async function getTasksFromNotion() {
+export async function getTasksFromNotion(): Promise<NotionTask[]> {
     const databaseId = process.env.NOTION_TASKS_DATABASE_ID;
     if (!process.env.NOTION_TOKEN || !databaseId) return [];
 
@@ -156,10 +175,10 @@ export async function getTasksFromNotion() {
 
     return response.results.map((page: any) => ({
         notionId: page.id,
-        id: page.properties.id?.title[0]?.plain_text,
-        title: page.properties["Title"]?.rich_text[0]?.plain_text,
-        status: page.properties["Status"]?.select?.name,
-        portalNotionId: page.properties["Portal"]?.relation[0]?.id,
+        id: page.properties.id?.title[0]?.plain_text || "",
+        title: page.properties["Title"]?.rich_text[0]?.plain_text || "",
+        status: page.properties["Status"]?.select?.name || "TODO",
+        portalNotionId: page.properties["Portal"]?.relation[0]?.id || "",
         updatedAt: new Date(page.properties["Updated At"]?.date?.start || page.last_edited_time),
     }));
 }

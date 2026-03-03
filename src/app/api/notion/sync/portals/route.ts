@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getPortalsFromNotion, getTasksFromNotion } from "@/lib/notion";
+import { getPortalsFromNotion, getTasksFromNotion, NotionPortal, NotionTask } from "@/lib/notion";
 import prisma from "@/lib/prisma";
 
 export async function POST() {
@@ -48,13 +48,13 @@ export async function POST() {
             // Let's assume the mapping is stable.
 
             // Re-fetch notionPortals to find the one with this notionId
-            const relatedNotionPortal = notionPortals.find(p => p.notionId === nTask.portalNotionId);
+            const relatedNotionPortal = notionPortals.find((p: NotionPortal) => p.notionId === nTask.portalNotionId);
             if (!relatedNotionPortal) {
                 console.warn(`Task ${nTask.id} has no valid portal relation in Notion.`);
                 continue;
             }
 
-            const dbPortal = allPortals.find(p => p.slug === relatedNotionPortal.slug);
+            const dbPortal = allPortals.find((p: any) => p.slug === relatedNotionPortal.slug);
             if (!dbPortal) {
                 console.warn(`Portal ${relatedNotionPortal.slug} not found in database.`);
                 continue;

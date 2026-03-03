@@ -42,7 +42,7 @@ export async function syncLeadToNotion(lead: any) {
                 "Service": { select: { name: lead.service } },
                 "Message": { rich_text: [{ text: { content: lead.message || "" } }] },
                 "Status": { select: { name: lead.status } },
-                "Created at": { date: { start: lead.createdAt.toISOString() } },
+                "Created At": { date: { start: lead.createdAt.toISOString() } },
             },
         });
         console.log(`Lead ${lead.id} successfully synced to Notion. Page ID: ${response.id}`);

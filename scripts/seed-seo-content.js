@@ -2,19 +2,21 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
+    const baseUrl = 'https://www.coral-group.be';
+
     console.log('Cleaning up existing projects and services...');
     // Delete projects first (and their images due to Cascade)
     await prisma.cMS_Project.deleteMany({});
     // Delete services
     await prisma.cMS_Service.deleteMany({});
 
-    console.log('Seeding fresh localized services...');
+    console.log('Seeding fresh localized services with absolute image URLs...');
 
     // 1. Whole Home
     await prisma.cMS_Service.create({
         data: {
             slug: 'whole-home',
-            image: '/images/kitchen-hero.png',
+            image: `${baseUrl}/images/kitchen-hero.png`,
             icon: 'Home',
             titleEn: 'Whole Home Transformation',
             titleNl: 'Exclusieve Totaalrenovatie',
@@ -40,7 +42,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'kitchen-design',
-            image: '/images/kitchen-portfolio-2.png',
+            image: `${baseUrl}/images/kitchen-portfolio-2.png`,
             icon: 'ChefHat',
             titleEn: 'Luxury Kitchen Design',
             titleNl: 'Luxueuze Keukens op Maat',
@@ -66,7 +68,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'bath-restoration',
-            image: '/images/bathroom-portfolio-2.png',
+            image: `${baseUrl}/images/bathroom-portfolio-2.png`,
             icon: 'Bath',
             titleEn: 'Wellness Bathrooms',
             titleNl: 'Wellness Badkamers',
@@ -92,7 +94,7 @@ async function main() {
     await prisma.cMS_Service.create({
         data: {
             slug: 'custom-additions',
-            image: '/images/bathroom-hero.png',
+            image: `${baseUrl}/images/bathroom-hero.png`,
             icon: 'Maximize',
             titleEn: 'Custom Home Additions',
             titleNl: 'Aanbouw op Maat',
@@ -114,7 +116,7 @@ async function main() {
         }
     });
 
-    console.log('Seeding fresh projects with verified images...');
+    console.log('Seeding fresh projects with absolute image URLs...');
 
     // Project 1
     await prisma.cMS_Project.create({
@@ -126,8 +128,8 @@ async function main() {
             order: 1,
             images: {
                 create: [
-                    { url: '/images/project-oasis-suite.png', order: 1, captionEn: 'Primary View' },
-                    { url: '/images/project-serenity-bath.png', order: 2, captionEn: 'Secondary View' }
+                    { url: `${baseUrl}/images/project-oasis-suite.png`, order: 1, captionEn: 'Primary View' },
+                    { url: `${baseUrl}/images/project-serenity-bath.png`, order: 2, captionEn: 'Secondary View' }
                 ]
             }
         }
@@ -143,14 +145,14 @@ async function main() {
             order: 2,
             images: {
                 create: [
-                    { url: '/images/project-chef-kitchen.png', order: 1, captionEn: 'Primary View' },
-                    { url: '/images/project-loft-kitchen.png', order: 2, captionEn: 'Secondary View' }
+                    { url: `${baseUrl}/images/project-chef-kitchen.png`, order: 1, captionEn: 'Primary View' },
+                    { url: `${baseUrl}/images/project-loft-kitchen.png`, order: 2, captionEn: 'Secondary View' }
                 ]
             }
         }
     });
 
-    console.log('Full Database Clean Refresh Completed Successfully');
+    console.log('Full Database Clean Refresh with Absolute URLs Completed Successfully');
 }
 
 main()

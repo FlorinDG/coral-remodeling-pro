@@ -1,18 +1,23 @@
+"use client";
+
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
 import Logo from './Logo';
 import Topbar from './Topbar';
-import { Phone, MessageCircle, Mail, ArrowLeft } from 'lucide-react';
+import { Phone, MessageCircle, Mail, ArrowLeft, Menu, X } from 'lucide-react';
+import { useState } from 'react';
 
 interface NavbarProps {
+
     onBookClick: () => void;
     backLink?: { href: string; label: string };
 }
 
 export default function Navbar({ onBookClick, backLink }: NavbarProps) {
     const t = useTranslations('Navbar');
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50">
@@ -27,8 +32,13 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                             <span className="font-bold text-sm tracking-widest">{t('back')}</span>
                         </Link>
                     ) : (
-                        <Link href="/" className="w-10 h-10 block group">
-                            <Logo className="w-full h-full group-hover:scale-105 transition-transform" />
+                        <Link href="/" className="flex items-center gap-3 group">
+                            <div className="w-10 h-10 block">
+                                <Logo className="w-full h-full group-hover:scale-105 transition-transform" />
+                            </div>
+                            <span className="font-black text-xs sm:text-sm md:text-base tracking-widest uppercase text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">
+                                Coral Enterprises
+                            </span>
                         </Link>
                     )}
                 </div>
@@ -60,7 +70,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
 
                 {/* Actions - Right End */}
                 <div className="flex items-center gap-6 min-w-[200px] justify-end">
-                    <div className="hidden sm:flex items-center gap-4">
+                    <div className="hidden lg:flex items-center gap-4">
                         <LanguageSwitcher />
                         <ThemeToggle />
                     </div>
@@ -70,8 +80,50 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                     >
                         {t('book')}
                     </button>
+                    <button
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="lg:hidden p-2 -mr-2 text-neutral-900 dark:text-white hover:text-[#d35400] dark:hover:text-[#d35400] transition-colors"
+                        aria-label="Toggle Menu"
+                    >
+                        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                    </button>
                 </div>
             </div>
+
+            {/* Mobile Menu Overlay */}
+            {isMobileMenuOpen && (
+                <div className="lg:hidden absolute top-full left-0 right-0 glass-morphism backdrop-blur-2xl border-b border-neutral-200 dark:border-white/10 bg-white/95 dark:bg-black/95 px-8 py-8 flex flex-col gap-8 shadow-2xl max-h-[calc(100vh-120px)] overflow-y-auto">
+                    <div className="flex flex-col gap-6 text-sm font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-white/90">
+                        <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d35400] transition-colors">{t('home')}</Link>
+                        <Link href="/#services" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d35400] transition-colors">{t('services')}</Link>
+                        <Link href="/#projects" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-[#d35400] transition-colors">{t('projects')}</Link>
+                    </div>
+
+                    <div className="h-px bg-neutral-200 dark:bg-white/10 w-full" />
+
+                    <div className="flex flex-col gap-5">
+                        <a href={`tel:${t('fastInterventions.number')}`} className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 hover:text-[#d35400]">
+                            <Phone className="w-5 h-5 text-neutral-400" />
+                            {t('contact.call')}
+                        </a>
+                        <a href="https://wa.me/32472741025" target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 hover:text-[#d35400]">
+                            <MessageCircle className="w-5 h-5 text-neutral-400" />
+                            {t('contact.whatsapp')}
+                        </a>
+                        <a href="mailto:info@coral-group.be" className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 hover:text-[#d35400]">
+                            <Mail className="w-5 h-5 text-neutral-400" />
+                            {t('contact.email')}
+                        </a>
+                    </div>
+
+                    <div className="h-px bg-neutral-200 dark:bg-white/10 w-full" />
+
+                    <div className="flex items-center justify-between pt-2">
+                        <LanguageSwitcher />
+                        <ThemeToggle />
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }

@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
             template: `%s | ${t('title')}`
         },
         description: t('description'),
-        keywords: ["renovatie", "verbouwing", "keuken op maat", "badkamerrenovatie", "totaalrenovatie", "België", "Brussel", "luxueus", "remodeling", "luxury kitchen", "bathroom renovation"],
+        keywords: t.raw('keywords') as string[],
         alternates: {
             canonical: `${baseUrl}/${locale}`,
             languages: {

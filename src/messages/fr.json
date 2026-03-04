@@ -1,7 +1,19 @@
 {
     "Metadata": {
         "title": "Coral Enterprises | Rénovation Totale de Luxe & Cuisines",
-        "description": "Rénovations résidentielles haut de gamme en Belgique. Spécialiste en cuisines de luxe, salles de bain wellness et design d'intérieur sur mesure."
+        "description": "Rénovations résidentielles haut de gamme en Belgique. Spécialiste en cuisines de luxe, salles de bain wellness et design d'intérieur sur mesure.",
+        "keywords": [
+            "rénovation",
+            "entrepreneur général",
+            "rénovation de cuisine",
+            "installation de salle de bain",
+            "extension de maison",
+            "rénovation totale",
+            "Belgique",
+            "Bruxelles",
+            "aménagement intérieur",
+            "luxe"
+        ]
     },
     "Navbar": {
         "home": "Accueil",

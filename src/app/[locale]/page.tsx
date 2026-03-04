@@ -31,22 +31,54 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     const cmsServices = await getCMSServices();
     const cmsProjects = await getCMSProjects();
 
-    const jsonLd = {
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "name": "Coral Enterprises",
-        "image": "https://coral-group.be/images/kitchen-hero.png",
-        "address": {
-            "@type": "PostalAddress",
-            "streetAddress": "Z.5 Industriezone 230",
-            "addressLocality": "Mollem (Asse)",
-            "postalCode": "1730",
-            "addressCountry": "BE"
+    const jsonLd = [
+        {
+            "@context": "https://schema.org",
+            "@type": "LocalBusiness",
+            "name": "Coral Enterprises",
+            "image": [
+                {
+                    "@type": "ImageObject",
+                    "url": "https://coral-group.be/images/kitchen-hero.png",
+                    "caption": t('Metadata.title')
+                }
+            ],
+            "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "Z.5 Industriezone 230",
+                "addressLocality": "Mollem (Asse)",
+                "postalCode": "1730",
+                "addressCountry": "BE"
+            },
+            "url": `https://coral-group.be/${locale}`,
+            "telephone": "+32 472 74 10 25",
+            "priceRange": "$$$",
         },
-        "url": `https://coral-group.be/${locale}`,
-        "telephone": "+32 472 74 10 25",
-        "priceRange": "$$$",
-    };
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": t('Navbar.home'),
+                    "item": `https://coral-group.be/${locale}`
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": t('Navbar.services'),
+                    "item": `https://coral-group.be/${locale}#services`
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 3,
+                    "name": t('Navbar.projects'),
+                    "item": `https://coral-group.be/${locale}#projects`
+                }
+            ]
+        }
+    ];
 
     return (
         <>

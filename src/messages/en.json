@@ -1,7 +1,20 @@
 {
     "Metadata": {
         "title": "Coral Enterprises | Lux Renovations & Custom Kitchens",
-        "description": "Expert total home renovations in Belgium. Specializing in luxury kitchens, wellness bathrooms, and bespoke interior design."
+        "description": "Expert total home renovations in Belgium. Specializing in luxury kitchens, wellness bathrooms, and bespoke interior design.",
+        "keywords": [
+            "renovation",
+            "home remodeling",
+            "general contractor",
+            "kitchen renovation",
+            "bathroom remodel",
+            "house extension",
+            "total renovation",
+            "Belgium",
+            "Brussels",
+            "interior design",
+            "luxury"
+        ]
     },
     "Navbar": {
         "home": "Home",

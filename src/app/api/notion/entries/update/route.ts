@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { updateDynamicPage } from "@/lib/notion";
 
+// Triggering re-scan for Prisma types
 export async function PATCH(request: Request) {
     try {
         const { entryId, data } = await request.json();
 
-        const entry = await prisma.notionEntry.findUnique({
+        const entry = await (prisma as any).notionEntry.findUnique({
             where: { id: entryId },
             include: { connection: true }
         });
@@ -22,7 +23,7 @@ export async function PATCH(request: Request) {
         );
 
         // Update locally
-        const updated = await prisma.notionEntry.update({
+        const updated = await (prisma as any).notionEntry.update({
             where: { id: entryId },
             data: { data: { ...(entry.data as object), ...data } }
         });

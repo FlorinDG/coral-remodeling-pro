@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from 'react';
 import { CheckCircle, Plus, Calendar, Paperclip, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';

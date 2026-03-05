@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useRef, useEffect } from 'react';
 import { Send, User, ShieldCheck, Paperclip, Reply, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';

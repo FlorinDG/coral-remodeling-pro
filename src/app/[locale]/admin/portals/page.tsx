@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from 'react';
 import LeadList from '@/components/admin/LeadList';
 import BookingList from '@/components/admin/BookingList';

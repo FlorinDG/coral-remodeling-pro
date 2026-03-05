@@ -10,7 +10,8 @@ export async function POST(request: Request) {
             data: {
                 portalId,
                 url,
-                caption
+                caption,
+                type: body.type || 'IMAGE'
             }
         });
 

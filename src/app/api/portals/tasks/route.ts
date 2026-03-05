@@ -4,13 +4,15 @@ import prisma from '@/lib/prisma';
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { portalId, title } = body;
+        const { portalId, title, dueDate, fileUrl } = body;
 
         const task = await prisma.task.create({
             data: {
                 portalId,
                 title,
-                status: 'TODO'
+                status: 'TODO',
+                dueDate: dueDate ? new Date(dueDate) : null,
+                fileUrl
             }
         });
 
@@ -23,11 +25,16 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
     try {
         const body = await request.json();
-        const { id, status } = body;
+        const { id, title, status, dueDate, fileUrl } = body;
 
         const task = await prisma.task.update({
             where: { id },
-            data: { status }
+            data: {
+                title,
+                status,
+                dueDate: dueDate ? new Date(dueDate) : undefined,
+                fileUrl
+            }
         });
 
         return NextResponse.json(task);

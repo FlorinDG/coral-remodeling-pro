@@ -13,6 +13,8 @@
     "@auth/prisma-adapter": "^2.11.1",
     "@notionhq/client": "^5.11.0",
     "@prisma/client": "^6.19.2",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.33.0",
     "lucide-react": "^0.563.0",

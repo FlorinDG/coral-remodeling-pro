@@ -9,7 +9,7 @@ export default function Topbar() {
         <div className="bg-black border-b border-white/5 h-10 flex items-center px-8 w-full max-w-[1920px] mx-auto overflow-hidden">
             <div className="flex-1 hidden md:flex">
                 <span className="text-xs font-bold tracking-[0.4em] uppercase text-white/30 whitespace-nowrap">
-                    Luxury. Redefined.
+                    CORAL ENTERPRISES CLIENT PORTAL
                 </span>
             </div>
 

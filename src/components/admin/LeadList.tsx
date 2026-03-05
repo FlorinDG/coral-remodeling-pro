@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import FilterBar from './FilterBar';
 import StatusBadge from './StatusBadge';
-import { ChevronRight, ChevronDown, Mail, Phone, MessageSquare, Clock, User, Trash2 } from 'lucide-react';
+import { ChevronRight, ChevronDown, Mail, Phone, MessageSquare, Clock, User, Trash2, CheckSquare, Square, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { updateLeadStatus } from '@/app/actions/crm';
+import { updateLeadStatus, deleteLead, bulkDeleteLeads } from '@/app/actions/crm';
 
 interface Lead {
     id: string;
@@ -27,6 +27,7 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
     const [search, setSearch] = useState('');
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
     const filteredLeads = leads.filter(lead => {
         const matchesFilter = filter === 'ALL' || lead.status === filter;
@@ -42,6 +43,49 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
             setLeads(prev => prev.map(lead => lead.id === id ? { ...lead, status } : lead));
         } catch {
             alert('Failed to update lead status');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this lead?')) return;
+        setUpdating(id);
+        try {
+            await deleteLead(id);
+            setLeads(prev => prev.filter(lead => lead.id !== id));
+        } catch {
+            alert('Failed to delete lead');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const toggleSelect = (id: string) => {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedIds(next);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === filteredLeads.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredLeads.map(l => l.id)));
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (!confirm(`Delete ${selectedIds.size} selected leads?`)) return;
+        setUpdating('BULK');
+        try {
+            const ids = Array.from(selectedIds) as string[];
+            await bulkDeleteLeads(ids);
+            setLeads(prev => prev.filter(lead => !selectedIds.has(lead.id)));
+            setSelectedIds(new Set());
+        } catch {
+            alert('Failed to delete leads');
         } finally {
             setUpdating(null);
         }
@@ -66,13 +110,42 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                 <span className="bg-black/5 dark:bg-white/10 text-xs px-3 py-1 rounded-full font-bold">{filteredLeads.length} matches</span>
             </div>
 
+            {selectedIds.size > 0 && (
+                <div className="mb-4 flex items-center justify-between bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-xl animate-in fade-in slide-in-from-top-2">
+                    <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">{selectedIds.size} SELECTED</span>
+                        <div className="h-4 w-px bg-blue-500/20" />
+                        <button
+                            onClick={handleBulkDelete}
+                            disabled={updating === 'BULK'}
+                            className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:text-red-600 transition-colors flex items-center gap-1.5"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" /> DELETE ALL
+                        </button>
+                    </div>
+                    <button onClick={() => setSelectedIds(new Set())} className="text-neutral-400 hover:text-neutral-600 transition-colors">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
+
             <FilterBar
                 onSearch={setSearch}
                 onFilterChange={setFilter}
                 statuses={['NEW', 'CONTACTED', 'CONVERTED', 'ARCHIVED']}
             />
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mt-4">
+            <div className="flex items-center justify-between mt-4 mb-2 px-2">
+                <button
+                    onClick={toggleSelectAll}
+                    className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-[#d35400] transition-colors flex items-center gap-2"
+                >
+                    {selectedIds.size === filteredLeads.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                    {selectedIds.size === filteredLeads.length ? 'DESELECT ALL' : 'SELECT ALL'}
+                </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar mt-2">
                 {filteredLeads.length === 0 && <p className="text-neutral-500 italic text-sm text-center py-10">{t('noLeads')}</p>}
                 {filteredLeads.map(lead => (
                     <div
@@ -80,30 +153,40 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                         className={`group rounded-2xl transition-all border overflow-hidden ${expandedId === lead.id
                             ? 'bg-white dark:bg-white/10 border-[#d35400]/30 shadow-lg'
                             : 'bg-white/80 dark:bg-black/20 border-neutral-200 dark:border-white/5 hover:border-[#d35400]/20'
-                            }`}
+                            } ${selectedIds.has(lead.id) ? 'ring-2 ring-blue-500/30 border-blue-500/50' : ''}`}
                     >
-                        <div
-                            className="p-4 flex justify-between items-center cursor-pointer"
-                            onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${lead.status === 'NEW' ? 'bg-blue-500/10 text-blue-500' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'
-                                    }`}>
-                                    {lead.name.charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">{lead.name}</h3>
-                                    <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">{lead.service} • {new Date(lead.createdAt).toLocaleDateString()}</p>
-                                </div>
+                        <div className="flex items-center">
+                            <div className="pl-4">
+                                <button
+                                    onClick={() => toggleSelect(lead.id)}
+                                    className={`p-1 rounded-md transition-colors ${selectedIds.has(lead.id) ? 'text-blue-500' : 'text-neutral-300 hover:text-neutral-400'}`}
+                                >
+                                    {selectedIds.has(lead.id) ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                                </button>
                             </div>
-                            <div className="flex items-center gap-3">
-                                <StatusBadge status={lead.status} />
-                                {expandedId === lead.id ? <ChevronDown className="w-4 h-4 text-[#d35400]" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />}
+                            <div
+                                className="p-4 flex-1 flex justify-between items-center cursor-pointer"
+                                onClick={() => setExpandedId(expandedId === lead.id ? null : lead.id)}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${lead.status === 'NEW' ? 'bg-blue-500/10 text-blue-500' : 'bg-neutral-100 dark:bg-white/5 text-neutral-500'
+                                        }`}>
+                                        {lead.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">{lead.name}</h3>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">{lead.service} • {new Date(lead.createdAt).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <StatusBadge status={lead.status} />
+                                    {expandedId === lead.id ? <ChevronDown className="w-4 h-4 text-[#d35400]" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />}
+                                </div>
                             </div>
                         </div>
 
                         {expandedId === lead.id && (
-                            <div className="px-4 pb-4 pt-2 border-t border-neutral-100 dark:border-white/5 animate-in slide-in-from-top-2 duration-200">
+                            <div className="px-4 pb-4 pt-2 ml-14 border-t border-neutral-100 dark:border-white/5 animate-in slide-in-from-top-2 duration-200">
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="space-y-2">
                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Contact Info</p>
@@ -131,7 +214,7 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                             <button
                                                 key={status}
                                                 onClick={() => handleStatusUpdate(lead.id, status)}
-                                                disabled={updating === lead.id}
+                                                disabled={!!updating}
                                                 className={`text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider transition-all ${lead.status === status
                                                     ? 'bg-[#d35400] text-white'
                                                     : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-white/10'
@@ -141,7 +224,11 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                             </button>
                                         ))}
                                     </div>
-                                    <button className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors">
+                                    <button
+                                        onClick={() => handleDelete(lead.id)}
+                                        disabled={!!updating}
+                                        className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                    >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>

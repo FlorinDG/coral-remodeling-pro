@@ -12,7 +12,7 @@ export default function AdminHeader() {
                         <Logo className="w-full h-full" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white">CORAL ADMIN</h1>
+                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white uppercase">CORAL ENTERPRISES CLIENT PORTAL</h1>
                         <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-widest">{t('title')}</p>
                     </div>
                 </Link>

@@ -36,10 +36,13 @@ model ClientPortal {
   clientName   String
   clientEmail  String
   slug         String          @unique
+  password     String?         // Hashed password for portal access
   status       String          @default("ACTIVE")
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   projectTitle String?
+  budget       Float?          @default(0)
+  paidAmount   Float?          @default(0)
   serviceId    String?
   service      CMS_Service?    @relation(fields: [serviceId], references: [id])
   documents    Document[]
@@ -56,7 +59,7 @@ model ProjectUpdate {
   content   String
   imageUrl  String?
   createdAt DateTime     @default(now())
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
 }
 
 model Task {
@@ -64,9 +67,11 @@ model Task {
   portalId  String
   title     String
   status    String       @default("TODO")
+  dueDate   DateTime?
+  fileUrl   String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
 }
 
 model Document {
@@ -76,7 +81,7 @@ model Document {
   url       String
   type      String
   createdAt DateTime     @default(now())
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
 }
 
 model ProjectMedia {
@@ -86,7 +91,7 @@ model ProjectMedia {
   caption   String?
   type      String       @default("IMAGE")
   createdAt DateTime     @default(now())
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
 }
 
 model Message {
@@ -94,8 +99,12 @@ model Message {
   portalId  String
   content   String
   sender    String
+  replyToId String?
+  fileUrl   String?
   createdAt DateTime     @default(now())
-  portal    ClientPortal @relation(fields: [portalId], references: [id])
+  portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  replyTo   Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[]    @relation("MessageReplies")
 }
 
 model Account {

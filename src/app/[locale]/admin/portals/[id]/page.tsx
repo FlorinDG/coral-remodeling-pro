@@ -7,6 +7,8 @@ import TaskManager from '@/components/portal/TaskManager';
 import DocumentManager from '@/components/portal/DocumentManager';
 import MediaManager from '@/components/portal/MediaManager';
 import ChatBox from '@/components/portal/ChatBox';
+import ProjectUpdateForm from '@/components/admin/ProjectUpdateForm';
+import PortalSettings from '@/components/admin/PortalSettings';
 import { getTranslations } from 'next-intl/server';
 
 export default async function PortalDetailPage({ params }: { params: Promise<{ id: string, locale: string }> }) {
@@ -67,16 +69,12 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
 
                     {/* Column 2: Updates & Docs */}
                     <div className="space-y-6">
-                        <div className="glass-morphism p-6 rounded-3xl border border-white/10">
-                            <h3 className="text-xl font-bold mb-6">{t('postUpdate')}</h3>
-                            <form action="/api/portals/updates" method="POST" className="space-y-4">
-                                <input type="hidden" name="portalId" value={portal.id} />
-                                <input name="title" placeholder={t('form.title')} required className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors" />
-                                <textarea name="content" placeholder={t('form.details')} required rows={3} className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors" />
-                                <button type="submit" className="w-full bg-[#d35400] hover:bg-[#a04000] text-white py-3 rounded-xl font-bold uppercase transition-colors">{t('form.post')}</button>
-                            </form>
-                        </div>
-
+                        <PortalSettings portal={{
+                            ...portal,
+                            budget: portal.budget ?? 0,
+                            paidAmount: portal.paidAmount ?? 0
+                        }} />
+                        <ProjectUpdateForm portalId={portal.id} />
                         <div className="h-[300px]">
                             <DocumentManager portalId={portal.id} initialDocs={portal.documents} />
                         </div>

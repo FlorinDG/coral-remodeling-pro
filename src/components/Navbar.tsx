@@ -37,7 +37,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                                 <Logo className="w-full h-full group-hover:scale-105 transition-transform" />
                             </div>
                             <span className="font-black text-xs sm:text-sm md:text-base tracking-widest uppercase text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">
-                                Coral Enterprises
+                                CORAL ENTERPRISES CLIENT PORTAL
                             </span>
                         </Link>
                     )}
@@ -85,6 +85,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                         className="lg:hidden p-2 -mr-2 text-neutral-900 dark:text-white hover:text-[#d35400] dark:hover:text-[#d35400] transition-colors"
                         aria-label="Toggle Menu"
                     >
+                        <span className="font-bold tracking-tighter text-lg text-neutral-900 dark:text-white">CORAL ENTERPRISES CLIENT PORTAL</span>
                         {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 </div>

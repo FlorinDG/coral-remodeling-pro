@@ -232,3 +232,24 @@ model PromotionalBanner {
   isActive  Boolean  @default(false)
   updatedAt DateTime @updatedAt
 }
+
+model NotionConnection {
+  id          String        @id @default(cuid())
+  name        String
+  databaseId  String
+  token       String?       // Optional override for global NOTION_TOKEN
+  lastSynced  DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  entries     NotionEntry[]
+}
+
+model NotionEntry {
+  id           String           @id @default(cuid())
+  notionId     String           @unique
+  connectionId String
+  data         Json             // Stores flattened Notion properties
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  connection   NotionConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+}

@@ -237,3 +237,114 @@ export async function getTasksFromNotion(): Promise<NotionTask[]> {
         updatedAt: new Date(page.properties["Updated At"]?.date?.start || page.last_edited_time),
     }));
 }
+
+/**
+ * Dynamic Sync Helpers
+ */
+
+export async function fetchDynamicDatabase(databaseId: string, token?: string) {
+    const client = token ? new Client({ auth: token }) : notion;
+    const response = await (client.databases as any).query({
+        database_id: databaseId,
+    });
+    return response.results;
+}
+
+export function flattenProperties(properties: any) {
+    const flattened: any = {};
+
+    for (const [key, prop] of Object.entries(properties) as [string, any][]) {
+        switch (prop.type) {
+            case 'title':
+                flattened[key] = prop.title[0]?.plain_text || "";
+                break;
+            case 'rich_text':
+                flattened[key] = prop.rich_text[0]?.plain_text || "";
+                break;
+            case 'number':
+                flattened[key] = prop.number;
+                break;
+            case 'select':
+                flattened[key] = prop.select?.name || "";
+                break;
+            case 'multi_select':
+                flattened[key] = prop.multi_select.map((s: any) => s.name);
+                break;
+            case 'date':
+                flattened[key] = prop.date?.start || null;
+                break;
+            case 'checkbox':
+                flattened[key] = prop.checkbox;
+                break;
+            case 'url':
+                flattened[key] = prop.url || "";
+                break;
+            case 'email':
+                flattened[key] = prop.email || "";
+                break;
+            case 'phone_number':
+                flattened[key] = prop.phone_number || "";
+                break;
+            case 'status':
+                flattened[key] = prop.status?.name || "";
+                break;
+            case 'files':
+                flattened[key] = prop.files.map((f: any) => f.file?.url || f.external?.url);
+                break;
+            default:
+                flattened[key] = JSON.stringify(prop[prop.type]);
+        }
+    }
+
+    return flattened;
+}
+
+export async function updateDynamicPage(pageId: string, data: any, databaseId: string, token?: string) {
+    const client = token ? new Client({ auth: token }) : notion;
+
+    // Fetch DB structure to know types for encoding
+    const db = await client.databases.retrieve({ database_id: databaseId }) as any;
+    const schema = db.properties;
+
+    const properties: any = {};
+
+    for (const [key, value] of Object.entries(data)) {
+        const propSchema = schema[key];
+        if (!propSchema) continue;
+
+        switch (propSchema.type) {
+            case 'rich_text':
+                properties[key] = { rich_text: [{ text: { content: String(value) } }] };
+                break;
+            case 'number':
+                properties[key] = { number: Number(value) };
+                break;
+            case 'select':
+                properties[key] = { select: { name: String(value) } };
+                break;
+            case 'multi_select':
+                properties[key] = { multi_select: (value as string[]).map(v => ({ name: v })) };
+                break;
+            case 'checkbox':
+                properties[key] = { checkbox: Boolean(value) };
+                break;
+            case 'url':
+                properties[key] = { url: String(value) };
+                break;
+            case 'email':
+                properties[key] = { email: String(value) };
+                break;
+            case 'phone_number':
+                properties[key] = { phone_number: String(value) };
+                break;
+            case 'date':
+                properties[key] = { date: { start: value } };
+                break;
+        }
+    }
+
+    return await client.pages.update({
+        page_id: pageId,
+        properties
+    });
+}

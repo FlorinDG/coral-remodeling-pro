@@ -39,17 +39,17 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-12">
-            {/* Language Switcher */}
-            <div className="flex items-center gap-2 p-1 bg-neutral-100 dark:bg-white/5 rounded-2xl w-fit sticky top-20 z-30 backdrop-blur-md shadow-lg border border-neutral-200 dark:border-white/10">
+        <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Language Switcher - More compact */}
+            <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-white/5 rounded-xl w-fit sticky top-20 z-30 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-white/10">
                 {(['en', 'nl', 'fr', 'ro'] as const).map((lang) => (
                     <button
                         key={lang}
                         type="button"
                         onClick={() => setActiveLang(lang)}
-                        className={`px-6 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${activeLang === lang
-                            ? 'bg-[#d35400] text-white shadow-lg'
-                            : 'hover:bg-neutral-200 dark:hover:bg-white/10'
+                        className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeLang === lang
+                            ? 'bg-[#d35400] text-white shadow-sm'
+                            : 'hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-500'
                             }`}
                     >
                         {lang}
@@ -57,81 +57,83 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                 ))}
             </div>
 
-            {Object.entries(groups).map(([groupName, keys]) => (
-                <div key={groupName} className="space-y-6">
-                    <h3 className="text-xl font-bold flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-neutral-400" />
-                        {groupName} Section
-                    </h3>
-                    <div className="grid gap-6">
-                        {keys.map((key) => {
-                            const isImage = key.toLowerCase().includes('image') || key.toLowerCase().includes('url') || key.toLowerCase().includes('logo') || key.toLowerCase().includes('bg');
-                            const isLarge = key.toLowerCase().includes('description') || key.toLowerCase().includes('content') || key.toLowerCase().includes('address');
+            <div className="space-y-10">
+                {Object.entries(groups).map(([groupName, keys]) => (
+                    <div key={groupName} className="space-y-4">
+                        <div className="flex items-center gap-2 border-b border-neutral-100 dark:border-white/5 pb-2">
+                            <Globe className="w-4 h-4 text-[#d35400]" />
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
+                                {groupName}
+                            </h3>
+                        </div>
 
-                            return (
-                                <div key={key} className="glass-morphism p-6 rounded-3xl border border-neutral-200 dark:border-white/10 space-y-4">
-                                    <div className="flex justify-between items-start">
-                                        <label className="block text-[10px] font-black uppercase tracking-widest text-[#d35400]">
-                                            {key.split('.').pop()}
-                                            <span className="text-neutral-400 ml-2 lowercase font-medium">({key})</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {keys.map((key) => {
+                                const isImage = key.toLowerCase().includes('image') || key.toLowerCase().includes('url') || key.toLowerCase().includes('logo') || key.toLowerCase().includes('bg');
+                                const isLarge = key.toLowerCase().includes('description') || key.toLowerCase().includes('content') || key.toLowerCase().includes('address');
+
+                                // Full width for large text and images, half for others
+                                const gridClass = (isLarge || isImage) ? "col-span-1 md:col-span-2" : "col-span-1";
+
+                                return (
+                                    <div key={key} className={`${gridClass} bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 space-y-2 hover:border-[#d35400]/20 transition-colors`}>
+                                        <label className="block text-[9px] font-bold uppercase tracking-[0.1em] text-neutral-500">
+                                            {key.split('.').pop()?.replace(/([A-Z])/g, ' $1').trim()}
+                                            <span className="text-neutral-300 dark:text-neutral-600 ml-2 lowercase font-normal italic">({key})</span>
                                         </label>
-                                    </div>
 
-                                    {isImage ? (
-                                        <div className="flex gap-6 items-center">
-                                            <div className="w-24 h-24 rounded-2xl bg-black border border-white/10 overflow-hidden relative flex-shrink-0 group">
-                                                {formData[key]?.[activeLang] ? (
-                                                    <img src={formData[key]?.[activeLang]} alt="Preview" className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-neutral-700">
-                                                        <Globe className="w-8 h-8" />
-                                                    </div>
-                                                )}
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                    <p className="text-[8px] font-bold text-white uppercase">Preview</p>
+                                        {isImage ? (
+                                            <div className="flex gap-4 items-center">
+                                                <div className="w-16 h-16 rounded-xl bg-neutral-100 dark:bg-black border border-neutral-200 dark:border-white/10 overflow-hidden relative flex-shrink-0 group">
+                                                    {formData[key]?.[activeLang] ? (
+                                                        <img src={formData[key]?.[activeLang]} alt="Preview" className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-neutral-300 dark:text-neutral-700">
+                                                            <Globe className="w-6 h-6" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <input
+                                                        type="text"
+                                                        value={formData[key]?.[activeLang] || ''}
+                                                        onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                                        placeholder="Image URL"
+                                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-10 outline-none focus:border-[#d35400] transition-all font-mono text-[11px]"
+                                                    />
                                                 </div>
                                             </div>
-                                            <div className="flex-1 space-y-2">
-                                                <input
-                                                    type="text"
-                                                    value={formData[key]?.[activeLang] || ''}
-                                                    onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                                    placeholder="Paste Image URL here..."
-                                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 h-12 outline-none focus:border-[#d35400] transition-all font-mono text-xs"
-                                                />
-                                                <p className="text-[10px] text-neutral-500 italic">Recommended: 1920x1080 for Hero, 800x800 for cards.</p>
-                                            </div>
-                                        </div>
-                                    ) : isLarge ? (
-                                        <textarea
-                                            value={formData[key]?.[activeLang] || ''}
-                                            onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                            rows={4}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 py-4 outline-none focus:border-[#d35400] transition-all resize-none font-medium leading-relaxed"
-                                        />
-                                    ) : (
-                                        <input
-                                            type="text"
-                                            value={formData[key]?.[activeLang] || ''}
-                                            onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-6 h-14 outline-none focus:border-[#d35400] transition-all font-bold"
-                                        />
-                                    )}
-                                </div>
-                            );
-                        })}
+                                        ) : isLarge ? (
+                                            <textarea
+                                                value={formData[key]?.[activeLang] || ''}
+                                                onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                                rows={3}
+                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-all resize-none text-sm leading-relaxed"
+                                            />
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={formData[key]?.[activeLang] || ''}
+                                                onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
+                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[#d35400] transition-all text-sm font-medium"
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
 
             <div className="fixed bottom-8 right-8 z-50">
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex items-center gap-3 bg-[#d35400] hover:bg-[#e67e22] text-white px-10 py-5 rounded-2xl font-bold shadow-2xl shadow-[#d35400]/40 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-[#d35400]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs tracking-widest uppercase"
                 >
-                    {isLoading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
-                    PUBLISH CHANGES
+                    {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    Publish Content
                 </button>
             </div>
         </form>

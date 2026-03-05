@@ -19,12 +19,11 @@ export default async function ContentEditor() {
     }, {});
 
     const groups = {
-        "Hero": ["Hero.title", "Hero.subtitle", "Hero.tagline", "Hero.description", "Hero.image"],
-        "Navbar": ["Navbar.home", "Navbar.services", "Navbar.projects", "Navbar.book", "Navbar.fastInterventions.label", "Navbar.fastInterventions.number"],
-        "Services Section": ["Services.title", "Services.explore"],
-        "Sections": ["Sections.expertise.title", "Sections.portfolio.title", "Sections.portfolio.tagline"],
-        "Footer": ["Footer.description", "Footer.address", "Footer.vat", "Footer.quickLinks", "Footer.contact", "Footer.office", "Footer.legal", "Footer.fastInterventions"],
-        "Metadata": ["Metadata.title", "Metadata.description"]
+        "Main Hero": ["Hero.title", "Hero.subtitle", "Hero.tagline", "Hero.description", "Hero.image"],
+        "Navigation": ["Navbar.home", "Navbar.services", "Navbar.projects", "Navbar.book", "Navbar.fastInterventions.label", "Navbar.fastInterventions.number"],
+        "Common Sections": ["Sections.expertise.title", "Sections.portfolio.title", "Sections.portfolio.tagline"],
+        "Website Footer": ["Footer.description", "Footer.address", "Footer.vat", "Footer.quickLinks", "Footer.contact", "Footer.office", "Footer.legal", "Footer.fastInterventions"],
+        "SEO Metadata": ["Metadata.title", "Metadata.description"]
     };
 
     return (

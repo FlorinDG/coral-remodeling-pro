@@ -8,6 +8,7 @@ export default function Topbar() {
     const pathname = usePathname();
 
     const isPortalOrAdmin = pathname.includes('/admin') || pathname.includes('/portal');
+    console.log('[DEBUG] Topbar:', { pathname, isPortalOrAdmin });
     const displayTitle = isPortalOrAdmin ? t('topbarTitlePortal') : t('topbarTitle');
 
     return (

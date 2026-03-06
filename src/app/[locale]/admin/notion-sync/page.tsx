@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Database, Plus, RefreshCw, Trash2, Table, Key, Link2 } from 'lucide-react';
+import { Database, Plus, RefreshCw, Trash2, Table, Key, Link2, Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 export default function NotionSyncDashboard() {
@@ -9,9 +9,13 @@ export default function NotionSyncDashboard() {
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [syncing, setSyncing] = useState<string | null>(null);
+    const [syncingAll, setSyncingAll] = useState(false);
     const [newConn, setNewConn] = useState({ name: '', databaseId: '', token: '' });
     const [selectedConn, setSelectedConn] = useState<any>(null);
     const [entries, setEntries] = useState<any[]>([]);
+    const [syncingEntryId, setSyncingEntryId] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchConnections();
@@ -56,6 +60,13 @@ export default function NotionSyncDashboard() {
         if (res.ok) fetchConnections();
     };
 
+    const handleSyncAll = async () => {
+        setSyncingAll(true);
+        const res = await fetch('/api/notion/sync/all', { method: 'POST' });
+        setSyncingAll(null as any);
+        if (res.ok) fetchConnections();
+    };
+
     const viewData = async (conn: any) => {
         setSelectedConn(conn);
         // We'll fetch entries for this connection
@@ -71,14 +82,23 @@ export default function NotionSyncDashboard() {
                     <h1 className="text-4xl font-black tracking-tighter uppercase text-neutral-900 dark:text-white">Notion Database Sync</h1>
                     <p className="text-neutral-500 font-medium mt-1">Connect any Notion database and keep properties in sync.</p>
                 </div>
-                {!isAdding && (
+                <div className="flex gap-3 items-end">
                     <button
-                        onClick={() => setIsAdding(true)}
-                        className="bg-[#d35400] text-white px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all flex items-center gap-2 shadow-xl shadow-[#d35400]/20"
+                        onClick={handleSyncAll}
+                        disabled={syncingAll}
+                        className="bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-neutral-200 transition-all flex items-center gap-2"
                     >
-                        <Plus className="w-4 h-4" /> Connect Database
+                        <RefreshCw className={`w-4 h-4 ${syncingAll ? 'animate-spin' : ''}`} /> {syncingAll ? 'Syncing...' : 'Sync All'}
                     </button>
-                )}
+                    {!isAdding && (
+                        <button
+                            onClick={() => setIsAdding(true)}
+                            className="bg-[#d35400] text-white px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all flex items-center gap-2 shadow-xl shadow-[#d35400]/20"
+                        >
+                            <Plus className="w-4 h-4" /> Connect Database
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -173,19 +193,53 @@ export default function NotionSyncDashboard() {
                 <div className="lg:col-span-2">
                     {selectedConn ? (
                         <div className="bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-[2.5rem] overflow-hidden shadow-sm flex flex-col h-[700px]">
-                            <div className="p-8 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20 flex justify-between items-center">
-                                <div>
-                                    <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 dark:text-white flex items-center gap-3">
-                                        {selectedConn.name}
-                                        <span className="text-[10px] text-neutral-400 font-bold bg-neutral-100 dark:bg-white/5 px-2 py-1 rounded-lg">JSON VIEW</span>
-                                    </h3>
-                                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1 flex items-center gap-2">
-                                        <Link2 className="w-3 h-3" /> {selectedConn.databaseId}
-                                    </p>
+                            <div className="p-8 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-neutral-100 dark:bg-white/5 rounded-2xl text-[#d35400]">
+                                        <Database className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 dark:text-white flex items-center gap-3">
+                                            {selectedConn.name}
+                                        </h3>
+                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1 flex items-center gap-2">
+                                            <Link2 className="w-3 h-3" /> {selectedConn.databaseId}
+                                        </p>
+                                    </div>
                                 </div>
-                                <button className="p-3 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-2xl text-neutral-600 dark:text-white transition-all">
-                                    <Table className="w-5 h-5" />
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                                        <input
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="Search data..."
+                                            className="bg-neutral-100 dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-xs outline-none focus:border-[#d35400] transition-colors w-40 md:w-60"
+                                        />
+                                        {searchTerm && (
+                                            <button
+                                                onClick={() => setSearchTerm('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="flex bg-neutral-100 dark:bg-white/5 p-1 rounded-xl">
+                                        <button
+                                            onClick={() => setViewMode('table')}
+                                            className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-white/10 shadow-sm text-[#d35400]' : 'text-neutral-400 hover:text-neutral-600'}`}
+                                        >
+                                            <Table className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode('cards')}
+                                            className={`p-2 rounded-lg transition-all ${viewMode === 'cards' ? 'bg-white dark:bg-white/10 shadow-sm text-[#d35400]' : 'text-neutral-400 hover:text-neutral-600'}`}
+                                        >
+                                            <Plus className="w-4 h-4 rotate-45" /> {/* Using Plus rotated for card view icon feel */}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex-1 overflow-auto p-4 custom-scrollbar">
@@ -195,42 +249,102 @@ export default function NotionSyncDashboard() {
                                         <p className="text-sm italic">No data synced yet. Tap sync to import.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
-                                        {entries.map(entry => (
-                                            <div key={entry.id} className="p-6 bg-neutral-50 dark:bg-black/40 rounded-3xl border border-neutral-100 dark:border-white/5 overflow-hidden group">
-                                                <div className="flex justify-between items-start mb-4">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-[#d35400] bg-[#d35400]/5 px-2 py-1 rounded-lg">Page ID: {entry.notionId.substring(0, 8)}...</span>
-                                                    <span className="text-[9px] font-bold text-neutral-400 uppercase">Updated {new Date(entry.updatedAt).toLocaleDateString()}</span>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    {Object.entries(entry.data).map(([key, val]: [string, any]) => (
-                                                        <div key={key} className="space-y-1 relative group/item">
-                                                            <label className="text-[8px] font-black text-neutral-400 uppercase tracking-[0.2em]">{key}</label>
-                                                            <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
-                                                                <span className="truncate">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
-                                                                <button
-                                                                    onClick={async () => {
-                                                                        const newVal = prompt(`Edit ${key}:`, Array.isArray(val) ? val.join(',') : String(val));
-                                                                        if (newVal === null || newVal === String(val)) return;
+                                    <>
+                                        {viewMode === 'table' ? (
+                                            <div className="rounded-2xl border border-neutral-100 dark:border-white/5 overflow-hidden">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/5">
+                                                        <tr>
+                                                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">ID</th>
+                                                            {/* Extract headers from first entry data */}
+                                                            {Object.keys(entries[0].data || {}).map(key => (
+                                                                <th key={key} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">{key}</th>
+                                                            ))}
+                                                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">Action</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-neutral-100 dark:divide-white/5">
+                                                        {entries.filter(e =>
+                                                            JSON.stringify(e.data).toLowerCase().includes(searchTerm.toLowerCase())
+                                                        ).map(entry => (
+                                                            <tr key={entry.id} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors group">
+                                                                <td className="px-4 py-4 text-[10px] font-bold text-neutral-400 font-mono">{entry.notionId.substring(0, 8)}</td>
+                                                                {Object.entries(entry.data).map(([key, val]: [string, any]) => (
+                                                                    <td key={key} className="px-4 py-4 text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                                                                        <span className="line-clamp-1">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
+                                                                    </td>
+                                                                ))}
+                                                                <td className="px-4 py-4">
+                                                                    <button
+                                                                        onClick={async () => {
+                                                                            const firstKey = Object.keys(entry.data)[0];
+                                                                            const newVal = prompt(`Edit ${firstKey}:`, entry.data[firstKey]);
+                                                                            if (newVal === null || newVal === entry.data[firstKey]) return;
 
-                                                                        const updatedData = { [key]: newVal };
-                                                                        const res = await fetch('/api/notion/entries/update', {
-                                                                            method: 'PATCH',
-                                                                            body: JSON.stringify({ entryId: entry.id, data: updatedData })
-                                                                        });
-                                                                        if (res.ok) viewData(selectedConn);
-                                                                    }}
-                                                                    className="opacity-0 group-hover/item:opacity-100 p-1 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-all text-[#d35400]"
-                                                                >
-                                                                    <RefreshCw className="w-3 h-3" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                                            setSyncingEntryId(entry.id);
+                                                                            const res = await fetch('/api/notion/entries/update', {
+                                                                                method: 'PATCH',
+                                                                                body: JSON.stringify({ entryId: entry.id, data: { [firstKey]: newVal } })
+                                                                            });
+                                                                            setSyncingEntryId(null);
+                                                                            if (res.ok) viewData(selectedConn);
+                                                                        }}
+                                                                        disabled={syncingEntryId === entry.id}
+                                                                        className="p-2 hover:bg-[#d35400]/10 rounded-lg text-neutral-400 hover:text-[#d35400] transition-colors disabled:opacity-50"
+                                                                        title="Edit first property"
+                                                                    >
+                                                                        <RefreshCw className={`w-3.5 h-3.5 ${syncingEntryId === entry.id ? 'animate-spin' : ''}`} />
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                        ))}
-                                    </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                {entries.filter(e =>
+                                                    JSON.stringify(e.data).toLowerCase().includes(searchTerm.toLowerCase())
+                                                ).map(entry => (
+                                                    <div key={entry.id} className="p-6 bg-neutral-50 dark:bg-black/40 rounded-3xl border border-neutral-100 dark:border-white/5 overflow-hidden group">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <span className="text-[9px] font-black uppercase tracking-widest text-[#d35400] bg-[#d35400]/5 px-2 py-1 rounded-lg">Page ID: {entry.notionId.substring(0, 8)}...</span>
+                                                            <span className="text-[9px] font-bold text-neutral-400 uppercase">Updated {new Date(entry.updatedAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                            {Object.entries(entry.data).map(([key, val]: [string, any]) => (
+                                                                <div key={key} className="space-y-1 relative group/item">
+                                                                    <label className="text-[8px] font-black text-neutral-400 uppercase tracking-[0.2em]">{key}</label>
+                                                                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
+                                                                        <span className="truncate">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                const newVal = prompt(`Edit ${key}:`, Array.isArray(val) ? val.join(',') : String(val));
+                                                                                if (newVal === null || newVal === String(val)) return;
+
+                                                                                setSyncingEntryId(entry.id);
+                                                                                const updatedData = { [key]: newVal };
+                                                                                const res = await fetch('/api/notion/entries/update', {
+                                                                                    method: 'PATCH',
+                                                                                    body: JSON.stringify({ entryId: entry.id, data: updatedData })
+                                                                                });
+                                                                                setSyncingEntryId(null);
+                                                                                if (res.ok) viewData(selectedConn);
+                                                                            }}
+                                                                            disabled={syncingEntryId === entry.id}
+                                                                            className={`opacity-0 group-hover/item:opacity-100 p-1 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-all text-[#d35400] ${syncingEntryId === entry.id ? 'opacity-100' : ''}`}
+                                                                        >
+                                                                            <RefreshCw className={`w-3 h-3 ${syncingEntryId === entry.id ? 'animate-spin' : ''}`} />
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>

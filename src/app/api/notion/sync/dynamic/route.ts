@@ -14,8 +14,9 @@ export async function POST(request: Request) {
         }
 
         const results = await fetchDynamicDatabase(connection.databaseId, connection.token || undefined);
+        const currentNotionIds = (results as any[]).map(page => page.id);
 
-        // Batch upsert entries
+        // 1. Batch upsert entries
         for (const page of results as any[]) {
             const flatData = flattenProperties(page.properties);
             await prisma.notionEntry.upsert({
@@ -32,6 +33,14 @@ export async function POST(request: Request) {
             });
         }
 
+        // 2. Prune local entries that are no longer in Notion
+        await prisma.notionEntry.deleteMany({
+            where: {
+                connectionId: connection.id,
+                notionId: { notIn: currentNotionIds }
+            }
+        });
+
         await prisma.notionConnection.update({
             where: { id: connectionId },
             data: { lastSynced: new Date() }
@@ -39,7 +48,8 @@ export async function POST(request: Request) {
 
         return NextResponse.json({
             success: true,
-            count: results.length
+            count: results.length,
+            deleted: "unknown" // prisma.deleteMany doesn't return count in some versions/adapters
         });
     } catch (error: any) {
         console.error("Dynamic sync error:", error);

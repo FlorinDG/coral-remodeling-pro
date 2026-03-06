@@ -313,6 +313,9 @@ export async function updateDynamicPage(pageId: string, data: any, databaseId: s
         if (!propSchema) continue;
 
         switch (propSchema.type) {
+            case 'title':
+                properties[key] = { title: [{ text: { content: String(value) } }] };
+                break;
             case 'rich_text':
                 properties[key] = { rich_text: [{ text: { content: String(value) } }] };
                 break;
@@ -346,5 +349,65 @@ export async function updateDynamicPage(pageId: string, data: any, databaseId: s
     return await client.pages.update({
         page_id: pageId,
         properties
+    });
+}
+export async function createDynamicPage(data: any, databaseId: string, token?: string) {
+    const client = token ? new Client({ auth: token }) : notion;
+
+    // Fetch DB structure to know types for encoding
+    const db = await client.databases.retrieve({ database_id: databaseId }) as any;
+    const schema = db.properties;
+
+    const properties: any = {};
+
+    for (const [key, value] of Object.entries(data)) {
+        const propSchema = schema[key];
+        if (!propSchema) continue;
+
+        switch (propSchema.type) {
+            case 'title':
+                properties[key] = { title: [{ text: { content: String(value) } }] };
+                break;
+            case 'rich_text':
+                properties[key] = { rich_text: [{ text: { content: String(value) } }] };
+                break;
+            case 'number':
+                properties[key] = { number: Number(value) };
+                break;
+            case 'select':
+                properties[key] = { select: { name: String(value) } };
+                break;
+            case 'multi_select':
+                properties[key] = { multi_select: (value as string[]).map(v => ({ name: v })) };
+                break;
+            case 'checkbox':
+                properties[key] = { checkbox: Boolean(value) };
+                break;
+            case 'url':
+                properties[key] = { url: String(value) };
+                break;
+            case 'email':
+                properties[key] = { email: String(value) };
+                break;
+            case 'phone_number':
+                properties[key] = { phone_number: String(value) };
+                break;
+            case 'date':
+                properties[key] = { date: { start: value } };
+                break;
+        }
+    }
+
+    return await client.pages.create({
+        parent: { database_id: databaseId },
+        properties
+    });
+}
+
+export async function deleteDynamicPage(pageId: string, token?: string) {
+    const client = token ? new Client({ auth: token }) : notion;
+    return await client.pages.update({
+        page_id: pageId,
+        archived: true
     });
 }

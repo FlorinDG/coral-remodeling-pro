@@ -10,6 +10,7 @@ export async function POST() {
         for (const connection of connections) {
             try {
                 const results = await fetchDynamicDatabase(connection.databaseId, connection.token || undefined);
+                const currentNotionIds = (results as any[]).map(page => page.id);
 
                 for (const page of results as any[]) {
                     const flatData = flattenProperties(page.properties);
@@ -26,6 +27,14 @@ export async function POST() {
                         }
                     });
                 }
+
+                // Prune local entries that are no longer in Notion for THIS connection
+                await prisma.notionEntry.deleteMany({
+                    where: {
+                        connectionId: connection.id,
+                        notionId: { notIn: currentNotionIds }
+                    }
+                });
 
                 await prisma.notionConnection.update({
                     where: { id: connection.id },

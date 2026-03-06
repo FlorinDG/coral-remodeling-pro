@@ -22,9 +22,19 @@ export default function NotionSyncDashboard() {
     }, []);
 
     const fetchConnections = async () => {
-        const res = await fetch('/api/notion/connections');
-        const data = await res.json();
-        setConnections(data);
+        try {
+            const res = await fetch('/api/notion/connections');
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setConnections(data);
+            } else {
+                console.error("Connections response is not an array:", data);
+                setConnections([]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch connections:", error);
+            setConnections([]);
+        }
         setLoading(false);
     };
 
@@ -69,10 +79,70 @@ export default function NotionSyncDashboard() {
 
     const viewData = async (conn: any) => {
         setSelectedConn(conn);
-        // We'll fetch entries for this connection
-        const res = await fetch(`/api/notion/entries?connectionId=${conn.id}`);
-        const data = await res.json();
-        setEntries(data);
+        setEntries([]); // Reset entries while loading
+        try {
+            // We'll fetch entries for this connection
+            const res = await fetch(`/api/notion/entries?connectionId=${conn.id}`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setEntries(data);
+            } else {
+                console.error("Entries response is not an array:", data);
+                setEntries([]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch entries:", error);
+            setEntries([]);
+        }
+    };
+
+    const handleCreateRow = async () => {
+        if (!selectedConn || entries.length === 0) {
+            // If no entries, we can't easily guess schema, but we can try with a default 'Name'
+            const name = prompt("Enter value for primary property (Name/Title):");
+            if (!name) return;
+
+            setSyncingAll(true);
+            const res = await fetch('/api/notion/entries', {
+                method: 'POST',
+                body: JSON.stringify({
+                    connectionId: selectedConn.id,
+                    data: { 'Name': name } // Guessing 'Name' as default
+                })
+            });
+            setSyncingAll(false);
+            if (res.ok) viewData(selectedConn);
+            return;
+        }
+
+        const firstKey = Object.keys(entries[0].data)[0];
+        const val = prompt(`Enter value for ${firstKey}:`);
+        if (!val) return;
+
+        setSyncingAll(true);
+        const res = await fetch('/api/notion/entries', {
+            method: 'POST',
+            body: JSON.stringify({
+                connectionId: selectedConn.id,
+                data: { [firstKey]: val }
+            })
+        });
+        setSyncingAll(false);
+        if (res.ok) viewData(selectedConn);
+    };
+
+    const handleDeleteRow = async (entryId: string) => {
+        if (!confirm('Are you sure you want to delete this row? It will be archived in Notion.')) return;
+
+        setSyncingEntryId(entryId);
+        const res = await fetch('/api/notion/entries', {
+            method: 'DELETE',
+            body: JSON.stringify({ entryId })
+        });
+        setSyncingEntryId(null);
+        if (res.ok) {
+            setEntries(prev => prev.filter(e => e.id !== entryId));
+        }
     };
 
     return (
@@ -227,6 +297,14 @@ export default function NotionSyncDashboard() {
                                     </div>
                                     <div className="flex bg-neutral-100 dark:bg-white/5 p-1 rounded-xl">
                                         <button
+                                            onClick={handleCreateRow}
+                                            className="p-2 rounded-lg transition-all text-neutral-400 hover:text-[#d35400] hover:bg-white dark:hover:bg-white/10 shadow-sm mr-1"
+                                            title="Add New Row"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                        </button>
+                                        <div className="w-px h-4 bg-neutral-200 dark:bg-white/10 my-auto mx-1" />
+                                        <button
                                             onClick={() => setViewMode('table')}
                                             className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-white/10 shadow-sm text-[#d35400]' : 'text-neutral-400 hover:text-neutral-600'}`}
                                         >
@@ -260,7 +338,7 @@ export default function NotionSyncDashboard() {
                                                             {Object.keys(entries[0].data || {}).map(key => (
                                                                 <th key={key} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">{key}</th>
                                                             ))}
-                                                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">Action</th>
+                                                            <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">Actions</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-neutral-100 dark:divide-white/5">
@@ -275,26 +353,36 @@ export default function NotionSyncDashboard() {
                                                                     </td>
                                                                 ))}
                                                                 <td className="px-4 py-4">
-                                                                    <button
-                                                                        onClick={async () => {
-                                                                            const firstKey = Object.keys(entry.data)[0];
-                                                                            const newVal = prompt(`Edit ${firstKey}:`, entry.data[firstKey]);
-                                                                            if (newVal === null || newVal === entry.data[firstKey]) return;
+                                                                    <div className="flex gap-1">
+                                                                        <button
+                                                                            onClick={async () => {
+                                                                                const firstKey = Object.keys(entry.data)[0];
+                                                                                const newVal = prompt(`Edit ${firstKey}:`, entry.data[firstKey]);
+                                                                                if (newVal === null || newVal === entry.data[firstKey]) return;
 
-                                                                            setSyncingEntryId(entry.id);
-                                                                            const res = await fetch('/api/notion/entries/update', {
-                                                                                method: 'PATCH',
-                                                                                body: JSON.stringify({ entryId: entry.id, data: { [firstKey]: newVal } })
-                                                                            });
-                                                                            setSyncingEntryId(null);
-                                                                            if (res.ok) viewData(selectedConn);
-                                                                        }}
-                                                                        disabled={syncingEntryId === entry.id}
-                                                                        className="p-2 hover:bg-[#d35400]/10 rounded-lg text-neutral-400 hover:text-[#d35400] transition-colors disabled:opacity-50"
-                                                                        title="Edit first property"
-                                                                    >
-                                                                        <RefreshCw className={`w-3.5 h-3.5 ${syncingEntryId === entry.id ? 'animate-spin' : ''}`} />
-                                                                    </button>
+                                                                                setSyncingEntryId(entry.id);
+                                                                                const res = await fetch('/api/notion/entries/update', {
+                                                                                    method: 'PATCH',
+                                                                                    body: JSON.stringify({ entryId: entry.id, data: { [firstKey]: newVal } })
+                                                                                });
+                                                                                setSyncingEntryId(null);
+                                                                                if (res.ok) viewData(selectedConn);
+                                                                            }}
+                                                                            disabled={syncingEntryId === entry.id}
+                                                                            className="p-2 hover:bg-[#d35400]/10 rounded-lg text-neutral-400 hover:text-[#d35400] transition-colors disabled:opacity-50"
+                                                                            title="Edit first property"
+                                                                        >
+                                                                            <RefreshCw className={`w-3.5 h-3.5 ${syncingEntryId === entry.id ? 'animate-spin' : ''}`} />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteRow(entry.id)}
+                                                                            disabled={syncingEntryId === entry.id}
+                                                                            className="p-2 hover:bg-red-500/10 rounded-lg text-neutral-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                                                                            title="Delete row"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -314,31 +402,41 @@ export default function NotionSyncDashboard() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                             {Object.entries(entry.data).map(([key, val]: [string, any]) => (
                                                                 <div key={key} className="space-y-1 relative group/item">
-                                                                    <label className="text-[8px] font-black text-neutral-400 uppercase tracking-[0.2em]">{key}</label>
-                                                                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-2">
-                                                                        <span className="truncate">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
-                                                                        <button
-                                                                            onClick={async () => {
-                                                                                const newVal = prompt(`Edit ${key}:`, Array.isArray(val) ? val.join(',') : String(val));
-                                                                                if (newVal === null || newVal === String(val)) return;
+                                                                    <div className="flex justify-between items-end">
+                                                                        <label className="text-[8px] font-black text-neutral-400 uppercase tracking-[0.2em]">{key}</label>
+                                                                        <div className="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                                                            <button
+                                                                                onClick={async () => {
+                                                                                    const newVal = prompt(`Edit ${key}:`, Array.isArray(val) ? val.join(',') : String(val));
+                                                                                    if (newVal === null || newVal === String(val)) return;
 
-                                                                                setSyncingEntryId(entry.id);
-                                                                                const updatedData = { [key]: newVal };
-                                                                                const res = await fetch('/api/notion/entries/update', {
-                                                                                    method: 'PATCH',
-                                                                                    body: JSON.stringify({ entryId: entry.id, data: updatedData })
-                                                                                });
-                                                                                setSyncingEntryId(null);
-                                                                                if (res.ok) viewData(selectedConn);
-                                                                            }}
-                                                                            disabled={syncingEntryId === entry.id}
-                                                                            className={`opacity-0 group-hover/item:opacity-100 p-1 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-all text-[#d35400] ${syncingEntryId === entry.id ? 'opacity-100' : ''}`}
-                                                                        >
-                                                                            <RefreshCw className={`w-3 h-3 ${syncingEntryId === entry.id ? 'animate-spin' : ''}`} />
-                                                                        </button>
+                                                                                    setSyncingEntryId(entry.id);
+                                                                                    const res = await fetch('/api/notion/entries/update', {
+                                                                                        method: 'PATCH',
+                                                                                        body: JSON.stringify({ entryId: entry.id, data: { [key]: newVal } })
+                                                                                    });
+                                                                                    setSyncingEntryId(null);
+                                                                                    if (res.ok) viewData(selectedConn);
+                                                                                }}
+                                                                                className="p-1 hover:bg-[#d35400]/10 rounded text-[#d35400]"
+                                                                            >
+                                                                                <RefreshCw className="w-2.5 h-2.5" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                                                                        {Array.isArray(val) ? val.join(', ') : String(val)}
                                                                     </div>
                                                                 </div>
                                                             ))}
+                                                        </div>
+                                                        <div className="mt-6 flex justify-end">
+                                                            <button
+                                                                onClick={() => handleDeleteRow(entry.id)}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-xl text-[9px] font-black uppercase tracking-widest transition-colors opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <Trash2 className="w-3 h-3" /> Delete Row
+                                                            </button>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -357,6 +455,6 @@ export default function NotionSyncDashboard() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

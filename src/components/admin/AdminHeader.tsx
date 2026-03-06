@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 
 export default function AdminHeader() {
     const t = useTranslations('Admin.header');
+    const tNav = useTranslations('Navbar');
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass-morphism border-b border-white/5">
             <div className="container mx-auto px-8 h-20 flex items-center justify-between">
@@ -12,7 +13,7 @@ export default function AdminHeader() {
                         <Logo className="w-full h-full" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white uppercase">CORAL ENTERPRISES CLIENT PORTAL</h1>
+                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white uppercase">{tNav('topbarTitlePortal')}</h1>
                         <p className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-widest">{t('title')}</p>
                     </div>
                 </Link>

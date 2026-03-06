@@ -11,7 +11,8 @@ import {
     User,
     Menu,
     X,
-    Globe
+    Globe,
+    RefreshCw
 } from "lucide-react";
 import { useState } from "react";
 import Logo from "@/components/Logo";
@@ -28,6 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: Briefcase, label: "Services", href: "/admin/services" },
         { icon: ImageIcon, label: "Portfolio", href: "/admin/projects" },
         { icon: User, label: "Client Portals", href: "/admin/portals" },
+        { icon: RefreshCw, label: "Notion Sync", href: "/admin/notion-sync" },
     ];
 
     return (

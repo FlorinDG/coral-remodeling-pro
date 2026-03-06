@@ -1,14 +1,13 @@
 "use client";
 
 import { useTranslations } from 'next-intl';
-import { usePathname } from '@/i18n/routing';
+import { usePathname } from 'next/navigation';
 
 export default function Topbar() {
     const t = useTranslations('Navbar');
     const pathname = usePathname();
 
-    const isPortalOrAdmin = pathname.includes('/admin') || pathname.includes('/portal');
-    console.log('[DEBUG] Topbar:', { pathname, isPortalOrAdmin });
+    const isPortalOrAdmin = pathname?.includes('/admin') || pathname?.includes('/portal');
     const displayTitle = isPortalOrAdmin ? t('topbarTitlePortal') : t('topbarTitle');
 
     return (

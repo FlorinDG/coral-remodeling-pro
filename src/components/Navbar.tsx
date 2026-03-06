@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, usePathname } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
@@ -19,7 +20,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-    const isPortalOrAdmin = pathname.includes('/admin') || pathname.includes('/portal');
+    const isPortalOrAdmin = pathname?.includes('/admin') || pathname?.includes('/portal');
     const displayTitle = isPortalOrAdmin ? t('topbarTitlePortal') : t('topbarTitle');
 
     return (

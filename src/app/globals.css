@@ -80,6 +80,8 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-oxanium), sans-serif;
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 .glass-morphism {

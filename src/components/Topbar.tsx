@@ -1,15 +1,20 @@
 "use client";
 
 import { useTranslations } from 'next-intl';
+import { usePathname } from '@/i18n/routing';
 
 export default function Topbar() {
     const t = useTranslations('Navbar');
+    const pathname = usePathname();
+
+    const isPortalOrAdmin = pathname.includes('/admin') || pathname.includes('/portal');
+    const displayTitle = isPortalOrAdmin ? t('topbarTitlePortal') : t('topbarTitle');
 
     return (
         <div className="bg-black border-b border-white/5 h-10 flex items-center px-8 w-full max-w-[1920px] mx-auto overflow-hidden">
             <div className="flex-1 hidden md:flex">
                 <span className="text-xs font-bold tracking-[0.4em] uppercase text-white/30 whitespace-nowrap">
-                    CORAL ENTERPRISES CLIENT PORTAL
+                    {displayTitle}
                 </span>
             </div>
 

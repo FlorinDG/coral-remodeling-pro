@@ -1,6 +1,6 @@
 "use client";
 
-import { Link } from '@/i18n/routing';
+import { Link, usePathname } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import LanguageSwitcher from './LanguageSwitcher';
 import { ThemeToggle } from './ThemeToggle';
@@ -10,14 +10,17 @@ import { Phone, MessageCircle, Mail, ArrowLeft, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface NavbarProps {
-
     onBookClick: () => void;
     backLink?: { href: string; label: string };
 }
 
 export default function Navbar({ onBookClick, backLink }: NavbarProps) {
     const t = useTranslations('Navbar');
+    const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const isPortalOrAdmin = pathname.includes('/admin') || pathname.includes('/portal');
+    const displayTitle = isPortalOrAdmin ? t('topbarTitlePortal') : t('topbarTitle');
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50">
@@ -37,7 +40,7 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                                 <Logo className="w-full h-full group-hover:scale-105 transition-transform" />
                             </div>
                             <span className="font-black text-xs sm:text-sm md:text-base tracking-widest uppercase text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">
-                                CORAL ENTERPRISES CLIENT PORTAL
+                                {displayTitle}
                             </span>
                         </Link>
                     )}
@@ -85,7 +88,6 @@ export default function Navbar({ onBookClick, backLink }: NavbarProps) {
                         className="lg:hidden p-2 -mr-2 text-neutral-900 dark:text-white hover:text-[#d35400] dark:hover:text-[#d35400] transition-colors"
                         aria-label="Toggle Menu"
                     >
-                        <span className="font-bold tracking-tighter text-lg text-neutral-900 dark:text-white">CORAL ENTERPRISES CLIENT PORTAL</span>
                         {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 </div>

@@ -73,6 +73,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 import PromotionalBanner from "@/components/PromotionalBanner";
+import CookieConsent from "@/components/CookieConsent";
 
 export default async function RootLayout({
     children,
@@ -102,9 +103,39 @@ export default async function RootLayout({
                         disableTransitionOnChange
                     >
                         <PromotionalBanner locale={locale} />
+                        <CookieConsent />
                         {children}
                     </ThemeProvider>
                 </NextIntlClientProvider>
+                <Script id="google-consent" strategy="afterInteractive">
+                    {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            
+            // Set default consent to 'denied'
+            gtag('consent', 'default', {
+              'ad_storage': 'denied',
+              'ad_user_data': 'denied',
+              'ad_personalization': 'denied',
+              'analytics_storage': 'denied',
+              'wait_for_update': 500
+            });
+          `}
+                </Script>
+                <Script
+                    src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
+                    strategy="afterInteractive"
+                />
+                <Script id="google-analytics" strategy="afterInteractive">
+                    {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+                </Script>
                 <Script id="service-worker" strategy="afterInteractive">
                     {`
             if ('serviceWorker' in navigator) {

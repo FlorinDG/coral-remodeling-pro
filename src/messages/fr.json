@@ -303,5 +303,12 @@
         "office": "Bureau",
         "legal": "Mentions Légales",
         "fastInterventions": "Interventions Rapides"
+    },
+    "CookieConsent": {
+        "title": "Nous attachons de l'importance à votre vie privée",
+        "description": "Pour améliorer votre expérience, nous utilisons des cookies. Lisez notre {link}.",
+        "linkText": "Politique de Cookies",
+        "accept": "Accepter",
+        "decline": "Refuser"
     }
 }

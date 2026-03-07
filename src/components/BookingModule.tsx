@@ -31,7 +31,17 @@ export default function BookingModule() {
                     timeSlot: selectedSlot
                 }),
             });
-            if (res.ok) setSuccess(true);
+            if (res.ok) {
+                // Track Conversion
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'generate_lead', {
+                        'event_category': 'Booking',
+                        'event_label': bookingInfo.service,
+                        'value': 1
+                    });
+                }
+                setSuccess(true);
+            }
         } catch (err) {
             console.error(err);
         } finally {

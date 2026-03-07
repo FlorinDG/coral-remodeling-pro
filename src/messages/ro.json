@@ -303,5 +303,12 @@
         "office": "Birou",
         "legal": "Legal",
         "fastInterventions": "Intervenții Rapide"
+    },
+    "CookieConsent": {
+        "title": "Apreciem confidențialitatea dvs.",
+        "description": "Pentru a vă îmbunătăți experiența, folosim cookie-uri. Citiți {link} noastră.",
+        "linkText": "Politica de Cookie-uri",
+        "accept": "Acceptă",
+        "decline": "Refuză"
     }
 }

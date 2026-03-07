@@ -304,5 +304,12 @@
         "office": "Office",
         "legal": "Legal",
         "fastInterventions": "Fast Interventions"
+    },
+    "CookieConsent": {
+        "title": "We value your privacy",
+        "description": "To enhance your experience, we use cookies. Read our {link}.",
+        "linkText": "Cookie Policy",
+        "accept": "Accept",
+        "decline": "Decline"
     }
 }

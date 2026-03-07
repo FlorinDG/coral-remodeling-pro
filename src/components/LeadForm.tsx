@@ -61,6 +61,15 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
             });
 
             if (res.ok) {
+                // Track Conversion
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'generate_lead', {
+                        'event_category': 'Contact',
+                        'event_label': formData.service,
+                        'value': 1
+                    });
+                }
+
                 setSent(true);
                 setTimeout(() => {
                     setInquirySuccess(true);
@@ -97,6 +106,15 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                 }),
             });
             if (res.ok) {
+                // Track Conversion
+                if (typeof window !== 'undefined' && (window as any).gtag) {
+                    (window as any).gtag('event', 'generate_lead', {
+                        'event_category': 'Booking',
+                        'event_label': formData.service,
+                        'value': 1
+                    });
+                }
+
                 setSent(true);
                 setTimeout(() => {
                     setBookingSuccess(true);

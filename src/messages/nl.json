@@ -304,5 +304,12 @@
         "office": "Kantoor",
         "legal": "Juridisch",
         "fastInterventions": "Snelle Interventies"
+    },
+    "CookieConsent": {
+        "title": "Wij waarderen uw privacy",
+        "description": "Om uw ervaring te verbeteren, gebruiken we cookies. Lees ons {link}.",
+        "linkText": "Cookiebeleid",
+        "accept": "Accepteren",
+        "decline": "Weigeren"
     }
 }

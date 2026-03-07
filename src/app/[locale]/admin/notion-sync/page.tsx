@@ -11,11 +11,14 @@ export default function NotionSyncDashboard() {
     const [syncing, setSyncing] = useState<string | null>(null);
     const [syncingAll, setSyncingAll] = useState(false);
     const [newConn, setNewConn] = useState({ name: '', databaseId: '', token: '' });
+    const [isTesting, setIsTesting] = useState(false);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [selectedConn, setSelectedConn] = useState<any>(null);
     const [entries, setEntries] = useState<any[]>([]);
     const [syncingEntryId, setSyncingEntryId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
     const [searchTerm, setSearchTerm] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         fetchConnections();
@@ -38,43 +41,106 @@ export default function NotionSyncDashboard() {
         setLoading(false);
     };
 
+    const handleTest = async () => {
+        if (!newConn.databaseId) {
+            setTestResult({ success: false, message: "Database ID is required for testing." });
+            return;
+        }
+
+        setIsTesting(true);
+        setTestResult(null);
+        try {
+            const res = await fetch('/api/notion/connections/test', {
+                method: 'POST',
+                body: JSON.stringify({ databaseId: newConn.databaseId, token: newConn.token })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setTestResult({ success: true, message: `Connected! Found: "${data.title}"` });
+            } else {
+                setTestResult({ success: false, message: data.error || "Connection failed." });
+            }
+        } catch (err) {
+            setTestResult({ success: false, message: "Network error during test." });
+        } finally {
+            setIsTesting(false);
+        }
+    };
+
     const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
-        const res = await fetch('/api/notion/connections', {
-            method: 'POST',
-            body: JSON.stringify(newConn)
-        });
-        if (res.ok) {
-            fetchConnections();
-            setIsAdding(false);
-            setNewConn({ name: '', databaseId: '', token: '' });
+        setError(null);
+        try {
+            const res = await fetch('/api/notion/connections', {
+                method: 'POST',
+                body: JSON.stringify(newConn)
+            });
+            if (res.ok) {
+                fetchConnections();
+                setIsAdding(false);
+                setNewConn({ name: '', databaseId: '', token: '' });
+                setTestResult(null);
+            } else {
+                const data = await res.json();
+                setError(data.error || "Failed to add connection.");
+            }
+        } catch (err) {
+            setError("Failed to add connection due to network error.");
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to remove this connection? All synced data for this DB will be deleted.')) return;
-        const res = await fetch('/api/notion/connections', {
-            method: 'DELETE',
-            body: JSON.stringify({ id })
-        });
-        if (res.ok) fetchConnections();
+        setError(null);
+        try {
+            const res = await fetch('/api/notion/connections', {
+                method: 'DELETE',
+                body: JSON.stringify({ id })
+            });
+            if (res.ok) fetchConnections();
+            else setError("Failed to delete connection.");
+        } catch (err) {
+            setError("Network error deleting connection.");
+        }
     };
 
     const handleSync = async (id: string) => {
         setSyncing(id);
-        const res = await fetch('/api/notion/sync/dynamic', {
-            method: 'POST',
-            body: JSON.stringify({ connectionId: id })
-        });
-        setSyncing(null);
-        if (res.ok) fetchConnections();
+        setError(null);
+        try {
+            const res = await fetch('/api/notion/sync/dynamic', {
+                method: 'POST',
+                body: JSON.stringify({ connectionId: id })
+            });
+            if (res.ok) {
+                fetchConnections();
+            } else {
+                const data = await res.json();
+                setError(`Sync failed: ${data.error || "Unknown error"}`);
+            }
+        } catch (err) {
+            setError("Sync failed due to network error.");
+        } finally {
+            setSyncing(null);
+        }
     };
 
     const handleSyncAll = async () => {
         setSyncingAll(true);
-        const res = await fetch('/api/notion/sync/all', { method: 'POST' });
-        setSyncingAll(null as any);
-        if (res.ok) fetchConnections();
+        setError(null);
+        try {
+            const res = await fetch('/api/notion/sync/all', { method: 'POST' });
+            if (res.ok) {
+                fetchConnections();
+            } else {
+                const data = await res.json();
+                setError(`Global sync failed: ${data.error || "Unknown error"}`);
+            }
+        } catch (err) {
+            setError("Global sync failed due to network error.");
+        } finally {
+            setSyncingAll(false);
+        }
     };
 
     const viewData = async (conn: any) => {
@@ -176,8 +242,13 @@ export default function NotionSyncDashboard() {
                 <div className="lg:col-span-1 space-y-4">
                     {isAdding && (
                         <div className="glass-morphism p-6 rounded-[2.5rem] border border-[#d35400]/20 animate-in zoom-in-95 duration-200">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-[#d35400] mb-6">New Connection</h3>
+                            <h3 className="text-xs font-black uppercase tracking-widest text-[#d35400] mb-6">Connect Notion Database</h3>
                             <form onSubmit={handleAdd} className="space-y-4">
+                                {error && (
+                                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-[10px] font-bold uppercase tracking-widest">
+                                        {error}
+                                    </div>
+                                )}
                                 <div className="space-y-1">
                                     <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Friendly Name</label>
                                     <input
@@ -189,29 +260,52 @@ export default function NotionSyncDashboard() {
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Database ID</label>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Notion Database ID</label>
                                     <input
                                         required
                                         value={newConn.databaseId}
                                         onChange={e => setNewConn({ ...newConn, databaseId: e.target.value })}
-                                        placeholder="Notion DB ID..."
+                                        placeholder="32-char ID from Notion URL..."
                                         className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
                                     />
+                                    <p className="text-[9px] text-neutral-500 px-1">Found in the URL: notion.so/<strong>DATABASE_ID</strong>?v=...</p>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Custom Token (Optional)</label>
+                                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Integration Secret (Token)</label>
                                     <input
                                         type="password"
                                         value={newConn.token}
                                         onChange={e => setNewConn({ ...newConn, token: e.target.value })}
-                                        placeholder="Keep empty to use global..."
+                                        placeholder="secret_..."
                                         className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
                                     />
+                                    <p className="text-[9px] text-neutral-500 px-1">From <a href="https://www.notion.so/my-integrations" target="_blank" className="text-[#d35400] underline">Notion Integrations</a>. ⚠️ Must share DB with this integration.</p>
                                 </div>
+
+                                {testResult && (
+                                    <div className={`p-3 rounded-xl text-[10px] font-bold uppercase tracking-widest border ${testResult.success ? 'bg-green-500/10 border-green-500/20 text-green-600' : 'bg-red-500/10 border-red-500/20 text-red-500'}`}>
+                                        {testResult.message}
+                                    </div>
+                                )}
+
                                 <div className="flex gap-2 pt-2">
-                                    <button type="submit" className="flex-1 bg-[#d35400] text-white py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-[#d35400]/20">Save Link</button>
-                                    <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-3 bg-neutral-100 dark:bg-white/5 text-neutral-500 rounded-xl font-bold uppercase text-[10px] tracking-widest">Cancel</button>
+                                    <button
+                                        type="button"
+                                        onClick={handleTest}
+                                        disabled={isTesting || !newConn.databaseId}
+                                        className="flex-1 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest hover:bg-neutral-200 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <RefreshCw className={`w-3 h-3 ${isTesting ? 'animate-spin' : ''}`} /> {isTesting ? 'Testing...' : 'Test Connection'}
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isTesting}
+                                        className="flex-1 bg-[#d35400] text-white py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest shadow-lg shadow-[#d35400]/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+                                    >
+                                        Save & Sync
+                                    </button>
                                 </div>
+                                <button type="button" onClick={() => setIsAdding(false)} className="w-full py-2 text-neutral-400 font-bold uppercase text-[9px] tracking-[0.2em] hover:text-neutral-600 transition-colors mt-2">Dismiss</button>
                             </form>
                         </div>
                     )}

@@ -24,6 +24,19 @@ export async function POST(request: Request) {
     }
 }
 
+export async function PATCH(request: Request) {
+    try {
+        const { id, hiddenProperties, name } = await request.json();
+        const connection = await (prisma as any).notionConnection.update({
+            where: { id },
+            data: { hiddenProperties, name }
+        });
+        return NextResponse.json(connection);
+    } catch (error) {
+        return NextResponse.json({ error: "Failed to update connection" }, { status: 500 });
+    }
+}
+
 export async function DELETE(request: Request) {
     try {
         const { id } = await request.json();

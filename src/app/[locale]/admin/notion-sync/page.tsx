@@ -19,6 +19,9 @@ export default function NotionSyncDashboard() {
     const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [tempHiddenProps, setTempHiddenProps] = useState<string[]>([]);
+    const [updating, setUpdating] = useState(false);
 
     useEffect(() => {
         fetchConnections();
@@ -30,6 +33,11 @@ export default function NotionSyncDashboard() {
             const data = await res.json();
             if (Array.isArray(data)) {
                 setConnections(data);
+                // Update selectedConn if it was already open
+                if (selectedConn) {
+                    const fresh = data.find(c => c.id === selectedConn.id);
+                    if (fresh) setSelectedConn(fresh);
+                }
             } else {
                 console.error("Connections response is not an array:", data);
                 setConnections([]);
@@ -39,6 +47,25 @@ export default function NotionSyncDashboard() {
             setConnections([]);
         }
         setLoading(false);
+    };
+
+    const handleUpdateConnection = async (id: string, updates: any) => {
+        setUpdating(true);
+        try {
+            const res = await fetch('/api/notion/connections', {
+                method: 'PATCH',
+                body: JSON.stringify({ id, ...updates })
+            });
+            if (res.ok) {
+                await fetchConnections();
+            } else {
+                setError("Failed to update connection settings.");
+            }
+        } catch (err) {
+            setError("Network error updating connection.");
+        } finally {
+            setUpdating(false);
+        }
     };
 
     const handleTest = async () => {
@@ -97,8 +124,12 @@ export default function NotionSyncDashboard() {
                 method: 'DELETE',
                 body: JSON.stringify({ id })
             });
-            if (res.ok) fetchConnections();
-            else setError("Failed to delete connection.");
+            if (res.ok) {
+                fetchConnections();
+                if (selectedConn?.id === id) setSelectedConn(null);
+            } else {
+                setError("Failed to delete connection.");
+            }
         } catch (err) {
             setError("Network error deleting connection.");
         }
@@ -114,6 +145,7 @@ export default function NotionSyncDashboard() {
             });
             if (res.ok) {
                 fetchConnections();
+                if (selectedConn?.id === id) viewData(selectedConn);
             } else {
                 const data = await res.json();
                 setError(`Sync failed: ${data.error || "Unknown error"}`);
@@ -195,6 +227,7 @@ export default function NotionSyncDashboard() {
         });
         setSyncingAll(false);
         if (res.ok) viewData(selectedConn);
+        return;
     };
 
     const handleDeleteRow = async (entryId: string) => {
@@ -323,6 +356,17 @@ export default function NotionSyncDashboard() {
                                     </div>
                                     <div className="flex gap-1">
                                         <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTempHiddenProps(conn.hiddenProperties || []);
+                                                setSelectedConn(conn);
+                                                setIsSettingsOpen(true);
+                                            }}
+                                            className="p-2 hover:bg-[#d35400]/10 rounded-xl text-neutral-400 hover:text-[#d35400] transition-colors"
+                                        >
+                                            <Key className="w-4 h-4" />
+                                        </button>
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); handleSync(conn.id); }}
                                             disabled={syncing === conn.id}
                                             className="p-2 hover:bg-[#d35400]/10 rounded-xl text-neutral-400 hover:text-[#d35400] transition-colors"
@@ -342,6 +386,11 @@ export default function NotionSyncDashboard() {
                                     <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest bg-neutral-100 dark:bg-black/40 px-2 py-1 rounded-lg flex items-center gap-1.2">
                                         <Table className="w-3 h-3" /> {conn._count.entries} Rows
                                     </span>
+                                    {conn.hiddenProperties?.length > 0 && (
+                                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest bg-[#d35400]/10 text-[#d35400] px-2 py-1 rounded-lg">
+                                            {conn.hiddenProperties.length} Hidden
+                                        </span>
+                                    )}
                                     {conn.lastSynced && (
                                         <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
                                             Last sync: {new Date(conn.lastSynced).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -428,8 +477,8 @@ export default function NotionSyncDashboard() {
                                                     <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/5">
                                                         <tr>
                                                             <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">ID</th>
-                                                            {/* Extract headers from first entry data */}
-                                                            {Object.keys(entries[0].data || {}).map(key => (
+                                                            {/* Extract headers from first entry data and filter hidden */}
+                                                            {Object.keys(entries[0].data || {}).filter(k => !selectedConn.hiddenProperties?.includes(k)).map(key => (
                                                                 <th key={key} className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">{key}</th>
                                                             ))}
                                                             <th className="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400">Actions</th>
@@ -441,7 +490,7 @@ export default function NotionSyncDashboard() {
                                                         ).map(entry => (
                                                             <tr key={entry.id} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors group">
                                                                 <td className="px-4 py-4 text-[10px] font-bold text-neutral-400 font-mono">{entry.notionId.substring(0, 8)}</td>
-                                                                {Object.entries(entry.data).map(([key, val]: [string, any]) => (
+                                                                {Object.entries(entry.data).filter(([k]) => !selectedConn.hiddenProperties?.includes(k)).map(([key, val]: [string, any]) => (
                                                                     <td key={key} className="px-4 py-4 text-xs font-medium text-neutral-700 dark:text-neutral-300">
                                                                         <span className="line-clamp-1">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
                                                                     </td>
@@ -494,7 +543,7 @@ export default function NotionSyncDashboard() {
                                                             <span className="text-[9px] font-bold text-neutral-400 uppercase">Updated {new Date(entry.updatedAt).toLocaleDateString()}</span>
                                                         </div>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                            {Object.entries(entry.data).map(([key, val]: [string, any]) => (
+                                                            {Object.entries(entry.data).filter(([k]) => !selectedConn.hiddenProperties?.includes(k)).map(([key, val]: [string, any]) => (
                                                                 <div key={key} className="space-y-1 relative group/item">
                                                                     <div className="flex justify-between items-end">
                                                                         <label className="text-[8px] font-black text-neutral-400 uppercase tracking-[0.2em]">{key}</label>
@@ -549,6 +598,92 @@ export default function NotionSyncDashboard() {
                     )}
                 </div>
             </div>
-        </div >
+
+            {/* Settings Modal */}
+            {isSettingsOpen && selectedConn && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-neutral-900 w-full max-w-lg rounded-[3rem] overflow-hidden shadow-2xl border border-neutral-200 dark:border-white/10 animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-black/20 flex justify-between items-center">
+                            <div>
+                                <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 dark:text-white">Connection Settings</h3>
+                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mt-1 italic">{selectedConn.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsSettingsOpen(false)}
+                                className="p-2 hover:bg-neutral-100 dark:hover:bg-white/10 rounded-xl transition-colors"
+                            >
+                                <X className="w-5 h-5 text-neutral-400" />
+                            </button>
+                        </div>
+
+                        <div className="p-8 space-y-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                            {/* Rename */}
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest px-1">Friendly Name</label>
+                                <input
+                                    value={selectedConn.name}
+                                    onChange={(e) => setSelectedConn({ ...selectedConn, name: e.target.value })}
+                                    className="w-full bg-neutral-50 dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:border-[#d35400] outline-none transition-colors"
+                                />
+                            </div>
+
+                            {/* Property Visibility */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-neutral-400 uppercase tracking-widest px-1">Property Visibility</label>
+                                    <p className="text-[9px] text-neutral-500 px-1 mt-1">Deselect properties to hide them from the CMS view. They stay safe in Notion.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2">
+                                    {Object.keys(entries[0]?.data || {}).map(prop => {
+                                        const isHidden = tempHiddenProps.includes(prop);
+                                        return (
+                                            <button
+                                                key={prop}
+                                                onClick={() => {
+                                                    if (isHidden) setTempHiddenProps(prev => prev.filter(p => p !== prop));
+                                                    else setTempHiddenProps(prev => [...prev, prop]);
+                                                }}
+                                                className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${!isHidden ? 'bg-[#d35400]/5 border-[#d35400]/20 text-neutral-900 dark:text-white' : 'bg-neutral-50 dark:bg-black/20 border-neutral-100 dark:border-white/5 text-neutral-400'}`}
+                                            >
+                                                <span className="text-xs font-bold uppercase tracking-tight">{prop}</span>
+                                                <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${!isHidden ? 'bg-[#d35400] border-[#d35400]' : 'border-neutral-300 dark:border-neutral-700'}`}>
+                                                    {!isHidden && <Plus className="w-3.5 h-3.5 text-white" />}
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                    {entries.length === 0 && (
+                                        <p className="text-[10px] text-neutral-400 italic text-center py-4">No properties discovered yet. Sync first.</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-8 bg-neutral-50/50 dark:bg-black/20 border-t border-neutral-100 dark:border-white/5 flex gap-3">
+                            <button
+                                onClick={() => setIsSettingsOpen(false)}
+                                className="flex-1 px-6 py-4 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-500 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-neutral-100 dark:hover:bg-white/10 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    await handleUpdateConnection(selectedConn.id, {
+                                        name: selectedConn.name,
+                                        hiddenProperties: tempHiddenProps
+                                    });
+                                    setIsSettingsOpen(false);
+                                }}
+                                disabled={updating}
+                                className="flex-[2] bg-[#d35400] text-white px-6 py-4 rounded-3xl font-black uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all shadow-xl shadow-[#d35400]/20 disabled:opacity-50"
+                            >
+                                {updating ? 'Saving...' : 'Save Settings'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 }

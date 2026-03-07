@@ -234,14 +234,15 @@ model PromotionalBanner {
 }
 
 model NotionConnection {
-  id          String        @id @default(cuid())
-  name        String
-  databaseId  String
-  token       String?       // Optional override for global NOTION_TOKEN
-  lastSynced  DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  entries     NotionEntry[]
+  id               String        @id @default(cuid())
+  name             String
+  databaseId       String
+  token            String?       // Optional override for global NOTION_TOKEN
+  hiddenProperties String[]      @default([])
+  lastSynced       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  entries          NotionEntry[]
 }
 
 model NotionEntry {

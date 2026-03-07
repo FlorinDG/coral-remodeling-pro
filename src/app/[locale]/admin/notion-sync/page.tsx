@@ -276,10 +276,10 @@ export default function NotionSyncDashboard() {
                                         type="password"
                                         value={newConn.token}
                                         onChange={e => setNewConn({ ...newConn, token: e.target.value })}
-                                        placeholder="secret_..."
+                                        placeholder="secret_... or ntn_..."
                                         className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
                                     />
-                                    <p className="text-[9px] text-neutral-500 px-1">From <a href="https://www.notion.so/my-integrations" target="_blank" className="text-[#d35400] underline">Notion Integrations</a>. ⚠️ Must share DB with this integration.</p>
+                                    <p className="text-[9px] text-neutral-500 px-1">From <a href="https://www.notion.so/my-integrations" target="_blank" className="text-[#d35400] underline">Notion Integrations</a>. ⚠️ Must share DB with this connection.</p>
                                 </div>
 
                                 {testResult && (

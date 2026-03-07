@@ -91,7 +91,7 @@ export default async function RootLayout({
                 <meta name="theme-color" content="#000000" />
             </head>
             <body
-                className={`${oxanium.variable} antialiased selection:bg-white/20`}
+                className={`${oxanium.variable} antialiased selection:bg-[#d35400]/30`}
                 suppressHydrationWarning
             >
                 <NextIntlClientProvider messages={messages}>

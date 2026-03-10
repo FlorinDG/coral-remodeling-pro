@@ -17,7 +17,14 @@ import {
     Database,
     Calendar,
     ChevronDown,
-    ChevronUp
+    ChevronUp,
+    Users,
+    UsersRound,
+    BriefcaseBusiness,
+    FileSignature,
+    Landmark,
+    Truck,
+    CircleDollarSign
 } from "lucide-react";
 import { useState } from "react";
 import Logo from "@/components/Logo";
@@ -46,10 +53,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 { label: "Portfolio", href: "/admin/projects" },
             ]
         },
+        { icon: UsersRound, label: "CRM", href: "/admin/crm" },
+        { icon: Users, label: "Clients", href: "/admin/clients" },
+        { icon: FileSignature, label: "Quotations", href: "/admin/quotations" },
+        { icon: BriefcaseBusiness, label: "Projects", href: "/admin/projects-management" },
+        {
+            icon: Landmark,
+            label: "Financials",
+            children: [
+                {
+                    label: "Income",
+                    isSubCategory: true,
+                    children: [
+                        { label: "Invoices", href: "/admin/financials/income/invoices" },
+                        { label: "Credit Notes", href: "/admin/financials/income/credit-notes" }
+                    ]
+                },
+                {
+                    label: "Expenses",
+                    isSubCategory: true,
+                    children: [
+                        { label: "Invoices", href: "/admin/financials/expenses/invoices" },
+                        { label: "Credit Notes", href: "/admin/financials/expenses/credit-notes" }
+                    ]
+                }
+            ]
+        },
+        { icon: CircleDollarSign, label: "HR", href: "/admin/hr" },
+        { icon: Truck, label: "Suppliers", href: "/admin/suppliers" },
         { icon: User, label: "Client Portals", href: "/admin/portals" },
         { icon: RefreshCw, label: "Notion Sync", href: "/admin/notion-sync" },
-        { icon: Table, label: "Spreadsheet", href: "/admin/spreadsheet" },
-        { icon: Database, label: "Database", href: "/admin/database" },
         { icon: Calendar, label: "Calendar", href: "/admin/calendar" },
     ];
 
@@ -87,14 +120,34 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     {/* Nested Items */}
                                     {isSidebarOpen && expandedMenus.includes(item.label) && (
                                         <div className="mt-1 ml-4 pl-3 border-l border-neutral-200 dark:border-white/10 space-y-1">
-                                            {item.children.map(child => (
-                                                <Link
-                                                    key={child.label}
-                                                    href={child.href as string}
-                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-[#d35400] dark:hover:text-[#d35400]"
-                                                >
-                                                    <span className="font-medium text-xs">{child.label}</span>
-                                                </Link>
+                                            {item.children.map((child: any) => (
+                                                <div key={child.label}>
+                                                    {child.isSubCategory ? (
+                                                        <>
+                                                            <div className="px-3 py-1.5 mt-2 mb-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                                                                {child.label}
+                                                            </div>
+                                                            <div className="space-y-1 pl-2">
+                                                                {child.children.map((subChild: any) => (
+                                                                    <Link
+                                                                        key={subChild.label}
+                                                                        href={subChild.href as string}
+                                                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-[#d35400] dark:hover:text-[#d35400]"
+                                                                    >
+                                                                        <span className="font-medium text-xs">{subChild.label}</span>
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    ) : (
+                                                        <Link
+                                                            href={child.href as string}
+                                                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-[#d35400] dark:hover:text-[#d35400]"
+                                                        >
+                                                            <span className="font-medium text-xs">{child.label}</span>
+                                                        </Link>
+                                                    )}
+                                                </div>
                                             ))}
                                         </div>
                                     )}

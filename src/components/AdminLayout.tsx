@@ -56,7 +56,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: UsersRound, label: "CRM", href: "/admin/crm" },
         { icon: Users, label: "Clients", href: "/admin/clients" },
         { icon: FileSignature, label: "Quotations", href: "/admin/quotations" },
-        { icon: BriefcaseBusiness, label: "Projects", href: "/admin/projects-management" },
+        {
+            icon: BriefcaseBusiness,
+            label: "Projects",
+            children: [
+                {
+                    label: "Planning",
+                    isSubCategory: true,
+                    children: [
+                        { label: "Time Tracker", href: "/admin/time-tracker" },
+                        { label: "Project Planning", href: "/admin/projects-management/planning" }
+                    ]
+                },
+                { label: "Tasks", href: "/admin/projects-management/tasks" }
+            ]
+        },
         {
             icon: Landmark,
             label: "Financials",

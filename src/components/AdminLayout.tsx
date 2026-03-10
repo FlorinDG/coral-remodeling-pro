@@ -14,7 +14,8 @@ import {
     Globe,
     RefreshCw,
     Table,
-    Database
+    Database,
+    Calendar
 } from "lucide-react";
 import { useState } from "react";
 import Logo from "@/components/Logo";
@@ -34,6 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         { icon: RefreshCw, label: "Notion Sync", href: "/admin/notion-sync" },
         { icon: Table, label: "Spreadsheet", href: "/admin/spreadsheet" },
         { icon: Database, label: "Database", href: "/admin/database" },
+        { icon: Calendar, label: "Calendar", href: "/admin/calendar" },
     ];
 
     return (

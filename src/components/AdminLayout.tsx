@@ -15,7 +15,9 @@ import {
     RefreshCw,
     Table,
     Database,
-    Calendar
+    Calendar,
+    ChevronDown,
+    ChevronUp
 } from "lucide-react";
 import { useState } from "react";
 import Logo from "@/components/Logo";
@@ -25,12 +27,25 @@ import QuickSearch from "@/components/admin/QuickSearch";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>(['Front End']);
+
+    const toggleMenu = (label: string) => {
+        setExpandedMenus(prev =>
+            prev.includes(label) ? prev.filter(item => item !== label) : [...prev, label]
+        );
+    };
 
     const menuItems = [
         { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
-        { icon: FileText, label: "Site Content", href: "/admin/content" },
-        { icon: Briefcase, label: "Services", href: "/admin/services" },
-        { icon: ImageIcon, label: "Portfolio", href: "/admin/projects" },
+        {
+            icon: Globe,
+            label: "Front End",
+            children: [
+                { label: "Pages / Content", href: "/admin/content" },
+                { label: "Services", href: "/admin/services" },
+                { label: "Portfolio", href: "/admin/projects" },
+            ]
+        },
         { icon: User, label: "Client Portals", href: "/admin/portals" },
         { icon: RefreshCw, label: "Notion Sync", href: "/admin/notion-sync" },
         { icon: Table, label: "Spreadsheet", href: "/admin/spreadsheet" },
@@ -49,16 +64,51 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {isSidebarOpen && <span className="font-bold tracking-tight text-sm">Admin CMS</span>}
                 </div>
 
-                <nav className="flex-1 px-3 py-4 space-y-1">
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                     {menuItems.map((item) => (
-                        <Link
-                            key={item.label}
-                            href={item.href as string}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
-                        >
-                            <item.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
-                            {isSidebarOpen && <span className="font-bold text-xs">{item.label}</span>}
-                        </Link>
+                        <div key={item.label}>
+                            {item.children ? (
+                                <>
+                                    <button
+                                        onClick={() => toggleMenu(item.label)}
+                                        className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <item.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
+                                            {isSidebarOpen && <span className="font-bold text-xs">{item.label}</span>}
+                                        </div>
+                                        {isSidebarOpen && (
+                                            expandedMenus.includes(item.label)
+                                                ? <ChevronUp className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#d35400]" />
+                                                : <ChevronDown className="w-3.5 h-3.5 text-neutral-400 group-hover:text-[#d35400]" />
+                                        )}
+                                    </button>
+
+                                    {/* Nested Items */}
+                                    {isSidebarOpen && expandedMenus.includes(item.label) && (
+                                        <div className="mt-1 ml-4 pl-3 border-l border-neutral-200 dark:border-white/10 space-y-1">
+                                            {item.children.map(child => (
+                                                <Link
+                                                    key={child.label}
+                                                    href={child.href as string}
+                                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-600 dark:text-neutral-400 hover:text-[#d35400] dark:hover:text-[#d35400]"
+                                                >
+                                                    <span className="font-medium text-xs">{child.label}</span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Link
+                                    href={item.href as string}
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
+                                >
+                                    <item.icon className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
+                                    {isSidebarOpen && <span className="font-bold text-xs">{item.label}</span>}
+                                </Link>
+                            )}
+                        </div>
                     ))}
                 </nav>
 

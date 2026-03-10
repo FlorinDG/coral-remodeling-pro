@@ -1,0 +1,238 @@
+
+/* TimeTracker Scoped Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap");
+
+.time-tracker-theme {
+
+    /* Baby Powder - Light background */
+    --background: 135 17% 95%;
+    --foreground: 70 11% 11%;
+
+    --card: 135 17% 98%;
+    --card-foreground: 70 11% 11%;
+
+    --popover: 135 17% 92%;
+    --popover-foreground: 70 11% 11%;
+
+    /* Tawny - Primary */
+    --primary: 26 100% 42%;
+    --primary-foreground: 135 17% 98%;
+
+    /* Persian Green - Secondary */
+    --secondary: 171 50% 40%;
+    --secondary-foreground: 135 17% 98%;
+
+    --muted: 135 10% 80%;
+    --muted-foreground: 70 11% 35%;
+
+    /* Persian Green - Accent */
+    --accent: 171 50% 92%;
+    --accent-foreground: 171 50% 30%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 85% 97%;
+
+    --border: 135 10% 85%;
+    --input: 135 10% 85%;
+    --ring: 26 100% 42%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --clock-in: 171 50% 40%;
+    --clock-out: 0 84% 60%;
+    --timer-bg: 26 100% 42%;
+    --timer-glow: 26 100% 42%;
+    --card-hover: 135 17% 90%;
+    --link-card: 135 17% 96%;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 3px 0px hsl(70 11% 11% / 0.08), 0 1px 2px -1px hsl(70 11% 11% / 0.08);
+    --shadow-md: 0 1px 3px 0px hsl(70 11% 11% / 0.1), 0 2px 4px -1px hsl(70 11% 11% / 0.08);
+    --shadow-lg: 0 1px 3px 0px hsl(70 11% 11% / 0.1), 0 4px 6px -1px hsl(70 11% 11% / 0.1);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.3);
+
+    --sidebar-background: 135 17% 98%;
+    --sidebar-foreground: 70 11% 11%;
+    --sidebar-primary: 26 100% 42%;
+    --sidebar-primary-foreground: 135 17% 98%;
+    --sidebar-accent: 171 50% 40%;
+    --sidebar-accent-foreground: 135 17% 98%;
+    --sidebar-border: 135 10% 85%;
+    --sidebar-ring: 26 100% 42%;
+    --chart-1: 26 100% 42%;
+    --chart-2: 171 50% 40%;
+    --chart-3: 26 100% 55%;
+    --chart-4: 171 50% 55%;
+    --chart-5: 70 11% 45%;
+    --sidebar: 135 17% 98%;
+    --font-sans: 'Roboto', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    --font-serif: 'Libre Caslon Text', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+    --font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --shadow-2xs: 0 1px 3px 0px hsl(70 11% 11% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(70 11% 11% / 0.05);
+    --shadow: 0 1px 3px 0px hsl(70 11% 11% / 0.1), 0 1px 2px -1px hsl(70 11% 11% / 0.1);
+    --shadow-xl: 0 1px 3px 0px hsl(70 11% 11% / 0.1), 0 8px 10px -1px hsl(70 11% 11% / 0.1);
+    --shadow-2xl: 0 1px 3px 0px hsl(70 11% 11% / 0.25);
+    --tracking-normal: 0em;
+    --spacing: 0.25rem;
+  
+}
+
+.dark .time-tracker-theme, .time-tracker-theme.dark {
+
+    /* Eerie Black - Dark background */
+    --background: 70 11% 11%;
+    --foreground: 135 17% 95%;
+
+    --card: 70 11% 15%;
+    --card-foreground: 135 17% 95%;
+
+    --popover: 70 11% 18%;
+    --popover-foreground: 135 17% 95%;
+
+    /* Tawny - Primary */
+    --primary: 26 100% 50%;
+    --primary-foreground: 70 11% 11%;
+
+    /* Persian Green - Secondary */
+    --secondary: 171 50% 45%;
+    --secondary-foreground: 135 17% 98%;
+
+    --muted: 70 11% 30%;
+    --muted-foreground: 135 17% 75%;
+
+    /* Persian Green - Accent */
+    --accent: 171 50% 20%;
+    --accent-foreground: 171 50% 70%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 85% 97%;
+
+    --border: 70 11% 25%;
+    --input: 70 11% 25%;
+    --ring: 26 100% 50%;
+
+    --clock-in: 171 50% 45%;
+    --clock-out: 0 72% 51%;
+    --timer-bg: 26 100% 50%;
+    --timer-glow: 26 100% 50%;
+    --card-hover: 70 11% 18%;
+    --link-card: 70 11% 14%;
+
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 4px 6px -1px hsl(0 0% 0% / 0.2);
+    --shadow-glow: 0 0 40px hsl(var(--primary) / 0.4);
+
+    --sidebar-background: 70 11% 13%;
+    --sidebar-foreground: 135 17% 95%;
+    --sidebar-primary: 26 100% 50%;
+    --sidebar-primary-foreground: 70 11% 11%;
+    --sidebar-accent: 171 50% 45%;
+    --sidebar-accent-foreground: 135 17% 98%;
+    --sidebar-border: 70 11% 25%;
+    --sidebar-ring: 26 100% 50%;
+    --chart-1: 26 100% 55%;
+    --chart-2: 171 50% 50%;
+    --chart-3: 26 100% 65%;
+    --chart-4: 171 50% 60%;
+    --chart-5: 70 11% 55%;
+    --sidebar: 70 11% 15%;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.2), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25), 0 8px 10px -1px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.4);
+  
+}
+
+
+.time-tracker-theme {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
+}
+.time-tracker-theme .font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.time-tracker-theme .glass-card {
+  background-color: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+.time-tracker-theme .timer-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.time-tracker-theme .link-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  transition: all 0.3s;
+}
+.time-tracker-theme .link-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+  border-color: hsl(var(--primary) / 0.2);
+  transform: translateY(-0.25rem);
+}
+
+.time-tracker-theme .btn-clock-in {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+.time-tracker-theme .btn-clock-in:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+
+.time-tracker-theme .btn-clock-out {
+  background-color: hsl(var(--clock-out));
+  color: white;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+}
+.time-tracker-theme .btn-clock-out:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+}
+
+.time-tracker-theme .stat-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+.time-tracker-theme .stat-card:hover { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+
+.time-tracker-theme .animate-pulse-slow {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.time-tracker-theme .animate-timer-glow {
+  animation: timer-glow 2s ease-in-out infinite;
+}
+
+@keyframes timer-glow {
+  0%, 100% { box-shadow: 0 0 20px hsl(var(--timer-glow) / 0.3); }
+  50% { box-shadow: 0 0 40px hsl(var(--timer-glow) / 0.5); }
+}
+
+.time-tracker-theme .gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+}

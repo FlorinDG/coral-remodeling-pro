@@ -15,8 +15,9 @@ export default auth((req) => {
     // Match any admin or portal path but NOT the login page and NOT API routes
     const isProtectedPath = pathname.includes("/admin") || pathname.includes("/portal");
     const isLoginPage = pathname.includes("/admin/login");
+    const isTimeTrackerPath = pathname.includes("/admin/time-tracker");
 
-    if (isProtectedPath && !isLoginPage && !isLoggedIn) {
+    if (isProtectedPath && !isLoginPage && !isTimeTrackerPath && !isLoggedIn) {
         const parts = pathname.split('/');
         const locale = parts[1];
         const hasLocale = ['en', 'nl', 'fr', 'ro'].includes(locale);

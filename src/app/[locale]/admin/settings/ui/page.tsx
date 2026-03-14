@@ -24,7 +24,8 @@ import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export const settingsTabs = [
-    { label: 'UI Layout', href: '/admin/settings/ui', id: 'ui' }
+    { label: 'UI Layout', href: '/admin/settings/ui', id: 'ui' },
+    { label: 'Notion Sync', href: '/admin/notion-sync', id: 'notion' }
 ];
 
 export default function SidebarOrderSettings() {

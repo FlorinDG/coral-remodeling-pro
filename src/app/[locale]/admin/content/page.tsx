@@ -5,9 +5,9 @@ import PromotionalBannerEditor from "@/components/admin/PromotionalBannerEditor"
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
 export const frontendTabs = [
-    { label: 'Pages / Content', href: '/admin/content', id: 'content' },
-    { label: 'Services', href: '/admin/services', id: 'services' },
-    { label: 'Portfolio', href: '/admin/projects', id: 'portfolio' },
+    { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
+    { label: 'SERVICES', href: '/admin/services', id: 'services' },
+    { label: 'PORTFOLIO', href: '/admin/projects', id: 'portfolio' },
 ];
 
 export default async function ContentEditor() {
@@ -35,7 +35,7 @@ export default async function ContentEditor() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={frontendTabs} />
+            <ModuleTabs tabs={frontendTabs} groupId="frontend" />
             <div className="p-8 space-y-12 max-w-5xl">
                 <div className="flex justify-between items-start">
                     <div>

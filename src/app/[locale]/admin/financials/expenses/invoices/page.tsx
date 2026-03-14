@@ -4,11 +4,11 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
 export const financialTabs = [
-    { label: 'Aankoopfacturen', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
-    { label: 'Creditnota - aankoop', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
-    { label: 'Creditnota - verkoop', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
+    { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
+    { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
+    { label: 'CREDITNOTA - VERKOOP', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
     { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
-    { label: 'offertes', href: '/admin/quotations', id: 'fin-offertes' },
+    { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
 ];
 
 const DatabaseCloneDynamic = dynamic(
@@ -19,7 +19,7 @@ const DatabaseCloneDynamic = dynamic(
 export default function ExpensesInvoicesPage() {
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={financialTabs} />
+            <ModuleTabs tabs={financialTabs} groupId="financials" />
             <div className="w-full h-full p-6 pb-10">
                 <div className="mb-4">
                     <h1 className="text-2xl font-bold">Expense Invoices</h1>

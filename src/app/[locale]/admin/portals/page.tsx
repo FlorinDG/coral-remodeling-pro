@@ -2,10 +2,10 @@
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
 export const relationsTabs = [
-    { label: 'Client portals', href: '/admin/portals', id: 'portals' },
-    { label: 'Leveranciers', href: '/admin/suppliers', id: 'suppliers' },
-    { label: 'Clients', href: '/admin/clients', id: 'clients' },
-    { label: 'Sales pipeline', href: '/admin/crm', id: 'pipeline' }
+    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
+    { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'suppliers' },
+    { label: 'CLIENTS', href: '/admin/clients', id: 'clients' },
+    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
 ];
 
 import { useEffect, useState } from 'react';
@@ -58,7 +58,7 @@ export default function PortalsPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={relationsTabs} />
+            <ModuleTabs tabs={relationsTabs} groupId="relations" />
             <div className="w-full h-full p-6 pb-10 space-y-8">
                 <div>
                     <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">CRM</h2>

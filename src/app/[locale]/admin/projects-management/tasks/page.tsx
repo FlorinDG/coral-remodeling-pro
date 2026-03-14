@@ -4,8 +4,8 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
 export const projectsTabs = [
-    { label: 'Projects Database', href: '/admin/projects-management/tasks', id: 'database' },
-    { label: 'Planning Timeline', href: '/admin/projects-management/planning', id: 'planning' }
+    { label: 'PROJECTS DATABASE', href: '/admin/projects-management/tasks', id: 'database' },
+    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
 ];
 
 const DatabaseCloneDynamic = dynamic(
@@ -16,7 +16,7 @@ const DatabaseCloneDynamic = dynamic(
 export default function TasksPage() {
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={projectsTabs} />
+            <ModuleTabs tabs={projectsTabs} groupId="projects" />
             <div className="w-full h-full p-6 pb-10">
                 <div className="mb-4">
                     <h1 className="text-2xl font-bold">Tasks</h1>

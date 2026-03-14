@@ -22,10 +22,12 @@ import { DraggableSidebarItem } from "@/components/admin/settings/DraggableSideb
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useTabStore } from "@/store/useTabStore";
+import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
 
 export const settingsTabs = [
-    { label: 'UI Layout', href: '/admin/settings/ui', id: 'ui' },
-    { label: 'Notion Sync', href: '/admin/notion-sync', id: 'notion' }
+    { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
+    { label: 'NOTION SYNC', href: '/admin/notion-sync', id: 'notion' }
 ];
 
 export default function SidebarOrderSettings() {
@@ -71,53 +73,183 @@ export default function SidebarOrderSettings() {
 
     const hasChanges = JSON.stringify(localItems) !== JSON.stringify(items);
 
+    const { tabOrders, setTabOrder, resetTabOrder, getAllGroups, getGroupConfig } = useTabStore();
+    const allGroups = getAllGroups();
+
+    // Tab Layout Local State
+    const [selectedGroupId, setSelectedGroupId] = useState<string>(allGroups[0]?.groupId || '');
+
+    // Get the active group configuration to determine its default tabs
+    const activeGroupConfig = getGroupConfig(selectedGroupId);
+
+    // Fallback if no config found
+    const defaultTabIds = activeGroupConfig?.defaultOrder || [];
+
+    // Calculate the user's customized order, falling back to the default order
+    const persistedOrder = tabOrders[selectedGroupId] || defaultTabIds;
+
+    // Manage local drag-and-drop state before saving
+    const [localTabOrder, setLocalTabOrder] = useState<string[]>(persistedOrder);
+
+    // Sync local state when changing groups or when global storage updates
+    useEffect(() => {
+        setLocalTabOrder(tabOrders[selectedGroupId] || getGroupConfig(selectedGroupId)?.defaultOrder || []);
+    }, [selectedGroupId, tabOrders]);
+
+    const handleTabDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            setLocalTabOrder((items) => {
+                const oldIndex = items.indexOf(active.id as string);
+                const newIndex = items.indexOf(over.id as string);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
+
+    const handleSaveTabs = () => {
+        setTabOrder(selectedGroupId, localTabOrder);
+        toast.success("Module tabs layout saved successfully");
+    };
+
+    const handleResetTabs = () => {
+        if (confirm("Are you sure you want to restore the default tab order for this module?")) {
+            resetTabOrder(selectedGroupId);
+            toast.info("Module tabs reset to default layout");
+        }
+    }
+
+    const hasTabChanges = JSON.stringify(localTabOrder) !== JSON.stringify(persistedOrder);
+
+    // Helper map to recreate full Tab objects for the Draggable component
+    // We map over all the imported tabs to find the matching objects
+    const allKnownTabs = [
+        ...require('@/app/[locale]/admin/hr/employees/page').hrTabs,
+        ...require('@/app/[locale]/admin/portals/page').relationsTabs,
+        ...require('@/app/[locale]/admin/content/page').frontendTabs,
+        ...require('@/app/[locale]/admin/projects-management/tasks/page').projectsTabs,
+        ...require('@/app/[locale]/admin/financials/expenses/invoices/page').financialTabs,
+        ...require('@/app/[locale]/admin/settings/ui/page').settingsTabs,
+    ];
+
+    // Build the rendered tab list by mapping the IDs back to their full objects
+    const renderedTabs = localTabOrder.map(id => allKnownTabs.find(t => t.id === id)).filter(Boolean) as any[];
+
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={settingsTabs} />
-            <div className="w-full h-full p-6 pb-10 max-w-3xl">
-                <div className="mb-6 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Sidebar Layout</h1>
-                        <p className="text-sm text-neutral-500 mt-1">Drag and drop to reorder your admin sidebar navigation.</p>
+            <ModuleTabs tabs={settingsTabs} groupId="settings" />
+            <div className="w-full h-full p-6 pb-10 max-w-4xl space-y-12">
+
+                {/* 1. SIDEBAR LAYOUT CONFIG */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Sidebar Layout</h1>
+                            <p className="text-sm text-neutral-500 mt-1">Drag and drop to reorder your global admin navigation.</p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button variant="outline" onClick={handleReset} className="gap-2">
+                                <RotateCcw className="w-4 h-4" />
+                                Reset Default
+                            </Button>
+                            <Button
+                                onClick={handleSave}
+                                className="gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white"
+                                disabled={!hasChanges}
+                            >
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                            </Button>
+                        </div>
                     </div>
 
-                    <div className="flex gap-3">
-                        <Button variant="outline" onClick={handleReset} className="gap-2">
-                            <RotateCcw className="w-4 h-4" />
-                            Reset Default
-                        </Button>
-                        <Button
-                            onClick={handleSave}
-                            className="gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white"
-                            disabled={!hasChanges}
+                    <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleDragEnd}
+                            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
                         >
-                            <Save className="w-4 h-4" />
-                            Save Changes
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-                    >
-                        <SortableContext
-                            items={localItems.map(i => i.id)}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            <div className="flex justify-center">
-                                <div className="w-full max-w-lg space-y-3">
-                                    {localItems.map((item) => (
-                                        <DraggableSidebarItem key={item.id} item={item} />
-                                    ))}
+                            <SortableContext
+                                items={localItems.map(i => i.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="flex justify-center">
+                                    <div className="w-full max-w-lg space-y-3">
+                                        {localItems.map((item) => (
+                                            <DraggableSidebarItem key={item.id} item={item} />
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        </SortableContext>
-                    </DndContext>
+                            </SortableContext>
+                        </DndContext>
+                    </div>
                 </div>
+
+                {/* 2. MODULE TABS CONFIG */}
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Module Tabs Layout</h1>
+                            <p className="text-sm text-neutral-500 mt-1">Reorder the horizontal navigation tabs for specific modules.</p>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-3">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Select Module:</label>
+                                <select
+                                    className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-[#d35400] transition-colors"
+                                    value={selectedGroupId}
+                                    onChange={(e) => setSelectedGroupId(e.target.value)}
+                                >
+                                    {allGroups.map((group: { groupId: string, label: string }) => (
+                                        <option key={group.groupId} value={group.groupId}>{group.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex gap-3 border-l border-neutral-200 dark:border-white/10 pl-6">
+                                <Button variant="outline" onClick={handleResetTabs} className="gap-2">
+                                    <RotateCcw className="w-4 h-4" />
+                                    Reset Default
+                                </Button>
+                                <Button
+                                    onClick={handleSaveTabs}
+                                    className="gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white"
+                                    disabled={!hasTabChanges}
+                                >
+                                    <Save className="w-4 h-4" />
+                                    Save Tabs
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragEnd={handleTabDragEnd}
+                            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                        >
+                            <SortableContext
+                                items={localTabOrder}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="flex justify-center">
+                                    <div className="w-full max-w-lg space-y-3">
+                                        {renderedTabs.map((tab) => (
+                                            <DraggableTabItem key={tab.id} tab={tab} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                </div>
+
             </div>
         </div>
     );

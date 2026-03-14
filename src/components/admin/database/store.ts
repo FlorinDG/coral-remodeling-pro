@@ -392,6 +392,13 @@ export const useDatabaseStore = create<DatabaseState>()(
         {
             name: 'coral-database-storage', // unique name for localStorage key
             version: 2, // Cache buster for major structural changes
+            migrate: (persistedState: any, version: number) => {
+                if (version < 2) {
+                    // Version bumping handled mostly by merge strategy below,
+                    // but we must provide a migrate function to satisfy persist middleware.
+                }
+                return persistedState as DatabaseState;
+            },
             merge: (persistedState: any, currentState: DatabaseState) => {
                 if (!persistedState?.databases) return currentState;
 

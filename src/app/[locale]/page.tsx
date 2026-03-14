@@ -118,6 +118,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                             {cmsProjects.map((project) => (
                                 <ProjectGallery
                                     key={project.id}
+                                    slug={project.titleEn.toLowerCase().replace(/[^a-z0-9]+/g, '-')}
                                     title={project[`title${locale.charAt(0).toUpperCase() + locale.slice(1)}` as keyof typeof project] as string || project.titleEn}
                                     location={project[`location${locale.charAt(0).toUpperCase() + locale.slice(1)}` as keyof typeof project] as string || project.locationEn}
                                     images={project.images.map(img => ({

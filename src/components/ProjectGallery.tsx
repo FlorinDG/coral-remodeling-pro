@@ -15,9 +15,10 @@ interface ProjectGalleryProps {
     title: string;
     location: string;
     images: ProjectImage[];
+    slug: string;
 }
 
-export default function ProjectGallery({ title, location, images }: ProjectGalleryProps) {
+export default function ProjectGallery({ title, location, images, slug }: ProjectGalleryProps) {
     const t = useTranslations('ProjectGallery');
     const [isOpen, setIsOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -56,6 +57,7 @@ export default function ProjectGallery({ title, location, images }: ProjectGalle
         <>
             {/* Card View */}
             <motion.div
+                id={slug}
                 layoutId={`card-${title}`}
                 onClick={() => setIsOpen(true)}
                 className="group relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-white/10 cursor-pointer"

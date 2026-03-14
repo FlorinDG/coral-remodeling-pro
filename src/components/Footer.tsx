@@ -10,7 +10,7 @@ export default function Footer() {
     const nt = useTranslations('Navbar');
 
     return (
-        <footer className="bg-neutral-950 text-white pt-24 pb-12 border-t border-white/5 relative overflow-hidden">
+        <footer id="contact" className="bg-neutral-950 text-white pt-24 pb-12 border-t border-white/5 relative overflow-hidden">
             {/* Background Decorative Mesh */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#d35400]/5 rounded-full blur-[120px] -mr-64 -mt-64 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#d35400]/5 rounded-full blur-[100px] -ml-48 -mb-48 pointer-events-none" />

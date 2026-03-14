@@ -45,6 +45,7 @@ export default function ServiceExpander({ cmsServices, locale }: ServiceExpander
                     return (
                         <motion.div
                             key={service.id}
+                            id={service.id}
                             onHoverStart={() => setActiveId(service.id)}
                             className={`relative rounded-3xl overflow-hidden cursor-pointer transition-all duration-300 ease-in-out border border-black dark:border-white/10 ${isActive ? 'flex-[4]' : 'flex-[1]'}`}
                         >
@@ -74,7 +75,7 @@ export default function ServiceExpander({ cmsServices, locale }: ServiceExpander
             <div className="md:hidden flex flex-col gap-4">
                 <AnimatePresence mode="popLayout">
                     {mappedServices.filter(s => s.id === activeId).map((service) => (
-                        <motion.div key={service.id} layoutId={service.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full aspect-[4/5] relative rounded-[2rem] overflow-hidden shadow-2xl border border-black dark:border-white/10">
+                        <motion.div key={service.id} id={service.id} layoutId={service.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} className="w-full aspect-[4/5] relative rounded-[2rem] overflow-hidden shadow-2xl border border-black dark:border-white/10">
                             <Image src={service.image} alt={service.title} fill className="object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
                             <div className="absolute bottom-0 left-0 right-0 p-8">

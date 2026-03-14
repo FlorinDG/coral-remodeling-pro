@@ -79,9 +79,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage', // name of the item in the storage (must be unique)
-            version: 2, // bump version to bust cache and add PROJECTS/FRONTEND changes
+            version: 3, // bump version 3 to bust cache because old items had undefined hrefs
             migrate: (persistedState: any, version: number) => {
-                if (version < 2) {
+                if (version < 3) {
                     // Reset to new defaults to ensure the new categories appear for existing users
                     return { items: defaultSidebarItems };
                 }

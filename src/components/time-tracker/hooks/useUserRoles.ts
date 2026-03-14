@@ -17,6 +17,13 @@ export function useUserRoles() {
       return;
     }
 
+    if (user.id === '00000000-0000-0000-0000-000000000000') {
+      // Mock user from AuthContext is treated as admin
+      setRoles(['admin', 'manager', 'owner']);
+      setLoading(false);
+      return;
+    }
+
     const fetchRoles = async () => {
       setLoading(true);
       const { data, error } = await supabase

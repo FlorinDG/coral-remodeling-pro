@@ -80,13 +80,13 @@ export default function Admin() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/time-tracker/auth");
+      router.push("/admin/hr/time-tracker/auth");
     }
   }, [user, loading, navigate]);
 
   useEffect(() => {
     if (!loading && !rolesLoading && user && !isAdmin) {
-      router.push("/admin/time-tracker");
+      router.push("/admin/hr/time-tracker");
     }
   }, [user, loading, rolesLoading, isAdmin, navigate]);
 
@@ -108,7 +108,7 @@ export default function Admin() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/time-tracker">
+            <Link href="/admin/hr/time-tracker">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -331,7 +331,7 @@ export default function Admin() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/time-tracker" 
+            href="/admin/hr/time-tracker" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

@@ -1,9 +1,9 @@
 "use client";
-import { 
-  Briefcase, 
-  BookOpen, 
-  Calendar, 
-  Clock, 
+import {
+  Briefcase,
+  BookOpen,
+  Calendar,
+  Clock,
   TrendingUp,
   ExternalLink,
   Shield,
@@ -33,15 +33,6 @@ interface QuickLink {
 }
 
 const quickLinks: QuickLink[] = [
-  {
-    id: 'project',
-    title: 'Projects',
-    description: 'View and manage projects',
-    icon: <Briefcase className="w-6 h-6" />,
-    url: '/projects',
-    gradient: 'bg-primary',
-    isInternal: true,
-  },
   {
     id: 'wiki',
     title: 'Company Wiki',
@@ -84,9 +75,9 @@ export function QuickLinks() {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
   const { shifts, loading: schedulesLoading } = useScheduledShifts();
-  
+
   const visibleLinks = quickLinks.filter(link => !link.adminOnly || isAdmin);
-  
+
   // Get the next upcoming shift for the current user
   const now = new Date();
   const nextShift = shifts
@@ -109,17 +100,17 @@ export function QuickLinks() {
   return (
     <section className="w-full">
       <h2 className="text-xl font-semibold text-foreground mb-6">Quick Access</h2>
-      
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* My Schedule Card */}
         <Link
-          href="/admin/time-tracker/schedule"
+          href="/admin/hr/time-tracker/schedule"
           className="link-card group animate-fade-in"
         >
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-secondary-foreground mb-4 group-hover:scale-110 transition-transform duration-300">
             <Clock className="w-6 h-6" />
           </div>
-          
+
           <div className="flex-1">
             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
               My Schedule
@@ -133,8 +124,8 @@ export function QuickLinks() {
               <div className="text-sm text-muted-foreground mt-1 space-y-1">
                 <div>
                   <span className="font-medium text-foreground">
-                    {isToday(parseISO(nextShift.shift_date)) 
-                      ? 'Today' 
+                    {isToday(parseISO(nextShift.shift_date))
+                      ? 'Today'
                       : isTomorrow(parseISO(nextShift.shift_date))
                         ? 'Tomorrow'
                         : format(parseISO(nextShift.shift_date), 'EEEE, MMM d')}
@@ -175,7 +166,7 @@ export function QuickLinks() {
               <div className={`w-12 h-12 rounded-xl ${link.gradient} flex items-center justify-center text-primary-foreground mb-4 group-hover:scale-110 transition-transform duration-300`}>
                 {link.icon}
               </div>
-              
+
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">

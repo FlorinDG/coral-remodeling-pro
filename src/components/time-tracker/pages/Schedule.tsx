@@ -119,7 +119,7 @@ export default function Schedule() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/admin/time-tracker/auth");
+      router.push("/admin/hr/time-tracker/auth");
     }
   }, [user, authLoading, navigate]);
 
@@ -137,7 +137,7 @@ export default function Schedule() {
       
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/time-tracker")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/hr/time-tracker")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>

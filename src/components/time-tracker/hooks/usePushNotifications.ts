@@ -83,6 +83,12 @@ export function usePushNotifications() {
       return false;
     }
 
+    if (!VAPID_PUBLIC_KEY) {
+      console.warn('VAPID_PUBLIC_KEY is missing from environment variables. Push notifications cannot be enabled.');
+      setState(prev => ({ ...prev, error: 'Push notifications are not configured' }));
+      return false;
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {

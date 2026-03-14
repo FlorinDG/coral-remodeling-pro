@@ -10,7 +10,8 @@ const DatabaseCloneDynamic = dynamic(
 export default function DatabasePage() {
     return (
         <div className="w-full h-full pb-10">
-            <DatabaseCloneDynamic />
+            {/* Render the mock database */}
+            <DatabaseCloneDynamic databaseId="db-1" />
         </div>
     );
 }

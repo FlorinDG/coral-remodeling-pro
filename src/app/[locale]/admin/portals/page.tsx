@@ -1,4 +1,12 @@
 "use client";
+import ModuleTabs from "@/components/admin/ModuleTabs";
+
+export const relationsTabs = [
+    { label: 'Client portals', href: '/admin/portals', id: 'portals' },
+    { label: 'Leveranciers', href: '/admin/suppliers', id: 'suppliers' },
+    { label: 'Clients', href: '/admin/clients', id: 'clients' },
+    { label: 'Sales pipeline', href: '/admin/crm', id: 'pipeline' }
+];
 
 import { useEffect, useState } from 'react';
 import LeadList from '@/components/admin/LeadList';
@@ -49,27 +57,30 @@ export default function PortalsPage() {
     );
 
     return (
-        <div className="space-y-8">
-            <div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">CRM</h2>
-                <h1 className="text-4xl font-bold tracking-tight">Client Portals</h1>
-                <p className="text-neutral-500 mt-2">Manage active projects and client communication via private portals.</p>
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={relationsTabs} />
+            <div className="w-full h-full p-6 pb-10 space-y-8">
+                <div>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">CRM</h2>
+                    <h1 className="text-4xl font-bold tracking-tight">Client Portals</h1>
+                    <p className="text-neutral-500 mt-2">Manage active projects and client communication via private portals.</p>
+                </div>
+
+                <section>
+                    <PortalGrid portals={portals} onCreateClick={() => setIsCreateModalOpen(true)} />
+                </section>
+
+                <section className="grid lg:grid-cols-2 gap-8 h-[600px]">
+                    <LeadList leads={leads} />
+                    <BookingList bookings={bookings} />
+                </section>
+
+                <CreatePortalModal
+                    isOpen={isCreateModalOpen}
+                    onClose={() => setIsCreateModalOpen(false)}
+                    onSuccess={fetchData}
+                />
             </div>
-
-            <section>
-                <PortalGrid portals={portals} onCreateClick={() => setIsCreateModalOpen(true)} />
-            </section>
-
-            <section className="grid lg:grid-cols-2 gap-8 h-[600px]">
-                <LeadList leads={leads} />
-                <BookingList bookings={bookings} />
-            </section>
-
-            <CreatePortalModal
-                isOpen={isCreateModalOpen}
-                onClose={() => setIsCreateModalOpen(false)}
-                onSuccess={fetchData}
-            />
         </div>
     );
 }

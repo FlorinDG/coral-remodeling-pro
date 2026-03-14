@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
-import Script from "next/script";
+
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -90,9 +90,46 @@ export default async function RootLayout({
             <head>
                 <link rel="manifest" href="/manifest.json" />
                 <meta name="theme-color" content="#000000" />
+
+                {/* Google Consent Mode */}
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                          window.dataLayer = window.dataLayer || [];
+                          function gtag(){dataLayer.push(arguments);}
+                          
+                          // Set default consent to 'denied'
+                          gtag('consent', 'default', {
+                            'ad_storage': 'denied',
+                            'ad_user_data': 'denied',
+                            'ad_personalization': 'denied',
+                            'analytics_storage': 'denied',
+                            'wait_for_update': 500
+                          });
+                        `
+                    }}
+                />
+
+                {/* Google tag (gtag.js) */}
+                <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}></script>
+                <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17978966291"></script>
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                          window.dataLayer = window.dataLayer || [];
+                          function gtag(){dataLayer.push(arguments);}
+                          gtag('js', new Date());
+
+                          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+                            page_path: window.location.pathname,
+                          });
+                          gtag('config', 'AW-17978966291');
+                        `
+                    }}
+                />
             </head>
             <body
-                className={`${oxanium.variable} antialiased selection:bg-[#d35400]/30`}
+                className={`${oxanium.variable} antialiased selection:bg-[#d35400]/30 overflow-y-scroll`}
                 suppressHydrationWarning
             >
                 <NextIntlClientProvider messages={messages}>
@@ -107,48 +144,23 @@ export default async function RootLayout({
                         {children}
                     </ThemeProvider>
                 </NextIntlClientProvider>
-                <Script id="google-consent" strategy="afterInteractive">
-                    {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            
-            // Set default consent to 'denied'
-            gtag('consent', 'default', {
-              'ad_storage': 'denied',
-              'ad_user_data': 'denied',
-              'ad_personalization': 'denied',
-              'analytics_storage': 'denied',
-              'wait_for_update': 500
-            });
-          `}
-                </Script>
-                <Script
-                    src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-                    strategy="afterInteractive"
+
+                {/* Service Worker Setup */}
+                <script
+                    dangerouslySetInnerHTML={{
+                        __html: `
+                          if ('serviceWorker' in navigator) {
+                            window.addEventListener('load', function() {
+                              navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                              }, function(err) {
+                                console.log('ServiceWorker registration failed: ', err);
+                              });
+                            });
+                          }
+                        `
+                    }}
                 />
-                <Script id="google-analytics" strategy="afterInteractive">
-                    {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
-              page_path: window.location.pathname,
-            });
-          `}
-                </Script>
-                <Script id="service-worker" strategy="afterInteractive">
-                    {`
-            if ('serviceWorker' in navigator) {
-              window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                  console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                }, function(err) {
-                  console.log('ServiceWorker registration failed: ', err);
-                });
-              });
-            }
-          `}
-                </Script>
             </body>
         </html>
     );

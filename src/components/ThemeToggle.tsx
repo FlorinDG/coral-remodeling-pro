@@ -1,19 +1,40 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Monitor } from "lucide-react"
 import { useTheme } from "next-themes"
 
 export function ThemeToggle() {
-    const { setTheme, resolvedTheme } = useTheme()
+    const [mounted, setMounted] = React.useState(false)
+    const { theme, setTheme } = useTheme()
+
+    React.useEffect(() => {
+        setMounted(true)
+    }, [])
+
+    if (!mounted) {
+        return (
+            <button className="relative w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/10 opacity-50">
+                <span className="sr-only">Toggle theme</span>
+            </button>
+        )
+    }
+
+    const cycleTheme = () => {
+        if (theme === "system") setTheme("light");
+        else if (theme === "light") setTheme("dark");
+        else setTheme("system");
+    };
 
     return (
         <button
-            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            onClick={cycleTheme}
             className="relative w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors border border-white/10"
+            title={`Current theme: ${theme}`}
         >
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 text-orange-500" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 text-white" />
+            {theme === "light" && <Sun className="h-[1.2rem] w-[1.2rem] text-orange-500" />}
+            {theme === "dark" && <Moon className="h-[1.2rem] w-[1.2rem] text-white" />}
+            {theme === "system" && <Monitor className="h-[1.2rem] w-[1.2rem] text-neutral-400" />}
             <span className="sr-only">Toggle theme</span>
         </button>
     )

@@ -7,6 +7,7 @@ import { CreateShiftForm } from '@/components/time-tracker/components/schedule/C
 import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { useDatabaseStore } from '@/components/admin/database/store';
 import { toast } from 'sonner';
 import {
   Select,
@@ -41,26 +42,32 @@ export function ScheduleManagement() {
   const [weekCount, setWeekCount] = useState<1 | 2>(1);
   const [editingShift, setEditingShift] = useState<ScheduledShift | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  
+
   // State for matrix add shift popup
   const [createShiftDialogOpen, setCreateShiftDialogOpen] = useState(false);
   const [prefilledUserId, setPrefilledUserId] = useState<string | undefined>();
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
 
+  const hrDb = useDatabaseStore(state => state.databases.find(db => db.id === 'db-hr'));
+
   useEffect(() => {
     const fetchWorkers = async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, hourly_rate')
-        .order('full_name');
+      if (hrDb) {
+        const activeWorkers = hrDb.pages
+          .filter(page => page.properties['prop-hr-status'] === 'opt-active')
+          .map(page => ({
+            id: page.id,
+            full_name: String(page.properties['title'] || 'Unknown'),
+            hourly_rate: 0
+          }));
 
-      if (!error && data) {
-        setWorkers(data.map(p => ({ id: p.user_id, full_name: p.full_name, hourly_rate: p.hourly_rate })));
+        activeWorkers.sort((a, b) => a.full_name.localeCompare(b.full_name));
+        setWorkers(activeWorkers);
       }
     };
 
     fetchWorkers();
-  }, []);
+  }, [hrDb]);
 
   const handleDelete = async (shiftId: string) => {
     try {
@@ -120,7 +127,7 @@ export function ScheduleManagement() {
     setPrefilledDate(date);
     setCreateShiftDialogOpen(true);
   };
-  
+
   const handleCreateShiftDialogClose = () => {
     setCreateShiftDialogOpen(false);
     setPrefilledUserId(undefined);
@@ -132,10 +139,10 @@ export function ScheduleManagement() {
   const matrixShifts = useMemo(() => {
     const endDate = new Date(weekStart);
     endDate.setDate(endDate.getDate() + (weekCount * 7) - 1);
-    
+
     const startStr = weekStart.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
-    
+
     return shifts.filter(s => s.shift_date >= startStr && s.shift_date <= endStr);
   }, [shifts, weekStart, weekCount]);
 
@@ -172,7 +179,7 @@ export function ScheduleManagement() {
             </SelectContent>
           </Select>
         </div>
-        
+
         {canManage && (
           <>
             <CreateShiftForm
@@ -196,7 +203,7 @@ export function ScheduleManagement() {
           </>
         )}
       </div>
-      
+
       {viewMode === 'table' ? (
         <ScheduleTable
           shifts={shifts}

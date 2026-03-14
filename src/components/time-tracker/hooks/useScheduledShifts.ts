@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
+import { useDatabaseStore } from '@/components/admin/database/store';
 
 // Notion colors for projects
 export const NOTION_COLORS = [
@@ -106,10 +107,19 @@ export function useScheduledShifts() {
       }, {} as Record<string, { full_name: string }>);
     }
 
+    // Fetch from Internal Workforce Database (db-hr)
+    const hrDb = useDatabaseStore.getState().getDatabase('db-hr');
+    const hrProfileMap: Record<string, { full_name: string }> = {};
+    if (hrDb) {
+      hrDb.pages.forEach(page => {
+        hrProfileMap[page.id] = { full_name: String(page.properties['title'] || 'Unknown') };
+      });
+    }
+
     // Combine shifts with profile data
     const transformedData: ScheduledShift[] = (shiftsData || []).map(shift => ({
       ...shift,
-      profile: profileMap[shift.user_id] || null,
+      profile: profileMap[shift.user_id] || hrProfileMap[shift.user_id] || { full_name: 'Unknown Staff' },
       project: shift.project || undefined, // Fix project being null vs undefined
     })) as unknown as ScheduledShift[];
 

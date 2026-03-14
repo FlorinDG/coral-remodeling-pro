@@ -24,8 +24,8 @@ export default function Logo({ className = "" }: { className?: string }) {
             <g
                 stroke="currentColor"
                 strokeWidth="22"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 fill="none"
             >
                 {/* Main Trunk */}

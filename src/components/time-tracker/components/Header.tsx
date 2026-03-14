@@ -132,7 +132,7 @@ export function Header() {
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = "/admin/time-tracker/profile"}>
+              <DropdownMenuItem onClick={() => window.location.href = "/admin/hr/time-tracker/profile"}>
                 <User className="mr-2 h-4 w-4 text-primary" />
                 Profile
               </DropdownMenuItem>

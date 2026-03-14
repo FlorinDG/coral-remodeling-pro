@@ -154,7 +154,7 @@ export default function Performance() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/time-tracker/auth");
+      router.push("/admin/hr/time-tracker/auth");
     }
   }, [user, loading, navigate]);
 
@@ -177,7 +177,7 @@ export default function Performance() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <Link 
-            href="/admin/time-tracker" 
+            href="/admin/hr/time-tracker" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -427,7 +427,7 @@ export default function Performance() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/time-tracker" 
+            href="/admin/hr/time-tracker" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

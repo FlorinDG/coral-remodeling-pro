@@ -42,7 +42,7 @@ export default function Profile() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/time-tracker/auth");
+      router.push("/admin/hr/time-tracker/auth");
     }
   }, [user, loading, navigate]);
 
@@ -118,7 +118,7 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Button variant="ghost" onClick={() => router.push("/admin/time-tracker")} className="mb-6">
+        <Button variant="ghost" onClick={() => router.push("/admin/hr/time-tracker")} className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back')}
         </Button>
         

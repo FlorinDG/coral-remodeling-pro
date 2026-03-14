@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Search, LayoutDashboard, FileText, Briefcase, ImageIcon, User, X, Command } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Link } from "@/i18n/routing";
@@ -39,23 +40,7 @@ export default function QuickSearch() {
         item.label.toLowerCase().includes(query.toLowerCase())
     );
 
-    if (!isOpen) {
-        return (
-            <button
-                onClick={toggle}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors group"
-            >
-                <Search className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">Search...</span>
-                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white dark:bg-white/10 rounded border border-neutral-200 dark:border-white/10 ml-2">
-                    <Command className="w-2.5 h-2.5" />
-                    <span className="text-[9px] font-bold">K</span>
-                </div>
-            </button>
-        );
-    }
-
-    return (
+    const modalContent = isOpen ? (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-neutral-200 dark:border-white/10 flex items-center gap-3">
@@ -106,5 +91,22 @@ export default function QuickSearch() {
             </div>
             <div className="fixed inset-0 -z-10" onClick={() => setIsOpen(false)} />
         </div>
+    ) : null;
+
+    return (
+        <>
+            <button
+                onClick={toggle}
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors group"
+            >
+                <Search className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Search...</span>
+                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-white dark:bg-white/10 rounded border border-neutral-200 dark:border-white/10 ml-2">
+                    <Command className="w-2.5 h-2.5" />
+                    <span className="text-[9px] font-bold">K</span>
+                </div>
+            </button>
+            {isOpen && typeof document !== 'undefined' && createPortal(modalContent, document.body)}
+        </>
     );
 }

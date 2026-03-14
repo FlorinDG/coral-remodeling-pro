@@ -1,77 +1,95 @@
 "use client";
 
-import React, { useState } from 'react';
-import {
-    DataSheetGrid,
-    checkboxColumn,
-    textColumn,
-    keyColumn,
-    intColumn,
-} from 'react-datasheet-grid';
-import 'react-datasheet-grid/dist/style.css';
+import React, { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import { useDatabaseStore } from '@/components/admin/database/store';
+import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus } from 'lucide-react';
 
-// Using a standard data structure to mimic a database 
-type Row = {
-    active: boolean;
-    name: string;
-    category: string;
-    priority: number | null;
-    notes: string | null;
-};
+const NotionGridDynamic = dynamic(
+  () => import('@/components/admin/database/NotionGrid'),
+  { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
+);
 
-export default function DatabaseClone() {
-    const [data, setData] = useState<Row[]>([
-        { active: true, name: 'Finish Kitchen Redesign', category: 'Project', priority: 1, notes: 'Awaiting client approval on tiles' },
-        { active: false, name: 'Call Suppliers', category: 'Task', priority: 2, notes: 'Need updated quotes for Q3' },
-        { active: true, name: 'Draft Monthly Report', category: 'Admin', priority: 3, notes: null },
-        { active: true, name: 'Site Visit: 124 Main St', category: 'Project', priority: 1, notes: 'Check plumbing status' },
-    ]);
+const BoardViewDynamic = dynamic(
+  () => import('@/components/admin/database/views/BoardView'),
+  { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
+);
 
-    const columns = [
-        { ...keyColumn('active', checkboxColumn), title: 'Active', minWidth: 60 },
-        { ...keyColumn('name', textColumn), title: 'Name' },
-        { ...keyColumn('category', textColumn), title: 'Category' },
-        { ...keyColumn('priority', intColumn), title: 'Priority', minWidth: 80 },
-        { ...keyColumn('notes', textColumn), title: 'Notes' },
-    ];
+const CalendarViewDynamic = dynamic(
+  () => import('@/components/admin/database/views/CalendarView'),
+  { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
+);
 
-    return (
-        <div className="flex flex-col h-full min-h-[calc(100vh-8rem)] bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
-            <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Database Module</h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage structure data with rich cell types and Airtable-like grid functionality.</p>
-            </div>
+interface DatabaseCloneProps {
+  databaseId: string;
+}
 
-            <div className="flex-1 w-full bg-white dark:bg-neutral-950 p-4">
-                <DataSheetGrid
-                    value={data}
-                    // Cast data back to Row[] because react-datasheet-grid's onChange provides Record<string, any>[]
-                    onChange={(newValue) => setData(newValue as Row[])}
-                    columns={columns}
-                    autoAddRow
-                    lockRows={false}
-                    className="h-full database-grid-custom"
-                />
-            </div>
+export default function DatabaseClone({ databaseId }: DatabaseCloneProps) {
+  const database = useDatabaseStore(state => state.getDatabase(databaseId));
 
-            {/* Adding custom styling for the grid to sit cleanly in dark node */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-        .database-grid-custom {
-          --dsg-border-color: rgba(0, 0, 0, 0.1);
-        }
-        
-        @media (prefers-color-scheme: dark) {
-          .database-grid-custom {
-            --dsg-border-color: rgba(255, 255, 255, 0.1);
-            --dsg-header-background-color: rgba(255,255,255, 0.05);
-            --dsg-cell-background-color: transparent;
-            --dsg-header-text-color: #fff;
-            --dsg-cell-text-color: #fff;
-            background: transparent;
-          }
-        }
-      `}} />
-        </div>
-    );
+  // Initialize synchronously to avoid a second re-render after mounting
+  const [activeViewId, setActiveViewId] = useState<string | null>(() => {
+    return database?.views && database.views.length > 0 ? database.views[0].id : null;
+  });
+
+  // Keep activeViewId synced if the current view is somehow deleted
+  useEffect(() => {
+    if (database && activeViewId) {
+      const viewExists = database.views.some(v => v.id === activeViewId);
+      if (!viewExists && database.views.length > 0) {
+        setActiveViewId(database.views[0].id);
+      }
+    }
+  }, [database, activeViewId]);
+
+  if (!database) return null;
+
+  const activeView = database.views.find(v => v.id === activeViewId) || database.views[0];
+
+  const getViewIcon = (type: string) => {
+    switch (type) {
+      case 'table': return <Table2 className="w-4 h-4" />;
+      case 'board': return <LayoutGrid className="w-4 h-4" />;
+      case 'calendar': return <CalendarIcon className="w-4 h-4" />;
+      default: return <Table2 className="w-4 h-4" />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
+      {/* View Tabs Bar */}
+      <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-white/10 px-2 pt-2 bg-neutral-50 dark:bg-white/5 overflow-x-auto no-scrollbar">
+        {database.views.map((view) => {
+          const isActive = view.id === activeViewId;
+          return (
+            <button
+              key={view.id}
+              onClick={() => setActiveViewId(view.id)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${isActive
+                ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
+                : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                }`}
+            >
+              {getViewIcon(view.type)}
+              {view.name}
+            </button>
+          );
+        })}
+        {/* Simplified Add View Button */}
+        <button
+          className="p-2 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+          title="Add View"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* View Content Area */}
+      <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} />}
+        {activeView.type === 'board' && <BoardViewDynamic databaseId={database.id} viewId={activeView.id} />}
+        {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} />}
+      </div>
+    </div>
+  );
 }

@@ -38,7 +38,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      router.push("/admin/time-tracker");
+      router.push("/admin/hr/time-tracker");
     }
   }, [user, authLoading, navigate]);
 
@@ -81,7 +81,7 @@ export default function Auth() {
       }
     } else {
       toast.success('Welcome back!');
-      router.push("/admin/time-tracker");
+      router.push("/admin/hr/time-tracker");
     }
   };
 

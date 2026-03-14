@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { X, Cookie } from "lucide-react";
@@ -49,13 +49,18 @@ export default function CookieConsent() {
                             <div className="flex-1">
                                 <h3 className="text-white font-bold text-lg mb-1">{t("title")}</h3>
                                 <p className="text-neutral-400 text-sm leading-relaxed mb-6">
-                                    {t.rich("description", {
-                                        link: (chunks) => (
-                                            <a href="/legal/cookies" className="text-[#d35400] hover:underline font-medium">
-                                                {t("linkText")}
-                                            </a>
-                                        )
-                                    })}
+                                    {typeof t("description", { link: "||LINK||" }) === 'string'
+                                        ? t("description", { link: "||LINK||" }).split("||LINK||").map((part, i, arr) => (
+                                            <React.Fragment key={i}>
+                                                {part}
+                                                {i !== arr.length - 1 && (
+                                                    <a href="/legal/cookies" className="text-[#d35400] hover:underline font-medium">
+                                                        {t("linkText")}
+                                                    </a>
+                                                )}
+                                            </React.Fragment>
+                                        ))
+                                        : null}
                                 </p>
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button

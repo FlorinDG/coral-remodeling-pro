@@ -40,7 +40,7 @@ export default function TimeOff() {
   }
 
   if (!user) {
-    router.push("/admin/time-tracker/auth");
+    router.push("/admin/hr/time-tracker/auth");
     return null;
   }
 
@@ -96,7 +96,7 @@ export default function TimeOff() {
       <main className="container mx-auto px-4 py-8">
         {/* Top back button */}
         <Link 
-          href="/admin/time-tracker" 
+          href="/admin/hr/time-tracker" 
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -238,7 +238,7 @@ export default function TimeOff() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/time-tracker" 
+            href="/admin/hr/time-tracker" 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

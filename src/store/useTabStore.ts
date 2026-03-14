@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { hrTabs } from '@/app/[locale]/admin/hr/employees/page';
-import { relationsTabs } from '@/app/[locale]/admin/portals/page';
-import { frontendTabs } from '@/app/[locale]/admin/content/page';
-import { projectsTabs } from '@/app/[locale]/admin/projects-management/tasks/page';
-import { financialTabs } from '@/app/[locale]/admin/financials/expenses/invoices/page';
-import { settingsTabs } from '@/app/[locale]/admin/settings/ui/page';
+import { hrTabs, relationsTabs, frontendTabs, projectsTabs, financialTabs, settingsTabs } from '@/config/tabs';
 
 interface TabGroup {
     groupId: string;

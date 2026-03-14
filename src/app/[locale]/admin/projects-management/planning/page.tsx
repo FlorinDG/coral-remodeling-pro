@@ -1,5 +1,5 @@
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { projectsTabs } from "../tasks/page";
+import { projectsTabs } from "@/config/tabs";
 
 export default function ProjectPlanningPage() {
     return (

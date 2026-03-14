@@ -3,10 +3,7 @@
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-export const projectsTabs = [
-    { label: 'PROJECTS DATABASE', href: '/admin/projects-management/tasks', id: 'database' },
-    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
-];
+import { projectsTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

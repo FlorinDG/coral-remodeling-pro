@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Index from "@/components/time-tracker/pages/Index";
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { hrTabs } from "./../employees/page";
+import { hrTabs } from "@/config/tabs";
 
 export default function Page() {
     const [mounted, setMounted] = useState(false);

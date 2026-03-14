@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import ServiceList from "./ServiceList";
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { frontendTabs } from "../content/page";
+import { frontendTabs } from "@/config/tabs";
 
 export default async function ServicesAdmin() {
     const services = await prisma.cMS_Service.findMany({

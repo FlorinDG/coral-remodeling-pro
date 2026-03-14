@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import ProjectList from "@/components/admin/ProjectList";
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { frontendTabs } from "../content/page";
+import { frontendTabs } from "@/config/tabs";
 
 export default async function ProjectsAdminPage() {
     const projects = await prisma.cMS_Project.findMany({

@@ -3,13 +3,7 @@
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-export const financialTabs = [
-    { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
-    { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
-    { label: 'CREDITNOTA - VERKOOP', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
-    { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
-    { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
-];
+import { financialTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

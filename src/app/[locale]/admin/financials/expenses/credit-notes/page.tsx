@@ -1,5 +1,5 @@
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { financialTabs } from "../invoices/page";
+import { financialTabs } from "@/config/tabs";
 
 export default function ExpensesCreditNotesPage() {
     return (

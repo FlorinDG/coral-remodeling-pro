@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { relationsTabs } from "../portals/page";
+import { relationsTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

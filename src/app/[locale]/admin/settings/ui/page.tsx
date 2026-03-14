@@ -25,10 +25,7 @@ import { toast } from "sonner";
 import { useTabStore } from "@/store/useTabStore";
 import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
 
-export const settingsTabs = [
-    { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
-    { label: 'NOTION SYNC', href: '/admin/notion-sync', id: 'notion' }
-];
+import { settingsTabs } from "@/config/tabs";
 
 export default function SidebarOrderSettings() {
     const { items, setItems, resetToDefault } = useSidebarStore();
@@ -125,12 +122,12 @@ export default function SidebarOrderSettings() {
     // Helper map to recreate full Tab objects for the Draggable component
     // We map over all the imported tabs to find the matching objects
     const allKnownTabs = [
-        ...require('@/app/[locale]/admin/hr/employees/page').hrTabs,
-        ...require('@/app/[locale]/admin/portals/page').relationsTabs,
-        ...require('@/app/[locale]/admin/content/page').frontendTabs,
-        ...require('@/app/[locale]/admin/projects-management/tasks/page').projectsTabs,
-        ...require('@/app/[locale]/admin/financials/expenses/invoices/page').financialTabs,
-        ...require('@/app/[locale]/admin/settings/ui/page').settingsTabs,
+        ...require('@/config/tabs').hrTabs,
+        ...require('@/config/tabs').relationsTabs,
+        ...require('@/config/tabs').frontendTabs,
+        ...require('@/config/tabs').projectsTabs,
+        ...require('@/config/tabs').financialTabs,
+        ...require('@/config/tabs').settingsTabs,
     ];
 
     // Build the rendered tab list by mapping the IDs back to their full objects

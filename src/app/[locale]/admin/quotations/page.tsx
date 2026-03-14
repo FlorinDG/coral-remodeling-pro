@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { financialTabs } from "../financials/expenses/invoices/page";
+import { financialTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

@@ -1,12 +1,7 @@
 "use client";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-export const relationsTabs = [
-    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
-    { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'suppliers' },
-    { label: 'CLIENTS', href: '/admin/clients', id: 'clients' },
-    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
-];
+import { relationsTabs } from "@/config/tabs";
 
 import { useEffect, useState } from 'react';
 import LeadList from '@/components/admin/LeadList';

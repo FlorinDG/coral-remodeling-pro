@@ -4,11 +4,7 @@ import { SiteContentMap } from "@/lib/cms";
 import PromotionalBannerEditor from "@/components/admin/PromotionalBannerEditor";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-export const frontendTabs = [
-    { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
-    { label: 'SERVICES', href: '/admin/services', id: 'services' },
-    { label: 'PORTFOLIO', href: '/admin/projects', id: 'portfolio' },
-];
+import { frontendTabs } from "@/config/tabs";
 
 export default async function ContentEditor() {
     const contents = await prisma.siteContent.findMany();

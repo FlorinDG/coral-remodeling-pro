@@ -3,10 +3,7 @@
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-export const hrTabs = [
-    { label: 'WORKHUB', href: '/admin/hr/time-tracker', id: 'workhub' },
-    { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
-]; // Scheduler removed until it exists
+import { hrTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

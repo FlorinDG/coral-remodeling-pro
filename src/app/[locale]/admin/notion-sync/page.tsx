@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Database, Plus, RefreshCw, Trash2, Table, Key, Link2, Search, X } from 'lucide-react';
-import { settingsTabs } from '../settings/ui/page';
+import { settingsTabs } from "@/config/tabs";
 import ModuleTabs from '@/components/admin/ModuleTabs';
 
 export default function NotionSyncDashboard() {

@@ -227,6 +227,23 @@ export const mockDatabases: Database[] = [
         ownerId: 'system'
     },
     {
+        id: 'db-bobex',
+        name: 'Bobex Pipeline',
+        description: 'Manage specialized leads and requests from Bobex.',
+        icon: '🔗',
+        properties: [
+            { id: 'title', name: 'Bobex Client & Request', type: 'text' },
+            { id: 'prop-bobex-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-b-new', name: 'New Request', color: 'blue' }, { id: 'opt-b-contacted', name: 'Contacted', color: 'yellow' }, { id: 'opt-b-won', name: 'Won', color: 'green' }, { id: 'opt-b-lost', name: 'Lost / Expired', color: 'red' }] } },
+            { id: 'prop-bobex-value', name: 'Quoted Value', type: 'number', config: { format: 'euro' } }
+        ],
+        pages: [],
+        activeFilters: [],
+        views: [{ id: 'view-bobex-table', name: 'Bobex Requests Table', type: 'table' }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ownerId: 'system'
+    },
+    {
         id: 'db-quotations',
         name: 'Quotations Tracker',
         description: 'Generate and track project estimates.',

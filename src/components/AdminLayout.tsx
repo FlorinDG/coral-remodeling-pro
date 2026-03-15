@@ -33,11 +33,16 @@ import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import QuickSearch from "@/components/admin/QuickSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
+import { useTabStore } from "@/store/useTabStore";
+import { hrTabs, relationsTabs, frontendTabs, projectsTabs, financialTabs, settingsTabs } from "@/config/tabs";
+
+const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...projectsTabs, ...financialTabs, ...settingsTabs];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { items: menuItems } = useSidebarStore();
+    const { tabOrders } = useTabStore();
 
     return (
         <div className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden">
@@ -53,10 +58,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                     {menuItems.map((item) => {
                         const IconComponent = getIconComponent(item.iconName || "");
+
+                        // Resolve dynamic href if a custom tab order exists for this module
+                        let resolvedHref = item.href as string;
+                        const customOrder = tabOrders[item.id];
+                        if (customOrder && customOrder.length > 0) {
+                            const topTabId = customOrder[0];
+                            const topTab = ALL_TABS.find(t => t.id === topTabId);
+                            if (topTab) {
+                                resolvedHref = topTab.href;
+                            }
+                        }
+
                         return (
                             <div key={item.id}>
                                 <Link
-                                    href={item.href as string}
+                                    href={resolvedHref}
                                     className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
                                 >
                                     {IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />}

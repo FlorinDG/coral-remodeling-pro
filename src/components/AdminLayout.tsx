@@ -34,9 +34,9 @@ import QuickSearch from "@/components/admin/QuickSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
 import { useTabStore } from "@/store/useTabStore";
-import { hrTabs, relationsTabs, frontendTabs, projectsTabs, financialTabs, settingsTabs } from "@/config/tabs";
+import { hrTabs, relationsTabs, frontendTabs, financialTabs, settingsTabs } from "@/config/tabs";
 
-const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...projectsTabs, ...financialTabs, ...settingsTabs];
+const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...financialTabs, ...settingsTabs];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { data: session } = useSession();

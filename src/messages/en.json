@@ -110,10 +110,13 @@
             "booking": "Book Visit"
         },
         "placeholders": {
-            "name": "Full Name",
-            "email": "Email",
-            "phone": "Phone",
-            "service": "Choose a service",
+            "name": "Name",
+            "surname": "Surname",
+            "street": "Street + number",
+            "postalCode": "Postal Code",
+            "town": "Town",
+            "email": "Email Address",
+            "phone": "Phone Number (Optional)",
             "message": "Tell us about your project...",
             "yourName": "Your Name",
             "yourEmail": "Your Email"
@@ -239,6 +242,7 @@
         "addDocPrompt": "Document Name:",
         "addUrlPrompt": "Document URL (e.g., Dropbox/Google Drive link):",
         "projectMedia": "Project Media",
+        "media": "Media",
         "noMedia": "No media.",
         "directMessage": "Direct Message",
         "noMessages": "No messages yet. Start the conversation!",

@@ -110,13 +110,16 @@
             "booking": "Bezoek Plannen"
         },
         "placeholders": {
-            "name": "Volledige Naam",
+            "name": "Naam",
+            "surname": "Achternaam",
+            "street": "Straat + huisnummer",
+            "postalCode": "Postcode",
+            "town": "Woonplaats",
             "email": "E-mailadres",
-            "phone": "Telefoonnummer",
-            "service": "Kies een dienst",
+            "phone": "Telefoonnummer (Optioneel)",
             "message": "Vertel ons over uw project...",
             "yourName": "Uw Naam",
-            "yourEmail": "Uw E-mail"
+            "yourEmail": "Uw E-mailadres"
         },
         "services": {
             "kitchen": "Keukenrenovatie",
@@ -239,6 +242,7 @@
         "addDocPrompt": "Document Naam:",
         "addUrlPrompt": "Document URL (bijv. Dropbox/Google Drive link):",
         "projectMedia": "Project Media",
+        "media": "Media",
         "noMedia": "Geen media.",
         "directMessage": "Direct Bericht",
         "noMessages": "Nog geen berichten. Start het gesprek!",

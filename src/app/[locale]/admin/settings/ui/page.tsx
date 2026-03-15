@@ -27,7 +27,10 @@ import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
 
 import { settingsTabs } from "@/config/tabs";
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export default function SidebarOrderSettings() {
+    usePageTitle('UI & Layouts');
     const { items, setItems, resetToDefault } = useSidebarStore();
     const [localItems, setLocalItems] = useState(items);
 
@@ -125,7 +128,6 @@ export default function SidebarOrderSettings() {
         ...require('@/config/tabs').hrTabs,
         ...require('@/config/tabs').relationsTabs,
         ...require('@/config/tabs').frontendTabs,
-        ...require('@/config/tabs').projectsTabs,
         ...require('@/config/tabs').financialTabs,
         ...require('@/config/tabs').settingsTabs,
     ];

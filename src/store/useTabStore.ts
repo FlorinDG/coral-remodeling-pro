@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { hrTabs, relationsTabs, frontendTabs, projectsTabs, financialTabs, settingsTabs } from '@/config/tabs';
+import { hrTabs, relationsTabs, frontendTabs, financialTabs, settingsTabs } from '@/config/tabs';
 
 interface TabGroup {
     groupId: string;
@@ -11,8 +11,7 @@ interface TabGroup {
 const DEFAULT_GROUPS: Record<string, TabGroup> = {
     hr: { groupId: 'hr', label: 'HR MODULE', defaultOrder: hrTabs.map(t => t.id) },
     relations: { groupId: 'relations', label: 'RELATIONS MODULE', defaultOrder: relationsTabs.map(t => t.id) },
-    frontend: { groupId: 'frontend', label: 'FRONTEND MODULE', defaultOrder: frontendTabs.map(t => t.id) },
-    projects: { groupId: 'projects', label: 'PROJECTS MODULE', defaultOrder: projectsTabs.map(t => t.id) },
+    frontend: { groupId: 'frontend', label: 'WEBSITE MODULE', defaultOrder: frontendTabs.map(t => t.id) },
     financials: { groupId: 'financials', label: 'FINANCIALS MODULE', defaultOrder: financialTabs.map(t => t.id) },
     settings: { groupId: 'settings', label: 'SETTINGS MODULE', defaultOrder: settingsTabs.map(t => t.id) }
 };
@@ -56,7 +55,13 @@ export const useTabStore = create<TabStore>()(
         }),
         {
             name: 'admin-module-tabs-storage',
-            version: 1,
+            version: 2,
+            migrate: (persistedState: any, version: number) => {
+                if (version < 2) {
+                    return { tabOrders: {} };
+                }
+                return persistedState as TabStore;
+            }
         }
     )
 );

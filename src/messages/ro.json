@@ -110,13 +110,16 @@
             "booking": "Programare Vizită"
         },
         "placeholders": {
-            "name": "Nume Complet",
+            "name": "Nume",
+            "surname": "Prenume",
+            "street": "Stradă + număr",
+            "postalCode": "Cod poștal",
+            "town": "Oraș",
             "email": "Adresă de E-mail",
-            "phone": "Număr de Telefon",
-            "service": "Alege un serviciu",
+            "phone": "Număr de Telefon (Opțional)",
             "message": "Spune-ne despre proiectul tău...",
             "yourName": "Numele Tău",
-            "yourEmail": "E-mail-ul Tău"
+            "yourEmail": "E-mailul Tău"
         },
         "services": {
             "kitchen": "Renovare Bucătărie",
@@ -238,6 +241,7 @@
         "addDocPrompt": "Nume Document:",
         "addUrlPrompt": "URL Document:",
         "projectMedia": "Media Proiect",
+        "media": "Media",
         "noMedia": "Niciun element media.",
         "directMessage": "Mesaj Direct",
         "noMessages": "Niciun mesaj încă. Începe conversația!",

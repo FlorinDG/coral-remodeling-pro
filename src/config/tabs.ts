@@ -1,5 +1,6 @@
 export const hrTabs = [
     { label: 'WORKHUB', href: '/admin/hr/time-tracker', id: 'workhub' },
+    { label: 'WORKFORCE SCHEDULER', href: '/admin/hr/time-tracker/schedule', id: 'scheduler' },
     { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
 ];
 
@@ -14,11 +15,6 @@ export const frontendTabs = [
     { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
     { label: 'SERVICES', href: '/admin/services', id: 'services' },
     { label: 'PORTFOLIO', href: '/admin/projects', id: 'portfolio' },
-];
-
-export const projectsTabs = [
-    { label: 'PROJECTS DATABASE', href: '/admin/projects-management/tasks', id: 'database' },
-    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
 ];
 
 export const financialTabs = [

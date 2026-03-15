@@ -10,15 +10,15 @@ const DatabaseCloneDynamic = dynamic(
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing HR Database...</div> }
 );
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export default function EmployeeDirectoryPage() {
+    usePageTitle('Employee Directory');
+
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={hrTabs} groupId="hr" />
             <div className="w-full h-full p-6 pb-10">
-                <div className="mb-4">
-                    <h1 className="text-2xl font-bold">Employee Directory</h1>
-                    <p className="text-sm text-neutral-500">Manage internal staff, track roles, and organize HR records.</p>
-                </div>
                 <DatabaseCloneDynamic databaseId="db-hr" />
             </div>
         </div>

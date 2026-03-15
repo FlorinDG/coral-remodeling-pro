@@ -55,13 +55,13 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'calendar', iconName: 'Calendar', label: 'CALENDAR', href: '/admin/calendar' },
     { id: 'dashboard', iconName: 'LayoutDashboard', label: 'DASHBOARD', href: '/admin/dashboard' },
     { id: 'financials', iconName: 'Landmark', label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
-    { id: 'frontend', iconName: 'Globe', label: 'FRONTEND', href: '/admin/content' },
+    { id: 'frontend', iconName: 'Globe', label: 'WEBSITE', href: '/admin/content' },
     { id: 'hr', iconName: 'CircleDollarSign', label: 'HR', href: '/admin/hr/time-tracker' },
     { id: 'library', iconName: 'Library', label: 'LIBRARY', href: '/admin/library' },
-    { id: 'projects', iconName: 'Briefcase', label: 'PROJECTS', href: '/admin/projects-management/tasks' },
+    { id: 'projects', iconName: 'Briefcase', label: 'PROJECTS', href: '/admin/projects-management' },
     { id: 'relations', iconName: 'UsersRound', label: 'RELATIONS', href: '/admin/portals' },
     { id: 'settings', iconName: 'Settings', label: 'SETTINGS', href: '/admin/settings/ui' },
-    { id: 'tasks', iconName: 'BriefcaseBusiness', label: 'TASKS', href: '/admin/projects-management/tasks' },
+    { id: 'tasks', iconName: 'BriefcaseBusiness', label: 'TASKS', href: '/admin/tasks' },
 ];
 
 interface SidebarStore {
@@ -79,9 +79,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage', // name of the item in the storage (must be unique)
-            version: 3, // bump version 3 to bust cache because old items had undefined hrefs
+            version: 6, // bump version 6 to bust cache for true TASKS vs PROJECTS separation
             migrate: (persistedState: any, version: number) => {
-                if (version < 3) {
+                if (version < 6) {
                     // Reset to new defaults to ensure the new categories appear for existing users
                     return { items: defaultSidebarItems };
                 }

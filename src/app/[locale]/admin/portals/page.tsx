@@ -9,8 +9,10 @@ import BookingList from '@/components/admin/BookingList';
 import PortalGrid from '@/components/admin/PortalGrid';
 import CreatePortalModal from '@/components/admin/CreatePortalModal';
 import { useTranslations } from 'next-intl';
+import { usePageTitle } from '@/hooks/usePageTitle';
 
 export default function PortalsPage() {
+    usePageTitle('Client Portals');
     const t = useTranslations('Admin');
     const [leads, setLeads] = useState([]);
     const [bookings, setBookings] = useState([]);
@@ -55,12 +57,6 @@ export default function PortalsPage() {
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={relationsTabs} groupId="relations" />
             <div className="w-full h-full p-6 pb-10 space-y-8">
-                <div>
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">CRM</h2>
-                    <h1 className="text-4xl font-bold tracking-tight">Client Portals</h1>
-                    <p className="text-neutral-500 mt-2">Manage active projects and client communication via private portals.</p>
-                </div>
-
                 <section>
                     <PortalGrid portals={portals} onCreateClick={() => setIsCreateModalOpen(true)} />
                 </section>

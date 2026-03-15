@@ -30,6 +30,10 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
     const [activeTab, setActiveTab] = useState<'inquiry' | 'booking'>(initialTab);
     const [formData, setFormData] = useState({
         name: '',
+        surname: '',
+        street: '',
+        postalCode: '',
+        town: '',
         email: '',
         phone: '',
         service: 'Kitchen',
@@ -53,11 +57,26 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        // Bundle address into message to avoid DB migration and protect Notion Sync
+        let finalMessage = formData.message;
+        const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
+        if (addressParts.length > 0) {
+            finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
+        }
+        const finalName = `${formData.name} ${formData.surname}`.trim();
+
         try {
             const res = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    name: finalName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    service: formData.service,
+                    message: finalMessage
+                }),
             });
 
             if (res.ok) {
@@ -93,12 +112,15 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         if (!selectedDate || !selectedSlot) return;
         setLoading(true);
         setError(null);
+
+        const finalName = `${formData.name} ${formData.surname}`.trim();
+
         try {
             const res = await fetch('/api/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    clientName: formData.name,
+                    clientName: finalName,
                     clientEmail: formData.email,
                     serviceType: formData.service,
                     date: selectedDate.toISOString(),
@@ -135,16 +157,16 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex gap-4 mb-8">
+            <div className="flex gap-4 mb-4">
                 <button
                     onClick={() => setActiveTab('inquiry')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'inquiry' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     {t('tabs.inquiry')}
                 </button>
                 <button
                     onClick={() => setActiveTab('booking')}
-                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
+                    className={`flex-1 py-3 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all rounded-xl border ${activeTab === 'booking' ? 'bg-[#d35400] text-white border-[#d35400]' : 'bg-neutral-50 dark:bg-white/5 border-neutral-300 dark:border-white/10 text-neutral-500 dark:text-neutral-300 hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100 dark:hover:bg-white/10'}`}
                 >
                     {t('tabs.booking')}
                 </button>
@@ -195,24 +217,75 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                             </div>
                         ) : (
                             <>
-                                <form onSubmit={handleInquirySubmit} className="space-y-4 flex-1 flex flex-col">
+                                <form onSubmit={handleInquirySubmit} className="space-y-3 flex-1 flex flex-col -mx-1 px-1 overflow-y-auto max-h-[460px] custom-scrollbar">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder={t('placeholders.name')}
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                            value={formData.name}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, name: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder={t('placeholders.surname')}
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                            value={formData.surname}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, surname: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                    </div>
+
                                     <input
                                         type="text"
-                                        placeholder={t('placeholders.name')}
+                                        placeholder={t('placeholders.street')}
                                         required
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
-                                        value={formData.name}
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                        value={formData.street}
                                         onChange={(e) => {
-                                            setFormData({ ...formData, name: e.target.value });
+                                            setFormData({ ...formData, street: e.target.value });
                                             setError(null);
                                         }}
                                     />
-                                    <div className="grid grid-cols-2 gap-4">
+
+                                    <div className="grid grid-cols-[1fr_2fr] gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder={t('placeholders.postalCode')}
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                            value={formData.postalCode}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, postalCode: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder={t('placeholders.town')}
+                                            required
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                            value={formData.town}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, town: e.target.value });
+                                                setError(null);
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
                                         <input
                                             type="email"
                                             placeholder={t('placeholders.email')}
                                             required
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
                                             value={formData.email}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, email: e.target.value });
@@ -222,7 +295,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         <input
                                             type="tel"
                                             placeholder={t('placeholders.phone')}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
                                             value={formData.phone}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, phone: e.target.value });
@@ -231,7 +304,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         />
                                     </div>
                                     <select
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
                                         value={formData.service}
                                         onChange={(e) => {
                                             setFormData({ ...formData, service: e.target.value });
@@ -245,7 +318,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     <textarea
                                         placeholder={t('placeholders.message')}
                                         rows={2}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm min-h-[60px]"
                                         value={formData.message}
                                         onChange={(e) => {
                                             setFormData({ ...formData, message: e.target.value });
@@ -253,12 +326,12 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         }}
                                     />
                                     {error && (
-                                        <p className="text-red-500 text-xs text-center font-medium animate-pulse">{error}</p>
+                                        <p className="text-red-500 text-[10px] text-center font-medium animate-pulse">{error}</p>
                                     )}
                                     <motion.button
                                         type="submit"
                                         disabled={loading}
-                                        className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 shadow-lg flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
+                                        className={`w-full font-bold py-3 mt-1 rounded-xl transition-colors disabled:opacity-50 shadow-lg flex items-center justify-center gap-2 ${sent ? 'bg-green-500 text-white' : 'bg-[#d35400] text-white hover:bg-[#a04000] shadow-[#d35400]/20'}`}
                                         animate={sent ? { scale: [1, 1.05, 1] } : {}}
                                     >
                                         {sent ? (

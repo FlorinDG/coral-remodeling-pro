@@ -5,6 +5,7 @@ import PromotionalBannerEditor from "@/components/admin/PromotionalBannerEditor"
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
 import { frontendTabs } from "@/config/tabs";
+import PageTitle from "@/components/admin/PageTitle";
 
 export default async function ContentEditor() {
     const contents = await prisma.siteContent.findMany();
@@ -31,15 +32,9 @@ export default async function ContentEditor() {
 
     return (
         <div className="flex flex-col w-full h-full">
+            <PageTitle title="Site Content" />
             <ModuleTabs tabs={frontendTabs} groupId="frontend" />
             <div className="p-8 space-y-12 max-w-5xl">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">Editor</h2>
-                        <h1 className="text-4xl font-bold tracking-tight">Site Content</h1>
-                        <p className="text-neutral-500 mt-2">Manage all the static text content across the website from one place.</p>
-                    </div>
-                </div>
 
                 <section className="space-y-6">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400">Marketing & Alerts</h3>

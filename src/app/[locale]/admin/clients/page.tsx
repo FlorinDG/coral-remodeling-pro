@@ -9,15 +9,15 @@ const DatabaseCloneDynamic = dynamic(
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Clients Database...</div> }
 );
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export default function ClientsPage() {
+    usePageTitle('Clients Directory');
+
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={relationsTabs} />
+            <ModuleTabs tabs={relationsTabs} groupId="relations" />
             <div className="w-full h-full p-6 pb-10">
-                <div className="mb-4">
-                    <h1 className="text-2xl font-bold">Clients Directory</h1>
-                    <p className="text-sm text-neutral-500">Manage all client contact information and active status.</p>
-                </div>
                 {/* Reusing the DatabaseClone skeleton for the Clients view */}
                 <DatabaseCloneDynamic databaseId="db-clients" />
             </div>

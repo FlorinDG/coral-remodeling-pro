@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import { ChevronRight, Home } from "lucide-react";
+import { useBreadcrumbStore } from "@/store/useBreadcrumbStore";
 
 export default function Breadcrumbs() {
     const pathname = usePathname();
@@ -11,6 +12,8 @@ export default function Breadcrumbs() {
     // Remove the locale from the paths for display
     const localeArr = ["en", "nl", "fr", "ro"];
     const filteredPaths = localeArr.includes(paths[0]) ? paths.slice(1) : paths;
+
+    const { pageTitle } = useBreadcrumbStore();
 
     return (
         <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
@@ -32,16 +35,23 @@ export default function Breadcrumbs() {
                 return (
                     <div key={path} className="flex items-center gap-2">
                         <ChevronRight className="w-3 h-3 text-neutral-300 dark:text-neutral-700" />
-                        {isLast ? (
+                        {isLast && !pageTitle ? (
                             <span className="text-neutral-900 dark:text-white">{label}</span>
                         ) : (
-                            <Link href={href} className="hover:text-[#d35400] transition-colors whitespace-nowrap">
+                            <span className="text-neutral-500 whitespace-nowrap">
                                 {label}
-                            </Link>
+                            </span>
                         )}
                     </div>
                 );
             })}
+
+            {pageTitle && (
+                <div className="flex items-center gap-2">
+                    <ChevronRight className="w-3 h-3 text-neutral-300 dark:text-neutral-700" />
+                    <span className="text-neutral-900 dark:text-white">{pageTitle}</span>
+                </div>
+            )}
         </nav>
     );
 }

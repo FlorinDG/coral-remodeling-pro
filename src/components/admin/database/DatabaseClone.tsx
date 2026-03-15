@@ -22,9 +22,11 @@ const CalendarViewDynamic = dynamic(
 
 interface DatabaseCloneProps {
   databaseId: string;
+  headerExtra?: React.ReactNode;
+  hideViewTabs?: boolean;
 }
 
-export default function DatabaseClone({ databaseId }: DatabaseCloneProps) {
+export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }: DatabaseCloneProps) {
   const database = useDatabaseStore(state => state.getDatabase(databaseId));
 
   // Initialize synchronously to avoid a second re-render after mounting
@@ -59,7 +61,8 @@ export default function DatabaseClone({ databaseId }: DatabaseCloneProps) {
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
       {/* View Tabs Bar */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-white/10 px-2 pt-2 bg-neutral-50 dark:bg-white/5 overflow-x-auto no-scrollbar">
-        {database.views.map((view) => {
+        {headerExtra}
+        {!hideViewTabs && database.views.map((view) => {
           const isActive = view.id === activeViewId;
           return (
             <button
@@ -76,12 +79,14 @@ export default function DatabaseClone({ databaseId }: DatabaseCloneProps) {
           );
         })}
         {/* Simplified Add View Button */}
-        <button
-          className="p-2 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-          title="Add View"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
+        {!hideViewTabs && (
+          <button
+            className="p-2 ml-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+            title="Add View"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {/* View Content Area */}

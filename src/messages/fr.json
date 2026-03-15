@@ -109,10 +109,13 @@
             "booking": "Planifier Visite"
         },
         "placeholders": {
-            "name": "Nom Complet",
+            "name": "Nom",
+            "surname": "Prénom",
+            "street": "Rue + numéro",
+            "postalCode": "Code postal",
+            "town": "Ville",
             "email": "Adresse E-mail",
-            "phone": "Numéro de Téléphone",
-            "service": "Choisir un service",
+            "phone": "Numéro de Téléphone (Optionnel)",
             "message": "Parlez-nous de votre projet...",
             "yourName": "Votre Nom",
             "yourEmail": "Votre E-mail"
@@ -238,6 +241,7 @@
         "addDocPrompt": "Nom du document :",
         "addUrlPrompt": "URL du document :",
         "projectMedia": "Médias du Projet",
+        "media": "Médias",
         "noMedia": "Aucun média.",
         "directMessage": "Message Direct",
         "noMessages": "Pas encore de messages. Commencez la conversation !",

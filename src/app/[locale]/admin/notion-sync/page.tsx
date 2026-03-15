@@ -5,7 +5,10 @@ import { Database, Plus, RefreshCw, Trash2, Table, Key, Link2, Search, X } from 
 import { settingsTabs } from "@/config/tabs";
 import ModuleTabs from '@/components/admin/ModuleTabs';
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export default function NotionSyncDashboard() {
+    usePageTitle('Notion Sync');
     const [connections, setConnections] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
@@ -27,7 +30,6 @@ export default function NotionSyncDashboard() {
     useEffect(() => {
         fetchConnections();
     }, []);
-
 
     useEffect(() => {
         fetchConnections();
@@ -252,13 +254,10 @@ export default function NotionSyncDashboard() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={settingsTabs} />
+            <ModuleTabs tabs={settingsTabs} groupId="settings" />
             <div className="w-full h-full p-6 pb-10 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
                 <div className="flex justify-between items-end">
-                    <div>
-                        <h1 className="text-4xl font-black tracking-tighter uppercase text-neutral-900 dark:text-white">Notion Database Sync</h1>
-                        <p className="text-neutral-500 font-medium mt-1">Connect any Notion database and keep properties in sync.</p>
-                    </div>
+                    <div className="flex-1"></div>
                     <div className="flex gap-3 items-end">
                         <button
                             onClick={handleSyncAll}

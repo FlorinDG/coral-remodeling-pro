@@ -10,15 +10,15 @@ const DatabaseCloneDynamic = dynamic(
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Expenses Database...</div> }
 );
 
+import { usePageTitle } from '@/hooks/usePageTitle';
+
 export default function ExpensesInvoicesPage() {
+    usePageTitle('Expense Invoices');
+
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={financialTabs} groupId="financials" />
             <div className="w-full h-full p-6 pb-10">
-                <div className="mb-4">
-                    <h1 className="text-2xl font-bold">Expense Invoices</h1>
-                    <p className="text-sm text-neutral-500">Track and manage incoming invoices from suppliers and contractors.</p>
-                </div>
                 <DatabaseCloneDynamic databaseId="db-expenses" />
             </div>
         </div>

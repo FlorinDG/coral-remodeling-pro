@@ -80,7 +80,7 @@ export default function Hero({ cmsContent, locale }: HeroProps) {
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.2 }}
-                    className="glass-morphism p-6 md:p-8 rounded-3xl border border-white/10 h-[calc(100vh-140px)] max-h-[600px] flex flex-col"
+                    className="glass-morphism p-6 md:p-8 rounded-3xl border border-white/10 h-[calc(100vh-140px)] max-h-[680px] flex flex-col"
                 >
                     <LeadForm />
                 </motion.div>

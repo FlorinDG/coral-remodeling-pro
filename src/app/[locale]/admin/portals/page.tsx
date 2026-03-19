@@ -1,7 +1,7 @@
 "use client";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 
-import { relationsTabs } from "@/config/tabs";
+import { projectsTabs } from "@/config/tabs";
 
 import { useEffect, useState } from 'react';
 import LeadList from '@/components/admin/LeadList';
@@ -55,7 +55,7 @@ export default function PortalsPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={relationsTabs} groupId="relations" />
+            <ModuleTabs tabs={projectsTabs} groupId="projects" />
             <div className="w-full h-full p-6 pb-10 space-y-8">
                 <section>
                     <PortalGrid portals={portals} onCreateClick={() => setIsCreateModalOpen(true)} />

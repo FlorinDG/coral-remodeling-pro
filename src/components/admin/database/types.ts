@@ -56,6 +56,7 @@ export interface Page {
     coverImage?: string | null;
     icon?: string | null;
     properties: Record<string, PropertyValue>; // Keys are Property IDs
+    order?: number; // Universal sorting index for drag-and-drop structural rows
     blocks: Block[]; // The rich text content inside the page
     createdAt: string;
     updatedAt: string;
@@ -93,6 +94,13 @@ export interface FilterGroup {
 
 export type ViewType = 'table' | 'board' | 'calendar';
 
+export interface ViewPropertyState {
+    propertyId: string;
+    width?: number;
+    hidden?: boolean;
+    order?: number;
+}
+
 export interface DatabaseView {
     id: string;
     name: string;
@@ -103,6 +111,7 @@ export interface DatabaseView {
     };
     filters?: FilterRule[]; // View-specific filters
     sorts?: SortRule[];     // View-specific sorts
+    propertiesState?: ViewPropertyState[]; // Track column widths, visibility, order per view
 }
 
 export interface Database {

@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import ModuleTabs from "@/components/admin/ModuleTabs";
+import { libraryTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -9,12 +11,15 @@ const DatabaseCloneDynamic = dynamic(
 
 export default function BestekPage() {
     return (
-        <div className="w-full h-full pb-10">
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold">Bestek (Specifications) Library</h1>
-                <p className="text-sm text-neutral-500">Standardized technical specifications and building codes context.</p>
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={libraryTabs} groupId="library" />
+            <div className="w-full h-full p-6 pb-10">
+                <div className="mb-4">
+                    <h1 className="text-2xl font-bold">Bestek (Specifications) Library</h1>
+                    <p className="text-sm text-neutral-500">Standardized technical specifications and building codes context.</p>
+                </div>
+                <DatabaseCloneDynamic databaseId="db-bestek" />
             </div>
-            <DatabaseCloneDynamic databaseId="db-bestek" />
         </div>
     );
 }

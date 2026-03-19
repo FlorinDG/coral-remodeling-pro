@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
-import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView } from './types';
+import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
 
 import { mockDatabases } from './mockData';
 
@@ -17,6 +17,8 @@ interface DatabaseState {
     // View Operations
     addView: (databaseId: string, view: Omit<DatabaseView, 'id'>) => void;
     updateView: (databaseId: string, viewId: string, updates: Partial<DatabaseView>) => void;
+    updateViewPropertyState: (databaseId: string, viewId: string, propertyId: string, updates: Partial<ViewPropertyState>) => void;
+    updateViewPropertyOrder: (databaseId: string, viewId: string, sourceIndex: number, destinationIndex: number) => void;
     deleteView: (databaseId: string, viewId: string) => void;
 
     // Property Operations
@@ -29,6 +31,7 @@ interface DatabaseState {
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
+    updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Filter Operations
     addFilter: (databaseId: string, filter: Omit<FilterRule, 'id'>) => void;
@@ -113,6 +116,78 @@ export const useDatabaseStore = create<DatabaseState>()(
                 })
             })),
 
+            updateViewPropertyState: (databaseId, viewId, propertyId, updates) => set((state) => ({
+                databases: state.databases.map(db => {
+                    if (db.id === databaseId && db.views) {
+                        return {
+                            ...db,
+                            views: db.views.map((view: DatabaseView) => {
+                                if (view.id === viewId) {
+                                    const currentState = view.propertiesState || [];
+                                    const existingProp = currentState.find(p => p.propertyId === propertyId);
+
+                                    let newPropertiesState;
+                                    if (existingProp) {
+                                        newPropertiesState = currentState.map(p =>
+                                            p.propertyId === propertyId ? { ...p, ...updates } : p
+                                        );
+                                    } else {
+                                        newPropertiesState = [...currentState, { propertyId, ...updates }];
+                                    }
+
+                                    return { ...view, propertiesState: newPropertiesState };
+                                }
+                                return view;
+                            })
+                        };
+                    }
+                    return db;
+                })
+            })),
+
+            updateViewPropertyOrder: (databaseId, viewId, sourceIndex, destinationIndex) => set((state) => ({
+                databases: state.databases.map(db => {
+                    if (db.id === databaseId && db.views) {
+                        return {
+                            ...db,
+                            views: db.views.map((view: DatabaseView) => {
+                                if (view.id === viewId) {
+                                    // Ensure we have a baseline array of properties mapping to the DB schema
+                                    let currentOrder = view.propertiesState || [];
+
+                                    // If this is the first time dragging, initialize the order array from the raw properties
+                                    if (currentOrder.length === 0) {
+                                        currentOrder = db.properties.map((p: Property, index: number) => ({
+                                            propertyId: p.id,
+                                            order: index
+                                        }));
+                                    }
+
+                                    // Create a new array, splice out the dragged item, and insert it at the destination
+                                    const newOrder = Array.from(currentOrder);
+                                    const [reorderedItem] = newOrder.splice(sourceIndex, 1);
+
+                                    if (reorderedItem) {
+                                        newOrder.splice(destinationIndex, 0, reorderedItem);
+                                    }
+
+                                    // Update the explicit 'order' integer on every item for predictable sorting
+                                    const finalizedState = newOrder.map((item, index) => ({
+                                        ...item,
+                                        propertyId: item?.propertyId || '',
+                                        order: index
+                                    }));
+
+                                    return { ...view, propertiesState: finalizedState };
+                                }
+                                return view;
+                            })
+                        };
+                    }
+                    return db;
+                })
+            })),
+
             deleteView: (databaseId, viewId) => set((state) => ({
                 databases: state.databases.map(db => {
                     if (db.id === databaseId && db.views) {
@@ -191,6 +266,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     newPage = {
                         id: uuidv4(),
                         databaseId,
+                        order: db.pages.length,
                         properties: fullProperties,
                         blocks: [],
                         createdAt: new Date().toISOString(),
@@ -217,6 +293,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     newPage = {
                         id: uuidv4(),
                         databaseId,
+                        order: 0,
                         properties: initialProperties,
                         blocks: [],
                         createdAt: new Date().toISOString(),
@@ -279,6 +356,33 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return {
                             ...db,
                             pages: db.pages.filter((page: Page) => page.id !== pageId),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+            },
+
+            updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+
+                        const newPages: any[] = Array.from(db.pages);
+                        const [reorderedPage] = newPages.splice(sourceIndex, 1);
+
+                        if (reorderedPage) {
+                            newPages.splice(destinationIndex, 0, reorderedPage);
+                        }
+
+                        // Re-index explicit order variables
+                        const finalizedPages = newPages.map((page: Page, index: number) => ({
+                            ...page,
+                            order: index
+                        })) as Page[];
+
+                        return {
+                            ...db,
+                            pages: finalizedPages,
                             updatedAt: new Date().toISOString()
                         };
                     })
@@ -407,12 +511,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const mergedDbs = currentState.databases.map(currentDb => {
                     const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
                     if (savedDb) {
-                        // Inherit new source code properties/views, but keep the user's row data
+                        // Inherit new source code properties/views, but keep the user's row data and view customizations
                         return {
                             ...currentDb,
                             pages: savedDb.pages,
                             activeFilters: savedDb.activeFilters,
-                            activeSorts: savedDb.activeSorts
+                            activeSorts: savedDb.activeSorts,
+                            views: savedDb.views || currentDb.views
                         };
                     }
                     return currentDb;

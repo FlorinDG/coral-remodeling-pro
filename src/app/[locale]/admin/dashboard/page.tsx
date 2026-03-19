@@ -3,23 +3,21 @@ import {
     Users,
     Calendar,
     TrendingUp,
-    ArrowUpRight,
     MessageSquare,
     Clock,
     Database,
-    FileText,
     Image as ImageIcon,
     UserPlus,
     LayoutDashboard,
-    PlusCircle
+    PlusCircle,
+    BarChart3
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import NotionSyncButton from "@/components/admin/NotionSyncButton";
+import { OverviewAreaChart, StatusBarChart } from "@/components/admin/dashboard/DashboardCharts";
 
 export default async function AdminDashboard() {
-    // Fetch stats
-    const leadsCount = await prisma.lead.count();
-    const newLeadsCount = await prisma.lead.count({ where: { status: 'NEW' } });
+    // Fetch generic stats
     const pendingBookingsCount = await prisma.booking.count({ where: { status: 'PENDING' } });
     const confirmedBookingsCount = await prisma.booking.count({ where: { status: 'CONFIRMED' } });
     const activePortalsCount = await prisma.clientPortal.count({ where: { status: 'ACTIVE' } });
@@ -38,18 +36,66 @@ export default async function AdminDashboard() {
     ];
 
     const quickActions = [
-        { label: "Edit Hero", href: "/admin/content", icon: LayoutDashboard, color: "text-blue-500" },
+        { label: "Edit Content", href: "/admin/content", icon: LayoutDashboard, color: "text-blue-500" },
         { label: "New Project", href: "/admin/projects/new", icon: PlusCircle, color: "text-green-500" },
         { label: "Setup Portal", href: "/admin/portals", icon: UserPlus, color: "text-[#d35400]" },
         { label: "View Portfolio", href: "/admin/projects", icon: ImageIcon, color: "text-purple-500" },
     ];
+
+    // Chart Data Generation (Last 14 Days)
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const last14Days = [...Array(14)].map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (13 - i));
+        return {
+            date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            leads: 0,
+            bookings: 0
+        };
+    });
+
+    const recentLeadsData = await prisma.lead.findMany({
+        where: { createdAt: { gte: fourteenDaysAgo } },
+        select: { createdAt: true }
+    });
+
+    const recentBookingsData = await prisma.booking.findMany({
+        where: { createdAt: { gte: fourteenDaysAgo } },
+        select: { createdAt: true }
+    });
+
+    recentLeadsData.forEach(l => {
+        const dateStr = l.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayMatch = last14Days.find(d => d.date === dateStr);
+        if (dayMatch) dayMatch.leads += 1;
+    });
+
+    recentBookingsData.forEach(b => {
+        const dateStr = b.createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const dayMatch = last14Days.find(d => d.date === dateStr);
+        if (dayMatch) dayMatch.bookings += 1;
+    });
+
+    // Status Chart Data
+    const statusGroups = await prisma.lead.groupBy({
+        by: ['status'],
+        _count: { id: true }
+    });
+
+    // Fallback if empty database
+    let statusData = statusGroups.map(g => ({ name: g.status, value: g._count.id }));
+    if (statusData.length === 0) {
+        statusData = [{ name: 'NEW', value: 0 }, { name: 'CONTACTED', value: 0 }];
+    }
 
     return (
         <div className="space-y-6">
             <div className="flex items-end justify-between mb-2">
                 <div>
                     <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-1">Administrative</h2>
-                    <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-neutral-900 dark:text-white font-bold">
@@ -62,29 +108,62 @@ export default async function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Left Column: Stats & Quick Actions */}
-                <div className="xl:col-span-2 space-y-6">
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        {stats.map((stat) => (
-                            <div key={stat.label} className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 transition-all shadow-sm">
-                                <div className="flex items-center gap-2 mb-2">
-                                    <div className={`p-1.5 rounded-lg ${stat.bg}`}>
-                                        <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
-                                    </div>
-                                    <p className="text-neutral-500 text-[8px] font-bold uppercase tracking-widest">{stat.label}</p>
-                                </div>
-                                <div className="flex items-end justify-between">
-                                    <p className="text-xl font-bold">{stat.value}</p>
-                                </div>
-                            </div>
-                        ))}
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {stats.map((stat) => (
+                    <div key={stat.label} className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 transition-all shadow-sm flex items-center justify-between">
+                        <div>
+                            <p className="text-neutral-500 text-[9px] font-bold uppercase tracking-widest">{stat.label}</p>
+                            <p className="text-2xl font-black mt-1">{stat.value}</p>
+                        </div>
+                        <div className={`p-2 rounded-xl ${stat.bg}`}>
+                            <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                        </div>
                     </div>
+                ))}
+            </div>
 
+            {/* Main Interactive Charts Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* Main Area Chart */}
+                <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-6 lg:col-span-2">
+                    <div className="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 className="text-sm font-bold flex items-center gap-2">
+                                <BarChart3 className="w-4 h-4 text-[#d35400]" />
+                                Acquisition Overview (14 Days)
+                            </h3>
+                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">Leads vs Bookings Volume</p>
+                        </div>
+                    </div>
+                    {/* Render Client Chart Component */}
+                    <OverviewAreaChart data={last14Days} />
+                </div>
+
+                {/* Status Bar Chart */}
+                <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-6 flex flex-col">
+                    <div className="mb-4">
+                        <h3 className="text-sm font-bold flex items-center gap-2">
+                            <Users className="w-4 h-4 text-purple-500" />
+                            Lead Status Spread
+                        </h3>
+                        <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">Current volume by status</p>
+                    </div>
+                    <div className="flex-1 flex items-end">
+                        <StatusBarChart data={statusData} />
+                    </div>
+                </div>
+
+            </div>
+
+            {/* Lower Grid: Quick Actions & Recent Activity */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+                {/* Left Column: Quick Actions & Controls */}
+                <div className="space-y-6">
                     {/* Quick Actions */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                         {quickActions.map((action) => (
                             <Link
                                 key={action.label}
@@ -99,42 +178,6 @@ export default async function AdminDashboard() {
                         ))}
                     </div>
 
-                    {/* Recent Leads Activity */}
-                    <div className="bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/5 overflow-hidden shadow-sm">
-                        <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between">
-                            <h3 className="text-sm font-bold flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4 text-neutral-400" />
-                                Recent Inquiries
-                            </h3>
-                            <Link href="/admin/leads" className="text-[10px] font-bold uppercase tracking-widest text-[#d35400] hover:underline">View All</Link>
-                        </div>
-                        <div className="divide-y divide-neutral-200 dark:divide-white/5">
-                            {recentLeads.length > 0 ? recentLeads.map((lead) => (
-                                <div key={lead.id} className="px-6 py-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-white/5 flex items-center justify-center text-xs font-bold text-neutral-500">
-                                            {lead.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-bold">{lead.name}</p>
-                                            <p className="text-[10px] text-neutral-500">{lead.service}</p>
-                                        </div>
-                                    </div>
-                                    <div className="text-right">
-                                        <span className="text-[9px] bg-neutral-100 dark:bg-white/10 px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">
-                                            {lead.status}
-                                        </span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="p-12 text-center text-neutral-500 text-xs">No recent leads.</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column: System Controls */}
-                <div className="space-y-6">
                     <div className="bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/5 p-6 shadow-sm">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
@@ -147,33 +190,56 @@ export default async function AdminDashboard() {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5">
-                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-3">Core Content</p>
-                                <NotionSyncButton endpoint="/api/notion/sync" label="Sync CMS" />
+                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 flex justify-between items-center">
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Core Content</p>
+                                <NotionSyncButton endpoint="/api/notion/sync" label="Sync" />
                             </div>
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5">
-                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-3">Clients & Tasks</p>
-                                <NotionSyncButton endpoint="/api/notion/sync/portals" label="Sync Portals" />
+                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 flex justify-between items-center">
+                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Clients</p>
+                                <NotionSyncButton endpoint="/api/notion/sync/portals" label="Sync" />
                             </div>
                         </div>
-                    </div>
-
-                    <div className="bg-[#d35400] rounded-3xl p-6 text-white shadow-lg shadow-[#d35400]/20 relative overflow-hidden group">
-                        <div className="relative z-10">
-                            <h3 className="text-lg font-bold mb-1">Portfolio</h3>
-                            <p className="text-white/80 text-[11px] mb-4 leading-relaxed">
-                                Share your latest luxury transformations with the world.
-                            </p>
-                            <Link
-                                href="/admin/projects"
-                                className="inline-flex items-center gap-2 bg-white text-[#d35400] px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-transform hover:scale-105"
-                            >
-                                Manage Projects
-                            </Link>
-                        </div>
-                        <ImageIcon className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10 rotate-12 group-hover:rotate-0 transition-transform duration-500" />
                     </div>
                 </div>
+
+                {/* Right Column: Recent Activity */}
+                <div className="xl:col-span-2">
+                    <div className="bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/5 overflow-hidden shadow-sm h-full flex flex-col">
+                        <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between bg-neutral-50/50 dark:bg-white/[0.01]">
+                            <h3 className="text-sm font-bold flex items-center gap-2">
+                                <MessageSquare className="w-4 h-4 text-neutral-400" />
+                                Recent Inquiries
+                            </h3>
+                            <Link href="/admin/leads" className="text-[10px] font-bold uppercase tracking-widest text-[#d35400] hover:underline">View All Leads</Link>
+                        </div>
+                        <div className="divide-y divide-neutral-200 dark:divide-white/5 flex-1 flex flex-col justify-start">
+                            {recentLeads.length > 0 ? recentLeads.map((lead) => (
+                                <div key={lead.id} className="px-6 py-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-white/5 dark:to-white/10 flex items-center justify-center text-sm font-black text-[#d35400]">
+                                            {lead.name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold">{lead.name}</p>
+                                            <p className="text-[10px] text-neutral-500">{lead.service}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className={`text-[9px] px-2 py-1 rounded-md font-bold uppercase tracking-widest ${lead.status === 'NEW' ? 'bg-blue-500/10 text-blue-500' :
+                                            lead.status === 'CONTACTED' ? 'bg-amber-500/10 text-amber-500' :
+                                                'bg-neutral-100 dark:bg-white/10'
+                                            }`}>
+                                            {lead.status}
+                                        </span>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="p-12 text-center text-neutral-500 text-xs my-auto">No recent leads found in database.</div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     );

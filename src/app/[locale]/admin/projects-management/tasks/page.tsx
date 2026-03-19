@@ -7,7 +7,7 @@ import { projectsTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
-    { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Tasks Database...</div> }
+    { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Projects Database...</div> }
 );
 
 export default function TasksPage() {
@@ -16,10 +16,10 @@ export default function TasksPage() {
             <ModuleTabs tabs={projectsTabs} groupId="projects" />
             <div className="w-full h-full p-6 pb-10">
                 <div className="mb-4">
-                    <h1 className="text-2xl font-bold">Tasks</h1>
-                    <p className="text-sm text-neutral-500">Manage daily action items, sub-tasks, and individual assignments.</p>
+                    <h1 className="text-2xl font-bold">Projects Database</h1>
+                    <p className="text-sm text-neutral-500">Manage all remodeling projects and their high-level details.</p>
                 </div>
-                <DatabaseCloneDynamic databaseId="db-tasks" />
+                <DatabaseCloneDynamic databaseId="db-1" />
             </div>
         </div>
     );

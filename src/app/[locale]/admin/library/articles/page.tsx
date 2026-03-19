@@ -1,6 +1,8 @@
 "use client";
 
 import dynamic from 'next/dynamic';
+import ModuleTabs from "@/components/admin/ModuleTabs";
+import { libraryTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -9,12 +11,15 @@ const DatabaseCloneDynamic = dynamic(
 
 export default function ArticlesPage() {
     return (
-        <div className="w-full h-full pb-10">
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold">Articles Library</h1>
-                <p className="text-sm text-neutral-500">Manage knowledge base articles, blog posts, and thought leadership content.</p>
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={libraryTabs} groupId="library" />
+            <div className="w-full h-full p-6 pb-10">
+                <div className="mb-4">
+                    <h1 className="text-2xl font-bold">Articles Library</h1>
+                    <p className="text-sm text-neutral-500">Manage knowledge base articles, blog posts, and thought leadership content.</p>
+                </div>
+                <DatabaseCloneDynamic databaseId="db-articles" />
             </div>
-            <DatabaseCloneDynamic databaseId="db-articles" />
         </div>
     );
 }

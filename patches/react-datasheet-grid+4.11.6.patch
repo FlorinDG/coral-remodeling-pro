@@ -1,0 +1,18 @@
+diff --git a/node_modules/react-datasheet-grid/dist/hooks/useColumnWidths.js b/node_modules/react-datasheet-grid/dist/hooks/useColumnWidths.js
+index 1eca24a..b1d29e2 100644
+--- a/node_modules/react-datasheet-grid/dist/hooks/useColumnWidths.js
++++ b/node_modules/react-datasheet-grid/dist/hooks/useColumnWidths.js
+@@ -33,6 +33,13 @@ const getColumnWidths = (containerWidth, columns) => {
+         let totalViolation = 0;
+         for (const item of items) {
+             if (!item.frozen) {
++                // PATCH: If a developer explicitly passed grow: 0 and shrink: 0,
++                // NEVER mathematically stretch this column under any circumstances.
++                if (item.factor === 0 && item.basis > 0) {
++                    item.frozen = true;
++                    item.size = item.basis;
++                    continue;
++                }
+                 item.size += (availableWidth * item.factor) / sumFactors;
+                 if (item.size < item.minWidth) {
+                     item.violation = item.minWidth - item.size;

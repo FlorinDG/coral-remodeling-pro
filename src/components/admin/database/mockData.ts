@@ -98,12 +98,19 @@ export const mockPages: Page[] = [
 
 export const mockClientPages: Page[] = [
     {
-        id: 'page-client-1',
+        id: 'page-contact-1',
         databaseId: 'db-clients',
         properties: {
             'title': 'John Doe Architecture',
+            'prop-first-name': 'John',
+            'prop-last-name': 'Doe',
             'prop-client-email': 'john@doe-arch.com',
-            'prop-client-phone': '+32 470 12 34 56'
+            'prop-client-phone-mobile': '+32 470 12 34 56',
+            'prop-contact-type': 'opt-partner',
+            'prop-client-status': 'opt-active',
+            'prop-language': 'opt-en',
+            'prop-address-city': 'Brussels',
+            'prop-vat-number': 'BE0123.456.789'
         },
         blocks: [],
         createdAt: new Date().toISOString(),
@@ -112,12 +119,41 @@ export const mockClientPages: Page[] = [
         lastEditedBy: 'system'
     },
     {
-        id: 'page-client-2',
+        id: 'page-contact-2',
         databaseId: 'db-clients',
         properties: {
-            'title': 'Emma Smith Interiors',
-            'prop-client-email': 'emma@smith-interiors.be',
-            'prop-client-phone': '+32 471 23 45 67'
+            'title': 'Emma Smith',
+            'prop-first-name': 'Emma',
+            'prop-last-name': 'Smith',
+            'prop-client-email': 'emma.smith@gmail.com',
+            'prop-client-phone-mobile': '+32 471 23 45 67',
+            'prop-contact-type': 'opt-b2c',
+            'prop-client-status': 'opt-lead',
+            'prop-lead-source': 'opt-web',
+            'prop-language': 'opt-nl',
+            'prop-address-city': 'Antwerp',
+            'prop-portal-access': false
+        },
+        blocks: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: 'system',
+        lastEditedBy: 'system'
+    },
+    {
+        id: 'page-contact-3',
+        databaseId: 'db-clients',
+        properties: {
+            'title': 'BuildIt Supplies NV',
+            'prop-first-name': 'Marc',
+            'prop-last-name': 'Janssens',
+            'prop-client-email': 'contact@buildit-supplies.be',
+            'prop-client-phone-office': '+32 2 123 45 67',
+            'prop-contact-type': 'opt-supplier',
+            'prop-client-status': 'opt-active',
+            'prop-language': 'opt-nl',
+            'prop-address-city': 'Ghent',
+            'prop-vat-number': 'BE0987.654.321'
         },
         blocks: [],
         createdAt: new Date().toISOString(),
@@ -147,18 +183,106 @@ export const mockDatabases: Database[] = [
     },
     {
         id: 'db-clients',
-        name: 'Clients Database',
-        description: 'Master list of all clients.',
-        icon: '👥',
+        name: 'Contacts Database',
+        description: 'Central list of all professional contacts, excluding workforce.',
+        icon: '📇',
         properties: [
-            { id: 'title', name: 'Name', type: 'text' },
-            { id: 'prop-client-email', name: 'Email', type: 'email' },
-            { id: 'prop-client-phone', name: 'Phone', type: 'phone' }
+            { id: 'title', name: 'Company / Full Name', type: 'text' },
+            { id: 'prop-first-name', name: 'First Name', type: 'text' },
+            { id: 'prop-last-name', name: 'Last Name', type: 'text' },
+            { id: 'prop-client-email', name: 'Primary Email', type: 'email' },
+            { id: 'prop-client-phone-mobile', name: 'Mobile Phone', type: 'phone' },
+            { id: 'prop-client-phone-office', name: 'Office Phone', type: 'phone' },
+            {
+                id: 'prop-contact-type',
+                name: 'Contact Type',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-b2c', name: 'Residential Client', color: 'blue' },
+                        { id: 'opt-commercial', name: 'Commercial Client', color: 'purple' },
+                        { id: 'opt-partner', name: 'Architect Partner', color: 'pink' },
+                        { id: 'opt-supplier', name: 'Supplier / Vendor', color: 'orange' },
+                        { id: 'opt-other', name: 'Other', color: 'gray' }
+                    ]
+                }
+            },
+            {
+                id: 'prop-client-status',
+                name: 'Status',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-lead', name: 'Lead', color: 'yellow' },
+                        { id: 'opt-prospect', name: 'Qualified Prospect', color: 'orange' },
+                        { id: 'opt-active', name: 'Active Client', color: 'green' },
+                        { id: 'opt-past', name: 'Past Client', color: 'gray' },
+                        { id: 'opt-archived', name: 'Archived', color: 'red' }
+                    ]
+                }
+            },
+            {
+                id: 'prop-lead-source',
+                name: 'Lead Source',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-web', name: 'Website Form', color: 'blue' },
+                        { id: 'opt-bobex', name: 'Bobex', color: 'purple' },
+                        { id: 'opt-referral', name: 'Referral', color: 'pink' },
+                        { id: 'opt-ads', name: 'Google Ads', color: 'green' },
+                        { id: 'opt-direct', name: 'Direct Contact', color: 'orange' }
+                    ]
+                }
+            },
+            {
+                id: 'prop-language',
+                name: 'Language',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-nl', name: 'Dutch', color: 'blue' },
+                        { id: 'opt-fr', name: 'French', color: 'red' },
+                        { id: 'opt-en', name: 'English', color: 'gray' },
+                        { id: 'opt-ro', name: 'Romanian', color: 'yellow' }
+                    ]
+                }
+            },
+            { id: 'prop-address-street', name: 'Street Address', type: 'text' },
+            { id: 'prop-address-number', name: 'House Number', type: 'text' },
+            { id: 'prop-address-postal', name: 'Postal Code', type: 'text' },
+            { id: 'prop-address-city', name: 'City', type: 'text' },
+            { id: 'prop-address-country', name: 'Country', type: 'text' },
+            { id: 'prop-vat-number', name: 'VAT Number', type: 'text' },
+            { id: 'prop-portal-access', name: 'Portal Access', type: 'checkbox' },
+            { id: 'prop-next-followup', name: 'Next Follow-up', type: 'date' }
         ],
         pages: mockClientPages,
         activeFilters: [],
         views: [
-            { id: 'view-client-table', name: 'All Clients', type: 'table' }
+            { id: 'view-contact-all', name: 'All Contacts', type: 'table' },
+            {
+                id: 'view-contact-active',
+                name: 'Active Clients',
+                type: 'table',
+                filters: [
+                    { id: 'filter-active', propertyId: 'prop-client-status', operator: 'equals', value: 'opt-active' }
+                ]
+            },
+            {
+                id: 'view-contact-b2b',
+                name: 'B2B Partners',
+                type: 'table',
+                filters: [
+                    { id: 'filter-partner', propertyId: 'prop-contact-type', operator: 'equals', value: 'opt-partner' }
+                ]
+            },
+            {
+                id: 'view-contact-followup',
+                name: 'Pending Follow-ups',
+                type: 'board',
+                config: { groupByPropertyId: 'prop-client-status' }
+            }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -269,6 +393,7 @@ export const mockDatabases: Database[] = [
             { id: 'title', name: 'Task Name', type: 'text' },
             { id: 'prop-task-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-todo', name: 'To Do', color: 'gray' }, { id: 'opt-doing', name: 'In Progress', color: 'blue' }, { id: 'opt-done', name: 'Done', color: 'green' }] } },
             { id: 'prop-task-assignee', name: 'Assignee', type: 'text' },
+            { id: 'prop-task-priority', name: 'Priority', type: 'select', config: { options: [{ id: 'opt-low', name: 'Low', color: 'green' }, { id: 'opt-med', name: 'Medium', color: 'yellow' }, { id: 'opt-high', name: 'High', color: 'red' }] } },
             { id: 'prop-task-due', name: 'Due Date', type: 'date' }
         ],
         pages: [],

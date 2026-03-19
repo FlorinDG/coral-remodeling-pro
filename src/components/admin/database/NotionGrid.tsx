@@ -11,7 +11,7 @@ import {
 } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
-import { Download, Upload, Plus } from 'lucide-react';
+import { Download, Upload, Plus, GripVertical } from 'lucide-react';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
@@ -22,6 +22,8 @@ import { relationColumn } from './columns/RelationColumn';
 import { rollupColumn } from './columns/RollupColumn';
 import { formulaColumn } from './columns/FormulaColumn';
 import PageModal from './components/PageModal';
+import PropertiesDropdown from './components/PropertiesDropdown';
+import { Property } from './types';
 
 interface NotionGridProps {
     databaseId: string;
@@ -31,18 +33,54 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
+    const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
+    const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
     const [activePageId, setActivePageId] = useState<string | null>(null);
+    const [resizingProperty, setResizingProperty] = useState<string | null>(null);
+    const [resizeOffset, setResizeOffset] = useState<number>(0);
 
     // Subscribe to store changes manually for this specific DB to avoid full-app re-renders
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    const activeViewId = database?.views?.[0]?.id; // Defaulting to first view for now, will add tabs later
+    const activeView = database?.views?.find(v => v.id === activeViewId);
 
     const [isReady, setIsReady] = useState(false);
+    const [hasHydrated, setHasHydrated] = useState(false);
     const isMounted = useRef(false);
+    const headerScrollRef = useRef<HTMLDivElement>(null);
+    const gridWrapperRef = useRef<HTMLDivElement>(null);
+
+    // Sync header scroll with grid scroll to ensure columns align horizontally
+    useEffect(() => {
+        if (!isReady) return;
+
+        const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+
+        const handleScroll = (e: Event) => {
+            if (headerScrollRef.current && e.target instanceof Element) {
+                headerScrollRef.current.style.transform = `translateX(-${e.target.scrollLeft}px)`;
+            }
+        };
+
+        if (gridContainer) {
+            gridContainer.addEventListener('scroll', handleScroll, { passive: true });
+        }
+
+        return () => {
+            if (gridContainer) {
+                gridContainer.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [isReady]);
     useEffect(() => {
         isMounted.current = true;
         // Delay mounting the grid slightly to ensure the parent flex-box layout 
         // has fully stabilized its pixel dimensions across all sidebars/paddings.
         const timer = setTimeout(() => setIsReady(true), 50);
+
+        useDatabaseStore.persist.onFinishHydration(() => setHasHydrated(true));
+        setHasHydrated(useDatabaseStore.persist.hasHydrated());
+
         return () => {
             isMounted.current = false;
             clearTimeout(timer);
@@ -50,73 +88,160 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     }, []);
 
     // Use properties reference directly to avoid recreating columns when page data updates (which changes database reference)
-    const databaseProperties = database?.properties;
-    const databaseIdRef = database?.id;
+    const databaseProperties = database?.properties || [];
+    const databaseIdRef = database?.id || '';
+
+    const viewStateMap = useMemo(() => new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []), [activeView?.propertiesState]);
+
+    const orderedVisibleProperties = useMemo(() => {
+        return [...databaseProperties]
+            .filter(prop => {
+                const state = viewStateMap.get(prop.id);
+                return !state?.hidden;
+            })
+            .sort((a, b) => {
+                const orderA = viewStateMap.get(a.id)?.order ?? 999;
+                const orderB = viewStateMap.get(b.id)?.order ?? 999;
+                return orderA - orderB;
+            });
+    }, [databaseProperties, viewStateMap]);
+
+    // Deeply stringify the critical widths to force React to trigger the columns useMemo when a drag ends
+    const columnWidthsHash = useMemo(() => {
+        return orderedVisibleProperties.map(p => `${p.id}:${viewStateMap.get(p.id)?.width || 150}`).join('|');
+    }, [orderedVisibleProperties, viewStateMap]);
 
     const columns = useMemo<Column<any, any>[]>(() => {
-        if (!databaseProperties || !databaseIdRef) return [];
+        if (!databaseProperties.length || !databaseIdRef || !activeViewId) return [];
 
-        return databaseProperties.map(prop => {
-            // Because TitleColumn operates on the full row data, we handle it separately
-            if (prop.id === 'title') {
+        const columnTraceLogs = orderedVisibleProperties.map(p => `${p.id}:${viewStateMap.get(p.id)?.width || 150}`).join(', ');
+        console.log("NotionGrid Rebuilding Columns! ->", columnTraceLogs);
+
+        const mappedProperties = orderedVisibleProperties
+            .map((prop: Property, i: number) => {
+                const state = viewStateMap.get(prop.id);
+                const columnWidth = state?.width || 150;
+                const currentWidth = resizingProperty === prop.id ? resizeOffset : columnWidth;
+                const GhostHeader = <div className="hidden" />;
+
+                // Because TitleColumn operates on the full row data, we handle it separately
+                if (prop.id === 'title') {
+                    return {
+                        ...titleColumn(prop.id, (row) => setActivePageId(row.id)),
+                        title: GhostHeader,
+                        basis: columnWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: columnWidth,
+                        maxWidth: columnWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
+
+                // Rollups also need full row data to read sibling relation properties
+                if (prop.type === 'rollup' && prop.config?.rollupPropertyId && prop.config?.rollupTargetPropertyId) {
+                    return {
+                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId) as any,
+                        title: GhostHeader,
+                        basis: columnWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: columnWidth,
+                        maxWidth: columnWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
+
+                // Relations need full row data to allow precise multi-select array mutations
+                if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
+                    return {
+                        ...relationColumn(prop.id, prop.config.relationDatabaseId) as any,
+                        title: GhostHeader,
+                        basis: columnWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: columnWidth,
+                        maxWidth: columnWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
+
+                // Formulas evaluate mathematical logic against row data dynamically
+                if (prop.type === 'formula' && prop.config?.formulaExpression) {
+                    return {
+                        ...formulaColumn(prop.config.formulaExpression, databaseIdRef) as any,
+                        title: GhostHeader,
+                        basis: columnWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: columnWidth,
+                        maxWidth: columnWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
+
+                // Map our PropertyType to react-datasheet-grid columns for other types
+                let baseColumn = textColumn;
+
+                if (prop.type === 'checkbox') {
+                    baseColumn = checkboxColumn as any;
+                } else if (prop.type === 'select' || prop.type === 'multi_select') {
+                    baseColumn = selectColumn({ choices: prop.config?.options || [] }) as any;
+                } else if (prop.type === 'date') {
+                    baseColumn = dateColumn as any;
+                }
+                // More custom columns like Number will go here later
+
                 return {
-                    ...titleColumn(prop.id, (row) => setActivePageId(row.id)),
-                    title: <ColumnHeader databaseId={databaseIdRef} property={prop} />,
-                    minWidth: 150
+                    ...keyColumn(prop.id, baseColumn),
+                    title: GhostHeader,
+                    basis: columnWidth,
+                    grow: 0,
+                    shrink: 0,
+                    minWidth: columnWidth,
+                    maxWidth: columnWidth,
+                    cellClassName: `dsg-col-${prop.id}`
                 };
-            }
+            });
 
-            // Rollups also need full row data to read sibling relation properties
-            if (prop.type === 'rollup' && prop.config?.rollupPropertyId && prop.config?.rollupTargetPropertyId) {
-                return {
-                    ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId) as any,
-                    title: <ColumnHeader databaseId={databaseIdRef} property={prop} />,
-                    minWidth: 150
-                };
-            }
+        // Prepend native HTML5 drag-and-drop Grip handle column
+        return [
+            {
+                title: <div className="hidden" />,
+                basis: 40,
+                grow: 0,
+                shrink: 0,
+                minWidth: 40,
+                maxWidth: 40,
+                component: ({ rowIndex }) => (
+                    <div
+                        draggable
+                        onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', rowIndex.toString());
+                        }}
+                        onDragOver={(e) => {
+                            e.preventDefault();
+                        }}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                            if (!isNaN(sourceIndex) && sourceIndex !== rowIndex && databaseIdRef) {
+                                updatePageOrder(databaseIdRef, sourceIndex, rowIndex);
+                            }
+                        }}
+                        className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition bg-neutral-50 dark:bg-black/50"
+                    >
+                        <GripVertical size={16} />
+                    </div>
+                )
+            },
+            ...mappedProperties
+        ]
+    }, [databaseProperties, databaseIdRef, activeViewId, activeView?.propertiesState, viewStateMap, orderedVisibleProperties, columnWidthsHash]);
 
-            // Relations need full row data to allow precise multi-select array mutations
-            if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
-                return {
-                    ...relationColumn(prop.id, prop.config.relationDatabaseId) as any,
-                    title: <ColumnHeader databaseId={databaseIdRef} property={prop} />,
-                    minWidth: 150
-                };
-            }
 
-            // Formulas evaluate mathematical logic against row data dynamically
-            if (prop.type === 'formula' && prop.config?.formulaExpression) {
-                return {
-                    ...formulaColumn(prop.config.formulaExpression, databaseIdRef) as any,
-                    title: <ColumnHeader databaseId={databaseIdRef} property={prop} />,
-                    minWidth: 150
-                };
-            }
-
-            // Map our PropertyType to react-datasheet-grid columns for other types
-            let baseColumn = textColumn;
-
-            if (prop.type === 'checkbox') {
-                baseColumn = checkboxColumn as any;
-            } else if (prop.type === 'select' || prop.type === 'multi_select') {
-                baseColumn = selectColumn({ choices: prop.config?.options || [] }) as any;
-            } else if (prop.type === 'date') {
-                baseColumn = dateColumn as any;
-            }
-            // More custom columns like Number will go here later
-
-            return {
-                ...keyColumn(prop.id, baseColumn),
-                title: <ColumnHeader databaseId={databaseIdRef} property={prop} />,
-                minWidth: 150
-            };
-        });
-    }, [databaseProperties, databaseIdRef]);
-
-    if (!database) return null;
-
-    // Execute Client-Side Filtering
     const filteredPages = useMemo(() => {
+        if (!database) return [];
         return database.pages.filter(page => {
             if (!database.activeFilters || database.activeFilters.length === 0) return true;
 
@@ -134,12 +259,15 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 }
             });
         });
-    }, [database.pages, database.activeFilters]);
+    }, [database?.pages, database?.activeFilters]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
+        if (!database) return [];
         return [...filteredPages].sort((a, b) => {
-            if (!database.activeSorts || database.activeSorts.length === 0) return 0;
+            if (!database.activeSorts || database.activeSorts.length === 0) {
+                return (a.order ?? 0) - (b.order ?? 0);
+            }
 
             for (const sort of database.activeSorts) {
                 const valA = a.properties[sort.propertyId];
@@ -158,7 +286,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
             return 0;
         });
-    }, [filteredPages, database.activeSorts]);
+    }, [filteredPages, database?.activeSorts]);
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
@@ -221,9 +349,20 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         const propId = headerToPropId[header] || headerToPropId[header.toLowerCase()];
                         if (propId) {
                             const val = row[header];
+                            if (val === undefined || val === null || val === '') return;
+
                             const propDef = database.properties.find(p => p.id === propId);
+
+                            // Transform human-readable CSV string values back into internal Option IDs for select fields
                             if (propDef?.type === 'multi_select' && typeof val === 'string') {
-                                initialProps[propId] = val.split(',').map(s => s.trim()).filter(Boolean);
+                                const optionNames = val.split(',').map(s => s.trim()).filter(Boolean);
+                                initialProps[propId] = optionNames.map(name => {
+                                    const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === name.toLowerCase());
+                                    return match ? match.id : name;
+                                });
+                            } else if (propDef?.type === 'select' && typeof val === 'string') {
+                                const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === val.trim().toLowerCase());
+                                initialProps[propId] = match ? match.id : val;
                             } else {
                                 initialProps[propId] = val;
                             }
@@ -244,8 +383,10 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
         });
     };
 
+    if (!database || !hasHydrated) return null;
+
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
+        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
             <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
@@ -260,6 +401,8 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    {activeViewId && <PropertiesDropdown databaseId={database.id} viewId={activeViewId} />}
+
                     <button
                         onClick={handleExportCSV}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800/80 transition shadow-sm"
@@ -294,48 +437,85 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 <SortToolbar databaseId={database.id} />
             </div>
 
-            <div className="flex-1 w-full p-0 relative overflow-hidden">
+            <div className="flex-1 w-full p-0 relative overflow-hidden min-h-0" ref={gridWrapperRef}>
                 {isReady ? (
-                    <DataSheetGrid
-                        value={rowData}
-                        onChange={(newRows) => {
-                            console.trace("DataSheetGrid onChange fired. isMounted:", isMounted.current);
-                            // Prevent DataSheetGrid from attempting to normalize rows during the initial Next.js render pass
-                            if (!isMounted.current) return;
+                    <div className="w-full h-full flex flex-col pt-9 relative">
+                        {/* Custom Floating Header context to override native grid pointer events */}
+                        <div
+                            onClick={e => e.stopPropagation()}
+                            onMouseDown={e => e.stopPropagation()}
+                            className="absolute top-0 left-0 right-0 h-9 z-50 flex bg-[#f9fafb] dark:bg-neutral-900 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 overflow-visible pointer-events-auto"
+                        >
+                            {/* React DataSheet Grid Row Number Gutter Spacer (43px) + Native Custom Grip Handler Spacer (40px) = 83px total left gutter */}
+                            <div className="w-[83px] border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 relative z-50" />
 
-                            newRows.forEach((newRow: any, index) => {
-                                const oldRow = rowData[index];
-                                if (!oldRow) return;
+                            <div ref={headerScrollRef} className="flex h-full min-w-max relative z-20" style={{ transform: 'translateX(0px)', willChange: 'transform' }}>
+                                {orderedVisibleProperties.map((prop: Property, i: number) => {
+                                    const state = viewStateMap.get(prop.id);
+                                    const width = state?.width || 150;
+                                    const currentWidth = resizingProperty === prop.id ? resizeOffset : width;
 
-                                database.properties.forEach(prop => {
-                                    if (prop.type === 'rollup' || prop.type === 'formula') return; // Read-only
+                                    return (
+                                        <div
+                                            key={prop.id}
+                                            style={{ width: `${currentWidth}px`, minWidth: `${currentWidth}px`, maxWidth: `${currentWidth}px` }}
+                                            className="border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 z-20 relative"
+                                        >
+                                            <ColumnHeader
+                                                databaseId={databaseIdRef}
+                                                viewId={activeViewId!}
+                                                property={prop}
+                                                index={i}
+                                                onLiveResize={(w) => { setResizingProperty(prop.id); setResizeOffset(w); }}
+                                                onLiveResizeEnd={() => { setResizingProperty(null); }}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
 
-                                    // Determine where the new value is stored based on if it bypassed keyColumn
-                                    let newVal;
-                                    if (prop.id === 'title' || (prop.type as string) === 'relation') {
-                                        newVal = newRow.properties?.[prop.id];
-                                    } else {
-                                        newVal = newRow[prop.id];
-                                    }
+                        <div className="flex-1 w-full relative z-10">
+                            <DataSheetGrid
+                                key={columnWidthsHash}
+                                value={rowData}
+                                onChange={(newRows) => {
+                                    if (!isMounted.current) return;
 
-                                    const oldVal = oldRow.properties[prop.id];
+                                    newRows.forEach((newRow: any, index) => {
+                                        const oldRow = rowData[index];
+                                        if (!oldRow) return;
 
-                                    // Deep comparison for arrays (like relations)
-                                    const isDifferent = Array.isArray(newVal) && Array.isArray(oldVal)
-                                        ? JSON.stringify(newVal) !== JSON.stringify(oldVal)
-                                        : newVal !== oldVal;
+                                        database.properties.forEach(prop => {
+                                            if (prop.type === 'rollup' || prop.type === 'formula') return;
 
-                                    if (newVal !== undefined && isDifferent) {
-                                        updatePageProperty(database.id, oldRow.id, prop.id, newVal);
-                                    }
-                                });
-                            });
-                        }}
-                        columns={columns}
-                        autoAddRow={false} // Custom add button handles this
-                        lockRows={false}
-                        className="h-full database-grid-custom"
-                    />
+                                            let newVal;
+                                            if (prop.id === 'title' || (prop.type as string) === 'relation') {
+                                                newVal = newRow.properties?.[prop.id];
+                                            } else {
+                                                newVal = newRow[prop.id];
+                                            }
+
+                                            const oldVal = oldRow.properties[prop.id];
+
+                                            const isDifferent = Array.isArray(newVal) && Array.isArray(oldVal)
+                                                ? JSON.stringify(newVal) !== JSON.stringify(oldVal)
+                                                : newVal !== oldVal;
+
+                                            if (newVal !== undefined && isDifferent) {
+                                                updatePageProperty(database.id, oldRow.id, prop.id, newVal);
+                                            }
+                                        });
+                                    });
+                                }}
+                                columns={columns}
+                                autoAddRow={false}
+                                lockRows={false}
+                                headerRowHeight={0}
+                                className="h-full database-grid-custom tracking-wider"
+                            />
+                        </div>
+                    </div>
                 ) : (
                     <div className="w-full h-full bg-neutral-50/50 dark:bg-white/5 animate-pulse" />
                 )}
@@ -360,19 +540,6 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             --dsg-cell-disabled-background: transparent;
             width: 100%;
             height: 100%;
-        }
-        
-        /* Prevent parent scrollbars from flickering when internal grid calculates width */
-        .dsg-container {
-            overflow: hidden !important;
-            width: 100% !important;
-            max-width: 100% !important;
-        }
-
-        /* Prevent fractional width calculation jitter in ResizeObserver and kill the vertical scrollbar battle loop */
-        .dsg-scrollable-view {
-            width: 100% !important;
-            overflow-y: scroll !important;
         }
 
         .dark .database-grid-custom {

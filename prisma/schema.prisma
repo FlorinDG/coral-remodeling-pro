@@ -77,19 +77,21 @@ model Task {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  start       DateTime
-  end         DateTime
-  allDay      Boolean  @default(false)
-  description String?
-  location    String?
-  userId      String   // Owner of the event
-  taskId      String?  @unique // Optional related task
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task        Task[]   // One-to-many from Event to Task (though typically 1:1 in this usecase, prisma needs array or unique back relation. The Task side has eventId and a relation)
+  id               String   @id @default(cuid())
+  title            String
+  start            DateTime
+  end              DateTime
+  allDay           Boolean  @default(false)
+  description      String?
+  location         String?
+  userId           String   // Owner of the event
+  taskId           String?  @unique // Optional related task
+  googleEventId    String?  @unique // ID of corresponding Google Calendar Event
+  googleCalendarId String?  // ID of the Google Calendar this belongs to
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task             Task[]   // One-to-many from Event to Task (though typically 1:1 in this usecase, prisma needs array or unique back relation. The Task side has eventId and a relation)
 }
 
 model Document {

@@ -29,10 +29,15 @@ function UserIcon(props: any) {
 
 interface ColumnHeaderProps {
     databaseId: string;
+    viewId?: string; // Essential for scoped dimensions
     property: Property;
+    index?: number;  // The column's current active visual index 
+    onLiveResize?: (width: number) => void;
+    onLiveResizeEnd?: () => void;
 }
 
-export default function ColumnHeader({ databaseId, property }: ColumnHeaderProps) {
+export default function ColumnHeader({ databaseId, viewId, property, index = 0, onLiveResize, onLiveResizeEnd }: ColumnHeaderProps) {
+    const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
     const [isOpen, setIsOpen] = useState(false);
@@ -41,6 +46,23 @@ export default function ColumnHeader({ databaseId, property }: ColumnHeaderProps
     const menuRef = useRef<HTMLDivElement>(null);
 
     const Icon = typeIcons[property.type] || Type;
+
+    const activeView = database?.views?.find(v => v.id === viewId);
+    const propertyState = activeView?.propertiesState?.find(p => p.propertyId === property.id);
+    const updateViewPropertyState = useDatabaseStore(state => state.updateViewPropertyState);
+
+    // Provide a sensible default starting width if undefined
+    const [localWidth, setLocalWidth] = useState(propertyState?.width || 150);
+    const [isResizing, setIsResizing] = useState(false);
+    const resizeStartX = useRef<number>(0);
+    const resizeStartWidth = useRef<number>(0);
+
+    // Sync from upper state if external change happens
+    useEffect(() => {
+        if (propertyState?.width !== undefined) {
+            setLocalWidth(propertyState.width);
+        }
+    }, [propertyState?.width]);
 
     // Handle outside click
     useEffect(() => {
@@ -62,15 +84,78 @@ export default function ColumnHeader({ databaseId, property }: ColumnHeaderProps
         setIsOpen(false);
     };
 
-    return (
-        <div className="relative flex items-center w-full h-full group" ref={menuRef}>
-            <button
-                className="flex items-center gap-2 w-full text-left px-2 outline-none"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <Icon className="w-3.5 h-3.5 text-neutral-400" />
-                <span className="font-medium">{property.name}</span>
-            </button>
+    // Resizing Logic
+    const handleResizeStart = (e: React.PointerEvent) => {
+        e.preventDefault();
+        e.stopPropagation(); // Stop sorting/menu trigger
+        setIsResizing(true);
+        resizeStartX.current = e.clientX;
+        resizeStartWidth.current = localWidth;
+
+        document.documentElement.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+
+        const handlePointerMove = (moveEvent: PointerEvent) => {
+            const diff = moveEvent.clientX - resizeStartX.current;
+            const newWidth = Math.max(60, resizeStartWidth.current + diff); // Min width 60px
+            setLocalWidth(newWidth);
+            onLiveResize?.(newWidth);
+        };
+
+        const handlePointerUp = (upEvent: PointerEvent) => {
+            const finalDiff = upEvent.clientX - resizeStartX.current;
+            const finalWidth = Math.max(60, resizeStartWidth.current + finalDiff);
+
+            // Commit to global view state
+            if (viewId) {
+                updateViewPropertyState(databaseId, viewId, property.id, { width: finalWidth });
+            }
+
+            setIsResizing(false);
+            onLiveResizeEnd?.();
+            document.documentElement.style.cursor = '';
+            document.body.style.userSelect = '';
+            document.removeEventListener('pointermove', handlePointerMove);
+            document.removeEventListener('pointerup', handlePointerUp);
+        };
+
+        document.addEventListener('pointermove', handlePointerMove);
+        document.addEventListener('pointerup', handlePointerUp);
+    };
+
+    const innerContent = (
+        <div
+            className={`relative flex items-center h-full group ${isResizing ? 'bg-neutral-100 dark:bg-white/5' : ''}`}
+            ref={menuRef}
+            style={{ width: '100%' }} // Flex layout handles actual sizing, we just stretch to fit
+        >
+            <div className="flex items-center gap-1.5 w-full h-full px-2">
+
+                <button
+                    className="flex items-center gap-1.5 w-full h-full text-left outline-none"
+                    onClick={() => setIsOpen(!isOpen)}
+                    onDoubleClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsOpen(true);
+                        setIsEditing(true);
+                    }}
+                    onContextMenu={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsOpen(true);
+                    }}
+                >
+                    <Icon className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                    <span className="font-medium truncate flex-1 select-none pointer-events-none">{property.name}</span>
+                </button>
+            </div>
+
+            {/* Resize Handle overlaying the right border edge */}
+            <div
+                className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 hover:opacity-100 opacity-0 z-10 transition-colors ${isResizing ? 'bg-blue-500 opacity-100' : ''}`}
+                onPointerDown={handleResizeStart}
+            />
 
             {isOpen && (
                 <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-800 rounded-md shadow-lg border border-neutral-200 dark:border-white/10 z-50 p-1 flex flex-col gap-1 text-sm font-normal">
@@ -111,4 +196,6 @@ export default function ColumnHeader({ databaseId, property }: ColumnHeaderProps
             )}
         </div>
     );
+
+    return innerContent;
 }

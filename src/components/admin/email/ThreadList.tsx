@@ -1,7 +1,7 @@
 "use client";
 
 import { useEmailStore, EmailThread } from "./store";
-import { PenSquare, Search, Check, Clock, Archive } from "lucide-react";
+import { PenSquare, Search, Check, Clock, Archive, RefreshCw } from "lucide-react";
 import { cn } from "@/components/time-tracker/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -32,6 +32,8 @@ export function ThreadList() {
     const selectedThreadId = useEmailStore((state) => state.selectedThreadId);
     const setSelectedThreadId = useEmailStore((state) => state.setSelectedThreadId);
     const searchQuery = useEmailStore((state) => state.searchQuery);
+    const fetchThreads = useEmailStore((state) => state.fetchThreads);
+    const isLoading = useEmailStore((state) => state.isLoading);
 
     // Filter threads simply for UI mockup
     const filteredThreads = threads.filter(t =>
@@ -50,6 +52,14 @@ export function ThreadList() {
                     </span>
                 </h1>
                 <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => fetchThreads()}
+                        disabled={isLoading}
+                        title="Sync Latest Emails"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw size={16} className={cn(isLoading && "animate-spin")} />
+                    </button>
                     <button className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
                         <Search size={16} />
                     </button>
@@ -93,14 +103,23 @@ export function ThreadList() {
                                     }}
                                     onClick={() => setSelectedThreadId(thread.id)}
                                     className={cn(
-                                        "w-full flex flex-col items-start gap-2 border-b border-border p-4 text-left text-sm cursor-pointer transition-colors group relative",
-                                        isSelected ? "bg-accent/50" : "hover:bg-muted/50"
+                                        "w-full flex flex-col items-start gap-1.5 border-b border-border p-3 text-left text-sm cursor-pointer transition-colors group relative",
+                                        isSelected ? "bg-accent/50" : "hover:bg-muted/50",
+                                        !thread.isRead && "bg-muted/10"
                                     )}
                                 >
                                     <div className="flex w-full items-center justify-between">
-                                        <span className="font-semibold text-foreground truncate max-w-[200px]">
-                                            {senderName}
-                                        </span>
+                                        <div className="flex items-center gap-1.5">
+                                            {!thread.isRead && (
+                                                <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                                            )}
+                                            <span className={cn(
+                                                "text-foreground truncate max-w-[180px]",
+                                                !thread.isRead ? "font-bold" : "font-semibold"
+                                            )}>
+                                                {senderName}
+                                            </span>
+                                        </div>
 
                                         <div className="flex items-center">
                                             {/* Actions override timestamp on hover */}
@@ -115,12 +134,15 @@ export function ThreadList() {
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="flex w-full flex-col gap-1">
-                                        <span className="font-medium text-foreground truncate">
+                                    <div className="flex w-full flex-col gap-0.5">
+                                        <span className={cn(
+                                            "truncate text-foreground",
+                                            !thread.isRead ? "font-bold" : "font-medium"
+                                        )}>
                                             {thread.subject || "No Subject"}
                                         </span>
                                         <span className="line-clamp-2 text-xs text-muted-foreground">
-                                            {latestEmail.body}
+                                            {latestEmail.snippet}
                                         </span>
                                     </div>
                                 </div>

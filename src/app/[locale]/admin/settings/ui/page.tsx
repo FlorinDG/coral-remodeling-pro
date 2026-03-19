@@ -166,6 +166,7 @@ export default function SidebarOrderSettings() {
 
                     <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
                         <DndContext
+                            id="dnd-sidebar"
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleDragEnd}
@@ -228,6 +229,7 @@ export default function SidebarOrderSettings() {
 
                     <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
                         <DndContext
+                            id="dnd-tabs"
                             sensors={sensors}
                             collisionDetection={closestCenter}
                             onDragEnd={handleTabDragEnd}

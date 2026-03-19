@@ -67,7 +67,8 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
 
         return result;
     } catch (e: any) {
-        console.error("Formula Evaluation Error:", e);
+        // Suppress console.error to prevent Next.js dev overlay from crashing on expected user typos
+        // console.warn("Formula Evaluation Error:", e.message);
         return '#ERROR!';
     }
 }

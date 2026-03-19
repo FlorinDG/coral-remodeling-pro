@@ -5,9 +5,8 @@ export const hrTabs = [
 ];
 
 export const relationsTabs = [
-    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
+    { label: 'CONTACTS', href: '/admin/contacts', id: 'contacts' },
     { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'suppliers' },
-    { label: 'CLIENTS', href: '/admin/clients', id: 'clients' },
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
 ];
 
@@ -15,6 +14,17 @@ export const frontendTabs = [
     { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
     { label: 'SERVICES', href: '/admin/services', id: 'services' },
     { label: 'PORTFOLIO', href: '/admin/projects', id: 'portfolio' },
+];
+
+export const libraryTabs = [
+    { label: 'ARTICLES', href: '/admin/library/articles', id: 'articles' },
+    { label: 'BESTEK', href: '/admin/library/bestek', id: 'bestek' }
+];
+
+export const projectsTabs = [
+    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
+    { label: 'PROJECTS DATABASE', href: '/admin/projects-management/tasks', id: 'database' },
+    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
 ];
 
 export const financialTabs = [
@@ -27,5 +37,13 @@ export const financialTabs = [
 
 export const settingsTabs = [
     { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
-    { label: 'NOTION SYNC', href: '/admin/notion-sync', id: 'notion' }
+    { label: 'NOTION SYNC', href: '/admin/notion-sync', id: 'notion' },
+    { label: 'CALENDAR', href: '/admin/settings/calendar', id: 'opt-calendar' },
+    { label: 'FINANCIALS', href: '/admin/settings/financials', id: 'opt-financials' },
+    { label: 'HR', href: '/admin/settings/hr', id: 'opt-hr' },
+    { label: 'LIBRARY', href: '/admin/settings/library', id: 'opt-library' },
+    { label: 'PROJECTS', href: '/admin/settings/projects', id: 'opt-projects' },
+    { label: 'RELATIONS', href: '/admin/settings/relations', id: 'opt-relations' },
+    { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
+    { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' }
 ];

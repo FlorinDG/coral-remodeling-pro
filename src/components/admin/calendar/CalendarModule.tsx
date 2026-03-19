@@ -1,15 +1,19 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
+import toast, { Toaster } from 'react-hot-toast';
 import { Settings, Plus, Calendar as CalendarIcon, Check, X, Clock, CalendarDays, ChevronDown, ChevronRight, MapPin, AlignLeft, Briefcase, RefreshCw } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
-import { Link } from "@/i18n/routing";
-
+import { Link, useRouter } from "@/i18n/routing";
+import { useCalendarStore } from './store';
+import { useDatabaseStore } from '../database/store';
+import { enGB } from 'date-fns/locale';
 interface EventData {
     id: string;
     title: string;
@@ -24,16 +28,25 @@ interface EventData {
 
 export default function CalendarModule() {
     const calendarRef = useRef<FullCalendar>(null);
+    const router = useRouter();
     const [date, setDate] = useState<Date>(new Date());
-    const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
+    const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    // Accounts & Calendars
-    const [accounts, setAccounts] = useState<any[]>([]);
+    // Global Store State
+    const { accounts, portals, isLoadingAccounts, fetchAccounts, fetchPortals } = useCalendarStore();
+
+    // Local UI State
     const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(new Set());
-    const [portals, setPortals] = useState<any[]>([]);
 
     // Custom Events State
     const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+    const [taskData, setTaskData] = useState({
+        title: '',
+        dueDate: '',
+        priority: 'opt-med'
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [newEvent, setNewEvent] = useState({
         id: '',
@@ -47,49 +60,34 @@ export default function CalendarModule() {
         portalId: '',
         calendarId: 'local',
         accountId: '',
-        isGoogle: false
+        isGoogle: false,
+        oldCalendarId: '',
+        oldAccountId: ''
     });
 
     useEffect(() => {
-        fetchAccounts();
-        fetchPortals();
-    }, []);
-
-    const fetchAccounts = async () => {
-        setIsLoadingAccounts(true);
-        try {
-            const res = await fetch('/api/calendar/accounts');
-            if (res.ok) {
-                const data = await res.json();
-                setAccounts(data.accounts || []);
-
-                // Select first calendar by default for each account
-                const defaultSelected = new Set<string>();
-                data.accounts?.forEach((acc: any) => {
-                    if (acc.calendars && acc.calendars.length > 0) {
-                        defaultSelected.add(acc.calendars[0].id);
-                    }
+        // Hydrate from network in background
+        fetchAccounts().then(() => {
+            // Select first calendar by default for each account exactly once to avoid batch flashes
+            const currentAccounts = useCalendarStore.getState().accounts;
+            if (currentAccounts && currentAccounts.length > 0) {
+                setSelectedCalendars(prev => {
+                    const next = new Set(prev);
+                    let changed = false;
+                    currentAccounts.forEach((acc: any) => {
+                        if (acc.calendars && acc.calendars.length > 0) {
+                            if (!next.has(acc.calendars[0].id)) {
+                                next.add(acc.calendars[0].id);
+                                changed = true;
+                            }
+                        }
+                    });
+                    return changed ? next : prev;
                 });
-                setSelectedCalendars(defaultSelected);
             }
-        } catch (e) {
-            console.error("Failed to fetch accounts:", e);
-        } finally {
-            setIsLoadingAccounts(false);
-        }
-    };
-
-    const fetchPortals = async () => {
-        try {
-            const res = await fetch('/api/calendar/portals');
-            if (res.ok) {
-                const data = await res.json();
-                setPortals(data);
-            }
-        } catch (e) {
-            console.error("Failed to fetch portals");
-        }
-    };
+        });
+        fetchPortals();
+    }, [fetchAccounts, fetchPortals]);
 
     const toggleCalendar = (calId: string) => {
         const next = new Set(selectedCalendars);
@@ -106,6 +104,7 @@ export default function CalendarModule() {
     // Handle Mini Calendar selection
     const handleDayClick = (day: Date) => {
         setDate(day);
+        setCalendarMonth(day);
         const calendarApi = calendarRef.current?.getApi();
         if (calendarApi) {
             calendarApi.gotoDate(day);
@@ -113,7 +112,7 @@ export default function CalendarModule() {
     };
 
     // Handle FullCalendar Date Selection (Drag / Click)
-    const handleDateSelect = (selectInfo: any) => {
+    const handleDateSelect = useCallback((selectInfo: any) => {
         setNewEvent({
             id: '',
             title: '',
@@ -126,24 +125,22 @@ export default function CalendarModule() {
             portalId: '',
             calendarId: 'local',
             accountId: '',
-            isGoogle: false
+            isGoogle: false,
+            oldCalendarId: '',
+            oldAccountId: ''
         });
         setIsEventModalOpen(true);
         selectInfo.view.calendar.unselect();
-    };
+    }, []);
 
     const handleSaveEvent = async () => {
         if (!newEvent.title.trim()) return;
         setIsSaving(true);
 
-        const isGoogleAPI = newEvent.calendarId !== 'local';
-        const apiUrl = isGoogleAPI ? '/api/calendar/google/events' : '/api/calendar/events';
+        const apiUrl = '/api/calendar/events';
         const method = newEvent.id ? 'PATCH' : 'POST';
 
         const body: any = { ...newEvent };
-        if (isGoogleAPI) {
-            body.eventId = newEvent.id;
-        }
 
         try {
             const res = await fetch(apiUrl, {
@@ -153,13 +150,33 @@ export default function CalendarModule() {
             });
 
             if (res.ok) {
+                // If the user requested an associated task and this is a NEW event
+                if (newEvent.createTask && !newEvent.id) {
+                    useDatabaseStore.getState().createPage('db-tasks', {
+                        'title': `[Event Task] ${newEvent.title}`,
+                        'prop-task-due': newEvent.start.split('T')[0],
+                        'prop-task-priority': 'opt-med',
+                        'prop-task-status': 'opt-todo'
+                    });
+                    toast.success('Event and Task created successfully!');
+                } else {
+                    toast.success('Event saved successfully!');
+                }
+
                 setIsEventModalOpen(false);
                 calendarRef.current?.getApi().refetchEvents();
+
+                // Reset form state so it doesn't try to reuse stale data
+                setNewEvent({
+                    id: '', title: '', start: '', end: '', allDay: false, description: '', location: '', createTask: false, portalId: '', calendarId: 'local', accountId: '', isGoogle: false, oldCalendarId: '', oldAccountId: ''
+                });
             } else {
                 console.error("Failed to save event");
+                toast.error('Failed to save event. Check connection.');
             }
         } catch (error) {
             console.error(error);
+            toast.error('An error occurred while saving.');
         } finally {
             setIsSaving(false);
         }
@@ -170,10 +187,8 @@ export default function CalendarModule() {
         if (!confirm("Are you sure you want to delete this event?")) return;
         setIsSaving(true);
 
-        const isGoogleAPI = newEvent.calendarId !== 'local';
-        const apiUrl = isGoogleAPI
-            ? `/ api / calendar / google / events ? eventId = ${encodeURIComponent(newEvent.id)}& calendarId=${encodeURIComponent(newEvent.calendarId)}& accountId=${encodeURIComponent(newEvent.accountId)} `
-            : `/ api / calendar / events ? id = ${encodeURIComponent(newEvent.id)} `;
+        const apiUrl = `/api/calendar/events?id=${encodeURIComponent(newEvent.id)}` +
+            (newEvent.accountId ? `&accountId=${encodeURIComponent(newEvent.accountId)}` : '');
 
         try {
             const res = await fetch(apiUrl, { method: 'DELETE' });
@@ -189,52 +204,80 @@ export default function CalendarModule() {
     };
 
     // FullCalendar Event Sources
-    const eventSources: any[] = [
-        {
-            url: '/api/calendar/events',
-            className: 'local-event'
-        }
-    ];
+    const eventSources = useMemo(() => {
+        return [{
+            events: async (info: any, successCallback: any, failureCallback: any) => {
+                try {
+                    const res = await fetch('/api/calendar/events');
+                    if (!res.ok) throw new Error("Failed");
+                    let data = await res.json();
 
-    // Add selected Google Calendars as functions
-    accounts.forEach(acc => {
-        acc.calendars?.forEach((cal: any) => {
-            if (selectedCalendars.has(cal.id)) {
-                eventSources.push({
-                    events: async (info: any, successCallback: any, failureCallback: any) => {
-                        try {
-                            const res = await fetch(`/ api / calendar / google / events ? calendarId = ${encodeURIComponent(cal.id)}& accountId=${acc.accountId}& start=${info.startStr}& end=${info.endStr} `);
-                            if (!res.ok) throw new Error("Failed");
-                            const data = await res.json();
-                            successCallback(data.map((e: any) => ({
-                                ...e,
-                                backgroundColor: cal.backgroundColor || '#3b82f6',
-                                borderColor: cal.backgroundColor || '#3b82f6',
-                                extendedProps: {
-                                    ...e.extendedProps,
-                                    calendarId: cal.id,
-                                    accountId: acc.accountId,
-                                    isGoogle: true
-                                }
-                            })));
-                        } catch (e) {
-                            failureCallback(e);
+                    data = data.map((e: any) => {
+                        const calId = e.extendedProps?.googleCalendarId;
+                        let isGoogle = false;
+                        let bgColor = '#d35400'; // local color
+                        let accId = '';
+
+                        if (calId) {
+                            // Find the google account and calendar to assign color
+                            accounts.forEach(acc => {
+                                acc.calendars?.forEach((cal: any) => {
+                                    if (cal.id === calId) {
+                                        isGoogle = true;
+                                        bgColor = cal.backgroundColor || '#3b82f6';
+                                        accId = acc.accountId;
+                                    }
+                                });
+                            });
                         }
-                    },
-                    className: 'google-event'
-                });
+
+                        // For local events, we always render them.
+                        // For Google events, we only render if their calendar is selected in the UI hook.
+                        if (isGoogle && !selectedCalendars.has(calId)) {
+                            return null;
+                        }
+
+                        return {
+                            ...e,
+                            className: isGoogle ? 'google-event' : 'local-event',
+                            backgroundColor: isGoogle ? bgColor : undefined,
+                            borderColor: isGoogle ? bgColor : undefined,
+                            extendedProps: {
+                                ...e.extendedProps,
+                                isGoogle,
+                                accountId: accId
+                            }
+                        };
+                    }).filter(Boolean); // remove unchecked calendars
+
+                    successCallback(data);
+                } catch (e) {
+                    failureCallback(e);
+                }
             }
-        });
-    });
+        }];
+    }, [accounts, selectedCalendars]);
 
-    return (
-        <div className="flex h-full min-h-[calc(100vh-8rem)] bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm relative">
-
-            {/* Sidebar / Settings Area */}
-            <div className={`w - 80 border - r border - neutral - 200 dark: border - white / 10 bg - neutral - 50 / 50 dark: bg - neutral - 900 / 20 flex flex - col transition - all duration - 300`}>
-                <div className="p-5 border-b border-neutral-200 dark:border-white/10">
-                    <button
-                        onClick={() => {
+    const renderCalendar = useMemo(() => {
+        return (
+            <FullCalendar
+                ref={calendarRef}
+                plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+                initialView="timeGridWeek"
+                weekNumbers={true}
+                firstDay={1}
+                locale="en-gb"
+                slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
+                dayHeaderFormat={{ weekday: 'short', day: '2-digit', month: '2-digit', omitCommas: true }}
+                customButtons={{
+                    toggleSidebar: {
+                        text: '☰',
+                        click: () => setIsSidebarOpen(prev => !prev),
+                    },
+                    createEvent: {
+                        text: '+ Create Event',
+                        click: () => {
                             const now = new Date();
                             setNewEvent({
                                 id: '',
@@ -248,43 +291,126 @@ export default function CalendarModule() {
                                 portalId: '',
                                 calendarId: 'local',
                                 accountId: '',
-                                isGoogle: false
+                                isGoogle: false,
+                                oldCalendarId: '',
+                                oldAccountId: ''
                             });
                             setIsEventModalOpen(true);
-                        }}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-all shadow-sm group"
-                    >
-                        <Plus className="w-5 h-5 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
-                        Create Event
-                    </button>
-                </div>
+                        }
+                    },
+                    refreshEvents: {
+                        text: '↻ Sync',
+                        click: async () => {
+                            const toastId = toast.loading('Syncing calendars...');
+                            try {
+                                const res = await fetch('/api/calendar/sync', { method: 'POST' });
+                                if (res.ok) {
+                                    calendarRef.current?.getApi().refetchEvents();
+                                    toast.success('Calendar synced successfully!', { id: toastId });
+                                } else {
+                                    throw new Error("Sync failed");
+                                }
+                            } catch (err) {
+                                console.error(err);
+                                toast.error('Failed to sync. Check connection.', { id: toastId });
+                            }
+                        }
+                    },
+                    createTask: {
+                        text: '+ Create Task',
+                        click: () => {
+                            setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                            setIsTaskModalOpen(true);
+                        }
+                    }
+                }}
+                headerToolbar={{
+                    left: 'toggleSidebar prev,next today',
+                    center: 'title',
+                    right: 'refreshEvents createEvent createTask dayGridMonth,timeGridWeek,timeGridDay'
+                }}
+                eventSources={eventSources}
+                height="100%"
+                editable={true}
+                selectable={true}
+                selectMirror={true}
+                dayMaxEvents={false} /* Do not trim the list */
+                allDaySlot={true} /* Put all-day events on top of the day page */
+                nowIndicator={true}
+                select={handleDateSelect}
+                eventClick={(info) => {
+                    if (info.event.url) {
+                        window.open(info.event.url, '_blank', 'noopener,noreferrer');
+                        info.jsEvent.preventDefault();
+                    } else {
+                        const props = info.event.extendedProps;
+                        setNewEvent({
+                            id: info.event.id,
+                            title: info.event.title,
+                            start: info.event.start?.toISOString() || '',
+                            end: info.event.end?.toISOString() || info.event.start?.toISOString() || '',
+                            allDay: info.event.allDay,
+                            description: props.description || '',
+                            location: props.location || '',
+                            createTask: false,
+                            portalId: '',
+                            calendarId: props.googleCalendarId || 'local',
+                            accountId: props.accountId || '',
+                            isGoogle: !!props.isGoogle,
+                            oldCalendarId: props.googleCalendarId || 'local',
+                            oldAccountId: props.accountId || ''
+                        });
+                        setIsEventModalOpen(true);
+                    }
+                }}
+                datesSet={(arg) => {
+                    const api = calendarRef.current?.getApi();
+                    if (api) {
+                        setCalendarMonth(api.getDate());
+                    } else {
+                        setCalendarMonth(arg.view.currentStart);
+                    }
+                }}
+            />
+        );
+    }, [eventSources, handleDateSelect]);
 
-                <div className="p-4 flex flex-col flex-1 overflow-y-auto w-80 hide-scrollbar">
+    return (
+        <div className="flex h-full min-h-[calc(100vh-8rem)] bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm relative">
+            <Toaster position="top-right" />
+            {/* Sidebar / Settings Area */}
+            <div className={`border-r border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-neutral-900/20 flex flex-col transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 overflow-hidden border-r-0'}`}>
+
+                <div className="p-4 flex flex-col flex-1 overflow-y-auto w-80 hide-scrollbar pt-6">
                     {/* Mini Calendar Apple-esque styling */}
                     <div className="mb-6 flex justify-center bg-white dark:bg-neutral-900/50 p-2 rounded-2xl border border-neutral-100 dark:border-white/5 shadow-sm">
                         <style dangerouslySetInnerHTML={{
                             __html: `
-    .rdp {
-    --rdp - cell - size: 34px;
-    --rdp - accent - color: #d35400;
-    --rdp - background - color: rgba(211, 84, 0, 0.1);
-    margin: 0;
-}
-                            .rdp - day_selected, .rdp - day_selected: focus - visible, .rdp - day_selected:hover {
-    color: white;
-    opacity: 1;
-    background - color: var(--rdp - accent - color);
-}
-                            .rdp - button: hover: not([disabled]): not(.rdp - day_selected) {
-    background - color: rgba(211, 84, 0, 0.05);
-    color: #d35400;
-}
-`}} />
+                            .rdp {
+                                --rdp-cell-size: 34px;
+                                --rdp-accent-color: #d35400;
+                                --rdp-background-color: rgba(211, 84, 0, 0.1);
+                                margin: 0;
+                            }
+                            .rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover {
+                                color: white;
+                                opacity: 1;
+                                background-color: var(--rdp-accent-color);
+                            }
+                            .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+                                background-color: rgba(211, 84, 0, 0.05);
+                                color: #d35400;
+                            }
+                        `}} />
                         <DayPicker
                             mode="single"
                             selected={date}
+                            month={calendarMonth}
+                            onMonthChange={setCalendarMonth}
                             onSelect={(d) => d && handleDayClick(d)}
                             showOutsideDays
+                            weekStartsOn={1}
+                            locale={enGB}
                         />
                     </div>
 
@@ -323,7 +449,7 @@ export default function CalendarModule() {
                                         <div key={cal.id}
                                             onClick={() => toggleCalendar(cal.id)}
                                             className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100/50 dark:hover:bg-white/5 transition-colors cursor-pointer">
-                                            <div className={`w - 4 h - 4 rounded border flex items - center justify - center transition - colors ${selectedCalendars.has(cal.id) ? 'border-transparent' : 'border-neutral-300 dark:border-neutral-600'} `}
+                                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${selectedCalendars.has(cal.id) ? 'border-transparent' : 'border-neutral-300 dark:border-neutral-600'}`}
                                                 style={{ backgroundColor: selectedCalendars.has(cal.id) ? (cal.backgroundColor || '#3b82f6') : 'transparent' }}>
                                                 {selectedCalendars.has(cal.id) && <Check className="w-3 h-3 text-white" />}
                                             </div>
@@ -340,51 +466,7 @@ export default function CalendarModule() {
             {/* Main Calendar Area */}
             <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-black rounded-r-2xl border-l border-neutral-200 dark:border-white/10">
                 <div className="flex-1 p-6 overflow-hidden calendar-container">
-                    <FullCalendar
-                        ref={calendarRef}
-                        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                        initialView="timeGridWeek"
-                        headerToolbar={{
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                        }}
-                        eventSources={eventSources}
-                        height="100%"
-                        editable={true}
-                        selectable={true}
-                        selectMirror={true}
-                        dayMaxEvents={false} /* Do not trim the list */
-                        allDaySlot={true} /* Put all-day events on top of the day page */
-                        nowIndicator={true}
-                        select={handleDateSelect}
-                        eventClick={(info) => {
-                            if (info.event.url) {
-                                window.open(info.event.url, '_blank', 'noopener,noreferrer');
-                                info.jsEvent.preventDefault();
-                            } else {
-                                const props = info.event.extendedProps;
-                                setNewEvent({
-                                    id: info.event.id,
-                                    title: info.event.title,
-                                    start: info.event.start?.toISOString() || '',
-                                    end: info.event.end?.toISOString() || info.event.start?.toISOString() || '',
-                                    allDay: info.event.allDay,
-                                    description: props.description || '',
-                                    location: props.location || '',
-                                    createTask: false,
-                                    portalId: '',
-                                    calendarId: props.calendarId || 'local',
-                                    accountId: props.accountId || '',
-                                    isGoogle: !!props.isGoogle
-                                });
-                                setIsEventModalOpen(true);
-                            }
-                        }}
-                        datesSet={(arg) => {
-                            setDate(arg.view.currentStart);
-                        }}
-                    />
+                    {renderCalendar}
                 </div>
             </div>
 
@@ -423,8 +505,15 @@ export default function CalendarModule() {
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (!val) return;
-                                                const iso = newEvent.allDay ? `${val} T00:00:00.000Z` : new Date(val).toISOString();
-                                                setNewEvent({ ...newEvent, start: iso });
+                                                if (newEvent.allDay) {
+                                                    setNewEvent({ ...newEvent, start: `${val}T00:00:00.000Z` });
+                                                } else {
+                                                    // Preserve local time by not using native UTC parsing
+                                                    const localDate = new Date(val);
+                                                    const offset = localDate.getTimezoneOffset() * 60000;
+                                                    const iso = new Date(localDate.getTime() - offset).toISOString().slice(0, -1);
+                                                    setNewEvent({ ...newEvent, start: `${iso}Z` });
+                                                }
                                             }}
                                         />
                                         <span>to</span>
@@ -435,8 +524,15 @@ export default function CalendarModule() {
                                             onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (!val) return;
-                                                const iso = newEvent.allDay ? `${val} T00:00:00.000Z` : new Date(val).toISOString();
-                                                setNewEvent({ ...newEvent, end: iso });
+                                                if (newEvent.allDay) {
+                                                    setNewEvent({ ...newEvent, end: `${val}T00:00:00.000Z` });
+                                                } else {
+                                                    // Preserve local time
+                                                    const localDate = new Date(val);
+                                                    const offset = localDate.getTimezoneOffset() * 60000;
+                                                    const iso = new Date(localDate.getTime() - offset).toISOString().slice(0, -1);
+                                                    setNewEvent({ ...newEvent, end: `${iso}Z` });
+                                                }
                                             }}
                                         />
                                     </div>
@@ -451,7 +547,7 @@ export default function CalendarModule() {
                                     <CalendarIcon className="w-5 h-5 text-neutral-400" />
                                     <select
                                         className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[#d35400] rounded-md outline-none transition-colors"
-                                        value={newEvent.calendarId === 'local' ? 'local' : `${newEvent.accountId}| ${newEvent.calendarId} `}
+                                        value={newEvent.calendarId === 'local' ? 'local' : `${newEvent.accountId}|${newEvent.calendarId}`}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             if (val === 'local') {
@@ -461,13 +557,12 @@ export default function CalendarModule() {
                                                 setNewEvent({ ...newEvent, calendarId: calId, accountId: accId, isGoogle: true });
                                             }
                                         }}
-                                        disabled={!!newEvent.id} // Don't allow moving existing events between calendars
                                     >
                                         <option value="local">Local Admin Calendar</option>
                                         {accounts.map(acc => (
                                             <optgroup key={acc.accountId} label={acc.email}>
                                                 {acc.calendars?.map((cal: any) => (
-                                                    <option key={cal.id} value={`${acc.accountId}| ${cal.id} `}>{cal.summary}</option>
+                                                    <option key={cal.id} value={`${acc.accountId}|${cal.id}`}>{cal.summary}</option>
                                                 ))}
                                             </optgroup>
                                         ))}
@@ -500,8 +595,8 @@ export default function CalendarModule() {
 
                                 {/* Link to Task Creation (Available for both Local and Google Events) */}
                                 <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w - 4 h - 4 rounded border flex items - center justify - center transition - colors ${newEvent.createTask ? 'bg-[#d35400] border-[#d35400]' : 'border-neutral-300 dark:border-neutral-600 group-hover:border-[#d35400]'} `}>
+                                    <label className="flex items-center gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); setNewEvent({ ...newEvent, createTask: !newEvent.createTask }); }}>
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${newEvent.createTask ? 'bg-[#d35400] border-[#d35400]' : 'border-neutral-300 dark:border-neutral-600 group-hover:border-[#d35400]'}`}>
                                             {newEvent.createTask && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Create associated Task</span>
@@ -515,7 +610,7 @@ export default function CalendarModule() {
                                                 value={newEvent.portalId}
                                                 onChange={(e) => setNewEvent({ ...newEvent, portalId: e.target.value })}
                                             >
-                                                <option value="" disabled>Select a Client Portal</option>
+                                                <option value="">No Client Portal (Admin Task Only)</option>
                                                 {portals.map(p => (
                                                     <option key={p.id} value={p.id}>{p.clientName} {p.projectTitle ? `(${p.projectTitle})` : ''}</option>
                                                 ))}
@@ -547,7 +642,7 @@ export default function CalendarModule() {
                                 </button>
                                 <button
                                     onClick={handleSaveEvent}
-                                    disabled={isSaving || !newEvent.title.trim() || (newEvent.createTask && !newEvent.portalId) || !newEvent.start}
+                                    disabled={isSaving || !newEvent.title.trim() || !newEvent.start}
                                     className="px-5 py-2 text-sm font-medium bg-[#d35400] hover:bg-[#e67e22] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                 >
                                     {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
@@ -559,144 +654,253 @@ export default function CalendarModule() {
                 </div>
             )}
 
+            {/* Standalone Task Creation Modal */}
+            {isTaskModalOpen && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 dark:bg-black/40 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-5 py-4 border-b border-neutral-100 dark:border-white/5 flex justify-between items-center bg-neutral-50/50 dark:bg-neutral-800/50">
+                            <h3 className="font-semibold text-lg text-neutral-900 dark:text-white">New Task</h3>
+                            <button onClick={() => setIsTaskModalOpen(false)} className="p-1 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+                                <X className="w-5 h-5 text-neutral-500" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            <div>
+                                <input
+                                    type="text"
+                                    placeholder="Task Title"
+                                    className="w-full text-lg font-medium px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-colors"
+                                    value={taskData.title}
+                                    onChange={(e) => setTaskData({ ...taskData, title: e.target.value })}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Due Date</label>
+                                    <input
+                                        type="date"
+                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none text-sm transition-colors"
+                                        value={taskData.dueDate}
+                                        onChange={(e) => setTaskData({ ...taskData, dueDate: e.target.value })}
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1.5">
+                                    <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Priority</label>
+                                    <select
+                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none text-sm transition-colors"
+                                        value={taskData.priority}
+                                        onChange={(e) => setTaskData({ ...taskData, priority: e.target.value })}
+                                    >
+                                        <option value="opt-high">High</option>
+                                        <option value="opt-med">Medium</option>
+                                        <option value="opt-low">Low</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-5 py-4 border-t border-neutral-100 dark:border-white/5 flex gap-3 justify-end bg-neutral-50/50 dark:bg-neutral-800/50">
+                            <button
+                                onClick={() => setIsTaskModalOpen(false)}
+                                className="px-4 py-2 text-sm font-medium text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                disabled={!taskData.title.trim()}
+                                className="px-5 py-2 text-sm font-medium bg-[#d35400] hover:bg-[#e67e22] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm"
+                                onClick={() => {
+                                    if (taskData.title.trim()) {
+                                        useDatabaseStore.getState().createPage('db-tasks', {
+                                            'title': taskData.title,
+                                            'prop-task-due': taskData.dueDate,
+                                            'prop-task-priority': taskData.priority,
+                                            'prop-task-status': 'opt-todo' // Default to "To Do"
+                                        });
+                                        toast.success('Task created successfully!');
+                                        setIsTaskModalOpen(false);
+                                        // Reset state for next use
+                                        setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                                    }
+                                }}
+                            >
+                                Create Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
             {/* Premium Apple/Google Calendar CSS Overrides */}
             <style dangerouslySetInnerHTML={{
                 __html: `
-    .calendar - container.fc {
-    --fc - border - color: rgba(0, 0, 0, 0.06);
-    --fc - button - text - color: #525252;
-    --fc - button - bg - color: #fff;
-    --fc - button - border - color: rgba(0, 0, 0, 0.1);
-    --fc - button - hover - bg - color: #f5f5f5;
-    --fc - button - hover - border - color: rgba(0, 0, 0, 0.2);
-    --fc - button - active - bg - color: #fef3c7;
-    --fc - button - active - border - color: #d35400;
-    --fc - button - active - text - color: #d35400;
-    --fc - today - bg - color: rgba(211, 84, 0, 0.03);
-    --fc - now - indicator - color: #ef4444;
-    font - family: inherit;
-}
-
-        .calendar - container.fc.fc - toolbar - title {
-    font - size: 1.25rem;
-    font - weight: 600;
-    color: #171717;
-}
-
-        .calendar - container.fc.fc - col - header - cell {
-    padding: 8px 0;
-    font - weight: 500;
-    text - transform: uppercase;
-    font - size: 0.75rem;
-    color: #737373;
-    border - bottomWidth: 1px;
-}
-
-        .calendar - container.fc - theme - standard.fc - scrollgrid {
-    border: none;
-}
-
-        .calendar - container.fc - theme - standard th {
-    border - top: none;
-    border - left: none;
-    border - right: none;
-}
-
-        .calendar - container.fc.fc - timegrid - now - indicator - arrow {
-    border - width: 5px;
-    border - radius: 5px;
-    border - color: var(--fc - now - indicator - color);
-    margin - top: -5px;
-}
-        .calendar - container.fc.fc - timegrid - now - indicator - line {
-    border - top - width: 2px;
-}
-
-        .calendar - container.fc - event {
-    border - radius: 6px;
-    padding: 3px 6px;
-    border: none;
-    font - size: 0.75rem;
-    font - weight: 500;
-    box - shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    transition: transform 0.1s ease, box - shadow 0.1s ease;
-}
-        
-        .calendar - container.fc - event:hover {
-    transform: translateY(-1px);
-    box - shadow: 0 4px 6px - 1px rgba(0, 0, 0, 0.1), 0 2px 4px - 1px rgba(0, 0, 0, 0.06);
-    z - index: 10!important;
-}
-
-        .calendar - container.local - event {
-    background - color: #d35400;
-    border - color: #d35400;
-}
-
-        .calendar - container.fc - timegrid - event.fc - event - main {
-    padding: 2px;
-}
-
-        .calendar - container.fc.fc - button {
-    border - radius: 8px;
-    padding: 0.4rem 0.8rem;
-    font - size: 0.875rem;
-    font - weight: 500;
-    text - transform: capitalize;
-    transition: all 0.2s;
-}
-        .calendar - container.fc.fc - button - primary: not(: disabled).fc - button - active, 
-        .calendar - container.fc.fc - button - primary: not(: disabled):active {
-    background - color: rgba(211, 84, 0, 0.1);
-    border - color: rgba(211, 84, 0, 0.2);
-    color: #d35400;
-    box - shadow: none;
-}
-
-@media(prefers - color - scheme: dark) {
-          .calendar - container.fc {
-        --fc - border - color: rgba(255, 255, 255, 0.08);
-        --fc - button - text - color: #a3a3a3;
-        --fc - button - bg - color: #171717;
-        --fc - button - border - color: rgba(255, 255, 255, 0.1);
-        --fc - button - hover - bg - color: #262626;
-        --fc - button - hover - border - color: rgba(255, 255, 255, 0.2);
-        --fc - page - bg - color: transparent;
-        --fc - neutral - bg - color: rgba(255, 255, 255, 0.02);
-        --fc - today - bg - color: rgba(211, 84, 0, 0.1);
-    }
-          
-          .calendar - container.fc.fc - toolbar - title {
-        color: #fff;
+    .calendar-container.fc {
+        --fc-border-color: rgba(0, 0, 0, 0.06);
+        --fc-button-text-color: #525252;
+        --fc-button-bg-color: #fff;
+        --fc-button-border-color: rgba(0, 0, 0, 0.1);
+        --fc-button-hover-bg-color: #f5f5f5;
+        --fc-button-hover-border-color: rgba(0, 0, 0, 0.2);
+        --fc-button-active-bg-color: #fef3c7;
+        --fc-button-active-border-color: #d35400;
+        --fc-button-active-text-color: #d35400;
+        --fc-today-bg-color: rgba(211, 84, 0, 0.03);
+        --fc-now-indicator-color: #ef4444;
+        font-family: inherit;
     }
 
-          .calendar - container.fc.fc - daygrid - day - number,
-          .calendar - container.fc.fc - col - header - cell - cushion {
-        color: #d4d4d4;
+    .calendar-container.fc .fc-toolbar-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #171717;
     }
-}
-        
-        .hide - scrollbar:: -webkit - scrollbar {
-    display: none;
-}
-        .hide - scrollbar {
-    -ms - overflow - style: none;
-    scrollbar - width: none;
-}
 
-        .custom - scrollbar:: -webkit - scrollbar {
-    width: 6px;
-}
-        .custom - scrollbar:: -webkit - scrollbar - track {
-    background: transparent;
-}
-        .custom - scrollbar:: -webkit - scrollbar - thumb {
-    background - color: rgba(0, 0, 0, 0.1);
-    border - radius: 10px;
-}
-        .dark.custom - scrollbar:: -webkit - scrollbar - thumb {
-    background - color: rgba(255, 255, 255, 0.1);
-}
+    .calendar-container.fc .fc-col-header-cell {
+        padding: 8px 0;
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        color: #737373;
+        border-bottom-width: 1px;
+    }
+
+    .calendar-container .fc-theme-standard .fc-scrollgrid {
+        border: none;
+    }
+
+    .calendar-container .fc-theme-standard th {
+        border-top: none;
+        border-left: none;
+        border-right: none;
+    }
+
+    .calendar-container.fc .fc-timegrid-now-indicator-arrow {
+        border-width: 5px;
+        border-radius: 5px;
+        border-color: var(--fc-now-indicator-color);
+        margin-top: -5px;
+    }
+    .calendar-container.fc .fc-timegrid-now-indicator-line {
+        border-top-width: 2px;
+    }
+
+    .calendar-container .fc-event {
+        border-radius: 6px;
+        padding: 3px 6px;
+        border: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .calendar-container .fc-event:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 10 !important;
+    }
+
+    .calendar-container .local-event {
+        background-color: #d35400;
+        border-color: #d35400;
+    }
+
+    .calendar-container .fc-timegrid-event .fc-event-main {
+        padding: 2px;
+    }
+
+    .calendar-container.fc .fc-button {
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-transform: capitalize;
+        transition: all 0.2s;
+    }
+
+    /* Styling for the custom action buttons */
+    .calendar-container.fc .fc-createEvent-button,
+    .calendar-container.fc .fc-createTask-button {
+        background-color: #d35400;
+        color: white;
+        border: 1px solid #d35400;
+        padding: 0.4rem 1rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    
+    .calendar-container.fc .fc-createEvent-button:hover,
+    .calendar-container.fc .fc-createTask-button:hover {
+        background-color: #e67e22;
+        border-color: #e67e22;
+        color: white;
+    }
+
+    /* Hamburger button styling */
+    .calendar-container.fc .fc-toggleSidebar-button {
+        font-size: 1.1rem;
+        padding: 0.2rem 0.6rem;
+        color: #525252;
+        background: transparent;
+        border: 1px solid rgba(0,0,0,0.1);
+        margin-right: 0.5rem;
+    }
+
+    .calendar-container.fc .fc-button-primary:not(:disabled).fc-button-active, 
+    .calendar-container.fc .fc-button-primary:not(:disabled):active {
+        background-color: rgba(211, 84, 0, 0.1);
+        border-color: rgba(211, 84, 0, 0.2);
+        color: #d35400;
+        box-shadow: none;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .calendar-container.fc {
+            --fc-border-color: rgba(255, 255, 255, 0.08);
+            --fc-button-text-color: #a3a3a3;
+            --fc-button-bg-color: #171717;
+            --fc-button-border-color: rgba(255, 255, 255, 0.1);
+            --fc-button-hover-bg-color: #262626;
+            --fc-button-hover-border-color: rgba(255, 255, 255, 0.2);
+            --fc-page-bg-color: transparent;
+            --fc-neutral-bg-color: rgba(255, 255, 255, 0.02);
+            --fc-today-bg-color: rgba(211, 84, 0, 0.1);
+        }
+
+        .calendar-container.fc .fc-toolbar-title {
+            color: #fff;
+        }
+
+        .calendar-container.fc .fc-daygrid-day-number,
+        .calendar-container.fc .fc-col-header-cell-cushion {
+            color: #d4d4d4;
+        }
+    }
+
+    .hide-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .hide-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
 `}} />
         </div>
     );

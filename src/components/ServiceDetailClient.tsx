@@ -56,12 +56,6 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
 
             <div className="container mx-auto px-8 md:px-16 py-16 grid md:grid-cols-[2fr_1fr] gap-16">
                 <div className="space-y-12">
-                    <div className="prose dark:prose-invert prose-lg max-w-none">
-                        <p className="text-xl leading-relaxed text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
-                            {service.fullDescription}
-                        </p>
-                    </div>
-
                     <div className="space-y-6">
                         <h3 className="text-2xl font-bold text-neutral-900 dark:text-white">
                             {service.slug === 'kitchen-design' ? translations.specializeIn : translations.keyFeatures}
@@ -74,6 +68,12 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                                 </li>
                             ))}
                         </ul>
+                    </div>
+
+                    <div className="prose dark:prose-invert prose-lg max-w-none">
+                        <p className="text-xl leading-relaxed text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
+                            {service.fullDescription}
+                        </p>
                     </div>
                 </div>
 

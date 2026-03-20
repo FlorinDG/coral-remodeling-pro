@@ -8,10 +8,10 @@ interface FileManagerState {
     error: string | null;
 
     // Actions
-    fetchNodes: (contextType: FileContextType, contextId?: string, tag?: string | null) => Promise<void>;
-    createFolder: (name: string, parentId: string | null, contextType: FileContextType, contextId?: string) => Promise<void>;
-    createGoogleFile: (name: string, type: 'document' | 'spreadsheet', parentId: string | null, contextType: FileContextType, contextId?: string) => Promise<void>;
-    uploadFile: (file: File, parentId: string | null, contextType: FileContextType, contextId?: string) => Promise<void>;
+    fetchNodes: (contextType: FileContextType, contextId?: string, tag?: string | null, driveFolderId?: string) => Promise<void>;
+    createFolder: (name: string, parentId: string | null, contextType: FileContextType, contextId?: string, driveFolderId?: string) => Promise<void>;
+    createGoogleFile: (name: string, type: 'document' | 'spreadsheet', parentId: string | null, contextType: FileContextType, contextId?: string, driveFolderId?: string) => Promise<void>;
+    uploadFile: (file: File, parentId: string | null, contextType: FileContextType, contextId?: string, driveFolderId?: string) => Promise<void>;
     deleteNode: (id: string) => Promise<void>;
     initializeContextFolder: (folderName: string, contextType: FileContextType, contextId: string) => Promise<string | null>;
 
@@ -21,12 +21,9 @@ interface FileManagerState {
 }
 
 // Helper to determine the correct Google Drive folder ID based on the app's context
-// In a full production app, you might look up `contextId` in Prisma to get its matching `driveFolderId`.
-// For Phase 7.1, we map the global context to a base env variable folder.
-const getDriveFolderIdForContext = (contextType: FileContextType, contextId?: string) => {
-    // If we're looking at a specific project row, Ideally we stored its GDrive folder ID in the DB.
-    // For now, if no ID is passed, the API route defaults to `process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID`
-    return contextId || undefined;
+const getDriveFolderIdForContext = (contextType: FileContextType, contextId?: string, driveFolderId?: string) => {
+    // Return explicit driveFolderId if provided (used for scoped projects)
+    return driveFolderId || undefined;
 };
 
 export const useFileManagerStore = create<FileManagerState>()(
@@ -36,10 +33,10 @@ export const useFileManagerStore = create<FileManagerState>()(
             isLoading: false,
             error: null,
 
-            fetchNodes: async (contextType, contextId, tag) => {
+            fetchNodes: async (contextType, contextId, tag, driveFolderId) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const folderId = getDriveFolderIdForContext(contextType, contextId);
+                    const folderId = getDriveFolderIdForContext(contextType, contextId, driveFolderId);
                     const url = new URL('/api/drive', window.location.origin);
                     if (folderId) url.searchParams.append('folderId', folderId);
                     if (tag) url.searchParams.append('tag', tag);
@@ -68,9 +65,9 @@ export const useFileManagerStore = create<FileManagerState>()(
                 }
             },
 
-            createFolder: async (name, parentId, contextType, contextId) => {
+            createFolder: async (name, parentId, contextType, contextId, driveFolderId) => {
                 try {
-                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId);
+                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId, driveFolderId);
 
                     const formData = new FormData();
                     formData.append('action', 'create_folder');
@@ -106,9 +103,9 @@ export const useFileManagerStore = create<FileManagerState>()(
                 }
             },
 
-            createGoogleFile: async (name, type, parentId, contextType, contextId) => {
+            createGoogleFile: async (name, type, parentId, contextType, contextId, driveFolderId) => {
                 try {
-                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId);
+                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId, driveFolderId);
 
                     const formData = new FormData();
                     formData.append('action', 'create_file');
@@ -167,9 +164,9 @@ export const useFileManagerStore = create<FileManagerState>()(
                 }
             },
 
-            uploadFile: async (file, parentId, contextType, contextId) => {
+            uploadFile: async (file, parentId, contextType, contextId, driveFolderId) => {
                 try {
-                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId);
+                    const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId, driveFolderId);
 
                     const formData = new FormData();
                     formData.append('action', 'upload_file');

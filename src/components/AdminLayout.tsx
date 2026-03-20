@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Link } from "@/i18n/routing";
+import { Link, usePathname } from "@/i18n/routing";
 import {
     LayoutDashboard,
     FileText,
@@ -43,6 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const { items: menuItems } = useSidebarStore();
     const { tabOrders } = useTabStore();
+    const pathname = usePathname();
 
     return (
         <div className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden">
@@ -72,13 +73,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                         return (
                             <div key={item.id}>
-                                <Link
-                                    href={resolvedHref}
-                                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
-                                >
-                                    {IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />}
-                                    {isSidebarOpen && <span className="font-bold text-xs">{item.label}</span>}
-                                </Link>
+                                {(() => {
+                                    const isActive = resolvedHref === '/admin'
+                                        ? pathname === '/admin'
+                                        : pathname.startsWith(resolvedHref);
+
+                                    return (
+                                        <Link
+                                            href={resolvedHref}
+                                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${isActive
+                                                ? 'text-[#d35400]'
+                                                : 'hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-900 dark:text-neutral-200'
+                                                }`}
+                                        >
+                                            {isActive ? (
+                                                <div className="w-5 h-5 flex-shrink-0 text-[#d35400]">
+                                                    <Logo />
+                                                </div>
+                                            ) : (
+                                                IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
+                                            )}
+                                            {isSidebarOpen && <span className="text-xs font-bold">{item.label}</span>}
+                                        </Link>
+                                    );
+                                })()}
                             </div>
                         )
                     })}
@@ -107,8 +125,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </aside>
 
             {/* Main Content */}
-            <main className={`flex-1 flex flex-col min-w-0 min-h-screen ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
-                <header className="h-12 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40">
+            <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
+                <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -138,7 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
                 </header>
 
-                <div className="p-6">
+                <div className="flex-1 px-6 pt-6 pb-[10px] overflow-y-auto min-h-0 flex flex-col">
                     {children}
                 </div>
             </main>

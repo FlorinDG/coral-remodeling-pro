@@ -11,7 +11,8 @@ import {
 } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
-import { Download, Upload, Plus, GripVertical } from 'lucide-react';
+import { Download, Upload, Plus, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
@@ -33,6 +34,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
+    const deletePage = useDatabaseStore(state => state.deletePage);
     const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
     const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
     const [activePageId, setActivePageId] = useState<string | null>(null);
@@ -213,26 +215,55 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 shrink: 0,
                 minWidth: 40,
                 maxWidth: 40,
-                component: ({ rowIndex }) => (
-                    <div
-                        draggable
-                        onDragStart={(e) => {
-                            e.dataTransfer.setData('text/plain', rowIndex.toString());
-                        }}
-                        onDragOver={(e) => {
-                            e.preventDefault();
-                        }}
-                        onDrop={(e) => {
-                            e.preventDefault();
-                            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                            if (!isNaN(sourceIndex) && sourceIndex !== rowIndex && databaseIdRef) {
-                                updatePageOrder(databaseIdRef, sourceIndex, rowIndex);
-                            }
-                        }}
-                        className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition bg-neutral-50 dark:bg-black/50"
-                    >
-                        <GripVertical size={16} />
-                    </div>
+                component: ({ rowIndex, rowData }) => (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <div
+                                draggable
+                                onDragStart={(e) => {
+                                    e.dataTransfer.setData('text/plain', rowIndex.toString());
+                                }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                                    if (!isNaN(sourceIndex) && sourceIndex !== rowIndex && databaseIdRef) {
+                                        updatePageOrder(databaseIdRef, sourceIndex, rowIndex);
+                                    }
+                                }}
+                                className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition bg-neutral-50 dark:bg-black/50"
+                            >
+                                <GripVertical size={16} />
+                            </div>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent align="start" className="w-48 z-[100] shadow-xl">
+                            <DropdownMenuItem onClick={() => setActivePageId(rowData.id)} className="cursor-pointer">
+                                <Maximize2 className="w-4 h-4 mr-2" />
+                                <span>Open</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                                const newProps = { ...rowData.properties };
+                                if (newProps.title) {
+                                    newProps.title = `${newProps.title} (Copy)`;
+                                }
+                                createPage(databaseIdRef, newProps);
+                            }} className="cursor-pointer">
+                                <Copy className="w-4 h-4 mr-2" />
+                                <span>Duplicate</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                                onClick={() => deletePage(databaseIdRef, rowData.id)}
+                                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                            >
+                                <Trash className="w-4 h-4 mr-2" />
+                                <span>Delete</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )
             },
             ...mappedProperties
@@ -387,7 +418,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
-            <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 flex items-center justify-between">
+            <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 flex items-center justify-between relative z-[60]">
                 <div>
                     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                         {database.icon && <span>{database.icon}</span>}
@@ -402,6 +433,8 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 </div>
                 <div className="flex items-center gap-2">
                     {activeViewId && <PropertiesDropdown databaseId={database.id} viewId={activeViewId} />}
+                    <FilterToolbar databaseId={database.id} />
+                    <SortToolbar databaseId={database.id} />
 
                     <button
                         onClick={handleExportCSV}
@@ -423,18 +456,25 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                     </label>
 
                     <button
-                        onClick={() => createPage(database.id)}
+                        onClick={() => {
+                            createPage(database.id);
+                            // Scroll to bottom so the new row is visible
+                            setTimeout(() => {
+                                const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+                                if (gridContainer) {
+                                    gridContainer.scrollTo({
+                                        top: gridContainer.scrollHeight,
+                                        behavior: 'smooth'
+                                    });
+                                }
+                            }, 150);
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
                         <span className="hidden md:inline">New Row</span>
                     </button>
                 </div>
-            </div>
-
-            <div className="flex flex-col w-full">
-                <FilterToolbar databaseId={database.id} />
-                <SortToolbar databaseId={database.id} />
             </div>
 
             <div className="flex-1 w-full p-0 relative overflow-hidden min-h-0" ref={gridWrapperRef}>
@@ -482,8 +522,24 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                                 onChange={(newRows) => {
                                     if (!isMounted.current) return;
 
-                                    newRows.forEach((newRow: any, index) => {
-                                        const oldRow = rowData[index];
+                                    // 1. Detect missing IDs to process grid-native Row deletions
+                                    const newRowIds = new Set(newRows.map((r: any) => r.id).filter(Boolean));
+                                    const deletedRows = rowData.filter(r => !newRowIds.has(r.id));
+
+                                    deletedRows.forEach(deleted => {
+                                        deletePage(database.id, deleted.id);
+                                    });
+
+                                    // 2. Map properties strictly by ID to prevent index shifting bugs during deletions/sorts
+                                    newRows.forEach((newRow: any) => {
+                                        if (!newRow.id) {
+                                            // Handle edge-case: user natively expanded grid via paste drag
+                                            const newProps = newRow.properties || {};
+                                            createPage(database.id, newProps);
+                                            return;
+                                        }
+
+                                        const oldRow = rowData.find(r => r.id === newRow.id);
                                         if (!oldRow) return;
 
                                         database.properties.forEach(prop => {
@@ -498,9 +554,11 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
                                             const oldVal = oldRow.properties[prop.id];
 
+                                            // Normalize permutations of empty values (null, undefined, '') so the DataSheetGrid 
+                                            // doesn't trigger synchronous 'auto-correction' cyclic updates during render on mount.
                                             const isDifferent = Array.isArray(newVal) && Array.isArray(oldVal)
                                                 ? JSON.stringify(newVal) !== JSON.stringify(oldVal)
-                                                : newVal !== oldVal;
+                                                : (newVal ?? '') !== (oldVal ?? '');
 
                                             if (newVal !== undefined && isDifferent) {
                                                 updatePageProperty(database.id, oldRow.id, prop.id, newVal);
@@ -511,6 +569,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                                 columns={columns}
                                 autoAddRow={false}
                                 lockRows={false}
+                                addRowsComponent={false}
                                 headerRowHeight={0}
                                 className="h-full database-grid-custom tracking-wider"
                             />

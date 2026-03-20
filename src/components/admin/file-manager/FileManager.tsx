@@ -176,9 +176,11 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
 
     useEffect(() => {
         // Trigger live fetch from Google Drive API on mount and context change
-        // We pass the driveFolderId as the contextId argument directly into fetchNodes so the API route knows where to look
-        fetchNodes(contextType || 'global', driveFolderId || contextId, tagFilter);
-    }, [contextType, contextId, driveFolderId, tagFilter, fetchNodes]);
+        // Wait for driveFolderId to be available for non-global contexts.
+        if (!isGlobalMode && !driveFolderId) return;
+
+        fetchNodes(contextType || 'global', contextId, tagFilter, driveFolderId);
+    }, [contextType, contextId, driveFolderId, tagFilter, fetchNodes, isGlobalMode]);
 
     // 1. Get the pool of relevant nodes based on scope
     const scopedNodes = useMemo(() => {
@@ -315,7 +317,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                         <button
                             onClick={async () => {
                                 const name = prompt('Enter new folder name:');
-                                if (name) await createFolder(name, currentFolderId, contextType || 'global', contextId);
+                                if (name) await createFolder(name, currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-md transition-colors"
                         >
@@ -326,7 +328,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                         <button
                             onClick={async () => {
                                 const name = prompt('Enter Google Doc name:');
-                                if (name) await createGoogleFile(name, 'document', currentFolderId, contextType || 'global', contextId);
+                                if (name) await createGoogleFile(name, 'document', currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors"
                         >
@@ -337,7 +339,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                         <button
                             onClick={async () => {
                                 const name = prompt('Enter Google Sheet name:');
-                                if (name) await createGoogleFile(name, 'spreadsheet', currentFolderId, contextType || 'global', contextId);
+                                if (name) await createGoogleFile(name, 'spreadsheet', currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-500 hover:bg-emerald-500/10 rounded-md transition-colors"
                         >
@@ -354,7 +356,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                        await uploadFile(file, currentFolderId, contextType || 'global', contextId);
+                                        await uploadFile(file, currentFolderId, contextType || 'global', contextId, driveFolderId);
                                     }
                                     e.target.value = ''; // reset
                                 }}

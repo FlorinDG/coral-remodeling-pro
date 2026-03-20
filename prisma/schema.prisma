@@ -288,3 +288,59 @@ model ConnectedEmailAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Contact {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  email     String   @unique
+  phone     String?
+  address   String?
+  town      String?
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platformLeads      PlatformLead[]
+  salesOpportunities SalesOpportunity[]
+}
+
+model PlatformLead {
+  id               String   @id @default(cuid())
+  externalNr       String?
+  contactId        String
+  source           String   @default("BOBEX")
+  dateIn           DateTime @default(now())
+  mailReceivedUrl  String?
+  
+  mailLead         Boolean  @default(false)
+  callLead         Boolean  @default(false)
+  visitPlanned     Boolean  @default(false)
+  
+  status           String   @default("NEW")
+  statusNote       String?
+  location         String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  contact          Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}
+
+model SalesOpportunity {
+  id               String   @id @default(cuid())
+  contactId        String
+  source           String   @default("WEBSITE")
+  dateIn           DateTime @default(now())
+  
+  visitPlanned     Boolean  @default(false)
+  
+  status           String   @default("NEW")
+  expectedValue    Float?   @default(0)
+  statusNote       String?
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  contact          Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+}

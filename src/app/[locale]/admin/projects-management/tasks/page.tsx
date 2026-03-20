@@ -14,7 +14,7 @@ export default function TasksPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={projectsTabs} groupId="projects" />
-            <div className="w-full h-full p-6 pb-10">
+            <div className="w-full h-full flex flex-col pt-6 min-h-0">
                 <div className="mb-4">
                     <h1 className="text-2xl font-bold">Projects Database</h1>
                     <p className="text-sm text-neutral-500">Manage all remodeling projects and their high-level details.</p>

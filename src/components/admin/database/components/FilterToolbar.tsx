@@ -43,7 +43,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
     };
 
     return (
-        <div className="w-full flex-col flex bg-white dark:bg-black border-b border-neutral-200 dark:border-white/10 px-4 py-2">
+        <div className="relative flex items-center">
 
             {/* Top Bar Actions */}
             <div className="flex items-center gap-2">
@@ -52,12 +52,12 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                         if (activeFilters.length === 0) handleAddFilter();
                         else setIsOpen(!isOpen);
                     }}
-                    className={`flex items-center gap-2 px-2 py-1 text-sm font-medium rounded-md transition-colors ${activeFilters.length > 0 || isOpen
-                        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                        : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md transition hover:bg-neutral-50 dark:hover:bg-neutral-800/80 shadow-sm ${activeFilters.length > 0 || isOpen
+                        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-500/20'
+                        : 'text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-white/10'
                         }`}
                 >
-                    <Filter className="w-3.5 h-3.5" />
+                    <Filter className="w-4 h-4" />
                     Filter
                     {activeFilters.length > 0 && (
                         <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
@@ -69,7 +69,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
 
             {/* Expanded Filter Panel */}
             {isOpen && activeFilters.length > 0 && (
-                <div className="mt-3 flex flex-col gap-2 p-3 bg-neutral-50 dark:bg-neutral-900/50 rounded-lg border border-neutral-200 dark:border-white/10">
+                <div className="absolute top-[100%] right-0 mt-2 z-50 min-w-[340px] flex flex-col gap-2 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 shadow-lg">
                     {activeFilters.map((filter, index) => (
                         <div key={filter.id} className="flex items-center gap-2 text-sm">
                             <span className="text-neutral-500 min-w-[50px]">

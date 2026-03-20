@@ -11,6 +11,14 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
     const inputRef = useRef<HTMLInputElement>(null);
     // Extract the string value from the rowData
     const value = (rowData?.properties?.[propId] as string) || '';
+    const [inputValue, setInputValue] = useState(value);
+
+    // Keep local input state synced with external value changes (unless focused)
+    useLayoutEffect(() => {
+        if (!focus) {
+            setInputValue(value);
+        }
+    }, [value, focus]);
 
     useLayoutEffect(() => {
         if (focus && inputRef.current) {
@@ -26,18 +34,37 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
                 id="title-cell-input"
                 name="title-cell-input"
                 className="w-full h-full outline-none bg-white dark:bg-neutral-900 px-2 text-sm font-medium"
-                value={value}
+                value={inputValue}
                 onChange={(e) => {
-                    const newValue = e.target.value;
-                    setRowData({
-                        ...rowData,
-                        properties: {
-                            ...(rowData?.properties || {}),
-                            [propId]: newValue
-                        }
-                    });
+                    setInputValue(e.target.value);
                 }}
-                onBlur={() => stopEditing()}
+                onBlur={() => {
+                    // Commit value when focus leaves cell
+                    if (inputValue !== value) {
+                        setRowData({
+                            ...rowData,
+                            properties: {
+                                ...(rowData?.properties || {}),
+                                [propId]: inputValue
+                            }
+                        });
+                    }
+                    stopEditing();
+                }}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        // Natively commit value safely before grid steals focus to next row
+                        if (inputValue !== value) {
+                            setRowData({
+                                ...rowData,
+                                properties: {
+                                    ...(rowData?.properties || {}),
+                                    [propId]: inputValue
+                                }
+                            });
+                        }
+                    }
+                }}
                 placeholder="Untitled"
             />
         );

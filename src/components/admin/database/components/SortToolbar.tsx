@@ -43,7 +43,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
     };
 
     return (
-        <div className="flex-col flex px-4">
+        <div className="relative flex items-center">
 
             {/* Top Bar Actions */}
             <div className="flex items-center gap-2">
@@ -52,12 +52,12 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
                         if (activeSorts.length === 0) handleAddSort();
                         else setIsOpen(!isOpen);
                     }}
-                    className={`flex items-center gap-2 px-2 py-1 text-sm font-medium rounded-md transition-colors ${activeSorts.length > 0 || isOpen
-                        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                        : 'text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-md transition hover:bg-neutral-50 dark:hover:bg-neutral-800/80 shadow-sm ${activeSorts.length > 0 || isOpen
+                        ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-blue-500/20'
+                        : 'text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-white/10'
                         }`}
                 >
-                    <ArrowUpDown className="w-3.5 h-3.5" />
+                    <ArrowUpDown className="w-4 h-4" />
                     Sort
                     {activeSorts.length > 0 && (
                         <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
@@ -69,7 +69,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
 
             {/* Expanded Sort Panel */}
             {isOpen && activeSorts.length > 0 && (
-                <div className="absolute top-[100%] left-0 mt-2 z-10 min-w-[340px] flex flex-col gap-2 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 shadow-lg">
+                <div className="absolute top-[100%] right-0 mt-2 z-50 min-w-[340px] flex flex-col gap-2 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 shadow-lg">
                     {activeSorts.map((sort, index) => (
                         <div key={sort.id} className="flex items-center gap-2 text-sm">
                             <span className="text-neutral-500 min-w-[60px]">

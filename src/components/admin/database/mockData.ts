@@ -336,12 +336,28 @@ export const mockDatabases: Database[] = [
     {
         id: 'db-crm',
         name: 'CRM: Leads & Pipeline',
-        description: 'Manage sales leads and customer relationships.',
+        description: 'Standard organic leads and sales opportunities trajectory.',
         icon: '🎯',
         properties: [
-            { id: 'title', name: 'Lead Name', type: 'text' },
-            { id: 'prop-crm-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-new', name: 'New', color: 'blue' }, { id: 'opt-contacted', name: 'Contacted', color: 'yellow' }, { id: 'opt-won', name: 'Won', color: 'green' }] } },
-            { id: 'prop-crm-value', name: 'Estimated Value', type: 'number', config: { format: 'euro' } }
+            { id: 'title', name: 'Opportunity Name', type: 'text' },
+            { id: 'prop-c-contact', name: 'Contact', type: 'relation', config: { relationDatabaseId: 'db-clients' } },
+            { id: 'prop-c-source', name: 'Source', type: 'select', config: { options: [{ id: 'opt-web', name: 'Website', color: 'blue' }, { id: 'opt-ref', name: 'Referral', color: 'purple' }, { id: 'opt-bobex-conv', name: 'Bobex Conv.', color: 'green' }] } },
+            { id: 'prop-c-datein', name: 'Date In', type: 'date' },
+            {
+                id: 'prop-crm-status', name: 'Status', type: 'select', config: {
+                    options: [
+                        { id: 'opt-new', name: 'New', color: 'blue' },
+                        { id: 'opt-qual', name: 'Qualification', color: 'purple' },
+                        { id: 'opt-opm', name: 'Oferte Opmaak', color: 'yellow' },
+                        { id: 'opt-sent', name: 'Offerte Sent', color: 'orange' },
+                        { id: 'opt-won', name: 'Won', color: 'green' },
+                        { id: 'opt-lost', name: 'Lost', color: 'red' }
+                    ]
+                }
+            },
+            { id: 'prop-c-visit', name: 'Visit Planned', type: 'checkbox' },
+            { id: 'prop-crm-value', name: 'Estimated Value', type: 'number', config: { format: 'euro' } },
+            { id: 'prop-c-note', name: 'Note', type: 'text' }
         ],
         pages: [],
         activeFilters: [],
@@ -353,12 +369,30 @@ export const mockDatabases: Database[] = [
     {
         id: 'db-bobex',
         name: 'Bobex Pipeline',
-        description: 'Manage specialized leads and requests from Bobex.',
+        description: 'Specialized flow for purchased Bobex leads.',
         icon: '🔗',
         properties: [
-            { id: 'title', name: 'Bobex Client & Request', type: 'text' },
-            { id: 'prop-bobex-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-b-new', name: 'New Request', color: 'blue' }, { id: 'opt-b-contacted', name: 'Contacted', color: 'yellow' }, { id: 'opt-b-won', name: 'Won', color: 'green' }, { id: 'opt-b-lost', name: 'Lost / Expired', color: 'red' }] } },
-            { id: 'prop-bobex-value', name: 'Quoted Value', type: 'number', config: { format: 'euro' } }
+            { id: 'title', name: 'Request Summary', type: 'text' },
+            { id: 'prop-b-extnr', name: 'Nr', type: 'text' },
+            { id: 'prop-b-contact', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients' } },
+            { id: 'prop-b-datein', name: 'Date In', type: 'date' },
+            { id: 'prop-b-location', name: 'Location', type: 'text' },
+            {
+                id: 'prop-bobex-status', name: 'Status', type: 'select', config: {
+                    options: [
+                        { id: 'opt-b-new', name: 'New', color: 'blue' },
+                        { id: 'opt-b-qual', name: 'Qualification', color: 'purple' },
+                        { id: 'opt-b-opm', name: 'Oferte Opmaak', color: 'yellow' },
+                        { id: 'opt-b-sent', name: 'Offerte Sent', color: 'orange' },
+                        { id: 'opt-b-won', name: 'Won', color: 'green' },
+                        { id: 'opt-b-lost', name: 'Lost', color: 'red' }
+                    ]
+                }
+            },
+            { id: 'prop-b-mail', name: 'Mail Lead', type: 'checkbox' },
+            { id: 'prop-b-call', name: 'Call Lead', type: 'checkbox' },
+            { id: 'prop-b-visit', name: 'Visit Planned', type: 'checkbox' },
+            { id: 'prop-b-note', name: 'Status Note', type: 'text' }
         ],
         pages: [],
         activeFilters: [],

@@ -18,7 +18,7 @@ export default function EmployeeDirectoryPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={hrTabs} groupId="hr" />
-            <div className="w-full h-full p-6 pb-10">
+            <div className="w-full h-full flex flex-col pt-6 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-hr" />
             </div>
         </div>

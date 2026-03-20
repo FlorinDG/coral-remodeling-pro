@@ -27,18 +27,14 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
 
         const customOrder = tabOrders[groupId];
 
-        // Sort tabs based on indexing in the customOrder array
-        // Any new tabs not yet in the custom order get appended to the end
-        return [...tabs].sort((a, b) => {
-            const indexA = customOrder.indexOf(a.id);
-            const indexB = customOrder.indexOf(b.id);
+        // Safely extract whatever tabs exist in the saved cache order
+        const ordered = customOrder.map(id => tabs.find(t => t.id === id)).filter(Boolean) as TabConfig[];
 
-            if (indexA === -1 && indexB === -1) return 0;
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
+        // Identify any newly injected tabs that aren't inside the cache yet
+        const missing = tabs.filter(t => !customOrder.includes(t.id));
 
-            return indexA - indexB;
-        });
+        // Deterministically append the missing tabs to the bottom of the list without relying on V8 sorting quirks
+        return [...ordered, ...missing];
     }, [tabs, groupId, tabOrders]);
 
     const activeTabId = useMemo(() => {
@@ -55,7 +51,7 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
     }, [pathname, tabs]);
 
     return (
-        <div className="w-full bg-white dark:bg-black border-b border-neutral-200 dark:border-white/10 px-6 pt-4 flex space-x-6 overflow-x-auto no-scrollbar shadow-sm z-10 sticky top-0">
+        <div className="w-full bg-white dark:bg-black border-b border-neutral-200 dark:border-white/10 px-6 pt-4 flex space-x-6 overflow-x-auto no-scrollbar shadow-sm z-10 sticky top-0 flex-shrink-0">
             {orderedTabs.map((tab) => {
                 const isActive = tab.id === activeTabId;
                 return (

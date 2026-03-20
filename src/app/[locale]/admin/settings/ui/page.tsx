@@ -86,14 +86,18 @@ export default function SidebarOrderSettings() {
     const defaultTabIds = activeGroupConfig?.defaultOrder || [];
 
     // Calculate the user's customized order, falling back to the default order
-    const persistedOrder = tabOrders[selectedGroupId] || defaultTabIds;
+    const persistedOrderRaw = tabOrders[selectedGroupId] || defaultTabIds;
+    // Crucial fix: Merge any newly deployed system tabs that aren't yet in the user's local storage cache
+    const persistedOrder = [...new Set([...persistedOrderRaw, ...defaultTabIds])];
 
     // Manage local drag-and-drop state before saving
     const [localTabOrder, setLocalTabOrder] = useState<string[]>(persistedOrder);
 
     // Sync local state when changing groups or when global storage updates
     useEffect(() => {
-        setLocalTabOrder(tabOrders[selectedGroupId] || getGroupConfig(selectedGroupId)?.defaultOrder || []);
+        const raw = tabOrders[selectedGroupId] || getGroupConfig(selectedGroupId)?.defaultOrder || [];
+        const defaults = getGroupConfig(selectedGroupId)?.defaultOrder || [];
+        setLocalTabOrder([...new Set([...raw, ...defaults])]);
     }, [selectedGroupId, tabOrders]);
 
     const handleTabDragEnd = (event: DragEndEvent) => {

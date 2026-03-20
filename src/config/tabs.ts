@@ -36,6 +36,7 @@ export const financialTabs = [
 ];
 
 export const settingsTabs = [
+    { label: 'INTEGRATIONS', href: '/admin/settings', id: 'integrations' },
     { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
     { label: 'NOTION SYNC', href: '/admin/notion-sync', id: 'notion' },
     { label: 'CALENDAR', href: '/admin/settings/calendar', id: 'opt-calendar' },

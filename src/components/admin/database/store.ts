@@ -1,9 +1,32 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
+import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
 
 import { mockDatabases } from './mockData';
+
+// Custom IndexedDB storage object to bypass the 5MB browser localStorage limit
+const idbStorage: StateStorage = {
+    getItem: async (name: string): Promise<string | null> => {
+        let value = await get(name);
+        // Silent migration: if IndexedDB is empty but legacy data exists, instantly rescue it over
+        if (!value) {
+            value = localStorage.getItem(name);
+            if (value) {
+                await set(name, value);
+            }
+        }
+        return value || null;
+    },
+    setItem: async (name: string, value: string): Promise<void> => {
+        await set(name, value);
+    },
+    removeItem: async (name: string): Promise<void> => {
+        await del(name);
+        localStorage.removeItem(name); // Cleanup legacy trace
+    },
+};
 
 interface DatabaseState {
     databases: Database[];
@@ -13,6 +36,7 @@ interface DatabaseState {
     updateDatabase: (id: string, updates: Partial<Database>) => void;
     deleteDatabase: (id: string) => void;
     getDatabase: (id: string) => Database | undefined;
+    clearDatabase: (databaseId: string) => void;
 
     // View Operations
     addView: (databaseId: string, view: Omit<DatabaseView, 'id'>) => void;
@@ -31,6 +55,7 @@ interface DatabaseState {
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
+    deletePages: (databaseId: string, pageIds: string[]) => void;
     updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Filter Operations
@@ -87,6 +112,14 @@ export const useDatabaseStore = create<DatabaseState>()(
                     databases: state.databases.filter(db => db.id !== id)
                 }));
             },
+
+            clearDatabase: (databaseId) => set((state) => ({
+                databases: state.databases.map(db =>
+                    db.id === databaseId
+                        ? { ...db, pages: [] }
+                        : db
+                )
+            })),
 
             getDatabase: (id) => {
                 return get().databases.find(db => db.id === id);
@@ -362,6 +395,19 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }));
             },
 
+            deletePages: (databaseId, pageIds) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+                        return {
+                            ...db,
+                            pages: db.pages.filter((page: Page) => !pageIds.includes(page.id)),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+            },
+
             updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
@@ -496,6 +542,7 @@ export const useDatabaseStore = create<DatabaseState>()(
         {
             name: 'coral-database-storage', // unique name for localStorage key
             version: 2, // Cache buster for major structural changes
+            storage: createJSONStorage(() => idbStorage),
             migrate: (persistedState: any, version: number) => {
                 if (version < 2) {
                     // Version bumping handled mostly by merge strategy below,
@@ -511,12 +558,25 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const mergedDbs = currentState.databases.map(currentDb => {
                     const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
                     if (savedDb) {
+                        // Merge properties: preserve user's dynamic CSV columns while inheriting codebase static updates
+                        const mergedProperties = [...(savedDb.properties || [])];
+                        currentDb.properties.forEach((devProp: Property) => {
+                            const existingIdx = mergedProperties.findIndex(p => p.id === devProp.id);
+                            if (existingIdx === -1) {
+                                mergedProperties.push(devProp);
+                            } else {
+                                // Override codebase modifications (like new config options) into the saved state
+                                mergedProperties[existingIdx] = { ...mergedProperties[existingIdx], ...devProp };
+                            }
+                        });
+
                         // Inherit new source code properties/views, but keep the user's row data and view customizations
                         return {
                             ...currentDb,
-                            pages: savedDb.pages,
-                            activeFilters: savedDb.activeFilters,
-                            activeSorts: savedDb.activeSorts,
+                            properties: mergedProperties,
+                            pages: savedDb.pages || [],
+                            activeFilters: savedDb.activeFilters || [],
+                            activeSorts: savedDb.activeSorts || [],
                             views: savedDb.views || currentDb.views
                         };
                     }

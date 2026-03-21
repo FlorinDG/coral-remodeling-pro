@@ -13,11 +13,7 @@ export default function ArticlesPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={libraryTabs} groupId="library" />
-            <div className="w-full h-full flex flex-col pt-6 min-h-0">
-                <div className="mb-4">
-                    <h1 className="text-2xl font-bold">Articles Library</h1>
-                    <p className="text-sm text-neutral-500">Manage knowledge base articles, blog posts, and thought leadership content.</p>
-                </div>
+            <div className="w-full h-full flex flex-col pt-4 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-articles" />
             </div>
         </div>

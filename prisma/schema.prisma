@@ -344,3 +344,138 @@ model SalesOpportunity {
 
   contact          Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
+
+// =========================================================================================
+// NEW GLOBAL MODULES (HR, FINANCIALS, PROJECTS, SUPPLIERS)
+// =========================================================================================
+
+model Invoice {
+  id              String        @id @default(cuid())
+  invoiceNumber   String        @unique // e.g., "INV-2026-001"
+  type            String        // "SALES", "PURCHASE", "CREDIT_NOTE_SALES", "CREDIT_NOTE_PURCHASE"
+  status          String        @default("DRAFT") // DRAFT, SENT, PARTIAL, PAID, OVERDUE, CANCELLED
+  issueDate       DateTime      @default(now())
+  dueDate         DateTime
+  
+  // Relations
+  contactId       String?       // For Sales/Clients
+  supplierId      String?       // For Purchases
+  projectId       String?       // Optional linkage to an Internal Project
+  
+  // Totals
+  subtotal        Float         @default(0)
+  vatTotal        Float         @default(0)
+  total           Float         @default(0)
+  
+  notes           String?
+  items           InvoiceItem[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model InvoiceItem {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  description     String
+  quantity        Float
+  unitPrice       Float
+  vatRate         Float    // e.g., 6, 21 for Belgium
+  total           Float
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+}
+
+model Quotation {
+  id              String          @id @default(cuid())
+  quoteNumber     String          @unique // e.g., "OFF-2026-001"
+  status          String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  date            DateTime        @default(now())
+  validUntil      DateTime
+  contactId       String
+  subtotal        Float           @default(0)
+  vatTotal        Float           @default(0)
+  total           Float           @default(0)
+  notes           String?
+  items           QuotationItem[]
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model QuotationItem {
+  id              String    @id @default(cuid())
+  quotationId     String
+  description     String
+  quantity        Float
+  unitPrice       Float
+  vatRate         Float
+  total           Float
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+}
+
+model Employee {
+  id              String      @id @default(cuid())
+  firstName       String
+  lastName        String
+  email           String      @unique
+  phone           String?
+  role            String      // e.g., "MANAGER", "CONTRACTOR", "TECHNICIAN"
+  status          String      @default("ACTIVE")
+  hourlyCost      Float?      // Internal cost calculation
+  hireDate        DateTime?
+  
+  timeEntries     TimeEntry[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model TimeEntry {
+  id              String    @id @default(cuid())
+  employeeId      String
+  projectId       String?   // Link to Internal Project where time was spent
+  taskId          String?   // Optional specific task
+  
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int?      // Calculated upon clock-out
+  
+  description     String?
+  isBillable      Boolean   @default(true)
+  
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model InternalProject {
+  id              String    @id @default(cuid())
+  projectCode     String    @unique // e.g., "PRJ-014"
+  name            String
+  status          String    @default("PLANNING") // PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
+  
+  clientId        String?   // Maps to Contact
+  startDate       DateTime?
+  targetEndDate   DateTime?
+  actualEndDate   DateTime?
+  
+  budget          Float?    @default(0)
+  
+  notes           String?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Supplier {
+  id              String    @id @default(cuid())
+  companyName     String
+  vatNumber       String?   @unique
+  contactPerson   String?
+  email           String?
+  phone           String?
+  address         String?
+  town            String?
+  category        String?   // e.g., "MATERIALS", "SUBCONTRACTOR", "LOGISTICS"
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}

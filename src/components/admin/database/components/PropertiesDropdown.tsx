@@ -68,9 +68,9 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition shadow-sm border ${isOpen ? 'bg-neutral-100 dark:bg-neutral-800 border-neutral-300 dark:border-white/20 text-neutral-900 dark:text-white' : 'bg-white dark:bg-neutral-800 border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/80'}`}
+                className={`flex items-center gap-1.5 px-2 py-1 text-sm font-medium transition ${isOpen ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
             >
-                <Settings2 className="w-4 h-4" />
+                <Settings2 className="w-3.5 h-3.5" />
                 <span className="hidden md:inline">Properties</span>
             </button>
 

@@ -55,7 +55,7 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'calendar', iconName: 'Calendar', label: 'CALENDAR', href: '/admin/calendar' },
     { id: 'dashboard', iconName: 'LayoutDashboard', label: 'DASHBOARD', href: '/admin/dashboard' },
     { id: 'email', iconName: 'Mail', label: 'EMAIL', href: '/admin/email' },
-    { id: 'files', iconName: 'Library', label: 'FILES', href: '/admin/library' },
+    { id: 'files', iconName: 'Library', label: 'FILES', href: '/admin/files' },
     { id: 'financials', iconName: 'Landmark', label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
     { id: 'frontend', iconName: 'Globe', label: 'WEBSITE', href: '/admin/content' },
     { id: 'hr', iconName: 'CircleDollarSign', label: 'HR', href: '/admin/hr/time-tracker' },
@@ -81,9 +81,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage', // name of the item in the storage (must be unique)
-            version: 9, // bump version 9 to bust cache for RELATIONS changes
+            version: 10, // bump version to bust cache for FILES separation
             migrate: (persistedState: any, version: number) => {
-                if (version < 9) {
+                if (version < 10) {
                     // Reset to new defaults to ensure the new categories appear for existing users
                     return { items: defaultSidebarItems };
                 }

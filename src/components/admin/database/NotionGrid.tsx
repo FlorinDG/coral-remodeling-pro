@@ -35,9 +35,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
     const deletePage = useDatabaseStore(state => state.deletePage);
+    const deletePages = useDatabaseStore(state => state.deletePages);
     const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
     const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
+    const addProperty = useDatabaseStore(state => state.addProperty);
+    const clearDatabase = useDatabaseStore(state => state.clearDatabase);
     const [activePageId, setActivePageId] = useState<string | null>(null);
+    const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
 
@@ -56,7 +60,8 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     useEffect(() => {
         if (!isReady) return;
 
-        const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+        let gridContainer: Element | null = null;
+        let attachInterval: NodeJS.Timeout;
 
         const handleScroll = (e: Event) => {
             if (headerScrollRef.current && e.target instanceof Element) {
@@ -64,13 +69,38 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             }
         };
 
-        if (gridContainer) {
-            gridContainer.addEventListener('scroll', handleScroll, { passive: true });
-        }
+        const handleHeaderWheel = (e: WheelEvent) => {
+            if (gridContainer && Math.abs(e.deltaX) > 0) {
+                // Forward horizontal trackpad swipes explicitly down to the underlying grid
+                gridContainer.scrollLeft += e.deltaX;
+                e.preventDefault(); // Stop browser back/forward swipe navigation gestures
+            }
+        };
+
+        const attemptAttach = () => {
+            gridContainer = gridWrapperRef.current?.querySelector('.dsg-container') || null;
+            if (gridContainer) {
+                gridContainer.addEventListener('scroll', handleScroll, { passive: true });
+                // We add the wheel listener to the sticky header container to forward swipes
+                const headerWrapper = gridWrapperRef.current?.querySelector('.absolute.top-0');
+                if (headerWrapper) {
+                    headerWrapper.addEventListener('wheel', handleHeaderWheel as any, { passive: false });
+                }
+                clearInterval(attachInterval);
+            }
+        };
+
+        // Aggressively attempt to fetch the lazy-rendered react-datasheet-grid container
+        attachInterval = setInterval(attemptAttach, 100);
 
         return () => {
+            clearInterval(attachInterval);
             if (gridContainer) {
                 gridContainer.removeEventListener('scroll', handleScroll);
+            }
+            const headerWrapper = gridWrapperRef.current?.querySelector('.absolute.top-0');
+            if (headerWrapper) {
+                headerWrapper.removeEventListener('wheel', handleHeaderWheel as any);
             }
         };
     }, [isReady]);
@@ -206,8 +236,38 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 };
             });
 
-        // Prepend native HTML5 drag-and-drop Grip handle column
+        // Prepend Selection Checkbox Col and native HTML5 drag-and-drop Grip handle column
         return [
+            {
+                title: <div className="hidden" />,
+                basis: 40,
+                grow: 0,
+                shrink: 0,
+                minWidth: 40,
+                maxWidth: 40,
+                component: ({ rowData }) => (
+                    <div
+                        className="w-full h-full flex items-center justify-center cursor-default bg-neutral-50 dark:bg-black/50 border-r border-neutral-200 dark:border-white/10"
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <input
+                            type="checkbox"
+                            checked={rowData._isSelected || false}
+                            onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setSelectedRowIds(prevSet => {
+                                    const next = new Set(prevSet);
+                                    if (isChecked) next.add(rowData.id);
+                                    else next.delete(rowData.id);
+                                    return next;
+                                });
+                            }}
+                            className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        />
+                    </div>
+                )
+            },
             {
                 title: <div className="hidden" />,
                 basis: 40,
@@ -268,7 +328,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             },
             ...mappedProperties
         ]
-    }, [databaseProperties, databaseIdRef, activeViewId, activeView?.propertiesState, viewStateMap, orderedVisibleProperties, columnWidthsHash]);
+    }, [databaseProperties, databaseIdRef, activeViewId, activeView?.propertiesState, viewStateMap, orderedVisibleProperties, columnWidthsHash, selectedRowIds]);
 
 
     const filteredPages = useMemo(() => {
@@ -323,8 +383,9 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
     const rowData = useMemo(() => sortedPages.map(page => ({
         ...page,
-        ...page.properties
-    })), [sortedPages]);
+        ...page.properties,
+        _isSelected: selectedRowIds.has(page.id)
+    })), [sortedPages, selectedRowIds]);
 
     const handleExportCSV = () => {
         if (!database) return;
@@ -358,60 +419,102 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
         document.body.removeChild(link);
     };
 
-    const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const processImportedData = (data: any[], headers: string[]) => {
+        // First pass: dynamically generate missing database properties
+        headers.forEach(header => {
+            if (!header) return;
+            const match = database!.properties.find(p => p.name.toLowerCase() === header.toString().toLowerCase());
+            if (!match && header.toString().trim() !== '') {
+                addProperty(database!.id, header.toString().trim(), 'text');
+            }
+        });
+
+        // Re-hydrate the schema from the Zustand store explicitly to capture the newly generated column IDs
+        const updatedDatabase = useDatabaseStore.getState().getDatabase(database!.id);
+        if (!updatedDatabase) return;
+
+        // Map the headers back to official property IDs
+        const headerToPropId: Record<string, string> = {};
+        updatedDatabase.properties.forEach(p => {
+            headerToPropId[p.name] = p.id;
+            headerToPropId[p.name.toLowerCase()] = p.id;
+        });
+
+        data.forEach((row: any) => {
+            const initialProps: Record<string, any> = {};
+
+            Object.keys(row).forEach(header => {
+                const propId = headerToPropId[header] || headerToPropId[header.toLowerCase()];
+                if (propId) {
+                    const val = row[header];
+                    if (val === undefined || val === null || val === '') return;
+
+                    const propDef = updatedDatabase.properties.find(p => p.id === propId);
+
+                    // Transform human-readable string values back into internal Option IDs for select fields
+                    if (propDef?.type === 'multi_select' && typeof val === 'string') {
+                        const optionNames = val.split(',').map(s => s.trim()).filter(Boolean);
+                        initialProps[propId] = optionNames.map(name => {
+                            const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === name.toLowerCase());
+                            return match ? match.id : name;
+                        });
+                    } else if (propDef?.type === 'select' && typeof val === 'string') {
+                        const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === val.trim().toLowerCase());
+                        initialProps[propId] = match ? match.id : val;
+                    } else {
+                        initialProps[propId] = val;
+                    }
+                }
+            });
+
+            // Add standard missing properties with default empty strings
+            updatedDatabase.properties.forEach(p => {
+                if (initialProps[p.id] === undefined) initialProps[p.id] = '';
+            });
+
+            createPage(updatedDatabase.id, initialProps);
+        });
+    };
+
+    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !database) return;
 
-        Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (results) => {
-                // Map the CSV headers back to property IDs
-                const headerToPropId: Record<string, string> = {};
-                database.properties.forEach(p => {
-                    headerToPropId[p.name] = p.id;
-                    headerToPropId[p.name.toLowerCase()] = p.id;
-                });
+        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            try {
+                // Dynamically load SheetJS to avoid heavy main bundle compilation hits
+                const XLSX = await import('xlsx');
+                const buffer = await file.arrayBuffer();
+                const workbook = XLSX.read(buffer, { type: 'array' });
 
-                results.data.forEach((row: any) => {
-                    const initialProps: Record<string, any> = {};
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
 
-                    Object.keys(row).forEach(header => {
-                        const propId = headerToPropId[header] || headerToPropId[header.toLowerCase()];
-                        if (propId) {
-                            const val = row[header];
-                            if (val === undefined || val === null || val === '') return;
+                // Read row 0 arrays natively to guarantee accurate header indexing for column tracking
+                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+                if (rawData.length === 0) return;
 
-                            const propDef = database.properties.find(p => p.id === propId);
+                const headers = rawData[0].map(String);
+                const data = XLSX.utils.sheet_to_json(sheet);
 
-                            // Transform human-readable CSV string values back into internal Option IDs for select fields
-                            if (propDef?.type === 'multi_select' && typeof val === 'string') {
-                                const optionNames = val.split(',').map(s => s.trim()).filter(Boolean);
-                                initialProps[propId] = optionNames.map(name => {
-                                    const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === name.toLowerCase());
-                                    return match ? match.id : name;
-                                });
-                            } else if (propDef?.type === 'select' && typeof val === 'string') {
-                                const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === val.trim().toLowerCase());
-                                initialProps[propId] = match ? match.id : val;
-                            } else {
-                                initialProps[propId] = val;
-                            }
-                        }
-                    });
-
-                    // Add standard missing properties with default empty strings
-                    database.properties.forEach(p => {
-                        if (initialProps[p.id] === undefined) initialProps[p.id] = '';
-                    });
-
-                    createPage(database.id, initialProps);
-                });
-
-                // Clear the input
+                processImportedData(data, headers);
+            } catch (err) {
+                console.error("Failed to parse Excel file:", err);
+                alert("Failed to parse Excel file. Check format integrity.");
+            } finally {
                 e.target.value = '';
             }
-        });
+        } else {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    const csvHeaders = results.meta.fields || [];
+                    processImportedData(results.data, csvHeaders);
+                    e.target.value = '';
+                }
+            });
+        }
     };
 
     if (!database || !hasHydrated) return null;
@@ -438,22 +541,42 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800/80 transition shadow-sm"
+                        className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
                     >
-                        <Download className="w-4 h-4" />
+                        <Download className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Export</span>
                     </button>
 
-                    <label className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-md hover:bg-neutral-50 dark:hover:bg-neutral-800/80 transition shadow-sm cursor-pointer">
-                        <Upload className="w-4 h-4" />
+                    <label className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition cursor-pointer">
+                        <Upload className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Import</span>
                         <input
                             type="file"
-                            accept=".csv"
+                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, .xlsx, .xls"
                             className="hidden"
-                            onChange={handleImportCSV}
+                            onChange={handleImportFile}
                         />
                     </label>
+
+                    <button
+                        onClick={() => {
+                            if (selectedRowIds.size > 0) {
+                                if (window.confirm(`Are you sure you want to permanently delete ${selectedRowIds.size} selected rows?`)) {
+                                    deletePages(database.id, Array.from(selectedRowIds));
+                                    setSelectedRowIds(new Set());
+                                }
+                            } else {
+                                if (window.confirm("Are you sure you want to permanently delete ALL records in this database?")) {
+                                    clearDatabase(database.id);
+                                }
+                            }
+                        }}
+                        className="flex items-center justify-center p-1.5 text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded transition"
+                        title={selectedRowIds.size > 0 ? `Delete ${selectedRowIds.size} Selected Rows` : "Clear All Rows"}
+                    >
+                        <Trash className="w-3.5 h-3.5" />
+                        {selectedRowIds.size > 0 && <span className="font-semibold ml-1 leading-none">{selectedRowIds.size}</span>}
+                    </button>
 
                     <button
                         onClick={() => {
@@ -471,13 +594,26 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
                     >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">New Row</span>
                     </button>
                 </div>
             </div>
 
-            <div className="flex-1 w-full p-0 relative overflow-hidden min-h-0" ref={gridWrapperRef}>
+            <div
+                className="flex-1 w-full p-0 relative overflow-hidden min-h-0"
+                ref={gridWrapperRef}
+                onDragOver={(e) => {
+                    // Automatically scroll the inner grid body if dragging near horizontal boundary edges
+                    const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+                    if (gridContainer) {
+                        const rect = gridContainer.getBoundingClientRect();
+                        const relativeX = e.clientX - rect.left;
+                        if (relativeX < 60) gridContainer.scrollLeft -= 15; // Pan left aggressively
+                        if (relativeX > rect.width - 60) gridContainer.scrollLeft += 15; // Pan right aggressively
+                    }
+                }}
+            >
                 {isReady ? (
                     <div className="w-full h-full flex flex-col pt-9 relative">
                         {/* Custom Floating Header context to override native grid pointer events */}
@@ -486,8 +622,30 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                             onMouseDown={e => e.stopPropagation()}
                             className="absolute top-0 left-0 right-0 h-9 z-50 flex bg-[#f9fafb] dark:bg-neutral-900 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 overflow-visible pointer-events-auto"
                         >
-                            {/* React DataSheet Grid Row Number Gutter Spacer (43px) + Native Custom Grip Handler Spacer (40px) = 83px total left gutter */}
-                            <div className="w-[83px] border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 relative z-50" />
+                            {/* React DataSheet Grid Row Number Gutter Spacer + Selection Spacer + Grip Spacer */}
+                            <div
+                                style={{ width: '123px', minWidth: '123px' }}
+                                className="border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 relative z-50 flex items-center"
+                            >
+                                {/* Native row index spacer */}
+                                <div style={{ width: '43px', minWidth: '43px' }} className="h-full" />
+
+                                {/* Select All Checkbox header exactly 40px width */}
+                                <div style={{ width: '40px', minWidth: '40px' }} className="h-full flex items-center justify-center border-r border-[rgba(0,0,0,0.1)] dark:border-white/10">
+                                    <input
+                                        type="checkbox"
+                                        checked={filteredPages.length > 0 && selectedRowIds.size === filteredPages.length}
+                                        onChange={(e) => {
+                                            if (e.target.checked) setSelectedRowIds(new Set(filteredPages.map(p => p.id)));
+                                            else setSelectedRowIds(new Set());
+                                        }}
+                                        className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                    />
+                                </div>
+
+                                {/* Grip spacer */}
+                                <div style={{ width: '40px', minWidth: '40px' }} className="h-full" />
+                            </div>
 
                             <div ref={headerScrollRef} className="flex h-full min-w-max relative z-20" style={{ transform: 'translateX(0px)', willChange: 'transform' }}>
                                 {orderedVisibleProperties.map((prop: Property, i: number) => {
@@ -498,8 +656,22 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                                     return (
                                         <div
                                             key={prop.id}
+                                            draggable={resizingProperty !== prop.id}
+                                            onDragStart={(e) => {
+                                                e.dataTransfer.setData('column-index', i.toString());
+                                            }}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                            }}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                const sourceIndex = parseInt(e.dataTransfer.getData('column-index'));
+                                                if (!isNaN(sourceIndex) && sourceIndex !== i && databaseIdRef && activeViewId) {
+                                                    updateViewPropertyOrder(databaseIdRef, activeViewId, sourceIndex, i);
+                                                }
+                                            }}
                                             style={{ width: `${currentWidth}px`, minWidth: `${currentWidth}px`, maxWidth: `${currentWidth}px` }}
-                                            className="border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 z-20 relative"
+                                            className="border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 z-20 relative transition-transform"
                                         >
                                             <ColumnHeader
                                                 databaseId={databaseIdRef}

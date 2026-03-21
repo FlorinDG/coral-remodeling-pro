@@ -67,6 +67,7 @@
     "googleapis": "^171.4.0",
     "i18next": "^25.8.16",
     "i18next-browser-languagedetector": "^8.2.1",
+    "idb-keyval": "^6.2.2",
     "imapflow": "^1.2.13",
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.0",

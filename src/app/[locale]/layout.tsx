@@ -101,12 +101,12 @@ export default async function RootLayout({
                           window.dataLayer = window.dataLayer || [];
                           function gtag(){dataLayer.push(arguments);}
                           
-                          // Set default consent to 'denied'
+                          // Set default consent for analytics to granted so it runs immediately
                           gtag('consent', 'default', {
                             'ad_storage': 'denied',
                             'ad_user_data': 'denied',
                             'ad_personalization': 'denied',
-                            'analytics_storage': 'denied',
+                            'analytics_storage': 'granted',
                             'wait_for_update': 500
                           });
                         `
@@ -117,7 +117,7 @@ export default async function RootLayout({
                 <Script
                     id="google-analytics-script"
                     strategy="afterInteractive"
-                    src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'G-N0NPGEPJKN'}`}
+                    src="https://www.googletagmanager.com/gtag/js?id=G-N0NPGEPJKN"
                 />
                 <Script
                     id="google-ads-script"
@@ -133,7 +133,7 @@ export default async function RootLayout({
                           function gtag(){dataLayer.push(arguments);}
                           gtag('js', new Date());
 
-                          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'G-N0NPGEPJKN'}', {
+                          gtag('config', 'G-N0NPGEPJKN', {
                             page_path: window.location.pathname,
                           });
                           gtag('config', 'AW-17978966291');

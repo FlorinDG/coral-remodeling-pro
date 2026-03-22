@@ -283,6 +283,25 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                     // Initialize all properties defined in the schema to prevent DataSheetGrid from breaking
                     const fullProperties: Record<string, any> = { ...initialProperties };
+
+                    // Custom Auto-Numbering for Quotations (CEO-YYYY-XXX.00)
+                    if (databaseId === 'db-quotations' && !fullProperties['title']) {
+                        const year = new Date().getFullYear();
+                        let maxNum = 0;
+                        db.pages.forEach((p: Page) => {
+                            const title = p.properties['title'] as string;
+                            if (title && title.startsWith(`CEO-${year}-`)) {
+                                const match = title.match(/CEO-\d{4}-(\d+)/);
+                                if (match && match[1]) {
+                                    const parsed = parseInt(match[1], 10);
+                                    if (parsed > maxNum) maxNum = parsed;
+                                }
+                            }
+                        });
+                        const nextStr = String(maxNum + 1).padStart(3, '0');
+                        fullProperties['title'] = `CEO-${year}-${nextStr}.00`;
+                    }
+
                     db.properties.forEach((prop: Property) => {
                         if (fullProperties[prop.id] === undefined) {
                             if (prop.type === 'multi_select' || prop.type === 'relation') {
@@ -346,17 +365,41 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databases: state.databases.map(db => {
                             if (db.id !== databaseId) return db;
 
-                            const newPages: Page[] = pagesProperties.map((initialProperties, index) => ({
-                                id: uuidv4(),
-                                databaseId,
-                                order: db.pages.length + index,
-                                properties: initialProperties,
-                                blocks: [],
-                                createdAt: new Date().toISOString(),
-                                updatedAt: new Date().toISOString(),
-                                createdBy: 'system',
-                                lastEditedBy: 'system'
-                            }));
+                            // Evaluate max sequence number if handling quotations
+                            let currentMax = 0;
+                            const year = new Date().getFullYear();
+                            if (databaseId === 'db-quotations') {
+                                db.pages.forEach((p: Page) => {
+                                    const title = p.properties['title'] as string;
+                                    if (title && title.startsWith(`CEO-${year}-`)) {
+                                        const m = title.match(/CEO-\d{4}-(\d+)/);
+                                        if (m && m[1]) {
+                                            const pNum = parseInt(m[1], 10);
+                                            if (pNum > currentMax) currentMax = pNum;
+                                        }
+                                    }
+                                });
+                            }
+
+                            const newPages: Page[] = pagesProperties.map((initialProperties, index) => {
+                                const pProps = { ...initialProperties };
+                                if (databaseId === 'db-quotations' && !pProps['title']) {
+                                    currentMax++;
+                                    pProps['title'] = `CEO-${year}-${String(currentMax).padStart(3, '0')}.00`;
+                                }
+
+                                return {
+                                    id: uuidv4(),
+                                    databaseId,
+                                    order: db.pages.length + index,
+                                    properties: pProps,
+                                    blocks: [],
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString(),
+                                    createdBy: 'system',
+                                    lastEditedBy: 'system'
+                                };
+                            });
 
                             return {
                                 ...db,

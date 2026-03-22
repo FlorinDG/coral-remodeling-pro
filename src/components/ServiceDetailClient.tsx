@@ -54,7 +54,7 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                             {service.subtitle}
                         </span>
                     )}
-                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-neutral-900 dark:text-white xl:whitespace-nowrap tracking-tight">{service.title}</h1>
+                    <h1 className="text-[42px] md:text-[66px] xl:text-[72px] leading-tight font-bold mb-6 text-neutral-900 dark:text-white xl:whitespace-nowrap tracking-tight">{service.title}</h1>
                 </div>
             </div>
 

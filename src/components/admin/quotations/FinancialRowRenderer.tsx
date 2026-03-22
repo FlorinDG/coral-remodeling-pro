@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Block } from '@/components/admin/database/types';
+import { Block, BlockType } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 
 interface FinancialRowRendererProps {
     block: Block;
-    databaseId: 'db-articles' | 'db-bestek';
+    databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;
 }
 
@@ -38,37 +38,98 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
 export default function FinancialRowRenderer({ block, databaseId, onUpdate }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
-    const [showSearchModal, setShowSearchModal] = useState(false);
-    const [searchState, setSearchState] = useState<{ query: string, show: boolean }>({ query: '', show: false });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
 
-    // Fetch target database entities for the select dropdown
-    const entities = useMemo(() => {
-        const db = getDatabase(databaseId);
-        if (!db) return [];
+    // Fetch and combine target database entities from BOTH databases for global search
+    const combinedEntities = useMemo(() => {
+        const dbs = [getDatabase('db-articles'), getDatabase('db-bestek')].filter(Boolean);
+        const results: any[] = [];
 
-        const nameProp = db.properties.find(p => ['naam', 'titel', 'title', 'name'].includes(p.name.toLowerCase()));
-        const namePropId = nameProp?.id || 'title';
+        dbs.forEach(db => {
+            if (!db) return;
+            const isArticle = db.id === 'db-articles';
+            const nameProp = db.properties.find(p => ['naam', 'titel', 'title', 'name'].includes(p.name.toLowerCase()));
+            const namePropId = nameProp?.id || 'title';
 
-        return db.pages.map(page => {
-            const titleVal = String(page.properties[namePropId] || 'Untitled');
+            db.pages.forEach(page => {
+                const titleVal = String(page.properties[namePropId] || 'Untitled');
+                const contextValues = Object.entries(page.properties)
+                    .filter(([key, val]) => key !== namePropId && val !== null && val !== undefined && String(val).trim() !== '')
+                    .map(([key, val]) => String(val));
 
-            // Aggregates structural columns (e.g., Kop1, Omschrijving) dynamically skipping the numerical title slot
-            const contextValues = Object.entries(page.properties)
-                .filter(([key, val]) => key !== namePropId && val !== null && val !== undefined && String(val).trim() !== '')
-                .map(([key, val]) => String(val));
+                const allValues = [titleVal, ...contextValues].map(val => val.toLowerCase()).join(' | ');
 
-            const allValues = [titleVal, ...contextValues].map(val => val.toLowerCase()).join(' | ');
-
-            return {
-                id: page.id,
-                title: titleVal,
-                description: contextValues.join(' › '),
-                searchableText: allValues
-            };
+                results.push({
+                    databaseId: db.id,
+                    type: isArticle ? 'article' : 'bestek',
+                    id: page.id,
+                    title: titleVal,
+                    description: contextValues.join(' › '),
+                    searchableText: allValues,
+                    page: page
+                });
+            });
         });
-    }, [databaseId, getDatabase]);
+        return results;
+    }, [getDatabase]);
 
-    const activeEntityId = databaseId === 'db-articles' ? block.articleId : block.bestekId;
+    // Fast fuzzy filter subset
+    const searchResults = useMemo(() => {
+        if (!searchQuery || searchQuery.length < 2) return [];
+        const lowerQ = searchQuery.toLowerCase();
+        return combinedEntities.filter(x => x.searchableText.includes(lowerQ)).slice(0, 8); // Top 8 hits
+    }, [searchQuery, combinedEntities]);
+
+    // Metamorphosis function invoked when an item is selected from dropdown
+    const handleSelectEntity = (entity: any) => {
+        const payload: Partial<Block> = { type: entity.type as BlockType }; // Force form mutation
+
+        const cleanDesc = (entity.description || '').replace(/ › /g, ' - ');
+        const constructedName = `${entity.title} — ${cleanDesc}`;
+        payload.content = constructedName;
+
+        if (entity.databaseId === 'db-articles') {
+            payload.articleId = entity.id;
+            payload.bestekId = undefined; // Purge cross-contamination
+        } else {
+            payload.bestekId = entity.id;
+            payload.articleId = undefined;
+        }
+
+        const db = getDatabase(entity.databaseId);
+        const page = entity.page;
+        if (db && page) {
+            const getPropVal = (keywords: string[]) => {
+                const prop = db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k)));
+                return prop ? page.properties[prop.id] : undefined;
+            };
+
+            const rawBruto = getPropVal(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+            const rawVerkoop = getPropVal(['verkoop', 'selling']);
+            const rawMarge = getPropVal(['marge', 'margin']);
+            const rawDiscount = getPropVal(['korting', 'discount']);
+            const rawUnit = getPropVal(['eenheid', 'unit', 'maat']);
+
+            if (rawBruto !== undefined && rawBruto !== null) payload.brutoPrice = Number(rawBruto) || 0;
+            if (rawDiscount !== undefined && rawDiscount !== null) payload.discountPercent = Number(rawDiscount) || 0;
+            if (rawMarge !== undefined && rawMarge !== null) payload.margePercent = Number(rawMarge) || 0;
+            if (rawUnit !== undefined && rawUnit !== null) payload.unit = String(rawUnit);
+
+            if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
+                const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
+                const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
+                const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
+                const cCost = bPrice * (1 - dPerc / 100);
+                payload.verkoopPrice = cCost * (1 + mPerc / 100);
+            } else if (rawVerkoop !== undefined && rawVerkoop !== null) {
+                payload.verkoopPrice = Number(rawVerkoop) || 0;
+            }
+        }
+
+        onUpdate(payload);
+        setShowDropdown(false);
+    };
 
     // The 5-Pillar Auto-Calculator Math Engine
     const handleMathChange = (field: keyof Block, value: number) => {
@@ -104,32 +165,49 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
             <div className="flex flex-row items-start w-full py-2 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
-                <div className="flex flex-col gap-0.5 flex-1 shrink-0 relative mt-0.5">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest px-1">Item</label>
-                    {block.type === 'line' ? (
+                <div className="flex flex-col gap-0.5 flex-1 shrink-0 relative mt-0.5 min-w-0">
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest px-1">Item / Description</label>
+                    <div className="relative w-full flex flex-col group/search">
                         <RichTextInput
-                            placeholder="Description..."
+                            placeholder="Type to search DB or enter custom spec..."
                             value={block.content || ''}
                             onChange={(html) => onUpdate({ content: html })}
-                            className="w-full bg-transparent border-none text-sm text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal"
+                            onSearch={(query) => {
+                                setSearchQuery(query);
+                                setShowDropdown(query.length >= 2);
+                            }}
+                            onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Allow click event execution
+                            className="w-full bg-transparent border-none text-sm text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
                         />
-                    ) : (
-                        <div className="relative w-full flex items-start gap-2 group/search">
-                            <RichTextInput
-                                placeholder="Item Description..."
-                                value={block.content || ''}
-                                onChange={(html) => onUpdate({ content: html })}
-                                className="flex-1 min-w-0 w-full bg-transparent border-none text-sm text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
-                            />
-                            <button
-                                onClick={() => setShowSearchModal(true)}
-                                className="opacity-0 group-focus-within/search:opacity-100 group-hover/search:opacity-100 p-1.5 bg-neutral-100 hover:bg-neutral-200 dark:bg-[#222] dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-md text-neutral-500 hover:text-black dark:hover:text-white transition-all shadow-sm shrink-0 flex items-center gap-1.5 px-2.5 mt-0.5"
-                            >
-                                <Search className="w-3.5 h-3.5 opacity-70" />
-                                <span className="text-[10px] uppercase font-bold tracking-widest">Browse DB</span>
-                            </button>
-                        </div>
-                    )}
+
+                        {/* Autocomplete Combobox Dropdown */}
+                        {showDropdown && searchResults.length > 0 && (
+                            <div className="absolute top-full left-0 mt-1 w-full sm:w-[500px] max-w-[90vw] bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 max-h-[350px] overflow-y-auto">
+                                <div className="px-3 py-2 text-[10px] font-bold tracking-widest uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 backdrop-blur-md sticky top-0">
+                                    Search Results
+                                </div>
+                                {searchResults.map(entity => (
+                                    <div
+                                        key={entity.id}
+                                        onClick={() => handleSelectEntity(entity)}
+                                        className="p-3 border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/10 cursor-pointer flex flex-col gap-1 transition-colors"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm ${entity.type === 'article' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-purple-100/50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                                                {entity.type}
+                                            </span>
+                                            <span className="text-sm font-bold text-black dark:text-white line-clamp-1">{entity.title}</span>
+                                        </div>
+                                        {entity.description && (
+                                            <span className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 pl-[42px] leading-snug">
+                                                {entity.description.replace(/ › /g, ' - ')}
+                                            </span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Rich Text Toolbar (Static visibility) */}
                     <div className="flex flex-wrap items-center gap-1 mt-1.5 px-2 pb-1 text-neutral-400">
@@ -284,164 +362,85 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                     <button
                         type="button"
                         onClick={() => {
-                            setIsSaving(true);
-                            const db = useDatabaseStore.getState().getDatabase(databaseId);
-                            if (db) {
-                                const newId = crypto.randomUUID();
-                                const props: Record<string, any> = {};
+                            const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
+                            const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
 
-                                const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+                            // Update Master Entity Mode
+                            if (activeDbId && sourceId) {
+                                if (!window.confirm(`Are you sure you want to update the master record in the Library?\n\nThis will permanently change the baseline stats for all future quotes using this item.`)) {
+                                    return;
+                                }
+                                setIsSaving(true);
+                                const db = useDatabaseStore.getState().getDatabase(activeDbId);
+                                if (db) {
+                                    const props: Record<string, any> = {};
+                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
 
-                                props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content || 'Nieuw Item';
+                                    if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, ''); // Stripping HTML logic
 
-                                const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
 
-                                const vProp = findProp(['verkoop', 'selling']);
-                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                    const vProp = findProp(['verkoop', 'selling']);
+                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
 
-                                const mProp = findProp(['marge', 'margin']);
-                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                    const mProp = findProp(['marge', 'margin']);
+                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
 
-                                const kProp = findProp(['korting', 'discount']);
-                                if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
+                                    const kProp = findProp(['korting', 'discount']);
+                                    if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
 
-                                const uProp = findProp(['eenheid', 'unit', 'maat']);
-                                if (uProp && block.unit) props[uProp] = block.unit;
+                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                    if (uProp && block.unit) props[uProp] = block.unit;
 
-                                const newPage = useDatabaseStore.getState().createPage(databaseId, props);
+                                    // Safely update all designated properties
+                                    Object.keys(props).forEach(k => {
+                                        useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]);
+                                    });
+                                }
+                                setTimeout(() => setIsSaving(false), 800);
 
-                                onUpdate(databaseId === 'db-articles' ? { articleId: newPage.id } : { bestekId: newPage.id });
+                                // Create New Entity Mode
+                            } else {
+                                if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
+                                setIsSaving(true);
+                                const dbToCreateIn = 'db-articles'; // Default isolated rows route to articles
+                                const db = useDatabaseStore.getState().getDatabase(dbToCreateIn);
+                                if (db) {
+                                    const props: Record<string, any> = {};
+                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+
+                                    props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
+
+                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+
+                                    const vProp = findProp(['verkoop', 'selling']);
+                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+
+                                    const mProp = findProp(['marge', 'margin']);
+                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
+
+                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                    if (uProp && block.unit) props[uProp] = block.unit;
+
+                                    const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
+                                    // Lock the block to its new permanent identity!
+                                    onUpdate({ type: 'article', articleId: newPage.id });
+                                }
+                                setTimeout(() => setIsSaving(false), 800);
                             }
-                            setTimeout(() => setIsSaving(false), 2000);
                         }}
                         disabled={isSaving}
-                        title="Save to Database"
-                        className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] text-neutral-400 hover:text-orange-500 transition-colors"
+                        title={block.articleId || block.bestekId ? "Sync Local Changes to Library Master" : "Save as New Library Item"}
+                        className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] text-neutral-400 hover:text-blue-500 transition-colors"
                     >
                         {isSaving ? <Check className="w-4 h-4 text-emerald-500" /> : <DatabaseIcon className="w-4 h-4" />}
                     </button>
                 </div>
             </div>
 
-            {/* Massive Full-Scale Database Search Modal Overlay */}
-            {showSearchModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8 md:p-12 animate-in fade-in duration-200">
-                    <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" onClick={() => setShowSearchModal(false)} />
-                    <div className="relative w-full max-w-5xl md:h-[80vh] h-[90vh] bg-white dark:bg-[#111] border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl flex flex-col overflow-hidden">
-
-                        {/* Header & Sticky Search Bar */}
-                        <div className="flex-none p-4 pb-0 bg-neutral-50 dark:bg-[#151515] border-b border-neutral-200 dark:border-neutral-800">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <DatabaseIcon className="w-5 h-5 text-orange-500" />
-                                    <h2 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-widest">{databaseId === 'db-articles' ? 'Articles DB' : 'Bestek Source'}</h2>
-                                </div>
-                                <button onClick={() => setShowSearchModal(false)} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-md transition-colors text-neutral-500">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <div className="relative w-full mb-4">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-neutral-400" />
-                                </div>
-                                <input
-                                    type="text"
-                                    autoFocus
-                                    placeholder="Filter godforsaken table by any property matching..."
-                                    className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#1a1a1a] border border-neutral-300 dark:border-neutral-700 rounded-lg text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 shadow-sm"
-                                    value={searchState.query}
-                                    onChange={(e) => setSearchState({ ...searchState, query: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Configurable Hybrid Flex-Grid Header */}
-                        <div className="flex-none grid grid-cols-[100px_1fr] md:grid-cols-[120px_1fr] gap-4 px-6 py-2.5 bg-neutral-100 dark:bg-[#0a0a0a] border-b border-neutral-200 dark:border-neutral-900/50 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                            <div>{databaseId === 'db-bestek' ? 'Artikel' : 'Code'}</div>
-                            <div>Context / Description Pipeline</div>
-                        </div>
-
-                        {/* Render Matrix */}
-                        <div className="flex-1 overflow-y-auto w-full custom-scrollbar p-2">
-                            <div className="flex flex-col gap-1 w-full pb-4">
-                                {entities.filter(x => !searchState.query || x.searchableText.includes(searchState.query.toLowerCase())).map(entity => (
-                                    <div
-                                        key={entity.id}
-                                        onClick={() => {
-                                            const payload: Partial<Block> = {};
-                                            const cleanDesc = (entity.description || '').replace(/ › /g, ' - ');
-                                            const constructedName = `${entity.title} — ${cleanDesc}`;
-                                            payload.content = constructedName; // Inject entire context string into Editor!
-
-                                            if (databaseId === 'db-articles') payload.articleId = entity.id;
-                                            else payload.bestekId = entity.id;
-
-                                            const db = getDatabase(databaseId);
-                                            const page = db?.pages.find(p => p.id === entity.id);
-                                            if (db && page) {
-                                                const getPropVal = (keywords: string[]) => {
-                                                    const prop = db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k)));
-                                                    return prop ? page.properties[prop.id] : undefined;
-                                                };
-
-                                                const rawBruto = getPropVal(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                                const rawVerkoop = getPropVal(['verkoop', 'selling']);
-                                                const rawMarge = getPropVal(['marge', 'margin']);
-                                                const rawDiscount = getPropVal(['korting', 'discount']);
-                                                const rawUnit = getPropVal(['eenheid', 'unit', 'maat']);
-
-                                                if (rawBruto !== undefined && rawBruto !== null) payload.brutoPrice = Number(rawBruto) || 0;
-                                                if (rawDiscount !== undefined && rawDiscount !== null) payload.discountPercent = Number(rawDiscount) || 0;
-                                                if (rawMarge !== undefined && rawMarge !== null) payload.margePercent = Number(rawMarge) || 0;
-                                                if (rawUnit !== undefined && rawUnit !== null) payload.unit = String(rawUnit);
-
-                                                if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
-                                                    const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
-                                                    const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
-                                                    const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
-                                                    const cCost = bPrice * (1 - dPerc / 100);
-                                                    payload.verkoopPrice = cCost * (1 + mPerc / 100);
-                                                } else if (rawVerkoop !== undefined && rawVerkoop !== null) {
-                                                    payload.verkoopPrice = Number(rawVerkoop) || 0;
-                                                }
-                                            }
-
-                                            onUpdate(payload);
-                                            setShowSearchModal(false);
-                                            setSearchState({ query: '', show: false });
-                                        }}
-                                        className="grid grid-cols-[100px_1fr] md:grid-cols-[120px_1fr] gap-4 px-4 py-3 bg-white dark:bg-[#151515] hover:bg-neutral-50 dark:hover:bg-[#1a1a1a] border border-neutral-100 dark:border-neutral-800/60 rounded-md cursor-pointer transition-colors group/row items-center"
-                                    >
-                                        <div className="font-mono text-xs text-orange-600 dark:text-orange-400/80 font-semibold align-middle mt-0.5">
-                                            {entity.title}
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-y-1 gap-x-2 w-full pr-4">
-                                            {(entity.description || 'No Context Provided').split(' › ').map((stringFrag, i, arr) => (
-                                                <React.Fragment key={i}>
-                                                    <span className={`text-sm tracking-tight ${i === arr.length - 1 ? 'font-bold text-black dark:text-white' : 'font-medium text-neutral-500 dark:text-neutral-400'}`}>
-                                                        {stringFrag}
-                                                    </span>
-                                                    {i < arr.length - 1 && (
-                                                        <span className="text-neutral-300 dark:text-neutral-700 mx-0.5 shrink-0 text-[10px]">▶</span>
-                                                    )}
-                                                </React.Fragment>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                                {entities.filter(x => !searchState.query || x.searchableText.includes(searchState.query.toLowerCase())).length === 0 && (
-                                    <div className="text-center py-20 text-neutral-400 text-sm">
-                                        No database rows match your query.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            )}
+            {/* Removed Global Search Modal - replaced by sleek inline combobox */}
         </div>
     );
 }

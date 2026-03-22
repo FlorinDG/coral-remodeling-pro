@@ -7,6 +7,7 @@ interface FinancialRowRendererProps {
     block: Block;
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;
+    childrenTotal?: number;
 }
 
 const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBlur, onFocus }: { value: string, onChange: (val: string) => void, onSearch?: (val: string) => void, placeholder?: string, className?: string, onBlur?: () => void, onFocus?: () => void }) => {
@@ -35,7 +36,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     );
 };
 
-export default function FinancialRowRenderer({ block, databaseId, onUpdate }: FinancialRowRendererProps) {
+export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -125,6 +126,20 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
             } else if (rawVerkoop !== undefined && rawVerkoop !== null) {
                 payload.verkoopPrice = Number(rawVerkoop) || 0;
             }
+
+            // Morph subcomponents recursively from template library
+            if (page.blocks && page.blocks.length > 0) {
+                const cloneBlocks = (blocks: Block[]): Block[] => {
+                    return blocks.map(b => ({
+                        ...b,
+                        id: crypto.randomUUID(),
+                        children: b.children ? cloneBlocks(b.children) : undefined
+                    }));
+                };
+                payload.children = cloneBlocks(page.blocks);
+            } else {
+                payload.children = []; // Purge previous structure if switching to empty
+            }
         }
 
         onUpdate(payload);
@@ -133,6 +148,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
 
     // The 5-Pillar Auto-Calculator Math Engine
     const handleMathChange = (field: keyof Block, value: number) => {
+        if (childrenTotal !== undefined) return; // Locked by subcomponents
+
         const payload: Partial<Block> = { [field]: value };
 
         // Auto-compute derived fields
@@ -296,8 +313,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                 </div>
 
                 {/* 4. Bruto Price (PRIX U. HT) */}
-                <div className="flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4">Bruto</label>
+                <div className={`flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Price driven by subcomponents' : ''}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Bruto</label>
                     <div className="w-full relative">
                         <input
                             type="number"
@@ -306,15 +323,16 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                             placeholder="0.00"
                             value={block.brutoPrice || ''}
                             onChange={(e) => handleMathChange('brutoPrice', parseFloat(e.target.value) || 0)}
-                            className="w-full bg-transparent border-none text-sm text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            readOnly={childrenTotal !== undefined}
+                            className="w-full bg-transparent border-none text-sm text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans">€</span>
+                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>
                 </div>
 
                 {/* 4.5. Discount Percent (Supplier Shortcut) */}
-                <div className="flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4">Disc.</label>
+                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Discount handled within subcomponents' : ''}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Disc.</label>
                     <div className="w-full relative">
                         <input
                             type="number"
@@ -323,15 +341,16 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                             placeholder="0"
                             value={block.discountPercent || ''}
                             onChange={(e) => handleMathChange('discountPercent', parseFloat(e.target.value) || 0)}
-                            className="w-full bg-transparent border-none text-sm text-red-500 dark:text-red-400 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            readOnly={childrenTotal !== undefined}
+                            className="w-full bg-transparent border-none text-sm text-red-500 dark:text-red-400 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans">%</span>
+                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
                 </div>
 
                 {/* 5. Margin / Custom TVA Equivalent */}
-                <div className="flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4">Marge</label>
+                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Margin driven by subcomponents' : ''}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Marge</label>
                     <div className="w-full relative">
                         <input
                             type="number"
@@ -340,20 +359,23 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                             placeholder="20"
                             value={block.margePercent || ''}
                             onChange={(e) => handleMathChange('margePercent', parseFloat(e.target.value) || 0)}
-                            className="w-full bg-transparent border-none text-sm text-neutral-500 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            readOnly={childrenTotal !== undefined}
+                            className="w-full bg-transparent border-none text-sm text-neutral-500 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans">%</span>
+                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
                 </div>
 
                 {/* 6. Total (TOTAL HT) */}
                 <div className="flex flex-col gap-0.5 w-[100px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4">Total</label>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Total</label>
                     <div className="w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
-                        <span className="font-medium text-sm text-black dark:text-white tabular-nums tracking-tight">
-                            {((block.verkoopPrice || 0) * (block.quantity || 1)).toFixed(2)}
+                        <span className={`font-bold text-sm tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
+                            {childrenTotal !== undefined
+                                ? (childrenTotal * (block.quantity || 1)).toFixed(2)
+                                : ((block.verkoopPrice || 0) * (block.quantity || 1)).toFixed(2)}
                         </span>
-                        <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5">€</span>
+                        <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
                     </div>
                 </div>
 
@@ -397,6 +419,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                                     Object.keys(props).forEach(k => {
                                         useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]);
                                     });
+
+                                    // Push subcomponents blueprint into the master database!
+                                    if (block.children !== undefined) {
+                                        useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
+                                    }
                                 }
                                 setTimeout(() => setIsSaving(false), 800);
 
@@ -425,6 +452,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
                                     if (uProp && block.unit) props[uProp] = block.unit;
 
                                     const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
+
+                                    if (block.children !== undefined && block.children.length > 0) {
+                                        useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
+                                    }
+
                                     // Lock the block to its new permanent identity!
                                     onUpdate({ type: 'article', articleId: newPage.id });
                                 }

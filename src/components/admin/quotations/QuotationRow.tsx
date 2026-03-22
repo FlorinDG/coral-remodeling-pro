@@ -47,13 +47,25 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
         }
     };
 
-    // Recursive calculation for nested Phase (Post/Section) totals
+    // Recursive calculation for nested Phase (Post/Section) totals + Subcomponents
     const calculateBlockTotal = (b: Block): number => {
         if (b.isOptional) return 0; // Phase 10: Globally drop any optional value
+
+        // Strict Containers (No quantity multiplier)
         if (b.type === 'post' || b.type === 'section' || b.type === 'subsection') {
             return (b.children || []).reduce((sum, child) => sum + calculateBlockTotal(child), 0);
         }
-        return (b.verkoopPrice || 0) * (b.quantity || 1);
+
+        // Base Items (Multiply by Quantity)
+        let unitTotal = 0;
+        if (b.children && b.children.length > 0) {
+            // Aggregate all subcomponents to form the new base price
+            unitTotal = b.children.reduce((sum, child) => sum + calculateBlockTotal(child), 0);
+        } else {
+            unitTotal = b.verkoopPrice || 0;
+        }
+
+        return unitTotal * (b.quantity || 1);
     };
 
     // Handlers for recursively nested children updates (preventing root pollution)
@@ -139,6 +151,15 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
                                             <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
                                         </DropdownMenuItem>
+
+                                        {!isContainer && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem onClick={() => handleAddChild('article')} className="text-orange-600">
+                                                    <Plus className="w-4 h-4 mr-2" /> Add Subcomponent
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
 
                                         <DropdownMenuSeparator />
 
@@ -304,7 +325,34 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 block={block}
                                                 databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
                                                 onUpdate={(updates) => onUpdate(block.id, updates)}
+                                                childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
                                             />
+                                        )}
+
+                                        {/* Dynamic Subcomponents Rendering Block */}
+                                        {block.children && block.children.length > 0 && (
+                                            <div className="mt-2 pl-6 ml-2 border-l-2 border-orange-200 dark:border-orange-800/50 relative before:absolute before:top-0 before:left-[-2px] before:w-[2px] before:h-4 before:bg-orange-500">
+                                                <div className="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                                    <Layers className="w-3 h-3" /> Subcomponents
+                                                </div>
+                                                <Droppable droppableId={`sub-${block.id}`} type="block">
+                                                    {(provided) => (
+                                                        <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-1">
+                                                            {block.children!.map((child, idx) => (
+                                                                <QuotationRow
+                                                                    key={child.id}
+                                                                    block={child}
+                                                                    index={idx}
+                                                                    onUpdate={handleChildUpdate}
+                                                                    onDelete={handleChildDelete}
+                                                                    onDuplicate={handleChildDuplicate}
+                                                                />
+                                                            ))}
+                                                            {provided.placeholder}
+                                                        </div>
+                                                    )}
+                                                </Droppable>
+                                            </div>
                                         )}
 
                                         {block.type === 'text' && (

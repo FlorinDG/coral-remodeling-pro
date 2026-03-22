@@ -49,7 +49,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
         dbs.forEach(db => {
             if (!db) return;
             const isArticle = db.id === 'db-articles';
-            const nameProp = db.properties.find(p => ['naam', 'titel', 'title', 'name'].includes(p.name.toLowerCase()));
+            const nameProp = db.properties.find(p => ['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving'].includes(p.name.toLowerCase()));
             const namePropId = nameProp?.id || 'title';
 
             db.pages.forEach(page => {
@@ -78,7 +78,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate }: Fi
     const searchResults = useMemo(() => {
         if (!searchQuery || searchQuery.length < 2) return [];
         const lowerQ = searchQuery.toLowerCase();
-        return combinedEntities.filter(x => x.searchableText.includes(lowerQ)).slice(0, 8); // Top 8 hits
+        return combinedEntities.filter(x => x.searchableText.includes(lowerQ)).slice(0, 50); // Top 50 hits
     }, [searchQuery, combinedEntities]);
 
     // Metamorphosis function invoked when an item is selected from dropdown

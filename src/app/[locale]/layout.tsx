@@ -70,6 +70,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
                 'max-snippet': -1,
             },
         },
+        icons: {
+            icon: '/icon.svg',
+        },
     };
 }
 

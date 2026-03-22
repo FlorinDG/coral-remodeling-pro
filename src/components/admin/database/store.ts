@@ -3,8 +3,15 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
+import { saveGlobalDatabase, saveGlobalPage, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
 
-import { mockDatabases } from './mockData';
+// Helper to fire-and-forget syncs to Postgres without blocking UI
+const syncDb = (db: Database | undefined) => {
+    if (db) saveGlobalDatabase(db).catch(console.error);
+};
+const syncPage = (page: Page | undefined) => {
+    if (page) saveGlobalPage(page).catch(console.error);
+};
 
 // Custom IndexedDB storage object to bypass the 5MB browser localStorage limit
 const idbStorage: StateStorage = {
@@ -30,6 +37,7 @@ const idbStorage: StateStorage = {
 
 interface DatabaseState {
     databases: Database[];
+    hydrateDatabases: (databases: Database[]) => void;
 
     // Database Operations
     createDatabase: (name: string, description?: string) => Database;
@@ -75,7 +83,11 @@ interface DatabaseState {
 export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
-            databases: mockDatabases,
+            databases: [],
+
+            hydrateDatabases: (serverDatabases) => {
+                set({ databases: serverDatabases });
+            },
 
             createDatabase: (name, description) => {
                 const newDatabase: Database = {
@@ -97,6 +109,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 };
 
                 set((state) => ({ databases: [...state.databases, newDatabase] }));
+                syncDb(newDatabase);
                 return newDatabase;
             },
 
@@ -106,12 +119,14 @@ export const useDatabaseStore = create<DatabaseState>()(
                         db.id === id ? { ...db, ...updates, updatedAt: new Date().toISOString() } : db
                     )
                 }));
+                syncDb(get().databases.find(d => d.id === id));
             },
 
             deleteDatabase: (id) => {
                 set((state) => ({
                     databases: state.databases.filter(db => db.id !== id)
                 }));
+                deleteGlobalDatabase(id).catch(console.error);
             },
 
             clearDatabase: (databaseId) => set((state) => ({
@@ -128,27 +143,33 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             // --- VIEW OPERATIONS ---
 
-            addView: (databaseId, view) => set((state) => ({
-                databases: state.databases.map(db => {
-                    if (db.id === databaseId) {
-                        const newView: DatabaseView = { ...view, id: uuidv4() };
-                        return { ...db, views: [...(db.views || []), newView] };
-                    }
-                    return db;
-                })
-            })),
+            addView: (databaseId, view) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id === databaseId) {
+                            const newView: DatabaseView = { ...view, id: uuidv4() };
+                            return { ...db, views: [...(db.views || []), newView] };
+                        }
+                        return db;
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
 
-            updateView: (databaseId, viewId, updates) => set((state) => ({
-                databases: state.databases.map(db => {
-                    if (db.id === databaseId && db.views) {
-                        return {
-                            ...db,
-                            views: db.views.map((view: DatabaseView) => view.id === viewId ? { ...view, ...updates } : view)
-                        };
-                    }
-                    return db;
-                })
-            })),
+            updateView: (databaseId, viewId, updates) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id === databaseId && db.views) {
+                            return {
+                                ...db,
+                                views: db.views.map((view: DatabaseView) => view.id === viewId ? { ...view, ...updates } : view)
+                            };
+                        }
+                        return db;
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
 
             updateViewPropertyState: (databaseId, viewId, propertyId, updates) => set((state) => ({
                 databases: state.databases.map(db => {
@@ -246,6 +267,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
             updateProperty: (databaseId, propertyId, updates) => {
@@ -259,6 +281,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
             deleteProperty: (databaseId, propertyId) => {
@@ -272,6 +295,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
             createPage: (databaseId, initialProperties = {}) => {
@@ -356,10 +380,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                     };
                 }
 
+                syncPage(newPage);
                 return newPage;
             },
 
             addPages: (databaseId, pagesProperties) => {
+                let createdPages: Page[] = [];
                 set((state) => {
                     return {
                         databases: state.databases.map(db => {
@@ -401,6 +427,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 };
                             });
 
+                            createdPages = [...createdPages, ...newPages];
                             return {
                                 ...db,
                                 pages: [...db.pages, ...newPages],
@@ -409,6 +436,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         })
                     };
                 });
+                createdPages.forEach((p: Page) => syncPage(p));
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {
@@ -432,6 +460,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                const db = get().databases.find(d => d.id === databaseId);
+                if (db) {
+                    syncPage(db.pages.find((p: Page) => p.id === pageId));
+                }
             },
 
             updatePageBlocks: (databaseId, pageId, blocks) => {
@@ -452,6 +484,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                const db = get().databases.find(d => d.id === databaseId);
+                if (db) {
+                    syncPage(db.pages.find((p: Page) => p.id === pageId));
+                }
             },
 
             deletePage: (databaseId, pageId) => {
@@ -465,6 +501,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                deleteGlobalPage(pageId).catch(console.error);
             },
 
             deletePages: (databaseId, pageIds) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Block, BlockType } from '@/components/admin/database/types';
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
@@ -18,6 +18,7 @@ interface QuotationRowProps {
 export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate }: QuotationRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
         switch (type) {
@@ -99,68 +100,73 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const sectionHeaderColor = block.type === 'section' ? 'border-orange-500 bg-orange-100/50 dark:bg-orange-900/20' : block.type === 'subsection' ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
 
     const renderContextMenu = (provided: any) => (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <div
-                    {...provided.dragHandleProps}
-                    className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/icon relative flex items-center justify-center shrink-0 w-7 h-7"
-                    title={getTypeLabel(block.type)}
-                >
-                    <div className="opacity-100 group-hover/icon:opacity-0 transition-opacity absolute flex items-center justify-center">
-                        {getTypeIcon(block.type)}
-                    </div>
-                    <div className="opacity-0 group-hover/icon:opacity-100 transition-opacity absolute flex items-center justify-center">
-                        <GripVertical className="w-4 h-4 text-neutral-500" />
-                    </div>
-                </div>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56 z-[100]">
-                <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500">Transform Matrix Target</div>
+        <div
+            {...provided.dragHandleProps}
+            onClick={(e) => {
+                e.stopPropagation();
+                // Imperatively fire Radix only on pure click (drag gestures swallow click events natively)
+                contextTriggerRef.current?.click();
+            }}
+            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/icon relative flex items-center justify-center shrink-0 w-7 h-7"
+            title={getTypeLabel(block.type)}
+        >
+            <div className="opacity-100 group-hover/icon:opacity-0 transition-opacity absolute flex items-center justify-center pointer-events-none">
+                {getTypeIcon(block.type)}
+            </div>
+            <div className="opacity-0 group-hover/icon:opacity-100 transition-opacity absolute flex items-center justify-center pointer-events-none">
+                <GripVertical className="w-4 h-4 text-neutral-500" />
+            </div>
 
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'section' })}>
-                    <Folder className="w-4 h-4 mr-2" /> Section Parent
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'subsection' })}>
-                    <FolderOpen className="w-4 h-4 mr-2" /> Subsection Parent
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+            <DropdownMenu modal={false}>
+                <DropdownMenuTrigger ref={contextTriggerRef} className="absolute inset-0 opacity-0 pointer-events-none hidden" />
+                <DropdownMenuContent align="start" className="w-56 z-[100]">
+                    <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500">Transform Matrix Target</div>
 
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'post' })}>
-                    <AlignLeft className="w-4 h-4 mr-2" /> Bestek Post (Container)
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'article' })}>
-                    <Box className="w-4 h-4 mr-2" /> Calculator Article
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'text' })}>
-                    <Text className="w-4 h-4 mr-2" /> Rich Text Notes
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
-                    <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
-                </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'section' })}>
+                        <Folder className="w-4 h-4 mr-2" /> Section Parent
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'subsection' })}>
+                        <FolderOpen className="w-4 h-4 mr-2" /> Subsection Parent
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
 
-                {!isContainer && (
-                    <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => handleAddChild('article')} className="text-orange-600">
-                            <Plus className="w-4 h-4 mr-2" /> Add Subcomponent
-                        </DropdownMenuItem>
-                    </>
-                )}
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'post' })}>
+                        <AlignLeft className="w-4 h-4 mr-2" /> Bestek Post (Container)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'article' })}>
+                        <Box className="w-4 h-4 mr-2" /> Calculator Article
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'text' })}>
+                        <Text className="w-4 h-4 mr-2" /> Rich Text Notes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
+                        <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
+                    </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
+                    {!isContainer && (
+                        <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleAddChild('article')} className="text-orange-600">
+                                <Plus className="w-4 h-4 mr-2" /> Add Subcomponent
+                            </DropdownMenuItem>
+                        </>
+                    )}
 
-                {/* Optional Matrix Override */}
-                <DropdownMenuItem onClick={() => onUpdate(block.id, { isOptional: !block.isOptional })}>
-                    <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-blue-500' : ''}`} />
-                    {block.isOptional ? 'Mark as Required' : 'Mark as Optional'}
-                </DropdownMenuItem>
+                    <DropdownMenuSeparator />
 
-                <DropdownMenuSeparator />
+                    {/* Optional Matrix Override */}
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { isOptional: !block.isOptional })}>
+                        <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-blue-500' : ''}`} />
+                        {block.isOptional ? 'Mark as Required' : 'Mark as Optional'}
+                    </DropdownMenuItem>
 
-                <DropdownMenuItem onClick={() => onDuplicate(block.id)}>Duplicate Block</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">Delete Block</DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem onClick={() => onDuplicate(block.id)}>Duplicate Block</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">Delete Block</DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     );
 
     return (

@@ -65,14 +65,14 @@ export default function QuotationDocumentHeader({ quotation, onUpdateProperty }:
             </div>
 
             {/* Betreft (Subject) Hero Input */}
-            <div className="w-full mt-4 flex flex-col gap-2">
-                <label className="text-xs uppercase tracking-widest font-bold text-neutral-400">Betreft (Subject)</label>
+            <div className="w-full mt-4 flex items-center gap-3 bg-neutral-50/50 dark:bg-[#111] py-1.5 px-3 rounded border border-neutral-200 dark:border-neutral-800 focus-within:border-blue-500 transition-colors">
+                <label className="text-[11px] uppercase tracking-widest font-bold text-neutral-400 whitespace-nowrap">Betreft:</label>
                 <input
                     type="text"
                     value={betreft}
                     onChange={(e) => onUpdateProperty('betreft', e.target.value)}
                     placeholder="e.g. Volledig badkamer renovatie incl. sanitair..."
-                    className="w-full text-2xl md:text-3xl font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 py-2 border-b-2 border-transparent focus:border-blue-500 transition-colors"
+                    className="flex-1 w-full text-base font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 p-0 text-black dark:text-white"
                 />
             </div>
 

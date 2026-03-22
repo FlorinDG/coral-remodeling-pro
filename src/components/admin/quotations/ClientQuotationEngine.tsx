@@ -34,6 +34,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const quotationTitle = quotation.properties?.['title'] || 'Draft Quotation';
     const clientId = (quotation.properties?.['client'] as string) || '';
     const projectId = (quotation.properties?.['project'] as string) || '';
+    const betreft = (quotation.properties?.['betreft'] as string) || '';
 
     const blocks = quotation.blocks || [];
 
@@ -145,9 +146,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
                     <div className="flex flex-col">
-                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{quotationTitle}</h1>
+                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{betreft || 'Draft Quotation'}</h1>
                         <p className="text-xs text-neutral-500 font-mono tracking-wider">
-                            OFFERTE
+                            OFFERTE {quotationTitle}
                         </p>
                     </div>
                 </div>
@@ -184,7 +185,17 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-[#0p0p0p]">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
-                    {/* Removed legacy A4 document header as per user request */}
+                    {/* Betreft (Subject) Input */}
+                    <div className="w-full mb-6 mt-2 flex flex-col gap-2 p-6 bg-white dark:bg-[#111] rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm shrink-0">
+                        <label className="text-xs uppercase tracking-widest font-bold text-neutral-400">Betreft / Object</label>
+                        <input
+                            type="text"
+                            value={betreft}
+                            onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
+                            placeholder="e.g. Volledig badkamer renovatie incl. sanitair..."
+                            className="w-full text-2xl md:text-3xl font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 py-2 border-b-2 border-transparent focus:border-blue-500 transition-colors"
+                        />
+                    </div>
 
                     {/* Mathematical Blocks */}
                     <DragDropContext onDragEnd={handleDragEnd}>

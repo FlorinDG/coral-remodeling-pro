@@ -36,7 +36,7 @@ model ClientPortal {
   clientName   String
   clientEmail  String
   slug         String          @unique
-  password     String?         // Hashed password for portal access
+  password     String? // Hashed password for portal access
   status       String          @default("ACTIVE")
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
@@ -65,7 +65,7 @@ model ProjectUpdate {
 model Task {
   id        String       @id @default(cuid())
   portalId  String
-  eventId   String?      // Optional reference to a calendar event
+  eventId   String? // Optional reference to a calendar event
   title     String
   status    String       @default("TODO")
   dueDate   DateTime?
@@ -84,14 +84,14 @@ model Event {
   allDay           Boolean  @default(false)
   description      String?
   location         String?
-  userId           String   // Owner of the event
+  userId           String // Owner of the event
   taskId           String?  @unique // Optional related task
   googleEventId    String?  @unique // ID of corresponding Google Calendar Event
-  googleCalendarId String?  // ID of the Google Calendar this belongs to
+  googleCalendarId String? // ID of the Google Calendar this belongs to
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task             Task[]   // One-to-many from Event to Task (though typically 1:1 in this usecase, prisma needs array or unique back relation. The Task side has eventId and a relation)
+  task             Task[] // One-to-many from Event to Task (though typically 1:1 in this usecase, prisma needs array or unique back relation. The Task side has eventId and a relation)
 }
 
 model Document {
@@ -258,7 +258,7 @@ model NotionConnection {
   id               String        @id @default(cuid())
   name             String
   databaseId       String
-  token            String?       // Optional override for global NOTION_TOKEN
+  token            String? // Optional override for global NOTION_TOKEN
   hiddenProperties String[]      @default([])
   lastSynced       DateTime?
   createdAt        DateTime      @default(now())
@@ -270,7 +270,7 @@ model NotionEntry {
   id           String           @id @default(cuid())
   notionId     String           @unique
   connectionId String
-  data         Json             // Stores flattened Notion properties
+  data         Json // Stores flattened Notion properties
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   connection   NotionConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
@@ -279,7 +279,7 @@ model NotionEntry {
 model ConnectedEmailAccount {
   id        String   @id @default(cuid())
   email     String   @unique
-  password  String   // In a production environment, this should be symmetrically encrypted
+  password  String // In a production environment, this should be symmetrically encrypted
   imapHost  String
   imapPort  Int      @default(993)
   smtpHost  String
@@ -306,43 +306,43 @@ model Contact {
 }
 
 model PlatformLead {
-  id               String   @id @default(cuid())
-  externalNr       String?
-  contactId        String
-  source           String   @default("BOBEX")
-  dateIn           DateTime @default(now())
-  mailReceivedUrl  String?
-  
-  mailLead         Boolean  @default(false)
-  callLead         Boolean  @default(false)
-  visitPlanned     Boolean  @default(false)
-  
-  status           String   @default("NEW")
-  statusNote       String?
-  location         String?
+  id              String   @id @default(cuid())
+  externalNr      String?
+  contactId       String
+  source          String   @default("BOBEX")
+  dateIn          DateTime @default(now())
+  mailReceivedUrl String?
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  mailLead     Boolean @default(false)
+  callLead     Boolean @default(false)
+  visitPlanned Boolean @default(false)
 
-  contact          Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status     String  @default("NEW")
+  statusNote String?
+  location   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
 model SalesOpportunity {
-  id               String   @id @default(cuid())
-  contactId        String
-  source           String   @default("WEBSITE")
-  dateIn           DateTime @default(now())
-  
-  visitPlanned     Boolean  @default(false)
-  
-  status           String   @default("NEW")
-  expectedValue    Float?   @default(0)
-  statusNote       String?
+  id        String   @id @default(cuid())
+  contactId String
+  source    String   @default("WEBSITE")
+  dateIn    DateTime @default(now())
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  visitPlanned Boolean @default(false)
 
-  contact          Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  status        String  @default("NEW")
+  expectedValue Float?  @default(0)
+  statusNote    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
 // =========================================================================================
@@ -350,132 +350,183 @@ model SalesOpportunity {
 // =========================================================================================
 
 model Invoice {
-  id              String        @id @default(cuid())
-  invoiceNumber   String        @unique // e.g., "INV-2026-001"
-  type            String        // "SALES", "PURCHASE", "CREDIT_NOTE_SALES", "CREDIT_NOTE_PURCHASE"
-  status          String        @default("DRAFT") // DRAFT, SENT, PARTIAL, PAID, OVERDUE, CANCELLED
-  issueDate       DateTime      @default(now())
-  dueDate         DateTime
-  
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique // e.g., "INV-2026-001"
+  type          String // "SALES", "PURCHASE", "CREDIT_NOTE_SALES", "CREDIT_NOTE_PURCHASE"
+  status        String   @default("DRAFT") // DRAFT, SENT, PARTIAL, PAID, OVERDUE, CANCELLED
+  issueDate     DateTime @default(now())
+  dueDate       DateTime
+
   // Relations
-  contactId       String?       // For Sales/Clients
-  supplierId      String?       // For Purchases
-  projectId       String?       // Optional linkage to an Internal Project
-  
+  contactId  String? // For Sales/Clients
+  supplierId String? // For Purchases
+  projectId  String? // Optional linkage to an Internal Project
+
   // Totals
-  subtotal        Float         @default(0)
-  vatTotal        Float         @default(0)
-  total           Float         @default(0)
-  
-  notes           String?
-  items           InvoiceItem[]
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  subtotal Float @default(0)
+  vatTotal Float @default(0)
+  total    Float @default(0)
+
+  notes String?
+  items InvoiceItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model InvoiceItem {
-  id              String   @id @default(cuid())
-  invoiceId       String
-  description     String
-  quantity        Float
-  unitPrice       Float
-  vatRate         Float    // e.g., 6, 21 for Belgium
-  total           Float
-  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float
+  unitPrice   Float
+  vatRate     Float // e.g., 6, 21 for Belgium
+  total       Float
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model Quotation {
-  id              String          @id @default(cuid())
-  quoteNumber     String          @unique // e.g., "OFF-2026-001"
-  status          String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
-  date            DateTime        @default(now())
-  validUntil      DateTime
-  contactId       String
-  subtotal        Float           @default(0)
-  vatTotal        Float           @default(0)
-  total           Float           @default(0)
-  notes           String?
-  items           QuotationItem[]
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id          String          @id @default(cuid())
+  quoteNumber String          @unique // e.g., "OFF-2026-001"
+  status      String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  date        DateTime        @default(now())
+  validUntil  DateTime
+  contactId   String
+  subtotal    Float           @default(0)
+  vatTotal    Float           @default(0)
+  total       Float           @default(0)
+  notes       String?
+  items       QuotationItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model QuotationItem {
-  id              String    @id @default(cuid())
-  quotationId     String
-  description     String
-  quantity        Float
-  unitPrice       Float
-  vatRate         Float
-  total           Float
-  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  quotationId String
+  description String
+  quantity    Float
+  unitPrice   Float
+  vatRate     Float
+  total       Float
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
 
 model Employee {
-  id              String      @id @default(cuid())
-  firstName       String
-  lastName        String
-  email           String      @unique
-  phone           String?
-  role            String      // e.g., "MANAGER", "CONTRACTOR", "TECHNICIAN"
-  status          String      @default("ACTIVE")
-  hourlyCost      Float?      // Internal cost calculation
-  hireDate        DateTime?
-  
-  timeEntries     TimeEntry[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id         String    @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String    @unique
+  phone      String?
+  role       String // e.g., "MANAGER", "CONTRACTOR", "TECHNICIAN"
+  status     String    @default("ACTIVE")
+  hourlyCost Float? // Internal cost calculation
+  hireDate   DateTime?
+
+  timeEntries TimeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TimeEntry {
-  id              String    @id @default(cuid())
-  employeeId      String
-  projectId       String?   // Link to Internal Project where time was spent
-  taskId          String?   // Optional specific task
-  
+  id         String  @id @default(cuid())
+  employeeId String
+  projectId  String? // Link to Internal Project where time was spent
+  taskId     String? // Optional specific task
+
   startTime       DateTime
   endTime         DateTime?
-  durationMinutes Int?      // Calculated upon clock-out
-  
-  description     String?
-  isBillable      Boolean   @default(true)
-  
-  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  durationMinutes Int? // Calculated upon clock-out
+
+  description String?
+  isBillable  Boolean @default(true)
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model InternalProject {
-  id              String    @id @default(cuid())
-  projectCode     String    @unique // e.g., "PRJ-014"
-  name            String
-  status          String    @default("PLANNING") // PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
-  
-  clientId        String?   // Maps to Contact
-  startDate       DateTime?
-  targetEndDate   DateTime?
-  actualEndDate   DateTime?
-  
-  budget          Float?    @default(0)
-  
-  notes           String?
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id          String @id @default(cuid())
+  projectCode String @unique // e.g., "PRJ-014"
+  name        String
+  status      String @default("PLANNING") // PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
+
+  clientId      String? // Maps to Contact
+  startDate     DateTime?
+  targetEndDate DateTime?
+  actualEndDate DateTime?
+
+  budget Float? @default(0)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Supplier {
-  id              String    @id @default(cuid())
-  companyName     String
-  vatNumber       String?   @unique
-  contactPerson   String?
-  email           String?
-  phone           String?
-  address         String?
-  town            String?
-  category        String?   // e.g., "MATERIALS", "SUBCONTRACTOR", "LOGISTICS"
-  
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String  @id @default(cuid())
+  companyName   String
+  vatNumber     String? @unique
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  town          String?
+  category      String? // e.g., "MATERIALS", "SUBCONTRACTOR", "LOGISTICS"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Global Databases Ecosystem (Notion-Style Grids) ---
+
+model GlobalDatabase {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  icon        String?
+  coverImage  String?
+  isTemplate  Boolean @default(false)
+  folderId    String?
+
+  // JSON arrays of Property[] and DatabaseView[]
+  properties Json @default("[]")
+  views      Json @default("[]")
+
+  pages GlobalPage[]
+
+  // Legacy fallback configs
+  activeFilters Json? @default("[]")
+  activeSorts   Json? @default("[]")
+
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GlobalPage {
+  id String @id @default(cuid())
+
+  databaseId String
+  database   GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  coverImage String?
+  icon       String?
+
+  // Record<PropertyId, PropertyValue>
+  properties Json @default("{}")
+
+  order Float?
+
+  // Array of Block[] representing subcomponents/rich text
+  blocks Json @default("[]")
+
+  createdBy     String
+  lastEditedBy  String
+  driveFolderId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

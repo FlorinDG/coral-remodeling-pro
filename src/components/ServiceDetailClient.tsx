@@ -48,9 +48,13 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-white dark:to-black" />
 
-                <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full max-w-4xl">
-                    <p className="text-[#d35400] font-bold tracking-widest uppercase mb-4">{service.subtitle}</p>
-                    <h1 className="text-5xl md:text-7xl font-bold mb-6 text-neutral-900 dark:text-white">{service.title}</h1>
+                <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full max-w-[95vw] 2xl:max-w-7xl">
+                    {service.subtitle && (
+                        <span className="inline-block bg-[#d35400]/10 dark:bg-[#d35400]/20 text-[#cc5000] dark:text-[#ff8c3a] font-black tracking-[0.2em] uppercase text-sm md:text-sm px-4 py-1.5 rounded-full mb-6 backdrop-blur-md border border-[#d35400]/20 shadow-sm">
+                            {service.subtitle}
+                        </span>
+                    )}
+                    <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 text-neutral-900 dark:text-white xl:whitespace-nowrap tracking-tight">{service.title}</h1>
                 </div>
             </div>
 

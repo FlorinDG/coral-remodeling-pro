@@ -262,7 +262,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                                     <div className="flex items-center gap-2 shrink-0">
                                         {/* Recursive Line Margin Mapping Engine */}
-                                        <div className="flex flex-col items-end px-4">
+                                        <div className="flex flex-col items-end w-[160px] pr-[56px]">
                                             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">Total Limit</span>
                                             <span className={`font-bold tabular-nums leading-none ${block.isOptional ? 'line-through text-neutral-400' : 'text-neutral-900 dark:text-white'}`}>
                                                 €{calculateBlockTotal(block).toFixed(2)}
@@ -325,7 +325,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         {/* Render context menu right at the start of the row */}
                                         {renderContextMenu(provided)}
                                     </div>
-                                    <div className="flex-1 min-w-0 pr-8">
+                                    <div className="flex-1 min-w-0 pr-1">
                                         {(block.type === 'article' || block.type === 'bestek' || block.type === 'line') && (
                                             <FinancialRowRenderer
                                                 block={block}

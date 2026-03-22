@@ -52,6 +52,7 @@ interface DatabaseState {
 
     // Page (Row) Operations
     createPage: (databaseId: string, initialProperties?: Record<string, any>) => Page;
+    addPages: (databaseId: string, pagesProperties: Record<string, any>[]) => void;
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
@@ -339,6 +340,34 @@ export const useDatabaseStore = create<DatabaseState>()(
                 return newPage;
             },
 
+            addPages: (databaseId, pagesProperties) => {
+                set((state) => {
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== databaseId) return db;
+
+                            const newPages: Page[] = pagesProperties.map((initialProperties, index) => ({
+                                id: uuidv4(),
+                                databaseId,
+                                order: db.pages.length + index,
+                                properties: initialProperties,
+                                blocks: [],
+                                createdAt: new Date().toISOString(),
+                                updatedAt: new Date().toISOString(),
+                                createdBy: 'system',
+                                lastEditedBy: 'system'
+                            }));
+
+                            return {
+                                ...db,
+                                pages: [...db.pages, ...newPages],
+                                updatedAt: new Date().toISOString()
+                            };
+                        })
+                    };
+                });
+            },
+
             updatePageProperty: (databaseId, pageId, propertyId, value) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
@@ -558,6 +587,35 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const mergedDbs = currentState.databases.map(currentDb => {
                     const savedDb = persistedState.databases.find((d: Database) => d.id === currentDb.id);
                     if (savedDb) {
+                        // User Schema Migration Request for 'db-bestek'
+                        if (savedDb.id === 'db-bestek') {
+                            const oldTitleProp = savedDb.properties.find((p: Property) => p.id === 'title');
+                            const numericArtikelProp = savedDb.properties.find((p: Property) => p.name === 'Artikel' && p.id !== 'title');
+
+                            if (numericArtikelProp) {
+                                const numericId = numericArtikelProp.id;
+
+                                // Transplant data
+                                if (savedDb.pages) {
+                                    savedDb.pages.forEach((page: Page) => {
+                                        if (page.properties[numericId] !== undefined) {
+                                            page.properties['title'] = page.properties[numericId];
+                                            delete page.properties[numericId];
+                                        }
+                                    });
+                                }
+
+                                // Elevate to primary title
+                                numericArtikelProp.id = 'title';
+                            }
+
+                            // Delete the old "Artikel" (title), "Category", and "Code Reference" properties eternally
+                            savedDb.properties = savedDb.properties.filter((p: Property) =>
+                                p.name !== 'Category' &&
+                                p.name !== 'Code Reference' &&
+                                p !== oldTitleProp
+                            );
+                        }
                         // Merge properties: preserve user's dynamic CSV columns while inheriting codebase static updates
                         const mergedProperties = [...(savedDb.properties || [])];
                         currentDb.properties.forEach((devProp: Property) => {

@@ -4,6 +4,7 @@ import { Oxanium } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
 import { ThemeProvider } from "@/components/ThemeProvider";
+import Script from "next/script";
 import "../globals.css";
 
 const oxanium = Oxanium({
@@ -92,7 +93,9 @@ export default async function RootLayout({
                 <meta name="theme-color" content="#000000" />
 
                 {/* Google Consent Mode */}
-                <script
+                <Script
+                    id="consent-mode"
+                    strategy="beforeInteractive"
                     dangerouslySetInnerHTML={{
                         __html: `
                           window.dataLayer = window.dataLayer || [];
@@ -111,16 +114,26 @@ export default async function RootLayout({
                 />
 
                 {/* Google tag (gtag.js) */}
-                <script async src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}></script>
-                <script async src="https://www.googletagmanager.com/gtag/js?id=AW-17978966291"></script>
-                <script
+                <Script
+                    id="google-analytics-script"
+                    strategy="afterInteractive"
+                    src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID || 'G-N0NPGEPJKN'}`}
+                />
+                <Script
+                    id="google-ads-script"
+                    strategy="afterInteractive"
+                    src="https://www.googletagmanager.com/gtag/js?id=AW-17978966291"
+                />
+                <Script
+                    id="google-analytics-config"
+                    strategy="afterInteractive"
                     dangerouslySetInnerHTML={{
                         __html: `
                           window.dataLayer = window.dataLayer || [];
                           function gtag(){dataLayer.push(arguments);}
                           gtag('js', new Date());
 
-                          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}', {
+                          gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'G-N0NPGEPJKN'}', {
                             page_path: window.location.pathname,
                           });
                           gtag('config', 'AW-17978966291');

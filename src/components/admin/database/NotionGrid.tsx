@@ -11,6 +11,7 @@ import {
 } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
+import { useRouter } from 'next/navigation';
 import { Download, Upload, Plus, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { selectColumn } from './columns/SelectColumn';
@@ -31,9 +32,11 @@ interface NotionGridProps {
 }
 
 export default function NotionGrid({ databaseId }: NotionGridProps) {
+    const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
+    const addPages = useDatabaseStore(state => state.addPages);
     const deletePage = useDatabaseStore(state => state.deletePage);
     const deletePages = useDatabaseStore(state => state.deletePages);
     const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
@@ -56,54 +59,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const headerScrollRef = useRef<HTMLDivElement>(null);
     const gridWrapperRef = useRef<HTMLDivElement>(null);
 
-    // Sync header scroll with grid scroll to ensure columns align horizontally
-    useEffect(() => {
-        if (!isReady) return;
-
-        let gridContainer: Element | null = null;
-        let attachInterval: NodeJS.Timeout;
-
-        const handleScroll = (e: Event) => {
-            if (headerScrollRef.current && e.target instanceof Element) {
-                headerScrollRef.current.style.transform = `translateX(-${e.target.scrollLeft}px)`;
-            }
-        };
-
-        const handleHeaderWheel = (e: WheelEvent) => {
-            if (gridContainer && Math.abs(e.deltaX) > 0) {
-                // Forward horizontal trackpad swipes explicitly down to the underlying grid
-                gridContainer.scrollLeft += e.deltaX;
-                e.preventDefault(); // Stop browser back/forward swipe navigation gestures
-            }
-        };
-
-        const attemptAttach = () => {
-            gridContainer = gridWrapperRef.current?.querySelector('.dsg-container') || null;
-            if (gridContainer) {
-                gridContainer.addEventListener('scroll', handleScroll, { passive: true });
-                // We add the wheel listener to the sticky header container to forward swipes
-                const headerWrapper = gridWrapperRef.current?.querySelector('.absolute.top-0');
-                if (headerWrapper) {
-                    headerWrapper.addEventListener('wheel', handleHeaderWheel as any, { passive: false });
-                }
-                clearInterval(attachInterval);
-            }
-        };
-
-        // Aggressively attempt to fetch the lazy-rendered react-datasheet-grid container
-        attachInterval = setInterval(attemptAttach, 100);
-
-        return () => {
-            clearInterval(attachInterval);
-            if (gridContainer) {
-                gridContainer.removeEventListener('scroll', handleScroll);
-            }
-            const headerWrapper = gridWrapperRef.current?.querySelector('.absolute.top-0');
-            if (headerWrapper) {
-                headerWrapper.removeEventListener('wheel', handleHeaderWheel as any);
-            }
-        };
-    }, [isReady]);
+    // Removed vanilla scroll observer interval loop - migrated natively to React capture phases.
     useEffect(() => {
         isMounted.current = true;
         // Delay mounting the grid slightly to ensure the parent flex-box layout 
@@ -159,7 +115,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 // Because TitleColumn operates on the full row data, we handle it separately
                 if (prop.id === 'title') {
                     return {
-                        ...titleColumn(prop.id, (row) => setActivePageId(row.id)),
+                        ...titleColumn(prop.id, (row) => {
+                            if (databaseIdRef === 'db-quotations') {
+                                router.push(`/admin/quotations/${row.id}`);
+                            } else {
+                                setActivePageId(row.id);
+                            }
+                        }),
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -440,6 +402,8 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             headerToPropId[p.name.toLowerCase()] = p.id;
         });
 
+        const batchedPages: Record<string, any>[] = [];
+
         data.forEach((row: any) => {
             const initialProps: Record<string, any> = {};
 
@@ -472,8 +436,11 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 if (initialProps[p.id] === undefined) initialProps[p.id] = '';
             });
 
-            createPage(updatedDatabase.id, initialProps);
+            batchedPages.push(initialProps);
         });
+
+        // Fire exactly one synchronized state mutation pushing thousands of rows instantly bypassing React freeze
+        addPages(updatedDatabase.id, batchedPages);
     };
 
     const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -603,6 +570,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             <div
                 className="flex-1 w-full p-0 relative overflow-hidden min-h-0"
                 ref={gridWrapperRef}
+                onScrollCapture={(e) => {
+                    // Synchronously intercept bubbled scroll events and lock the header offset translation
+                    const target = e.target as HTMLElement;
+                    if (target.classList?.contains('dsg-container') && headerScrollRef.current) {
+                        headerScrollRef.current.style.transform = `translateX(-${target.scrollLeft}px)`;
+                    }
+                }}
                 onDragOver={(e) => {
                     // Automatically scroll the inner grid body if dragging near horizontal boundary edges
                     const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
@@ -620,6 +594,12 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         <div
                             onClick={e => e.stopPropagation()}
                             onMouseDown={e => e.stopPropagation()}
+                            onWheel={e => {
+                                const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+                                if (gridContainer && Math.abs(e.deltaX) > 0) {
+                                    gridContainer.scrollLeft += e.deltaX;
+                                }
+                            }}
                             className="absolute top-0 left-0 right-0 h-9 z-50 flex bg-[#f9fafb] dark:bg-neutral-900 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 overflow-visible pointer-events-auto"
                         >
                             {/* React DataSheet Grid Row Number Gutter Spacer + Selection Spacer + Grip Spacer */}
@@ -647,7 +627,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                                 <div style={{ width: '40px', minWidth: '40px' }} className="h-full" />
                             </div>
 
-                            <div ref={headerScrollRef} className="flex h-full min-w-max relative z-20" style={{ transform: 'translateX(0px)', willChange: 'transform' }}>
+                            <div ref={headerScrollRef} className="flex h-full min-w-max relative z-20" style={{ willChange: 'transform' }}>
                                 {orderedVisibleProperties.map((prop: Property, i: number) => {
                                     const state = viewStateMap.get(prop.id);
                                     const width = state?.width || 150;

@@ -39,12 +39,32 @@ export interface Property {
     config?: PropertyConfig;
 }
 
+export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line';
+
 export interface Block {
     id: string;
-    type: 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video';
-    content: string; // Rich text content or URL
+    type: BlockType;
+    content: string; // Rich text content or URL or Post Title
     properties?: Record<string, any>; // Formatting like bold, italic, color
-    children?: Block[]; // Nested blocks
+
+    // --- Quotation Engine Pillars ---
+    articleId?: string; // Foreign key to Articles DB
+    bestekId?: string;  // Foreign key to Bestek DB
+
+    quantity?: number;  // Standard row quantity
+    unit?: string;      // Measurement standard (e.g., m2, stuks)
+
+    brutoPrice?: number;
+    discountPercent?: number;
+    costPrice?: number; // Derived: Bruto - Discount
+    margePercent?: number;
+    verkoopPrice?: number; // Derived: Cost + Marge
+
+    children?: Block[]; // Compound nesting architecture (essential for `section` / `subsection` / `post` blocks)
+
+    // --- Phase 10: Advanced Profitability & Hierarchies ---
+    isOptional?: boolean; // If true, omit from Grand Total
+    calculationType?: 'levering' | 'materieel' | 'loon' | 'indirect'; // Used for the final Reporting Matrix
 }
 
 // A generic primitive type for property values

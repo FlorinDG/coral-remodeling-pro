@@ -509,14 +509,17 @@ export const mockDatabases: Database[] = [
         description: 'Knowledge base and blog post content management.',
         icon: '📚',
         properties: [
-            { id: 'title', name: 'Article Title', type: 'text' },
-            { id: 'prop-art-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-draft', name: 'Draft', color: 'yellow' }, { id: 'opt-published', name: 'Published', color: 'green' }] } },
-            { id: 'prop-art-author', name: 'Author', type: 'text' }
+            { id: 'title', name: 'Naam', type: 'text' },
+            { id: 'prop-art-desc', name: 'Description', type: 'text' }
         ],
         pages: [
             {
                 id: 'page-art-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
-                properties: { 'title': 'The Future of Luxury Kitchens in 2026', 'prop-art-status': 'opt-published', 'prop-art-author': 'Design Team' }
+                properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.' }
+            },
+            {
+                id: 'page-art-2', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                properties: { 'title': 'Isolatie 10cm', 'prop-art-desc': 'Acoustic thermal fiberglass insulation wrap.' }
             }
         ],
         activeFilters: [],
@@ -531,9 +534,7 @@ export const mockDatabases: Database[] = [
         description: 'Standardized technical specifications and building codes context.',
         icon: '🏗️',
         properties: [
-            { id: 'title', name: 'Specification Title', type: 'text' },
-            { id: 'prop-bst-code', name: 'Code Reference', type: 'text' },
-            { id: 'prop-bst-category', name: 'Category', type: 'select', config: { options: [{ id: 'opt-elec', name: 'Electrical', color: 'yellow' }, { id: 'opt-plumb', name: 'Plumbing', color: 'blue' }] } }
+            { id: 'title', name: 'Artikel', type: 'text' }
         ],
         pages: [],
         activeFilters: [],

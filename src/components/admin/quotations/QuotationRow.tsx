@@ -96,7 +96,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     };
 
     const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
-    const sectionHeaderColor = block.type === 'section' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : block.type === 'subsection' ? 'border-purple-400 bg-purple-50/30 dark:bg-purple-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
+    const sectionHeaderColor = block.type === 'section' ? 'border-orange-500 bg-orange-100/50 dark:bg-orange-900/20' : block.type === 'subsection' ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
 
     const renderContextMenu = (provided: any) => (
         <DropdownMenu>
@@ -280,7 +280,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         <div
                                             {...providedDroppable.droppableProps}
                                             ref={providedDroppable.innerRef}
-                                            className={`flex flex-col ${block.type === 'section' ? 'p-1.5 gap-1.5' : 'p-1 gap-1 border-l-2 border-orange-100 dark:border-orange-900/30 ml-2'}`}
+                                            className="flex flex-col w-full gap-1 mt-1"
                                         >
 
                                             {/* Recursive Child Mounting */}
@@ -297,7 +297,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                             {providedDroppable.placeholder}
 
                                             {/* Contextual Spawners for deep depths */}
-                                            <div className="flex items-center gap-2 mt-1 ml-4 py-1">
+                                            <div className="flex items-center gap-2 mt-1 py-1">
                                                 {block.type === 'section' && (
                                                     <button
                                                         onClick={() => handleAddChild('subsection')}
@@ -337,7 +337,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                                         {/* Dynamic Subcomponents Rendering Block */}
                                         {block.children && block.children.length > 0 && (
-                                            <div className="mt-2 pl-6 ml-2 border-l-2 border-orange-200 dark:border-orange-800/50 relative before:absolute before:top-0 before:left-[-2px] before:w-[2px] before:h-4 before:bg-orange-500">
+                                            <div className="mt-2 w-full flex flex-col relative pt-2 border-t border-neutral-100 dark:border-neutral-800/50">
                                                 <div className="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                                     <Layers className="w-3 h-3" /> Subcomponents
                                                 </div>

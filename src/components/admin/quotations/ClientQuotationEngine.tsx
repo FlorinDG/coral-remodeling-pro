@@ -3,11 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText } from 'lucide-react';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling component
-import QuotationDocumentHeader from './QuotationDocumentHeader';
 import QuotationFooterReport from './QuotationFooterReport';
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
@@ -33,6 +32,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Quotation Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
 
     const quotationTitle = quotation.properties?.['title'] || 'Draft Quotation';
+    const clientId = (quotation.properties?.['client'] as string) || '';
+    const projectId = (quotation.properties?.['project'] as string) || '';
+
     const blocks = quotation.blocks || [];
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
@@ -135,23 +137,44 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         <div className="flex flex-col w-full h-full bg-white dark:bg-[#0p0p0p] text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 min-w-0">
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
-                    <div>
-                        <h1 className="text-xl font-semibold">{quotationTitle}</h1>
-                        <p className="text-xs text-neutral-500 font-mono">ID: {quotation.id}</p>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{quotationTitle}</h1>
+                        <p className="text-xs text-neutral-500 font-mono tracking-wider">
+                            OFFERTE
+                        </p>
+                    </div>
+                </div>
+
+                {/* Central Selectors */}
+                <div className="flex-1 flex items-center justify-center gap-3 px-4">
+                    {/* Placeholder for Client Selection */}
+                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors border border-transparent dark:border-white/5">
+                        <User className="w-4 h-4 text-neutral-500" />
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {clientId ? 'Client Relation Linked' : 'Selecteer Klant (Client)...'}
+                        </span>
+                    </div>
+
+                    {/* Placeholder for Project Selection */}
+                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors border border-transparent dark:border-white/5">
+                        <Briefcase className="w-4 h-4 text-neutral-500" />
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                            {projectId ? 'Project Linked' : 'Koppel Project (Optioneel)'}
+                        </span>
                     </div>
                 </div>
 
                 {/* Mathematical Global Output Frame */}
-                <div className="flex flex-col items-end px-4">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Grand Total</span>
-                    <span className="text-2xl font-bold tracking-tight text-blue-600 dark:text-blue-400">
+                <div className="flex flex-col items-end px-4 min-w-max">
+                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Grand Total</span>
+                    <span className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400 leading-none">
                         €{grandTotal.toFixed(2)}
                     </span>
                 </div>
@@ -161,13 +184,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-[#0p0p0p]">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
-                    {/* A4 Document Header */}
-                    <div className="mb-4">
-                        <QuotationDocumentHeader
-                            quotation={quotation}
-                            onUpdateProperty={handleUpdateProperty}
-                        />
-                    </div>
+                    {/* Removed legacy A4 document header as per user request */}
 
                     {/* Mathematical Blocks */}
                     <DragDropContext onDragEnd={handleDragEnd}>

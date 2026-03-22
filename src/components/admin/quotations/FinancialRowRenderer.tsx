@@ -102,20 +102,45 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
         const page = entity.page;
         if (db && page) {
             const getPropVal = (keywords: string[]) => {
-                const prop = db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k)));
+                const prop = db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())));
                 return prop ? page.properties[prop.id] : undefined;
             };
 
-            const rawBruto = getPropVal(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-            const rawVerkoop = getPropVal(['verkoop', 'selling']);
-            const rawMarge = getPropVal(['marge', 'margin']);
-            const rawDiscount = getPropVal(['korting', 'discount']);
-            const rawUnit = getPropVal(['eenheid', 'unit', 'maat']);
+            const parseNumber = (val: any): number | undefined => {
+                if (val === undefined || val === null || val === '') return undefined;
+                if (typeof val === 'number') return val;
+                if (typeof val === 'string') {
+                    const cleaned = val.replace(/[^0-9,-.]/g, '').replace(',', '.');
+                    const parsed = parseFloat(cleaned);
+                    return isNaN(parsed) ? undefined : parsed;
+                }
+                return undefined;
+            };
 
-            if (rawBruto !== undefined && rawBruto !== null) payload.brutoPrice = Number(rawBruto) || 0;
-            if (rawDiscount !== undefined && rawDiscount !== null) payload.discountPercent = Number(rawDiscount) || 0;
-            if (rawMarge !== undefined && rawMarge !== null) payload.margePercent = Number(rawMarge) || 0;
+            const rawBruto = getPropVal(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
+            const rawVerkoop = getPropVal(['verkoop', 'selling']);
+            const rawMarge = getPropVal(['marge', 'margin', 'marge stanndard', 'marge standard']);
+            const rawDiscount = getPropVal(['korting', 'discount', 'disc']);
+            const rawUnit = getPropVal(['eenheid', 'unit', 'maat', 'eeh']);
+            const rawType = getPropVal(['type', 'calculatietype', 'calculationtype']);
+
+            const numBruto = parseNumber(rawBruto);
+            if (numBruto !== undefined) payload.brutoPrice = numBruto;
+
+            const numDiscount = parseNumber(rawDiscount);
+            if (numDiscount !== undefined) payload.discountPercent = numDiscount;
+
+            const numMarge = parseNumber(rawMarge);
+            if (numMarge !== undefined) payload.margePercent = numMarge;
+
             if (rawUnit !== undefined && rawUnit !== null) payload.unit = String(rawUnit);
+
+            if (rawType !== undefined && rawType !== null) {
+                const lowerType = String(rawType).toLowerCase();
+                if (['materieel', 'levering', 'loon', 'indirect'].includes(lowerType)) {
+                    payload.calculationType = lowerType as any;
+                }
+            }
 
             if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
                 const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
@@ -123,8 +148,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
                 const cCost = bPrice * (1 - dPerc / 100);
                 payload.verkoopPrice = cCost * (1 + mPerc / 100);
-            } else if (rawVerkoop !== undefined && rawVerkoop !== null) {
-                payload.verkoopPrice = Number(rawVerkoop) || 0;
+            } else {
+                const numVerkoop = parseNumber(rawVerkoop);
+                if (numVerkoop !== undefined) {
+                    payload.verkoopPrice = numVerkoop;
+                }
             }
 
             // Morph subcomponents recursively from template library

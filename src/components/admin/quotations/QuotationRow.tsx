@@ -98,6 +98,71 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
     const sectionHeaderColor = block.type === 'section' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : block.type === 'subsection' ? 'border-purple-400 bg-purple-50/30 dark:bg-purple-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
 
+    const renderContextMenu = (provided: any) => (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <div
+                    {...provided.dragHandleProps}
+                    className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/icon relative flex items-center justify-center shrink-0 w-7 h-7"
+                    title={getTypeLabel(block.type)}
+                >
+                    <div className="opacity-100 group-hover/icon:opacity-0 transition-opacity absolute flex items-center justify-center">
+                        {getTypeIcon(block.type)}
+                    </div>
+                    <div className="opacity-0 group-hover/icon:opacity-100 transition-opacity absolute flex items-center justify-center">
+                        <GripVertical className="w-4 h-4 text-neutral-500" />
+                    </div>
+                </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 z-[100]">
+                <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500">Transform Matrix Target</div>
+
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'section' })}>
+                    <Folder className="w-4 h-4 mr-2" /> Section Parent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'subsection' })}>
+                    <FolderOpen className="w-4 h-4 mr-2" /> Subsection Parent
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'post' })}>
+                    <AlignLeft className="w-4 h-4 mr-2" /> Bestek Post (Container)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'article' })}>
+                    <Box className="w-4 h-4 mr-2" /> Calculator Article
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'text' })}>
+                    <Text className="w-4 h-4 mr-2" /> Rich Text Notes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
+                    <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
+                </DropdownMenuItem>
+
+                {!isContainer && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleAddChild('article')} className="text-orange-600">
+                            <Plus className="w-4 h-4 mr-2" /> Add Subcomponent
+                        </DropdownMenuItem>
+                    </>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* Optional Matrix Override */}
+                <DropdownMenuItem onClick={() => onUpdate(block.id, { isOptional: !block.isOptional })}>
+                    <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-blue-500' : ''}`} />
+                    {block.isOptional ? 'Mark as Required' : 'Mark as Optional'}
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => onDuplicate(block.id)}>Duplicate Block</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">Delete Block</DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+
     return (
         <>
             <Draggable draggableId={block.id} index={index}>
@@ -105,78 +170,12 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                     <div
                         ref={provided.innerRef}
                         {...provided.draggableProps}
-                        className={`group relative flex items-start w-full transition-all p-2 rounded-lg -mx-2 
+                        className={`group relative w-full transition-all py-1.5 rounded flex flex-col 
                         ${block.isOptional ? 'opacity-50 grayscale' : ''} 
                         ${!isContainer ? 'even:bg-neutral-50/80 dark:even:bg-white/5 odd:bg-transparent' : ''}
                         ${snapshot.isDragging ? 'z-50 shadow-2xl bg-white dark:bg-neutral-900 border border-orange-500' : ''}
                     `}
                     >
-
-                        {/* Type Icon & Operations Column */}
-                        <div className="flex-shrink-0 w-8 flex flex-col items-center pt-1.5 gap-2" title={getTypeLabel(block.type)}>
-                            {getTypeIcon(block.type)}
-                            <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pb-2">
-                                <div
-                                    {...provided.dragHandleProps}
-                                    className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing hover:bg-black/5 dark:hover:bg-white/5 rounded"
-                                >
-                                    <GripVertical className="w-4 h-4" />
-                                </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <button className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-black/5 dark:hover:bg-white/5 rounded">
-                                            <MoreVertical className="w-4 h-4" />
-                                        </button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="start" className="w-56 z-[100]">
-                                        <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500">Transform Matrix Target</div>
-
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'section' })}>
-                                            <Folder className="w-4 h-4 mr-2" /> Section Parent
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'subsection' })}>
-                                            <FolderOpen className="w-4 h-4 mr-2" /> Subsection Parent
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'post' })}>
-                                            <AlignLeft className="w-4 h-4 mr-2" /> Bestek Post (Container)
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'article' })}>
-                                            <Box className="w-4 h-4 mr-2" /> Calculator Article
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'text' })}>
-                                            <Text className="w-4 h-4 mr-2" /> Rich Text Notes
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
-                                            <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
-                                        </DropdownMenuItem>
-
-                                        {!isContainer && (
-                                            <>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => handleAddChild('article')} className="text-orange-600">
-                                                    <Plus className="w-4 h-4 mr-2" /> Add Subcomponent
-                                                </DropdownMenuItem>
-                                            </>
-                                        )}
-
-                                        <DropdownMenuSeparator />
-
-                                        {/* Optional Matrix Override */}
-                                        <DropdownMenuItem onClick={() => onUpdate(block.id, { isOptional: !block.isOptional })}>
-                                            <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-blue-500' : ''}`} />
-                                            {block.isOptional ? 'Mark as Required' : 'Mark as Optional'}
-                                        </DropdownMenuItem>
-
-                                        <DropdownMenuSeparator />
-
-                                        <DropdownMenuItem onClick={() => onDuplicate(block.id)}>Duplicate Block</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">Delete Block</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
 
                         {/* Main Content Area */}
                         <div className="flex-1 min-w-0">
@@ -199,7 +198,10 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                         ${block.type === 'post' ? 'p-1.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-neutral-800' : ''}
                     `}
                                 >
-                                    <div className="flex items-center gap-2 flex-1">
+                                    <div className="flex items-center gap-1.5 flex-1">
+                                        {/* The Dynamic Icon / Drag Handle */}
+                                        {renderContextMenu(provided)}
+
                                         <button
                                             onClick={() => block.type === 'post' ? setIsPostModalOpen(true) : setIsExpanded(!isExpanded)}
                                             title={block.type === 'post' ? 'Open Post Editor Modal' : 'Toggle Expand'}
@@ -318,7 +320,11 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                             {/* --- Raw Base-Level Rows (Line/Article/Bestek) --- */}
                             {!isContainer && (
-                                <div className="w-full flex items-start gap-2 p-1.5 bg-white dark:bg-[#111] even:bg-neutral-50 dark:even:bg-[#1a1a1a] transition-colors rounded-sm border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 group relative">
+                                <div className="w-full flex items-start gap-1 p-1 bg-white dark:bg-[#111] even:bg-neutral-50 dark:even:bg-[#1a1a1a] transition-colors rounded-sm border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 group relative">
+                                    <div className="pt-2 pl-1 shrink-0">
+                                        {/* Render context menu right at the start of the row */}
+                                        {renderContextMenu(provided)}
+                                    </div>
                                     <div className="flex-1 min-w-0 pr-8">
                                         {(block.type === 'article' || block.type === 'bestek' || block.type === 'line') && (
                                             <FinancialRowRenderer

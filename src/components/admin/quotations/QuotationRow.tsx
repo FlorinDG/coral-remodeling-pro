@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Block, BlockType } from '@/components/admin/database/types';
-import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2 } from 'lucide-react';
+import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink } from 'lucide-react';
+import PageModal from '@/components/admin/database/components/PageModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/time-tracker/components/ui/dialog';
 import FinancialRowRenderer from './FinancialRowRenderer';
@@ -18,6 +19,7 @@ interface QuotationRowProps {
 export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate }: QuotationRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+    const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
@@ -171,6 +173,13 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
     return (
         <>
+            {isReferenceModalOpen && (block.articleId || block.bestekId) && (
+                <PageModal
+                    databaseId={block.articleId ? 'db-articles' : 'db-bestek'}
+                    pageId={block.articleId || block.bestekId || ''}
+                    onClose={() => setIsReferenceModalOpen(false)}
+                />
+            )}
             <Draggable draggableId={block.id} index={index}>
                 {(provided, snapshot) => (
                     <div
@@ -333,12 +342,34 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                     </div>
                                     <div className="flex-1 min-w-0 pr-1">
                                         {(block.type === 'article' || block.type === 'bestek' || block.type === 'line') && (
-                                            <FinancialRowRenderer
-                                                block={block}
-                                                databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
-                                                onUpdate={(updates) => onUpdate(block.id, updates)}
-                                                childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
-                                            />
+                                            <>
+                                                <FinancialRowRenderer
+                                                    block={block}
+                                                    databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
+                                                    onUpdate={(updates) => onUpdate(block.id, updates)}
+                                                    childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
+                                                />
+
+                                                {/* Action Toolbar */}
+                                                <div className="flex justify-end pr-2 overflow-hidden h-0 group-hover:h-auto opacity-0 group-hover:opacity-100 focus-within:h-auto focus-within:opacity-100 transition-all duration-200">
+                                                    <div className="flex items-center gap-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                                        {(block.articleId || block.bestekId) && (
+                                                            <button onClick={() => setIsReferenceModalOpen(true)} className="flex items-center hover:text-blue-500 transition-colors">
+                                                                <ExternalLink className="w-3 h-3 mr-1" /> View Source
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => handleAddChild('article')} className="flex items-center hover:text-orange-500 transition-colors text-orange-600/80">
+                                                            <Plus className="w-3 h-3 mr-1" /> Subcomponent
+                                                        </button>
+                                                        <button onClick={() => onDuplicate(block.id)} className="flex items-center hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
+                                                            <Copy className="w-3 h-3 mr-1" /> Duplicate
+                                                        </button>
+                                                        <button onClick={() => onDelete(block.id)} className="flex items-center hover:text-red-500 transition-colors text-red-500/80">
+                                                            <Trash className="w-3 h-3 mr-1" /> Delete
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </>
                                         )}
 
                                         {/* Dynamic Subcomponents Rendering Block */}

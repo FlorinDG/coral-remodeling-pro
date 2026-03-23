@@ -23,6 +23,7 @@ import { titleColumn } from './columns/TitleColumn';
 import { relationColumn } from './columns/RelationColumn';
 import { rollupColumn } from './columns/RollupColumn';
 import { formulaColumn } from './columns/FormulaColumn';
+import { currencyColumn } from './columns/CurrencyColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { Property } from './types';
@@ -183,6 +184,9 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                     baseColumn = selectColumn({ choices: prop.config?.options || [] }) as any;
                 } else if (prop.type === 'date') {
                     baseColumn = dateColumn as any;
+                } else if (prop.type === 'currency' || prop.type === 'number') {
+                    const symbol = prop.config?.format === 'dollar' ? '$' : '€';
+                    baseColumn = currencyColumn(prop.id, prop.type === 'currency' ? symbol : '') as any; // Empty symbol acts as pure number column natively
                 }
                 // More custom columns like Number will go here later
 

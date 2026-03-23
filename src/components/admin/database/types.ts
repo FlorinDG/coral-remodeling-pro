@@ -11,6 +11,8 @@ export type PropertyType =
     | 'relation'
     | 'rollup'
     | 'formula'
+    | 'currency'
+    | 'percent'
     | 'person'
     | 'created_time'
     | 'created_by'

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
-import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link } from 'lucide-react';
+import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
 
 const typeIcons: Record<PropertyType, React.ElementType> = {
     text: Type,
@@ -16,6 +16,8 @@ const typeIcons: Record<PropertyType, React.ElementType> = {
     relation: Link,
     rollup: Link,
     formula: Settings2,
+    currency: Euro,
+    percent: Percent,
     person: UserIcon,
     created_time: Calendar,
     created_by: UserIcon,

@@ -506,21 +506,38 @@ export const mockDatabases: Database[] = [
     {
         id: 'db-articles',
         name: 'Articles Library',
-        description: 'Knowledge base and blog post content management.',
+        description: 'Global master catalog for materials, labor, and services.',
         icon: '📚',
         properties: [
             { id: 'title', name: 'Naam', type: 'text' },
-            { id: 'prop-art-desc', name: 'Description', type: 'text' },
+            { id: 'prop-art-id', name: 'ID', type: 'formula', config: { formulaExpression: 'concat("ART-", slice(id, 0, 6))' } },
+            { id: 'prop-art-desc', name: 'Omschrijving', type: 'text' },
+            { id: 'prop-art-brand', name: 'Merk', type: 'text' },
+            { id: 'prop-art-group', name: 'Artikelgroep', type: 'select', config: { options: [{ id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'gray' }, { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' }, { id: 'opt-technieken', name: 'Technieken', color: 'orange' }] } },
+            { id: 'prop-art-supplier', name: 'Leverancier', type: 'relation', config: { relationDatabaseId: 'db-suppliers' } },
+
+            { id: 'prop-art-bruto', name: 'Brutoprijs', type: 'number', config: { format: 'euro' } },
+            { id: 'prop-art-remise', name: 'Remise', type: 'number', config: { format: 'percent' } },
+            { id: 'prop-art-netto', name: 'Netto kostprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Brutoprijs") * (1 - (prop("Remise") / 100)))' } },
+
+            { id: 'prop-art-margin', name: 'Marge', type: 'number', config: { format: 'percent' } },
+            { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") * (prop("Marge") / 100))' } },
+            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'number', config: { format: 'euro' } },
+
+            { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },
+            { id: 'prop-art-packaging', name: 'Packaging', type: 'text' },
+            { id: 'prop-art-min-order', name: 'Minimum Order', type: 'number' },
+
             { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }
         ],
         pages: [
             {
                 id: 'page-art-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
-                properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.' }
+                properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.', 'prop-art-bruto': 12.50, 'prop-art-remise': 20, 'prop-art-margin': 65, 'prop-art-verkoop': 16.50, 'prop-art-unit': 'u-m2', 'prop-art-packaging': 'plaat', 'prop-art-min-order': 3.12 }
             },
             {
                 id: 'page-art-2', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
-                properties: { 'title': 'Isolatie 10cm', 'prop-art-desc': 'Acoustic thermal fiberglass insulation wrap.' }
+                properties: { 'title': 'Isolatie 10cm', 'prop-art-desc': 'Acoustic thermal fiberglass insulation wrap.', 'prop-art-bruto': 8.00, 'prop-art-remise': 15, 'prop-art-margin': 65, 'prop-art-verkoop': 11.20, 'prop-art-unit': 'u-m2' }
             },
             {
                 id: 'page-art-drain-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',

@@ -48,6 +48,7 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
             concat: (...args: any[]) => args.join(''),
             length: (val: any) => (val ? val.length : 0),
             round: Math.round,
+            round2: (val: any) => Math.round(Number(val) * 100) / 100,
             floor: Math.floor,
             ceil: Math.ceil,
             pow: Math.pow,

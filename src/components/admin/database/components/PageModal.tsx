@@ -146,9 +146,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                     {/* Properties Grid */}
                     {/* Properties Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 py-4 border-b border-neutral-100 dark:border-white/5 mb-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[1px] bg-neutral-200 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-8">
                         {database.properties.filter(p => p.id !== 'title').map(prop => (
-                            <div key={prop.id} className="flex flex-col justify-center gap-1 px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-black/40 shadow-sm hover:shadow-md dark:hover:border-neutral-700 transition-all group relative">
+                            <div key={prop.id} className="flex flex-col justify-center gap-1 px-3 py-2 bg-neutral-50 dark:bg-[#151515] hover:bg-white dark:hover:bg-[#1e1e1e] transition-colors group relative">
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">{prop.name}</span>
 

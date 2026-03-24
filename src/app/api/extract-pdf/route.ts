@@ -46,10 +46,13 @@ Your output MUST be a strict JSON object with a single array key "articles".
 Each object in the "articles" array MUST adhere to this exact schema matching our global database:
 {
   "title": "string (the name/description of the product or service)",
+  "brand": "string (infer the brand or manufacturer from the text. blank if none given)",
   "brutoPrice": "number (the standard/gross unit monetary price without currency symbols. Default to 0)",
   "discountPercent": "number (the discount percentage granted by the supplier/shop. If you see 'rem' or 'remise', this is the discount. If you only see Bruto and Netto, calculate the discount percentage. Strip the % sign. Default to 0)",
   "quantity": "number (the quantity specified. Default to 1)",
   "unit": "string (the unit of measurement, e.g. 'stk', 'm', 'uur', 'm2', 'L')",
+  "packaging": "string (closely related to the unit. e.g. if a drywall plate is 3.12 sq meters, packaging is 'plaat'. Infer if obvious, blank if none)",
+  "minimumOrder": "number (the minimum order quantity related to packaging if mentioned. e.g. 3.12)",
   "calculationType": "string (MUST be one of: 'materieel', 'levering', 'loon', 'indirect'. Defaults to 'materieel')"
 }
 CRITICAL RULES: 

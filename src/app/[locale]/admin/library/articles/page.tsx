@@ -140,6 +140,25 @@ export default function ArticlesPage() {
         }
     };
 
+    const forceResetSchema = () => {
+        const articleDb = useDatabaseStore.getState().getDatabase('db-articles');
+        if (!articleDb) return;
+        const confirm = window.confirm("Are you sure you want to FORCE RESTORE the Master Schema? This will overwrite the exact columns defined in the codebase, wiping custom columns but guaranteeing perfect system sync.");
+        if (!confirm) return;
+
+        try {
+            const newProperties = mockDatabases.find(d => d.id === 'db-articles')?.properties;
+            if (!newProperties) throw new Error("Mock schema not found");
+
+            useDatabaseStore.getState().updateDatabase('db-articles', {
+                properties: newProperties
+            });
+            alert("Master schema successfully restored and synced to PostgreSQL. Please refresh the page.");
+        } catch (e: any) {
+            alert("Error: " + e.message);
+        }
+    };
+
     return (
         <div className="flex flex-col w-full h-full relative">
             <ModuleTabs tabs={libraryTabs} groupId="library" />

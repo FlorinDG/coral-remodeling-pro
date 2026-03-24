@@ -513,7 +513,7 @@ export const mockDatabases: Database[] = [
             { id: 'prop-art-id', name: 'ID', type: 'text' },
             { id: 'prop-art-desc', name: 'Omschrijving', type: 'text' },
             { id: 'prop-art-brand', name: 'Merk', type: 'text' },
-            { id: 'prop-art-group', name: 'Artikelgroep', type: 'select', config: { options: [{ id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'gray' }, { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' }, { id: 'opt-technieken', name: 'Technieken', color: 'orange' }] } },
+            { id: 'prop-art-group', name: 'Artikelgroep', type: 'select', config: { options: [{ id: 'opt-general', name: 'General', color: 'default' }, { id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'gray' }, { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' }, { id: 'opt-elektriciteit', name: 'Elektriciteit', color: 'yellow' }, { id: 'opt-sanitaire', name: 'Sanitaire', color: 'blue' }, { id: 'opt-ventilatie', name: 'Ventilatie', color: 'purple' }, { id: 'opt-verwarming', name: 'Verwarming', color: 'red' }] } },
             { id: 'prop-art-supplier', name: 'Leverancier', type: 'relation', config: { relationDatabaseId: 'db-suppliers' } },
 
             { id: 'prop-art-bruto', name: 'Brutoprijs', type: 'number', config: { format: 'euro' } },

@@ -83,7 +83,10 @@ export default function ArticlesPage() {
                 const groupVal = mappedP['prop-art-group'];
                 if (groupVal === 'opt-ruwbouw') groupCode = '01';
                 else if (groupVal === 'opt-afwerking') groupCode = '02';
-                else if (groupVal === 'opt-technieken') groupCode = '03';
+                else if (groupVal === 'opt-elektriciteit') groupCode = '03';
+                else if (groupVal === 'opt-sanitaire') groupCode = '04';
+                else if (groupVal === 'opt-ventilatie') groupCode = '05';
+                else if (groupVal === 'opt-verwarming') groupCode = '06';
 
                 if (!counters[groupCode]) counters[groupCode] = 0;
                 counters[groupCode]++;

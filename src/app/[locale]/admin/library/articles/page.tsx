@@ -126,14 +126,11 @@ export default function ArticlesPage() {
                 }
             });
 
-            // Commit overwrite
-            useDatabaseStore.setState(state => ({
-                databases: state.databases.map(d => d.id === 'db-articles' ? {
-                    ...d,
-                    properties: mergedProperties,
-                    pages: newPages
-                } : d)
-            }));
+            // Commit overwrite to Zustand and force Postgres synchronization
+            useDatabaseStore.getState().updateDatabase('db-articles', {
+                properties: mergedProperties,
+                pages: newPages
+            });
 
             setMigrated(true);
         } catch (e) {

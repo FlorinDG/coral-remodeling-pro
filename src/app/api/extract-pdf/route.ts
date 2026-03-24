@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import * as pdfParseModule from 'pdf-parse';
-const pdfParse = (pdfParseModule as any).default || pdfParseModule;
+// @ts-ignore: Next.js Turbopack bug workaround parsing test files
+import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 
 // Node.js runtime is required for pdf-parse Buffer manipulation
 export const runtime = 'nodejs';

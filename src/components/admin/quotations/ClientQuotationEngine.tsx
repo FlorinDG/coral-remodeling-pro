@@ -10,6 +10,8 @@ import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling
 import QuotationFooterReport from './QuotationFooterReport';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
+import PDFImportModal from './PDFImportModal';
+import { Bot } from 'lucide-react';
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
@@ -18,6 +20,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     const [isHydrated, setIsHydrated] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -115,6 +118,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const handleAddBlock = (type: Block['type'] = 'line') => {
         const newBlock: Block = { id: crypto.randomUUID(), type, content: '' };
         updatePageBlocks('db-quotations', id, [...blocks, newBlock]);
+    };
+
+    const handleImportComplete = (newBlocks: Block[]) => {
+        updatePageBlocks('db-quotations', id, [...blocks, ...newBlocks]);
     };
 
     const handleUpdateProperty = (key: string, value: any) => {
@@ -263,6 +270,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         >
                             <span className="text-sm leading-none">+</span> Add Line
                         </button>
+                        <div className="flex-1" />
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 dark:bg-purple-900/20 dark:border-purple-800/50 dark:text-purple-400 dark:hover:bg-purple-900/40 text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded shadow-sm"
+                        >
+                            <Bot className="w-3.5 h-3.5" /> AI PDF Import
+                        </button>
                     </div>
 
                     {/* Phase 10: Profitability Engine & Signature Block */}
@@ -270,6 +284,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                 </div>
             </div>
+
+            <PDFImportModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onImportComplete={handleImportComplete}
+            />
         </div>
     );
 }

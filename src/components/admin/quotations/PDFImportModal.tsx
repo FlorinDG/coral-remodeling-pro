@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
-import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2 } from 'lucide-react';
+import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2, Database } from 'lucide-react';
 import { Block } from '@/components/admin/database/types';
+import { useDatabaseStore } from '@/components/admin/database/store';
 
 interface PDFImportModalProps {
     isOpen: boolean;
@@ -80,6 +81,67 @@ export default function PDFImportModal({ isOpen, onClose, onImportComplete }: PD
         setFile(null);
         setExtractedItems([]);
         onClose();
+    };
+
+    const handleDirectLibraryImport = () => {
+        const store = useDatabaseStore.getState();
+        const articleDb = store.getDatabase('db-articles');
+        if (!articleDb) {
+            setError("Global article database not found.");
+            return;
+        }
+
+        setIsProcessing(true);
+
+        const findPropId = (keywords: string[]) => {
+            return articleDb.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
+        };
+
+        const map = {
+            title: findPropId(['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving']) || 'title',
+            bruto: findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']) || '',
+            discount: findPropId(['korting', 'remise', 'discount', 'disc']) || '',
+            unit: findPropId(['eenheid', 'unit', 'maat', 'eeh']) || '',
+            brand: findPropId(['merk', 'brand']) || '',
+            packaging: findPropId(['packaging', 'verpakking']) || '',
+            minOrder: findPropId(['min', 'minimum']) || '',
+            group: findPropId(['groep', 'group']) || ''
+        };
+
+        const pagesToCreate = extractedItems.map(item => {
+            const props: Record<string, any> = {};
+            props[map.title] = item.title || 'Unknown Item';
+            if (map.bruto) props[map.bruto] = item.brutoPrice || 0;
+            if (map.discount) props[map.discount] = item.discountPercent || 0;
+            if (map.brand && item.brand) props[map.brand] = item.brand;
+            if (map.packaging && item.packaging) props[map.packaging] = item.packaging;
+            if (map.minOrder && item.minimumOrder) props[map.minOrder] = item.minimumOrder;
+            if (map.group && item.group) props[map.group] = item.group;
+
+            // Map units
+            if (map.unit && item.unit) {
+                const u = String(item.unit).toLowerCase().trim();
+                if (u.includes('stk') || u.includes('stuk')) props[map.unit] = 'u-stk';
+                else if (u === 'm') props[map.unit] = 'u-m';
+                else if (u.includes('m2')) props[map.unit] = 'u-m2';
+                else if (u.includes('m3')) props[map.unit] = 'u-m3';
+                else if (u === 'l' || u.includes('liter')) props[map.unit] = 'u-l';
+                else if (u === 'uur') props[map.unit] = 'u-uur';
+                else if (u === 'set') props[map.unit] = 'u-set';
+                else if (u.includes('kg')) props[map.unit] = 'u-kg';
+                else props[map.unit] = 'u-stk';
+            }
+            return props;
+        });
+
+        // Add them all instantly to the global memory store!
+        store.addPages('db-articles', pagesToCreate);
+
+        setIsProcessing(false);
+        setFile(null);
+        setExtractedItems([]);
+        onClose();
+        alert(`Successfully injected ${pagesToCreate.length} articles directly into the global database!`);
     };
 
     return (
@@ -193,7 +255,13 @@ export default function PDFImportModal({ isOpen, onClose, onImportComplete }: PD
                                 </table>
                             </div>
 
-                            <div className="flex justify-end mt-2">
+                            <div className="flex justify-end mt-4 gap-3">
+                                <button
+                                    onClick={handleDirectLibraryImport}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <Database className="w-4 h-4" /> Bulk Upload {extractedItems.length} Direct to DB
+                                </button>
                                 <button
                                     onClick={confirmImport}
                                     className="bg-black text-white dark:bg-white dark:text-black hover:opacity-80 font-bold py-2 px-6 rounded-lg transition-colors flex items-center gap-2"

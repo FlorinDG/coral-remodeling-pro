@@ -53,6 +53,7 @@ Each object in the "articles" array MUST adhere to this exact schema matching ou
   "unit": "string (the unit of measurement, e.g. 'stk', 'm', 'uur', 'm2', 'L')",
   "packaging": "string (closely related to the unit. e.g. if a drywall plate is 3.12 sq meters, packaging is 'plaat'. Infer if obvious, blank if none)",
   "minimumOrder": "number (the minimum order quantity related to packaging if mentioned. e.g. 3.12)",
+  "group": "string (MUST be exactly one of: 'opt-ruwbouw', 'opt-afwerking', 'opt-elektriciteit', 'opt-sanitaire', 'opt-ventilatie', 'opt-verwarming', 'opt-general'. Intelligently classify the item based on its nature. Default 'opt-general')",
   "calculationType": "string (MUST be one of: 'materieel', 'levering', 'loon', 'indirect'. Defaults to 'materieel')"
 }
 CRITICAL RULES: 

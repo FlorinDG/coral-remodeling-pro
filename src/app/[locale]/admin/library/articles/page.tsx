@@ -191,6 +191,16 @@ export default function ArticlesPage() {
                 </div>
             )}
 
+            {/* Failsafe Schema Recovery Button */}
+            <div className="mx-6 mt-4 flex justify-end">
+                <button
+                    onClick={forceResetSchema}
+                    className="text-xs font-bold text-neutral-400 hover:text-red-500 transition-colors uppercase tracking-widest border border-neutral-200 dark:border-white/10 px-4 py-2 rounded-lg"
+                >
+                    Failsafe: Force Overwrite Master Schema
+                </button>
+            </div>
+
             <div className="w-full h-full flex flex-col pt-4 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-articles" />
             </div>

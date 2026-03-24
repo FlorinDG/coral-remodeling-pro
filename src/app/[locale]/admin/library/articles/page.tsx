@@ -90,7 +90,7 @@ export default function ArticlesPage() {
 
                 if (!counters[groupCode]) counters[groupCode] = 0;
                 counters[groupCode]++;
-                mappedP['prop-art-id'] = `ART-${groupCode}-${String(counters[groupCode]).padStart(3, '0')}`;
+                mappedP['prop-art-id'] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
 
                 // Retain variants if present (PLURAL, do not confuse with singular 'variant' which is deleted)
                 const oldVariantsId = findPropId('variants');

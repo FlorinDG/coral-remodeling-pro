@@ -348,7 +348,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 }
                             }
                         });
-                        const nextStr = String(maxNum + 1).padStart(3, '0');
+                        const nextStr = String(maxNum + 1).padStart(4, '0');
                         fullProperties['prop-art-id'] = `ART-${groupCode}-${nextStr}`;
                     }
 
@@ -470,7 +470,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                     if (!currentArticleMax[groupCode]) currentArticleMax[groupCode] = 0;
                                     currentArticleMax[groupCode]++;
-                                    pProps['prop-art-id'] = `ART-${groupCode}-${String(currentArticleMax[groupCode]).padStart(3, '0')}`;
+                                    pProps['prop-art-id'] = `ART-${groupCode}-${String(currentArticleMax[groupCode]).padStart(4, '0')}`;
                                 }
 
                                 return {

@@ -3,7 +3,7 @@ import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
 
-const typeIcons: Record<PropertyType, React.ElementType> = {
+const typeIcons: Record<string, React.ElementType> = {
     text: Type,
     number: Hash,
     select: List,

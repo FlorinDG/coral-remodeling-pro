@@ -7,6 +7,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import BlockEditor from './BlockEditor';
 import FileManager from '@/components/admin/file-manager/FileManager';
 import { useFileManagerStore } from '@/components/admin/file-manager/store';
+import VariantsPropertyEditor from './VariantsPropertyEditor';
+import { VariantsConfig } from '../types';
 
 interface PageModalProps {
     databaseId: string;
@@ -248,6 +250,13 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                 updatePageProperty(databaseId, pageId, prop.id, arr);
                                             }}
                                             placeholder="Comma separated..."
+                                        />
+                                    ) : prop.type === 'variants' ? (
+                                        <VariantsPropertyEditor
+                                            databaseId={databaseId}
+                                            pageId={pageId}
+                                            propertyId={prop.id}
+                                            initialConfig={(page.properties[prop.id] as VariantsConfig) || []}
                                         />
                                     ) : (
                                         <input

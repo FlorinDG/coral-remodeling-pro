@@ -24,6 +24,7 @@ import { relationColumn } from './columns/RelationColumn';
 import { rollupColumn } from './columns/RollupColumn';
 import { formulaColumn } from './columns/FormulaColumn';
 import { currencyColumn } from './columns/CurrencyColumn';
+import { variantsColumn } from './columns/VariantsColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { Property } from './types';
@@ -187,6 +188,8 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 } else if (prop.type === 'currency' || prop.type === 'number') {
                     const symbol = prop.config?.format === 'dollar' ? '$' : '€';
                     baseColumn = currencyColumn(prop.id, prop.type === 'currency' ? symbol : '') as any; // Empty symbol acts as pure number column natively
+                } else if (prop.type === 'variants') {
+                    baseColumn = variantsColumn as any;
                 }
                 // More custom columns like Number will go here later
 

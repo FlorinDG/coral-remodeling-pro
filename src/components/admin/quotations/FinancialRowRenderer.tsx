@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Block, BlockType } from '@/components/admin/database/types';
+import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 
@@ -41,6 +41,26 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+
+    // Compute active variant pricing deltas specifically for visual UI components
+    const variantDeltas = useMemo(() => {
+        let deltas = 0;
+        if (!block.selectedVariants || !block.articleId) return 0;
+        const db = getDatabase('db-articles');
+        const page = db?.pages.find(p => p.id === block.articleId);
+        const vProp = db?.properties.find(p => p.type === 'variants');
+        if (page && vProp) {
+            const vConfig = page.properties[vProp.id] as VariantsConfig;
+            if (vConfig && Array.isArray(vConfig)) {
+                Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
+                    const axis = vConfig.find(a => a.id === axisId);
+                    const opt = axis?.options.find(o => o.id === optId);
+                    if (opt) deltas += opt.priceDelta;
+                });
+            }
+        }
+        return deltas;
+    }, [block.selectedVariants, block.articleId, getDatabase]);
 
     // Fetch and combine target database entities from BOTH databases for global search
     const combinedEntities = useMemo(() => {
@@ -206,8 +226,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     };
 
     return (
-        <div className="flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-1">
-            <div className="flex flex-row items-start w-full py-2 px-2 gap-4">
+        <div className="flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
+            <div className="flex flex-row items-start w-full pt-1 pb-0.5 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
                 <div className="flex flex-col gap-0.5 flex-1 shrink-0 relative mt-0.5 min-w-0">
@@ -222,7 +242,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 setShowDropdown(query.length >= 2);
                             }}
                             onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Allow click event execution
-                            className="w-full bg-transparent border-none text-sm text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
                         />
 
                         {/* Autocomplete Combobox Dropdown */}
@@ -255,7 +275,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* Rich Text Toolbar (Static visibility) */}
-                    <div className="flex flex-wrap items-center gap-1 mt-1.5 px-2 pb-1 text-neutral-400">
+                    <div className="flex flex-wrap items-center gap-1 mt-0.5 px-2 pb-0 text-neutral-400">
                         <button onMouseDown={(e) => { e.preventDefault(); document.execCommand('bold', false); }} className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-black dark:hover:text-white transition-colors" title="Bold">
                             <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 12a4 4 0 0 0 0-8H6v8" /><path d="M15 20a4 4 0 0 0 0-8H6v8Zm-9-8h8Zm0-4h7" /></svg>
                         </button>
@@ -292,11 +312,51 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
                 </div>
 
+                {/* Phase 11: Variants Engine Selectors */}
+                {(() => {
+                    const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
+                    const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
+                    if (!activeDbId || !sourceId) return null;
+
+                    const db = useDatabaseStore.getState().getDatabase(activeDbId);
+                    const page = db?.pages.find(p => p.id === sourceId);
+                    const variantsProp = db?.properties.find(p => p.type === 'variants');
+                    if (!page || !variantsProp) return null;
+
+                    const variantsConfig = page.properties[variantsProp.id] as VariantsConfig;
+                    if (!variantsConfig || !Array.isArray(variantsConfig) || variantsConfig.length === 0) return null;
+
+                    return (
+                        <div className="flex flex-wrap items-center gap-2 mt-2 px-2 pb-1">
+                            {variantsConfig.map(axis => (
+                                <div key={axis.id} className="flex items-center gap-1.5 bg-neutral-100 dark:bg-black/30 rounded px-2 py-1 border border-neutral-200 dark:border-white/5">
+                                    <span className="text-[10px] uppercase font-bold text-neutral-500 tracking-wider ">{axis.name}:</span>
+                                    <select
+                                        value={block.selectedVariants?.[axis.id] || ''}
+                                        onChange={(e) => {
+                                            const newSelected = { ...(block.selectedVariants || {}), [axis.id]: e.target.value };
+                                            onUpdate({ selectedVariants: newSelected });
+                                        }}
+                                        className="bg-transparent text-xs font-semibold text-neutral-800 dark:text-neutral-200 outline-none cursor-pointer hover:text-orange-500 transition-colors"
+                                    >
+                                        <option value="" disabled>Select...</option>
+                                        {axis.options.map(opt => (
+                                            <option key={opt.id} value={opt.id}>
+                                                {opt.name} {opt.priceDelta !== 0 ? `(${opt.priceDelta > 0 ? '+' : ''}€${opt.priceDelta.toFixed(2)})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            ))}
+                        </div>
+                    );
+                })()}
+
                 {/* 1.5 Type / Category Pill (Discrete Rectangle) */}
                 <div className="flex flex-col gap-0.5 w-[75px] shrink-0 self-start mt-0.5 text-center">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Type</label>
                     <select
-                        className="w-full bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-xs text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5"
+                        className="w-full bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5"
                         value={block.calculationType || 'loon'}
                         onChange={(e) => onUpdate({ calculationType: e.target.value as any })}
                     >
@@ -317,7 +377,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         placeholder="1"
                         value={block.quantity || ''}
                         onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-transparent border-none text-sm text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                 </div>
 
@@ -327,7 +387,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <select
                         value={block.unit || 'stuk'}
                         onChange={(e) => onUpdate({ unit: e.target.value })}
-                        className="w-full bg-transparent border-none text-sm text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
+                        className="w-full bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
                     >
                         <option value="u">u</option>
                         <option value="stuk">stuk</option>
@@ -352,7 +412,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             value={block.brutoPrice || ''}
                             onChange={(e) => handleMathChange('brutoPrice', parseFloat(e.target.value) || 0)}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-sm text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>
@@ -370,7 +430,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             value={block.discountPercent || ''}
                             onChange={(e) => handleMathChange('discountPercent', parseFloat(e.target.value) || 0)}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-sm text-red-500 dark:text-red-400 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-red-500 dark:text-red-400 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
@@ -388,7 +448,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             value={block.margePercent || ''}
                             onChange={(e) => handleMathChange('margePercent', parseFloat(e.target.value) || 0)}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-sm text-neutral-500 text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
@@ -398,109 +458,19 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 <div className="flex flex-col gap-0.5 w-[100px] shrink-0 self-start mt-0.5 relative text-right">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Total</label>
                     <div className="w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
-                        <span className={`font-bold text-sm tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
+                        <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
                             {childrenTotal !== undefined
                                 ? (childrenTotal * (block.quantity || 1)).toFixed(2)
-                                : ((block.verkoopPrice || 0) * (block.quantity || 1)).toFixed(2)}
+                                : (((block.verkoopPrice || 0) + variantDeltas) * (block.quantity || 1)).toFixed(2)}
                         </span>
                         <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
                     </div>
                 </div>
 
-                {/* 7. Save / Context Menu (Matched via Image context dots) */}
-                <div className="w-[30px] shrink-0 self-start mt-6 flex justify-center opacity-0 group-focus-within:opacity-100 transition-opacity">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
-                            const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
+                {/* 7. Save / Context Menu (Matched via Image context dots) - MOVED TO ACTION TOOLBAR */}
 
-                            // Update Master Entity Mode
-                            if (activeDbId && sourceId) {
-                                if (!window.confirm(`Are you sure you want to update the master record in the Library?\n\nThis will permanently change the baseline stats for all future quotes using this item.`)) {
-                                    return;
-                                }
-                                setIsSaving(true);
-                                const db = useDatabaseStore.getState().getDatabase(activeDbId);
-                                if (db) {
-                                    const props: Record<string, any> = {};
-                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
-
-                                    if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, ''); // Stripping HTML logic
-
-                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
-
-                                    const vProp = findProp(['verkoop', 'selling']);
-                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
-
-                                    const mProp = findProp(['marge', 'margin']);
-                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
-
-                                    const kProp = findProp(['korting', 'discount']);
-                                    if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
-
-                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
-                                    if (uProp && block.unit) props[uProp] = block.unit;
-
-                                    // Safely update all designated properties
-                                    Object.keys(props).forEach(k => {
-                                        useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]);
-                                    });
-
-                                    // Push subcomponents blueprint into the master database!
-                                    if (block.children !== undefined) {
-                                        useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
-                                    }
-                                }
-                                setTimeout(() => setIsSaving(false), 800);
-
-                                // Create New Entity Mode
-                            } else {
-                                if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
-                                setIsSaving(true);
-                                const dbToCreateIn = 'db-articles'; // Default isolated rows route to articles
-                                const db = useDatabaseStore.getState().getDatabase(dbToCreateIn);
-                                if (db) {
-                                    const props: Record<string, any> = {};
-                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
-
-                                    props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
-
-                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
-
-                                    const vProp = findProp(['verkoop', 'selling']);
-                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
-
-                                    const mProp = findProp(['marge', 'margin']);
-                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
-
-                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
-                                    if (uProp && block.unit) props[uProp] = block.unit;
-
-                                    const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
-
-                                    if (block.children !== undefined && block.children.length > 0) {
-                                        useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
-                                    }
-
-                                    // Lock the block to its new permanent identity!
-                                    onUpdate({ type: 'article', articleId: newPage.id });
-                                }
-                                setTimeout(() => setIsSaving(false), 800);
-                            }
-                        }}
-                        disabled={isSaving}
-                        title={block.articleId || block.bestekId ? "Sync Local Changes to Library Master" : "Save as New Library Item"}
-                        className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-[#1a1a1a] text-neutral-400 hover:text-blue-500 transition-colors"
-                    >
-                        {isSaving ? <Check className="w-4 h-4 text-emerald-500" /> : <DatabaseIcon className="w-4 h-4" />}
-                    </button>
-                </div>
+                {/* Removed Global Search Modal - replaced by sleek inline combobox */}
             </div>
-
-            {/* Removed Global Search Modal - replaced by sleek inline combobox */}
         </div>
     );
 }

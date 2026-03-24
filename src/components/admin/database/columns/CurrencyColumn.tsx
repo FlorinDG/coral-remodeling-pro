@@ -16,7 +16,7 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
         }
     }, [focus]);
 
-    const val = rowData[propertyId];
+    const val = rowData ? rowData[propertyId] : null;
 
     if (!active) {
         if (val === undefined || val === null || val === '') {
@@ -39,15 +39,15 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
                 ref={inputRef}
                 className="w-full h-full text-sm bg-transparent outline-none focus:ring-0 text-right tabular-nums text-neutral-900 dark:text-white"
                 value={val ?? ''}
-                onChange={e => setRowData({ ...rowData, [propertyId]: e.target.value })}
+                onChange={e => setRowData({ ...(rowData || {}), [propertyId]: e.target.value })}
                 onBlur={(e) => {
                     const str = e.target.value.replace(/,/g, '.'); // Auto fix euro commas
                     if (str === '') {
-                        setRowData({ ...rowData, [propertyId]: null });
+                        setRowData({ ...(rowData || {}), [propertyId]: null });
                         return;
                     }
                     const parsed = parseFloat(str);
-                    setRowData({ ...rowData, [propertyId]: isNaN(parsed) ? null : parsed });
+                    setRowData({ ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed });
                 }}
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -62,14 +62,14 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
 export const currencyColumn = (propertyId: string, symbol: string = '€'): Column<any, any> => ({
     component: (props) => <CurrencyComponent {...props} propertyId={propertyId} symbol={symbol} />,
     keepFocus: true,
-    deleteValue: ({ rowData }) => ({ ...rowData, [propertyId]: null }),
+    deleteValue: ({ rowData }) => ({ ...(rowData || {}), [propertyId]: null }),
     pasteValue: ({ rowData, value }) => {
         const parsed = parseFloat(String(value).replace(/,/g, '.'));
-        return { ...rowData, [propertyId]: isNaN(parsed) ? null : parsed };
+        return { ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed };
     },
     copyValue: ({ rowData }) => {
-        const val = rowData[propertyId];
+        const val = rowData ? rowData[propertyId] : null;
         return val !== undefined && val !== null ? String(val) : '';
     },
-    isCellEmpty: ({ rowData }) => rowData[propertyId] === undefined || rowData[propertyId] === null || rowData[propertyId] === '',
+    isCellEmpty: ({ rowData }) => !rowData || rowData[propertyId] === undefined || rowData[propertyId] === null || rowData[propertyId] === '',
 });

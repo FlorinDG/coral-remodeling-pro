@@ -17,7 +17,8 @@ export type PropertyType =
     | 'created_time'
     | 'created_by'
     | 'last_edited_time'
-    | 'last_edited_by';
+    | 'last_edited_by'
+    | 'variants';
 
 export interface SelectOption {
     id: string;
@@ -40,6 +41,20 @@ export interface Property {
     type: PropertyType;
     config?: PropertyConfig;
 }
+
+export interface VariantOption {
+    id: string;
+    name: string;
+    priceDelta: number; // +/- adjustment to the article's base price
+}
+
+export interface VariantAxis {
+    id: string;
+    name: string; // e.g. "Color", "Length"
+    options: VariantOption[];
+}
+
+export type VariantsConfig = VariantAxis[];
 
 export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line';
 
@@ -67,10 +82,13 @@ export interface Block {
     // --- Phase 10: Advanced Profitability & Hierarchies ---
     isOptional?: boolean; // If true, omit from Grand Total
     calculationType?: 'levering' | 'materieel' | 'loon' | 'indirect'; // Used for the final Reporting Matrix
+
+    // --- Phase 11: Product Variants ---
+    selectedVariants?: Record<string, string>; // Maps axisId -> optionId
 }
 
 // A generic primitive type for property values
-export type PropertyValue = string | number | boolean | string[] | any[] | null;
+export type PropertyValue = string | number | boolean | string[] | any[] | null | VariantsConfig;
 
 export interface Page {
     id: string;

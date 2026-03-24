@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Block, BlockType } from '@/components/admin/database/types';
-import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink } from 'lucide-react';
+import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
+import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save } from 'lucide-react';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/time-tracker/components/ui/dialog';
@@ -20,19 +20,20 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
         switch (type) {
-            case 'text': return <Type className="w-4 h-4 text-blue-500" />;
-            case 'image': return <ImageIcon className="w-4 h-4 text-emerald-500" />;
-            case 'article': return <Box className="w-4 h-4 text-amber-500" />;
-            case 'bestek': return <Layers className="w-4 h-4 text-purple-500" />;
-            case 'section': return <Folder className="w-4 h-4 text-blue-600" />;
-            case 'subsection': return <FolderOpen className="w-4 h-4 text-blue-400" />;
-            case 'line': return <FileMinus className="w-4 h-4 text-amber-600" />;
-            case 'post': return <AlignLeft className="w-4 h-4 text-rose-500" />;
-            default: return <Type className="w-4 h-4 text-neutral-400" />;
+            case 'text': return <Type className="w-4 h-4 text-black dark:text-white" />;
+            case 'image': return <ImageIcon className="w-4 h-4 text-black dark:text-white" />;
+            case 'article': return <Box className="w-4 h-4 text-orange-500" />;
+            case 'bestek': return <Layers className="w-4 h-4 text-orange-500" />;
+            case 'section': return <Folder className="w-4 h-4 text-white" />;
+            case 'subsection': return <FolderOpen className="w-4 h-4 text-orange-500" />;
+            case 'line': return <FileMinus className="w-4 h-4 text-orange-500" />;
+            case 'post': return <AlignLeft className="w-4 h-4 text-black dark:text-white" />;
+            default: return <Type className="w-4 h-4 text-black dark:text-white" />;
         }
     };
 
@@ -66,6 +67,26 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
             unitTotal = b.children.reduce((sum, child) => sum + calculateBlockTotal(child), 0);
         } else {
             unitTotal = b.verkoopPrice || 0;
+
+            // Phase 11: Add Product Variant Deltas!
+            if (b.selectedVariants && b.articleId) {
+                const db = useDatabaseStore.getState().getDatabase('db-articles');
+                const page = db?.pages.find(p => p.id === b.articleId);
+                const variantsProp = db?.properties.find(p => p.type === 'variants');
+                if (page && variantsProp) {
+                    const variantsConfig = page.properties[variantsProp.id] as VariantsConfig;
+                    if (variantsConfig && Array.isArray(variantsConfig)) {
+                        let variantDeltas = 0;
+                        Object.entries(b.selectedVariants).forEach(([axisId, optionId]) => {
+                            const axis = variantsConfig.find(a => a.id === axisId);
+                            const opt = axis?.options.find(o => o.id === optionId);
+                            if (opt) variantDeltas += opt.priceDelta;
+                        });
+                        // Assume priceDelta directly adds to the final verkoopPrice (retail price delta)
+                        unitTotal += variantDeltas;
+                    }
+                }
+            }
         }
 
         return unitTotal * (b.quantity || 1);
@@ -194,23 +215,15 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                         {/* Main Content Area */}
                         <div className="flex-1 min-w-0">
-                            {block.type === 'text' && (
-                                <input
-                                    type="text"
-                                    placeholder="Type anything..."
-                                    value={block.content || ''}
-                                    onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-                                    className="w-full bg-transparent border-none outline-none focus:ring-0 text-base py-1 placeholder:text-neutral-400"
-                                />
-                            )}
+
 
                             {/* --- Block Container / Header --- */}
                             {isContainer && (
                                 <div
                                     className={`flex items-center justify-between transition-colors w-full
-                        ${block.type === 'section' ? 'p-2 bg-orange-50/50 dark:bg-orange-900/10 border-b border-orange-200 dark:border-orange-800 hover:bg-orange-100/50 dark:hover:bg-orange-900/20' : ''}
-                        ${block.type === 'subsection' ? 'p-1.5 bg-orange-50/20 dark:bg-orange-900/5 border-b border-orange-100 dark:border-orange-800/50 hover:bg-orange-100/30' : ''}
-                        ${block.type === 'post' ? 'p-1.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-neutral-800' : ''}
+                        ${block.type === 'section' ? 'py-1 px-2 bg-[#d75d00] border-b border-[#b04b00] hover:bg-[#c25300] text-white' : ''}
+                        ${block.type === 'subsection' ? 'py-0.5 px-1.5 bg-[#d75d00]/15 dark:bg-[#d75d00]/20 border-b border-[#d75d00]/30 hover:bg-[#d75d00]/25' : ''}
+                        ${block.type === 'post' ? 'py-0.5 px-1.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-neutral-800' : ''}
                     `}
                                 >
                                     <div className="flex items-center gap-1.5 flex-1">
@@ -220,12 +233,12 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         <button
                                             onClick={() => block.type === 'post' ? setIsPostModalOpen(true) : setIsExpanded(!isExpanded)}
                                             title={block.type === 'post' ? 'Open Post Editor Modal' : 'Toggle Expand'}
-                                            className={`p-1 rounded transition-colors ${block.type === 'post' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 hover:bg-orange-200 shadow-sm' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                                            className={`p-1 rounded transition-colors ${block.type === 'post' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 hover:bg-orange-200 shadow-sm' : block.type === 'section' ? 'hover:bg-white/20 text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
                                         >
                                             {block.type === 'post' ? (
                                                 <Maximize2 className="w-4 h-4" />
                                             ) : (
-                                                isExpanded ? <ChevronDown className="w-4 h-4 text-neutral-500" /> : <ChevronRight className="w-4 h-4 text-neutral-500" />
+                                                isExpanded ? <ChevronDown className={`w-4 h-4 ${block.type === 'section' ? 'text-white' : 'text-neutral-500'}`} /> : <ChevronRight className={`w-4 h-4 ${block.type === 'section' ? 'text-white' : 'text-neutral-500'}`} />
                                             )}
                                         </button>
 
@@ -267,8 +280,8 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 placeholder={`${block.type.charAt(0).toUpperCase() + block.type.slice(1)} Title...`}
                                                 value={block.content || ''}
                                                 onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-                                                className={`bg-transparent border-none outline-none flex-1 font-semibold placeholder:font-normal placeholder:opacity-50 text-black dark:text-white
-                                        ${block.type === 'section' ? 'text-lg' : ''}
+                                                className={`bg-transparent border-none outline-none flex-1 font-bold placeholder:font-normal leading-tight
+                                        ${block.type === 'section' ? 'text-lg text-white placeholder:text-white/70' : 'text-black dark:text-white placeholder:opacity-50'}
                                         ${block.type === 'subsection' ? 'text-base' : ''}
                                     `}
                                             />
@@ -277,11 +290,27 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                                     <div className="flex items-center gap-2 shrink-0">
                                         {/* Recursive Line Margin Mapping Engine */}
-                                        <div className="flex flex-col items-end w-[160px] pr-[56px]">
-                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest leading-none mb-1">Total Limit</span>
-                                            <span className={`font-bold tabular-nums leading-none ${block.isOptional ? 'line-through text-neutral-400' : 'text-neutral-900 dark:text-white'}`}>
-                                                €{calculateBlockTotal(block).toFixed(2)}
-                                            </span>
+                                        <div className="flex flex-row items-center justify-end w-[160px] pr-[56px] relative group/del">
+                                            <div className="flex flex-col items-end w-full">
+                                                <span className={`tabular-nums leading-none ${block.isOptional ? 'line-through opacity-50' : block.type === 'section' ? 'font-bold text-white' : 'font-normal text-neutral-900 dark:text-white'}`}>
+                                                    €{calculateBlockTotal(block).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm(`Are you sure you want to delete this ${block.type} and all its contents?`)) {
+                                                        onDelete(block.id);
+                                                    }
+                                                }}
+                                                className={`absolute right-3 opacity-0 group-hover/del:opacity-100 p-1.5 rounded transition-all flex items-center gap-1 ${block.type === 'section'
+                                                        ? 'text-white/60 hover:text-white hover:bg-white/20'
+                                                        : 'text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                    }`}
+                                                title={`Delete ${block.type}`}
+                                            >
+                                                <Trash className="w-3.5 h-3.5" />
+                                            </button>
                                         </div>
                                         {/* Context menu is now in the left gutter */}
                                     </div>
@@ -350,27 +379,92 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
                                                 />
 
-                                                {/* Action Toolbar */}
-                                                <div className="flex justify-end pr-2 overflow-hidden h-0 group-hover:h-auto opacity-0 group-hover:opacity-100 focus-within:h-auto focus-within:opacity-100 transition-all duration-200">
-                                                    <div className="flex items-center gap-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                                        {(block.articleId || block.bestekId) && (
-                                                            <button onClick={() => setIsReferenceModalOpen(true)} className="flex items-center hover:text-blue-500 transition-colors">
-                                                                <ExternalLink className="w-3 h-3 mr-1" /> View Source
-                                                            </button>
-                                                        )}
-                                                        <button onClick={() => handleAddChild('article')} className="flex items-center hover:text-orange-500 transition-colors text-orange-600/80">
-                                                            <Plus className="w-3 h-3 mr-1" /> Subcomponent
-                                                        </button>
-                                                        <button onClick={() => onDuplicate(block.id)} className="flex items-center hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">
-                                                            <Copy className="w-3 h-3 mr-1" /> Duplicate
-                                                        </button>
-                                                        <button onClick={() => onDelete(block.id)} className="flex items-center hover:text-red-500 transition-colors text-red-500/80">
-                                                            <Trash className="w-3 h-3 mr-1" /> Delete
-                                                        </button>
-                                                    </div>
-                                                </div>
                                             </>
                                         )}
+
+                                        {/* Action Toolbar (Universally available for base rows to prevent undeletable orphans) */}
+                                        <div className="flex justify-start pl-2 py-0.5 mt-0.5 border-t border-neutral-100 dark:border-neutral-800">
+                                            <div className="flex items-center gap-4 py-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
+                                                {(block.articleId || block.bestekId) && (
+                                                    <button onClick={() => setIsReferenceModalOpen(true)} className="flex items-center hover:text-[#d75d00] transition-colors">
+                                                        <ExternalLink className="w-3.5 h-3.5 mr-1" /> View
+                                                    </button>
+                                                )}
+                                                <button onClick={() => handleAddChild('article')} className="flex items-center hover:text-[#d75d00] transition-colors">
+                                                    <Plus className="w-3.5 h-3.5 mr-1" /> Subcomponent
+                                                </button>
+                                                <button onClick={() => onDuplicate(block.id)} className="flex items-center hover:text-[#d75d00] transition-colors">
+                                                    <Copy className="w-3.5 h-3.5 mr-1" /> Duplicate
+                                                </button>
+                                                <button onClick={() => onDelete(block.id)} className="flex items-center hover:text-[#d75d00] transition-colors">
+                                                    <Trash className="w-3.5 h-3.5 mr-1" /> Delete
+                                                </button>
+
+                                                <button
+                                                    onClick={() => {
+                                                        const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
+                                                        const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
+
+                                                        if (activeDbId && sourceId) {
+                                                            if (!window.confirm(`Are you sure you want to update the master record in the Library?\n\nThis will permanently change the baseline stats for all future quotes using this item.`)) return;
+                                                            setIsSaving(true);
+                                                            const db = useDatabaseStore.getState().getDatabase(activeDbId);
+                                                            if (db) {
+                                                                const props: Record<string, any> = {};
+                                                                const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+                                                                if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, '');
+
+                                                                const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                const vProp = findProp(['verkoop', 'selling']);
+                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                const mProp = findProp(['marge', 'margin']);
+                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                const kProp = findProp(['korting', 'discount']);
+                                                                if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
+                                                                const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                                                if (uProp && block.unit) props[uProp] = block.unit;
+
+                                                                Object.keys(props).forEach(k => useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]));
+                                                                if (block.children !== undefined) useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
+                                                            }
+                                                            setTimeout(() => setIsSaving(false), 800);
+                                                        } else {
+                                                            if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
+                                                            setIsSaving(true);
+                                                            const dbToCreateIn = 'db-articles';
+                                                            const db = useDatabaseStore.getState().getDatabase(dbToCreateIn);
+                                                            if (db) {
+                                                                const props: Record<string, any> = {};
+                                                                const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+                                                                props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
+
+                                                                const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                const vProp = findProp(['verkoop', 'selling']);
+                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                const mProp = findProp(['marge', 'margin']);
+                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                                                if (uProp && block.unit) props[uProp] = block.unit;
+
+                                                                const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
+                                                                if (block.children !== undefined && block.children.length > 0) {
+                                                                    useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
+                                                                }
+                                                                onUpdate(block.id, { type: 'article', articleId: newPage.id });
+                                                            }
+                                                            setTimeout(() => setIsSaving(false), 800);
+                                                        }
+                                                    }}
+                                                    disabled={isSaving}
+                                                    className={`marginLeft-auto flex items-center hover:text-[#d75d00] transition-colors ml-auto ${isSaving ? 'text-emerald-500 hover:text-emerald-600' : ''}`}
+                                                >
+                                                    {isSaving ? <Check className="w-3.5 h-3.5 mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                                                    {block.articleId || block.bestekId ? "Update Library" : "Save to Library"}
+                                                </button>
+                                            </div>
+                                        </div>
 
                                         {/* Dynamic Subcomponents Rendering Block */}
                                         {block.children && block.children.length > 0 && (
@@ -437,9 +531,10 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                             )}
 
                         </div>
-                    </div>
-                )}
-            </Draggable>
+                    </div >
+                )
+                }
+            </Draggable >
 
             {/* --- Dedicated Modal Editor for Bestek Post Constraints --- */}
             {
@@ -499,7 +594,8 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                             </div>
                         </DialogContent>
                     </Dialog>
-                )}
+                )
+            }
         </>
     );
 }

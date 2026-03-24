@@ -186,14 +186,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                     {/* Betreft (Subject) Input */}
-                    <div className="w-full mb-6 mt-2 flex flex-col gap-2 p-6 bg-white dark:bg-[#111] rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm shrink-0">
-                        <label className="text-xs uppercase tracking-widest font-bold text-neutral-400">Betreft / Object</label>
+                    <div className="w-full mb-3 mt-1 bg-white dark:bg-[#111] rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm shrink-0 px-4 py-1.5">
                         <input
                             type="text"
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
-                            placeholder="e.g. Volledig badkamer renovatie incl. sanitair..."
-                            className="w-full text-2xl md:text-3xl font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 py-2 border-b-2 border-transparent focus:border-blue-500 transition-colors"
+                            placeholder="Titel of Object (e.g. Volledig badkamer renovatie)..."
+                            className="w-full text-lg md:text-xl font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 py-1 transition-colors"
                         />
                     </div>
 
@@ -225,7 +224,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <div className="flex items-center gap-2 mt-2">
                         <button
                             onClick={() => handleAddBlock('section')}
-                            className="text-white bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-500 text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded shadow-sm"
+                            className="text-white bg-[#d75d00] hover:bg-[#b04b00] dark:bg-[#d75d00] dark:hover:bg-[#b04b00] text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded shadow-sm"
                         >
                             <span className="text-sm leading-none">+</span> Add Section
                         </button>

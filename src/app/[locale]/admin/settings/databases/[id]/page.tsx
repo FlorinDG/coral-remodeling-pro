@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Property, PropertyType } from '@/components/admin/database/types';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Database as DatabaseIcon, Plus, Save, Trash, Type, Hash, Link as LinkIcon, Calculator, CheckSquare, Calendar, Euro, Percent, Edit3 } from 'lucide-react';
+import { ChevronLeft, Database as DatabaseIcon, Plus, Save, Trash, Type, Hash, Link as LinkIcon, Calculator, CheckSquare, Calendar, Euro, Percent, Edit3, Settings2 } from 'lucide-react';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; icon: React.FC<any> }[] = [
     { id: 'text', label: 'Text', icon: Type },
@@ -17,6 +17,7 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: React.FC<any> }[]
     { id: 'multi_select', label: 'Multi-Select', icon: Edit3 },
     { id: 'relation', label: 'Relation Link', icon: LinkIcon },
     { id: 'formula', label: 'Calculation Formula', icon: Calculator },
+    { id: 'variants', label: 'Product Variants', icon: Settings2 },
 ];
 
 export default function DatabaseSchemaConfigurator() {

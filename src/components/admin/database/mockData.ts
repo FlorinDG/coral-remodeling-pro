@@ -510,7 +510,8 @@ export const mockDatabases: Database[] = [
         icon: '📚',
         properties: [
             { id: 'title', name: 'Naam', type: 'text' },
-            { id: 'prop-art-desc', name: 'Description', type: 'text' }
+            { id: 'prop-art-desc', name: 'Description', type: 'text' },
+            { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }
         ],
         pages: [
             {
@@ -520,6 +521,18 @@ export const mockDatabases: Database[] = [
             {
                 id: 'page-art-2', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'Isolatie 10cm', 'prop-art-desc': 'Acoustic thermal fiberglass insulation wrap.' }
+            },
+            {
+                id: 'page-art-drain-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                properties: {
+                    'title': 'Shower Drain',
+                    'prop-art-desc': 'Premium drainage channel.',
+                    'prop-art-variants': [
+                        { id: 'axis-color', name: 'Color', options: [{ id: 'opt-stainless', name: 'Stainless', priceDelta: 0 }, { id: 'opt-chrome', name: 'Chrome', priceDelta: 0 }, { id: 'opt-black', name: 'Matte Black', priceDelta: 20 }] },
+                        { id: 'axis-length', name: 'Length', options: [{ id: 'opt-70', name: '70cm', priceDelta: 0 }, { id: 'opt-80', name: '80cm', priceDelta: 10 }, { id: 'opt-90', name: '90cm', priceDelta: 20 }, { id: 'opt-100', name: '100cm', priceDelta: 30 }] },
+                        { id: 'axis-depth', name: 'Depth Profile', options: [{ id: 'opt-shallow', name: 'Shallow (65mm)', priceDelta: 0 }, { id: 'opt-deep', name: 'Deep (90mm)', priceDelta: 15 }] }
+                    ]
+                }
             }
         ],
         activeFilters: [],

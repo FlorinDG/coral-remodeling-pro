@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save } from 'lucide-react';
 import PageModal from '@/components/admin/database/components/PageModal';
+import SaveToLibraryModal from './SaveToLibraryModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/time-tracker/components/ui/dialog';
 import FinancialRowRenderer from './FinancialRowRenderer';
@@ -21,6 +22,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
@@ -119,49 +121,6 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
         if (!isExpanded) setIsExpanded(true); // Auto-expand when pushing new children
     };
 
-    const handleSaveToLibrary = () => {
-        const db = useDatabaseStore.getState().getDatabase('db-articles');
-        if (!db) {
-            alert('Artikelendatabase niet gevonden.');
-            return;
-        }
-
-        const findPropId = (keywords: string[]) => {
-            return db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
-        };
-
-        const titleId = findPropId(['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving']) || 'title';
-        const brutoId = findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
-        const verkoopId = findPropId(['verkoop', 'selling']);
-        const margeId = findPropId(['marge', 'margin']);
-        const discountId = findPropId(['korting', 'discount', 'disc']);
-        const unitId = findPropId(['eenheid', 'unit', 'maat', 'eeh']);
-        const typeId = findPropId(['type', 'calculatietype', 'calculationtype']);
-
-        const initialProps: Record<string, any> = {};
-
-        let cleanedName = block.content || 'Nieuw Artikel';
-        cleanedName = cleanedName.replace(/<[^>]*>?/gm, ''); // Strip rich text HTML
-        if (!cleanedName.trim()) cleanedName = 'Nieuw Artikel';
-
-        initialProps[titleId] = cleanedName;
-        if (brutoId && block.brutoPrice !== undefined) initialProps[brutoId] = block.brutoPrice;
-        if (verkoopId && block.verkoopPrice !== undefined) initialProps[verkoopId] = block.verkoopPrice;
-        if (margeId && block.margePercent !== undefined) initialProps[margeId] = block.margePercent;
-        if (discountId && block.discountPercent !== undefined) initialProps[discountId] = block.discountPercent;
-        if (unitId && block.unit) initialProps[unitId] = block.unit;
-        if (typeId && block.calculationType) initialProps[typeId] = block.calculationType;
-
-        const newPage = useDatabaseStore.getState().createPage('db-articles', initialProps);
-
-        // Link this block to the newly created article, transforming it into a strict catalog item
-        onUpdate(block.id, { articleId: newPage.id, type: 'article' });
-
-        // Brief visual success indicator (a toast would be better but alert works as a barebones fallback if toast isn't available)
-        setIsSaving(true);
-        setTimeout(() => setIsSaving(false), 2000);
-    };
-
     const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
     const sectionHeaderColor = block.type === 'section' ? 'border-orange-500 bg-orange-100/50 dark:bg-orange-900/20' : block.type === 'subsection' ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
 
@@ -232,10 +191,10 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                         <Copy className="w-4 h-4 mr-2" /> Duplicate Block
                     </DropdownMenuItem>
 
-                    {!isContainer && !block.articleId && !block.bestekId && (
-                        <DropdownMenuItem onClick={handleSaveToLibrary} className="text-blue-600 dark:text-blue-400">
+                    {!isContainer && (
+                        <DropdownMenuItem onClick={() => setIsSaveModalOpen(true)} className="text-blue-600 dark:text-blue-400">
                             {isSaving ? <Check className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                            {isSaving ? 'Opgeslagen!' : 'Save to Library'}
+                            {isSaving ? 'Opgeslagen!' : (block.articleId ? 'Update Library Article...' : 'Save to Library...')}
                         </DropdownMenuItem>
                     )}
 
@@ -651,6 +610,16 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                     </Dialog>
                 )
             }
+            <SaveToLibraryModal
+                isOpen={isSaveModalOpen}
+                onClose={() => setIsSaveModalOpen(false)}
+                block={block}
+                onSaveSuccess={(articleId) => {
+                    setIsSaving(true);
+                    onUpdate(block.id, { articleId, type: 'article' });
+                    setTimeout(() => setIsSaving(false), 2000);
+                }}
+            />
         </>
     );
 }

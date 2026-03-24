@@ -41,18 +41,21 @@ export async function POST(req: Request) {
             messages: [
                 {
                     role: "system",
-                    content: `You are an expert construction estimator. You extract line items (materials, labor, articles) from supplier PDF quotes (like Facq, Desco, or contractor invoices).
+                    content: `You are an expert construction estimator. You extract line items from supplier PDF quotes (like Facq, Desco, or contractor invoices).
 Your output MUST be a strict JSON object with a single array key "articles". 
 Each object in the "articles" array MUST adhere to this exact schema matching our global database:
 {
   "title": "string (the name/description of the product or service)",
-  "brutoPrice": "number (the standard unit monetary price without currency symbols. Default to 0 if none)",
-  "discountPercent": "number (the discount percentage if visible. Strip the % sign. Default to 0 if none)",
+  "brutoPrice": "number (the standard/gross unit monetary price without currency symbols. Default to 0)",
+  "discountPercent": "number (the discount percentage granted by the supplier/shop. If you see 'rem' or 'remise', this is the discount. If you only see Bruto and Netto, calculate the discount percentage. Strip the % sign. Default to 0)",
   "quantity": "number (the quantity specified. Default to 1)",
-  "unit": "string (the unit of measurement, e.g. 'stk', 'm', 'uur', 'm2', 'L'. Translate abbreviations to short Dutch units if needed, default to 'stk')",
-  "calculationType": "string (MUST be one of: 'materieel', 'levering', 'loon', 'indirect'. If it is a physical product from a supplier, use 'materieel')"
+  "unit": "string (the unit of measurement, e.g. 'stk', 'm', 'uur', 'm2', 'L')",
+  "calculationType": "string (MUST be one of: 'materieel', 'levering', 'loon', 'indirect'. Defaults to 'materieel')"
 }
-Ignore boilerplate text, page numbers, addresses, table of contents, and aggregate totals. Only extract the specific distinct line items/products. Double check the prices to ensure accuracy.`
+CRITICAL RULES: 
+1. "discountPercent" ONLY represents the discount we GET from the supplier (remise/rem). It has nothing to do with what we bill to the client.
+2. If given Bruto Price and Netto Price (Net), "discountPercent" is the delta. Do NOT output a "nettoPrice" field, only output brutoPrice and discountPercent.
+3. Ignore boilerplate text, page numbers, addresses, table of contents, and aggregate totals.`
                 },
                 {
                     role: "user",

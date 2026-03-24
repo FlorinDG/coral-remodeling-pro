@@ -119,6 +119,49 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
         if (!isExpanded) setIsExpanded(true); // Auto-expand when pushing new children
     };
 
+    const handleSaveToLibrary = () => {
+        const db = useDatabaseStore.getState().getDatabase('db-articles');
+        if (!db) {
+            alert('Artikelendatabase niet gevonden.');
+            return;
+        }
+
+        const findPropId = (keywords: string[]) => {
+            return db.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
+        };
+
+        const titleId = findPropId(['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving']) || 'title';
+        const brutoId = findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
+        const verkoopId = findPropId(['verkoop', 'selling']);
+        const margeId = findPropId(['marge', 'margin']);
+        const discountId = findPropId(['korting', 'discount', 'disc']);
+        const unitId = findPropId(['eenheid', 'unit', 'maat', 'eeh']);
+        const typeId = findPropId(['type', 'calculatietype', 'calculationtype']);
+
+        const initialProps: Record<string, any> = {};
+
+        let cleanedName = block.content || 'Nieuw Artikel';
+        cleanedName = cleanedName.replace(/<[^>]*>?/gm, ''); // Strip rich text HTML
+        if (!cleanedName.trim()) cleanedName = 'Nieuw Artikel';
+
+        initialProps[titleId] = cleanedName;
+        if (brutoId && block.brutoPrice !== undefined) initialProps[brutoId] = block.brutoPrice;
+        if (verkoopId && block.verkoopPrice !== undefined) initialProps[verkoopId] = block.verkoopPrice;
+        if (margeId && block.margePercent !== undefined) initialProps[margeId] = block.margePercent;
+        if (discountId && block.discountPercent !== undefined) initialProps[discountId] = block.discountPercent;
+        if (unitId && block.unit) initialProps[unitId] = block.unit;
+        if (typeId && block.calculationType) initialProps[typeId] = block.calculationType;
+
+        const newPage = useDatabaseStore.getState().createPage('db-articles', initialProps);
+
+        // Link this block to the newly created article, transforming it into a strict catalog item
+        onUpdate(block.id, { articleId: newPage.id, type: 'article' });
+
+        // Brief visual success indicator (a toast would be better but alert works as a barebones fallback if toast isn't available)
+        setIsSaving(true);
+        setTimeout(() => setIsSaving(false), 2000);
+    };
+
     const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
     const sectionHeaderColor = block.type === 'section' ? 'border-orange-500 bg-orange-100/50 dark:bg-orange-900/20' : block.type === 'subsection' ? 'border-orange-400 bg-orange-50/50 dark:bg-orange-900/10' : 'border-neutral-300 dark:border-neutral-700 bg-black/5 dark:bg-white/5';
 
@@ -185,8 +228,20 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                     <DropdownMenuSeparator />
 
-                    <DropdownMenuItem onClick={() => onDuplicate(block.id)}>Duplicate Block</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">Delete Block</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onDuplicate(block.id)}>
+                        <Copy className="w-4 h-4 mr-2" /> Duplicate Block
+                    </DropdownMenuItem>
+
+                    {!isContainer && !block.articleId && !block.bestekId && (
+                        <DropdownMenuItem onClick={handleSaveToLibrary} className="text-blue-600 dark:text-blue-400">
+                            {isSaving ? <Check className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                            {isSaving ? 'Opgeslagen!' : 'Save to Library'}
+                        </DropdownMenuItem>
+                    )}
+
+                    <DropdownMenuItem onClick={() => onDelete(block.id)} className="text-red-500">
+                        <Trash className="w-4 h-4 mr-2" /> Delete Block
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
         </div>
@@ -304,8 +359,8 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     }
                                                 }}
                                                 className={`absolute right-3 opacity-0 group-hover/del:opacity-100 p-1.5 rounded transition-all flex items-center gap-1 ${block.type === 'section'
-                                                        ? 'text-white/60 hover:text-white hover:bg-white/20'
-                                                        : 'text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                                                    ? 'text-white/60 hover:text-white hover:bg-white/20'
+                                                    : 'text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                                                     }`}
                                                 title={`Delete ${block.type}`}
                                             >

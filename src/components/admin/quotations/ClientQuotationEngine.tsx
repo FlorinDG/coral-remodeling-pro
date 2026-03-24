@@ -8,6 +8,8 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling component
 import QuotationFooterReport from './QuotationFooterReport';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
@@ -172,12 +174,39 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     </div>
                 </div>
 
-                {/* Mathematical Global Output Frame */}
-                <div className="flex flex-col items-end px-4 min-w-max">
-                    <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Grand Total</span>
-                    <span className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400 leading-none">
-                        €{grandTotal.toFixed(2)}
-                    </span>
+                {/* Mathematical Global Output Frame and Export */}
+                <div className="flex flex-col items-end px-4 min-w-max gap-3">
+                    <div className="flex flex-col items-end">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Grand Total</span>
+                        <span className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400 leading-none">
+                            €{grandTotal.toFixed(2)}
+                        </span>
+                    </div>
+                    {isHydrated && (
+                        <PDFDownloadLink
+                            document={
+                                <QuotationPDFTemplate
+                                    blocks={blocks}
+                                    quotationTitle={String(quotationTitle)}
+                                    betreft={String(betreft)}
+                                    clientId={String(clientId)}
+                                    projectId={String(projectId)}
+                                    grandTotal={grandTotal}
+                                    databaseStoreState={useDatabaseStore.getState()}
+                                />
+                            }
+                            fileName={`Offerte_${quotationTitle || 'Draft'}.pdf`}
+                            className="bg-black text-white dark:bg-white dark:text-black text-xs font-bold px-4 py-1.5 rounded hover:opacity-80 transition-opacity flex items-center gap-2"
+                        >
+                            {({ blob, url, loading, error }) =>
+                                loading ? 'Generating PDF...' : (
+                                    <>
+                                        <FileText className="w-3.5 h-3.5" /> Export PDF
+                                    </>
+                                )
+                            }
+                        </PDFDownloadLink>
+                    )}
                 </div>
             </div>
 

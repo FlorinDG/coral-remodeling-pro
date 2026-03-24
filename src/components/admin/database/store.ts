@@ -326,6 +326,29 @@ export const useDatabaseStore = create<DatabaseState>()(
                         fullProperties['title'] = `CEO-${year}-${nextStr}.00`;
                     }
 
+                    // Custom Auto-Numbering for Articles (ART-XX-XXX)
+                    if (databaseId === 'db-articles' && !fullProperties['prop-art-id']) {
+                        let groupCode = '00';
+                        const groupVal = fullProperties['prop-art-group'];
+                        if (groupVal === 'opt-ruwbouw') groupCode = '01';
+                        else if (groupVal === 'opt-afwerking') groupCode = '02';
+                        else if (groupVal === 'opt-technieken') groupCode = '03';
+
+                        let maxNum = 0;
+                        db.pages.forEach((p: Page) => {
+                            const artId = p.properties['prop-art-id'] as string;
+                            if (artId && artId.startsWith(`ART-${groupCode}-`)) {
+                                const m = artId.match(new RegExp(`ART-${groupCode}-(\\d+)`));
+                                if (m && m[1]) {
+                                    const parsed = parseInt(m[1], 10);
+                                    if (parsed > maxNum) maxNum = parsed;
+                                }
+                            }
+                        });
+                        const nextStr = String(maxNum + 1).padStart(3, '0');
+                        fullProperties['prop-art-id'] = `ART-${groupCode}-${nextStr}`;
+                    }
+
                     db.properties.forEach((prop: Property) => {
                         if (fullProperties[prop.id] === undefined) {
                             if (prop.type === 'multi_select' || prop.type === 'relation') {
@@ -407,11 +430,41 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 });
                             }
 
+                            // Evaluate max sequence counters for articles
+                            let currentArticleMax: Record<string, number> = {};
+                            if (databaseId === 'db-articles') {
+                                db.pages.forEach((p: Page) => {
+                                    const artId = p.properties['prop-art-id'] as string;
+                                    if (artId && artId.startsWith('ART-')) {
+                                        const m = artId.match(/ART-(\d{2})-(\d+)/);
+                                        if (m && m[1] && m[2]) {
+                                            const groupCode = m[1];
+                                            const pNum = parseInt(m[2], 10);
+                                            if (!currentArticleMax[groupCode] || pNum > currentArticleMax[groupCode]) {
+                                                currentArticleMax[groupCode] = pNum;
+                                            }
+                                        }
+                                    }
+                                });
+                            }
+
                             const newPages: Page[] = pagesProperties.map((initialProperties, index) => {
                                 const pProps = { ...initialProperties };
                                 if (databaseId === 'db-quotations' && !pProps['title']) {
                                     currentMax++;
                                     pProps['title'] = `CEO-${year}-${String(currentMax).padStart(3, '0')}.00`;
+                                }
+
+                                if (databaseId === 'db-articles' && !pProps['prop-art-id']) {
+                                    let groupCode = '00';
+                                    const groupVal = pProps['prop-art-group'];
+                                    if (groupVal === 'opt-ruwbouw') groupCode = '01';
+                                    else if (groupVal === 'opt-afwerking') groupCode = '02';
+                                    else if (groupVal === 'opt-technieken') groupCode = '03';
+
+                                    if (!currentArticleMax[groupCode]) currentArticleMax[groupCode] = 0;
+                                    currentArticleMax[groupCode]++;
+                                    pProps['prop-art-id'] = `ART-${groupCode}-${String(currentArticleMax[groupCode]).padStart(3, '0')}`;
                                 }
 
                                 return {

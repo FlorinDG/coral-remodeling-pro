@@ -510,7 +510,7 @@ export const mockDatabases: Database[] = [
         icon: '📚',
         properties: [
             { id: 'title', name: 'Naam', type: 'text' },
-            { id: 'prop-art-id', name: 'ID', type: 'formula', config: { formulaExpression: 'concat("ART-", slice(id, 0, 6))' } },
+            { id: 'prop-art-id', name: 'ID', type: 'text' },
             { id: 'prop-art-desc', name: 'Omschrijving', type: 'text' },
             { id: 'prop-art-brand', name: 'Merk', type: 'text' },
             { id: 'prop-art-group', name: 'Artikelgroep', type: 'select', config: { options: [{ id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'gray' }, { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' }, { id: 'opt-technieken', name: 'Technieken', color: 'orange' }] } },

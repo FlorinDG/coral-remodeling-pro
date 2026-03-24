@@ -27,9 +27,11 @@ export default function ArticlesPage() {
             const newProperties = mockDatabases.find(d => d.id === 'db-articles')?.properties;
             if (!newProperties) throw new Error("Mock schema not found");
 
+            const counters: Record<string, number> = {};
+
             const newPages = db.pages.map(page => {
                 const oldP = { ...page.properties };
-                const mappedP: Record<string, any> = {};
+                const mappedP: Record<string, any> = { ...oldP }; // Rescue all user properties
 
                 // Find old IDs dynamically by matching names
                 const findPropId = (search: string) => db.properties.find(p => p.name.toLowerCase().includes(search.toLowerCase()))?.id;
@@ -76,20 +78,56 @@ export default function ArticlesPage() {
                     else mappedP['prop-art-unit'] = 'u-stk';
                 }
 
+                // 5. ART-XX-XXX Sequence Generator
+                let groupCode = '00';
+                const groupVal = mappedP['prop-art-group'];
+                if (groupVal === 'opt-ruwbouw') groupCode = '01';
+                else if (groupVal === 'opt-afwerking') groupCode = '02';
+                else if (groupVal === 'opt-technieken') groupCode = '03';
+
+                if (!counters[groupCode]) counters[groupCode] = 0;
+                counters[groupCode]++;
+                mappedP['prop-art-id'] = `ART-${groupCode}-${String(counters[groupCode]).padStart(3, '0')}`;
+
                 // Retain variants if present (PLURAL, do not confuse with singular 'variant' which is deleted)
                 const oldVariantsId = findPropId('variants');
                 if (oldVariantsId && oldP[oldVariantsId]) {
                     mappedP['prop-art-variants'] = oldP[oldVariantsId];
                 }
 
+                // Delete deprecated mapping sources to clean up the row
+                const toDeleteIds = [
+                    findPropId('brutoprijs variant'), findPropId('calculus'), findPropId('docs'),
+                    findPropId('marge reno-k'), findPropId('marge reno active'), findPropId('photos'),
+                    findPropId('variant'), oldNaamId, oldDescId, oldBrutoId, oldRemiseId, oldVerkoopId, oldEehId, oldMargeId
+                ].filter(Boolean);
+
+                toDeleteIds.forEach(id => {
+                    if (id && id !== 'title' && id !== 'prop-art-variants') delete mappedP[id as string];
+                });
+
                 return { ...page, properties: mappedP };
+            });
+
+            // Reconstruct the definition properties without destroying user custom properties
+            const toDeleteNames = ['brutoprijs variant', 'calculus', 'docs', 'marge reno-k', 'marge reno active', 'photos', 'variant', 'naam'];
+
+            const mergedProperties = [...db.properties].filter(p => !toDeleteNames.includes(p.name.toLowerCase()));
+
+            newProperties.forEach(np => {
+                const existingIdx = mergedProperties.findIndex(p => p.id === np.id);
+                if (existingIdx === -1) {
+                    mergedProperties.push(np);
+                } else {
+                    mergedProperties[existingIdx] = { ...mergedProperties[existingIdx], ...np };
+                }
             });
 
             // Commit overwrite
             useDatabaseStore.setState(state => ({
                 databases: state.databases.map(d => d.id === 'db-articles' ? {
                     ...d,
-                    properties: newProperties,
+                    properties: mergedProperties,
                     pages: newPages
                 } : d)
             }));

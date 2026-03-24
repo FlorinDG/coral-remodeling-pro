@@ -6,7 +6,8 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { libraryTabs } from "@/config/tabs";
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { mockDatabases } from '@/components/admin/database/mockData';
-import { AlertCircle, ArrowRight, Check, Database } from 'lucide-react';
+import { AlertCircle, ArrowRight, Check, Database, FileSpreadsheet } from 'lucide-react';
+import { SpreadsheetImportModal } from '@/components/admin/database/components/SpreadsheetImportModal';
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -16,6 +17,7 @@ const DatabaseCloneDynamic = dynamic(
 export default function ArticlesPage() {
     const [isMigrating, setIsMigrating] = useState(false);
     const [migrated, setMigrated] = useState(false);
+    const [isSpreadsheetOpen, setIsSpreadsheetOpen] = useState(false);
 
     const handleRunMigration = () => {
         setIsMigrating(true);
@@ -163,6 +165,17 @@ export default function ArticlesPage() {
         <div className="flex flex-col w-full h-full relative">
             <ModuleTabs tabs={libraryTabs} groupId="library" />
 
+            <div className="mx-6 mt-4 flex justify-between items-center">
+                <h1 className="text-2xl font-bold">Articles Master Library</h1>
+                <button
+                    onClick={() => setIsSpreadsheetOpen(true)}
+                    className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-6 rounded-lg shadow-sm transition-colors flex items-center gap-2"
+                >
+                    <FileSpreadsheet className="w-5 h-5" />
+                    Bulk Import Excel/CSV
+                </button>
+            </div>
+
             {!migrated && (
                 <div className="mx-6 mt-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-900/50 rounded-lg p-4 flex items-start justify-between">
                     <div className="flex gap-4">
@@ -204,6 +217,11 @@ export default function ArticlesPage() {
             <div className="w-full h-full flex flex-col pt-4 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-articles" />
             </div>
+
+            <SpreadsheetImportModal
+                isOpen={isSpreadsheetOpen}
+                onClose={() => setIsSpreadsheetOpen(false)}
+            />
         </div>
     );
 }

@@ -53,8 +53,11 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                         const parsedData = results.data as any[];
                         if (parsedData.length === 0) throw new Error("CSV file is empty");
 
-                        const extractedHeaders = results.meta.fields || Object.keys(parsedData[0] || {});
-                        setupMapping(extractedHeaders, parsedData);
+                        // Strip trailing or fully empty parsing artifacts
+                        const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+
+                        const extractedHeaders = results.meta.fields || Object.keys(cleanedData[0] || {});
+                        setupMapping(extractedHeaders, cleanedData);
                     },
                     error: (err) => {
                         throw new Error("CSV Parsing Error: " + err.message);
@@ -70,12 +73,15 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
 
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const parsedData = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+                const parsedData = xlsx.utils.sheet_to_json(worksheet, { defval: "" }) as any[];
 
                 if (parsedData.length === 0) throw new Error("Excel sheet is empty");
 
-                const extractedHeaders = Object.keys(parsedData[0] || {});
-                setupMapping(extractedHeaders, parsedData);
+                // Strip trailing or fully empty parsing artifacts
+                const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+
+                const extractedHeaders = Object.keys(cleanedData[0] || {});
+                setupMapping(extractedHeaders, cleanedData);
             }
             else {
                 throw new Error("Unsupported file format. Please upload .csv or .xlsx");

@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { useDatabaseStore } from '../store';
-import { FilterRule, FilterOperator } from '../types';
-import { Filter, X, Plus } from 'lucide-react';
+import { FilterOperator } from '../types';
+import { Filter, X, Plus, Trash2 } from 'lucide-react';
 
 interface FilterToolbarProps {
     databaseId: string;
@@ -25,6 +25,23 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
     const removeFilter = useDatabaseStore(state => state.removeFilter);
     const clearFilters = useDatabaseStore(state => state.clearFilters);
     const [isOpen, setIsOpen] = useState(false);
+    const popoverRef = React.useRef<HTMLDivElement>(null);
+
+    // Close when clicking outside the popover
+    React.useEffect(() => {
+        const listener = (event: MouseEvent | TouchEvent) => {
+            if (!popoverRef.current || popoverRef.current.contains(event.target as Node)) {
+                return;
+            }
+            setIsOpen(false);
+        };
+        document.addEventListener("mousedown", listener);
+        document.addEventListener("touchstart", listener);
+        return () => {
+            document.removeEventListener("mousedown", listener);
+            document.removeEventListener("touchstart", listener);
+        };
+    }, []);
 
     // Subscribe to store
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
@@ -43,7 +60,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
     };
 
     return (
-        <div className="relative flex items-center">
+        <div ref={popoverRef} className="relative flex items-center">
 
             {/* Top Bar Actions */}
             <div className="flex items-center gap-2">
@@ -111,9 +128,10 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                             {/* Remove Row */}
                             <button
                                 onClick={() => removeFilter(databaseId, filter.id)}
-                                className="p-1 text-neutral-400 hover:text-red-500 rounded ml-auto"
+                                className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded ml-auto transition-colors"
+                                title="Remove this rule"
                             >
-                                <X className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                             </button>
                         </div>
                     ))}

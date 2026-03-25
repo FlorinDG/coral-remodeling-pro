@@ -235,12 +235,29 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
             return props;
         });
 
-        // Batch Database Commit Event
-        useDatabaseStore.getState().addPages(defaultGlobalDb, pagesToCreate);
+        // Array Chunking Database Commit Engine
+        // Break injection payload into 250-row chunks to protect Server Action bandwidth and Prisma Conn Pool Limits
+        const CHUNK_SIZE = 250;
+        let processed = 0;
 
-        setIsProcessing(false);
-        alert(`Master Catalog Engine successfully bulk imported ${pagesToCreate.length} structural items directly into PostgreSQL!`);
-        handleClose();
+        const processNextChunk = () => {
+            const chunk = pagesToCreate.slice(processed, processed + CHUNK_SIZE);
+            if (chunk.length === 0) {
+                setIsProcessing(false);
+                alert(`Master Catalog Engine successfully bulk imported ${pagesToCreate.length} structural items directly into PostgreSQL!`);
+                handleClose();
+                return;
+            }
+
+            // Sync chunk to native state and trigger batch API calls behind the scenes
+            useDatabaseStore.getState().addPages(defaultGlobalDb, chunk);
+            processed += CHUNK_SIZE;
+
+            // Allow JS event loop and React Network buffer to breathe for 250ms before next injection
+            setTimeout(processNextChunk, 250);
+        };
+
+        processNextChunk();
     };
 
     const handleClose = () => {

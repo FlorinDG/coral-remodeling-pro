@@ -38,7 +38,8 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     }, [focus, active]);
 
     // Extract relation array directly from the full row object
-    const value = (rowData?.properties?.[propId] as string[]) || [];
+    const rawValue = rowData?.properties?.[propId];
+    const value = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
 
     // Subscribe to the target database to fetch titles
     const targetDatabase = useDatabaseStore(state => state.databases.find(db => db.id === relationDatabaseId));

@@ -201,6 +201,14 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                             else val = 'opt-general';
                         }
                     }
+                    else if (dbProp.type === 'relation') {
+                        if (val) val = [String(val).trim()];
+                        else val = [];
+                    }
+                    else if (dbProp.type === 'multi_select') {
+                        if (val) val = String(val).split(',').map(s => s.trim()).filter(Boolean);
+                        else val = [];
+                    }
                     props[dbProp.id] = val;
                 }
             });

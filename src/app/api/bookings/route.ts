@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendBookingNotification } from "@/lib/email";
-import { syncBookingToNotion } from "@/lib/notion";
 
 export async function POST(request: Request) {
     try {
@@ -43,8 +42,7 @@ export async function POST(request: Request) {
             console.error("Booking email failed:", emailError);
         }
 
-        // Sync to Notion
-        await syncBookingToNotion(booking);
+        // Return success response
 
         return NextResponse.json(booking, { status: 201 });
     } catch (error) {

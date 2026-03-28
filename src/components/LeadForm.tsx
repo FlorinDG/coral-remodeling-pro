@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays, startOfToday } from 'date-fns';
 import { Check, MessageCircle, Phone, Mail } from 'lucide-react';
+import Autocomplete from 'react-google-autocomplete';
 import { useTranslations, useLocale } from 'next-intl';
 import { nl, enUS, fr } from 'date-fns/locale';
 
@@ -39,6 +40,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         service: 'Kitchen',
         message: ''
     });
+    const [file, setFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false); // New state for button animation
@@ -58,15 +60,34 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         setLoading(true);
         setError(null);
 
-        // Bundle address into message to avoid DB migration and protect Notion Sync
-        let finalMessage = formData.message;
-        const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
-        if (addressParts.length > 0) {
-            finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
-        }
-        const finalName = `${formData.name} ${formData.surname}`.trim();
-
         try {
+            let uploadedFileLink = null;
+            if (file) {
+                const uploadData = new FormData();
+                uploadData.append('action', 'upload_file');
+                uploadData.append('file', file);
+                uploadData.append('moduleTag', 'Lead');
+
+                const uploadRes = await fetch('/api/drive', {
+                    method: 'POST',
+                    body: uploadData,
+                });
+                if (!uploadRes.ok) throw new Error("File upload failed");
+                const uploadJson = await uploadRes.json();
+                uploadedFileLink = uploadJson.node?.webViewLink;
+            }
+
+            // Bundle address into message to avoid DB migration and protect Notion Sync
+            let finalMessage = formData.message;
+            const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
+            if (addressParts.length > 0) {
+                finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
+            }
+            if (uploadedFileLink) {
+                finalMessage += `\n\nAttached File: ${uploadedFileLink}`;
+            }
+            const finalName = `${formData.name} ${formData.surname}`.trim();
+
             const res = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -113,9 +134,34 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         setLoading(true);
         setError(null);
 
-        const finalName = `${formData.name} ${formData.surname}`.trim();
-
         try {
+            let uploadedFileLink = null;
+            if (file) {
+                const uploadData = new FormData();
+                uploadData.append('action', 'upload_file');
+                uploadData.append('file', file);
+                uploadData.append('moduleTag', 'Booking');
+
+                const uploadRes = await fetch('/api/drive', {
+                    method: 'POST',
+                    body: uploadData,
+                });
+                if (!uploadRes.ok) throw new Error("File upload failed");
+                const uploadJson = await uploadRes.json();
+                uploadedFileLink = uploadJson.node?.webViewLink;
+            }
+
+            const finalName = `${formData.name} ${formData.surname}`.trim();
+
+            let finalMessage = formData.message;
+            const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
+            if (addressParts.length > 0) {
+                finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
+            }
+            if (uploadedFileLink) {
+                finalMessage += `\n\nAttached File: ${uploadedFileLink}`;
+            }
+
             const res = await fetch('/api/bookings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -124,7 +170,8 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                     clientEmail: formData.email,
                     serviceType: formData.service,
                     date: selectedDate.toISOString(),
-                    timeSlot: selectedSlot
+                    timeSlot: selectedSlot,
+                    message: finalMessage
                 }),
             });
             if (res.ok) {
@@ -218,6 +265,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                         ) : (
                             <>
                                 <form onSubmit={handleInquirySubmit} className="space-y-3 flex-1 flex flex-col -mx-1 px-1 overflow-y-auto max-h-[460px] custom-scrollbar">
+                                    <p className="text-xs text-neutral-500 font-medium px-1 mb-1">{t('messages.inquiryWarning')}</p>
                                     <div className="grid grid-cols-2 gap-3">
                                         <input
                                             type="text"
@@ -238,43 +286,6 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             value={formData.surname}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, surname: e.target.value });
-                                                setError(null);
-                                            }}
-                                        />
-                                    </div>
-
-                                    <input
-                                        type="text"
-                                        placeholder={t('placeholders.street')}
-                                        required
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
-                                        value={formData.street}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, street: e.target.value });
-                                            setError(null);
-                                        }}
-                                    />
-
-                                    <div className="grid grid-cols-[1fr_2fr] gap-3">
-                                        <input
-                                            type="text"
-                                            placeholder={t('placeholders.postalCode')}
-                                            required
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
-                                            value={formData.postalCode}
-                                            onChange={(e) => {
-                                                setFormData({ ...formData, postalCode: e.target.value });
-                                                setError(null);
-                                            }}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder={t('placeholders.town')}
-                                            required
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
-                                            value={formData.town}
-                                            onChange={(e) => {
-                                                setFormData({ ...formData, town: e.target.value });
                                                 setError(null);
                                             }}
                                         />
@@ -303,20 +314,37 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             }}
                                         />
                                     </div>
-                                    <select
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
-                                        value={formData.service}
-                                        onChange={(e) => {
-                                            setFormData({ ...formData, service: e.target.value });
-                                            setError(null);
-                                        }}
-                                    >
-                                        <option value="Kitchen">{t('services.kitchen')}</option>
-                                        <option value="Bathroom">{t('services.bathroom')}</option>
-                                        <option value="Addition">{t('services.addition')}</option>
-                                    </select>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <select
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                            value={formData.service}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, service: e.target.value });
+                                                setError(null);
+                                            }}
+                                        >
+                                            <option value="Kitchen">{t('services.kitchen')}</option>
+                                            <option value="Bathroom">{t('services.bathroom')}</option>
+                                            <option value="Addition">{t('services.addition')}</option>
+                                        </select>
+                                        <div className="relative w-full h-[44px]">
+                                            <input
+                                                type="file"
+                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                onChange={(e) => {
+                                                    setFile(e.target.files?.[0] || null);
+                                                    setError(null);
+                                                }}
+                                            />
+                                            <div className="w-full h-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 flex items-center justify-between text-neutral-400 text-sm hover:border-white/30 transition-all pointer-events-none">
+                                                <span className="truncate pr-2">{file ? file.name : t('placeholders.file')}</span>
+                                                <span className="text-lg flex-shrink-0">📎</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <textarea
                                         placeholder={t('placeholders.message')}
+                                        required
                                         rows={2}
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm min-h-[60px]"
                                         value={formData.message}
@@ -409,25 +437,81 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                 )}
                             </div>
                         ) : bookingStep === 1 ? (
-                            <div className="flex-1 flex flex-col justify-center space-y-4">
-                                <input
-                                    type="text"
-                                    placeholder={t('placeholders.yourName')}
-                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            <div className="flex-1 flex flex-col -mx-1 px-1 overflow-y-auto max-h-[460px] custom-scrollbar space-y-3">
+                                <p className="text-xs text-neutral-500 font-medium px-1 mb-1">{t('messages.bookingWarning')}</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <input
+                                        type="text"
+                                        placeholder={t('placeholders.yourName')}
+                                        required
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    />
+                                    <input
+                                        type="email"
+                                        placeholder={t('placeholders.yourEmail')}
+                                        required
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
+                                </div>
+                                <Autocomplete
+                                    apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+                                    onPlaceSelected={(place) => {
+                                        if (place && place.formatted_address) {
+                                            setFormData({ ...formData, street: place.formatted_address, town: '', postalCode: '' });
+                                            setError(null);
+                                        }
+                                    }}
+                                    options={{
+                                        types: ["address"],
+                                        componentRestrictions: { country: "be" },
+                                    }}
+                                    placeholder={t('placeholders.street')} // Can use a more generic "Address" placeholder if we had one, this works fine too
+                                    required
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                    defaultValue={formData.street}
+                                    onChange={(e: any) => setFormData({ ...formData, street: e.target.value })}
                                 />
-                                <input
-                                    type="email"
-                                    placeholder={t('placeholders.yourEmail')}
-                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[50px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-500"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                <div className="grid grid-cols-2 gap-3">
+                                    <select
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d35400] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
+                                        value={formData.service}
+                                        onChange={(e) => setFormData({ ...formData, service: e.target.value })}
+                                    >
+                                        <option value="Kitchen">{t('services.kitchen')}</option>
+                                        <option value="Bathroom">{t('services.bathroom')}</option>
+                                        <option value="Addition">{t('services.addition')}</option>
+                                    </select>
+                                    <div className="relative w-full h-[44px]">
+                                        <input
+                                            type="file"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                            onChange={(e) => setFile(e.target.files?.[0] || null)}
+                                        />
+                                        <div className="w-full h-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 flex items-center justify-between text-neutral-400 text-sm hover:border-white/30 transition-all pointer-events-none">
+                                            <span className="truncate pr-2">{file ? file.name : t('placeholders.file')}</span>
+                                            <span className="text-lg flex-shrink-0">📎</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <textarea
+                                    placeholder={t('placeholders.message')}
+                                    required
+                                    rows={2}
+                                    className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none hover:border-white/30 focus:border-[#d35400] transition-all resize-none flex-1 text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm min-h-[60px]"
+                                    value={formData.message}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, message: e.target.value });
+                                        setError(null);
+                                    }}
                                 />
                                 <button
                                     onClick={() => setBookingStep(2)}
-                                    disabled={!formData.name || !formData.email}
-                                    className="w-full bg-[#d35400] text-white font-bold py-4 rounded-xl hover:bg-[#a04000] transition-colors shadow-lg shadow-[#d35400]/20 disabled:opacity-50"
+                                    disabled={!formData.name || !formData.email || !formData.street}
+                                    className="w-full bg-[#d35400] text-white font-bold py-4 rounded-xl mt-auto hover:bg-[#a04000] transition-colors shadow-lg shadow-[#d35400]/20 disabled:opacity-50"
                                 >
                                     {t('buttons.chooseDate')}
                                 </button>

@@ -6,7 +6,7 @@ import { syncBookingToNotion } from "@/lib/notion";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { clientName, clientEmail, serviceType, date, timeSlot } = body;
+        const { clientName, clientEmail, serviceType, date, timeSlot, message } = body;
 
         console.log(`Processing booking for: ${clientName} (${clientEmail}) on ${date}`);
 
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
                     serviceType,
                     date: new Date(date),
                     timeSlot,
+                    message,
                 },
             }));
             console.log("Booking created in DB:", booking.id);

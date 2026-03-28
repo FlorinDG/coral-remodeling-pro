@@ -104,6 +104,10 @@
         }
     },
     "LeadForm": {
+        "messages": {
+            "inquiryWarning": "Pour laisser une demande, vous devez nous fournir vos coordonnées.",
+            "bookingWarning": "Pour réserver une visite, vous devez nous fournir une adresse et des coordonnées."
+        },
         "tabs": {
             "inquiry": "Demande",
             "booking": "Planifier Visite"
@@ -118,7 +122,8 @@
             "phone": "Numéro de Téléphone (Optionnel)",
             "message": "Parlez-nous de votre projet...",
             "yourName": "Votre Nom",
-            "yourEmail": "Votre E-mail"
+            "yourEmail": "Votre E-mail",
+            "file": "Télécharger un fichier (Optionnel)"
         },
         "services": {
             "kitchen": "Rénovation Cuisine",

@@ -105,6 +105,10 @@
         }
     },
     "LeadForm": {
+        "messages": {
+            "inquiryWarning": "Pentru a lăsa o solicitare, trebuie să ne oferiți detaliile dumneavoastră.",
+            "bookingWarning": "Pentru a rezerva o vizită, trebuie să ne oferiți o adresă și detalii."
+        },
         "tabs": {
             "inquiry": "Solicitare",
             "booking": "Programare Vizită"
@@ -119,7 +123,8 @@
             "phone": "Număr de Telefon (Opțional)",
             "message": "Spune-ne despre proiectul tău...",
             "yourName": "Numele Tău",
-            "yourEmail": "E-mailul Tău"
+            "yourEmail": "E-mailul Tău",
+            "file": "Încărcați un fișier (Opțional)"
         },
         "services": {
             "kitchen": "Renovare Bucătărie",

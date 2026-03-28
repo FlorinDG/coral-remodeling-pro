@@ -26,6 +26,7 @@ model Booking {
   serviceType String
   date        DateTime
   timeSlot    String
+  message     String?
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

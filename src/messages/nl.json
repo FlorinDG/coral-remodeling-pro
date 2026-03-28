@@ -105,6 +105,10 @@
         }
     },
     "LeadForm": {
+        "messages": {
+            "inquiryWarning": "Om een aanvraag in te dienen, dient u uw gegevens in te vullen.",
+            "bookingWarning": "Om een bezoek in te plannen, dient u een adres en uw gegevens in te vullen."
+        },
         "tabs": {
             "inquiry": "Aanvraag",
             "booking": "Bezoek Plannen"
@@ -119,7 +123,8 @@
             "phone": "Telefoonnummer (Optioneel)",
             "message": "Vertel ons over uw project...",
             "yourName": "Uw Naam",
-            "yourEmail": "Uw E-mailadres"
+            "yourEmail": "Uw E-mailadres",
+            "file": "Bestand uploaden (Optioneel)"
         },
         "services": {
             "kitchen": "Keukenrenovatie",

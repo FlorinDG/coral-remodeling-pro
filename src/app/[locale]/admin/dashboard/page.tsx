@@ -13,7 +13,6 @@ import {
     BarChart3
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
-import NotionSyncButton from "@/components/admin/NotionSyncButton";
 import { OverviewAreaChart, StatusBarChart } from "@/components/admin/dashboard/DashboardCharts";
 
 export default async function AdminDashboard() {
@@ -178,28 +177,7 @@ export default async function AdminDashboard() {
                         ))}
                     </div>
 
-                    <div className="bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/5 p-6 shadow-sm">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                                <Database className="w-5 h-5 text-purple-500" />
-                            </div>
-                            <div>
-                                <h3 className="text-sm font-bold">Notion CMS</h3>
-                                <p className="text-[10px] text-neutral-500">Database synchronization</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 flex justify-between items-center">
-                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Core Content</p>
-                                <NotionSyncButton endpoint="/api/notion/sync" label="Sync" />
-                            </div>
-                            <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 flex justify-between items-center">
-                                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Clients</p>
-                                <NotionSyncButton endpoint="/api/notion/sync/portals" label="Sync" />
-                            </div>
-                        </div>
-                    </div>
+                    {/* Placeholder for future widgets */}
                 </div>
 
                 {/* Right Column: Recent Activity */}

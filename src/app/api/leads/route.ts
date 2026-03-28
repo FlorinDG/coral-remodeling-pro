@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
-import { syncLeadToNotion } from "@/lib/notion";
 
 export async function POST(request: Request) {
     try {
@@ -43,8 +42,7 @@ export async function POST(request: Request) {
             // We don't return 500 here because the lead WAS saved to DB
         }
 
-        // Sync to Notion
-        await syncLeadToNotion(lead);
+        // Return success response
 
         return NextResponse.json(lead, { status: 201 });
     } catch (error) {

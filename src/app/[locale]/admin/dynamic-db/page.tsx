@@ -18,7 +18,7 @@ export default function DynamicDatabasePage() {
             <div className="mb-6 px-6 flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Workspace Databases</h1>
-                    <p className="text-neutral-500 dark:text-neutral-400">Notion-style dynamic tables.</p>
+                    <p className="text-neutral-500 dark:text-neutral-400">Custom dynamic tables.</p>
                 </div>
                 <button
                     onClick={() => createDatabase('New Database', 'A newly instantiated schema.')}

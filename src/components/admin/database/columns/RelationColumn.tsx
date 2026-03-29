@@ -7,9 +7,10 @@ import { Link } from 'lucide-react';
 interface RelationComponentProps extends CellProps<any, any> {
     relationDatabaseId: string;
     propId: string;
+    displayPropertyId?: string;
 }
 
-const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, relationDatabaseId, propId }: RelationComponentProps) => {
+const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, relationDatabaseId, propId, displayPropertyId = 'title' }: RelationComponentProps) => {
     const cellRef = useRef<HTMLDivElement>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -48,9 +49,9 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
         if (!targetDatabase || value.length === 0) return [];
         return value.map(id => {
             const page = targetDatabase.pages.find(p => p.id === id);
-            return (page?.properties['title'] as string) || 'Untitled';
+            return (page?.properties[displayPropertyId] as string) || 'Untitled';
         });
-    }, [targetDatabase, value]);
+    }, [targetDatabase, value, displayPropertyId]);
 
     if (!focus && !active) {
         if (selectedTitles.length === 0) {
@@ -115,7 +116,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                 {/* List of avaiable pages in target DB */}
                 <div className="flex flex-col gap-0.5 overflow-y-auto">
                     {targetDatabase?.pages.map(page => {
-                        const title = (page.properties['title'] as string) || 'Untitled';
+                        const title = String(page.properties[displayPropertyId] || 'Untitled');
                         const isSelected = value.includes(page.id);
 
                         return (
@@ -178,8 +179,8 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     );
 };
 
-export const relationColumn = (propId: string, relationDatabaseId: string): Column<any, any> => ({
-    component: (props) => <RelationComponent {...props} relationDatabaseId={relationDatabaseId} propId={propId} />,
+export const relationColumn = (propId: string, relationDatabaseId: string, displayPropertyId?: string): Column<any, any> => ({
+    component: (props) => <RelationComponent {...props} relationDatabaseId={relationDatabaseId} propId={propId} displayPropertyId={displayPropertyId} />,
     keepFocus: true,
     deleteValue: ({ rowData }) => ({
         ...rowData,

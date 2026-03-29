@@ -16,6 +16,11 @@ export const mockProperties: Property[] = [
         }
     },
     { id: 'prop-assignee', name: 'Assignee', type: 'person' },
+    { id: 'prop-start-date', name: 'Planned Start', type: 'date' },
+    { id: 'prop-end-date', name: 'Planned End', type: 'date' },
+    { id: 'prop-actual-start', name: 'Actual Start', type: 'date' },
+    { id: 'prop-actual-end', name: 'Actual End', type: 'date' },
+    { id: 'prop-budget', name: 'Internal Budget', type: 'currency', config: { format: 'euro' } },
     { id: 'prop-due-date', name: 'Due Date', type: 'date' },
     {
         id: 'prop-priority', name: 'Priority', type: 'select',
@@ -109,7 +114,7 @@ export const mockClientPages: Page[] = [
             'prop-contact-type': 'opt-partner',
             'prop-client-status': 'opt-active',
             'prop-language': 'opt-en',
-            'prop-address-city': 'Brussels',
+            'prop-address-main': 'Brussels, Belgium',
             'prop-vat-number': 'BE0123.456.789'
         },
         blocks: [],
@@ -131,7 +136,7 @@ export const mockClientPages: Page[] = [
             'prop-client-status': 'opt-lead',
             'prop-lead-source': 'opt-web',
             'prop-language': 'opt-nl',
-            'prop-address-city': 'Antwerp',
+            'prop-address-main': 'Antwerp, Belgium',
             'prop-portal-access': false
         },
         blocks: [],
@@ -152,7 +157,7 @@ export const mockClientPages: Page[] = [
             'prop-contact-type': 'opt-supplier',
             'prop-client-status': 'opt-active',
             'prop-language': 'opt-nl',
-            'prop-address-city': 'Ghent',
+            'prop-address-main': 'Ghent, Belgium',
             'prop-vat-number': 'BE0987.654.321'
         },
         blocks: [],
@@ -248,11 +253,7 @@ export const mockDatabases: Database[] = [
                     ]
                 }
             },
-            { id: 'prop-address-street', name: 'Street Address', type: 'text' },
-            { id: 'prop-address-number', name: 'House Number', type: 'text' },
-            { id: 'prop-address-postal', name: 'Postal Code', type: 'text' },
-            { id: 'prop-address-city', name: 'City', type: 'text' },
-            { id: 'prop-address-country', name: 'Country', type: 'text' },
+            { id: 'prop-address-main', name: 'Address', type: 'places' },
             { id: 'prop-vat-number', name: 'VAT Number', type: 'text' },
             { id: 'prop-portal-access', name: 'Portal Access', type: 'checkbox' },
             { id: 'prop-next-followup', name: 'Next Follow-up', type: 'date' }
@@ -522,11 +523,11 @@ export const mockDatabases: Database[] = [
 
             { id: 'prop-art-margin', name: 'Marge', type: 'number', config: { format: 'percent' } },
             { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") * (prop("Marge") / 100))' } },
-            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'number', config: { format: 'euro' } },
+            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") + prop("Marge€"))' } },
 
             { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },
-            { id: 'prop-art-packaging', name: 'Packaging', type: 'text' },
-            { id: 'prop-art-min-order', name: 'Minimum Order', type: 'number' },
+            { id: 'prop-art-packaging', name: 'Packaging', type: 'select', config: { options: [{ id: 'opt-stk', name: 'stuk', color: 'gray' }, { id: 'opt-plaat', name: 'plaat', color: 'blue' }, { id: 'opt-rol', name: 'rol', color: 'yellow' }, { id: 'opt-doos', name: 'doos', color: 'orange' }] } },
+            { id: 'prop-art-min-order', name: 'Minimum Order', type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
 
             { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }
         ],

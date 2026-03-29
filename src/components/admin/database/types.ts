@@ -8,6 +8,7 @@ export type PropertyType =
     | 'url'
     | 'email'
     | 'phone'
+    | 'places'
     | 'relation'
     | 'rollup'
     | 'formula'
@@ -30,6 +31,7 @@ export interface PropertyConfig {
     options?: SelectOption[]; // For select and multi_select
     format?: 'number' | 'number_with_commas' | 'percent' | 'euro' | 'dollar'; // For numbers
     relationDatabaseId?: string; // For relations
+    relationDisplayPropertyId?: string; // Property to display instead of title
     rollupPropertyId?: string; // For rollups
     rollupTargetPropertyId?: string;
     formulaExpression?: string; // For formulas

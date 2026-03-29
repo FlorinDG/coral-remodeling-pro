@@ -27,6 +27,7 @@ import { currencyColumn } from './columns/CurrencyColumn';
 import { variantsColumn } from './columns/VariantsColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
+import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
 import { Property } from './types';
 
 interface NotionGridProps {
@@ -47,6 +48,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const clearDatabase = useDatabaseStore(state => state.clearDatabase);
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
 
@@ -151,7 +153,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 // Relations need full row data to allow precise multi-select array mutations
                 if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
                     return {
-                        ...relationColumn(prop.id, prop.config.relationDatabaseId) as any,
+                        ...relationColumn(prop.id, prop.config.relationDatabaseId, prop.config.relationDisplayPropertyId) as any,
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -388,108 +390,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
         document.body.removeChild(link);
     };
 
-    const processImportedData = (data: any[], headers: string[]) => {
-        // First pass: dynamically generate missing database properties
-        headers.forEach(header => {
-            if (!header) return;
-            const match = database!.properties.find(p => p.name.toLowerCase() === header.toString().toLowerCase());
-            if (!match && header.toString().trim() !== '') {
-                addProperty(database!.id, header.toString().trim(), 'text');
-            }
-        });
-
-        // Re-hydrate the schema from the Zustand store explicitly to capture the newly generated column IDs
-        const updatedDatabase = useDatabaseStore.getState().getDatabase(database!.id);
-        if (!updatedDatabase) return;
-
-        // Map the headers back to official property IDs
-        const headerToPropId: Record<string, string> = {};
-        updatedDatabase.properties.forEach(p => {
-            headerToPropId[p.name] = p.id;
-            headerToPropId[p.name.toLowerCase()] = p.id;
-        });
-
-        const batchedPages: Record<string, any>[] = [];
-
-        data.forEach((row: any) => {
-            const initialProps: Record<string, any> = {};
-
-            Object.keys(row).forEach(header => {
-                const propId = headerToPropId[header] || headerToPropId[header.toLowerCase()];
-                if (propId) {
-                    const val = row[header];
-                    if (val === undefined || val === null || val === '') return;
-
-                    const propDef = updatedDatabase.properties.find(p => p.id === propId);
-
-                    // Transform human-readable string values back into internal Option IDs for select fields
-                    if (propDef?.type === 'multi_select' && typeof val === 'string') {
-                        const optionNames = val.split(',').map(s => s.trim()).filter(Boolean);
-                        initialProps[propId] = optionNames.map(name => {
-                            const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === name.toLowerCase());
-                            return match ? match.id : name;
-                        });
-                    } else if (propDef?.type === 'select' && typeof val === 'string') {
-                        const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === val.trim().toLowerCase());
-                        initialProps[propId] = match ? match.id : val;
-                    } else {
-                        initialProps[propId] = val;
-                    }
-                }
-            });
-
-            // Add standard missing properties with default empty strings
-            updatedDatabase.properties.forEach(p => {
-                if (initialProps[p.id] === undefined) initialProps[p.id] = '';
-            });
-
-            batchedPages.push(initialProps);
-        });
-
-        // Fire exactly one synchronized state mutation pushing thousands of rows instantly bypassing React freeze
-        addPages(updatedDatabase.id, batchedPages);
-    };
-
-    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !database) return;
-
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-            try {
-                // Dynamically load SheetJS to avoid heavy main bundle compilation hits
-                const XLSX = await import('xlsx');
-                const buffer = await file.arrayBuffer();
-                const workbook = XLSX.read(buffer, { type: 'array' });
-
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-
-                // Read row 0 arrays natively to guarantee accurate header indexing for column tracking
-                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-                if (rawData.length === 0) return;
-
-                const headers = rawData[0].map(String);
-                const data = XLSX.utils.sheet_to_json(sheet);
-
-                processImportedData(data, headers);
-            } catch (err) {
-                console.error("Failed to parse Excel file:", err);
-                alert("Failed to parse Excel file. Check format integrity.");
-            } finally {
-                e.target.value = '';
-            }
-        } else {
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    const csvHeaders = results.meta.fields || [];
-                    processImportedData(results.data, csvHeaders);
-                    e.target.value = '';
-                }
-            });
-        }
-    };
+    // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
 
     if (!database || !hasHydrated) return null;
 
@@ -521,16 +422,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         <span className="hidden md:inline">Export</span>
                     </button>
 
-                    <label className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition cursor-pointer">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
+                    >
                         <Upload className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Import</span>
-                        <input
-                            type="file"
-                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, .xlsx, .xls"
-                            className="hidden"
-                            onChange={handleImportFile}
-                        />
-                    </label>
+                    </button>
 
                     <button
                         onClick={() => {
@@ -746,6 +644,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         onClose={() => setActivePageId(null)}
                     />
                 )}
+
+                {/* Unified Import UI */}
+                <SpreadsheetImportModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    databaseId={database.id}
+                />
             </div>
 
             <style dangerouslySetInnerHTML={{

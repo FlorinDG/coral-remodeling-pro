@@ -57,6 +57,7 @@ interface DatabaseState {
     addProperty: (databaseId: string, name: string, type: PropertyType, config?: PropertyConfig) => void;
     updateProperty: (databaseId: string, propertyId: string, updates: Partial<Property>) => void;
     deleteProperty: (databaseId: string, propertyId: string) => void;
+    updatePropertyOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
     createPage: (databaseId: string, initialProperties?: Record<string, any>) => Page;
@@ -298,6 +299,25 @@ export const useDatabaseStore = create<DatabaseState>()(
                 syncDb(get().databases.find(d => d.id === databaseId));
             },
 
+            updatePropertyOrder: (databaseId, sourceIndex, destinationIndex) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+                        const newProps = Array.from(db.properties);
+                        const [reorderedProp] = newProps.splice(sourceIndex, 1);
+                        if (reorderedProp) {
+                            newProps.splice(destinationIndex, 0, reorderedProp);
+                        }
+                        return {
+                            ...db,
+                            properties: newProps,
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
+
             createPage: (databaseId, initialProperties = {}) => {
                 let newPage: Page | null = null;
 
@@ -506,12 +526,22 @@ export const useDatabaseStore = create<DatabaseState>()(
                             ...db,
                             pages: db.pages.map((page: Page) => {
                                 if (page.id !== pageId) return page;
+
+                                const newProps = { ...page.properties, [propertyId]: value };
+
+                                // Automations mapping for Project Tracker Execution Status
+                                if (databaseId === 'db-1' && propertyId === 'prop-status') {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    if (value === 'opt-2' && !newProps['prop-actual-start']) {
+                                        newProps['prop-actual-start'] = today; // In Progress sets Start Date
+                                    } else if (value === 'opt-3' && !newProps['prop-actual-end']) {
+                                        newProps['prop-actual-end'] = today; // Done sets End Date
+                                    }
+                                }
+
                                 return {
                                     ...page,
-                                    properties: {
-                                        ...page.properties,
-                                        [propertyId]: value
-                                    },
+                                    properties: newProps,
                                     updatedAt: new Date().toISOString()
                                 };
                             }),

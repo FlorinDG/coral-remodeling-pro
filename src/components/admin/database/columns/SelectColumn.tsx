@@ -29,37 +29,45 @@ const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, colu
         }
     }, [focus]);
 
-    // Read View
-    if (!focus && !active) {
-        if (!selectedOption) return <div className="w-full h-full p-2 flex items-center"></div>;
-        return (
-            <div className="w-full h-full p-2 flex items-center">
-                <span className={`px-2 py-0.5 rounded-sm text-xs font-medium ${colorMap[selectedOption.color] || colorMap.gray}`}>
-                    {selectedOption.name}
-                </span>
-            </div>
-        );
-    }
-
-    // Edit View
+    // Seamless 1-Click Select View
     return (
-        <select
-            ref={selectRef}
-            className="w-full h-full outline-none bg-white dark:bg-neutral-900 px-2 text-sm"
-            value={value || ''}
-            onChange={(e) => {
-                setRowData(e.target.value);
-                setTimeout(() => stopEditing(), 0);
-            }}
-            onBlur={() => stopEditing()}
-        >
-            <option value="">Empty</option>
-            {choices.map(choice => (
-                <option key={choice.id} value={choice.id}>
-                    {choice.name}
-                </option>
-            ))}
-        </select>
+        <div className="relative w-full h-full flex items-center p-2 isolate">
+            {/* Visual Formatting Layer (only visible when not active/editing) */}
+            {(!focus && !active) && (
+                <span className={`px-2 py-0.5 rounded-sm text-xs font-medium z-0 ${selectedOption ? (colorMap[selectedOption.color] || colorMap.gray) : 'opacity-0'}`}>
+                    {selectedOption ? selectedOption.name : ''}
+                </span>
+            )}
+
+            {/* Interactive Select Overlay */}
+            <select
+                ref={selectRef}
+                className={`absolute inset-0 w-full h-full outline-none px-2 text-sm z-10 cursor-pointer ${(!focus && !active) ? 'opacity-0' : 'bg-white dark:bg-neutral-900 opacity-100'}`}
+                value={value || ''}
+                onMouseDown={(e) => {
+                    // CRITICAL: Stop the grid from swallowing the native click!
+                    // react-datasheet-grid usually calls e.preventDefault() on cells to trap focus.
+                    // By stopping propagation here, the OS handles the click and natively opens the dropdown!
+                    e.stopPropagation();
+                }}
+                onChange={(e) => {
+                    setRowData(e.target.value);
+                    if (focus || active) {
+                        setTimeout(() => stopEditing(), 0);
+                    }
+                }}
+                onBlur={() => {
+                    if (focus) stopEditing();
+                }}
+            >
+                <option value="">Empty</option>
+                {choices.map(choice => (
+                    <option key={choice.id} value={choice.id}>
+                        {choice.name}
+                    </option>
+                ))}
+            </select>
+        </div>
     );
 };
 

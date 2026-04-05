@@ -14,7 +14,7 @@ export default auth((req) => {
     const role = (req.auth?.user as any)?.role
 
     const host = req.headers.get("host") || "";
-    const isSysSubdomain = host.startsWith("sys.");
+    const isSysSubdomain = host.startsWith("sys.") || host.startsWith("coral-sys.");
     const isAppSubdomain = host.startsWith("app.");
 
     // Virtualize paths so we protect correctly BEFORE the rewrite actually occurs
@@ -31,7 +31,7 @@ export default auth((req) => {
             const loginUrl = new URL(req.nextUrl.href);
             if (isSysSubdomain) {
                 // Bridge them explicitly to the app.* subdomain for logging in
-                loginUrl.hostname = loginUrl.hostname.replace(/^sys\./, 'app.');
+                loginUrl.hostname = loginUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
                 loginUrl.pathname = '/login';
             } else {
                 loginUrl.pathname = '/en/admin/login';
@@ -41,7 +41,7 @@ export default auth((req) => {
         if (role !== "SUPERADMIN") {
             const fallbackUrl = new URL(req.nextUrl.href);
             if (isSysSubdomain) {
-                fallbackUrl.hostname = fallbackUrl.hostname.replace(/^sys\./, 'app.');
+                fallbackUrl.hostname = fallbackUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
                 fallbackUrl.pathname = '/';
             } else {
                 fallbackUrl.pathname = '/en/admin';

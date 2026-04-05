@@ -3,9 +3,10 @@ import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { settingsTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText } from "lucide-react";
+import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette } from "lucide-react";
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
+import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
 
 export default function CompanyInfoSettings() {
     usePageTitle('Company Info');
@@ -541,44 +542,14 @@ export default function CompanyInfoSettings() {
                     })}
                 </div>
 
-                {/* Document Template Selection */}
+                {/* Document Branding & Templates */}
                 <div className="mt-8 space-y-6">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
-                        <FileText className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                        Document Template
+                        <Palette className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
+                        Branding & Document Templates
                     </h3>
-                    <p className="text-xs text-neutral-500 -mt-4">Choose the PDF layout style for your quotations and invoices. The selected template applies to all new documents.</p>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[
-                            { id: 't1', name: 'Classic', desc: 'Standard layout with logo left, details right, orange accent lines', preview: '━━━━━━━━━━━━' },
-                            { id: 't2', name: 'Minimalist', desc: 'Clean whitespace, thin hairlines, monochrome with subtle typography', preview: '─  ─  ─  ─  ─' },
-                            { id: 't3', name: 'Bold Corporate', desc: 'Full-width accent header band, dark table headers, strong visual hierarchy', preview: '████████████' },
-                            { id: 't4', name: 'Elegant', desc: 'Centered header, serif typography, ornamental dividers, classic feel', preview: '~ ─── ✦ ─── ~' },
-                        ].map(t => (
-                            <button
-                                key={t.id}
-                                type="button"
-                                onClick={() => setProfile({ ...profile, documentTemplate: t.id })}
-                                className={`text-left p-4 rounded-2xl border-2 transition-all hover:shadow-sm ${
-                                    profile.documentTemplate === t.id
-                                        ? 'border-[var(--brand-color,#d35400)] shadow-sm'
-                                        : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300'
-                                }`}
-                            >
-                                <div className="text-center text-2xl font-mono mb-3 py-3 bg-neutral-50 dark:bg-white/[0.03] rounded-lg text-neutral-400">
-                                    {t.preview}
-                                </div>
-                                <h4 className="font-bold text-sm text-neutral-900 dark:text-white">{t.name}</h4>
-                                <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">{t.desc}</p>
-                                {profile.documentTemplate === t.id && (
-                                    <div className="mt-2 text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--brand-color, #d35400)' }}>
-                                        ● Active
-                                    </div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                    <p className="text-xs text-neutral-500 -mt-4">Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.</p>
+                    <DocumentTemplatesModule />
                 </div>
 
             </div>

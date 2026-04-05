@@ -45,6 +45,5 @@ export const settingsTabs = [
     { label: 'PROJECTS', href: '/admin/settings/projects', id: 'opt-projects' },
     { label: 'RELATIONS', href: '/admin/settings/relations', id: 'opt-relations' },
     { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
-    { label: 'DOCUMENT TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' },
     { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' }
 ];

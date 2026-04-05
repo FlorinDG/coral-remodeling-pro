@@ -114,7 +114,8 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="bg-[#d35400] hover:bg-[#e67e22] text-white px-8 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-[#d35400]/20 disabled:opacity-50"
+                    className="text-white px-8 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-sm disabled:opacity-50 hover:opacity-90"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     <Save className="w-4 h-4" /> {loading ? 'SAVING...' : 'SAVE CHANGES'}
                 </button>
@@ -130,7 +131,8 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                 key={lang.key}
                                 type="button"
                                 onClick={() => setActiveTab(lang.key)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === lang.key ? 'bg-white dark:bg-white/10 text-[#d35400] shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === lang.key ? 'bg-white dark:bg-white/10 shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
+                                style={activeTab === lang.key ? { color: 'var(--brand-color, #d35400)' } : {}}
                             >
                                 {lang.label}
                             </button>
@@ -149,7 +151,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                         type="text"
                                         value={(formData as any)[`title${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                         onChange={e => setFormData({ ...formData, [`title${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                        className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors font-bold"
+                                        className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color)] outline-none transition-colors font-bold"
                                         placeholder={`Strategic title in ${activeTab}...`}
                                         required={activeTab === 'en'}
                                     />
@@ -162,7 +164,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                         type="text"
                                         value={(formData as any)[`subtitle${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                         onChange={e => setFormData({ ...formData, [`subtitle${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                        className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                        className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                         placeholder="Catchy subtitle..."
                                     />
                                 </div>
@@ -175,7 +177,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                 <textarea
                                     value={(formData as any)[`description${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                     onChange={e => setFormData({ ...formData, [`description${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors min-h-[100px] resize-none"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color)] outline-none transition-colors min-h-[100px] resize-none"
                                     placeholder="Used in service grid cards..."
                                     required={activeTab === 'en'}
                                 />
@@ -188,7 +190,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                 <textarea
                                     value={(formData as any)[`fullDescription${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                     onChange={e => setFormData({ ...formData, [`fullDescription${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors min-h-[200px] resize-y"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color)] outline-none transition-colors min-h-[200px] resize-y"
                                     placeholder="Detailed marketing content for the service page..."
                                     required={activeTab === 'en'}
                                 />
@@ -204,7 +206,8 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                 <button
                                     type="button"
                                     onClick={() => handleFeatureAdd(activeTab)}
-                                    className="text-[10px] font-bold text-[#d35400] hover:text-[#e67e22] uppercase tracking-widest transition-colors flex items-center gap-1"
+                                    className="text-[10px] font-bold uppercase tracking-widest transition-colors flex items-center gap-1 hover:opacity-80"
+                                    style={{ color: 'var(--brand-color, #d35400)' }}
                                 >
                                     <Plus className="w-3.5 h-3.5" /> Add Feature
                                 </button>
@@ -216,7 +219,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                             type="text"
                                             value={feature}
                                             onChange={e => handleFeatureChange(activeTab, idx, e.target.value)}
-                                            className="w-full bg-neutral-100 dark:bg-white/5 border border-transparent rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors pr-10"
+                                            className="w-full bg-neutral-100 dark:bg-white/5 border border-transparent rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color)] outline-none transition-colors pr-10"
                                             placeholder="Feature highlight..."
                                         />
                                         <button
@@ -252,7 +255,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                     type="text"
                                     value={formData.slug}
                                     onChange={e => setFormData({ ...formData, slug: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors font-mono"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color)] outline-none transition-colors font-mono"
                                     placeholder="e.g. kitchen-remodeling"
                                     required
                                 />
@@ -263,7 +266,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                     type="text"
                                     value={formData.icon}
                                     onChange={e => setFormData({ ...formData, icon: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors text-xl"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color)] outline-none transition-colors text-xl"
                                     placeholder="🏗️"
                                     required
                                 />
@@ -274,7 +277,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                                     type="number"
                                     value={formData.order}
                                     onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                 />
                             </div>
                         </div>
@@ -310,7 +313,7 @@ export default function ServiceForm({ initialData }: ServiceFormProps) {
                             type="text"
                             value={formData.image}
                             onChange={e => setFormData({ ...formData, image: e.target.value })}
-                            className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-[10px] focus:border-[#d35400] outline-none transition-colors font-mono"
+                            className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-[10px] focus:border-[var(--brand-color)] outline-none transition-colors font-mono"
                             placeholder="Image URL..."
                             required
                         />

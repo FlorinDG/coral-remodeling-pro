@@ -3,12 +3,36 @@ import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
 import { Search } from 'lucide-react';
 
+export function applyRollupAggregation(results: string[], aggregation?: string): string[] {
+    if (!results || results.length === 0) return [];
+    const agg = aggregation || 'show_original';
+
+    switch (agg) {
+        case 'extract_numbers':
+            return results.map(r => r.replace(/[^\d+]/g, '')).filter(Boolean);
+        case 'sum': {
+            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.replace(/[^\d.-]/g, '')) || 0), 0);
+            return [String(sum)];
+        }
+        case 'average': {
+            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.replace(/[^\d.-]/g, '')) || 0), 0);
+            return [String(Number((sum / results.length).toFixed(2)))];
+        }
+        case 'count':
+            return [String(results.length)];
+        case 'show_original':
+        default:
+            return results;
+    }
+}
+
 interface RollupComponentProps extends CellProps<any, any> {
     rollupPropertyId: string;
     rollupTargetPropertyId: string;
+    rollupAggregation?: string;
 }
 
-const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId }: RollupComponentProps) => {
+const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, rollupAggregation }: RollupComponentProps) => {
     // A Rollup requires read-access to the entire DB registry to cross-reference
     const databases = useDatabaseStore(state => state.databases);
 
@@ -40,8 +64,8 @@ const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId }: 
             }
         }
 
-        return results;
-    }, [rowData, rollupPropertyId, rollupTargetPropertyId, databases]);
+        return applyRollupAggregation(results, rollupAggregation);
+    }, [rowData, rollupPropertyId, rollupTargetPropertyId, rollupAggregation, databases]);
 
     if (aggregatedValues.length === 0) {
         return <div className="w-full h-full p-2 flex items-center text-neutral-400 text-sm italic">Empty</div>;
@@ -59,8 +83,8 @@ const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId }: 
     );
 };
 
-export const rollupColumn = (rollupPropertyId: string, rollupTargetPropertyId: string): Column<any, any> => ({
-    component: (props) => <RollupComponent {...props} rollupPropertyId={rollupPropertyId} rollupTargetPropertyId={rollupTargetPropertyId} />,
+export const rollupColumn = (rollupPropertyId: string, rollupTargetPropertyId: string, rollupAggregation?: string): Column<any, any> => ({
+    component: (props) => <RollupComponent {...props} rollupPropertyId={rollupPropertyId} rollupTargetPropertyId={rollupTargetPropertyId} rollupAggregation={rollupAggregation} />,
     keepFocus: false, // Read only
     disabled: true, // Rollups cannot be edited manually
     deleteValue: ({ rowData }) => rowData, // No-op

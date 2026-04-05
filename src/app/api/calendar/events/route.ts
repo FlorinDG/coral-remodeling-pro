@@ -104,6 +104,7 @@ export const POST = auth(async function POST(req: any) {
             description,
             location,
             userId: req.auth.user.id,
+            tenantId: (req.auth.user as any)?.tenantId,
             googleEventId,
             googleCalendarId: calendarId && calendarId !== 'local' ? calendarId : null
         };

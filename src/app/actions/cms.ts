@@ -2,6 +2,7 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 
 interface ContentUpdate {
     en: string;
@@ -15,12 +16,16 @@ interface SiteContentData {
 }
 
 export async function updateSiteContent(formData: SiteContentData) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
+
     const keys = Object.keys(formData);
 
     for (const key of keys) {
         const item = formData[key];
         await prisma.siteContent.upsert({
-            where: { key: key },
+            where: { tenantId_key: { tenantId, key } },
             update: {
                 valueEn: item.en,
                 valueNl: item.nl,
@@ -33,6 +38,7 @@ export async function updateSiteContent(formData: SiteContentData) {
                 valueNl: item.nl,
                 valueFr: item.fr,
                 valueRo: item.ro,
+                tenantId
             }
         });
     }
@@ -74,6 +80,10 @@ interface ProjectData {
 }
 
 export async function createProject(data: ProjectData) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
+
     await prisma.cMS_Project.create({
         data: {
             titleEn: data.titleEn,
@@ -95,7 +105,8 @@ export async function createProject(data: ProjectData) {
                     isBefore: img.isBefore || false,
                     order: img.order || 0
                 }))
-            }
+            },
+            tenantId
         }
     });
     revalidatePath("/[locale]", "layout");
@@ -145,7 +156,11 @@ export async function deleteProject(id: string) {
 }
 
 export async function updateBanner(data: { textEn: string; textNl?: string | null; isActive: boolean }) {
-    const banner = await prisma.promotionalBanner.findFirst();
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
+
+    const banner = await prisma.promotionalBanner.findFirst({ where: { tenantId } });
     if (banner) {
         await prisma.promotionalBanner.update({
             where: { id: banner.id },
@@ -155,7 +170,8 @@ export async function updateBanner(data: { textEn: string; textNl?: string | nul
         await prisma.promotionalBanner.create({
             data: {
                 ...data,
-                id: 'banner_1'
+                id: `banner_1_${tenantId}`,
+                tenantId
             }
         });
     }
@@ -164,8 +180,12 @@ export async function updateBanner(data: { textEn: string; textNl?: string | nul
 }
 
 export async function createService(data: any) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
+
     const service = await prisma.cMS_Service.create({
-        data
+        data: { ...data, tenantId }
     });
     revalidatePath("/[locale]/admin/services");
     return { success: true, service };

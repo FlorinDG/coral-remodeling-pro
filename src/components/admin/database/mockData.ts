@@ -4,18 +4,38 @@ import { v4 as uuidv4 } from 'uuid';
 export const mockProperties: Property[] = [
     { id: 'title', name: 'Name', type: 'text' },
     {
-        id: 'prop-status',
-        name: 'Status',
+        id: 'prop-execution-status',
+        name: 'Execution Status',
         type: 'select',
         config: {
             options: [
-                { id: 'opt-1', name: 'To Do', color: 'gray' },
-                { id: 'opt-2', name: 'In Progress', color: 'blue' },
-                { id: 'opt-3', name: 'Done', color: 'green' }
+                { id: 'opt-to-do', name: 'To Do', color: 'gray' },
+                { id: 'opt-in-prog', name: 'In Progress', color: 'blue' },
+                { id: 'opt-done', name: 'Done', color: 'green' }
+            ]
+        }
+    },
+    {
+        id: 'prop-financial-status',
+        name: 'Financial Status',
+        type: 'select',
+        config: {
+            options: [
+                { id: 'opt-quote', name: 'Quotation', color: 'gray' },
+                { id: 'opt-budget', name: 'Budgeted', color: 'yellow' },
+                { id: 'opt-invo', name: 'Invoiced', color: 'blue' },
+                { id: 'opt-paid', name: 'Paid', color: 'green' },
+                { id: 'opt-overdue', name: 'Overdue', color: 'red' }
             ]
         }
     },
     { id: 'prop-assignee', name: 'Assignee', type: 'person' },
+    { id: 'prop-start-date', name: 'Planned Start', type: 'date' },
+    { id: 'prop-end-date', name: 'Planned End', type: 'date' },
+    { id: 'prop-actual-start', name: 'Actual Start', type: 'date' },
+    { id: 'prop-actual-end', name: 'Actual End', type: 'date' },
+    { id: 'prop-budget', name: 'Internal Budget', type: 'currency', config: { format: 'euro' } },
+    { id: 'prop-actual-costs', name: 'Actual Costs', type: 'currency', config: { format: 'euro' } },
     { id: 'prop-due-date', name: 'Due Date', type: 'date' },
     {
         id: 'prop-priority', name: 'Priority', type: 'select',
@@ -63,9 +83,14 @@ export const mockPages: Page[] = [
         databaseId: 'db-1',
         properties: {
             'title': 'Finalize Kitchen Renderings',
-            'prop-status': 'opt-2',
+            'prop-execution-status': 'opt-in-prog',
+            'prop-financial-status': 'opt-paid',
             'prop-assignee': ['user-1'],
+            'prop-start-date': '2026-03-01',
+            'prop-end-date': '2026-03-14',
             'prop-due-date': '2026-03-15',
+            'prop-budget': 12000,
+            'prop-actual-costs': 8500,
             'prop-priority': 'opt-high',
             'prop-client-relation': ['page-client-1'],
             'prop-supplier-relation': ['page-supplier-1']
@@ -81,9 +106,14 @@ export const mockPages: Page[] = [
         databaseId: 'db-1',
         properties: {
             'title': 'Order Carrara Marble',
-            'prop-status': 'opt-1',
+            'prop-execution-status': 'opt-to-do',
+            'prop-financial-status': 'opt-quote',
             'prop-assignee': ['user-2'],
+            'prop-start-date': '2026-03-10',
+            'prop-end-date': '2026-03-18',
             'prop-due-date': '2026-03-20',
+            'prop-budget': 25000,
+            'prop-actual-costs': 4000,
             'prop-priority': 'opt-med',
             'prop-client-relation': [],
             'prop-supplier-relation': []
@@ -109,7 +139,7 @@ export const mockClientPages: Page[] = [
             'prop-contact-type': 'opt-partner',
             'prop-client-status': 'opt-active',
             'prop-language': 'opt-en',
-            'prop-address-city': 'Brussels',
+            'prop-address-main': 'Brussels, Belgium',
             'prop-vat-number': 'BE0123.456.789'
         },
         blocks: [],
@@ -131,7 +161,7 @@ export const mockClientPages: Page[] = [
             'prop-client-status': 'opt-lead',
             'prop-lead-source': 'opt-web',
             'prop-language': 'opt-nl',
-            'prop-address-city': 'Antwerp',
+            'prop-address-main': 'Antwerp, Belgium',
             'prop-portal-access': false
         },
         blocks: [],
@@ -152,7 +182,7 @@ export const mockClientPages: Page[] = [
             'prop-contact-type': 'opt-supplier',
             'prop-client-status': 'opt-active',
             'prop-language': 'opt-nl',
-            'prop-address-city': 'Ghent',
+            'prop-address-main': 'Ghent, Belgium',
             'prop-vat-number': 'BE0987.654.321'
         },
         blocks: [],
@@ -174,8 +204,8 @@ export const mockDatabases: Database[] = [
         activeFilters: [],
         views: [
             { id: 'view-1', name: 'All Projects', type: 'table' },
-            { id: 'view-2', name: 'Status Board', type: 'board', config: { groupByPropertyId: 'prop-status' } },
-            { id: 'view-3', name: 'Project Calendar', type: 'calendar', config: { datePropertyId: 'prop-due-date' } }
+            { id: 'view-2', name: 'Execution Board', type: 'board', config: { groupByPropertyId: 'prop-execution-status' } },
+            { id: 'view-4', name: 'Financial Pipeline', type: 'board', config: { groupByPropertyId: 'prop-financial-status' } }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -248,11 +278,7 @@ export const mockDatabases: Database[] = [
                     ]
                 }
             },
-            { id: 'prop-address-street', name: 'Street Address', type: 'text' },
-            { id: 'prop-address-number', name: 'House Number', type: 'text' },
-            { id: 'prop-address-postal', name: 'Postal Code', type: 'text' },
-            { id: 'prop-address-city', name: 'City', type: 'text' },
-            { id: 'prop-address-country', name: 'Country', type: 'text' },
+            { id: 'prop-address-main', name: 'Address', type: 'places' },
             { id: 'prop-vat-number', name: 'VAT Number', type: 'text' },
             { id: 'prop-portal-access', name: 'Portal Access', type: 'checkbox' },
             { id: 'prop-next-followup', name: 'Next Follow-up', type: 'date' }
@@ -296,6 +322,21 @@ export const mockDatabases: Database[] = [
         properties: [
             { id: 'title', name: 'Name', type: 'text' },
             { id: 'prop-supplier-email', name: 'Email', type: 'email' },
+            { id: 'prop-address-main', name: 'Address', type: 'places' },
+            { id: 'prop-vat-number', name: 'BTW', type: 'text' },
+            { id: 'prop-supplier-phone', name: 'Phone', type: 'phone' },
+            {
+                id: 'prop-supplier-type', name: 'Type', type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-material', name: 'Material Supplier', color: 'orange' },
+                        { id: 'opt-subcontractor', name: 'Subcontractor', color: 'blue' },
+                        { id: 'opt-logistics', name: 'Logistics', color: 'purple' },
+                        { id: 'opt-services', name: 'Services', color: 'green' },
+                        { id: 'opt-other', name: 'Other', color: 'gray' }
+                    ]
+                }
+            },
         ],
         pages: [
             {
@@ -428,11 +469,16 @@ export const mockDatabases: Database[] = [
             { id: 'prop-task-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-todo', name: 'To Do', color: 'gray' }, { id: 'opt-doing', name: 'In Progress', color: 'blue' }, { id: 'opt-done', name: 'Done', color: 'green' }] } },
             { id: 'prop-task-assignee', name: 'Assignee', type: 'text' },
             { id: 'prop-task-priority', name: 'Priority', type: 'select', config: { options: [{ id: 'opt-low', name: 'Low', color: 'green' }, { id: 'opt-med', name: 'Medium', color: 'yellow' }, { id: 'opt-high', name: 'High', color: 'red' }] } },
-            { id: 'prop-task-due', name: 'Due Date', type: 'date' }
+            { id: 'prop-task-due', name: 'Due Date', type: 'date' },
+            { id: 'prop-task-project', name: 'Project Link', type: 'relation', config: { relationDatabaseId: 'db-1' } }
         ],
         pages: [],
         activeFilters: [],
-        views: [{ id: 'view-task-table', name: 'Active Tasks', type: 'table' }],
+        views: [
+            { id: 'view-task-table', name: 'All Tasks List', type: 'table' },
+            { id: 'view-task-board', name: 'Kanban Board', type: 'board', config: { groupByPropertyId: 'prop-task-status' } },
+            { id: 'view-task-calendar', name: 'Timeline Calendar', type: 'calendar', config: { datePropertyId: 'prop-task-due' } }
+        ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ownerId: 'system'
@@ -522,11 +568,11 @@ export const mockDatabases: Database[] = [
 
             { id: 'prop-art-margin', name: 'Marge', type: 'number', config: { format: 'percent' } },
             { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") * (prop("Marge") / 100))' } },
-            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'number', config: { format: 'euro' } },
+            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") + prop("Marge€"))' } },
 
             { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },
-            { id: 'prop-art-packaging', name: 'Packaging', type: 'text' },
-            { id: 'prop-art-min-order', name: 'Minimum Order', type: 'number' },
+            { id: 'prop-art-packaging', name: 'Packaging', type: 'select', config: { options: [{ id: 'opt-stk', name: 'stuk', color: 'gray' }, { id: 'opt-plaat', name: 'plaat', color: 'blue' }, { id: 'opt-rol', name: 'rol', color: 'yellow' }, { id: 'opt-doos', name: 'doos', color: 'orange' }] } },
+            { id: 'prop-art-min-order', name: 'Minimum Order', type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
 
             { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }
         ],

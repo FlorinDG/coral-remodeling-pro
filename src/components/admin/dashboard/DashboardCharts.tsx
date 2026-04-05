@@ -29,13 +29,13 @@ export function OverviewAreaChart({ data }: ChartProps) {
                     margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
                     <defs>
-                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#d35400" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#d35400" stopOpacity={0} />
+                        <linearGradient id="colorInvoiced" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                         </linearGradient>
-                        <linearGradient id="colorBookings" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-neutral-200, #e5e5e5)" />
@@ -64,22 +64,22 @@ export function OverviewAreaChart({ data }: ChartProps) {
                     <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
                     <Area
                         type="monotone"
-                        dataKey="leads"
-                        name="New Leads"
-                        stroke="#d35400"
+                        dataKey="invoiced"
+                        name="Amount Invoiced (€)"
+                        stroke="#22c55e"
                         strokeWidth={2}
                         fillOpacity={1}
-                        fill="url(#colorLeads)"
+                        fill="url(#colorInvoiced)"
                         activeDot={{ r: 6, strokeWidth: 0 }}
                     />
                     <Area
                         type="monotone"
-                        dataKey="bookings"
-                        name="Bookings"
-                        stroke="#3b82f6"
+                        dataKey="expenditures"
+                        name="Expenditures (€)"
+                        stroke="#ef4444"
                         strokeWidth={2}
                         fillOpacity={1}
-                        fill="url(#colorBookings)"
+                        fill="url(#colorExp)"
                     />
                 </AreaChart>
             </ResponsiveContainer>
@@ -115,7 +115,7 @@ export function StatusBarChart({ data }: ChartProps) {
                             fontSize: '12px',
                         }}
                     />
-                    <Bar dataKey="value" name="Amount" fill="#d35400" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar dataKey="value" name="Amount" fill="var(--brand-color, #d35400)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                 </BarChart>
             </ResponsiveContainer>
         </div>

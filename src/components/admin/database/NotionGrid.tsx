@@ -14,6 +14,7 @@ import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, Plus, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { useTenant } from '@/context/TenantContext';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
@@ -27,13 +28,16 @@ import { currencyColumn } from './columns/CurrencyColumn';
 import { variantsColumn } from './columns/VariantsColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
+import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
 import { Property } from './types';
 
 interface NotionGridProps {
     databaseId: string;
+    viewId?: string;
+    renderTabs?: React.ReactNode;
 }
 
-export default function NotionGrid({ databaseId }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGridProps) {
     const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -47,13 +51,17 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     const clearDatabase = useDatabaseStore(state => state.clearDatabase);
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
 
     // Subscribe to store changes manually for this specific DB to avoid full-app re-renders
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
-    const activeViewId = database?.views?.[0]?.id; // Defaulting to first view for now, will add tabs later
+    const activeViewId = viewId || database?.views?.[0]?.id; // prioritize explicitly passed viewId from tab engine
     const activeView = database?.views?.find(v => v.id === activeViewId);
+
+    const { activeModules } = useTenant();
+    const hasCRM = activeModules.includes('CRM');
 
     const [isReady, setIsReady] = useState(false);
     const [hasHydrated, setHasHydrated] = useState(false);
@@ -78,7 +86,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     }, []);
 
     // Use properties reference directly to avoid recreating columns when page data updates (which changes database reference)
-    const databaseProperties = database?.properties || [];
+    let databaseProperties = database?.properties || [];
+
+    // ENFORCE LICENSING ISOLATION: Hide 'Lead Source' property for Free Tier
+    if (!hasCRM && databaseId === 'db-clients') {
+        databaseProperties = databaseProperties.filter(p => p.name.toLowerCase() !== 'lead source');
+    }
+
     const databaseIdRef = database?.id || '';
 
     const viewStateMap = useMemo(() => new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []), [activeView?.propertiesState]);
@@ -137,7 +151,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 // Rollups also need full row data to read sibling relation properties
                 if (prop.type === 'rollup' && prop.config?.rollupPropertyId && prop.config?.rollupTargetPropertyId) {
                     return {
-                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId) as any,
+                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId, prop.config.rollupAggregation) as any,
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -151,7 +165,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 // Relations need full row data to allow precise multi-select array mutations
                 if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
                     return {
-                        ...relationColumn(prop.id, prop.config.relationDatabaseId) as any,
+                        ...relationColumn(prop.id, prop.config.relationDatabaseId, prop.config.relationDisplayPropertyId) as any,
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -302,10 +316,12 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
     const filteredPages = useMemo(() => {
         if (!database) return [];
-        return database.pages.filter(page => {
-            if (!database.activeFilters || database.activeFilters.length === 0) return true;
+        const activeFilters = activeView?.filters || database.activeFilters || [];
 
-            return database.activeFilters.every(filter => {
+        return database.pages.filter(page => {
+            if (!activeFilters || activeFilters.length === 0) return true;
+
+            return activeFilters.every(filter => {
                 const cellValue = page.properties[filter.propertyId];
 
                 switch (filter.operator) {
@@ -319,17 +335,19 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 }
             });
         });
-    }, [database?.pages, database?.activeFilters]);
+    }, [database?.pages, activeView?.filters, database?.activeFilters]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
         if (!database) return [];
+        const activeSorts = activeView?.sorts || database.activeSorts || [];
+
         return [...filteredPages].sort((a, b) => {
-            if (!database.activeSorts || database.activeSorts.length === 0) {
+            if (!activeSorts || activeSorts.length === 0) {
                 return (a.order ?? 0) - (b.order ?? 0);
             }
 
-            for (const sort of database.activeSorts) {
+            for (const sort of activeSorts) {
                 const valA = a.properties[sort.propertyId];
                 const valB = b.properties[sort.propertyId];
 
@@ -346,7 +364,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
             return 0;
         });
-    }, [filteredPages, database?.activeSorts]);
+    }, [filteredPages, activeView?.sorts, database?.activeSorts]);
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
@@ -388,130 +406,28 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
         document.body.removeChild(link);
     };
 
-    const processImportedData = (data: any[], headers: string[]) => {
-        // First pass: dynamically generate missing database properties
-        headers.forEach(header => {
-            if (!header) return;
-            const match = database!.properties.find(p => p.name.toLowerCase() === header.toString().toLowerCase());
-            if (!match && header.toString().trim() !== '') {
-                addProperty(database!.id, header.toString().trim(), 'text');
-            }
-        });
-
-        // Re-hydrate the schema from the Zustand store explicitly to capture the newly generated column IDs
-        const updatedDatabase = useDatabaseStore.getState().getDatabase(database!.id);
-        if (!updatedDatabase) return;
-
-        // Map the headers back to official property IDs
-        const headerToPropId: Record<string, string> = {};
-        updatedDatabase.properties.forEach(p => {
-            headerToPropId[p.name] = p.id;
-            headerToPropId[p.name.toLowerCase()] = p.id;
-        });
-
-        const batchedPages: Record<string, any>[] = [];
-
-        data.forEach((row: any) => {
-            const initialProps: Record<string, any> = {};
-
-            Object.keys(row).forEach(header => {
-                const propId = headerToPropId[header] || headerToPropId[header.toLowerCase()];
-                if (propId) {
-                    const val = row[header];
-                    if (val === undefined || val === null || val === '') return;
-
-                    const propDef = updatedDatabase.properties.find(p => p.id === propId);
-
-                    // Transform human-readable string values back into internal Option IDs for select fields
-                    if (propDef?.type === 'multi_select' && typeof val === 'string') {
-                        const optionNames = val.split(',').map(s => s.trim()).filter(Boolean);
-                        initialProps[propId] = optionNames.map(name => {
-                            const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === name.toLowerCase());
-                            return match ? match.id : name;
-                        });
-                    } else if (propDef?.type === 'select' && typeof val === 'string') {
-                        const match = propDef.config?.options?.find((o: any) => o.name.toLowerCase() === val.trim().toLowerCase());
-                        initialProps[propId] = match ? match.id : val;
-                    } else {
-                        initialProps[propId] = val;
-                    }
-                }
-            });
-
-            // Add standard missing properties with default empty strings
-            updatedDatabase.properties.forEach(p => {
-                if (initialProps[p.id] === undefined) initialProps[p.id] = '';
-            });
-
-            batchedPages.push(initialProps);
-        });
-
-        // Fire exactly one synchronized state mutation pushing thousands of rows instantly bypassing React freeze
-        addPages(updatedDatabase.id, batchedPages);
-    };
-
-    const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !database) return;
-
-        if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-            try {
-                // Dynamically load SheetJS to avoid heavy main bundle compilation hits
-                const XLSX = await import('xlsx');
-                const buffer = await file.arrayBuffer();
-                const workbook = XLSX.read(buffer, { type: 'array' });
-
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-
-                // Read row 0 arrays natively to guarantee accurate header indexing for column tracking
-                const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-                if (rawData.length === 0) return;
-
-                const headers = rawData[0].map(String);
-                const data = XLSX.utils.sheet_to_json(sheet);
-
-                processImportedData(data, headers);
-            } catch (err) {
-                console.error("Failed to parse Excel file:", err);
-                alert("Failed to parse Excel file. Check format integrity.");
-            } finally {
-                e.target.value = '';
-            }
-        } else {
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    const csvHeaders = results.meta.fields || [];
-                    processImportedData(results.data, csvHeaders);
-                    e.target.value = '';
-                }
-            });
-        }
-    };
+    // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
 
     if (!database || !hasHydrated) return null;
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
-            <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 flex items-center justify-between relative z-[60]">
-                <div>
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                        {database.icon && <span>{database.icon}</span>}
-                        {database.name}
-                        <span className="text-xs bg-neutral-200 dark:bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full ml-2">
-                            {filteredPages.length} Rows
-                        </span>
-                    </h2>
-                    {database.description && (
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{database.description}</p>
+            <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
+                <div className="flex items-end pr-2 shrink-0">
+                    {renderTabs ? renderTabs : (
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2 pb-2">
+                            {database.icon && <span>{database.icon}</span>}
+                            {database.name}
+                            <span className="text-xs bg-neutral-200 dark:bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full ml-2">
+                                {filteredPages.length} Rows
+                            </span>
+                        </h2>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar">
                     {activeViewId && <PropertiesDropdown databaseId={database.id} viewId={activeViewId} />}
-                    <FilterToolbar databaseId={database.id} />
-                    <SortToolbar databaseId={database.id} />
+                    <FilterToolbar databaseId={database.id} viewId={activeViewId} />
+                    <SortToolbar databaseId={database.id} viewId={activeViewId} />
 
                     <button
                         onClick={handleExportCSV}
@@ -521,16 +437,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         <span className="hidden md:inline">Export</span>
                     </button>
 
-                    <label className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition cursor-pointer">
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
+                    >
                         <Upload className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Import</span>
-                        <input
-                            type="file"
-                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel, .xlsx, .xls"
-                            className="hidden"
-                            onChange={handleImportFile}
-                        />
-                    </label>
+                    </button>
 
                     <button
                         onClick={() => {
@@ -575,7 +488,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             </div>
 
             <div
-                className="flex-1 w-full p-0 relative overflow-hidden min-h-0"
+                className="flex-1 w-full p-0 relative overflow-hidden min-h-0 bg-white dark:bg-black"
                 ref={gridWrapperRef}
                 onScrollCapture={(e) => {
                     // Synchronously intercept bubbled scroll events and lock the header offset translation
@@ -746,6 +659,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                         onClose={() => setActivePageId(null)}
                     />
                 )}
+
+                {/* Unified Import UI */}
+                <SpreadsheetImportModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    databaseId={database.id}
+                />
             </div>
 
             <style dangerouslySetInnerHTML={{

@@ -8,10 +8,10 @@ import * as xlsx from 'xlsx';
 interface SpreadsheetImportModalProps {
     isOpen: boolean;
     onClose: () => void;
+    databaseId: string;
 }
 
-export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportModalProps) {
-    const defaultGlobalDb = 'db-articles';
+export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: SpreadsheetImportModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isParsing, setIsParsing] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
@@ -28,7 +28,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
 
     // Native Zustand Reference
     const store = useDatabaseStore();
-    const articleDb = store.getDatabase(defaultGlobalDb);
+    const targetDb = store.getDatabase(databaseId);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const uploadedFile = e.target.files?.[0];
@@ -114,11 +114,11 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
     };
 
     const autoDetectProperty = (headerName: string) => {
-        if (!articleDb) return null;
+        if (!targetDb) return null;
         const normalized = headerName.toLowerCase().trim();
 
         const map = {
-            title: ['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving', 'description'],
+            title: ['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving', 'description', 'contact', 'client', 'supplier'],
             bruto: ['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop', 'excl'],
             discount: ['korting', 'remise', 'discount', 'disc'],
             unit: ['eenheid', 'unit', 'maat', 'eeh'],
@@ -129,7 +129,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
         };
 
         const findPropId = (keywords: string[]) =>
-            articleDb.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
+            targetDb.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
 
         for (const [key, keywords] of Object.entries(map)) {
             if (keywords.some(k => normalized.includes(k))) {
@@ -147,7 +147,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
     };
 
     const confirmImport = () => {
-        if (!articleDb) {
+        if (!targetDb) {
             setError("Global Database schema not found.");
             return;
         }
@@ -157,20 +157,44 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
         // Sequence Tracker for ART-XX-XXXX
         const counters: Record<string, number> = {};
 
-        // Load existing IDs heavily from DB to avoid collision (Optional, naive counting is fine for bulk fresh injection)
-        articleDb.pages.forEach(p => {
-            const idVal = String(p.properties['prop-art-id'] || '');
-            const match = idVal.match(/ART-(\d{2})-(\d{4})/);
-            if (match) {
-                const group = match[1];
-                const seq = parseInt(match[2], 10);
-                if (!counters[group] || seq > counters[group]) counters[group] = seq;
+        // Load existing IDs heavily from DB to avoid collision (Only for db-articles specific sequencing)
+        if (databaseId === 'db-articles') {
+            targetDb.pages.forEach(p => {
+                const idVal = String(p.properties['prop-art-id'] || '');
+                const match = idVal.match(/ART-(\d{2})-(\d{4})/);
+                if (match) {
+                    const group = match[1];
+                    const seq = parseInt(match[2], 10);
+                    if (!counters[group] || seq > counters[group]) counters[group] = seq;
+                }
+            });
+        }
+
+        // Pre-process any "Create New Property" requests natively before mapping data
+        const localMapping = { ...mapping };
+
+        for (const [header, targetPropId] of Object.entries(localMapping)) {
+            if (targetPropId === 'create_new') {
+                // Determine plausible property type heuristically (quick inference)
+                const sampleValues = previewData.slice(0, 10).map(row => row[header]).filter(Boolean);
+                let targetType: any = 'text';
+
+                if (sampleValues.every(val => !isNaN(Number(String(val).replace(/,/g, '.'))) && String(val).trim() !== '')) {
+                    targetType = 'number';
+                }
+
+                const newPropId = useDatabaseStore.getState().addProperty(databaseId, header, targetType);
+                localMapping[header] = newPropId; // Inject explicitly back into mapping pipeline
             }
-        });
+        }
+
+        // Re-pull the database instantly to capture the newly injected schema fields for row digestion
+        const refreshedDb = useDatabaseStore.getState().getDatabase(databaseId);
+        if (!refreshedDb) return;
 
         // Inverse mapping to know which property ID gets mapped from which header
         const invertedMap: Record<string, string> = {};
-        Object.entries(mapping).forEach(([header, targetPropId]) => {
+        Object.entries(localMapping).forEach(([header, targetPropId]) => {
             if (targetPropId !== 'ignore') {
                 invertedMap[targetPropId] = header;
             }
@@ -180,7 +204,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
             const props: Record<string, any> = {};
 
             // Pluck mapped values from the row
-            articleDb.properties.forEach(dbProp => {
+            refreshedDb.properties.forEach((dbProp: any) => {
                 const sourceHeader = invertedMap[dbProp.id];
                 if (sourceHeader && row[sourceHeader] !== undefined) {
                     let val = row[sourceHeader];
@@ -196,7 +220,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                         val = String(val).trim();
 
                         // Edge case manual mapping logic: Group Codes
-                        if (dbProp.name === 'Artikelgroep') {
+                        if (databaseId === 'db-articles' && dbProp.name === 'Artikelgroep') {
                             const lg = val.toLowerCase();
                             if (lg.includes('ruwbouw')) val = 'opt-ruwbouw';
                             else if (lg.includes('afwerking')) val = 'opt-afwerking';
@@ -220,30 +244,32 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
             });
 
             // Enforce default fallback protections
-            const titlePropId = articleDb.properties.find(p => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
-            if (!props[titlePropId]) props[titlePropId] = 'Unknown Item mapped from CSV';
+            const titlePropId = refreshedDb.properties.find((p: any) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
+            if (!props[titlePropId]) props[titlePropId] = 'Imported Row';
 
-            // ART-XX-XXXX Generation Loop Component
-            const groupPropId = articleDb.properties.find(p => p.name === 'Artikelgroep' || p.id === 'prop-art-group')?.id;
-            let groupCode = '00';
+            // ART-XX-XXXX Generation Loop Component (Articles specific)
+            if (databaseId === 'db-articles') {
+                const groupPropId = targetDb.properties.find(p => p.name === 'Artikelgroep' || p.id === 'prop-art-group')?.id;
+                let groupCode = '00';
 
-            if (groupPropId && props[groupPropId]) {
-                const groupVal = props[groupPropId];
-                if (groupVal === 'opt-ruwbouw') groupCode = '01';
-                else if (groupVal === 'opt-afwerking') groupCode = '02';
-                else if (groupVal === 'opt-elektriciteit') groupCode = '03';
-                else if (groupVal === 'opt-sanitaire') groupCode = '04';
-                else if (groupVal === 'opt-ventilatie') groupCode = '05';
-                else if (groupVal === 'opt-verwarming') groupCode = '06';
-            }
+                if (groupPropId && props[groupPropId]) {
+                    const groupVal = props[groupPropId];
+                    if (groupVal === 'opt-ruwbouw') groupCode = '01';
+                    else if (groupVal === 'opt-afwerking') groupCode = '02';
+                    else if (groupVal === 'opt-elektriciteit') groupCode = '03';
+                    else if (groupVal === 'opt-sanitaire') groupCode = '04';
+                    else if (groupVal === 'opt-ventilatie') groupCode = '05';
+                    else if (groupVal === 'opt-verwarming') groupCode = '06';
+                }
 
-            if (!counters[groupCode]) counters[groupCode] = 0;
-            counters[groupCode]++;
+                if (!counters[groupCode]) counters[groupCode] = 0;
+                counters[groupCode]++;
 
-            // Assign explicitly
-            const autoIdProp = articleDb.properties.find(p => p.id === 'prop-art-id' || p.name === 'ID')?.id;
-            if (autoIdProp) {
-                props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
+                // Assign explicitly
+                const autoIdProp = refreshedDb.properties.find((p: any) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
+                if (autoIdProp) {
+                    props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
+                }
             }
 
             return props;
@@ -258,13 +284,13 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
             const chunk = pagesToCreate.slice(processed, processed + CHUNK_SIZE);
             if (chunk.length === 0) {
                 setIsProcessing(false);
-                alert(`Master Catalog Engine successfully bulk imported ${pagesToCreate.length} structural items directly into PostgreSQL!`);
+                alert(`Engine successfully bulk imported ${pagesToCreate.length} rows into ${targetDb.name}!`);
                 handleClose();
                 return;
             }
 
             // Sync chunk to native state and trigger batch API calls behind the scenes
-            useDatabaseStore.getState().addPages(defaultGlobalDb, chunk);
+            useDatabaseStore.getState().addPages(databaseId, chunk);
             processed += CHUNK_SIZE;
 
             // Allow JS event loop and React Network buffer to breathe for 250ms before next injection
@@ -337,7 +363,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                     )}
 
                     {/* Mapping Interface */}
-                    {headers.length > 0 && articleDb && (
+                    {headers.length > 0 && targetDb && (
                         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
                             <div className="flex items-center justify-between">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
@@ -374,8 +400,9 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                                                     className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded p-1.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none truncate"
                                                 >
                                                     <option value="ignore" className="italic text-neutral-500">❌ Ignore (Skip Data)</option>
-                                                    <optgroup label={`Master Database Fields (${defaultGlobalDb})`}>
-                                                        {articleDb.properties.map(p => (
+                                                    <option value="create_new" className="font-semibold text-orange-600">✨ Create New Property</option>
+                                                    <optgroup label={`Master Database Fields (${targetDb.name})`}>
+                                                        {targetDb.properties.map(p => (
                                                             <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
                                                         ))}
                                                     </optgroup>
@@ -401,7 +428,7 @@ export function SpreadsheetImportModal({ isOpen, onClose }: SpreadsheetImportMod
                                     {isProcessing ? (
                                         <><Loader2 className="w-4 h-4 animate-spin" /> Batch Processing {previewData.length} lines...</>
                                     ) : (
-                                        <><Database className="w-4 h-4" /> Hard Sync {previewData.length.toLocaleString()} Articles Directly</>
+                                        <><Database className="w-4 h-4" /> Import {previewData.length.toLocaleString()} Rows Directly</>
                                     )}
                                 </button>
                             </div>

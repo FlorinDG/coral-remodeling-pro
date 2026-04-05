@@ -7,6 +7,7 @@ import { ArrowUpDown, X, Plus } from 'lucide-react';
 
 interface SortToolbarProps {
     databaseId: string;
+    viewId?: string;
 }
 
 const directions: { value: SortDirection; label: string }[] = [
@@ -14,19 +15,38 @@ const directions: { value: SortDirection; label: string }[] = [
     { value: 'descending', label: 'Descending' }
 ];
 
-export default function SortToolbar({ databaseId }: SortToolbarProps) {
+export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const addSort = useDatabaseStore(state => state.addSort);
     const updateSort = useDatabaseStore(state => state.updateSort);
     const removeSort = useDatabaseStore(state => state.removeSort);
     const clearSorts = useDatabaseStore(state => state.clearSorts);
     const [isOpen, setIsOpen] = useState(false);
+    const popoverRef = React.useRef<HTMLDivElement>(null);
+
+    // Close when clicking outside the popover
+    React.useEffect(() => {
+        const listener = (event: MouseEvent | TouchEvent) => {
+            if (!popoverRef.current || popoverRef.current.contains(event.target as Node)) {
+                return;
+            }
+            setIsOpen(false);
+        };
+        document.addEventListener("mousedown", listener);
+        document.addEventListener("touchstart", listener);
+        return () => {
+            document.removeEventListener("mousedown", listener);
+            document.removeEventListener("touchstart", listener);
+        };
+    }, []);
 
     // Subscribe to store
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     if (!database) return null;
 
-    const activeSorts = database.activeSorts || [];
+    const activeSorts = viewId
+        ? database.views.find(v => v.id === viewId)?.sorts || []
+        : database.activeSorts || [];
 
     const handleAddSort = () => {
         if (database.properties.length === 0) return;
@@ -35,7 +55,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
         const unassignedProps = database.properties.filter(p => !activeSorts.some(s => s.propertyId === p.id));
         if (unassignedProps.length === 0) return;
 
-        addSort(databaseId, {
+        addSort(databaseId, viewId, {
             propertyId: unassignedProps[0].id,
             direction: 'ascending'
         });
@@ -43,7 +63,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
     };
 
     return (
-        <div className="relative flex items-center">
+        <div ref={popoverRef} className="relative flex items-center">
 
             {/* Top Bar Actions */}
             <div className="flex items-center gap-2">
@@ -80,7 +100,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
                             <select
                                 className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[120px] flex-1"
                                 value={sort.propertyId}
-                                onChange={e => updateSort(databaseId, sort.id, { propertyId: e.target.value })}
+                                onChange={e => updateSort(databaseId, viewId, sort.id, { propertyId: e.target.value })}
                             >
                                 {database.properties.map(p => (
                                     <option
@@ -97,7 +117,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
                             <select
                                 className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[110px]"
                                 value={sort.direction}
-                                onChange={e => updateSort(databaseId, sort.id, { direction: e.target.value as SortDirection })}
+                                onChange={e => updateSort(databaseId, viewId, sort.id, { direction: e.target.value as SortDirection })}
                             >
                                 {directions.map(dir => (
                                     <option key={dir.value} value={dir.value}>{dir.label}</option>
@@ -106,7 +126,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
 
                             {/* Remove Row */}
                             <button
-                                onClick={() => removeSort(databaseId, sort.id)}
+                                onClick={() => removeSort(databaseId, viewId, sort.id)}
                                 className="p-1 text-neutral-400 hover:text-red-500 rounded ml-auto"
                             >
                                 <X className="w-4 h-4" />
@@ -125,7 +145,7 @@ export default function SortToolbar({ databaseId }: SortToolbarProps) {
                         </button>
                         <button
                             onClick={() => {
-                                clearSorts(databaseId);
+                                clearSorts(databaseId, viewId);
                                 setIsOpen(false);
                             }}
                             className="text-sm text-red-500 hover:text-red-600 ml-auto mr-6"

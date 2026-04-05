@@ -37,7 +37,7 @@ export function MailSidebar() {
                 <h2 className="text-lg font-semibold tracking-tight text-foreground">Mailboxes</h2>
                 {isLoading && (
                     <div className="flex h-4 w-4 items-center justify-center">
-                        <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-[#d35400]"></div>
+                        <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-[var(--brand-color,#d35400)]"></div>
                     </div>
                 )}
             </div>
@@ -108,7 +108,7 @@ export function MailSidebar() {
             <div className="absolute inset-x-0 bottom-0 p-4 border-t border-border bg-card z-10 shrink-0">
                 <button
                     onClick={() => setIsSettingsOpen(true)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-[#d35400] text-white hover:bg-[#e67e22] transition-colors shadow-sm"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-semibold bg-[var(--brand-color,#d35400)] text-white hover:opacity-90 transition-colors shadow-sm"
                 >
                     <Plus className="w-4 h-4" />
                     Connect Account

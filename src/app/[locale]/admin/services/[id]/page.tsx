@@ -10,7 +10,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
         return (
             <div className="space-y-8">
                 <div>
-                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">Management</h2>
+                    <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2" style={{ color: 'var(--brand-color, #d35400)' }}>Management</h2>
                     <h1 className="text-4xl font-bold tracking-tight">New Service</h1>
                     <p className="text-neutral-500 mt-2">Create a new expertise area for your luxury renovations.</p>
                 </div>
@@ -29,7 +29,7 @@ export default async function EditServicePage({ params }: { params: Promise<{ id
     return (
         <div className="space-y-8">
             <div>
-                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#d35400] mb-2">Management</h2>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.3em] mb-2" style={{ color: 'var(--brand-color, #d35400)' }}>Management</h2>
                 <h1 className="text-4xl font-bold tracking-tight">Edit Service</h1>
                 <p className="text-neutral-500 mt-2">{service.titleEn}</p>
             </div>

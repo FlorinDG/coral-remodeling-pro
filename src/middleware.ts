@@ -11,22 +11,102 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
     const isLoggedIn = !!req.auth
     const { pathname } = req.nextUrl
+    const role = (req.auth?.user as any)?.role
 
-    // Match any admin or portal path but NOT the login page and NOT API routes
-    const isProtectedPath = pathname.includes("/admin") || pathname.includes("/portal");
-    const isLoginPage = pathname.includes("/admin/login");
-    const isTimeTrackerPath = pathname.includes("/admin/time-tracker");
+    const host = req.headers.get("host") || "";
+    const isSysSubdomain = host.startsWith("sys.");
+    const isAppSubdomain = host.startsWith("app.");
 
-    if (isProtectedPath && !isLoginPage && !isTimeTrackerPath && !isLoggedIn) {
-        const parts = pathname.split('/');
-        const locale = parts[1];
-        const hasLocale = ['en', 'nl', 'fr', 'ro'].includes(locale);
-        const redirectPath = hasLocale ? `/${locale}/admin/login` : '/admin/login';
+    // Virtualize paths so we protect correctly BEFORE the rewrite actually occurs
+    const virtualPath = isSysSubdomain && !pathname.startsWith('/superadmin')
+        ? `/superadmin${pathname === '/' ? '' : pathname}`
+        : isAppSubdomain && !pathname.startsWith('/admin')
+            ? `/admin${pathname === '/' ? '' : pathname}`
+            : pathname;
 
-        return NextResponse.redirect(new URL(redirectPath, req.nextUrl))
+    // Protect Superadmin endpoints fundamentally
+    const isSuperadminPath = virtualPath.includes("/superadmin");
+    if (isSuperadminPath) {
+        if (!isLoggedIn) {
+            const loginUrl = new URL(req.nextUrl.href);
+            if (isSysSubdomain) {
+                // Bridge them explicitly to the app.* subdomain for logging in
+                loginUrl.hostname = loginUrl.hostname.replace(/^sys\./, 'app.');
+                loginUrl.pathname = '/login';
+            } else {
+                loginUrl.pathname = '/en/admin/login';
+            }
+            return NextResponse.redirect(loginUrl);
+        }
+        if (role !== "SUPERADMIN") {
+            const fallbackUrl = new URL(req.nextUrl.href);
+            if (isSysSubdomain) {
+                fallbackUrl.hostname = fallbackUrl.hostname.replace(/^sys\./, 'app.');
+                fallbackUrl.pathname = '/';
+            } else {
+                fallbackUrl.pathname = '/en/admin';
+            }
+            return NextResponse.redirect(fallbackUrl);
+        }
     }
 
-    return intlMiddleware(req)
+    // Match any admin or portal path but NOT the login page and NOT API routes
+    const isProtectedPath = virtualPath.includes("/admin") || virtualPath.includes("/portal");
+    const isLoginPage = virtualPath.includes("/login");
+    const isTimeTrackerPath = virtualPath.includes("/admin/time-tracker");
+
+    if (isProtectedPath && !isLoginPage && !isTimeTrackerPath && !isLoggedIn) {
+        const loginUrl = new URL(req.nextUrl.href);
+        if (isAppSubdomain) {
+            loginUrl.pathname = '/en/login';
+        } else {
+            loginUrl.pathname = '/en/admin/login';
+        }
+        return NextResponse.redirect(loginUrl)
+    }
+
+    // Pass to next-intl to resolve localization
+    const intlResponse = intlMiddleware(req);
+
+    // If next-intl generated a redirect natively, bypass our rewrite engine and return
+    if (intlResponse.status !== 200) {
+        return intlResponse;
+    }
+
+    // Extract next-intl's internal rewrite target (it generates the /locale bounds)
+    const rewriteUrl = intlResponse.headers.get('x-middleware-rewrite');
+
+    if (rewriteUrl) {
+        const url = new URL(rewriteUrl);
+        let shouldRewrite = false;
+
+        if (isSysSubdomain) {
+            const parts = url.pathname.split('/');
+            const locale = parts[1];
+            const rest = parts.slice(2).join('/');
+
+            if (!rest.startsWith('superadmin')) {
+                url.pathname = `/${locale}/superadmin${rest ? `/${rest}` : ''}`;
+                shouldRewrite = true;
+            }
+        } else if (isAppSubdomain) {
+            const parts = url.pathname.split('/');
+            const locale = parts[1];
+            const rest = parts.slice(2).join('/');
+
+            if (!rest.startsWith('admin') && !rest.startsWith('login')) {
+                url.pathname = `/${locale}/admin${rest ? `/${rest}` : ''}`;
+                shouldRewrite = true;
+            }
+        }
+
+        // Finalize the subdomain mutation
+        if (shouldRewrite) {
+            intlResponse.headers.set('x-middleware-rewrite', url.toString());
+        }
+    }
+
+    return intlResponse;
 })
 
 export const config = {

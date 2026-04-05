@@ -46,10 +46,10 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold flex items-center gap-3 text-neutral-900 dark:text-white">
                     {t('documents')}
-                    <FileText className="w-5 h-5 text-[#d35400]" />
+                    <FileText className="w-5 h-5 text-[#d75d00]" />
                 </h3>
                 {!readOnly && !isAdding && (
-                    <button onClick={() => setIsAdding(true)} className="p-2 bg-[#d35400] text-white rounded-full hover:bg-neutral-900 transition-all">
+                    <button onClick={() => setIsAdding(true)} className="p-2 bg-[#d75d00] text-white rounded-full hover:bg-neutral-900 transition-all">
                         <Plus className="w-5 h-5" />
                     </button>
                 )}
@@ -57,9 +57,9 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
 
             <div className="flex-1 overflow-y-auto space-y-4 mb-2 pr-2 custom-scrollbar">
                 {isAdding && (
-                    <div className="glass-morphism p-6 rounded-3xl border border-[#d35400]/20 animate-in slide-in-from-right-4 duration-300 mb-4">
+                    <div className="glass-morphism p-6 rounded-3xl border border-[#d75d00]/20 animate-in slide-in-from-right-4 duration-300 mb-4">
                         <div className="flex justify-between items-center mb-4">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#d35400]">New Document</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#d75d00]">New Document</span>
                             <button onClick={() => setIsAdding(false)}><X className="w-4 h-4 text-neutral-400" /></button>
                         </div>
                         <form onSubmit={handleAddDoc} className="space-y-4">
@@ -68,15 +68,15 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Document name..."
-                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
                             />
                             <input
                                 value={formData.url}
                                 onChange={e => setFormData({ ...formData, url: e.target.value })}
                                 placeholder="Link to document (PDF, Google Drive, etc.)..."
-                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
                             />
-                            <button type="submit" className="w-full bg-[#d35400] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all">
+                            <button type="submit" className="w-full bg-[#d75d00] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all">
                                 Add Document
                             </button>
                         </form>
@@ -91,12 +91,12 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
                             href={doc.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="p-5 bg-white dark:bg-black/40 rounded-[1.5rem] border border-neutral-200 dark:border-white/10 hover:border-[#d35400]/50 shadow-sm group transition-all hover:-translate-y-1"
+                            className="p-5 bg-white dark:bg-black/40 rounded-[1.5rem] border border-neutral-200 dark:border-white/10 hover:border-[#d75d00]/50 shadow-sm group transition-all hover:-translate-y-1"
                         >
-                            <div className="w-10 h-10 rounded-xl bg-[#d35400]/10 flex items-center justify-center group-hover:bg-[#d35400] transition-colors mb-3">
-                                <FileText className="w-5 h-5 text-[#d35400] group-hover:text-white transition-colors" />
+                            <div className="w-10 h-10 rounded-xl bg-[#d75d00]/10 flex items-center justify-center group-hover:bg-[#d75d00] transition-colors mb-3">
+                                <FileText className="w-5 h-5 text-[#d75d00] group-hover:text-white transition-colors" />
                             </div>
-                            <span className="text-xs font-black uppercase tracking-widest truncate w-full group-hover:text-[#d35400] transition-colors">{doc.name}</span>
+                            <span className="text-xs font-black uppercase tracking-widest truncate w-full group-hover:text-[#d75d00] transition-colors">{doc.name}</span>
                             <div className="mt-2 text-[8px] font-bold text-neutral-400 uppercase tracking-[0.2em]">{doc.type}</div>
                         </a>
                     ))}

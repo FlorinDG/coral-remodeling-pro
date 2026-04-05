@@ -12,9 +12,10 @@ import { useRouter } from 'next/navigation';
 interface CalendarViewProps {
     databaseId: string;
     viewId: string;
+    renderTabs?: React.ReactNode;
 }
 
-export default function CalendarView({ databaseId, viewId }: CalendarViewProps) {
+export default function CalendarView({ databaseId, viewId, renderTabs }: CalendarViewProps) {
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const router = useRouter();
 
@@ -88,8 +89,20 @@ export default function CalendarView({ databaseId, viewId }: CalendarViewProps) 
     };
 
     return (
-        <div className="w-full h-full p-6 bg-white dark:bg-black overflow-y-auto no-scrollbar styled-calendar">
-            <style jsx global>{`
+        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative styled-calendar">
+            <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
+                <div className="flex items-end pr-2 shrink-0">
+                    {renderTabs ? renderTabs : (
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2 pb-2">
+                            {database.icon && <span>{database.icon}</span>}
+                            {database.name}
+                        </h2>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex-1 w-full h-full p-6 overflow-y-auto no-scrollbar relative min-h-0">
+                <style jsx global>{`
                 .styled-calendar .fc {
                     font-family: inherit;
                     --fc-border-color: rgba(0,0,0,0.1);
@@ -133,25 +146,26 @@ export default function CalendarView({ databaseId, viewId }: CalendarViewProps) 
                 }
             `}</style>
 
-            <FullCalendar
-                plugins={[dayGridPlugin, interactionPlugin]}
-                initialView="dayGridMonth"
-                events={calendarEvents}
-                eventClick={handleEventClick}
-                headerToolbar={{
-                    left: 'prev,next today',
-                    center: 'title',
-                    right: 'dayGridMonth,dayGridWeek'
-                }}
-                height="auto"
-                aspectRatio={1.35}
-                firstDay={1} // Monday start
-                buttonText={{
-                    today: 'Today',
-                    month: 'Month',
-                    week: 'Week'
-                }}
-            />
+                <FullCalendar
+                    plugins={[dayGridPlugin, interactionPlugin]}
+                    initialView="dayGridMonth"
+                    events={calendarEvents}
+                    eventClick={handleEventClick}
+                    headerToolbar={{
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,dayGridWeek'
+                    }}
+                    height="auto"
+                    aspectRatio={1.35}
+                    firstDay={1} // Monday start
+                    buttonText={{
+                        today: 'Today',
+                        month: 'Month',
+                        week: 'Week'
+                    }}
+                />
+            </div>
         </div>
     );
 }

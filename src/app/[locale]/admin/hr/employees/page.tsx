@@ -17,7 +17,7 @@ export default async function EmployeesPage() {
                         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Employee Directory</h1>
                         <p className="text-neutral-500 font-medium text-sm mt-1">Manage personnel, roles, and internal billing rates.</p>
                     </div>
-                    <button className="flex items-center gap-2 bg-[#d35400] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-[#e67e22] transition-colors">
+                    <button className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition-colors" style={{ backgroundColor: 'var(--brand-color, #d35400)' }}>
                         <Plus className="w-4 h-4" />
                         Add Employee
                     </button>
@@ -71,7 +71,7 @@ export default async function EmployeesPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-[#d35400] text-sm font-bold hover:underline">Edit</button>
+                                                <button className="text-sm font-bold hover:underline" style={{ color: 'var(--brand-color, #d35400)' }}>Edit</button>
                                             </td>
                                         </tr>
                                     ))}

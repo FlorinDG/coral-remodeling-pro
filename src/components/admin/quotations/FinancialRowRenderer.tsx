@@ -8,6 +8,7 @@ interface FinancialRowRendererProps {
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;
     childrenTotal?: number;
+    hasLibraryAccess?: boolean;
 }
 
 const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBlur, onFocus }: { value: string, onChange: (val: string) => void, onSearch?: (val: string) => void, placeholder?: string, className?: string, onBlur?: () => void, onFocus?: () => void }) => {
@@ -36,7 +37,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     );
 };
 
-export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal }: FinancialRowRendererProps) {
+export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -239,7 +240,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             onChange={(html) => onUpdate({ content: html })}
                             onSearch={(query) => {
                                 setSearchQuery(query);
-                                setShowDropdown(query.length >= 2);
+                                if (hasLibraryAccess) setShowDropdown(query.length >= 2);
                             }}
                             onBlur={() => setTimeout(() => setShowDropdown(false), 200)} // Allow click event execution
                             className="w-full bg-transparent border-none text-base text-black dark:text-white focus:outline-none focus:ring-0 font-medium px-2 py-0.5 empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 empty:before:font-normal break-words whitespace-pre-wrap leading-relaxed"
@@ -418,9 +419,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
                 </div>
 
-                {/* 4.5. Discount Percent (Supplier Shortcut) */}
-                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Discount handled within subcomponents' : ''}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Disc.</label>
+                {/* 4.5. Supplier Discount — Korting die Coral ontvangt van leverancier */}
+                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Korting via subcomponenten' : 'Leverancierskorting die Coral ontvangt'}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default" title="Leverancierskorting">Kort.</label>
                     <div className="w-full relative">
                         <input
                             type="number"

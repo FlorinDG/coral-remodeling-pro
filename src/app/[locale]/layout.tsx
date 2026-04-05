@@ -145,7 +145,7 @@ export default async function RootLayout({
                 />
             </head>
             <body
-                className={`${oxanium.variable} antialiased selection:bg-[#d35400]/30 overflow-y-scroll`}
+                className={`${oxanium.variable} antialiased selection:bg-[#d75d00]/30 overflow-y-scroll`}
                 suppressHydrationWarning
             >
                 <NextIntlClientProvider messages={messages}>

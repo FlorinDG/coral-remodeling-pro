@@ -36,9 +36,9 @@ export default function PromotionalBannerEditor({ initialData }: PromotionalBann
     };
 
     return (
-        <div className="glass-morphism p-8 rounded-3xl border border-neutral-200 dark:border-white/10 max-w-2xl bg-[#d35400]/5 border-[#d35400]/10">
+        <div className="glass-morphism p-8 rounded-3xl border border-neutral-200 dark:border-white/10 max-w-2xl bg-[var(--brand-color,#d35400)]/5 border-[var(--brand-color,#d35400)]/10">
             <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 bg-[#d35400] rounded-2xl">
+                <div className="p-3 bg-[var(--brand-color,#d35400)] rounded-2xl">
                     <Megaphone className="w-6 h-6 text-white" />
                 </div>
                 <div>
@@ -65,7 +65,7 @@ export default function PromotionalBannerEditor({ initialData }: PromotionalBann
                             onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
                             className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-neutral-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d35400]"></div>
+                        <div className="w-11 h-6 bg-neutral-200 dark:bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[var(--brand-color,#d35400)]"></div>
                     </label>
                 </div>
 
@@ -77,7 +77,7 @@ export default function PromotionalBannerEditor({ initialData }: PromotionalBann
                             value={formData.textEn}
                             onChange={e => setFormData({ ...formData, textEn: e.target.value })}
                             placeholder="e.g. Special Offer: 20% off on all bathroom renovations until April!"
-                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                             required
                         />
                     </div>
@@ -88,7 +88,7 @@ export default function PromotionalBannerEditor({ initialData }: PromotionalBann
                             value={formData.textNl || ''}
                             onChange={e => setFormData({ ...formData, textNl: e.target.value })}
                             placeholder="e.g. Speciale aanbieding: 20% korting..."
-                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                         />
                     </div>
                 </div>
@@ -96,7 +96,7 @@ export default function PromotionalBannerEditor({ initialData }: PromotionalBann
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-neutral-900 dark:bg-white dark:text-black py-4 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[#d35400] dark:hover:bg-[#d35400] dark:hover:text-white transition-all disabled:opacity-50"
+                    className="w-full bg-neutral-900 dark:bg-white dark:text-black py-4 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-[var(--brand-color,#d35400)] dark:hover:bg-[var(--brand-color,#d35400)] dark:hover:text-white transition-all disabled:opacity-50"
                 >
                     <Save className="w-4 h-4" />
                     {loading ? 'Updating...' : 'Update Banner Settings'}

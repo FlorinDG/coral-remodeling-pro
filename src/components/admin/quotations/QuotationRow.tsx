@@ -15,9 +15,10 @@ interface QuotationRowProps {
     onUpdate: (id: string, updates: Partial<Block>) => void;
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
+    hasLibraryAccess?: boolean;
 }
 
-export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate }: QuotationRowProps) {
+export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true }: QuotationRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -191,7 +192,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                         <Copy className="w-4 h-4 mr-2" /> Duplicate Block
                     </DropdownMenuItem>
 
-                    {!isContainer && (
+                    {!isContainer && hasLibraryAccess && (
                         <DropdownMenuItem onClick={() => setIsSaveModalOpen(true)} className="text-blue-600 dark:text-blue-400">
                             {isSaving ? <Check className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                             {isSaving ? 'Opgeslagen!' : (block.articleId ? 'Update Library Article...' : 'Save to Library...')}
@@ -266,6 +267,10 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     value={block.content || ''}
                                                     onChange={(e) => {
                                                         const val = e.target.value;
+                                                        if (!hasLibraryAccess) {
+                                                            onUpdate(block.id, { content: val });
+                                                            return;
+                                                        }
                                                         const db = useDatabaseStore.getState().getDatabase('db-bestek');
                                                         if (db) {
                                                             const nameProp = db.properties.find((p: any) => ['naam', 'titel', 'title', 'name'].includes(p.name.toLowerCase()));
@@ -350,6 +355,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onUpdate={handleChildUpdate}
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
+                                                    hasLibraryAccess={hasLibraryAccess}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}
@@ -391,6 +397,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
                                                     onUpdate={(updates) => onUpdate(block.id, updates)}
                                                     childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
+                                                    hasLibraryAccess={hasLibraryAccess}
                                                 />
 
                                             </>
@@ -414,69 +421,71 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     <Trash className="w-3.5 h-3.5 mr-1" /> Delete
                                                 </button>
 
-                                                <button
-                                                    onClick={() => {
-                                                        const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
-                                                        const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
+                                                {hasLibraryAccess && (
+                                                    <button
+                                                        onClick={() => {
+                                                            const activeDbId = block.type === 'article' ? 'db-articles' : block.type === 'bestek' ? 'db-bestek' : null;
+                                                            const sourceId = block.type === 'article' ? block.articleId : block.type === 'bestek' ? block.bestekId : null;
 
-                                                        if (activeDbId && sourceId) {
-                                                            if (!window.confirm(`Are you sure you want to update the master record in the Library?\n\nThis will permanently change the baseline stats for all future quotes using this item.`)) return;
-                                                            setIsSaving(true);
-                                                            const db = useDatabaseStore.getState().getDatabase(activeDbId);
-                                                            if (db) {
-                                                                const props: Record<string, any> = {};
-                                                                const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
-                                                                if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, '');
+                                                            if (activeDbId && sourceId) {
+                                                                if (!window.confirm(`Are you sure you want to update the master record in the Library?\n\nThis will permanently change the baseline stats for all future quotes using this item.`)) return;
+                                                                setIsSaving(true);
+                                                                const db = useDatabaseStore.getState().getDatabase(activeDbId);
+                                                                if (db) {
+                                                                    const props: Record<string, any> = {};
+                                                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+                                                                    if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, '');
 
-                                                                const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
-                                                                const vProp = findProp(['verkoop', 'selling']);
-                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
-                                                                const mProp = findProp(['marge', 'margin']);
-                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
-                                                                const kProp = findProp(['korting', 'discount']);
-                                                                if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
-                                                                const uProp = findProp(['eenheid', 'unit', 'maat']);
-                                                                if (uProp && block.unit) props[uProp] = block.unit;
+                                                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                    const vProp = findProp(['verkoop', 'selling']);
+                                                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                    const mProp = findProp(['marge', 'margin']);
+                                                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                    const kProp = findProp(['korting', 'discount']);
+                                                                    if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
+                                                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                                                    if (uProp && block.unit) props[uProp] = block.unit;
 
-                                                                Object.keys(props).forEach(k => useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]));
-                                                                if (block.children !== undefined) useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
-                                                            }
-                                                            setTimeout(() => setIsSaving(false), 800);
-                                                        } else {
-                                                            if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
-                                                            setIsSaving(true);
-                                                            const dbToCreateIn = 'db-articles';
-                                                            const db = useDatabaseStore.getState().getDatabase(dbToCreateIn);
-                                                            if (db) {
-                                                                const props: Record<string, any> = {};
-                                                                const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
-                                                                props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
-
-                                                                const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
-                                                                const vProp = findProp(['verkoop', 'selling']);
-                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
-                                                                const mProp = findProp(['marge', 'margin']);
-                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
-                                                                const uProp = findProp(['eenheid', 'unit', 'maat']);
-                                                                if (uProp && block.unit) props[uProp] = block.unit;
-
-                                                                const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
-                                                                if (block.children !== undefined && block.children.length > 0) {
-                                                                    useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
+                                                                    Object.keys(props).forEach(k => useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]));
+                                                                    if (block.children !== undefined) useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
                                                                 }
-                                                                onUpdate(block.id, { type: 'article', articleId: newPage.id });
+                                                                setTimeout(() => setIsSaving(false), 800);
+                                                            } else {
+                                                                if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
+                                                                setIsSaving(true);
+                                                                const dbToCreateIn = 'db-articles';
+                                                                const db = useDatabaseStore.getState().getDatabase(dbToCreateIn);
+                                                                if (db) {
+                                                                    const props: Record<string, any> = {};
+                                                                    const findProp = (keys: string[]) => db.properties.find(p => keys.some(k => p.name.toLowerCase().includes(k)))?.id;
+                                                                    props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
+
+                                                                    const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
+                                                                    if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                    const vProp = findProp(['verkoop', 'selling']);
+                                                                    if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                    const mProp = findProp(['marge', 'margin']);
+                                                                    if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                    const uProp = findProp(['eenheid', 'unit', 'maat']);
+                                                                    if (uProp && block.unit) props[uProp] = block.unit;
+
+                                                                    const newPage = useDatabaseStore.getState().createPage(dbToCreateIn, props);
+                                                                    if (block.children !== undefined && block.children.length > 0) {
+                                                                        useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
+                                                                    }
+                                                                    onUpdate(block.id, { type: 'article', articleId: newPage.id });
+                                                                }
+                                                                setTimeout(() => setIsSaving(false), 800);
                                                             }
-                                                            setTimeout(() => setIsSaving(false), 800);
-                                                        }
-                                                    }}
-                                                    disabled={isSaving}
-                                                    className={`marginLeft-auto flex items-center hover:text-[#d75d00] transition-colors ml-auto ${isSaving ? 'text-emerald-500 hover:text-emerald-600' : ''}`}
-                                                >
-                                                    {isSaving ? <Check className="w-3.5 h-3.5 mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
-                                                    {block.articleId || block.bestekId ? "Update Library" : "Save to Library"}
-                                                </button>
+                                                        }}
+                                                        disabled={isSaving}
+                                                        className={`marginLeft-auto flex items-center hover:text-[#d75d00] transition-colors ml-auto ${isSaving ? 'text-emerald-500 hover:text-emerald-600' : ''}`}
+                                                    >
+                                                        {isSaving ? <Check className="w-3.5 h-3.5 mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                                                        {block.articleId || block.bestekId ? "Update Library" : "Save to Library"}
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
 
@@ -497,6 +506,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                                     onUpdate={handleChildUpdate}
                                                                     onDelete={handleChildDelete}
                                                                     onDuplicate={handleChildDuplicate}
+                                                                    hasLibraryAccess={hasLibraryAccess}
                                                                 />
                                                             ))}
                                                             {provided.placeholder}
@@ -578,6 +588,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onUpdate={handleChildUpdate}
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
+                                                    hasLibraryAccess={hasLibraryAccess}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}

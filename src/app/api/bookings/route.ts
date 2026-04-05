@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendBookingNotification } from "@/lib/email";
+import { auth } from '@/auth';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { clientName, clientEmail, serviceType, date, timeSlot, message } = body;
+        const { clientName, clientEmail, serviceType, date, timeSlot, message, tenantId } = body;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: "Missing tenant ID for routing." }, { status: 400 });
+        }
 
         console.log(`Processing booking for: ${clientName} (${clientEmail}) on ${date}`);
 
@@ -13,6 +18,7 @@ export async function POST(request: Request) {
         try {
             booking = await dbRetry(() => prisma.booking.create({
                 data: {
+                    tenantId,
                     clientName,
                     clientEmail,
                     serviceType,
@@ -56,7 +62,12 @@ export async function POST(request: Request) {
 
 export async function GET() {
     try {
+        const session = await auth();
+        const tenantId = (session?.user as any)?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const bookings = await prisma.booking.findMany({
+            where: { tenantId },
             orderBy: { date: "asc" },
         });
         return NextResponse.json(bookings);

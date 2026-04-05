@@ -45,7 +45,7 @@ export default function LoginPage() {
                     <div className="w-16 h-16 mb-6">
                         <Logo />
                     </div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-[#d35400] to-[#e67e22] bg-clip-text text-transparent italic">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-[#d75d00] to-[#e88c20] bg-clip-text text-transparent italic">
                         CORAL ENTERPRISES
                     </h1>
                     <p className="text-neutral-500 mt-2 font-oxanium tracking-widest uppercase text-xs">
@@ -63,7 +63,7 @@ export default function LoginPage() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-colors text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d75d00] transition-colors text-white"
                                 placeholder="admin@coral-group.be"
                                 required
                             />
@@ -77,7 +77,7 @@ export default function LoginPage() {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-colors text-white"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d75d00] transition-colors text-white"
                                 placeholder="••••••••"
                                 required
                             />
@@ -92,7 +92,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-[#d35400] hover:bg-[#e67e22] disabled:opacity-50 text-white font-bold py-4 rounded-xl transition-all shadow-xl shadow-[#d35400]/20 active:scale-[0.98] flex items-center justify-center gap-2"
+                            className="w-full bg-[#d75d00] hover:bg-[#e88c20] disabled:opacity-50 text-white font-bold py-4 rounded-xl transition-all shadow-xl shadow-[#d75d00]/20 active:scale-[0.98] flex items-center justify-center gap-2"
                         >
                             {isLoading ? (
                                 <Loader2 className="w-5 h-5 animate-spin" />

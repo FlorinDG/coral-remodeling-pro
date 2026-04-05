@@ -19,12 +19,12 @@ export default function FilterBar({ onSearch, onFilterChange, statuses, placehol
                 <input
                     type="text"
                     placeholder={placeholder || t('search')}
-                    className="w-full bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-[#d35400] transition-colors outline-none text-neutral-900 dark:text-white"
+                    className="w-full bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-[var(--brand-color,#d35400)] transition-colors outline-none text-neutral-900 dark:text-white"
                     onChange={(e) => onSearch(e.target.value)}
                 />
             </div>
             <select
-                className="bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-2 text-sm outline-none focus:border-[#d35400] cursor-pointer appearance-none text-neutral-900 dark:text-white"
+                className="bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-2 text-sm outline-none focus:border-[var(--brand-color,#d35400)] cursor-pointer appearance-none text-neutral-900 dark:text-white"
                 onChange={(e) => onFilterChange(e.target.value)}
             >
                 <option value="ALL">{t('all')}</option>

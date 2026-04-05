@@ -19,7 +19,7 @@ export default function Breadcrumbs() {
         <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
             <Link
                 href="/admin/dashboard"
-                className="hover:text-[#d35400] transition-colors flex items-center gap-1"
+                className="hover:text-[var(--brand-color,#d35400)] transition-colors flex items-center gap-1"
             >
                 <Home className="w-3 h-3" />
                 <span>Admin</span>

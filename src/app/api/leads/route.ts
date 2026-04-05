@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
 import prisma, { dbRetry } from "@/lib/prisma";
 import { sendLeadNotification } from "@/lib/email";
+import { auth } from '@/auth';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, phone, service, message } = body;
+        const { name, email, phone, service, message, tenantId } = body;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: "Missing tenant ID for routing." }, { status: 400 });
+        }
 
         console.log(`Processing lead for: ${name} (${email})`);
 
@@ -13,6 +18,7 @@ export async function POST(request: Request) {
         try {
             lead = await dbRetry(() => prisma.lead.create({
                 data: {
+                    tenantId,
                     name,
                     email,
                     phone,
@@ -56,7 +62,12 @@ export async function POST(request: Request) {
 
 export async function GET() {
     try {
+        const session = await auth();
+        const tenantId = (session?.user as any)?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const leads = await prisma.lead.findMany({
+            where: { tenantId },
             orderBy: { createdAt: "desc" },
         });
         return NextResponse.json(leads);

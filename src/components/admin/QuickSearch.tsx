@@ -44,7 +44,7 @@ export default function QuickSearch() {
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-neutral-200 dark:border-white/10 flex items-center gap-3">
-                    <Search className="w-5 h-5 text-[#d35400]" />
+                    <Search className="w-5 h-5 text-[var(--brand-color,#d35400)]" />
                     <input
                         autoFocus
                         type="text"
@@ -69,7 +69,7 @@ export default function QuickSearch() {
                                     className="flex items-center gap-3 p-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors group"
                                 >
                                     <div className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-white/10 flex items-center justify-center">
-                                        <item.icon className="w-4 h-4 text-neutral-400 group-hover:text-[#d35400] transition-colors" />
+                                        <item.icon className="w-4 h-4 text-neutral-400 group-hover:text-[var(--brand-color,#d35400)] transition-colors" />
                                     </div>
                                     <span className="font-bold text-sm">{item.label}</span>
                                     <span className="text-[10px] text-neutral-400 ml-auto uppercase tracking-wider">{item.href}</span>

@@ -10,9 +10,10 @@ import { cn } from '@/components/time-tracker/lib/utils';
 interface BoardViewProps {
     databaseId: string;
     viewId: string;
+    renderTabs?: React.ReactNode;
 }
 
-export default function BoardView({ databaseId, viewId }: BoardViewProps) {
+export default function BoardView({ databaseId, viewId, renderTabs }: BoardViewProps) {
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
@@ -112,113 +113,126 @@ export default function BoardView({ databaseId, viewId }: BoardViewProps) {
     const dateProp = database.properties.find(p => p.type === 'date');
 
     return (
-        <div className="flex w-full h-full overflow-x-auto overflow-y-hidden bg-neutral-50/50 dark:bg-neutral-900/20 p-6 no-scrollbar gap-6">
-            {columns.map((col) => {
-                // Filter pages that match this column
-                const columnPages = database.pages.filter(page => {
-                    const val = page.properties[groupProperty.id];
-                    if (col.id === 'no-status') {
-                        return !val || (Array.isArray(val) && val.length === 0);
-                    }
-                    // Handle both single select and multi-select (checking if array includes col.id)
-                    if (Array.isArray(val)) {
-                        return val.includes(col.id);
-                    }
-                    return val === col.id;
-                });
+        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
+            <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
+                <div className="flex items-end pr-2 shrink-0">
+                    {renderTabs ? renderTabs : (
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2 pb-2">
+                            {database.icon && <span>{database.icon}</span>}
+                            {database.name}
+                        </h2>
+                    )}
+                </div>
+            </div>
 
-                // Skip "No Status" column if it's empty to keep the UI clean
-                if (col.id === 'no-status' && columnPages.length === 0) return null;
+            <div className="flex-1 flex w-full h-full overflow-x-auto overflow-y-hidden bg-neutral-50/50 dark:bg-neutral-900/20 p-6 no-scrollbar gap-6 relative min-h-0">
+                {columns.map((col) => {
+                    // Filter pages that match this column
+                    const columnPages = database.pages.filter(page => {
+                        const val = page.properties[groupProperty.id];
+                        if (col.id === 'no-status') {
+                            return !val || (Array.isArray(val) && val.length === 0);
+                        }
+                        // Handle both single select and multi-select (checking if array includes col.id)
+                        if (Array.isArray(val)) {
+                            return val.includes(col.id);
+                        }
+                        return val === col.id;
+                    });
 
-                return (
-                    <div
-                        key={col.id}
-                        className="flex flex-col min-w-[320px] max-w-[320px] shrink-0"
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDrop(e, col.id)}
-                    >
-                        {/* Column Header */}
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                            <div className={cn("px-2 py-0.5 rounded text-xs font-medium", getHeaderColor(col.color))}>
-                                {col.name}
+                    // Skip "No Status" column if it's empty to keep the UI clean
+                    if (col.id === 'no-status' && columnPages.length === 0) return null;
+
+                    return (
+                        <div
+                            key={col.id}
+                            className="flex flex-col min-w-[320px] max-w-[320px] shrink-0"
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, col.id)}
+                        >
+                            {/* Column Header */}
+                            <div className="flex items-center gap-2 mb-3 px-1">
+                                <div className={cn("px-2 py-0.5 rounded text-xs font-medium", getHeaderColor(col.color))}>
+                                    {col.name}
+                                </div>
+                                <span className="text-sm text-neutral-400">{columnPages.length}</span>
                             </div>
-                            <span className="text-sm text-neutral-400">{columnPages.length}</span>
-                        </div>
 
-                        {/* Column Body / Dropzone */}
-                        <div className="flex-1 overflow-y-auto no-scrollbar pb-10 space-y-3">
-                            {columnPages.map(page => {
-                                const title = page.properties['title'] || 'Untitled';
+                            {/* Column Body / Dropzone */}
+                            <div className="flex-1 overflow-y-auto no-scrollbar pb-10 space-y-3">
+                                {columnPages.map(page => {
+                                    const title = page.properties['title'] || 'Untitled';
 
-                                // Get priority label if property exists
-                                let priorityMarkup = null;
-                                if (priorityProp) {
-                                    const pVal = page.properties[priorityProp.id] as string;
-                                    const pOpt = priorityProp.config?.options?.find(o => o.id === pVal);
-                                    if (pOpt) {
-                                        priorityMarkup = (
-                                            <div className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", getColorClasses(pOpt.color))}>
-                                                {pOpt.name}
-                                            </div>
-                                        )
-                                    }
-                                }
-
-                                // Get date if property exists
-                                let dateStr = '';
-                                if (dateProp) {
-                                    const dVal = page.properties[dateProp.id] as string;
-                                    if (dVal) {
-                                        dateStr = format(new Date(dVal), 'MMM d, yyyy');
-                                    }
-                                }
-
-                                return (
-                                    <div
-                                        key={page.id}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, page.id)}
-                                        onDragEnd={handleDragEnd}
-                                        className="group bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg p-3 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-neutral-300 dark:hover:border-white/20"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="line-clamp-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200 leading-snug">
-                                                {title}
-                                            </div>
-                                            <button className="opacity-0 group-hover:opacity-100 p-1 -mr-1 -mt-1 text-neutral-400 hover:text-neutral-600 transition-opacity">
-                                                <MoreHorizontal className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 mt-4 mt-auto">
-                                            {/* Status/Priority Tags */}
-                                            {priorityMarkup}
-
-                                            <div className="flex-1" />
-
-                                            {/* Date */}
-                                            {dateStr && (
-                                                <div className="flex items-center gap-1 text-xs text-neutral-400">
-                                                    <CalendarIcon className="w-3 h-3" />
-                                                    {dateStr}
+                                    // Get priority label if property exists
+                                    let priorityMarkup = null;
+                                    if (priorityProp) {
+                                        const pVal = page.properties[priorityProp.id] as string;
+                                        const pOpt = priorityProp.config?.options?.find(o => o.id === pVal);
+                                        if (pOpt) {
+                                            priorityMarkup = (
+                                                <div className={cn("text-[10px] font-medium px-2 py-0.5 rounded-full", getColorClasses(pOpt.color))}>
+                                                    {pOpt.name}
                                                 </div>
-                                            )}
+                                            )
+                                        }
+                                    }
 
-                                            {/* Assignee Avatar Stub */}
-                                            <div className="w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center border border-white dark:border-neutral-900 shrink-0 ml-1">
-                                                <User2 className="w-3 h-3 text-neutral-500" />
+                                    // Get date if property exists
+                                    let dateStr = '';
+                                    if (dateProp) {
+                                        const dVal = page.properties[dateProp.id] as string;
+                                        if (dVal) {
+                                            dateStr = format(new Date(dVal), 'MMM d, yyyy');
+                                        }
+                                    }
+
+                                    return (
+                                        <div
+                                            key={page.id}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, page.id)}
+                                            onDragEnd={handleDragEnd}
+                                            className="group bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg p-3 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-neutral-300 dark:hover:border-white/20"
+                                        >
+                                            <div className="flex items-start justify-between mb-2">
+                                                <div className="line-clamp-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200 leading-snug">
+                                                    {title}
+                                                </div>
+                                                <button className="opacity-0 group-hover:opacity-100 p-1 -mr-1 -mt-1 text-neutral-400 hover:text-neutral-600 transition-opacity">
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 mt-4 mt-auto">
+                                                {/* Status/Priority Tags */}
+                                                {priorityMarkup}
+
+                                                <div className="flex-1" />
+
+                                                {/* Date */}
+                                                {dateStr && (
+                                                    <div className="flex items-center gap-1 text-xs text-neutral-400">
+                                                        <CalendarIcon className="w-3 h-3" />
+                                                        {dateStr}
+                                                    </div>
+                                                )}
+
+                                                {/* Assignee Avatar Stub */}
+                                                <div className="w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center border border-white dark:border-neutral-900 shrink-0 ml-1">
+                                                    <User2 className="w-3 h-3 text-neutral-500" />
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
 
-                            {/* Invisible drop target padding to make dropping into empty columns easier */}
-                            <div className="h-20 w-full" />
+                                {/* Invisible drop target padding to make dropping into empty columns easier */}
+                                <div className="h-20 w-full" />
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
         </div>
     );
 }

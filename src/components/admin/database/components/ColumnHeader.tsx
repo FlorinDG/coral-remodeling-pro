@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType } from '../types';
+import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
+import { useTenant } from '@/context/TenantContext';
 
 const typeIcons: Record<string, React.ElementType> = {
     text: Type,
@@ -42,6 +44,11 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
+    const { activeModules } = useTenant();
+    const hasDatabases = activeModules.includes('DATABASES');
+    const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
+    const canEditSchema = !isImmutableContactDB || hasDatabases;
+
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [name, setName] = useState(property.name);
@@ -134,17 +141,22 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
             <div className="flex items-center gap-1.5 w-full h-full px-2">
 
                 <button
-                    className="flex items-center gap-1.5 w-full h-full text-left outline-none"
-                    onClick={() => setIsOpen(!isOpen)}
+                    className={`flex items-center gap-1.5 w-full h-full text-left outline-none ${canEditSchema ? 'cursor-pointer' : 'cursor-default'}`}
+                    onClick={() => {
+                        if (!canEditSchema) return;
+                        setIsOpen(!isOpen);
+                    }}
                     onDoubleClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (!canEditSchema) return;
                         setIsOpen(true);
                         setIsEditing(true);
                     }}
                     onContextMenu={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        if (!canEditSchema) return;
                         setIsOpen(true);
                     }}
                 >

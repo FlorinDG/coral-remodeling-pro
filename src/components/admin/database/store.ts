@@ -40,7 +40,7 @@ interface DatabaseState {
     hydrateDatabases: (databases: Database[]) => void;
 
     // Database Operations
-    createDatabase: (name: string, description?: string) => Database;
+    createDatabase: (name: string, description?: string, specificId?: string, properties?: Property[]) => Database;
     updateDatabase: (id: string, updates: Partial<Database>) => void;
     deleteDatabase: (id: string) => void;
     getDatabase: (id: string) => Database | undefined;
@@ -54,9 +54,10 @@ interface DatabaseState {
     deleteView: (databaseId: string, viewId: string) => void;
 
     // Property Operations
-    addProperty: (databaseId: string, name: string, type: PropertyType, config?: PropertyConfig) => void;
+    addProperty: (databaseId: string, name: string, type: PropertyType, config?: PropertyConfig) => string;
     updateProperty: (databaseId: string, propertyId: string, updates: Partial<Property>) => void;
     deleteProperty: (databaseId: string, propertyId: string) => void;
+    updatePropertyOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
     createPage: (databaseId: string, initialProperties?: Record<string, any>) => Page;
@@ -66,18 +67,19 @@ interface DatabaseState {
     deletePage: (databaseId: string, pageId: string) => void;
     deletePages: (databaseId: string, pageIds: string[]) => void;
     updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
+    updatePageDriveId: (databaseId: string, pageId: string, driveId: string) => void;
 
     // Filter Operations
-    addFilter: (databaseId: string, filter: Omit<FilterRule, 'id'>) => void;
-    updateFilter: (databaseId: string, filterId: string, updates: Partial<FilterRule>) => void;
-    removeFilter: (databaseId: string, filterId: string) => void;
-    clearFilters: (databaseId: string) => void;
+    addFilter: (databaseId: string, viewId: string | null | undefined, filter: Omit<FilterRule, 'id'>) => void;
+    updateFilter: (databaseId: string, viewId: string | null | undefined, filterId: string, updates: Partial<FilterRule>) => void;
+    removeFilter: (databaseId: string, viewId: string | null | undefined, filterId: string) => void;
+    clearFilters: (databaseId: string, viewId: string | null | undefined) => void;
 
     // Sort Operations
-    addSort: (databaseId: string, sort: Omit<SortRule, 'id'>) => void;
-    updateSort: (databaseId: string, sortId: string, updates: Partial<SortRule>) => void;
-    removeSort: (databaseId: string, sortId: string) => void;
-    clearSorts: (databaseId: string) => void;
+    addSort: (databaseId: string, viewId: string | null | undefined, sort: Omit<SortRule, 'id'>) => void;
+    updateSort: (databaseId: string, viewId: string | null | undefined, sortId: string, updates: Partial<SortRule>) => void;
+    removeSort: (databaseId: string, viewId: string | null | undefined, sortId: string) => void;
+    clearSorts: (databaseId: string, viewId: string | null | undefined) => void;
 }
 
 export const useDatabaseStore = create<DatabaseState>()(
@@ -256,10 +258,11 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
+                const newId = uuidv4();
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        const newProperty: Property = { id: uuidv4(), name, type, config };
+                        const newProperty: Property = { id: newId, name, type, config };
                         return {
                             ...db,
                             properties: [...db.properties, newProperty],
@@ -268,6 +271,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
+                return newId;
             },
 
             updateProperty: (databaseId, propertyId, updates) => {
@@ -291,6 +295,25 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return {
                             ...db,
                             properties: db.properties.filter((p: Property) => p.id !== propertyId),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
+
+            updatePropertyOrder: (databaseId, sourceIndex, destinationIndex) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+                        const newProps = Array.from(db.properties);
+                        const [reorderedProp] = newProps.splice(sourceIndex, 1);
+                        if (reorderedProp) {
+                            newProps.splice(destinationIndex, 0, reorderedProp);
+                        }
+                        return {
+                            ...db,
+                            properties: newProps,
                             updatedAt: new Date().toISOString()
                         };
                     })
@@ -506,14 +529,61 @@ export const useDatabaseStore = create<DatabaseState>()(
                             ...db,
                             pages: db.pages.map((page: Page) => {
                                 if (page.id !== pageId) return page;
+
+                                const newProps = { ...page.properties, [propertyId]: value };
+
+                                // Automated Google Drive Folder generation when a title is first defined
+                                if (propertyId === 'title' && typeof value === 'string' && value.trim() !== '' && !page.driveFolderId) {
+                                    if (['db-clients', 'db-1', 'db-portals'].includes(databaseId)) {
+                                        fetch('/api/drive/init', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ databaseId, pageId, title: value })
+                                        })
+                                            .then(res => res.json())
+                                            .then(data => {
+                                                if (data.driveFolderId) {
+                                                    get().updatePageDriveId(databaseId, pageId, data.driveFolderId);
+                                                }
+                                            }).catch(console.error);
+                                    }
+                                }
+
+                                // Automations mapping for Project Tracker Execution Status
+                                if (databaseId === 'db-1' && propertyId === 'prop-status') {
+                                    const today = new Date().toISOString().split('T')[0];
+                                    if (value === 'opt-2' && !newProps['prop-actual-start']) {
+                                        newProps['prop-actual-start'] = today; // In Progress sets Start Date
+                                    } else if (value === 'opt-3' && !newProps['prop-actual-end']) {
+                                        newProps['prop-actual-end'] = today; // Done sets End Date
+                                    }
+                                }
+
                                 return {
                                     ...page,
-                                    properties: {
-                                        ...page.properties,
-                                        [propertyId]: value
-                                    },
+                                    properties: newProps,
                                     updatedAt: new Date().toISOString()
                                 };
+                            }),
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+                const db = get().databases.find(d => d.id === databaseId);
+                if (db) {
+                    syncPage(db.pages.find((p: Page) => p.id === pageId));
+                }
+            },
+
+            updatePageDriveId: (databaseId, pageId, driveId) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+                        return {
+                            ...db,
+                            pages: db.pages.map((page: Page) => {
+                                if (page.id !== pageId) return page;
+                                return { ...page, driveFolderId: driveId, updatedAt: new Date().toISOString() };
                             }),
                             updatedAt: new Date().toISOString()
                         };
@@ -603,23 +673,38 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }));
             },
 
-            addFilter: (databaseId, filter) => {
+            addFilter: (databaseId, viewId, filter) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [...(v.filters || []), { ...filter, id: uuidv4() }] } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
-                            activeFilters: [...db.activeFilters, { ...filter, id: uuidv4() }],
+                            activeFilters: [...(db.activeFilters || []), { ...filter, id: uuidv4() }],
                             updatedAt: new Date().toISOString()
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            updateFilter: (databaseId, filterId, updates) => {
+            updateFilter: (databaseId, viewId, filterId, updates) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).map((f: FilterRule) => f.id === filterId ? { ...f, ...updates } : f) } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeFilters: db.activeFilters.map((f: FilterRule) => f.id === filterId ? { ...f, ...updates } : f),
@@ -627,12 +712,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            removeFilter: (databaseId, filterId) => {
+            removeFilter: (databaseId, viewId, filterId) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).filter((f: FilterRule) => f.id !== filterId) } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeFilters: db.activeFilters.filter((f: FilterRule) => f.id !== filterId),
@@ -640,12 +733,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            clearFilters: (databaseId) => {
+            clearFilters: (databaseId, viewId) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [] } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeFilters: [],
@@ -653,12 +754,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            addSort: (databaseId, sort) => {
+            addSort: (databaseId, viewId, sort) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [...(v.sorts || []), { ...sort, id: uuidv4() }] } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeSorts: [...(db.activeSorts || []), { ...sort, id: uuidv4() }],
@@ -666,12 +775,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            updateSort: (databaseId, sortId, updates) => {
+            updateSort: (databaseId, viewId, sortId, updates) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).map((s: SortRule) => s.id === sortId ? { ...s, ...updates } : s) } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeSorts: (db.activeSorts || []).map((s: SortRule) => s.id === sortId ? { ...s, ...updates } : s),
@@ -679,12 +796,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            removeSort: (databaseId, sortId) => {
+            removeSort: (databaseId, viewId, sortId) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).filter((s: SortRule) => s.id !== sortId) } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeSorts: (db.activeSorts || []).filter((s: SortRule) => s.id !== sortId),
@@ -692,12 +817,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            clearSorts: (databaseId) => {
+            clearSorts: (databaseId, viewId) => {
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
+                        if (viewId) {
+                            return {
+                                ...db,
+                                views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [] } : v),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }
                         return {
                             ...db,
                             activeSorts: [],
@@ -705,16 +838,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                syncDb(get().databases.find(d => d.id === databaseId));
             }
         }),
         {
-            name: 'coral-database-storage', // unique name for localStorage key
-            version: 2, // Cache buster for major structural changes
+            name: 'coral-database-storage-v4', // Nuclear Option to abandon all legacy schemas
+            version: 4,
             storage: createJSONStorage(() => idbStorage),
             migrate: (persistedState: any, version: number) => {
-                if (version < 2) {
-                    // Version bumping handled mostly by merge strategy below,
-                    // but we must provide a migrate function to satisfy persist middleware.
+                if (version < 3) {
+                    // Force an absolute wipe of db-1 to force deep hydration of the new 
+                    // Financial/Execution bifurcated trackers and Nacalculatie properties.
+                    if (persistedState.databases) {
+                        persistedState.databases = persistedState.databases.filter((d: any) => d.id !== 'db-1');
+                    }
                 }
                 return persistedState as DatabaseState;
             },
@@ -767,6 +904,9 @@ export const useDatabaseStore = create<DatabaseState>()(
                             }
                         });
 
+                        // Strip out legacy view-5 from db-1 to prevent duplicate timeline tabs
+                        const mergedViews = (savedDb.views || currentDb.views).filter((v: any) => !(currentDb.id === 'db-1' && v.id === 'view-5'));
+
                         // Inherit new source code properties/views, but keep the user's row data and view customizations
                         return {
                             ...currentDb,
@@ -774,7 +914,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             pages: savedDb.pages || [],
                             activeFilters: savedDb.activeFilters || [],
                             activeSorts: savedDb.activeSorts || [],
-                            views: savedDb.views || currentDb.views
+                            views: mergedViews
                         };
                     }
                     return currentDb;

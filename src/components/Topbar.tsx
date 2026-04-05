@@ -27,7 +27,7 @@ export default function Topbar() {
             {/* Desktop View */}
             <div className="hidden md:flex items-center gap-4 text-sm font-bold tracking-[0.2em] uppercase mx-auto md:mx-0">
                 <span className="text-neutral-400 italic font-medium">{t('fastInterventions.label')}:</span>
-                <a href={`tel:${t('fastInterventions.number')}`} className="text-white hover:text-[#d35400] transition-colors">
+                <a href={`tel:${t('fastInterventions.number')}`} className="text-white hover:text-[#d75d00] transition-colors">
                     {t('fastInterventions.number')}
                 </a>
             </div>

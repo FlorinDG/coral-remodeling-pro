@@ -6,7 +6,7 @@ export const hrTabs = [
 
 export const relationsTabs = [
     { label: 'CONTACTS', href: '/admin/contacts', id: 'contacts' },
-    { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'suppliers' },
+    { label: 'LEVERANCIERS (SUPPLIERS)', href: '/admin/suppliers', id: 'suppliers' },
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
 ];
 
@@ -23,7 +23,7 @@ export const libraryTabs = [
 
 export const projectsTabs = [
     { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
-    { label: 'PROJECTS DATABASE', href: '/admin/projects-management/tasks', id: 'database' },
+    { label: 'PROJECTS DATABASE', href: '/admin/projects-management', id: 'database' },
     { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
 ];
 
@@ -36,8 +36,7 @@ export const financialTabs = [
 ];
 
 export const settingsTabs = [
-    { label: 'INTEGRATIONS', href: '/admin/settings', id: 'integrations' },
-    { label: 'DATABASES', href: '/admin/settings/databases', id: 'databases' },
+    { label: 'COMPANY INFO', href: '/admin/settings/company-info', id: 'company-info' },
     { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
     { label: 'CALENDAR', href: '/admin/settings/calendar', id: 'opt-calendar' },
     { label: 'FINANCIALS', href: '/admin/settings/financials', id: 'opt-financials' },
@@ -46,5 +45,6 @@ export const settingsTabs = [
     { label: 'PROJECTS', href: '/admin/settings/projects', id: 'opt-projects' },
     { label: 'RELATIONS', href: '/admin/settings/relations', id: 'opt-relations' },
     { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
+    { label: 'DOCUMENT TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' },
     { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' }
 ];

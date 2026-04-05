@@ -29,7 +29,7 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
     if (!portal) notFound();
 
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-[#d35400] selection:text-white pb-20">
+        <div className="min-h-screen bg-black text-white selection:bg-[var(--brand-color,#d35400)] selection:text-white pb-20">
             <AdminHeader />
 
             <main className="container mx-auto px-4 md:px-8 pt-32">
@@ -95,7 +95,7 @@ export default async function PortalDetailPage({ params }: { params: Promise<{ i
                             <div className="space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                                 {portal.updates.map((update) => (
                                     <div key={update.id} className="relative pl-6 border-l border-white/10 pb-4 last:pb-0">
-                                        <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 bg-[#d35400] rounded-full" />
+                                        <div className="absolute left-[-5px] top-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'var(--brand-color, #d35400)' }} />
                                         <span className="text-[10px] font-mono text-neutral-500 uppercase block mb-1">
                                             {new Date(update.createdAt).toLocaleDateString()}
                                         </span>

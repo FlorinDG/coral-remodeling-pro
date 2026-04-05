@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '20mb',
     },
   },
+  distDir: '.next.nosync',
   webpack: (config) => {
     config.cache = false;
     return config;

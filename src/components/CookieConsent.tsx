@@ -43,7 +43,7 @@ export default function CookieConsent() {
                 >
                     <div className="w-full max-w-xl bg-neutral-900/95 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl pointer-events-auto">
                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-[#d35400]/10 rounded-2xl text-[#d35400] shrink-0">
+                            <div className="p-3 bg-[#d75d00]/10 rounded-2xl text-[#d75d00] shrink-0">
                                 <Cookie className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
@@ -54,7 +54,7 @@ export default function CookieConsent() {
                                             <React.Fragment key={i}>
                                                 {part}
                                                 {i !== arr.length - 1 && (
-                                                    <a href="/legal/cookies" className="text-[#d35400] hover:underline font-medium">
+                                                    <a href="/legal/cookies" className="text-[#d75d00] hover:underline font-medium">
                                                         {t("linkText")}
                                                     </a>
                                                 )}
@@ -65,7 +65,7 @@ export default function CookieConsent() {
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <button
                                         onClick={() => handleConsent("granted")}
-                                        className="flex-1 bg-[#d35400] hover:bg-[#a04000] text-white font-bold py-3 px-6 rounded-2xl transition-all shadow-lg shadow-[#d35400]/20"
+                                        className="flex-1 bg-[#d75d00] hover:bg-[#b05000] text-white font-bold py-3 px-6 rounded-2xl transition-all shadow-lg shadow-[#d75d00]/20"
                                     >
                                         {t("accept")}
                                     </button>

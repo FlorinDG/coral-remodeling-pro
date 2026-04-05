@@ -52,7 +52,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
             {/* Global SEO Section */}
             <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
                 <div className="bg-neutral-50 dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/10 px-6 py-4 flex items-center gap-3">
-                    <Search className="w-5 h-5 text-[#d35400]" />
+                    <Search className="w-5 h-5" style={{ color: 'var(--brand-color, #d35400)' }} />
                     <h3 className="font-bold text-neutral-900 dark:text-white">Global SEO Configuration</h3>
                 </div>
                 <div className="p-6 space-y-6">
@@ -64,7 +64,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
                                 value={getVal('Settings.SEO.TitleSuffix')}
                                 onChange={(e) => handleUpdate('Settings.SEO.TitleSuffix', e.target.value)}
                                 placeholder="e.g., | Coral Remodeling - Luxury Contractor"
-                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[#d35400] transition-all"
+                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[var(--brand-color)] transition-all"
                             />
                             <p className="text-[11px] text-neutral-400">Appended to the end of all page titles to maintain consistent branding.</p>
                         </div>
@@ -75,7 +75,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
                                 onChange={(e) => handleUpdate('Settings.SEO.Keywords', e.target.value)}
                                 rows={3}
                                 placeholder="luxury, remodeling, renovation, general contractor, highest quality"
-                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-all resize-none"
+                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[var(--brand-color)] transition-all resize-none"
                             />
                             <p className="text-[11px] text-neutral-400">Comma separated keywords injected into the root layout for wider SEO reach.</p>
                         </div>
@@ -121,7 +121,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
                                 value={getVal('Settings.Tracking.GA4')}
                                 onChange={(e) => handleUpdate('Settings.Tracking.GA4', e.target.value)}
                                 placeholder="G-XXXXXXXXXX"
-                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[#d35400] transition-all font-mono text-sm"
+                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[var(--brand-color)] transition-all font-mono text-sm"
                             />
                         </div>
                         <div className="space-y-2">
@@ -131,7 +131,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
                                 value={getVal('Settings.Tracking.GTM')}
                                 onChange={(e) => handleUpdate('Settings.Tracking.GTM', e.target.value)}
                                 placeholder="GTM-XXXXXXX"
-                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[#d35400] transition-all font-mono text-sm"
+                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[var(--brand-color)] transition-all font-mono text-sm"
                             />
                         </div>
                     </div>
@@ -143,7 +143,8 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex items-center gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-[#d35400]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs tracking-widest uppercase"
+                    className="flex items-center gap-2 text-white px-8 py-4 rounded-xl font-bold shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs tracking-widest uppercase hover:opacity-90"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Save Settings

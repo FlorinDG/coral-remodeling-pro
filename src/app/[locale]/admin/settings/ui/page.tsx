@@ -159,7 +159,7 @@ export default function SidebarOrderSettings() {
                             </Button>
                             <Button
                                 onClick={handleSave}
-                                className="gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white"
+                                className="gap-2 bg-[var(--brand-color,#d35400)] hover:opacity-90 text-white"
                                 disabled={!hasChanges}
                             >
                                 <Save className="w-4 h-4" />
@@ -204,7 +204,7 @@ export default function SidebarOrderSettings() {
                             <div className="flex items-center gap-3">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Select Module:</label>
                                 <select
-                                    className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-[#d35400] transition-colors"
+                                    className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-[var(--brand-color)] transition-colors"
                                     value={selectedGroupId}
                                     onChange={(e) => setSelectedGroupId(e.target.value)}
                                 >
@@ -221,7 +221,7 @@ export default function SidebarOrderSettings() {
                                 </Button>
                                 <Button
                                     onClick={handleSaveTabs}
-                                    className="gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white"
+                                    className="gap-2 bg-[var(--brand-color,#d35400)] hover:opacity-90 text-white"
                                     disabled={!hasTabChanges}
                                 >
                                     <Save className="w-4 h-4" />

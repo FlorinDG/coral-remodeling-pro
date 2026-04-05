@@ -7,6 +7,7 @@ import { Filter, X, Plus, Trash2 } from 'lucide-react';
 
 interface FilterToolbarProps {
     databaseId: string;
+    viewId?: string;
 }
 
 const operators: { value: FilterOperator; label: string }[] = [
@@ -18,7 +19,7 @@ const operators: { value: FilterOperator; label: string }[] = [
     { value: 'is_not_empty', label: 'Is not empty' }
 ];
 
-export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
+export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const addFilter = useDatabaseStore(state => state.addFilter);
     const updateFilter = useDatabaseStore(state => state.updateFilter);
@@ -47,11 +48,13 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     if (!database) return null;
 
-    const activeFilters = database.activeFilters || [];
+    const activeFilters = viewId
+        ? database.views.find(v => v.id === viewId)?.filters || []
+        : database.activeFilters || [];
 
     const handleAddFilter = () => {
         if (database.properties.length === 0) return;
-        addFilter(databaseId, {
+        addFilter(databaseId, viewId, {
             propertyId: database.properties[0].id,
             operator: 'equals',
             value: ''
@@ -97,7 +100,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                             <select
                                 className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[120px]"
                                 value={filter.propertyId}
-                                onChange={e => updateFilter(databaseId, filter.id, { propertyId: e.target.value })}
+                                onChange={e => updateFilter(databaseId, viewId, filter.id, { propertyId: e.target.value })}
                             >
                                 {database.properties.map(p => (
                                     <option key={p.id} value={p.id}>{p.name}</option>
@@ -108,7 +111,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                             <select
                                 className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[120px]"
                                 value={filter.operator}
-                                onChange={e => updateFilter(databaseId, filter.id, { operator: e.target.value as FilterOperator })}
+                                onChange={e => updateFilter(databaseId, viewId, filter.id, { operator: e.target.value as FilterOperator })}
                             >
                                 {operators.map(op => (
                                     <option key={op.value} value={op.value}>{op.label}</option>
@@ -121,13 +124,13 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                                     className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[200px]"
                                     placeholder="Type a value..."
                                     value={filter.value as string || ''}
-                                    onChange={e => updateFilter(databaseId, filter.id, { value: e.target.value })}
+                                    onChange={e => updateFilter(databaseId, viewId, filter.id, { value: e.target.value })}
                                 />
                             )}
 
                             {/* Remove Row */}
                             <button
-                                onClick={() => removeFilter(databaseId, filter.id)}
+                                onClick={() => removeFilter(databaseId, viewId, filter.id)}
                                 className="p-1.5 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded ml-auto transition-colors"
                                 title="Remove this rule"
                             >
@@ -146,7 +149,7 @@ export default function FilterToolbar({ databaseId }: FilterToolbarProps) {
                         </button>
                         <button
                             onClick={() => {
-                                clearFilters(databaseId);
+                                clearFilters(databaseId, viewId);
                                 setIsOpen(false);
                             }}
                             className="text-sm text-red-500 hover:text-red-600"

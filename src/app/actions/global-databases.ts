@@ -4,6 +4,8 @@ import prisma from '@/lib/prisma';
 import { Database, Page, Property, DatabaseView, Block } from '@/components/admin/database/types';
 import { revalidatePath } from 'next/cache';
 
+import { auth } from '@/auth';
+
 /**
  * Validates and sanitizes a string ID, preventing undefined/null values from hitting Prisma
  */
@@ -16,8 +18,13 @@ const safeId = (id: string | undefined | null) => {
  * Reconstructs them to perfectly match the frontend Zustand signatures.
  */
 export async function getGlobalDatabases(): Promise<Database[]> {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return [];
+
     try {
         const dbs = await prisma.globalDatabase.findMany({
+            where: { tenantId },
             include: { pages: true },
             orderBy: { createdAt: 'desc' }
         });
@@ -63,7 +70,16 @@ export async function getGlobalDatabases(): Promise<Database[]> {
  * Does not mutate pages.
  */
 export async function saveGlobalDatabase(db: Database) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return { success: false, error: 'Unauthorized' };
+
     try {
+        const existing = await prisma.globalDatabase.findUnique({ where: { id: safeId(db.id) } });
+        if (existing && existing.tenantId !== tenantId) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
         await prisma.globalDatabase.upsert({
             where: { id: safeId(db.id) },
             update: {
@@ -82,6 +98,7 @@ export async function saveGlobalDatabase(db: Database) {
             },
             create: {
                 id: safeId(db.id),
+                tenantId,
                 name: db.name,
                 description: db.description,
                 icon: db.icon,
@@ -108,7 +125,16 @@ export async function saveGlobalDatabase(db: Database) {
  * Upserts a specific Row/Page within a database, including its dynamic property cell values and underlying rich-text blocks.
  */
 export async function saveGlobalPage(page: Page) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return { success: false, error: 'Unauthorized' };
+
     try {
+        const parentDb = await prisma.globalDatabase.findUnique({ where: { id: safeId(page.databaseId) } });
+        if (!parentDb || parentDb.tenantId !== tenantId) {
+            return { success: false, error: 'Unauthorized DB access' };
+        }
+
         await prisma.globalPage.upsert({
             where: { id: safeId(page.id) },
             update: {
@@ -144,7 +170,19 @@ export async function saveGlobalPage(page: Page) {
 }
 
 export async function deleteGlobalPage(pageId: string) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return { success: false, error: 'Unauthorized' };
+
     try {
+        const page = await prisma.globalPage.findUnique({
+            where: { id: pageId },
+            include: { database: true }
+        });
+        if (!page || page.database.tenantId !== tenantId) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
         await prisma.globalPage.delete({ where: { id: pageId } });
         return { success: true };
     } catch (e) {
@@ -154,7 +192,16 @@ export async function deleteGlobalPage(pageId: string) {
 }
 
 export async function deleteGlobalDatabase(dbId: string) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return { success: false, error: 'Unauthorized' };
+
     try {
+        const existing = await prisma.globalDatabase.findUnique({ where: { id: dbId } });
+        if (!existing || existing.tenantId !== tenantId) {
+            return { success: false, error: 'Unauthorized' };
+        }
+
         // Cascade handles page deletion
         await prisma.globalDatabase.delete({ where: { id: dbId } });
         return { success: true };

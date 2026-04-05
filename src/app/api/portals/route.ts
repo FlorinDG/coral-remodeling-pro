@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { nanoid } from "nanoid";
+import { auth } from '@/auth';
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = (session?.user as any)?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
         const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password } = body;
 
@@ -16,6 +20,7 @@ export async function POST(request: Request) {
 
         const portal = await prisma.clientPortal.create({
             data: {
+                tenantId,
                 clientName,
                 clientEmail,
                 projectTitle,

@@ -49,7 +49,7 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
         <div className="glass-morphism p-6 rounded-3xl border border-white/10 h-full">
             <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                    <Settings className="w-5 h-5 text-[#d35400]" /> Portal Settings
+                    <Settings className="w-5 h-5 text-[var(--brand-color,#d35400)]" /> Portal Settings
                 </h3>
             </div>
 
@@ -64,7 +64,7 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                             step="0.01"
                             value={formData.budget}
                             onChange={e => setFormData({ ...formData, budget: e.target.value })}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                         />
                     </div>
                     <div className="space-y-1.5">
@@ -76,7 +76,7 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                             step="0.01"
                             value={formData.paidAmount}
                             onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                         />
                     </div>
                 </div>
@@ -90,7 +90,7 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                         placeholder="Leave blank to keep current"
                         value={formData.password}
                         onChange={e => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                     />
                 </div>
 
@@ -99,7 +99,7 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                     <select
                         value={formData.status}
                         onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                     >
                         <option value="ACTIVE">ACTIVE</option>
                         <option value="COMPLETED">COMPLETED</option>

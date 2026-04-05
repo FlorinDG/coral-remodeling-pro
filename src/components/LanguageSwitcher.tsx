@@ -18,6 +18,7 @@ export default function LanguageSwitcher() {
         { code: 'en', label: 'EN' },
         { code: 'fr', label: 'FR' },
         { code: 'ro', label: 'RO' },
+        { code: 'ru', label: 'RU' },
     ];
 
     const onSelectChange = (nextLocale: string) => {
@@ -31,7 +32,7 @@ export default function LanguageSwitcher() {
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 text-[#d35400] dark:text-white/80 hover:text-[#d35400] dark:hover:text-white transition-colors"
+                className="flex items-center gap-2 text-[#d75d00] dark:text-white/80 hover:text-[#d75d00] dark:hover:text-white transition-colors"
                 disabled={isPending}
             >
                 <Globe className="w-5 h-5" />
@@ -50,7 +51,7 @@ export default function LanguageSwitcher() {
                             <button
                                 key={lang.code}
                                 onClick={() => onSelectChange(lang.code)}
-                                className={`w-full text-left px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors ${locale === lang.code ? 'text-[#d35400]' : 'text-white/80'
+                                className={`w-full text-left px-4 py-2 text-sm font-medium hover:bg-white/10 transition-colors ${locale === lang.code ? 'text-[#d75d00]' : 'text-white/80'
                                     }`}
                             >
                                 {lang.label}

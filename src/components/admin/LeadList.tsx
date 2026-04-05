@@ -140,7 +140,7 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
             <div className="flex items-center justify-between mt-4 mb-2 px-2">
                 <button
                     onClick={toggleSelectAll}
-                    className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-[#d35400] transition-colors flex items-center gap-2"
+                    className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-colors flex items-center gap-2"
                 >
                     {selectedIds.size === filteredLeads.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                     {selectedIds.size === filteredLeads.length ? 'DESELECT ALL' : 'SELECT ALL'}
@@ -153,8 +153,8 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                     <div
                         key={lead.id}
                         className={`group rounded-2xl transition-all border overflow-hidden ${expandedId === lead.id
-                            ? 'bg-white dark:bg-white/10 border-[#d35400]/30 shadow-lg'
-                            : 'bg-white/80 dark:bg-black/20 border-neutral-200 dark:border-white/5 hover:border-[#d35400]/20'
+                            ? 'bg-white dark:bg-white/10 border-[var(--brand-color,#d35400)]/30 shadow-lg'
+                            : 'bg-white/80 dark:bg-black/20 border-neutral-200 dark:border-white/5 hover:border-[var(--brand-color,#d35400)]/20'
                             } ${selectedIds.has(lead.id) ? 'ring-2 ring-blue-500/30 border-blue-500/50' : ''}`}
                     >
                         <div className="flex items-center">
@@ -176,13 +176,13 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                         {lead.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[#d35400] transition-colors">{lead.name}</h3>
+                                        <h3 className="font-bold text-sm text-neutral-900 dark:text-white group-hover:text-[var(--brand-color,#d35400)] transition-colors">{lead.name}</h3>
                                         <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium uppercase tracking-wider">{lead.service} • {new Date(lead.createdAt).toLocaleDateString()}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <StatusBadge status={lead.status} />
-                                    {expandedId === lead.id ? <ChevronDown className="w-4 h-4 text-[#d35400]" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />}
+                                    {expandedId === lead.id ? <ChevronDown className="w-4 h-4 text-[var(--brand-color,#d35400)]" /> : <ChevronRight className="w-4 h-4 text-neutral-400" />}
                                 </div>
                             </div>
                         </div>
@@ -192,11 +192,11 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                 <div className="grid grid-cols-2 gap-4 mb-6">
                                     <div className="space-y-2">
                                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Contact Info</p>
-                                        <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-[#d35400] transition-colors">
+                                        <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-[var(--brand-color,#d35400)] transition-colors">
                                             <Mail className="w-3.5 h-3.5" /> {lead.email}
                                         </a>
                                         {lead.phone && (
-                                            <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-[#d35400] transition-colors">
+                                            <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-300 hover:text-[var(--brand-color,#d35400)] transition-colors">
                                                 <Phone className="w-3.5 h-3.5" /> {lead.phone}
                                             </a>
                                         )}
@@ -218,7 +218,7 @@ export default function LeadList({ leads: initialLeads }: LeadListProps) {
                                                 onClick={() => handleStatusUpdate(lead.id, status)}
                                                 disabled={!!updating}
                                                 className={`text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wider transition-all ${lead.status === status
-                                                    ? 'bg-[#d35400] text-white'
+                                                    ? 'bg-[var(--brand-color,#d35400)] text-white'
                                                     : 'bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-white/10'
                                                     }`}
                                             >

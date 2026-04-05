@@ -3,24 +3,102 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Tenant {
+  id          String   @id @default(cuid())
+  companyName String
+  vatNumber   String?
+  iban        String?
+  logoUrl     String?
+  planType    String   @default("FREE")
+  peppolId    String?
+  driveFolderId String?
+  email       String?
+  street      String?
+  postalCode  String?
+  city        String?
+  documentLanguage   String?
+  commercialName     String?
+  bic                String?
+  deliveryStreet     String?
+  deliveryPostalCode String?
+  deliveryCity       String?
+  headquartersStreet String?
+  headquartersPostalCode String?
+  headquartersCity   String?
+  directorFirstName  String?
+  directorLastName   String?
+  brandColor         String?
+
+  // Document Numbering Patterns
+  invoicePrefix      String?  @default("INV")
+  invoiceConnector   String?  @default("-")
+  invoiceDateFormat  String?  @default("YYYY")
+  invoiceNumberWidth Int?     @default(3)
+  invoiceNextNumber  Int?     @default(1)
+
+  quotationPrefix      String?  @default("OFF")
+  quotationConnector   String?  @default("-")
+  quotationDateFormat  String?  @default("YYYY")
+  quotationNumberWidth Int?     @default(3)
+  quotationNextNumber  Int?     @default(1)
+
+  // Document Template
+  documentTemplate   String?  @default("t1")
+
+  // Phase 2: SaaS Overarching Subscription Controls
+  subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL
+  activeModules      String[] @default(["CRM", "PROJECTS", "INVOICING", "CALENDAR", "DATABASES"])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users                 User[]
+  leads                 Lead[]
+  bookings              Booking[]
+  clientPortals         ClientPortal[]
+  events                Event[]
+  siteContents          SiteContent[]
+  cmsServices           CMS_Service[]
+  cmsProjects           CMS_Project[]
+  promotionalBanners    PromotionalBanner[]
+  notionConnections     NotionConnection[]
+  connectedEmailAccounts ConnectedEmailAccount[]
+  contacts              Contact[]
+  invoices              Invoice[]
+  quotations            Quotation[]
+  employees             Employee[]
+  internalProjects      InternalProject[]
+  suppliers             Supplier[]
+  globalDatabases       GlobalDatabase[]
 }
 
 model Lead {
   id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
   name      String
   email     String
   phone     String?
   service   String
   message   String?
   status    String   @default("NEW")
+  driveFolderId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Booking {
   id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   clientName  String
   clientEmail String
   serviceType String
@@ -34,11 +112,15 @@ model Booking {
 
 model ClientPortal {
   id           String          @id @default(cuid())
+  tenantId     String
+  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   clientName   String
   clientEmail  String
   slug         String          @unique
   password     String? // Hashed password for portal access
   status       String          @default("ACTIVE")
+  driveFolderId String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   projectTitle String?
@@ -79,6 +161,9 @@ model Task {
 
 model Event {
   id               String   @id @default(cuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   title            String
   start            DateTime
   end              DateTime
@@ -92,7 +177,7 @@ model Event {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task             Task[] // One-to-many from Event to Task (though typically 1:1 in this usecase, prisma needs array or unique back relation. The Task side has eventId and a relation)
+  task             Task[] 
 }
 
 model Document {
@@ -156,12 +241,16 @@ model Session {
 
 model User {
   id            String    @id @default(cuid())
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("ADMIN")
+  role          String    @default("TENANT_ADMIN") // SUPERADMIN, TENANT_ADMIN, EMPLOYEE
+  environmentLanguage String? @default("en")
   accounts      Account[]
   sessions      Session[]
   events        Event[]
@@ -177,16 +266,24 @@ model VerificationToken {
 
 model SiteContent {
   id        String   @id @default(cuid())
-  key       String   @unique
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  key       String
   valueEn   String
   valueNl   String?
   valueFr   String?
   valueRo   String?
   updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, key])
 }
 
 model CMS_Service {
   id                String         @id @default(cuid())
+  tenantId          String
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   slug              String         @unique
   titleEn           String
   titleNl           String?
@@ -214,10 +311,15 @@ model CMS_Service {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   portals           ClientPortal[]
+
+  @@unique([tenantId, slug])
 }
 
 model CMS_Project {
   id         String             @id @default(cuid())
+  tenantId   String
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   titleEn    String
   titleNl    String?
   titleFr    String?
@@ -247,6 +349,9 @@ model CMS_ProjectImage {
 
 model PromotionalBanner {
   id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   textEn    String
   textNl    String?
   textFr    String?
@@ -257,6 +362,9 @@ model PromotionalBanner {
 
 model NotionConnection {
   id               String        @id @default(cuid())
+  tenantId         String
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   name             String
   databaseId       String
   token            String? // Optional override for global NOTION_TOKEN
@@ -279,8 +387,11 @@ model NotionEntry {
 
 model ConnectedEmailAccount {
   id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   email     String   @unique
-  password  String // In a production environment, this should be symmetrically encrypted
+  password  String // Symmetrically encrypted
   imapHost  String
   imapPort  Int      @default(993)
   smtpHost  String
@@ -292,13 +403,18 @@ model ConnectedEmailAccount {
 
 model Contact {
   id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   firstName String
   lastName  String
-  email     String   @unique
+  email     String   
   phone     String?
   address   String?
   town      String?
+  language  String?
   tags      String[] @default([])
+  driveFolderId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -346,24 +462,21 @@ model SalesOpportunity {
   contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
-// =========================================================================================
-// NEW GLOBAL MODULES (HR, FINANCIALS, PROJECTS, SUPPLIERS)
-// =========================================================================================
-
 model Invoice {
   id            String   @id @default(cuid())
-  invoiceNumber String   @unique // e.g., "INV-2026-001"
-  type          String // "SALES", "PURCHASE", "CREDIT_NOTE_SALES", "CREDIT_NOTE_PURCHASE"
-  status        String   @default("DRAFT") // DRAFT, SENT, PARTIAL, PAID, OVERDUE, CANCELLED
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  invoiceNumber String   
+  type          String 
+  status        String   @default("DRAFT")
   issueDate     DateTime @default(now())
   dueDate       DateTime
 
-  // Relations
-  contactId  String? // For Sales/Clients
-  supplierId String? // For Purchases
-  projectId  String? // Optional linkage to an Internal Project
+  contactId  String? 
+  supplierId String? 
+  projectId  String? 
 
-  // Totals
   subtotal Float @default(0)
   vatTotal Float @default(0)
   total    Float @default(0)
@@ -373,6 +486,8 @@ model Invoice {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, invoiceNumber])
 }
 
 model InvoiceItem {
@@ -381,15 +496,18 @@ model InvoiceItem {
   description String
   quantity    Float
   unitPrice   Float
-  vatRate     Float // e.g., 6, 21 for Belgium
+  vatRate     Float 
   total       Float
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
 
 model Quotation {
   id          String          @id @default(cuid())
-  quoteNumber String          @unique // e.g., "OFF-2026-001"
-  status      String          @default("DRAFT") // DRAFT, SENT, ACCEPTED, REJECTED
+  tenantId    String
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  quoteNumber String          @unique
+  status      String          @default("DRAFT")
   date        DateTime        @default(now())
   validUntil  DateTime
   contactId   String
@@ -416,13 +534,16 @@ model QuotationItem {
 
 model Employee {
   id         String    @id @default(cuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   firstName  String
   lastName   String
   email      String    @unique
   phone      String?
-  role       String // e.g., "MANAGER", "CONTRACTOR", "TECHNICIAN"
+  role       String 
   status     String    @default("ACTIVE")
-  hourlyCost Float? // Internal cost calculation
+  hourlyCost Float? 
   hireDate   DateTime?
 
   timeEntries TimeEntry[]
@@ -434,12 +555,12 @@ model Employee {
 model TimeEntry {
   id         String  @id @default(cuid())
   employeeId String
-  projectId  String? // Link to Internal Project where time was spent
-  taskId     String? // Optional specific task
+  projectId  String? 
+  taskId     String? 
 
   startTime       DateTime
   endTime         DateTime?
-  durationMinutes Int? // Calculated upon clock-out
+  durationMinutes Int? 
 
   description String?
   isBillable  Boolean @default(true)
@@ -449,11 +570,14 @@ model TimeEntry {
 
 model InternalProject {
   id          String @id @default(cuid())
-  projectCode String @unique // e.g., "PRJ-014"
-  name        String
-  status      String @default("PLANNING") // PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
+  tenantId    String
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  clientId      String? // Maps to Contact
+  projectCode String 
+  name        String
+  status      String @default("PLANNING") 
+
+  clientId      String? 
   startDate     DateTime?
   targetEndDate DateTime?
   actualEndDate DateTime?
@@ -464,10 +588,15 @@ model InternalProject {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, projectCode])
 }
 
 model Supplier {
   id            String  @id @default(cuid())
+  tenantId      String
+  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   companyName   String
   vatNumber     String? @unique
   contactPerson String?
@@ -475,16 +604,17 @@ model Supplier {
   phone         String?
   address       String?
   town          String?
-  category      String? // e.g., "MATERIALS", "SUBCONTRACTOR", "LOGISTICS"
+  category      String? 
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// --- Global Databases Ecosystem (Notion-Style Grids) ---
-
 model GlobalDatabase {
   id          String  @id @default(cuid())
+  tenantId    String
+  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   name        String
   description String?
   icon        String?
@@ -492,13 +622,11 @@ model GlobalDatabase {
   isTemplate  Boolean @default(false)
   folderId    String?
 
-  // JSON arrays of Property[] and DatabaseView[]
   properties Json @default("[]")
   views      Json @default("[]")
 
   pages GlobalPage[]
 
-  // Legacy fallback configs
   activeFilters Json? @default("[]")
   activeSorts   Json? @default("[]")
 
@@ -516,12 +644,10 @@ model GlobalPage {
   coverImage String?
   icon       String?
 
-  // Record<PropertyId, PropertyValue>
   properties Json @default("{}")
 
   order Float?
 
-  // Array of Block[] representing subcomponents/rich text
   blocks Json @default("[]")
 
   createdBy     String

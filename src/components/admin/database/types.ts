@@ -8,6 +8,7 @@ export type PropertyType =
     | 'url'
     | 'email'
     | 'phone'
+    | 'places'
     | 'relation'
     | 'rollup'
     | 'formula'
@@ -30,8 +31,10 @@ export interface PropertyConfig {
     options?: SelectOption[]; // For select and multi_select
     format?: 'number' | 'number_with_commas' | 'percent' | 'euro' | 'dollar'; // For numbers
     relationDatabaseId?: string; // For relations
+    relationDisplayPropertyId?: string; // Property to display instead of title
     rollupPropertyId?: string; // For rollups
     rollupTargetPropertyId?: string;
+    rollupAggregation?: 'show_original' | 'extract_numbers' | 'sum' | 'count' | 'average'; // Defines calculation over fetched array
     formulaExpression?: string; // For formulas
 }
 
@@ -76,6 +79,11 @@ export interface Block {
     costPrice?: number; // Derived: Bruto - Discount
     margePercent?: number;
     verkoopPrice?: number; // Derived: Cost + Marge
+
+    // --- Invoice Engine Fields ---
+    unitPrice?: number;   // Unit price excl. VAT (invoice-specific, replaces verkoopPrice column)
+    vatRate?: number;     // Per-line VAT rate: 21, 12, 6, 0 (default 21)
+    vatMedecontractant?: boolean; // Per-line medecontractant flag (BTW verlegd → 0%)
 
     children?: Block[]; // Compound nesting architecture (essential for `section` / `subsection` / `post` blocks)
 
@@ -132,7 +140,7 @@ export interface FilterGroup {
     filters: (FilterRule | FilterGroup)[];
 }
 
-export type ViewType = 'table' | 'board' | 'calendar';
+export type ViewType = 'table' | 'board' | 'calendar' | 'timeline';
 
 export interface ViewPropertyState {
     propertyId: string;

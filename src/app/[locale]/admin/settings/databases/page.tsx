@@ -18,7 +18,7 @@ export default function DatabaseListSettingsPage() {
     if (!isMounted) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-4">
             <div className="flex flex-col gap-2">
                 <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
                     <DatabaseIcon className="w-6 h-6 text-blue-500" />
@@ -29,20 +29,20 @@ export default function DatabaseListSettingsPage() {
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {databases.filter(db => !db.isTemplate).map(db => (
                     <Link
                         key={db.id}
                         href={`/admin/settings/databases/${db.id}`}
-                        className="group flex flex-col p-5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/5 transition-all w-full text-left"
+                        className="group flex flex-col p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/5 transition-all w-full text-left"
                     >
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-blue-50/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
                                     {db.icon ? (
-                                        <span className="text-lg">{db.icon}</span>
+                                        <span className="text-base">{db.icon}</span>
                                     ) : (
-                                        <Boxes className="w-5 h-5" />
+                                        <Boxes className="w-4 h-4" />
                                     )}
                                 </div>
                                 <div>
@@ -82,7 +82,7 @@ export default function DatabaseListSettingsPage() {
                 ))}
             </div>
 
-            <div className="p-6 rounded-2xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 border-dashed flex flex-col items-center justify-center text-center">
+            <div className="p-4 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 border-dashed flex flex-col items-center justify-center text-center">
                 <div className="w-12 h-12 rounded-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 flex items-center justify-center text-neutral-400 mb-3 shadow-sm">
                     <Settings2 className="w-5 h-5 -rotate-90" />
                 </div>

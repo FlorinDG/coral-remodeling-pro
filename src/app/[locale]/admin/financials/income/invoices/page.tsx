@@ -1,34 +1,37 @@
 import prisma from "@/lib/prisma";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { financialTabs } from "@/config/tabs";
-import { FileText, Plus, Euro, Calendar, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { FileText, Plus, Calendar, CheckCircle, AlertCircle, Clock } from "lucide-react";
+
+import Link from "next/link";
+import CreateInvoiceButton from "@/components/admin/invoices/CreateInvoiceButton";
+import InvoiceActionDropdown from "@/components/admin/invoices/InvoiceActionDropdown";
+import InvoiceTotalCell from "@/components/admin/invoices/InvoiceTotalCell";
 
 export default async function SalesInvoicesPage() {
     const invoices = await prisma.invoice.findMany({
         where: { type: 'SALES' },
         orderBy: { issueDate: 'desc' },
-        include: {
-            // Optional: when relations are mapped to real contacts, this will join them
-            // contact: true 
-        }
+        include: {}
     });
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={financialTabs} groupId="financials" />
+            <div className="relative">
+                <ModuleTabs tabs={financialTabs} groupId="financials" />
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20">
+                    <CreateInvoiceButton />
+                </div>
+            </div>
             <div className="w-full h-full p-6 pb-10 flex flex-col hide-scrollbar overflow-y-auto">
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Verkoopfacturen (Sales Invoices)</h1>
                         <p className="text-neutral-500 font-medium text-sm mt-1">Manage accounts receivable, track payments, and generate PDF invoices.</p>
                     </div>
-                    <button className="flex items-center gap-2 bg-[#d35400] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-[#e67e22] transition-colors">
-                        <Plus className="w-4 h-4" />
-                        Create Invoice
-                    </button>
                 </div>
 
-                <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl shadow-sm">
                     {invoices.length === 0 ? (
                         <div className="p-12 flex flex-col items-center justify-center text-center">
                             <div className="w-16 h-16 bg-neutral-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
@@ -38,7 +41,7 @@ export default async function SalesInvoicesPage() {
                             <p className="text-neutral-500 text-sm mt-2 max-w-sm">Draft your first invoice line-item to establish accounts receivable tracking and VAT logging.</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <div>
                             <table className="w-full text-left border-collapse min-w-[900px]">
                                 <thead>
                                     <tr className="border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.02]">
@@ -54,12 +57,20 @@ export default async function SalesInvoicesPage() {
                                     {invoices.map((inv) => (
                                         <tr key={inv.id} className="border-b border-neutral-100 dark:border-white/5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors">
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-[#d35400]/10 dark:bg-[#e67e22]/20 border border-[#d35400]/20 text-[#d35400] dark:text-[#e67e22]">
+                                                <Link
+                                                    href={`/nl/admin/financials/income/invoices/${inv.id}`}
+                                                    className="flex items-center gap-3 group"
+                                                >
+                                                    <div
+                                                        className="p-2 rounded-lg border"
+                                                        style={{ borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)', color: 'var(--brand-color, #d35400)' }}
+                                                    >
                                                         <FileText className="w-4 h-4" />
                                                     </div>
-                                                    <span className="font-bold font-mono text-sm tracking-widest text-neutral-900 dark:text-white">{inv.invoiceNumber}</span>
-                                                </div>
+                                                    <span className="font-bold font-mono text-sm tracking-widest text-neutral-900 dark:text-white group-hover:underline transition-colors" style={{ textDecorationColor: 'var(--brand-color, #d35400)' }}>
+                                                        {inv.invoiceNumber}
+                                                    </span>
+                                                </Link>
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -71,19 +82,17 @@ export default async function SalesInvoicesPage() {
                                                     <Calendar className="w-3 h-3 block" />
                                                     Issued: {new Date(inv.issueDate).toLocaleDateString()}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[11px] text-[#d35400] font-bold tracking-wider">
+                                                <div className="flex items-center gap-2 text-[11px] font-bold tracking-wider" style={{ color: 'var(--brand-color, #d35400)' }}>
                                                     <Clock className="w-3 h-3" />
                                                     Due: {new Date(inv.dueDate).toLocaleDateString()}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-1 font-mono text-sm font-bold text-neutral-900 dark:text-white">
-                                                    <Euro className="w-3 h-3 text-neutral-400" />
-                                                    {inv.total.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                </div>
-                                                <div className="text-[10px] text-neutral-400 uppercase tracking-widest mt-0.5">
-                                                    {inv.vatTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })} VAT
-                                                </div>
+                                                <InvoiceTotalCell
+                                                    invoiceId={inv.id}
+                                                    fallbackTotal={inv.total}
+                                                    fallbackVat={inv.vatTotal}
+                                                />
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 flex items-center gap-1.5 w-max rounded-full text-[10px] font-bold uppercase tracking-wider border
@@ -97,7 +106,7 @@ export default async function SalesInvoicesPage() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-[#d35400] text-sm font-bold hover:underline">View PDF</button>
+                                                <InvoiceActionDropdown invoiceId={inv.id} invoiceNumber={inv.invoiceNumber} />
                                             </td>
                                         </tr>
                                     ))}

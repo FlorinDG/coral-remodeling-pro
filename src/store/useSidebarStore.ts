@@ -60,9 +60,10 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'frontend', iconName: 'Globe', label: 'WEBSITE', href: '/admin/content' },
     { id: 'hr', iconName: 'CircleDollarSign', label: 'HR', href: '/admin/hr/time-tracker' },
     { id: 'library', iconName: 'Library', label: 'LIBRARY', href: '/admin/library/articles' },
-    { id: 'projects', iconName: 'Briefcase', label: 'PROJECTS', href: '/admin/projects-management/tasks' },
-    { id: 'relations', iconName: 'UsersRound', label: 'RELATIONS', href: '/admin/contacts' },
-    { id: 'settings', iconName: 'Settings', label: 'SETTINGS', href: '/admin/settings/ui' },
+    { id: 'projects', iconName: 'Briefcase', label: 'PROJECTS', href: '/admin/projects-management' },
+    { id: 'contacts', iconName: 'Users', label: 'CONTACTS', href: '/admin/contacts' },
+    { id: 'suppliers', iconName: 'Truck', label: 'SUPPLIERS', href: '/admin/suppliers' },
+    { id: 'settings', iconName: 'Settings', label: 'SETTINGS', href: '/admin/settings/company-info' },
     { id: 'tasks', iconName: 'BriefcaseBusiness', label: 'TASKS', href: '/admin/tasks' },
 ];
 
@@ -80,11 +81,10 @@ export const useSidebarStore = create<SidebarStore>()(
             resetToDefault: () => set({ items: defaultSidebarItems }),
         }),
         {
-            name: 'admin-sidebar-storage', // name of the item in the storage (must be unique)
-            version: 10, // bump version to bust cache for FILES separation
+            name: 'admin-sidebar-storage',
+            version: 13, // bump version to fix settings default redirect
             migrate: (persistedState: any, version: number) => {
-                if (version < 10) {
-                    // Reset to new defaults to ensure the new categories appear for existing users
+                if (version < 13) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from 're
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
-import { Link } from 'lucide-react';
+import { Link, Search } from 'lucide-react';
 
 interface RelationComponentProps extends CellProps<any, any> {
     relationDatabaseId: string;
@@ -12,7 +12,33 @@ interface RelationComponentProps extends CellProps<any, any> {
 
 const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, relationDatabaseId, propId, displayPropertyId = 'title' }: RelationComponentProps) => {
     const cellRef = useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
     const [rect, setRect] = useState<DOMRect | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Native Click Away Listener for robust dismissal beyond React-Datasheet-Grid
+    useEffect(() => {
+        if (!focus && !active) return;
+
+        const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+            // If we click inside the popover or inside the cell itself, do nothing
+            if (
+                popoverRef.current?.contains(e.target as Node) ||
+                cellRef.current?.contains(e.target as Node)
+            ) {
+                return;
+            }
+            // Otherwise, we clicked completely outside. Force dismount!
+            stopEditing({ nextRow: false });
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('touchstart', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('touchstart', handleClickOutside);
+        };
+    }, [focus, active, stopEditing]);
 
     // Manage portal position
     useLayoutEffect(() => {
@@ -53,6 +79,16 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
         });
     }, [targetDatabase, value, displayPropertyId]);
 
+    const filteredTargetPages = useMemo(() => {
+        if (!targetDatabase) return [];
+        if (!searchQuery.trim()) return targetDatabase.pages;
+
+        return targetDatabase.pages.filter(page => {
+            const title = String(page.properties[displayPropertyId] || 'Untitled');
+            return title.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    }, [targetDatabase, searchQuery, displayPropertyId]);
+
     if (!focus && !active) {
         if (selectedTitles.length === 0) {
             return <div className="w-full h-full p-2 flex items-center text-neutral-400 text-sm">Empty</div>;
@@ -73,19 +109,32 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     const dropdownMenu = rect ? (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, pointerEvents: 'none' }}>
             <div
+                ref={popoverRef}
                 className="bg-white dark:bg-neutral-900 border border-blue-500 shadow-xl flex flex-col p-2 animate-in fade-in duration-100 rounded-b-md"
                 style={{
                     position: 'absolute',
                     top: rect.bottom,
                     left: rect.left,
-                    width: Math.max(250, rect.width),
+                    width: Math.max(300, rect.width),
                     height: 'auto',
-                    maxHeight: '250px',
+                    maxHeight: '350px',
                     pointerEvents: 'auto',
                     boxSizing: 'border-box'
                 }}
             >
-                <div className="text-xs font-semibold text-neutral-500 mb-2 uppercase tracking-wider">Select Pages</div>
+                <div className="flex items-center gap-2 mb-3">
+                    <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+                    <input
+                        type="text"
+                        autoFocus
+                        placeholder="Search related pages..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-transparent border-none text-sm outline-none text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400"
+                        onPointerDown={(e) => e.stopPropagation()} // Prevent drag locks
+                        onKeyDown={(e) => e.stopPropagation()} // Prevent grid catching typing
+                    />
+                </div>
 
                 {/* Current Selections */}
                 {selectedTitles.length > 0 && (
@@ -115,49 +164,44 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
 
                 {/* List of avaiable pages in target DB */}
                 <div className="flex flex-col gap-0.5 overflow-y-auto">
-                    {targetDatabase?.pages.map(page => {
-                        const title = String(page.properties[displayPropertyId] || 'Untitled');
-                        const isSelected = value.includes(page.id);
+                    {filteredTargetPages.length === 0 ? (
+                        <div className="text-xs text-neutral-400 italic p-2 text-center">No results found.</div>
+                    ) : (
+                        filteredTargetPages.map(page => {
+                            const title = String(page.properties[displayPropertyId] || 'Untitled');
+                            const isSelected = value.includes(page.id);
 
-                        return (
-                            <button
-                                key={page.id}
-                                onPointerDown={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (isSelected) {
-                                        const nextValue = value.filter(v => v !== page.id);
-                                        setRowData({
-                                            ...rowData,
-                                            properties: { ...(rowData?.properties || {}), [propId]: nextValue }
-                                        });
-                                    } else {
-                                        const nextValue = [...value, page.id];
-                                        setRowData({
-                                            ...rowData,
-                                            properties: { ...(rowData?.properties || {}), [propId]: nextValue }
-                                        });
-                                    }
-                                }}
-                                className={`w-full text-left px-2 py-1.5 rounded text-sm transition-colors ${isSelected
-                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium'
-                                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                                    }`}
-                            >
-                                {title}
-                            </button>
-                        )
-                    })}
+                            return (
+                                <button
+                                    key={page.id}
+                                    onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (isSelected) {
+                                            const nextValue = value.filter(v => v !== page.id);
+                                            setRowData({
+                                                ...rowData,
+                                                properties: { ...(rowData?.properties || {}), [propId]: nextValue }
+                                            });
+                                        } else {
+                                            const nextValue = [...value, page.id];
+                                            setRowData({
+                                                ...rowData,
+                                                properties: { ...(rowData?.properties || {}), [propId]: nextValue }
+                                            });
+                                        }
+                                    }}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-sm transition-colors ${isSelected
+                                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 font-medium'
+                                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                                        }`}
+                                >
+                                    {title}
+                                </button>
+                            )
+                        })
+                    )}
                 </div>
-
-                {/* Click outside trap to close */}
-                <div
-                    style={{ position: 'fixed', inset: 0, zIndex: -1, pointerEvents: 'auto' }}
-                    onPointerDown={(e) => {
-                        e.preventDefault();
-                        stopEditing({ nextRow: false });
-                    }}
-                />
             </div>
         </div>
     ) : null;

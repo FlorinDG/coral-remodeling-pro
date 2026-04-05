@@ -33,7 +33,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
                     <div className="flex justify-between items-center mb-8">
                         <div>
                             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">{title}</h2>
-                            <div className="h-1 w-12 bg-[#d35400] rounded-full mt-2" />
+                            <div className="h-1 w-12 bg-[var(--brand-color,#d35400)] rounded-full mt-2" />
                         </div>
                         <button
                             onClick={onClose}

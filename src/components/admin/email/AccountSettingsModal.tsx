@@ -163,7 +163,7 @@ export function AccountSettingsModal({ isOpen, onClose }: AccountSettingsModalPr
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="flex-1 flex justify-center items-center gap-2 py-2 text-sm font-bold text-white bg-[#d35400] hover:bg-[#e67e22] rounded-lg transition-colors shadow-md disabled:opacity-50"
+                            className="flex-1 flex justify-center items-center gap-2 py-2 text-sm font-bold text-white bg-[var(--brand-color,#d35400)] hover:opacity-90 rounded-lg transition-colors shadow-md disabled:opacity-50"
                         >
                             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect"}
                         </button>

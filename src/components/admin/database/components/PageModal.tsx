@@ -1,14 +1,187 @@
 "use client";
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
-import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus } from 'lucide-react';
+import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, ExternalLink } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
 import FileManager from '@/components/admin/file-manager/FileManager';
 import { useFileManagerStore } from '@/components/admin/file-manager/store';
+import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
-import { VariantsConfig } from '../types';
+import { Property, VariantsConfig } from '../types';
+import { Search, Loader2 } from 'lucide-react';
+import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
+import { toast } from 'sonner';
+import SmartVATLookup from './SmartVATLookup';
+
+const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
+    const databases = useDatabaseStore(state => state.databases);
+    const page = databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId);
+
+    const rollupPropertyId = property.config?.rollupPropertyId;
+    const rollupTargetPropertyId = property.config?.rollupTargetPropertyId;
+
+    const aggregatedValues = React.useMemo(() => {
+        if (!page || !rollupPropertyId || !rollupTargetPropertyId) return [];
+        const relationIds = page.properties?.[rollupPropertyId] as string[];
+        if (!relationIds || !Array.isArray(relationIds) || relationIds.length === 0) return [];
+
+        const results: string[] = [];
+        for (const targetPageId of relationIds) {
+            const targetDb = databases.find(db => db.pages.some(p => p.id === targetPageId));
+            if (targetDb) {
+                const targetPage = targetDb.pages.find(p => p.id === targetPageId);
+                if (targetPage) {
+                    const val = targetPage.properties[rollupTargetPropertyId];
+                    if (val !== undefined && val !== null && String(val).trim() !== '') {
+                        results.push(String(val));
+                    }
+                }
+            }
+        }
+        return applyRollupAggregation(results, property.config?.rollupAggregation);
+    }, [page, rollupPropertyId, rollupTargetPropertyId, databases, property.config?.rollupAggregation]);
+
+    if (aggregatedValues.length === 0) {
+        return <div className="w-full h-full flex items-center text-neutral-400 font-medium italic">Empty Rollup</div>;
+    }
+
+    return (
+        <div className="w-full h-full flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+            <Search className="w-3 h-3 text-neutral-400 flex-shrink-0 mr-1" />
+            {aggregatedValues.map((val: string, i: number) => (
+                <span key={i} className="px-1.5 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
+                    {val}
+                </span>
+            ))}
+        </div>
+    );
+};
+
+const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
+    const targetDbId = property.config?.relationDatabaseId;
+    const targetDatabase = useDatabaseStore(state => state.databases.find(db => db.id === targetDbId));
+    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
+    const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+
+    const rawValue = page?.properties[property.id];
+    const value = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
+
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const listener = (e: MouseEvent | TouchEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', listener);
+        document.addEventListener('touchstart', listener);
+        return () => {
+            document.removeEventListener('mousedown', listener);
+            document.removeEventListener('touchstart', listener);
+        };
+    }, []);
+
+    const displayPropertyId = (property.config as any)?.displayPropertyId || 'title';
+
+    const selectedTitles = React.useMemo(() => {
+        if (!targetDatabase || value.length === 0) return [];
+        return value.map(id => {
+            const dp = targetDatabase.pages.find(p => p.id === id);
+            return (dp?.properties[displayPropertyId] as string) || 'Untitled';
+        });
+    }, [targetDatabase, value, displayPropertyId]);
+
+    const filteredPages = React.useMemo(() => {
+        if (!targetDatabase) return [];
+        if (!search.trim()) return targetDatabase.pages;
+        return targetDatabase.pages.filter(p => {
+            const title = String(p.properties[displayPropertyId] || 'Untitled');
+            return title.toLowerCase().includes(search.toLowerCase());
+        });
+    }, [targetDatabase, search, displayPropertyId]);
+
+    return (
+        <div ref={ref} className="relative w-full h-full flex items-center">
+            <div
+                className="flex gap-1 overflow-x-auto no-scrollbar outline-none cursor-pointer w-full h-full items-center"
+                onClick={() => setIsOpen(true)}
+            >
+                {selectedTitles.length === 0 ? (
+                    <span className="text-neutral-400 placeholder">Empty</span>
+                ) : (
+                    selectedTitles.map((t, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
+                            <Link className="w-3 h-3" />
+                            {t}
+                        </span>
+                    ))
+                )}
+            </div>
+
+            {isOpen && ref.current && typeof document !== 'undefined' && createPortal(
+                <div
+                    className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-blue-500 shadow-xl rounded-md w-64 p-2 animate-in fade-in duration-200"
+                    style={{
+                        top: ref.current.getBoundingClientRect().bottom + 4,
+                        left: ref.current.getBoundingClientRect().left
+                    }}
+                >
+                    <input
+                        autoFocus
+                        type="text"
+                        placeholder="Search pages..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full bg-neutral-100 dark:bg-neutral-800 border-none outline-none text-sm px-2 py-1.5 rounded mb-2 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400"
+                    />
+
+                    {selectedTitles.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
+                            {value.map((id, i) => (
+                                <span key={id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
+                                    <Link className="w-3 h-3" />
+                                    {selectedTitles[i]}
+                                    <button
+                                        className="ml-1 hover:text-red-500"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updatePageProperty(databaseId, pageId, property.id, value.filter(v => v !== id));
+                                        }}
+                                    >×</button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                        {filteredPages.length === 0 && <span className="text-xs text-neutral-400 p-2 italic">No results</span>}
+                        {filteredPages.map(p => {
+                            const isSelected = value.includes(p.id);
+                            return (
+                                <button
+                                    key={p.id}
+                                    onClick={() => {
+                                        if (isSelected) updatePageProperty(databaseId, pageId, property.id, value.filter(v => v !== p.id));
+                                        else updatePageProperty(databaseId, pageId, property.id, [...value, p.id]);
+                                    }}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-sm ${isSelected ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}`}
+                                >
+                                    {String(p.properties[displayPropertyId] || 'Untitled')}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+};
 
 interface PageModalProps {
     databaseId: string;
@@ -102,10 +275,23 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
         startGarbageCollection();
     }, [database, page, nodes, deleteNode]);
 
-    if (!database || !page) return null;
+    const handleVATImport = (data: { name: string; address: string; vatNumber: string }) => {
+        if (data.name) updatePageProperty(databaseId, pageId, 'title', data.name);
+        // Find the address property by name (could be UUID ID from Postgres)
+        const addressProp = database?.properties.find(p =>
+            p.name.toLowerCase().includes('address') || p.name.toLowerCase().includes('adres') || p.id === 'prop-address-main'
+        );
+        if (data.address && addressProp) {
+            updatePageProperty(databaseId, pageId, addressProp.id, data.address);
+        }
+        toast.success('Bedrijfsgegevens geïmporteerd uit VIES register.', { id: 'vat-import' });
+    };
 
-    return (
-        <div className="fixed inset-0 z-[100] flex justify-end">
+    if (!database || !page) return null;
+    if (typeof document === 'undefined') return null;
+
+    return createPortal(
+        <div className="fixed inset-0 z-[99999] flex justify-end">
             <div className="absolute inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
             <div
@@ -135,7 +321,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 </div>
 
                 {/* Page Content */}
-                <div className="flex-1 px-8 pt-2 pb-6 max-w-[900px] mx-auto w-full">
+                <div className="flex-1 px-8 pt-2 pb-6 max-w-[1200px] mx-auto w-full">
                     {/* Title */}
                     <input
                         className="w-full text-4xl font-bold mb-4 text-neutral-900 dark:text-white outline-none bg-transparent placeholder:text-neutral-300 dark:placeholder:text-neutral-700"
@@ -150,7 +336,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         {database.properties.filter(p => p.id !== 'title').map(prop => (
                             <div key={prop.id} className="flex flex-col justify-center gap-1 px-3 py-2 bg-neutral-50 dark:bg-[#151515] hover:bg-white dark:hover:bg-[#1e1e1e] transition-colors group relative">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">{prop.name}</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">{prop.name}</span>
+                                    </div>
 
                                     {(prop.type === 'select' || prop.type === 'multi_select') && (
                                         <DropdownMenu>
@@ -194,12 +382,24 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                         </DropdownMenu>
                                     )}
                                 </div>
-                                <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 h-7 flex items-center w-full">
-                                    {prop.type === 'text' ? (
-                                        <input
-                                            className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
+                                    {(prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer') ? (
+                                        <SmartVATLookup
                                             value={(page.properties[prop.id] as string) || ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                            onChange={(val) => updatePageProperty(databaseId, pageId, prop.id, val)}
+                                            onImport={handleVATImport}
+                                        />
+                                    ) : prop.type === 'text' ? (
+                                        <textarea
+                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                            value={(page.properties[prop.id] as string) || ''}
+                                            onChange={(e) => {
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = e.target.scrollHeight + 'px';
+                                                updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                            }}
+                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                            rows={1}
                                             placeholder="Empty"
                                         />
                                     ) : prop.type === 'number' ? (
@@ -241,16 +441,24 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                             ))}
                                         </select>
                                     ) : prop.type === 'multi_select' ? (
-                                        <input
-                                            className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                        <textarea
+                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
                                             value={Array.isArray(page.properties[prop.id]) ? (page.properties[prop.id] as string[]).join(', ') : ''}
                                             onChange={(e) => {
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = e.target.scrollHeight + 'px';
                                                 const val = e.target.value;
                                                 const arr = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
                                                 updatePageProperty(databaseId, pageId, prop.id, arr);
                                             }}
+                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                            rows={1}
                                             placeholder="Comma separated..."
                                         />
+                                    ) : prop.type === 'relation' ? (
+                                        <PageRelationEditor databaseId={databaseId} pageId={pageId} property={prop} />
+                                    ) : prop.type === 'rollup' ? (
+                                        <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
                                     ) : prop.type === 'variants' ? (
                                         <VariantsPropertyEditor
                                             databaseId={databaseId}
@@ -258,11 +466,49 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                             propertyId={prop.id}
                                             initialConfig={(page.properties[prop.id] as VariantsConfig) || []}
                                         />
+                                    ) : ['email', 'phone', 'url', 'places'].includes(prop.type) ? (
+                                        <div className="flex items-center w-full gap-2 group relative">
+                                            <textarea
+                                                className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                value={page.properties[prop.id] !== undefined ? String(page.properties[prop.id]) : ''}
+                                                onChange={(e) => {
+                                                    e.target.style.height = 'auto';
+                                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                                    updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                                }}
+                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                rows={1}
+                                                placeholder={`Empty (${prop.type})`}
+                                            />
+                                            {page.properties[prop.id] && String(page.properties[prop.id]).trim() !== '' && (
+                                                <a
+                                                    href={
+                                                        prop.type === 'email' ? `mailto:${page.properties[prop.id]}` :
+                                                            prop.type === 'phone' ? `tel:${String(page.properties[prop.id]).replace(/[^\d+]/g, '')}` :
+                                                                prop.type === 'places' ? `https://maps.google.com/?q=${encodeURIComponent(String(page.properties[prop.id]))}` :
+                                                                    prop.type === 'url' ? (String(page.properties[prop.id]).startsWith('http') ? String(page.properties[prop.id]) : `https://${page.properties[prop.id]}`) :
+                                                                        '#'
+                                                    }
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="opacity-100 md:opacity-0 group-hover:opacity-100 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition flex-shrink-0 text-blue-500 hover:text-blue-600 dark:text-blue-400"
+                                                    title={`Open ${prop.type}`}
+                                                >
+                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                </a>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <input
-                                            className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                        <textarea
+                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
                                             value={page.properties[prop.id] !== undefined ? String(page.properties[prop.id]) : ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                            onChange={(e) => {
+                                                e.target.style.height = 'auto';
+                                                e.target.style.height = e.target.scrollHeight + 'px';
+                                                updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                            }}
+                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                            rows={1}
                                             placeholder={`Empty (${prop.type})`}
                                         />
                                     )}
@@ -271,27 +517,38 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         ))}
                     </div>
 
+                    {/* Financial Analysis Inline Component */}
+                    <div className="px-6 md:px-0">
+                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} />
+                    </div>
+
                     {/* Block Editor */}
-                    <div className="mt-8 mb-12">
+                    <div className="mt-8 mb-12 px-6 md:px-0">
                         <h2 className="text-xl font-bold text-foreground mb-4">Content</h2>
                         <BlockEditor databaseId={databaseId} pageId={pageId} />
                     </div>
 
                     {/* Appended File Manager (Scoped Context) */}
                     <div className="mt-8 pb-12">
-                        <h2 className="text-xl font-bold text-foreground mb-4">Attached Files</h2>
+                        <h2 className="text-xl font-bold text-foreground mb-4">File Explorer</h2>
                         <div className="h-[500px] border border-border/50 rounded-xl overflow-hidden shadow-sm">
-                            <FileManager
-                                contextType="project"
-                                contextId={pageId}
-                                // Pass the actual Google Drive folder ID mapped to this specific database page record.
-                                // If undefined, the FileManager falls back to the Global Root defined in env vars.
-                                driveFolderId={page.driveFolderId}
-                            />
+                            {page.driveFolderId ? (
+                                <DriveFileExplorer
+                                    rootFolderId={page.driveFolderId}
+                                    rootFolderName={String(page.properties['title'] || 'Workspace')}
+                                />
+                            ) : (
+                                <FileManager
+                                    contextType="project"
+                                    contextId={pageId}
+                                    driveFolderId={undefined}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

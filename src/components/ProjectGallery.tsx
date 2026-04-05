@@ -77,7 +77,7 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
                         <motion.p layoutId={`loc-${title}`} className="text-sm text-neutral-400 mb-4">{location}</motion.p>
 
                         {/* Ghost Button */}
-                        <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#d35400] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#d75d00] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                             {t('viewProject')} <ArrowRight className="w-4 h-4" />
                         </button>
                     </div>
@@ -124,15 +124,15 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.8 }}
                                 transition={{ delay: 0.3 }}
-                                className="hidden md:flex absolute left-[33.33333%] top-1/2 -translate-y-1/2 -translate-x-1/2 z-[60] flex-col items-center justify-center gap-4 p-4 bg-[#d35400] rounded-full shadow-xl shadow-black/20 w-16"
+                                className="hidden md:flex absolute left-[33.33333%] top-1/2 -translate-y-1/2 -translate-x-1/2 z-[60] flex-col items-center justify-center gap-4 p-4 bg-[#d75d00] rounded-full shadow-xl shadow-black/20 w-16"
                             >
-                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
+                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-5 h-5 fill-current" />
                                 </a>
-                                <a href="mailto:info@coral-group.be" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
+                                <a href="mailto:info@coral-group.be" className="p-3 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-5 h-5" />
                                 </a>
-                                <a href="#map" className="p-3 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
+                                <a href="#map" className="p-3 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
                                     <MapPin className="w-5 h-5 fill-current" />
                                 </a>
                             </motion.div>
@@ -143,22 +143,22 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: 20 }}
                                 transition={{ delay: 0.3 }}
-                                className="flex md:hidden absolute right-4 bottom-8 z-[60] flex-row gap-2 p-2 bg-[#d35400] rounded-full shadow-xl shadow-black/20"
+                                className="flex md:hidden absolute right-4 bottom-8 z-[60] flex-row gap-2 p-2 bg-[#d75d00] rounded-full shadow-xl shadow-black/20"
                             >
-                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
+                                <a href="https://wa.me/" target="_blank" rel="noopener noreferrer" className="p-2 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.whatsapp')}>
                                     <Phone className="w-4 h-4 fill-current" />
                                 </a>
-                                <a href="mailto:info@coral-group.be" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
+                                <a href="mailto:info@coral-group.be" className="p-2 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.email')}>
                                     <Mail className="w-4 h-4" />
                                 </a>
-                                <a href="#map" className="p-2 bg-white text-[#d35400] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
+                                <a href="#map" className="p-2 bg-white text-[#d75d00] hover:bg-neutral-100 rounded-full transition-colors shadow-sm" title={t('tooltips.location')}>
                                     <MapPin className="w-4 h-4 fill-current" />
                                 </a>
                             </motion.div>
 
                             {/* Mobile Header: Title and Location (Top on Mobile) */}
                             <div className="md:hidden p-8 pb-4 bg-black/60 backdrop-blur-md relative border-b border-white/5 z-20 order-1 text-white">
-                                <span className="text-[#d35400] font-bold tracking-widest text-[10px] uppercase mb-2 block">
+                                <span className="text-[#d75d00] font-bold tracking-widest text-[10px] uppercase mb-2 block">
                                     {t('details')}
                                 </span>
                                 <motion.h2 layoutId={isMobile ? `title-${title}` : undefined} className="text-3xl font-black mb-1">{title}</motion.h2>
@@ -169,12 +169,12 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
                             <div className="w-full md:w-1/3 p-8 md:p-12 flex flex-col justify-center bg-black/60 backdrop-blur-md relative md:border-r border-white/5 order-3 md:order-1">
                                 {/* Desktop version of Header */}
                                 <div className="hidden md:block text-white">
-                                    <span className="text-[#d35400] font-bold tracking-widest text-xs uppercase mb-4 block">
+                                    <span className="text-[#d75d00] font-bold tracking-widest text-xs uppercase mb-4 block">
                                         {t('details')}
                                     </span>
                                     <motion.h2 layoutId={!isMobile ? `title-${title}` : undefined} className="text-3xl md:text-5xl font-black mb-4 leading-tight">{title}</motion.h2>
                                     <motion.p layoutId={!isMobile ? `loc-${title}` : undefined} className="text-lg text-white/80 font-medium mb-6">{location}</motion.p>
-                                    <div className="w-12 h-1 bg-[#d35400] mb-8" />
+                                    <div className="w-12 h-1 bg-[#d75d00] mb-8" />
                                 </div>
 
                                 {/* Text Fade Transition */}
@@ -186,7 +186,7 @@ export default function ProjectGallery({ title, location, images, slug }: Projec
                                         exit={{ opacity: 0, y: -10 }}
                                         transition={{ duration: 0.7 }}
                                     >
-                                        <div className="md:hidden w-12 h-1 bg-[#d35400] mb-6" />
+                                        <div className="md:hidden w-12 h-1 bg-[#d75d00] mb-6" />
 
                                         <p className="text-neutral-400 leading-relaxed text-sm md:text-base">
                                             {images[currentIndex].caption || t('fallbackCaption')}

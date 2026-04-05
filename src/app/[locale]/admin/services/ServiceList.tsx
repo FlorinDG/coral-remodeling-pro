@@ -35,7 +35,8 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                 </div>
                 <Link
                     href="/admin/services/new"
-                    className="bg-[#d35400] hover:bg-[#e67e22] text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-[#d35400]/20"
+                    className="text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-sm hover:opacity-90"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     <Plus className="w-4 h-4" />
                     ADD SERVICE
@@ -44,7 +45,7 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {services.sort((a, b) => a.order - b.order).map((service) => (
-                    <div key={service.id} className="group bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/10 overflow-hidden hover:border-[#d35400]/30 transition-all flex flex-col shadow-sm">
+                    <div key={service.id} className="group bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/10 overflow-hidden hover:border-[var(--brand-color,#d35400)]/30 transition-all flex flex-col shadow-sm">
                         <div className="aspect-[4/3] relative bg-neutral-900">
                             <Image src={service.image} alt={service.titleEn} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
                             <div className="absolute top-3 left-3 bg-white/90 dark:bg-black/80 backdrop-blur-md w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg">
@@ -53,14 +54,19 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                 <Link
                                     href={`/admin/services/${service.id}`}
-                                    className="p-3 bg-white text-black rounded-full hover:bg-[#d35400] hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
+                                    className="p-3 bg-white text-black rounded-full hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300"
+                                    style={{ '--hover-bg': 'var(--brand-color, #d35400)' } as React.CSSProperties}
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--brand-color, #d35400)' }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'white' }}
                                 >
                                     <Edit2 className="w-5 h-5" />
                                 </Link>
                                 <a
                                     href={`/services/${service.slug}`}
                                     target="_blank"
-                                    className="p-3 bg-white text-black rounded-full hover:bg-[#d35400] hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75"
+                                    className="p-3 bg-white text-black rounded-full hover:text-white transition-all transform translate-y-4 group-hover:translate-y-0 duration-300 delay-75"
+                                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--brand-color, #d35400)' }}
+                                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = 'white' }}
                                 >
                                     <ExternalLink className="w-5 h-5" />
                                 </a>
@@ -68,12 +74,12 @@ export default function ServiceList({ initialServices }: ServiceListProps) {
                         </div>
                         <div className="p-4 flex-1 flex flex-col">
                             <h3 className="font-bold text-neutral-900 dark:text-white">{service.titleEn}</h3>
-                            <p className="text-[10px] text-[#d35400] font-bold uppercase tracking-widest mt-1 opacity-70">/{service.slug}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70" style={{ color: 'var(--brand-color, #d35400)' }}>/{service.slug}</p>
                             <div className="mt-auto pt-4 flex items-center justify-between border-t border-neutral-100 dark:border-white/5">
                                 <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Order: {service.order}</span>
                                 <div className="flex gap-1">
                                     {['en', 'nl', 'fr', 'ro'].map(l => (
-                                        <span key={l} className={`text-[8px] font-bold uppercase ${(service as any)[`title${l.charAt(0).toUpperCase() + l.slice(1)}`] ? 'text-[#d35400]' : 'text-neutral-300'}`}>{l}</span>
+                                        <span key={l} className={`text-[8px] font-bold uppercase ${(service as any)[`title${l.charAt(0).toUpperCase() + l.slice(1)}`] ? '' : 'text-neutral-300'}`} style={(service as any)[`title${l.charAt(0).toUpperCase() + l.slice(1)}`] ? { color: 'var(--brand-color, #d35400)' } : {}}>{l}</span>
                                     ))}
                                 </div>
                             </div>

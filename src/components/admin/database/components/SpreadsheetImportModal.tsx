@@ -170,9 +170,31 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             });
         }
 
+        // Pre-process any "Create New Property" requests natively before mapping data
+        const localMapping = { ...mapping };
+
+        for (const [header, targetPropId] of Object.entries(localMapping)) {
+            if (targetPropId === 'create_new') {
+                // Determine plausible property type heuristically (quick inference)
+                const sampleValues = previewData.slice(0, 10).map(row => row[header]).filter(Boolean);
+                let targetType: any = 'text';
+
+                if (sampleValues.every(val => !isNaN(Number(String(val).replace(/,/g, '.'))) && String(val).trim() !== '')) {
+                    targetType = 'number';
+                }
+
+                const newPropId = useDatabaseStore.getState().addProperty(databaseId, header, targetType);
+                localMapping[header] = newPropId; // Inject explicitly back into mapping pipeline
+            }
+        }
+
+        // Re-pull the database instantly to capture the newly injected schema fields for row digestion
+        const refreshedDb = useDatabaseStore.getState().getDatabase(databaseId);
+        if (!refreshedDb) return;
+
         // Inverse mapping to know which property ID gets mapped from which header
         const invertedMap: Record<string, string> = {};
-        Object.entries(mapping).forEach(([header, targetPropId]) => {
+        Object.entries(localMapping).forEach(([header, targetPropId]) => {
             if (targetPropId !== 'ignore') {
                 invertedMap[targetPropId] = header;
             }
@@ -182,7 +204,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             const props: Record<string, any> = {};
 
             // Pluck mapped values from the row
-            targetDb.properties.forEach(dbProp => {
+            refreshedDb.properties.forEach((dbProp: any) => {
                 const sourceHeader = invertedMap[dbProp.id];
                 if (sourceHeader && row[sourceHeader] !== undefined) {
                     let val = row[sourceHeader];
@@ -222,7 +244,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             });
 
             // Enforce default fallback protections
-            const titlePropId = targetDb.properties.find(p => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
+            const titlePropId = refreshedDb.properties.find((p: any) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
             if (!props[titlePropId]) props[titlePropId] = 'Imported Row';
 
             // ART-XX-XXXX Generation Loop Component (Articles specific)
@@ -244,7 +266,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 counters[groupCode]++;
 
                 // Assign explicitly
-                const autoIdProp = targetDb.properties.find(p => p.id === 'prop-art-id' || p.name === 'ID')?.id;
+                const autoIdProp = refreshedDb.properties.find((p: any) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
                 if (autoIdProp) {
                     props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
                 }
@@ -378,6 +400,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                                     className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded p-1.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none truncate"
                                                 >
                                                     <option value="ignore" className="italic text-neutral-500">❌ Ignore (Skip Data)</option>
+                                                    <option value="create_new" className="font-semibold text-orange-600">✨ Create New Property</option>
                                                     <optgroup label={`Master Database Fields (${targetDb.name})`}>
                                                         {targetDb.properties.map(p => (
                                                             <option key={p.id} value={p.id}>{p.name} ({p.type})</option>

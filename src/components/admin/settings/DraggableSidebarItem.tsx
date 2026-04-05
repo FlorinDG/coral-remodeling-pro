@@ -32,7 +32,7 @@ export function DraggableSidebarItem({ item }: DraggableSidebarItemProps) {
         <div
             ref={setNodeRef}
             style={style}
-            className={`flex items-center gap-3 p-3 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg shadow-sm ${isDragging ? "opacity-50 ring-2 ring-[#d35400] relative z-50" : ""
+            className={`flex items-center gap-3 p-3 bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg shadow-sm ${isDragging ? "opacity-50 ring-2 ring-[var(--brand-color, #d35400)] relative z-50" : ""
                 }`}
         >
             {/* Drag Handle */}

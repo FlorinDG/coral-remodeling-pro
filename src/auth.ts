@@ -48,39 +48,63 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    tenantId: (user as any).tenantId, // Multi-tenant binding
                 };
             }
         })
     ],
     callbacks: {
+        ...authConfig.callbacks,
         async signIn({ user, account }) {
-            if (account?.provider === "google") {
-                // Prevent creating random users via Google OAuth directly.
-                // We only want to allow linking or logging in if the email already exists in our system.
-                if (user.email) {
-                    const existingUser = await prisma.user.findUnique({
-                        where: { email: user.email }
-                    });
-
-                    // Allow linking if the user is already logged in (they are trying to link an account)
-                    const cookieStore = await cookies();
-                    const sessionToken = cookieStore.get("authjs.session-token")?.value || cookieStore.get("__Secure-authjs.session-token")?.value;
-                    let isLoggedIn = false;
-
-                    if (sessionToken) {
-                        const session = await prisma.session.findUnique({
-                            where: { sessionToken }
-                        });
-                        isLoggedIn = !!session;
-                    }
-
-                    if (!existingUser && !isLoggedIn) {
-                        return false; // Reject standalone Google login for unknown emails
-                    }
-                }
-            }
+            // For MVP release, we allow anyone to authenticate via Google OAuth.
+            // Brand new users will have a database `User` injected by the Prisma Adapter.
+            // The `jwt` callback below handles their architectural `Tenant` onboarding.
             return true;
         },
-        ...authConfig.callbacks
+        async jwt({ token, user, trigger, session }) {
+            // First run authConfig jwt explicitly to avoid edge issues
+            if (authConfig.callbacks?.jwt) {
+                token = await authConfig.callbacks.jwt({ token, user, trigger, session, account: null as any, profile: undefined, isNewUser: undefined });
+            }
+
+            // On initial sign in, aggressively inject the database properties into the token
+            if (user && user.email) {
+                let dbUser = await prisma.user.findUnique({
+                    where: { email: user.email }
+                });
+
+                // SaaS MVP Auto-Provisioning: If user exists but is lacking an overarching Tenant workspace, generate one dynamically.
+                if (dbUser && !dbUser.tenantId) {
+                    const cookieStore = await cookies();
+                    const nextLocale = cookieStore.get('NEXT_LOCALE')?.value || 'fr';
+
+                    const newTenant = await prisma.tenant.create({
+                        data: {
+                            companyName: user.name ? `${user.name}'s Workspace` : 'New Workspace',
+                            planType: "FREE",
+                            subscriptionStatus: "ACTIVE",
+                            activeModules: ["INVOICING"], // strictly isolated free tier default
+                            documentLanguage: nextLocale
+                        }
+                    });
+
+                    dbUser = await prisma.user.update({
+                        where: { id: dbUser.id },
+                        data: {
+                            tenantId: newTenant.id,
+                            role: "TENANT_ADMIN",
+                            environmentLanguage: nextLocale
+                        }
+                    });
+                }
+
+                if (dbUser) {
+                    token.role = dbUser.role;
+                    token.tenantId = dbUser.tenantId;
+                    token.environmentLanguage = dbUser.environmentLanguage;
+                }
+            }
+            return token;
+        }
     }
 });

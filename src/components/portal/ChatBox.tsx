@@ -80,14 +80,14 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
                                 </div>
                             )}
                             <div className={`flex gap-3 ${isMe ? 'flex-row-reverse' : ''}`}>
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${isMe ? 'bg-[#d35400] shadow-[#d35400]/20' : 'bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'}`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg ${isMe ? 'bg-[#d75d00] shadow-[#d75d00]/20' : 'bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700'}`}>
                                     {msg.sender === 'ADMIN' ? <ShieldCheck className="w-4 h-4 text-white" /> : <User className={`w-4 h-4 ${isMe ? 'text-white' : 'text-neutral-600 dark:text-white'}`} />}
                                 </div>
                                 <div className="space-y-1">
-                                    <div className={`p-4 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-[#d35400] text-white rounded-tr-sm shadow-xl shadow-[#d35400]/10' : 'bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-neutral-200 rounded-tl-sm shadow-sm'}`}>
+                                    <div className={`p-4 rounded-2xl text-sm leading-relaxed ${isMe ? 'bg-[#d75d00] text-white rounded-tr-sm shadow-xl shadow-[#d75d00]/10' : 'bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 text-neutral-800 dark:text-neutral-200 rounded-tl-sm shadow-sm'}`}>
                                         {msg.content}
                                         {msg.fileUrl && (
-                                            <a href={msg.fileUrl} target="_blank" className={`mt-2 flex items-center gap-2 p-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors ${isMe ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-[#d35400]/10 hover:bg-[#d35400]/20 text-[#d35400]'}`}>
+                                            <a href={msg.fileUrl} target="_blank" className={`mt-2 flex items-center gap-2 p-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-colors ${isMe ? 'bg-white/20 hover:bg-white/30 text-white' : 'bg-[#d75d00]/10 hover:bg-[#d75d00]/20 text-[#d75d00]'}`}>
                                                 <Paperclip className="w-3 h-3" /> Attachment
                                             </a>
                                         )}
@@ -96,7 +96,7 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
                                         <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                         <button
                                             onClick={() => setReplyTo(msg)}
-                                            className="text-[9px] font-black text-[#d35400] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="text-[9px] font-black text-[#d75d00] uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
                                             Reply
                                         </button>
@@ -110,9 +110,9 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
 
             <div className="bg-white/50 dark:bg-black/20 border-t border-neutral-200 dark:border-white/10 p-4 space-y-3">
                 {replyTo && (
-                    <div className="bg-[#d35400]/10 p-3 rounded-2xl flex items-center justify-between animate-in slide-in-from-bottom-2">
+                    <div className="bg-[#d75d00]/10 p-3 rounded-2xl flex items-center justify-between animate-in slide-in-from-bottom-2">
                         <div className="flex items-center gap-2 text-xs">
-                            <Reply className="w-3 h-3 text-[#d35400]" />
+                            <Reply className="w-3 h-3 text-[#d75d00]" />
                             <span className="text-neutral-500 font-medium">Replying to: </span>
                             <span className="text-neutral-900 dark:text-white font-bold truncate max-w-[200px]">{replyTo.content}</span>
                         </div>
@@ -128,7 +128,7 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder={t('typeMessage')}
-                            className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] px-6 py-4 text-sm focus:border-[#d35400] outline-none transition-colors text-neutral-900 dark:text-white shadow-inner"
+                            className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-[1.5rem] px-6 py-4 text-sm focus:border-[#d75d00] outline-none transition-colors text-neutral-900 dark:text-white shadow-inner"
                         />
                         <button
                             type="button"
@@ -136,18 +136,18 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
                                 const url = prompt('Enter file link:');
                                 if (url) setFileUrl(url);
                             }}
-                            className={`absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${fileUrl ? 'bg-[#d35400] text-white' : 'text-neutral-400 hover:text-[#d35400]'}`}
+                            className={`absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors ${fileUrl ? 'bg-[#d75d00] text-white' : 'text-neutral-400 hover:text-[#d75d00]'}`}
                         >
                             <Paperclip className="w-4 h-4" />
                         </button>
                     </div>
-                    <button type="submit" className="p-4 bg-[#d35400] hover:bg-neutral-900 text-white rounded-[1.5rem] transition-all shadow-xl shadow-[#d35400]/20 flex items-center justify-center min-w-[56px] group">
+                    <button type="submit" className="p-4 bg-[#d75d00] hover:bg-neutral-900 text-white rounded-[1.5rem] transition-all shadow-xl shadow-[#d75d00]/20 flex items-center justify-center min-w-[56px] group">
                         <Send className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
                     </button>
                 </form>
                 {fileUrl && (
                     <div className="flex items-center gap-2 px-6">
-                        <span className="text-[10px] font-bold text-[#d35400] uppercase tracking-widest flex items-center gap-1">
+                        <span className="text-[10px] font-bold text-[#d75d00] uppercase tracking-widest flex items-center gap-1">
                             <Paperclip className="w-3 h-3" /> Attached: {fileUrl.substring(0, 30)}...
                         </span>
                         <button onClick={() => setFileUrl('')} className="text-[10px] font-bold text-neutral-500 hover:text-red-500 uppercase tracking-widest">Remove</button>

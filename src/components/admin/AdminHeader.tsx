@@ -18,10 +18,10 @@ export default function AdminHeader() {
                     </div>
                 </Link>
                 <div className="flex items-center gap-4">
-                    <Link href="/" target="_blank" className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-[#d35400] dark:hover:text-white transition-colors">
+                    <Link href="/" target="_blank" className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-[var(--brand-color,#d35400)] dark:hover:text-white transition-colors">
                         {t('viewLive')}
                     </Link>
-                    <div className="w-8 h-8 rounded-full bg-[#d35400] flex items-center justify-center text-xs font-bold text-white">
+                    <div className="w-8 h-8 rounded-full bg-[var(--brand-color,#d35400)] flex items-center justify-center text-xs font-bold text-white">
                         A
                     </div>
                 </div>

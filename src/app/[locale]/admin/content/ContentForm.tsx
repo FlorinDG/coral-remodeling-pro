@@ -48,7 +48,7 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                         type="button"
                         onClick={() => setActiveLang(lang)}
                         className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${activeLang === lang
-                            ? 'bg-[#d35400] text-white shadow-sm'
+                            ? 'bg-[var(--brand-color,#d35400)] text-white shadow-sm'
                             : 'hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-500'
                             }`}
                     >
@@ -61,7 +61,7 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                 {Object.entries(groups).map(([groupName, keys]) => (
                     <div key={groupName} className="space-y-4">
                         <div className="flex items-center gap-2 border-b border-neutral-100 dark:border-white/5 pb-2">
-                            <Globe className="w-4 h-4 text-[#d35400]" />
+                            <Globe className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
                             <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-900 dark:text-white">
                                 {groupName}
                             </h3>
@@ -76,7 +76,7 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                                 const gridClass = (isLarge || isImage) ? "col-span-1 md:col-span-2" : "col-span-1";
 
                                 return (
-                                    <div key={key} className={`${gridClass} bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 space-y-2 hover:border-[#d35400]/20 transition-colors`}>
+                                    <div key={key} className={`${gridClass} bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 space-y-2 hover:border-[var(--brand-color,#d35400)]/20 transition-colors`}>
                                         <label className="block text-[9px] font-bold uppercase tracking-[0.1em] text-neutral-500">
                                             {key.split('.').pop()?.replace(/([A-Z])/g, ' $1').trim()}
                                             <span className="text-neutral-300 dark:text-neutral-600 ml-2 lowercase font-normal italic">({key})</span>
@@ -99,7 +99,7 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                                                         value={formData[key]?.[activeLang] || ''}
                                                         onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
                                                         placeholder="Image URL"
-                                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-10 outline-none focus:border-[#d35400] transition-all font-mono text-[11px]"
+                                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-10 outline-none focus:border-[var(--brand-color)] transition-all font-mono text-[11px]"
                                                     />
                                                 </div>
                                             </div>
@@ -108,14 +108,14 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                                                 value={formData[key]?.[activeLang] || ''}
                                                 onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
                                                 rows={3}
-                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[#d35400] transition-all resize-none text-sm leading-relaxed"
+                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 outline-none focus:border-[var(--brand-color)] transition-all resize-none text-sm leading-relaxed"
                                             />
                                         ) : (
                                             <input
                                                 type="text"
                                                 value={formData[key]?.[activeLang] || ''}
                                                 onChange={(e) => handleUpdate(key, activeLang, e.target.value)}
-                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[#d35400] transition-all text-sm font-medium"
+                                                className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-11 outline-none focus:border-[var(--brand-color)] transition-all text-sm font-medium"
                                             />
                                         )}
                                     </div>
@@ -130,7 +130,8 @@ export default function ContentForm({ initialData, groups }: ContentFormProps) {
                 <button
                     type="submit"
                     disabled={isLoading}
-                    className="flex items-center gap-2 bg-[#d35400] hover:bg-[#e67e22] text-white px-8 py-4 rounded-xl font-bold shadow-xl shadow-[#d35400]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs tracking-widest uppercase"
+                    className="flex items-center gap-2 text-white px-8 py-4 rounded-xl font-bold shadow-sm transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs tracking-widest uppercase hover:opacity-90"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                     Publish Content

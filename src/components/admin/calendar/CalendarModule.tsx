@@ -215,7 +215,7 @@ export default function CalendarModule() {
                     data = data.map((e: any) => {
                         const calId = e.extendedProps?.googleCalendarId;
                         let isGoogle = false;
-                        let bgColor = '#d35400'; // local color
+                        let bgColor = 'var(--brand-color, #d35400)'; // local color
                         let accId = '';
 
                         if (calId) {
@@ -388,7 +388,7 @@ export default function CalendarModule() {
                             __html: `
                             .rdp {
                                 --rdp-cell-size: 34px;
-                                --rdp-accent-color: #d35400;
+                                --rdp-accent-color: var(--brand-color, #d35400);
                                 --rdp-background-color: rgba(211, 84, 0, 0.1);
                                 margin: 0;
                             }
@@ -399,7 +399,7 @@ export default function CalendarModule() {
                             }
                             .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
                                 background-color: rgba(211, 84, 0, 0.05);
-                                color: #d35400;
+                                color: var(--brand-color, #d35400);
                             }
                         `}} />
                         <DayPicker
@@ -418,7 +418,7 @@ export default function CalendarModule() {
                     <div className="space-y-1 mb-6">
                         <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-3 px-2 flex items-center justify-between">
                             <span className="flex items-center gap-2"><CalendarDays className="w-3.5 h-3.5" /> My Calendars</span>
-                            <Link href="/admin/settings" className="p-1 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-[#d35400]" title="Manage Integrations">
+                            <Link href="/admin/settings" className="p-1 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-colors text-neutral-400 hover:text-[var(--brand-color,var(--brand-color, #d35400))]" title="Manage Integrations">
                                 <Settings className="w-3.5 h-3.5" />
                             </Link>
                         </div>
@@ -427,7 +427,7 @@ export default function CalendarModule() {
                                 // Local events are always checked for now
                                 calendarRef.current?.getApi().refetchEvents();
                             }}>
-                            <div className="w-4 h-4 rounded appearance-none border border-neutral-300 dark:border-neutral-600 bg-[#d35400] flex items-center justify-center">
+                            <div className="w-4 h-4 rounded appearance-none border border-neutral-300 dark:border-neutral-600 bg-[var(--brand-color,var(--brand-color, #d35400))] flex items-center justify-center">
                                 <Check className="w-3 h-3 text-white" />
                             </div>
                             <span className="text-sm font-medium">Local Events</span>
@@ -486,7 +486,7 @@ export default function CalendarModule() {
                                 <input
                                     type="text"
                                     placeholder="Add title"
-                                    className="w-full text-2xl font-medium px-0 py-2 bg-transparent border-b-2 border-transparent focus:border-[#d35400] focus:outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-colors"
+                                    className="w-full text-2xl font-medium px-0 py-2 bg-transparent border-b-2 border-transparent focus:border-[var(--brand-color,var(--brand-color, #d35400))] focus:outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-colors"
                                     value={newEvent.title}
                                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
                                     autoFocus
@@ -500,7 +500,7 @@ export default function CalendarModule() {
                                     <div className="flex gap-2 items-center flex-1">
                                         <input
                                             type={newEvent.allDay ? "date" : "datetime-local"}
-                                            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 border border-transparent focus:border-[#d35400] rounded-md outline-none transition-colors"
+                                            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 border border-transparent focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors"
                                             value={newEvent.start ? newEvent.start.slice(0, newEvent.allDay ? 10 : 16) : ''}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -519,7 +519,7 @@ export default function CalendarModule() {
                                         <span>to</span>
                                         <input
                                             type={newEvent.allDay ? "date" : "datetime-local"}
-                                            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 border border-transparent focus:border-[#d35400] rounded-md outline-none transition-colors"
+                                            className="px-3 py-1.5 bg-neutral-100 dark:bg-neutral-800 border border-transparent focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors"
                                             value={newEvent.end ? newEvent.end.slice(0, newEvent.allDay ? 10 : 16) : ''}
                                             onChange={(e) => {
                                                 const val = e.target.value;
@@ -537,7 +537,7 @@ export default function CalendarModule() {
                                         />
                                     </div>
                                     <label className="flex items-center gap-2 text-xs whitespace-nowrap min-w-fit">
-                                        <input type="checkbox" checked={newEvent.allDay} onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })} className="accent-[#d35400]" />
+                                        <input type="checkbox" checked={newEvent.allDay} onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })} className="accent-[var(--brand-color, #d35400)]" />
                                         All day
                                     </label>
                                 </div>
@@ -546,7 +546,7 @@ export default function CalendarModule() {
                                 <div className="flex items-center gap-4 text-sm text-neutral-700 dark:text-neutral-300">
                                     <CalendarIcon className="w-5 h-5 text-neutral-400" />
                                     <select
-                                        className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[#d35400] rounded-md outline-none transition-colors"
+                                        className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors"
                                         value={newEvent.calendarId === 'local' ? 'local' : `${newEvent.accountId}|${newEvent.calendarId}`}
                                         onChange={(e) => {
                                             const val = e.target.value;
@@ -575,7 +575,7 @@ export default function CalendarModule() {
                                     <input
                                         type="text"
                                         placeholder="Add location"
-                                        className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[#d35400] rounded-md outline-none transition-colors"
+                                        className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors"
                                         value={newEvent.location}
                                         onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
                                     />
@@ -587,7 +587,7 @@ export default function CalendarModule() {
                                     <textarea
                                         placeholder="Add description"
                                         rows={3}
-                                        className="flex-1 px-3 py-2 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[#d35400] rounded-md outline-none transition-colors resize-none"
+                                        className="flex-1 px-3 py-2 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors resize-none"
                                         value={newEvent.description}
                                         onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                                     />
@@ -596,7 +596,7 @@ export default function CalendarModule() {
                                 {/* Link to Task Creation (Available for both Local and Google Events) */}
                                 <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
                                     <label className="flex items-center gap-3 cursor-pointer group" onClick={(e) => { e.preventDefault(); setNewEvent({ ...newEvent, createTask: !newEvent.createTask }); }}>
-                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${newEvent.createTask ? 'bg-[#d35400] border-[#d35400]' : 'border-neutral-300 dark:border-neutral-600 group-hover:border-[#d35400]'}`}>
+                                        <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${newEvent.createTask ? 'bg-[var(--brand-color,#d35400)] border-[var(--brand-color,#d35400)]' : 'border-neutral-300 dark:border-neutral-600 group-hover:border-[var(--brand-color,var(--brand-color, #d35400))]'}`}>
                                             {newEvent.createTask && <Check className="w-3 h-3 text-white" />}
                                         </div>
                                         <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Create associated Task</span>
@@ -606,7 +606,7 @@ export default function CalendarModule() {
                                         <div className="mt-3 ml-7 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                                             <Briefcase className="w-4 h-4 text-neutral-400" />
                                             <select
-                                                className="flex-1 px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md outline-none focus:border-[#d35400]"
+                                                className="flex-1 px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md outline-none focus:border-[var(--brand-color,var(--brand-color, #d35400))]"
                                                 value={newEvent.portalId}
                                                 onChange={(e) => setNewEvent({ ...newEvent, portalId: e.target.value })}
                                             >
@@ -643,7 +643,7 @@ export default function CalendarModule() {
                                 <button
                                     onClick={handleSaveEvent}
                                     disabled={isSaving || !newEvent.title.trim() || !newEvent.start}
-                                    className="px-5 py-2 text-sm font-medium bg-[#d35400] hover:bg-[#e67e22] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm flex items-center gap-2"
+                                    className="px-5 py-2 text-sm font-medium bg-[var(--brand-color,var(--brand-color, #d35400))] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm flex items-center gap-2"
                                 >
                                     {isSaving && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
                                     {newEvent.id ? 'Save Changes' : 'Save Event'}
@@ -670,7 +670,7 @@ export default function CalendarModule() {
                                 <input
                                     type="text"
                                     placeholder="Task Title"
-                                    className="w-full text-lg font-medium px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-colors"
+                                    className="w-full text-lg font-medium px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-lg outline-none placeholder:text-neutral-400 dark:placeholder:text-neutral-600 transition-colors"
                                     value={taskData.title}
                                     onChange={(e) => setTaskData({ ...taskData, title: e.target.value })}
                                     autoFocus
@@ -682,7 +682,7 @@ export default function CalendarModule() {
                                     <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Due Date</label>
                                     <input
                                         type="date"
-                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none text-sm transition-colors"
+                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-lg outline-none text-sm transition-colors"
                                         value={taskData.dueDate}
                                         onChange={(e) => setTaskData({ ...taskData, dueDate: e.target.value })}
                                     />
@@ -690,7 +690,7 @@ export default function CalendarModule() {
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Priority</label>
                                     <select
-                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[#d35400] rounded-lg outline-none text-sm transition-colors"
+                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-lg outline-none text-sm transition-colors"
                                         value={taskData.priority}
                                         onChange={(e) => setTaskData({ ...taskData, priority: e.target.value })}
                                     >
@@ -711,7 +711,7 @@ export default function CalendarModule() {
                             </button>
                             <button
                                 disabled={!taskData.title.trim()}
-                                className="px-5 py-2 text-sm font-medium bg-[#d35400] hover:bg-[#e67e22] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm"
+                                className="px-5 py-2 text-sm font-medium bg-[var(--brand-color,var(--brand-color, #d35400))] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm"
                                 onClick={() => {
                                     if (taskData.title.trim()) {
                                         useDatabaseStore.getState().createPage('db-tasks', {
@@ -746,8 +746,8 @@ export default function CalendarModule() {
         --fc-button-hover-bg-color: #f5f5f5;
         --fc-button-hover-border-color: rgba(0, 0, 0, 0.2);
         --fc-button-active-bg-color: #fef3c7;
-        --fc-button-active-border-color: #d35400;
-        --fc-button-active-text-color: #d35400;
+        --fc-button-active-border-color: var(--brand-color, #d35400);
+        --fc-button-active-text-color: var(--brand-color, #d35400);
         --fc-today-bg-color: rgba(211, 84, 0, 0.03);
         --fc-now-indicator-color: #ef4444;
         font-family: inherit;
@@ -805,8 +805,8 @@ export default function CalendarModule() {
     }
 
     .calendar-container .local-event {
-        background-color: #d35400;
-        border-color: #d35400;
+        background-color: var(--brand-color, #d35400);
+        border-color: var(--brand-color, #d35400);
     }
 
     .calendar-container .fc-timegrid-event .fc-event-main {
@@ -825,9 +825,9 @@ export default function CalendarModule() {
     /* Styling for the custom action buttons */
     .calendar-container.fc .fc-createEvent-button,
     .calendar-container.fc .fc-createTask-button {
-        background-color: #d35400;
+        background-color: var(--brand-color, #d35400);
         color: white;
-        border: 1px solid #d35400;
+        border: 1px solid var(--brand-color, #d35400);
         padding: 0.4rem 1rem;
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
@@ -853,7 +853,7 @@ export default function CalendarModule() {
     .calendar-container.fc .fc-button-primary:not(:disabled):active {
         background-color: rgba(211, 84, 0, 0.1);
         border-color: rgba(211, 84, 0, 0.2);
-        color: #d35400;
+        color: var(--brand-color, #d35400);
         box-shadow: none;
     }
 

@@ -105,34 +105,7 @@ export default function QuotationFooterReport({ blocks }: QuotationFooterReportP
                 </div>
             </div>
 
-            {/* Signature Block Form */}
-            <div className="w-full flex flex-col md:flex-row gap-8 justify-between mt-8">
-                {/* Coral Representation */}
-                <div className="flex-1 flex flex-col gap-12 p-6 rounded-lg bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold uppercase tracking-widest text-neutral-400">Voor Akkoord (Coral)</span>
-                        <span className="text-base font-medium">Coral Remodeling Pro</span>
-                    </div>
-                    <div className="border-b-2 border-black dark:border-white opacity-20 w-full" />
-                    <div className="flex justify-between text-xs text-neutral-500">
-                        <span>Handtekening</span>
-                        <span>Datum</span>
-                    </div>
-                </div>
 
-                {/* Client Signature */}
-                <div className="flex-1 flex flex-col gap-12 p-6 rounded-lg bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-sm font-bold uppercase tracking-widest text-neutral-400">Voor Akkoord (Klant)</span>
-                        <span className="text-base font-medium placeholder-text">.............................................</span>
-                    </div>
-                    <div className="border-b-2 border-black dark:border-white opacity-20 w-full" />
-                    <div className="flex justify-between text-xs text-neutral-500">
-                        <span>Handtekening</span>
-                        <span>Datum</span>
-                    </div>
-                </div>
-            </div>
 
         </div>
     );

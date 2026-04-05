@@ -2,10 +2,16 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 
 export async function createInternalProject(data: { name: string; budget?: number; startDate?: string; targetEndDate?: string }) {
-    // Generate the next project code
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
+
+    // Generate the next project code securely inside the Tenant
     const latestProject = await prisma.internalProject.findFirst({
+        where: { tenantId },
         orderBy: { projectCode: 'desc' }
     });
 
@@ -26,7 +32,8 @@ export async function createInternalProject(data: { name: string; budget?: numbe
             budget: data.budget || 0,
             startDate: data.startDate ? new Date(data.startDate) : undefined,
             targetEndDate: data.targetEndDate ? new Date(data.targetEndDate) : undefined,
-            status: 'PLANNING'
+            status: 'PLANNING',
+            tenantId
         }
     });
 

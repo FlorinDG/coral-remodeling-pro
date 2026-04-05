@@ -125,7 +125,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="bg-[#d35400] hover:bg-[#e67e22] text-white px-8 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-[#d35400]/20 disabled:opacity-50"
+                        className="bg-[var(--brand-color,#d35400)] hover:opacity-90 text-white px-8 py-2.5 rounded-xl flex items-center gap-2 text-sm font-bold transition-all shadow-lg shadow-sm disabled:opacity-50"
                     >
                         <Save className="w-4 h-4" /> {loading ? 'SAVING...' : 'SAVE CHANGES'}
                     </button>
@@ -142,7 +142,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                                 key={lang.key}
                                 type="button"
                                 onClick={() => setActiveTab(lang.key)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === lang.key ? 'bg-white dark:bg-white/10 text-[#d35400] shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${activeTab === lang.key ? 'bg-white dark:bg-white/10 text-[var(--brand-color,#d35400)] shadow-sm' : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'}`}
                             >
                                 {lang.label}
                             </button>
@@ -160,7 +160,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                                     type="text"
                                     value={(formData as any)[`title${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                     onChange={e => setFormData({ ...formData, [`title${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors font-bold"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors font-bold"
                                     placeholder={`Project name in ${activeTab}...`}
                                     required={activeTab === 'en'}
                                 />
@@ -173,7 +173,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                                     type="text"
                                     value={(formData as any)[`location${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`] || ''}
                                     onChange={e => setFormData({ ...formData, [`location${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`]: e.target.value })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                                     placeholder="e.g. Antwerp, Belgium..."
                                 />
                             </div>
@@ -189,7 +189,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                             <button
                                 type="button"
                                 onClick={handleAddImage}
-                                className="text-[10px] font-bold text-[#d35400] hover:text-[#e67e22] uppercase tracking-widest transition-colors flex items-center gap-1"
+                                className="text-[10px] font-bold text-[var(--brand-color,#d35400)] hover:text-[var(--brand-color,#d35400)] uppercase tracking-widest transition-colors flex items-center gap-1"
                             >
                                 <Plus className="w-3.5 h-3.5" /> Add Image URL
                             </button>
@@ -207,7 +207,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                                                 newImages[idx].isBefore = !newImages[idx].isBefore;
                                                 setFormData({ ...formData, images: newImages });
                                             }}
-                                            className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full border shadow-lg transition-all ${image.isBefore ? 'bg-[#d35400] border-[#d35400] text-white' : 'bg-white/10 border-white/20 text-white'}`}
+                                            className={`text-[9px] font-black uppercase px-3 py-1.5 rounded-full border shadow-lg transition-all ${image.isBefore ? 'bg-[var(--brand-color,#d35400)] border-[var(--brand-color,#d35400)] text-white' : 'bg-white/10 border-white/20 text-white'}`}
                                         >
                                             {image.isBefore ? 'BEFORE PIC' : 'AFTER PIC'}
                                         </button>
@@ -230,7 +230,7 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                             <button
                                 type="button"
                                 onClick={handleAddImage}
-                                className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/5 flex flex-col items-center justify-center gap-2 text-neutral-400 hover:border-[#d35400] hover:text-[#d35400] transition-all bg-neutral-50/50 dark:bg-white/[0.01]"
+                                className="aspect-square rounded-2xl border-2 border-dashed border-neutral-200 dark:border-white/5 flex flex-col items-center justify-center gap-2 text-neutral-400 hover:border-[var(--brand-color,#d35400)] hover:text-[var(--brand-color,#d35400)] transition-all bg-neutral-50/50 dark:bg-white/[0.01]"
                             >
                                 <Plus className="w-8 h-8 opacity-20" />
                                 <span className="text-[9px] font-bold uppercase tracking-[0.2em]">Add Media</span>
@@ -252,13 +252,13 @@ export default function ProjectForm({ initialData }: ProjectFormProps) {
                                     type="number"
                                     value={formData.order}
                                     onChange={e => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                    className="w-full bg-transparent border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-[#d35400] rounded-3xl p-6 text-white shadow-lg shadow-[#d35400]/20 relative overflow-hidden">
+                    <div className="bg-[var(--brand-color,#d35400)] rounded-3xl p-6 text-white shadow-lg shadow-sm relative overflow-hidden">
                         <div className="relative z-10">
                             <h3 className="text-sm font-bold uppercase tracking-widest mb-2 opacity-80">Helpful Tip</h3>
                             <p className="text-[11px] leading-relaxed mb-4">

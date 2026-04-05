@@ -59,7 +59,7 @@ export default function Hero({ cmsContent, locale }: HeroProps) {
                     <p className="text-lg md:text-xl text-neutral-500 dark:text-neutral-300 max-w-md mb-8 leading-relaxed font-normal">
                         {description}
                     </p>
-                    <p className="text-[#d35400] font-bold tracking-[0.3em] uppercase mb-12 text-sm md:text-base">
+                    <p className="text-[#d75d00] font-bold tracking-[0.3em] uppercase mb-12 text-sm md:text-base">
                         {tagline}
                     </p>
                     <div className="flex gap-6 text-neutral-950 dark:text-white">

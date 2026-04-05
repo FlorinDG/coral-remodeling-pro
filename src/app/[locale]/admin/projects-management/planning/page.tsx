@@ -2,8 +2,13 @@
 
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
-import ProjectTimelineView from "./ProjectTimelineView";
 import { Calendar } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const GanttViewDynamic = dynamic(
+    () => import('@/components/admin/database/views/GanttView'),
+    { ssr: false, loading: () => <div className="text-neutral-500 p-8 font-medium">Loading SVAR timeline engine...</div> }
+);
 
 export default function ProjectPlanningPage() {
     return (
@@ -21,7 +26,9 @@ export default function ProjectPlanningPage() {
                     </div>
                 </div>
 
-                <ProjectTimelineView />
+                <div className="flex-1 min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col mt-4">
+                    <GanttViewDynamic databaseId="db-1" viewId="view-5" />
+                </div>
             </div>
         </div>
     );

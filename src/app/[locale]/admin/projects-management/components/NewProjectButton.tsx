@@ -76,7 +76,8 @@ export default function NewProjectButton() {
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 bg-[#d35400] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-[#e67e22] transition-colors"
+                className="flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:opacity-90 transition-colors"
+                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
             >
                 <Plus className="w-4 h-4" />
                 New Project
@@ -87,7 +88,7 @@ export default function NewProjectButton() {
                     <div className="bg-white dark:bg-neutral-900 w-full max-w-md rounded-2xl shadow-xl border border-neutral-200 dark:border-white/10 overflow-hidden transform transition-all">
                         <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-white/5">
                             <div className="flex items-center gap-2 font-bold text-neutral-900 dark:text-white">
-                                <FolderKanban className="w-5 h-5 text-[#d35400] hidden sm:block" />
+                                <FolderKanban className="w-5 h-5 hidden sm:block" style={{ color: 'var(--brand-color, #d35400)' }} />
                                 Scaffold New Project
                             </div>
                             <button
@@ -108,7 +109,7 @@ export default function NewProjectButton() {
                                     disabled={isLoading}
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[#d35400] outline-none transition-colors font-bold text-neutral-900 dark:text-white"
+                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[var(--brand-color)] outline-none transition-colors font-bold text-neutral-900 dark:text-white"
                                     placeholder="e.g. Master Bedroom Remodel"
                                 />
                             </div>
@@ -120,7 +121,7 @@ export default function NewProjectButton() {
                                     disabled={isLoading}
                                     value={formData.budget}
                                     onChange={e => setFormData({ ...formData, budget: e.target.value })}
-                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                    className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                     placeholder="0.00"
                                 />
                             </div>
@@ -133,7 +134,7 @@ export default function NewProjectButton() {
                                         disabled={isLoading}
                                         value={formData.startDate}
                                         onChange={e => setFormData({ ...formData, startDate: e.target.value })}
-                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                     />
                                 </div>
                                 <div className="space-y-1">
@@ -143,7 +144,7 @@ export default function NewProjectButton() {
                                         disabled={isLoading}
                                         value={formData.targetEndDate}
                                         onChange={e => setFormData({ ...formData, targetEndDate: e.target.value })}
-                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[#d35400] outline-none transition-colors"
+                                        className="w-full bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm focus:border-[var(--brand-color)] outline-none transition-colors"
                                     />
                                 </div>
                             </div>
@@ -152,7 +153,8 @@ export default function NewProjectButton() {
                                 <button
                                     type="submit"
                                     disabled={isLoading || !formData.name}
-                                    className="w-full bg-[#d35400] hover:bg-[#e67e22] text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                                    className="w-full text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 hover:opacity-90"
+                                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                                 >
                                     {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                                     {isLoading ? 'Processing...' : 'Provision Architecture'}

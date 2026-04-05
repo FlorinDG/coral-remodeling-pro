@@ -50,7 +50,7 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
 
                 <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full max-w-[95vw] 2xl:max-w-7xl">
                     {service.subtitle && (
-                        <span className="inline-block bg-[#d35400]/10 dark:bg-[#d35400]/20 text-[#cc5000] dark:text-[#ff8c3a] font-black tracking-[0.2em] uppercase text-sm md:text-sm px-4 py-1.5 rounded-full mb-6 backdrop-blur-md border border-[#d35400]/20 shadow-sm">
+                        <span className="inline-block bg-[#d75d00]/10 dark:bg-[#d75d00]/20 text-[#cc5000] dark:text-[#ff8c3a] font-black tracking-[0.2em] uppercase text-sm md:text-sm px-4 py-1.5 rounded-full mb-6 backdrop-blur-md border border-[#d75d00]/20 shadow-sm">
                             {service.subtitle}
                         </span>
                     )}
@@ -67,7 +67,7 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {service.features.map((feature, index) => (
                                 <li key={index} className="flex items-start gap-3 text-neutral-600 dark:text-neutral-300">
-                                    <span className="text-[#d35400] mt-1">•</span>
+                                    <span className="text-[#d75d00] mt-1">•</span>
                                     <span>{feature}</span>
                                 </li>
                             ))}
@@ -89,7 +89,7 @@ export default function ServiceDetailClient({ service, translations }: ServiceDe
                         </p>
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            className="w-full bg-[#d35400] text-white font-bold py-4 rounded-xl hover:bg-[#a04000] transition-colors shadow-lg shadow-[#d35400]/20"
+                            className="w-full bg-[#d75d00] text-white font-bold py-4 rounded-xl hover:bg-[#b05000] transition-colors shadow-lg shadow-[#d75d00]/20"
                         >
                             {translations.bookConsultation}
                         </button>

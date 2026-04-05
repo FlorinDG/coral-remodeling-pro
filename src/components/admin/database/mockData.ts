@@ -4,14 +4,28 @@ import { v4 as uuidv4 } from 'uuid';
 export const mockProperties: Property[] = [
     { id: 'title', name: 'Name', type: 'text' },
     {
-        id: 'prop-status',
-        name: 'Status',
+        id: 'prop-execution-status',
+        name: 'Execution Status',
         type: 'select',
         config: {
             options: [
-                { id: 'opt-1', name: 'To Do', color: 'gray' },
-                { id: 'opt-2', name: 'In Progress', color: 'blue' },
-                { id: 'opt-3', name: 'Done', color: 'green' }
+                { id: 'opt-to-do', name: 'To Do', color: 'gray' },
+                { id: 'opt-in-prog', name: 'In Progress', color: 'blue' },
+                { id: 'opt-done', name: 'Done', color: 'green' }
+            ]
+        }
+    },
+    {
+        id: 'prop-financial-status',
+        name: 'Financial Status',
+        type: 'select',
+        config: {
+            options: [
+                { id: 'opt-quote', name: 'Quotation', color: 'gray' },
+                { id: 'opt-budget', name: 'Budgeted', color: 'yellow' },
+                { id: 'opt-invo', name: 'Invoiced', color: 'blue' },
+                { id: 'opt-paid', name: 'Paid', color: 'green' },
+                { id: 'opt-overdue', name: 'Overdue', color: 'red' }
             ]
         }
     },
@@ -21,6 +35,7 @@ export const mockProperties: Property[] = [
     { id: 'prop-actual-start', name: 'Actual Start', type: 'date' },
     { id: 'prop-actual-end', name: 'Actual End', type: 'date' },
     { id: 'prop-budget', name: 'Internal Budget', type: 'currency', config: { format: 'euro' } },
+    { id: 'prop-actual-costs', name: 'Actual Costs', type: 'currency', config: { format: 'euro' } },
     { id: 'prop-due-date', name: 'Due Date', type: 'date' },
     {
         id: 'prop-priority', name: 'Priority', type: 'select',
@@ -68,9 +83,14 @@ export const mockPages: Page[] = [
         databaseId: 'db-1',
         properties: {
             'title': 'Finalize Kitchen Renderings',
-            'prop-status': 'opt-2',
+            'prop-execution-status': 'opt-in-prog',
+            'prop-financial-status': 'opt-paid',
             'prop-assignee': ['user-1'],
+            'prop-start-date': '2026-03-01',
+            'prop-end-date': '2026-03-14',
             'prop-due-date': '2026-03-15',
+            'prop-budget': 12000,
+            'prop-actual-costs': 8500,
             'prop-priority': 'opt-high',
             'prop-client-relation': ['page-client-1'],
             'prop-supplier-relation': ['page-supplier-1']
@@ -86,9 +106,14 @@ export const mockPages: Page[] = [
         databaseId: 'db-1',
         properties: {
             'title': 'Order Carrara Marble',
-            'prop-status': 'opt-1',
+            'prop-execution-status': 'opt-to-do',
+            'prop-financial-status': 'opt-quote',
             'prop-assignee': ['user-2'],
+            'prop-start-date': '2026-03-10',
+            'prop-end-date': '2026-03-18',
             'prop-due-date': '2026-03-20',
+            'prop-budget': 25000,
+            'prop-actual-costs': 4000,
             'prop-priority': 'opt-med',
             'prop-client-relation': [],
             'prop-supplier-relation': []
@@ -179,8 +204,8 @@ export const mockDatabases: Database[] = [
         activeFilters: [],
         views: [
             { id: 'view-1', name: 'All Projects', type: 'table' },
-            { id: 'view-2', name: 'Status Board', type: 'board', config: { groupByPropertyId: 'prop-status' } },
-            { id: 'view-3', name: 'Project Calendar', type: 'calendar', config: { datePropertyId: 'prop-due-date' } }
+            { id: 'view-2', name: 'Execution Board', type: 'board', config: { groupByPropertyId: 'prop-execution-status' } },
+            { id: 'view-4', name: 'Financial Pipeline', type: 'board', config: { groupByPropertyId: 'prop-financial-status' } }
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -297,6 +322,21 @@ export const mockDatabases: Database[] = [
         properties: [
             { id: 'title', name: 'Name', type: 'text' },
             { id: 'prop-supplier-email', name: 'Email', type: 'email' },
+            { id: 'prop-address-main', name: 'Address', type: 'places' },
+            { id: 'prop-vat-number', name: 'BTW', type: 'text' },
+            { id: 'prop-supplier-phone', name: 'Phone', type: 'phone' },
+            {
+                id: 'prop-supplier-type', name: 'Type', type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-material', name: 'Material Supplier', color: 'orange' },
+                        { id: 'opt-subcontractor', name: 'Subcontractor', color: 'blue' },
+                        { id: 'opt-logistics', name: 'Logistics', color: 'purple' },
+                        { id: 'opt-services', name: 'Services', color: 'green' },
+                        { id: 'opt-other', name: 'Other', color: 'gray' }
+                    ]
+                }
+            },
         ],
         pages: [
             {
@@ -429,11 +469,16 @@ export const mockDatabases: Database[] = [
             { id: 'prop-task-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-todo', name: 'To Do', color: 'gray' }, { id: 'opt-doing', name: 'In Progress', color: 'blue' }, { id: 'opt-done', name: 'Done', color: 'green' }] } },
             { id: 'prop-task-assignee', name: 'Assignee', type: 'text' },
             { id: 'prop-task-priority', name: 'Priority', type: 'select', config: { options: [{ id: 'opt-low', name: 'Low', color: 'green' }, { id: 'opt-med', name: 'Medium', color: 'yellow' }, { id: 'opt-high', name: 'High', color: 'red' }] } },
-            { id: 'prop-task-due', name: 'Due Date', type: 'date' }
+            { id: 'prop-task-due', name: 'Due Date', type: 'date' },
+            { id: 'prop-task-project', name: 'Project Link', type: 'relation', config: { relationDatabaseId: 'db-1' } }
         ],
         pages: [],
         activeFilters: [],
-        views: [{ id: 'view-task-table', name: 'Active Tasks', type: 'table' }],
+        views: [
+            { id: 'view-task-table', name: 'All Tasks List', type: 'table' },
+            { id: 'view-task-board', name: 'Kanban Board', type: 'board', config: { groupByPropertyId: 'prop-task-status' } },
+            { id: 'view-task-calendar', name: 'Timeline Calendar', type: 'calendar', config: { datePropertyId: 'prop-task-due' } }
+        ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ownerId: 'system'

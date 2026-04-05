@@ -18,6 +18,7 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: React.FC<any> }[]
     { id: 'select', label: 'Select', icon: Edit3 },
     { id: 'multi_select', label: 'Multi-Select', icon: Edit3 },
     { id: 'relation', label: 'Relation Link', icon: LinkIcon },
+    { id: 'rollup', label: 'Rollup Lookup', icon: LinkIcon },
     { id: 'formula', label: 'Calculation Formula', icon: Calculator },
     { id: 'variants', label: 'Product Variants', icon: Settings2 },
 ];
@@ -255,6 +256,57 @@ export default function DatabaseSchemaConfigurator() {
                                                                     >
                                                                         <Calculator className="w-4 h-4" />
                                                                     </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {prop.type === 'rollup' && (
+                                                            <div className="flex flex-col gap-1 w-full mt-2">
+                                                                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 px-1">Rollup Configuration & Aggregation</span>
+                                                                <div className="flex gap-2 w-full flex-wrap sm:flex-nowrap">
+                                                                    <select
+                                                                        value={prop.config?.rollupPropertyId || ''}
+                                                                        onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupPropertyId: e.target.value, rollupTargetPropertyId: '' } })}
+                                                                        className="flex-1 min-w-[120px] bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    >
+                                                                        <option value="">-- Relation --</option>
+                                                                        {database.properties.filter(p => p.type === 'relation').map(p => (
+                                                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                                                        ))}
+                                                                    </select>
+
+                                                                    {prop.config?.rollupPropertyId && (
+                                                                        <select
+                                                                            value={prop.config.rollupTargetPropertyId || ''}
+                                                                            onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupTargetPropertyId: e.target.value } })}
+                                                                            className="flex-1 min-w-[120px] bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                        >
+                                                                            <option value="">-- Target Property --</option>
+                                                                            {(() => {
+                                                                                const relationProp = database.properties.find(p => p.id === prop.config!.rollupPropertyId);
+                                                                                const targetDbId = relationProp?.config?.relationDatabaseId;
+                                                                                const targetDb = allDatabases.find(d => d.id === targetDbId);
+                                                                                if (!targetDb) return null;
+                                                                                return targetDb.properties.map(p => (
+                                                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                                                ));
+                                                                            })()}
+                                                                        </select>
+                                                                    )}
+
+                                                                    {prop.config?.rollupTargetPropertyId && (
+                                                                        <select
+                                                                            value={prop.config.rollupAggregation || 'show_original'}
+                                                                            onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupAggregation: e.target.value as any } })}
+                                                                            className="flex-1 min-w-[120px] bg-neutral-100 dark:bg-neutral-800 border bg-transparent border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-neutral-700 dark:text-neutral-300 font-medium"
+                                                                        >
+                                                                            <option value="show_original">Show Original</option>
+                                                                            <option value="extract_numbers">Extract Numbers</option>
+                                                                            <option value="sum">Sum</option>
+                                                                            <option value="average">Average</option>
+                                                                            <option value="count">Count</option>
+                                                                        </select>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}

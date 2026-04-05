@@ -60,7 +60,7 @@ export default function ServiceExpander({ cmsServices, locale }: ServiceExpander
                                         <div className="min-w-[300px] pt-4">
                                             <p className="text-xl text-orange-500 font-medium mb-2">{service.subtitle}</p>
                                             <p className="text-neutral-200 mb-6 max-w-md">{service.description}</p>
-                                            <Link href={`/${locale}/services/${service.id}`} className="inline-flex items-center gap-2 bg-neutral-900 border border-white/20 text-white px-6 py-3 rounded-full font-bold hover:bg-[#d35400] hover:border-[#d35400] transition-all">
+                                            <Link href={`/${locale}/services/${service.id}`} className="inline-flex items-center gap-2 bg-neutral-900 border border-white/20 text-white px-6 py-3 rounded-full font-bold hover:bg-[#d75d00] hover:border-[#d75d00] transition-all">
                                                 {t('explore')} <ArrowRight className="w-4 h-4" />
                                             </Link>
                                         </div>

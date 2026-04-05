@@ -201,7 +201,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
         if (searchQuery) return [{ id: 'search', name: `Search results for "${searchQuery}"` }];
         if (tagFilter) return [{ id: 'filter', name: `Filtered by ${tagFilter}` }];
 
-        const crumbs = [{ id: null, name: isGlobalMode ? 'Global Library' : 'Project Files' }];
+        const crumbs = [{ id: null, name: isGlobalMode ? 'Global Library' : 'Files' }];
         let current = nodes.find(n => n.id === currentFolderId);
 
         const path = [];

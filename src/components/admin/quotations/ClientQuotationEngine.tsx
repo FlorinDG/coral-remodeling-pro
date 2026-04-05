@@ -1,37 +1,77 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText } from 'lucide-react';
+import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling component
 import QuotationFooterReport from './QuotationFooterReport';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
-import { Bot } from 'lucide-react';
+
+import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
+import { Link } from '@/i18n/routing';
+import { toast } from 'sonner';
+
+const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
+    const { activeModules } = useTenant();
+    const hasProjects = activeModules.includes('PROJECTS');
+    const hasCRM = activeModules.includes('CRM');
+    const hasDatabases = activeModules.includes('DATABASES');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const createPage = useDatabaseStore(state => state.createPage);
 
     const [isHydrated, setIsHydrated] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+    const [isSavingToDrive, setIsSavingToDrive] = useState(false);
+    const [tenantProfile, setTenantProfile] = useState<any>(null);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
         setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
+
+        // Fetch specific SaaS branding metadata dynamically
+        fetch('/api/tenant/profile').then(res => res.json()).then(data => {
+            if (data && !data.error) setTenantProfile(data);
+        }).catch(e => console.error("Failed to fetch tenant profile", e));
     }, []);
 
-    // Reactive subscription to the specific quotation page directly in Zustand
     const quotation = useDatabaseStore(state => {
         const db = state.databases.find(d => d.id === 'db-quotations');
         return db?.pages.find(p => p.id === id) || null;
     });
+
+    const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
+
+    // Read the raw db-clients database from Zustand (stable reference)
+    const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === 'db-clients'));
+
+    // Derive client list with useMemo to avoid infinite re-render loops
+    const clients = useMemo(() => {
+        if (!clientsDb) return [];
+        const nameProp = clientsDb.properties.find(p => ['naam', 'name', 'voornaam', 'first', 'firstname'].some(k => p.name.toLowerCase().includes(k)));
+        const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam'].some(k => p.name.toLowerCase().includes(k)));
+        const emailProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('email'));
+        const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+        return clientsDb.pages.map(page => ({
+            id: page.id,
+            firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
+            lastName: String(page.properties[lastProp?.id || ''] || ''),
+            email: emailProp ? String(page.properties[emailProp.id] || '') : null,
+            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null
+        }));
+    }, [clientsDb]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Quotation Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
@@ -143,94 +183,319 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     const grandTotal = calculateGrandTotal(blocks);
 
+    const handleSendEmail = async () => {
+        if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
+
+        setIsSending(true);
+        try {
+            // Find client email from the relation database payload
+            const clientRecord = clients.find(c => c.id === clientId);
+            const clientEmail = String(clientRecord?.email || '');
+            const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
+            const projectName = betreft || quotationTitle || 'Offerte';
+
+            if (!clientEmail || clientEmail === 'undefined') {
+                toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
+                setIsSending(false);
+                return;
+            }
+
+            // Create React PDF document configuration
+            const doc = (
+                <QuotationPDFTemplate
+                    blocks={blocks}
+                    quotationTitle={String(quotationTitle)}
+                    betreft={String(betreft)}
+                    clientId={String(clientId)}
+                    projectId={String(projectId)}
+                    grandTotal={grandTotal}
+                    databaseStoreState={useDatabaseStore.getState()}
+                    tenantProfile={tenantProfile}
+                    templateId={tenantProfile?.documentTemplate || 't1'}
+                />
+            );
+
+            // Dynamically generate the PDF binary buffer natively
+            const asPdf = pdf(doc);
+            const blob = await asPdf.toBlob();
+
+            // Convert to base64
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = (reader.result as string).split(',')[1];
+                const response = await sendQuotationToClient(id, clientEmail, clientName, String(projectName), `€${grandTotal.toFixed(2)}`, base64data);
+
+                if (response.success) {
+                    toast.success('Offerte is succesvol verzonden!');
+                } else {
+                    toast.error(`Fout bij verzenden: ${response.error}`);
+                }
+                setIsSending(false);
+            };
+        } catch (error) {
+            console.error(error);
+            toast.error('Er is iets misgegaan tijdens het genereren van de PDF.');
+            setIsSending(false);
+        }
+    };
+
+    const handleSaveToDrive = async () => {
+        if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan in Google Drive.');
+
+        const clientRecord = clients.find(c => c.id === clientId);
+        const parentId = clientRecord?.driveFolderId;
+
+        if (!parentId) {
+            toast.warning('Deze klant heeft nog geen Google Drive folder. Synchroniseer de database eerst.');
+            return;
+        }
+
+        setIsSavingToDrive(true);
+        try {
+            const doc = (
+                <QuotationPDFTemplate
+                    blocks={blocks}
+                    quotationTitle={String(quotationTitle)}
+                    betreft={String(betreft)}
+                    clientId={String(clientId)}
+                    projectId={String(projectId)}
+                    grandTotal={grandTotal}
+                    databaseStoreState={useDatabaseStore.getState()}
+                    tenantProfile={tenantProfile}
+                    templateId={tenantProfile?.documentTemplate || 't1'}
+                />
+            );
+
+            const asPdf = pdf(doc);
+            const blob = await asPdf.toBlob();
+
+            const file = new File([blob], `Offerte_${quotationTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('parentId', String(parentId));
+            formData.append('targetSubfolder', 'Offertes');
+
+            const res = await fetch('/api/drive/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                toast.success('Succesvol opgeslagen in Google Drive!');
+            } else {
+                toast.error(`Drive fout: ${data.error}`);
+            }
+        } catch (e: any) {
+            console.error(e);
+            toast.error('Er is iets misgegaan tijdens het opslaan: ' + e.message);
+        } finally {
+            setIsSavingToDrive(false);
+        }
+    };
+
+    const handleHandover = () => {
+        if (!clientId) return toast.warning('Selecteer eerst een klant om het project te starten.');
+
+        // 1. Create a Project in db-1
+        const newProject = createPage('db-1', {
+            title: `[EXEC] ${betreft || quotationTitle}`,
+            'prop-execution-status': 'opt-to-do',
+            'prop-financial-status': 'opt-quote',
+            'prop-client-relation': [clientId],
+            'prop-budget': grandTotal
+        });
+
+        if (!newProject) {
+            toast.error('Project aanmaken mislukt.');
+            return;
+        }
+
+        // 2. Map blocks to Tasks in db-tasks
+        const extractTasks = (nodes: Block[]) => {
+            nodes.forEach(block => {
+                if (block.type === 'line' || block.type === 'post') {
+                    createPage('db-tasks', {
+                        title: block.content || 'Uitvoerende Taak',
+                        'prop-task-status': 'opt-todo',
+                        'prop-task-project': [newProject.id]
+                    });
+                }
+                if (block.children) {
+                    extractTasks(block.children);
+                }
+            });
+        };
+
+        extractTasks(blocks);
+
+        // 3. Link the quotation to the new project
+        handleUpdateProperty('project', newProject.id);
+
+        toast.success('Project aangemaakt en taken toegewezen!');
+
+        // 4. Navigate to the new Bordereau route
+        router.push(`/nl/admin/projects-management/bordereau/${newProject.id}`);
+    };
+
     return (
-        <div className="flex flex-col w-full h-full bg-white dark:bg-[#0p0p0p] text-neutral-900 dark:text-white">
+        <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
-                <div className="flex items-center gap-4 min-w-0">
+            <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
+                <div className="flex items-center gap-4 px-4 py-3">
+                    {/* Back + Title */}
                     <button
                         onClick={() => router.back()}
-                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors"
+                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0"
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
-                    <div className="flex flex-col">
-                        <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-white line-clamp-1">{betreft || 'Draft Quotation'}</h1>
-                        <p className="text-xs text-neutral-500 font-mono tracking-wider">
-                            OFFERTE {quotationTitle}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Central Selectors */}
-                <div className="flex-1 flex items-center justify-center gap-3 px-4">
-                    {/* Placeholder for Client Selection */}
-                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors border border-transparent dark:border-white/5">
-                        <User className="w-4 h-4 text-neutral-500" />
-                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            {clientId ? 'Client Relation Linked' : 'Selecteer Klant (Client)...'}
-                        </span>
-                    </div>
-
-                    {/* Placeholder for Project Selection */}
-                    <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 px-3 py-1.5 rounded-md cursor-pointer hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors border border-transparent dark:border-white/5">
-                        <Briefcase className="w-4 h-4 text-neutral-500" />
-                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                            {projectId ? 'Project Linked' : 'Koppel Project (Optioneel)'}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Mathematical Global Output Frame and Export */}
-                <div className="flex flex-col items-end px-4 min-w-max gap-3">
-                    <div className="flex flex-col items-end">
-                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-0.5">Grand Total</span>
-                        <span className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400 leading-none">
-                            €{grandTotal.toFixed(2)}
-                        </span>
-                    </div>
-                    {isHydrated && (
-                        <PDFDownloadLink
-                            document={
-                                <QuotationPDFTemplate
-                                    blocks={blocks}
-                                    quotationTitle={String(quotationTitle)}
-                                    betreft={String(betreft)}
-                                    clientId={String(clientId)}
-                                    projectId={String(projectId)}
-                                    grandTotal={grandTotal}
-                                    databaseStoreState={useDatabaseStore.getState()}
-                                />
-                            }
-                            fileName={`Offerte_${quotationTitle || 'Draft'}.pdf`}
-                            className="bg-black text-white dark:bg-white dark:text-black text-xs font-bold px-4 py-1.5 rounded hover:opacity-80 transition-opacity flex items-center gap-2"
-                        >
-                            {({ blob, url, loading, error }) =>
-                                loading ? 'Generating PDF...' : (
-                                    <>
-                                        <FileText className="w-3.5 h-3.5" /> Export PDF
-                                    </>
-                                )
-                            }
-                        </PDFDownloadLink>
-                    )}
-                </div>
-            </div>
-
-            {/* Main Canvas Workspace */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-[#0p0p0p]">
-                <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
-
-                    {/* Betreft (Subject) Input */}
-                    <div className="w-full mb-3 mt-1 bg-white dark:bg-[#111] rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm shrink-0 px-4 py-1.5">
+                    <div className="flex flex-col min-w-0 shrink-0">
                         <input
                             type="text"
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
-                            placeholder="Titel of Object (e.g. Volledig badkamer renovatie)..."
-                            className="w-full text-lg md:text-xl font-bold bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-300 dark:placeholder:text-neutral-700 py-1 transition-colors"
+                            placeholder="Draft Quotation"
+                            className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px]"
                         />
+                        <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
+                            Offerte {quotationTitle}
+                        </p>
                     </div>
+
+                    {/* Separator */}
+                    <div className="h-8 w-px bg-neutral-200 dark:bg-white/10 shrink-0" />
+
+                    {/* Selectors */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {/* Client Selector */}
+                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                            <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                            <select
+                                value={clientId}
+                                onChange={(e) => handleUpdateProperty('client', e.target.value)}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
+                            >
+                                <option value="">Klant selecteren...</option>
+                                {clients.map(client => (
+                                    <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
+                                        {client.firstName} {client.lastName}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Project Selector */}
+                        {hasProjects && (
+                            <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                                <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                                <select
+                                    value={projectId}
+                                    onChange={(e) => handleUpdateProperty('project', e.target.value)}
+                                    className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
+                                >
+                                    <option value="">Project koppelen...</option>
+                                    {projects.map(project => (
+                                        <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
+                                            {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Action Buttons — Monocolor brand-themed */}
+                    <div className="flex items-center gap-1.5 shrink-0">
+                        {hasProjects && isHydrated && (String(quotation?.properties?.['status']) === 'ACCEPTED' || String(quotation?.properties?.['status']) === 'opt-accepted' || String(quotation?.properties?.['prop-quote-status']) === 'opt-accepted' || String(quotation?.properties?.['prop-quote-status']) === 'ACCEPTED') && (
+                            <button
+                                onClick={handleHandover}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                    color: 'var(--brand-color, #d35400)',
+                                }}
+                            >
+                                <Briefcase className="w-3.5 h-3.5" /> Handover
+                            </button>
+                        )}
+                        {hasCRM && isHydrated && (
+                            <button
+                                onClick={handleSendEmail}
+                                disabled={isSending || !clientId}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <Mail className="w-3.5 h-3.5" /> {isSending ? 'Sending...' : 'Send'}
+                            </button>
+                        )}
+                        {hasProjects && isHydrated && (
+                            <button
+                                onClick={handleSaveToDrive}
+                                disabled={isSavingToDrive || !clientId}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
+                            </button>
+                        )}
+                        {isHydrated && (
+                            <PDFDownloadLink
+                                document={
+                                    <QuotationPDFTemplate
+                                        blocks={blocks}
+                                        quotationTitle={String(quotationTitle)}
+                                        betreft={String(betreft)}
+                                        clientId={String(clientId)}
+                                        projectId={String(projectId)}
+                                        grandTotal={grandTotal}
+                                        databaseStoreState={useDatabaseStore.getState()}
+                                        tenantProfile={tenantProfile}
+                                        templateId={tenantProfile?.documentTemplate || 't1'}
+                                    />
+                                }
+                                fileName={`Offerte_${quotationTitle || 'Draft'}.pdf`}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90"
+                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                            >
+                                {({ blob, url, loading, error }) =>
+                                    loading ? 'Generating...' : (
+                                        <>
+                                            <FileText className="w-3.5 h-3.5" /> Export PDF
+                                        </>
+                                    )
+                                }
+                            </PDFDownloadLink>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {tenantProfile && (!tenantProfile.companyName || !tenantProfile.vatNumber) && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
+                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                        <strong>Identity Missing:</strong> Your PDF exports will appear incomplete. Please link your Company Name and VAT Number in the settings.
+                    </p>
+                    <Link href="/admin/settings/company-info" className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
+                        Update Settings
+                    </Link>
+                </div>
+            )}
+
+            {/* Main Canvas Workspace */}
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
+                <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                     {/* Mathematical Blocks */}
                     <DragDropContext onDragEnd={handleDragEnd}>
@@ -249,6 +514,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             onUpdate={handleUpdateBlock}
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
+                                            hasLibraryAccess={hasDatabases}
                                         />
                                     ))}
                                     {provided.placeholder}
@@ -260,20 +526,31 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <div className="flex items-center gap-2 mt-2">
                         <button
                             onClick={() => handleAddBlock('section')}
-                            className="text-white bg-[#d75d00] hover:bg-[#b04b00] dark:bg-[#d75d00] dark:hover:bg-[#b04b00] text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded shadow-sm"
+                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
+                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                         >
                             <span className="text-sm leading-none">+</span> Add Section
                         </button>
                         <button
                             onClick={() => handleAddBlock('line')}
-                            className="text-neutral-700 bg-white border border-neutral-200 hover:bg-neutral-50 dark:bg-[#222] dark:border-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-800 text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded shadow-sm"
+                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
+                            style={{
+                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
+                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                color: 'var(--brand-color, #d35400)',
+                            }}
                         >
                             <span className="text-sm leading-none">+</span> Add Line
                         </button>
                         <div className="flex-1" />
                         <button
                             onClick={() => setIsImportModalOpen(true)}
-                            className="text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 dark:bg-purple-900/20 dark:border-purple-800/50 dark:text-purple-400 dark:hover:bg-purple-900/40 text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded shadow-sm"
+                            className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
+                            style={{
+                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
+                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                color: 'var(--brand-color, #d35400)',
+                            }}
                         >
                             <Bot className="w-3.5 h-3.5" /> AI PDF Import
                         </button>
@@ -290,6 +567,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 onClose={() => setIsImportModalOpen(false)}
                 onImportComplete={handleImportComplete}
             />
-        </div>
+        </div >
     );
 }

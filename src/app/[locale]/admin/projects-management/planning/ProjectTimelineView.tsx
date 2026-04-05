@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Calendar as CalendarIcon, Clock, ChevronRight, Activity } from 'lucide-react';
 import { differenceInDays, addDays, startOfMonth, endOfMonth, eachMonthOfInterval, format } from 'date-fns';
 
 export default function ProjectTimelineView() {
     const database = useDatabaseStore(state => state.getDatabase('db-1'));
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     const timelineData = useMemo(() => {
         if (!database) return [];
@@ -33,7 +38,8 @@ export default function ProjectTimelineView() {
         }).filter(p => p.plannedStart || p.actualStart); // Only show projects with schedules bounds
     }, [database]);
 
-    if (!database) return <div className="text-neutral-500 p-8">Loading operational framework...</div>;
+    if (!isMounted) return <div className="text-neutral-500 p-8">Loading operational framework...</div>;
+    if (!database) return <div className="text-neutral-500 p-8">Initializing tracker...</div>;
     if (timelineData.length === 0) return <div className="text-neutral-500 p-8 font-medium">No active schedules. Assign planned or actual dates to projects in the Database Hub to visualize the timeline.</div>;
 
     // Calculate dynamic timeline bounds

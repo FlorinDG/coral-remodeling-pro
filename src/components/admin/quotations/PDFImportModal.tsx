@@ -65,16 +65,26 @@ export default function PDFImportModal({ isOpen, onClose, onImportComplete }: PD
     };
 
     const confirmImport = () => {
-        const generatedBlocks: Block[] = extractedItems.map(item => ({
-            id: crypto.randomUUID(),
-            type: 'line',
-            content: item.title || 'Unknown Item',
-            brutoPrice: item.brutoPrice || 0,
-            discountPercent: item.discountPercent || 0,
-            quantity: item.quantity || 1,
-            unit: item.unit || 'stk',
-            calculationType: item.calculationType as any || 'materieel'
-        }));
+        const generatedBlocks: Block[] = extractedItems.map(item => {
+            const bruto = item.brutoPrice || 0;
+            const discount = item.discountPercent || 0;
+            const defaultMarge = 20;
+            const costAfterDiscount = bruto * (1 - discount / 100);
+            const computedVerkoop = costAfterDiscount * (1 + defaultMarge / 100);
+
+            return {
+                id: crypto.randomUUID(),
+                type: 'line' as const,
+                content: item.title || 'Unknown Item',
+                brutoPrice: bruto,
+                discountPercent: discount,
+                margePercent: defaultMarge,
+                verkoopPrice: computedVerkoop,
+                quantity: item.quantity || 1,
+                unit: item.unit || 'stk',
+                calculationType: item.calculationType as any || 'materieel'
+            };
+        });
 
         onImportComplete(generatedBlocks);
         // Reset state for next time UI is opened

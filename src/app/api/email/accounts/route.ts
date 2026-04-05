@@ -1,11 +1,14 @@
-import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { auth } from '@/auth';
 
-const prisma = new PrismaClient();
-
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
-        const { email, password, host, port, type } = await request.json();
+        const session = await auth();
+        const tenantId = (session?.user as any)?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized: SaaS workspace context missing.' }, { status: 401 });
+
+        const { email, password, host, port } = await req.json();
 
         if (!email || !password) {
             return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
@@ -25,19 +28,21 @@ export async function POST(request: Request) {
             update: {
                 password,
                 imapHost,
-                imapPort,
+                imapPort: Number(imapPort),
                 smtpHost,
-                smtpPort,
-                isActive: true
+                smtpPort: Number(smtpPort),
+                isActive: true,
+                tenantId
             },
             create: {
                 email,
                 password,
                 imapHost,
-                imapPort,
+                imapPort: Number(imapPort),
                 smtpHost,
-                smtpPort,
-                isActive: true
+                smtpPort: Number(smtpPort),
+                isActive: true,
+                tenantId
             }
         });
 

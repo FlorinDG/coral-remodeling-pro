@@ -41,7 +41,7 @@ export default function ProjectUpdateForm({ portalId }: ProjectUpdateFormProps) 
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder={t('form.title')}
                     required
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                 />
                 <textarea
                     name="content"
@@ -50,12 +50,12 @@ export default function ProjectUpdateForm({ portalId }: ProjectUpdateFormProps) 
                     placeholder={t('form.details')}
                     required
                     rows={3}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d35400] outline-none transition-colors"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
                 />
                 <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#d35400] hover:bg-[#a04000] text-white py-3 rounded-xl font-bold uppercase transition-colors disabled:opacity-50"
+                    className="w-full bg-[var(--brand-color,#d35400)] hover:bg-[#a04000] text-white py-3 rounded-xl font-bold uppercase transition-colors disabled:opacity-50"
                 >
                     {loading ? 'POSTING...' : t('form.post')}
                 </button>

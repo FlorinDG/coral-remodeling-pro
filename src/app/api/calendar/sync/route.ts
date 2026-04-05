@@ -10,6 +10,8 @@ export const POST = auth(async function POST(req: any) {
         }
 
         const userId = req.auth.user.id;
+        const tenantId = (req.auth.user as any)?.tenantId;
+        if (!tenantId) return new NextResponse("Unauthorized", { status: 401 });
         const body = await req.json().catch(() => ({}));
 
         // Optional parameters to limit sync window
@@ -92,6 +94,7 @@ export const POST = auth(async function POST(req: any) {
                         };
                         const upsertCreate: any = {
                             userId,
+                            tenantId,
                             googleEventId: gEvent.id,
                             googleCalendarId: cal.id,
                             title: gEvent.summary || "Busy",

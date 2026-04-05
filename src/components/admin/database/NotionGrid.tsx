@@ -14,6 +14,7 @@ import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
 import { Download, Upload, Plus, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { useTenant } from '@/context/TenantContext';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
@@ -32,9 +33,11 @@ import { Property } from './types';
 
 interface NotionGridProps {
     databaseId: string;
+    viewId?: string;
+    renderTabs?: React.ReactNode;
 }
 
-export default function NotionGrid({ databaseId }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGridProps) {
     const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -54,8 +57,11 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
     // Subscribe to store changes manually for this specific DB to avoid full-app re-renders
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
-    const activeViewId = database?.views?.[0]?.id; // Defaulting to first view for now, will add tabs later
+    const activeViewId = viewId || database?.views?.[0]?.id; // prioritize explicitly passed viewId from tab engine
     const activeView = database?.views?.find(v => v.id === activeViewId);
+
+    const { activeModules } = useTenant();
+    const hasCRM = activeModules.includes('CRM');
 
     const [isReady, setIsReady] = useState(false);
     const [hasHydrated, setHasHydrated] = useState(false);
@@ -80,7 +86,13 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
     }, []);
 
     // Use properties reference directly to avoid recreating columns when page data updates (which changes database reference)
-    const databaseProperties = database?.properties || [];
+    let databaseProperties = database?.properties || [];
+
+    // ENFORCE LICENSING ISOLATION: Hide 'Lead Source' property for Free Tier
+    if (!hasCRM && databaseId === 'db-clients') {
+        databaseProperties = databaseProperties.filter(p => p.name.toLowerCase() !== 'lead source');
+    }
+
     const databaseIdRef = database?.id || '';
 
     const viewStateMap = useMemo(() => new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []), [activeView?.propertiesState]);
@@ -139,7 +151,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 // Rollups also need full row data to read sibling relation properties
                 if (prop.type === 'rollup' && prop.config?.rollupPropertyId && prop.config?.rollupTargetPropertyId) {
                     return {
-                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId) as any,
+                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId, prop.config.rollupAggregation) as any,
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -304,10 +316,12 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
     const filteredPages = useMemo(() => {
         if (!database) return [];
-        return database.pages.filter(page => {
-            if (!database.activeFilters || database.activeFilters.length === 0) return true;
+        const activeFilters = activeView?.filters || database.activeFilters || [];
 
-            return database.activeFilters.every(filter => {
+        return database.pages.filter(page => {
+            if (!activeFilters || activeFilters.length === 0) return true;
+
+            return activeFilters.every(filter => {
                 const cellValue = page.properties[filter.propertyId];
 
                 switch (filter.operator) {
@@ -321,17 +335,19 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
                 }
             });
         });
-    }, [database?.pages, database?.activeFilters]);
+    }, [database?.pages, activeView?.filters, database?.activeFilters]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
         if (!database) return [];
+        const activeSorts = activeView?.sorts || database.activeSorts || [];
+
         return [...filteredPages].sort((a, b) => {
-            if (!database.activeSorts || database.activeSorts.length === 0) {
+            if (!activeSorts || activeSorts.length === 0) {
                 return (a.order ?? 0) - (b.order ?? 0);
             }
 
-            for (const sort of database.activeSorts) {
+            for (const sort of activeSorts) {
                 const valA = a.properties[sort.propertyId];
                 const valB = b.properties[sort.propertyId];
 
@@ -348,7 +364,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
             return 0;
         });
-    }, [filteredPages, database?.activeSorts]);
+    }, [filteredPages, activeView?.sorts, database?.activeSorts]);
 
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
@@ -396,23 +412,22 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
 
     return (
         <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
-            <div className="p-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 flex items-center justify-between relative z-[60]">
-                <div>
-                    <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
-                        {database.icon && <span>{database.icon}</span>}
-                        {database.name}
-                        <span className="text-xs bg-neutral-200 dark:bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full ml-2">
-                            {filteredPages.length} Rows
-                        </span>
-                    </h2>
-                    {database.description && (
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{database.description}</p>
+            <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
+                <div className="flex items-end pr-2 shrink-0">
+                    {renderTabs ? renderTabs : (
+                        <h2 className="text-lg font-semibold text-neutral-900 dark:text-white flex items-center gap-2 pb-2">
+                            {database.icon && <span>{database.icon}</span>}
+                            {database.name}
+                            <span className="text-xs bg-neutral-200 dark:bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full ml-2">
+                                {filteredPages.length} Rows
+                            </span>
+                        </h2>
                     )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar">
                     {activeViewId && <PropertiesDropdown databaseId={database.id} viewId={activeViewId} />}
-                    <FilterToolbar databaseId={database.id} />
-                    <SortToolbar databaseId={database.id} />
+                    <FilterToolbar databaseId={database.id} viewId={activeViewId} />
+                    <SortToolbar databaseId={database.id} viewId={activeViewId} />
 
                     <button
                         onClick={handleExportCSV}
@@ -473,7 +488,7 @@ export default function NotionGrid({ databaseId }: NotionGridProps) {
             </div>
 
             <div
-                className="flex-1 w-full p-0 relative overflow-hidden min-h-0"
+                className="flex-1 w-full p-0 relative overflow-hidden min-h-0 bg-white dark:bg-black"
                 ref={gridWrapperRef}
                 onScrollCapture={(e) => {
                     // Synchronously intercept bubbled scroll events and lock the header offset translation

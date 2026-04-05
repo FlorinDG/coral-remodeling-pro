@@ -44,7 +44,8 @@ export default function ProjectList({ projects: initialProjects }: ProjectListPr
                 <h2 className="text-xl font-bold">Manage Portfolio</h2>
                 <button
                     onClick={() => window.location.href = './projects/new'}
-                    className="bg-[#d35400] hover:bg-[#e67e22] text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold transition-all"
+                    className="text-white px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold transition-all hover:opacity-90"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     <Plus className="w-4 h-4" />
                     ADD NEW PROJECT
@@ -53,7 +54,7 @@ export default function ProjectList({ projects: initialProjects }: ProjectListPr
 
             <div className="grid gap-4">
                 {projects.map((project) => (
-                    <div key={project.id} className="glass-morphism p-4 rounded-2xl border border-white/10 flex items-center gap-6 group hover:border-[#d35400]/30 transition-all">
+                    <div key={project.id} className="glass-morphism p-4 rounded-2xl border border-white/10 flex items-center gap-6 group hover:border-[var(--brand-color,#d35400)]/30 transition-all">
                         <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-neutral-900 flex-shrink-0">
                             {project.images?.[0]?.url ? (
                                 <Image
@@ -115,7 +116,8 @@ export default function ProjectList({ projects: initialProjects }: ProjectListPr
                         <p className="text-neutral-500">No projects in portfolio yet.</p>
                         <button
                             onClick={() => window.location.href = './projects/new'}
-                            className="mt-4 text-[#d35400] font-bold text-sm uppercase tracking-widest hover:underline"
+                            className="mt-4 font-bold text-sm uppercase tracking-widest hover:underline"
+                            style={{ color: 'var(--brand-color, #d35400)' }}
                         >
                             Create your first project
                         </button>

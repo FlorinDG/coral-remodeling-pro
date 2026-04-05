@@ -20,17 +20,97 @@ async function main() {
     await prisma.cMS_Service.deleteMany();
     console.log('🧹 Cleaned up existing CMS data');
 
+    // Create Default Core Workspace Tenant
+    const tenant = await prisma.tenant.create({
+        data: {
+            companyName: 'Coral Group Main Platform',
+            planType: 'ENTERPRISE',
+        }
+    });
+    const tenantId = tenant.id;
+    console.log('✅ Default SaaS Tenant Vault mounted:', tenantId);
+
     // Create Admin User
     await prisma.user.upsert({
         where: { email: 'tfo@coral-group.be' },
         update: {},
         create: {
             email: 'tfo@coral-group.be',
-            name: 'Admin',
+            name: 'SuperAdmin',
             password: 'admin', // Simple password for now, as requested.
-            role: 'ADMIN',
+            role: 'SUPERADMIN',
+            tenantId,
         },
     });
+    console.log('✅ Superadmin master account created');
+
+    // Create Mock: Free Tier Startup
+    const freeTenant = await prisma.tenant.create({
+        data: {
+            companyName: 'Bootstrap Remodeling (Free Tier)',
+            planType: 'FREE',
+            subscriptionStatus: 'ACTIVE',
+            activeModules: ["INVOICING"]
+        }
+    });
+
+    await prisma.user.upsert({
+        where: { email: 'free@coral-group.be' },
+        update: {},
+        create: {
+            email: 'free@coral-group.be',
+            name: 'Free Tier Admin',
+            password: 'admin',
+            role: 'TENANT_ADMIN',
+            tenantId: freeTenant.id,
+        },
+    });
+
+    // Create Mock: Pro Tier Agency
+    const proTenant = await prisma.tenant.create({
+        data: {
+            companyName: 'Elevate Designers (Pro Tier)',
+            planType: 'PRO',
+            subscriptionStatus: 'ACTIVE',
+            activeModules: ["INVOICING", "CRM", "PROJECTS", "DATABASES"]
+        }
+    });
+
+    await prisma.user.upsert({
+        where: { email: 'pro@coral-group.be' },
+        update: {},
+        create: {
+            email: 'pro@coral-group.be',
+            name: 'Pro Tier Admin',
+            password: 'admin',
+            role: 'TENANT_ADMIN',
+            tenantId: proTenant.id,
+        },
+    });
+
+    // Create Mock: Enterprise Corporation
+    const enterpriseTenant = await prisma.tenant.create({
+        data: {
+            companyName: 'Apex Construction Group (EnterpriseTier)',
+            planType: 'ENTERPRISE',
+            subscriptionStatus: 'ACTIVE',
+            activeModules: ["INVOICING", "CRM", "PROJECTS", "DATABASES", "CALENDAR", "HR"]
+        }
+    });
+
+    await prisma.user.upsert({
+        where: { email: 'enterprise@coral-group.be' },
+        update: {},
+        create: {
+            email: 'enterprise@coral-group.be',
+            name: 'Enterprise Admin',
+            password: 'admin',
+            role: 'TENANT_ADMIN',
+            tenantId: enterpriseTenant.id,
+        },
+    });
+
+    console.log('✅ Three functional SaaS mockup tiers explicitly configured and sealed');
     console.log('✅ Admin user created');
 
     // Load translations to seed SiteContent
@@ -58,7 +138,7 @@ async function main() {
         const valRo = getNestedValue(messages.ro, parts);
 
         await prisma.siteContent.upsert({
-            where: { key },
+            where: { tenantId_key: { tenantId, key } },
             update: {},
             create: {
                 key,
@@ -66,6 +146,7 @@ async function main() {
                 valueNl: valNl as string,
                 valueFr: valFr as string,
                 valueRo: valRo as string,
+                tenantId,
             },
         });
     }
@@ -86,7 +167,7 @@ async function main() {
         const tRo = messages.ro.Services[s.key];
 
         await prisma.cMS_Service.upsert({
-            where: { slug: s.slug },
+            where: { tenantId_slug: { tenantId, slug: s.slug } },
             update: {},
             create: {
                 slug: s.slug,
@@ -113,6 +194,7 @@ async function main() {
                 featuresNl: tNl.features || [],
                 featuresFr: tFr.features || [],
                 featuresRo: tRo.features || [],
+                tenantId,
             },
         });
     }
@@ -147,6 +229,7 @@ async function main() {
                 locationFr: tFr.location,
                 locationRo: tRo.location,
                 order: i + 1,
+                tenantId,
                 images: {
                     create: [
                         { url: imageUrl, captionEn: tEn.caption1, captionNl: tNl.caption1, captionFr: tFr.caption1, captionRo: tRo.caption1, order: 1 },

@@ -2,13 +2,14 @@ import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
     pages: {
-        signIn: "/admin/login",
+        signIn: "/login",
     },
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
                 token.role = (user as { role?: string }).role;
                 token.id = user.id;
+                token.tenantId = (user as { tenantId?: string | null }).tenantId;
             }
             return token;
         },
@@ -16,6 +17,7 @@ export const authConfig = {
             if (session.user) {
                 (session.user as { role?: string }).role = token.role as string;
                 session.user.id = token.id as string;
+                (session.user as { tenantId?: string | null }).tenantId = token.tenantId as string | null;
             }
             return session;
         }

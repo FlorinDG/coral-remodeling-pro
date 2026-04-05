@@ -1,5 +1,7 @@
 "use client";
 
+import { Toaster } from 'sonner';
+
 import { useSession, signOut } from "next-auth/react";
 import { Link, usePathname } from "@/i18n/routing";
 import {
@@ -27,7 +29,7 @@ import {
     Library,
     Mail
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import QuickSearch from "@/components/admin/QuickSearch";
@@ -38,29 +40,93 @@ import { hrTabs, relationsTabs, frontendTabs, financialTabs, settingsTabs } from
 
 const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...financialTabs, ...settingsTabs];
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+import { Lock } from "lucide-react";
+import { TenantProvider } from "@/context/TenantContext";
+
+export default function AdminLayout({ children, activeModules = [] }: { children: React.ReactNode, activeModules?: string[] }) {
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [companyName, setCompanyName] = useState<string>('');
+    const [brandColor, setBrandColor] = useState<string>('#d75d00');
+    const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
+            if (d && !d.error) {
+                setCompanyName(d.commercialName || d.companyName || '');
+                if (d.brandColor) {
+                    setBrandColor(d.brandColor);
+                    document.documentElement.style.setProperty('--brand-color', d.brandColor);
+                }
+                if (d.logoUrl) setLogoUrl(d.logoUrl);
+            }
+        }).catch(() => {});
+    }, []);
+
     const { items: menuItems } = useSidebarStore();
     const { tabOrders } = useTabStore();
     const pathname = usePathname();
 
+    const MODULE_MAP: Record<string, string[]> = {
+        'contacts': ['INVOICING'],
+        'suppliers': ['INVOICING'],
+        'email': ['CRM'],
+        'tasks': ['CRM'],
+        'projects': ['PROJECTS'],
+        'hr': ['HR'],
+        'files': ['PROJECTS'],
+        'financials': ['INVOICING'],
+        'calendar': ['CALENDAR'],
+        'library': ['DATABASES'],
+        'frontend': ['ENTERPRISE']
+    };
+
+    const filteredItems = menuItems.filter(item => {
+        const requiredModules = MODULE_MAP[item.id];
+        if (!requiredModules) return true;
+        return requiredModules.some(m => activeModules.includes(m));
+    });
+
+    let activeTopPath = null;
+    for (const item of menuItems) {
+        if (item.href && (pathname === item.href || pathname.startsWith(item.href + "/"))) {
+            if (!activeTopPath || item.href.length > activeTopPath.href!.length) {
+                activeTopPath = item;
+            }
+        }
+    }
+
+    const isBlocked = activeTopPath && !filteredItems.find(f => f.id === activeTopPath.id);
+
+    // Rhombus SVG fallback for when no logo is uploaded
+    const RhombusLogo = ({ size = 28, color }: { size?: number, color: string }) => (
+        <svg width={size} height={size} viewBox="0 0 28 28" fill="none">
+            <rect x="14" y="2" width="15" height="15" rx="3" transform="rotate(45 14 2)" fill={color} />
+        </svg>
+    );
+
     return (
-        <div className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden">
+        <div
+            className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden"
+            style={{ '--brand-color': brandColor } as React.CSSProperties}
+        >
             {/* Sidebar */}
             <aside className={`${isSidebarOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-200 dark:border-white/10 flex flex-col fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl`}>
                 <div className="p-4 flex items-center gap-3">
                     <div className="w-7 h-7 flex-shrink-0">
-                        <Logo />
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-7 h-7 object-contain rounded" />
+                        ) : (
+                            <RhombusLogo color={brandColor} />
+                        )}
                     </div>
-                    {isSidebarOpen && <span className="font-bold tracking-tight text-sm">Admin CMS</span>}
+                    {isSidebarOpen && <span className="font-bold tracking-tight text-sm truncate">{companyName || 'Admin CMS'}</span>}
                 </div>
 
                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                    {menuItems.map((item) => {
+                    {filteredItems.map((item) => {
                         const IconComponent = getIconComponent(item.iconName || "");
 
-                        // Resolve dynamic href if a custom tab order exists for this module
                         let resolvedHref = item.href as string;
                         const customOrder = tabOrders[item.id];
                         if (customOrder && customOrder.length > 0) {
@@ -82,16 +148,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         <Link
                                             href={resolvedHref}
                                             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${isActive
-                                                ? 'text-[#d35400]'
+                                                ? ''
                                                 : 'hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-900 dark:text-neutral-200'
                                                 }`}
+                                            style={isActive ? { color: brandColor } : {}}
                                         >
                                             {isActive ? (
-                                                <div className="w-5 h-5 flex-shrink-0 text-[#d35400]">
-                                                    <Logo />
+                                                <div className="w-5 h-5 flex-shrink-0">
+                                                    <RhombusLogo size={20} color={brandColor} />
                                                 </div>
                                             ) : (
-                                                IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 group-hover:text-[#d35400] transition-colors" />
+                                                IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 transition-colors" style={{}} />
                                             )}
                                             {isSidebarOpen && <span className="text-xs font-bold">{item.label}</span>}
                                         </Link>
@@ -141,25 +208,47 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <QuickSearch />
-
-                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-                            <div className="w-1 h-1 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[9px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Sync Active</span>
-                        </div>
 
                         <ThemeToggle />
 
-                        <Link href="/" className="text-[10px] font-bold uppercase tracking-widest text-[#d35400] hover:text-[#e67e22] transition-colors border-l border-neutral-200 dark:border-white/10 pl-4">
-                            View Site
-                        </Link>
+                        {(!activeModules.includes('HR') || !activeModules.includes('DATABASES')) && (
+                            <Link
+                                href="/admin/settings"
+                                className="text-[10px] text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"
+                                style={{ backgroundColor: brandColor }}
+                            >
+                                Upgrade Plan
+                            </Link>
+                        )}
+
+                        <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-4 ml-2" style={{ color: brandColor }}>
+                            Coral Group
+                        </a>
                     </div>
                 </header>
 
-                <div className="flex-1 p-4 overflow-y-auto min-h-0 flex flex-col">
-                    {children}
+                <div className="flex-1 p-4 pb-16 overflow-y-auto min-h-0 flex flex-col relative w-full">
+                    <TenantProvider activeModules={activeModules}>
+                        {isBlocked ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 m-4">
+                                <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mb-6" style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}>
+                                    <Lock className="w-8 h-8" style={{ color: brandColor }} />
+                                </div>
+                                <h2 className="text-2xl font-black tracking-tight mb-3">Module Upgrade Required</h2>
+                                <p className="text-neutral-500 dark:text-neutral-400 max-w-md mb-8 leading-relaxed">
+                                    This specific application module requires an active premium license. Contact the Superadmin or upgrade your tenant subscription to unlock full system capabilities.
+                                </p>
+                                <Link href="/admin/dashboard" className="px-6 py-3 rounded-lg bg-black dark:bg-white text-white dark:text-black font-bold hover:opacity-90 transition-opacity">
+                                    Return to Dashboard
+                                </Link>
+                            </div>
+                        ) : (
+                            children
+                        )}
+                    </TenantProvider>
                 </div>
             </main>
+            <Toaster position="top-right" richColors closeButton />
         </div>
     );
 }

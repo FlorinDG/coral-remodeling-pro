@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '20mb',
     },
   },
-  distDir: '.next.nosync',
+  distDir: process.env.VERCEL ? '.next' : '.next.nosync',
   webpack: (config) => {
     config.cache = false;
     return config;

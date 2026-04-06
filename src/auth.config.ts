@@ -10,6 +10,7 @@ export const authConfig = {
                 token.role = (user as { role?: string }).role;
                 token.id = user.id;
                 token.tenantId = (user as { tenantId?: string | null }).tenantId;
+                token.emailVerified = !!(user as unknown as { emailVerified?: Date | null }).emailVerified;
             }
             return token;
         },
@@ -18,6 +19,7 @@ export const authConfig = {
                 (session.user as { role?: string }).role = token.role as string;
                 session.user.id = token.id as string;
                 (session.user as { tenantId?: string | null }).tenantId = token.tenantId as string | null;
+                (session.user as unknown as { emailVerified?: boolean }).emailVerified = token.emailVerified as boolean;
             }
             return session;
         }

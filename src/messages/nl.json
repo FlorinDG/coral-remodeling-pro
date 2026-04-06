@@ -301,6 +301,56 @@
             "CANCELLED": "Geannuleerd",
             "ACTIVE": "Actief",
             "COMPLETED": "Voltooid"
+        },
+        "nav": {
+            "sidebar": {
+                "dashboard": "DASHBOARD",
+                "financials": "FINANCIEEL",
+                "contacts": "CONTACTEN",
+                "suppliers": "LEVERANCIERS",
+                "settings": "INSTELLINGEN",
+                "hr": "HR",
+                "library": "BIBLIOTHEEK",
+                "website": "WEBSITE",
+                "crm": "CRM",
+                "projects": "PROJECTEN"
+            },
+            "financialTabs": {
+                "purchaseInvoices": "AANKOOPFACTUREN",
+                "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
+                "salesCreditNotes": "CREDITNOTA - VERKOOP",
+                "salesInvoices": "FACTUREN",
+                "quotations": "OFFERTES"
+            },
+            "pages": {
+                "salesInvoices": "Verkoopfacturen",
+                "salesInvoicesDesc": "Beheer debiteuren, volg betalingen en genereer PDF-facturen.",
+                "noInvoices": "Geen verkoopfacturen",
+                "noInvoicesDesc": "Maak uw eerste factuur om aan de slag te gaan.",
+                "createInvoice": "Factuur Aanmaken",
+                "dashboard": "Dashboard",
+                "administrative": "Administratief"
+            },
+            "settings": {
+                "companyInfo": "BEDRIJFSINFO",
+                "uiLayout": "UI LAYOUT",
+                "calendar": "KALENDER",
+                "financials": "FINANCIEEL",
+                "hr": "HR",
+                "library": "BIBLIOTHEEK",
+                "projects": "PROJECTEN",
+                "relations": "RELATIES",
+                "tasks": "TAKEN",
+                "website": "WEBSITE",
+                "appPreferences": "App- & Documentvoorkeuren",
+                "documentLanguage": "Globale Documenttaal",
+                "documentLanguageDesc": "Stelt de standaard uitvoertaal in voor gegenereerde PDF's (Offertes, Facturen). Indien leeg, wordt de taal van de klant of Frans gebruikt.",
+                "fallbackOption": "Terugvallen op klanttaal",
+                "documentNumbering": "Documentnummering",
+                "documentNumberingDesc": "Configureer het automatische nummeringpatroon voor facturen en offertes. Wijzigingen gelden alleen voor nieuw aangemaakte documenten.",
+                "save": "Profiel Opslaan",
+                "saving": "Opslaan..."
+            }
         }
     },
     "Footer": {

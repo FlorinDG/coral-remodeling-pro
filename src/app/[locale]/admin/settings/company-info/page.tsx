@@ -7,9 +7,11 @@ import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Has
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
+import { useTranslations } from 'next-intl';
 
 export default function CompanyInfoSettings() {
     usePageTitle('Company Info');
+    const t = useTranslations('Admin');
 
     const [profile, setProfile] = useState({
         companyName: '',
@@ -97,6 +99,22 @@ export default function CompanyInfoSettings() {
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
+
+                // If document language was set, switch the admin UI locale to match
+                const newLang = profile.documentLanguage;
+                const supportedLocales = ['en', 'fr', 'nl', 'ro', 'ru'];
+                if (newLang && supportedLocales.includes(newLang)) {
+                    const currentPath = window.location.pathname;
+                    // Replace the locale segment in the URL (e.g., /en/admin/... → /fr/admin/...)
+                    const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
+                    if (localeRegex.test(currentPath)) {
+                        const newPath = currentPath.replace(localeRegex, `/${newLang}$2`);
+                        if (newPath !== currentPath) {
+                            window.location.href = newPath;
+                            return;
+                        }
+                    }
+                }
             } else {
                 throw new Error('Failed to save');
             }
@@ -397,23 +415,23 @@ export default function CompanyInfoSettings() {
                 <div className="mt-8 space-y-6">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                         <Globe className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                        App & Document Preferences
+                        {t.has('nav.settings.appPreferences') ? t('nav.settings.appPreferences') : 'App & Document Preferences'}
                     </h3>
                     <div className="max-w-md">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Global Document Language</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t.has('nav.settings.documentLanguage') ? t('nav.settings.documentLanguage') : 'Global Document Language'}</label>
                         <select
                             value={profile.documentLanguage}
                             onChange={e => setProfile({ ...profile, documentLanguage: e.target.value })}
                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
                         >
-                            <option value="">Fallback to Client Language</option>
+                            <option value="">{t.has('nav.settings.fallbackOption') ? t('nav.settings.fallbackOption') : 'Fallback to Client Language'}</option>
                             <option value="en">English</option>
-                            <option value="fr">French</option>
-                            <option value="nl">Dutch</option>
-                            <option value="ro">Romanian</option>
-                            <option value="ru">Russian</option>
+                            <option value="fr">Français</option>
+                            <option value="nl">Nederlands</option>
+                            <option value="ro">Română</option>
+                            <option value="ru">Русский</option>
                         </select>
-                        <p className="text-xs text-neutral-500 mt-2">Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French.</p>
+                        <p className="text-xs text-neutral-500 mt-2">{t.has('nav.settings.documentLanguageDesc') ? t('nav.settings.documentLanguageDesc') : "Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French."}</p>
                     </div>
                 </div>
 

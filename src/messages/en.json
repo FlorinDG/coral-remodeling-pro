@@ -301,6 +301,56 @@
             "CANCELLED": "Cancelled",
             "ACTIVE": "Active",
             "COMPLETED": "Completed"
+        },
+        "nav": {
+            "sidebar": {
+                "dashboard": "DASHBOARD",
+                "financials": "FINANCIALS",
+                "contacts": "CONTACTS",
+                "suppliers": "SUPPLIERS",
+                "settings": "SETTINGS",
+                "hr": "HR",
+                "library": "LIBRARY",
+                "website": "WEBSITE",
+                "crm": "CRM",
+                "projects": "PROJECTS"
+            },
+            "financialTabs": {
+                "purchaseInvoices": "PURCHASE INVOICES",
+                "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
+                "salesCreditNotes": "CREDIT NOTE - SALES",
+                "salesInvoices": "INVOICES",
+                "quotations": "QUOTATIONS"
+            },
+            "pages": {
+                "salesInvoices": "Sales Invoices",
+                "salesInvoicesDesc": "Manage accounts receivable, track payments, and generate PDF invoices.",
+                "noInvoices": "No Sales Invoices Generated",
+                "noInvoicesDesc": "Create your first invoice to get started with invoicing.",
+                "createInvoice": "Create Invoice",
+                "dashboard": "Dashboard",
+                "administrative": "Administrative"
+            },
+            "settings": {
+                "companyInfo": "COMPANY INFO",
+                "uiLayout": "UI LAYOUT",
+                "calendar": "CALENDAR",
+                "financials": "FINANCIALS",
+                "hr": "HR",
+                "library": "LIBRARY",
+                "projects": "PROJECTS",
+                "relations": "RELATIONS",
+                "tasks": "TASKS",
+                "website": "WEBSITE",
+                "appPreferences": "App & Document Preferences",
+                "documentLanguage": "Global Document Language",
+                "documentLanguageDesc": "Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French.",
+                "fallbackOption": "Fallback to Client Language",
+                "documentNumbering": "Document Numbering",
+                "documentNumberingDesc": "Configure the automatic numbering pattern for invoices and quotations. Changes apply to newly created documents only.",
+                "save": "Save Profile",
+                "saving": "Saving..."
+            }
         }
     },
     "Footer": {

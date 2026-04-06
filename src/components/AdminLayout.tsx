@@ -1,6 +1,7 @@
 "use client";
 
 import { Toaster } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 import { useSession, signOut } from "next-auth/react";
 import { Link, usePathname } from "@/i18n/routing";
@@ -45,7 +46,25 @@ const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...financialTabs
 import { Lock } from "lucide-react";
 import { TenantProvider } from "@/context/TenantContext";
 
+// Map sidebar item IDs to translation keys
+const SIDEBAR_I18N_MAP: Record<string, string> = {
+    dashboard: 'sidebar.dashboard',
+    financials: 'sidebar.financials',
+    contacts: 'sidebar.contacts',
+    suppliers: 'sidebar.suppliers',
+    settings: 'sidebar.settings',
+    hr: 'sidebar.hr',
+    library: 'sidebar.library',
+    frontend: 'sidebar.website',
+    projects: 'sidebar.projects',
+    calendar: 'sidebar.dashboard', // fallback
+    email: 'sidebar.dashboard', // fallback
+    files: 'sidebar.dashboard', // fallback
+    tasks: 'sidebar.dashboard', // fallback
+};
+
 export default function AdminLayout({ children, activeModules = [] }: { children: React.ReactNode, activeModules?: string[] }) {
+    const t = useTranslations('Admin');
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [companyName, setCompanyName] = useState<string>('');
@@ -183,7 +202,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                                             ) : (
                                                 IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 transition-colors" style={{}} />
                                             )}
-                                            {isSidebarOpen && <span className="text-xs font-bold">{item.label}</span>}
+                                            {isSidebarOpen && <span className="text-xs font-bold">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
                                         </Link>
                                     );
                                 })()}

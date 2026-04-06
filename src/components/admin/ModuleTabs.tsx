@@ -6,6 +6,8 @@ import { clsx } from "clsx";
 import { useMemo } from "react";
 import { useTabStore } from "@/store/useTabStore";
 import { useTenant } from "@/context/TenantContext";
+import { useTranslations } from 'next-intl';
+import { getFinancialTabs, getSettingsTabs } from "@/config/tabs";
 
 export interface TabConfig {
     label: string;
@@ -22,6 +24,16 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
     const pathname = usePathname();
     const { tabOrders } = useTabStore();
     const { activeModules } = useTenant();
+    const t = useTranslations('Admin');
+
+    // Auto-resolve localized tabs for known groups
+    const resolvedTabs = useMemo(() => {
+        const tFn = (key: string) => t(key);
+        const tHasFn = (key: string) => t.has(key);
+        if (groupId === 'financials') return getFinancialTabs(tFn, tHasFn);
+        if (groupId === 'settings') return getSettingsTabs(tFn, tHasFn);
+        return tabs;
+    }, [tabs, groupId, t]);
 
     const allowedTabs = useMemo(() => {
         const SETTINGS_MODULE_MAP: Record<string, string[]> = {
@@ -38,12 +50,12 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
             'integrations': ['CRM'],  // Bind Integrations mapping to Pro
             'opt-financials': ['CRM'] // Strip off Financial Settings from Free
         };
-        return tabs.filter(tab => {
+        return resolvedTabs.filter(tab => {
             const req = SETTINGS_MODULE_MAP[tab.id];
             if (!req) return true;
             return req.some(m => activeModules.includes(m));
         });
-    }, [tabs, activeModules]);
+    }, [resolvedTabs, activeModules]);
 
     // Reorder tabs if a custom order exists for this group
     const orderedTabs = useMemo(() => {

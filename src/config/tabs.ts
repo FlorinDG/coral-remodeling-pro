@@ -27,7 +27,16 @@ export const projectsTabs = [
     { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
 ];
 
-export const financialTabs = [
+// Financial tab i18n key map (fallback to hardcoded if no translator provided)
+const FINANCIAL_TAB_KEYS: Record<string, string> = {
+    'fin-aankoop': 'purchaseInvoices',
+    'fin-cred-aankoop': 'purchaseCreditNotes',
+    'fin-cred-verkoop': 'salesCreditNotes',
+    'fin-facturen': 'salesInvoices',
+    'fin-offertes': 'quotations',
+};
+
+const financialTabsBase = [
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
     { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
     { label: 'CREDITNOTA - VERKOOP', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
@@ -35,7 +44,33 @@ export const financialTabs = [
     { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
 ];
 
-export const settingsTabs = [
+// Returns localized financial tabs; t is optional (from useTranslations('Admin'))
+export function getFinancialTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
+    if (!t || !tHas) return financialTabsBase;
+    return financialTabsBase.map(tab => {
+        const key = `nav.financialTabs.${FINANCIAL_TAB_KEYS[tab.id]}`;
+        return { ...tab, label: tHas(key) ? t(key) : tab.label };
+    });
+}
+
+// Backward compat: export the base tabs as default
+export const financialTabs = financialTabsBase;
+
+// Settings tabs i18n key map
+const SETTINGS_TAB_KEYS: Record<string, string> = {
+    'company-info': 'companyInfo',
+    'ui': 'uiLayout',
+    'opt-calendar': 'calendar',
+    'opt-financials': 'financials',
+    'opt-hr': 'hr',
+    'opt-library': 'library',
+    'opt-projects': 'projects',
+    'opt-relations': 'relations',
+    'opt-tasks': 'tasks',
+    'opt-website': 'website',
+};
+
+const settingsTabsBase = [
     { label: 'COMPANY INFO', href: '/admin/settings/company-info', id: 'company-info' },
     { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
     { label: 'CALENDAR', href: '/admin/settings/calendar', id: 'opt-calendar' },
@@ -47,3 +82,14 @@ export const settingsTabs = [
     { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
     { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' }
 ];
+
+export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
+    if (!t || !tHas) return settingsTabsBase;
+    return settingsTabsBase.map(tab => {
+        const key = `nav.settings.${SETTINGS_TAB_KEYS[tab.id]}`;
+        return { ...tab, label: tHas(key) ? t(key) : tab.label };
+    });
+}
+
+export const settingsTabs = settingsTabsBase;
+

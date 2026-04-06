@@ -27,7 +27,9 @@ import {
     CircleDollarSign,
     Settings,
     Library,
-    Mail
+    Mail,
+    ShieldAlert,
+    Loader2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
@@ -49,6 +51,27 @@ export default function AdminLayout({ children, activeModules = [] }: { children
     const [companyName, setCompanyName] = useState<string>('');
     const [brandColor, setBrandColor] = useState<string>('#d75d00');
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
+    const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
+    const [resendingVerification, setResendingVerification] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
+
+    const isEmailVerified = (session?.user as any)?.emailVerified;
+    const userEmail = session?.user?.email;
+
+    const handleResendVerification = async () => {
+        setResendingVerification(true);
+        try {
+            await fetch('/api/auth/resend-verification', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userEmail }),
+            });
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 5000);
+        } catch {} finally {
+            setResendingVerification(false);
+        }
+    };
 
     useEffect(() => {
         fetch('/api/tenant/profile').then(r => r.json()).then(d => {
@@ -226,6 +249,38 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                         </a>
                     </div>
                 </header>
+
+                {/* Email Verification Banner */}
+                {!isEmailVerified && session?.user && !verifyBannerDismissed && (
+                    <div className="flex-shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                                Please verify your email address. Check your inbox for a verification link.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                            {resendSuccess ? (
+                                <span className="text-xs text-emerald-600 font-bold">Sent!</span>
+                            ) : (
+                                <button
+                                    onClick={handleResendVerification}
+                                    disabled={resendingVerification}
+                                    className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2 flex items-center gap-1"
+                                >
+                                    {resendingVerification && <Loader2 className="w-3 h-3 animate-spin" />}
+                                    Resend
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setVerifyBannerDismissed(true)}
+                                className="text-amber-400 hover:text-amber-600 dark:hover:text-amber-200 transition-colors"
+                            >
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="flex-1 p-4 pb-16 overflow-y-auto min-h-0 flex flex-col relative w-full">
                     <TenantProvider activeModules={activeModules}>

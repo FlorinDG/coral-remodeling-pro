@@ -251,6 +251,8 @@ model User {
   password      String?
   role          String    @default("TENANT_ADMIN") // SUPERADMIN, TENANT_ADMIN, EMPLOYEE
   environmentLanguage String? @default("en")
+  verificationToken   String?
+  verificationSentAt  DateTime?
   accounts      Account[]
   sessions      Session[]
   events        Event[]

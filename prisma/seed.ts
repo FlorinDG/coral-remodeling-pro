@@ -1,8 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import fs from 'fs';
 import path from 'path';
 
 const prisma = new PrismaClient();
+
+async function hashPw(plain: string): Promise<string> {
+    return bcrypt.hash(plain, 12);
+}
 
 function readJsonFile(relativePath: string) {
     const filePath = path.join(__dirname, relativePath);
@@ -37,9 +42,10 @@ async function main() {
         create: {
             email: 'tfo@coral-group.be',
             name: 'SuperAdmin',
-            password: 'admin', // Simple password for now, as requested.
+            password: await hashPw('admin'),
             role: 'SUPERADMIN',
             tenantId,
+            emailVerified: new Date(),
         },
     });
     console.log('✅ Superadmin master account created');
@@ -60,9 +66,10 @@ async function main() {
         create: {
             email: 'free@coral-group.be',
             name: 'Free Tier Admin',
-            password: 'admin',
+            password: await hashPw('admin'),
             role: 'TENANT_ADMIN',
             tenantId: freeTenant.id,
+            emailVerified: new Date(),
         },
     });
 
@@ -82,9 +89,10 @@ async function main() {
         create: {
             email: 'pro@coral-group.be',
             name: 'Pro Tier Admin',
-            password: 'admin',
+            password: await hashPw('admin'),
             role: 'TENANT_ADMIN',
             tenantId: proTenant.id,
+            emailVerified: new Date(),
         },
     });
 
@@ -104,9 +112,10 @@ async function main() {
         create: {
             email: 'enterprise@coral-group.be',
             name: 'Enterprise Admin',
-            password: 'admin',
+            password: await hashPw('admin'),
             role: 'TENANT_ADMIN',
             tenantId: enterpriseTenant.id,
+            emailVerified: new Date(),
         },
     });
 

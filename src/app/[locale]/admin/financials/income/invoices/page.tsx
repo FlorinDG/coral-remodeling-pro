@@ -7,10 +7,18 @@ import Link from "next/link";
 import CreateInvoiceButton from "@/components/admin/invoices/CreateInvoiceButton";
 import InvoiceActionDropdown from "@/components/admin/invoices/InvoiceActionDropdown";
 import InvoiceTotalCell from "@/components/admin/invoices/InvoiceTotalCell";
+import { auth } from "@/auth";
 
 export default async function SalesInvoicesPage() {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+
+    if (!tenantId) {
+        return <div className="p-12 text-center text-red-500 font-bold">Unauthorized. Tenant context missing.</div>;
+    }
+
     const invoices = await prisma.invoice.findMany({
-        where: { type: 'SALES' },
+        where: { type: 'SALES', tenantId },
         orderBy: { issueDate: 'desc' },
         include: {}
     });

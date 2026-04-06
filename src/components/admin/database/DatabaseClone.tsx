@@ -71,41 +71,39 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     }
   }, [database, activeViewId]);
 
+  // Auto-instantiate uninitialized databases instead of showing a manual button
+  const [autoInitializing, setAutoInitializing] = useState(false);
+
+  useEffect(() => {
+    if (!database && !autoInitializing) {
+      setAutoInitializing(true);
+      let parsedName = 'New Workspace';
+      if (databaseId === 'db-quotations') parsedName = 'Quotations';
+      if (databaseId === 'db-articles') parsedName = 'Material Articles';
+      if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
+      if (databaseId === 'db-1') parsedName = 'Projects';
+
+      let customProps = undefined;
+      if (databaseId === 'db-quotations') {
+        customProps = [
+          { id: 'title', name: 'Quote Number', type: 'text' },
+          { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
+          { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
+          { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
+          { id: 'date', name: 'Date', type: 'date' },
+          { id: 'betreft', name: 'Betreft', type: 'text' }
+        ];
+      }
+
+      useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
+    }
+  }, [database, databaseId, autoInitializing]);
+
   if (!database) {
     return (
       <div className="flex flex-col items-center justify-center h-[500px] bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 p-8 text-center space-y-4 m-6">
-        <DatabaseIcon className="w-12 h-12 text-neutral-300 dark:text-neutral-700" />
-        <div className="space-y-1">
-          <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Workspace Not Initialized</h3>
-          <p className="text-sm text-neutral-500 max-w-sm mx-auto">This database workspace hasn't been instantiated for your account yet.</p>
-        </div>
-        <button
-          onClick={() => {
-            let parsedName = 'New Workspace';
-            if (databaseId === 'db-quotations') parsedName = 'Quotations';
-            if (databaseId === 'db-articles') parsedName = 'Material Articles';
-            if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
-            if (databaseId === 'db-1') parsedName = 'Projects';
-
-            let customProps = undefined;
-            if (databaseId === 'db-quotations') {
-              customProps = [
-                { id: 'title', name: 'Quote Number', type: 'text' },
-                { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
-                { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
-                { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
-                { id: 'date', name: 'Date', type: 'date' },
-                { id: 'betreft', name: 'Betreft', type: 'text' }
-              ];
-            }
-
-            useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
-          }}
-          className="text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition-colors flex items-center gap-2 hover:opacity-90"
-          style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-        >
-          <Plus className="w-4 h-4" /> Instantiate Framework
-        </button>
+        <div className="w-8 h-8 border-2 border-neutral-300 border-t-[var(--brand-color,#d35400)] rounded-full animate-spin" />
+        <p className="text-sm text-neutral-500 font-medium">Initializing workspace...</p>
       </div>
     );
   }

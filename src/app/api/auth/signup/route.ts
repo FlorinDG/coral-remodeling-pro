@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { validatePassword, hashPassword } from '@/lib/password';
 import { randomBytes } from 'crypto';
 import { cookies } from 'next/headers';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
     try {
@@ -82,11 +83,14 @@ export async function POST(req: Request) {
             }
         });
 
-        // TODO: Send verification email
-        // For now, log the verification URL for development
+        // Send verification email
         const baseUrl = process.env.NEXTAUTH_URL || 'https://app.coral-group.be';
         const verifyUrl = `${baseUrl}/api/auth/verify?token=${verificationToken}`;
-        console.log(`[Signup] Verification URL for ${email}: ${verifyUrl}`);
+        await sendVerificationEmail({
+            to: email.toLowerCase().trim(),
+            name: name.trim(),
+            verificationUrl: verifyUrl,
+        });
 
         return NextResponse.json({
             success: true,

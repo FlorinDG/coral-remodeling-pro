@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
     try {
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.tenantId) {
+        const session = await auth();
+        if (!(session?.user as any)?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
         }
+        const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
         const { invoiceId, clientId, projectId, betreft } = body;
@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
         // 1. Fetch the overarching Tenant Configuration (Sender details)
         const tenant = await prisma.tenant.findUnique({
-            where: { id: session.user.tenantId }
+            where: { id: tenantId }
         });
 
         if (!tenant) {

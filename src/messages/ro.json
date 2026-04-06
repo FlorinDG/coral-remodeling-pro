@@ -300,6 +300,56 @@
             "CANCELLED": "Anulat",
             "ACTIVE": "Activ",
             "COMPLETED": "Finalizat"
+        },
+        "nav": {
+            "sidebar": {
+                "dashboard": "PANOU CONTROL",
+                "financials": "FINANCIAR",
+                "contacts": "CONTACTE",
+                "suppliers": "FURNIZORI",
+                "settings": "SETĂRI",
+                "hr": "HR",
+                "library": "BIBLIOTECĂ",
+                "website": "WEBSITE",
+                "crm": "CRM",
+                "projects": "PROIECTE"
+            },
+            "financialTabs": {
+                "purchaseInvoices": "FACTURI ACHIZIȚIE",
+                "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
+                "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
+                "salesInvoices": "FACTURI",
+                "quotations": "OFERTE"
+            },
+            "pages": {
+                "salesInvoices": "Facturi de Vânzare",
+                "salesInvoicesDesc": "Gestionați conturile de încasat, urmăriți plățile și generați facturi PDF.",
+                "noInvoices": "Nicio factură de vânzare",
+                "noInvoicesDesc": "Creați prima factură pentru a începe.",
+                "createInvoice": "Creează Factură",
+                "dashboard": "Panou de Control",
+                "administrative": "Administrativ"
+            },
+            "settings": {
+                "companyInfo": "INFO COMPANIE",
+                "uiLayout": "ASPECT UI",
+                "calendar": "CALENDAR",
+                "financials": "FINANCIAR",
+                "hr": "HR",
+                "library": "BIBLIOTECĂ",
+                "projects": "PROIECTE",
+                "relations": "RELAȚII",
+                "tasks": "SARCINI",
+                "website": "WEBSITE",
+                "appPreferences": "Preferințe Aplicație & Documente",
+                "documentLanguage": "Limba Documentelor",
+                "documentLanguageDesc": "Setează limba implicită pentru PDF-urile generate (Oferte, Facturi). Dacă este gol, folosește limba clientului sau franceza.",
+                "fallbackOption": "Folosește limba clientului",
+                "documentNumbering": "Numerotare Documente",
+                "documentNumberingDesc": "Configurați modelul de numerotare automată pentru facturi și oferte. Modificările se aplică doar documentelor nou create.",
+                "save": "Salvează Profilul",
+                "saving": "Se salvează..."
+            }
         }
     },
     "Footer": {

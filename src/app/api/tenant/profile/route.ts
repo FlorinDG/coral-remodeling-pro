@@ -71,6 +71,15 @@ export async function PUT(request: Request) {
             select: buildSelect()
         });
 
+        // Also sync the user's environmentLanguage when documentLanguage changes
+        const userId = (session?.user as any)?.id;
+        if (data.documentLanguage && userId) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { environmentLanguage: data.documentLanguage }
+            });
+        }
+
         return NextResponse.json(updatedTenant);
     } catch (error) {
         console.error('Error updating tenant profile:', error);

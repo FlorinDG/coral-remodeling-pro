@@ -300,6 +300,56 @@
             "CANCELLED": "Annulé",
             "ACTIVE": "Actif",
             "COMPLETED": "Terminé"
+        },
+        "nav": {
+            "sidebar": {
+                "dashboard": "TABLEAU DE BORD",
+                "financials": "FINANCES",
+                "contacts": "CONTACTS",
+                "suppliers": "FOURNISSEURS",
+                "settings": "PARAMÈTRES",
+                "hr": "RH",
+                "library": "BIBLIOTHÈQUE",
+                "website": "SITE WEB",
+                "crm": "CRM",
+                "projects": "PROJETS"
+            },
+            "financialTabs": {
+                "purchaseInvoices": "FACTURES D'ACHAT",
+                "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
+                "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
+                "salesInvoices": "FACTURES",
+                "quotations": "DEVIS"
+            },
+            "pages": {
+                "salesInvoices": "Factures de Vente",
+                "salesInvoicesDesc": "Gérez les comptes débiteurs, suivez les paiements et générez des factures PDF.",
+                "noInvoices": "Aucune facture de vente",
+                "noInvoicesDesc": "Créez votre première facture pour commencer.",
+                "createInvoice": "Créer une Facture",
+                "dashboard": "Tableau de Bord",
+                "administrative": "Administratif"
+            },
+            "settings": {
+                "companyInfo": "INFOS SOCIÉTÉ",
+                "uiLayout": "MISE EN PAGE",
+                "calendar": "CALENDRIER",
+                "financials": "FINANCES",
+                "hr": "RH",
+                "library": "BIBLIOTHÈQUE",
+                "projects": "PROJETS",
+                "relations": "RELATIONS",
+                "tasks": "TÂCHES",
+                "website": "SITE WEB",
+                "appPreferences": "Préférences d'Application & Documents",
+                "documentLanguage": "Langue des Documents",
+                "documentLanguageDesc": "Définit la langue par défaut pour les PDF générés (Devis, Factures). Si vide, utilise la langue du client ou le français.",
+                "fallbackOption": "Utiliser la langue du client",
+                "documentNumbering": "Numérotation des Documents",
+                "documentNumberingDesc": "Configurez le modèle de numérotation automatique pour les factures et les devis. Les changements s'appliquent uniquement aux nouveaux documents.",
+                "save": "Enregistrer le Profil",
+                "saving": "Sauvegarde..."
+            }
         }
     },
     "Footer": {

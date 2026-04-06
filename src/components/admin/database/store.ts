@@ -91,12 +91,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set({ databases: serverDatabases });
             },
 
-            createDatabase: (name, description) => {
+            createDatabase: (name, description, specificId, properties) => {
                 const newDatabase: Database = {
-                    id: uuidv4(),
+                    id: specificId || uuidv4(),
                     name,
                     description: description || null,
-                    properties: [
+                    properties: properties || [
                         { id: 'title', name: 'Name', type: 'text' } // Every DB needs a Title
                     ],
                     pages: [],

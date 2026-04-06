@@ -73,31 +73,49 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
 
   // Auto-instantiate uninitialized databases instead of showing a manual button
   const [autoInitializing, setAutoInitializing] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Wait for Zustand store hydration from IndexedDB before auto-creating
+  useEffect(() => {
+    const unsub = useDatabaseStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+    // If already hydrated (store was loaded before this component mounted)
+    if (useDatabaseStore.persist.hasHydrated()) {
+      setHydrated(true);
+    }
+    return unsub;
+  }, []);
 
   useEffect(() => {
-    if (!database && !autoInitializing) {
-      setAutoInitializing(true);
-      let parsedName = 'New Workspace';
-      if (databaseId === 'db-quotations') parsedName = 'Quotations';
-      if (databaseId === 'db-articles') parsedName = 'Material Articles';
-      if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
-      if (databaseId === 'db-1') parsedName = 'Projects';
+    if (!hydrated) return; // Don't act before store is loaded from IndexedDB
+    if (database || autoInitializing) return; // Already exists or already creating
 
-      let customProps = undefined;
-      if (databaseId === 'db-quotations') {
-        customProps = [
-          { id: 'title', name: 'Quote Number', type: 'text' },
-          { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
-          { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
-          { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
-          { id: 'date', name: 'Date', type: 'date' },
-          { id: 'betreft', name: 'Betreft', type: 'text' }
-        ];
-      }
+    // Double-check the store directly (in case of race condition)
+    const existing = useDatabaseStore.getState().getDatabase(databaseId);
+    if (existing) return;
 
-      useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
+    setAutoInitializing(true);
+    let parsedName = 'New Workspace';
+    if (databaseId === 'db-quotations') parsedName = 'Quotations';
+    if (databaseId === 'db-articles') parsedName = 'Material Articles';
+    if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
+    if (databaseId === 'db-1') parsedName = 'Projects';
+
+    let customProps = undefined;
+    if (databaseId === 'db-quotations') {
+      customProps = [
+        { id: 'title', name: 'Quote Number', type: 'text' },
+        { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
+        { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
+        { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
+        { id: 'date', name: 'Date', type: 'date' },
+        { id: 'betreft', name: 'Betreft', type: 'text' }
+      ];
     }
-  }, [database, databaseId, autoInitializing]);
+
+    useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
+  }, [database, databaseId, autoInitializing, hydrated]);
 
   if (!database) {
     return (

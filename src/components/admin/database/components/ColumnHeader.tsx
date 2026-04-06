@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType } from '../types';
-import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';

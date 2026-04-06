@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { randomBytes } from 'crypto';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
     try {
@@ -41,10 +42,14 @@ export async function POST(req: Request) {
             }
         });
 
-        // TODO: Send verification email
+        // Send verification email
         const baseUrl = process.env.NEXTAUTH_URL || 'https://app.coral-group.be';
         const verifyUrl = `${baseUrl}/api/auth/verify?token=${verificationToken}`;
-        console.log(`[Resend Verification] URL for ${email}: ${verifyUrl}`);
+        await sendVerificationEmail({
+            to: user.email!,
+            name: user.name || 'User',
+            verificationUrl: verifyUrl,
+        });
 
         return NextResponse.json({
             success: true,

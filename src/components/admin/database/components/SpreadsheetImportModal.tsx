@@ -400,7 +400,9 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                                     className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded p-1.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none truncate"
                                                 >
                                                     <option value="ignore" className="italic text-neutral-500">❌ Ignore (Skip Data)</option>
-                                                    <option value="create_new" className="font-semibold text-orange-600">✨ Create New Property</option>
+                                                    {databaseId !== 'db-clients' && databaseId !== 'db-suppliers' && (
+                                                        <option value="create_new" className="font-semibold text-orange-600">✨ Create New Property</option>
+                                                    )}
                                                     <optgroup label={`Master Database Fields (${targetDb.name})`}>
                                                         {targetDb.properties.map(p => (
                                                             <option key={p.id} value={p.id}>{p.name} ({p.type})</option>

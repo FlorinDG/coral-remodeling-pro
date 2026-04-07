@@ -4,8 +4,27 @@ import { usePathname } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import { ChevronRight, Home } from "lucide-react";
 import { useBreadcrumbStore } from "@/store/useBreadcrumbStore";
+import { useTranslations } from 'next-intl';
+
+// Map route segments to translation keys
+const BREADCRUMB_I18N: Record<string, string> = {
+    dashboard: 'nav.pages.dashboard',
+    settings: 'nav.sidebar.settings',
+    financials: 'nav.sidebar.financials',
+    contacts: 'nav.sidebar.contacts',
+    suppliers: 'nav.sidebar.suppliers',
+    hr: 'nav.sidebar.hr',
+    library: 'nav.sidebar.library',
+    projects: 'nav.sidebar.projects',
+    'company-info': 'nav.settings.companyInfo',
+    'ui-layout': 'nav.settings.uiLayout',
+    calendar: 'nav.settings.calendar',
+    invoices: 'nav.financialTabs.salesInvoices',
+    quotations: 'nav.financialTabs.quotations',
+};
 
 export default function Breadcrumbs() {
+    const t = useTranslations('Admin');
     const pathname = usePathname();
     const paths = pathname.split("/").filter(Boolean);
 
@@ -15,6 +34,13 @@ export default function Breadcrumbs() {
 
     const { pageTitle } = useBreadcrumbStore();
 
+    const getLabel = (path: string) => {
+        const key = BREADCRUMB_I18N[path];
+        if (key) {
+            try { return t(key); } catch { /* fallback */ }
+        }
+        return path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
+    };
     return (
         <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
             <Link
@@ -29,7 +55,7 @@ export default function Breadcrumbs() {
                 if (path === "admin") return null;
 
                 const href = `/${filteredPaths.slice(0, index + 1).join("/")}`;
-                const label = path.charAt(0).toUpperCase() + path.slice(1);
+                const label = getLabel(path);
                 const isLast = index === filteredPaths.length - 1;
 
                 return (

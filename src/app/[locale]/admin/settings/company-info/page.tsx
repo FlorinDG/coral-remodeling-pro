@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { settingsTabs } from "@/config/tabs";
-import { usePageTitle } from '@/hooks/usePageTitle';
 import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette } from "lucide-react";
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
@@ -10,7 +9,6 @@ import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplat
 import { useTranslations } from 'next-intl';
 
 export default function CompanyInfoSettings() {
-    usePageTitle('Company Info');
     const t = useTranslations('Admin');
 
     const [profile, setProfile] = useState({
@@ -169,8 +167,8 @@ export default function CompanyInfoSettings() {
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-neutral-200 dark:border-white/10 pb-4">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Company Identity</h1>
-                        <p className="text-sm text-neutral-500 mt-1">Manage global business details and Peppol invoicing data.</p>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">{t('nav.settings.pageTitle')}</h1>
+                        <p className="text-sm text-neutral-500 mt-1">{t('nav.settings.pageSubtitle')}</p>
                     </div>
                     <Button
                         onClick={handleSave}
@@ -179,7 +177,7 @@ export default function CompanyInfoSettings() {
                         style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                     >
                         {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {saving ? 'Saving...' : 'Save Profile'}
+                        {saving ? t('nav.settings.saving') : t('nav.settings.save')}
                     </Button>
                 </div>
 
@@ -189,9 +187,9 @@ export default function CompanyInfoSettings() {
                         <AlertCircle className="w-6 h-6" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-300">Peppol Invoicing Integration</h3>
+                        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-300">{t('nav.settings.peppolTitle')}</h3>
                         <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1 mb-4 leading-relaxed">
-                            Your account requires an active Peppol profile to instantly deliver B2B invoices across the European Union. Enter your VAT number below, then click "Auto-Fetch" to retrieve your company details securely.
+                            {t('nav.settings.peppolDesc')}
                         </p>
                         <div className="flex gap-3">
                             <Button
@@ -200,10 +198,10 @@ export default function CompanyInfoSettings() {
                                 className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm border-0 font-bold disabled:opacity-50"
                             >
                                 {fetchingRegistry ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                {fetchingRegistry ? 'Searching...' : 'Search Peppol Registry'}
+                                {fetchingRegistry ? t('nav.settings.searching') : t('nav.settings.searchRegistry')}
                             </Button>
                             <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
-                                Enter Manually
+                                {t('nav.settings.enterManually')}
                             </Button>
                         </div>
                     </div>
@@ -216,12 +214,12 @@ export default function CompanyInfoSettings() {
                     <div className="space-y-6">
                         <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                             <Building2 className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                            Business Identity
+                            {t('nav.settings.businessIdentity')}
                         </h3>
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Company Name (Legal)</label>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.companyNameLegal')}</label>
                                 <input
                                     type="text"
                                     value={profile.companyName}
@@ -231,7 +229,7 @@ export default function CompanyInfoSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Commercial Name</label>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.commercialName')}</label>
                                 <input
                                     type="text"
                                     value={profile.commercialName}
@@ -241,7 +239,7 @@ export default function CompanyInfoSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">VAT Number (KBO)</label>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.vatNumber')}</label>
                                 <input
                                     type="text"
                                     value={profile.vatNumber}
@@ -251,7 +249,7 @@ export default function CompanyInfoSettings() {
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Default Email</label>
+                                <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.defaultEmail')}</label>
                                 <input
                                     type="email"
                                     value={profile.email}
@@ -262,7 +260,7 @@ export default function CompanyInfoSettings() {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Director First Name</label>
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.directorFirstName')}</label>
                                     <input
                                         type="text"
                                         value={profile.directorFirstName}
@@ -272,7 +270,7 @@ export default function CompanyInfoSettings() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Director Last Name</label>
+                                    <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.directorLastName')}</label>
                                     <input
                                         type="text"
                                         value={profile.directorLastName}
@@ -284,7 +282,7 @@ export default function CompanyInfoSettings() {
                             </div>
                             <div>
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block flex items-center gap-1.5">
-                                    <CreditCard className="w-3 h-3" /> IBAN Account
+                                    <CreditCard className="w-3 h-3" /> {t('nav.settings.ibanAccount')}
                                 </label>
                                 <input
                                     type="text"
@@ -296,7 +294,7 @@ export default function CompanyInfoSettings() {
                             </div>
                             <div>
                                 <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block flex items-center gap-1.5">
-                                    <CreditCard className="w-3 h-3" /> BIC Code
+                                    <CreditCard className="w-3 h-3" /> {t('nav.settings.bicCode')}
                                 </label>
                                 <input
                                     type="text"
@@ -313,19 +311,19 @@ export default function CompanyInfoSettings() {
                     <div className="space-y-6">
                         <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                             <MapPin className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                            Addresses & Locations
+                            {t('nav.settings.addressesLocations')}
                         </h3>
 
                         <div className="space-y-4">
                             {/* Invoicing Address */}
                             <div className="bg-neutral-50 dark:bg-white/5 p-4 rounded-xl border border-neutral-200 dark:border-white/10">
-                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">Invoicing Address</h4>
+                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">{t('nav.settings.invoicingAddress')}</h4>
                                 <div className="space-y-3">
                                     <input
                                         type="text"
                                         value={profile.street}
                                         onChange={e => setProfile({ ...profile, street: e.target.value })}
-                                        placeholder="Street & Number"
+                                        placeholder={t('nav.settings.streetNumber')}
                                         className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                     />
                                     <div className="grid grid-cols-2 gap-3">
@@ -333,14 +331,14 @@ export default function CompanyInfoSettings() {
                                             type="text"
                                             value={profile.postalCode}
                                             onChange={e => setProfile({ ...profile, postalCode: e.target.value })}
-                                            placeholder="Postal Code"
+                                            placeholder={t('nav.settings.postalCode')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                         <input
                                             type="text"
                                             value={profile.city}
                                             onChange={e => setProfile({ ...profile, city: e.target.value })}
-                                            placeholder="City"
+                                            placeholder={t('nav.settings.city')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                     </div>
@@ -349,13 +347,13 @@ export default function CompanyInfoSettings() {
 
                             {/* Delivery Address */}
                             <div className="bg-neutral-50 dark:bg-white/5 p-4 rounded-xl border border-neutral-200 dark:border-white/10">
-                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">Delivery Address</h4>
+                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">{t('nav.settings.deliveryAddress')}</h4>
                                 <div className="space-y-3">
                                     <input
                                         type="text"
                                         value={profile.deliveryStreet}
                                         onChange={e => setProfile({ ...profile, deliveryStreet: e.target.value })}
-                                        placeholder="Street & Number"
+                                        placeholder={t('nav.settings.streetNumber')}
                                         className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                     />
                                     <div className="grid grid-cols-2 gap-3">
@@ -363,14 +361,14 @@ export default function CompanyInfoSettings() {
                                             type="text"
                                             value={profile.deliveryPostalCode}
                                             onChange={e => setProfile({ ...profile, deliveryPostalCode: e.target.value })}
-                                            placeholder="Postal Code"
+                                            placeholder={t('nav.settings.postalCode')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                         <input
                                             type="text"
                                             value={profile.deliveryCity}
                                             onChange={e => setProfile({ ...profile, deliveryCity: e.target.value })}
-                                            placeholder="City"
+                                            placeholder={t('nav.settings.city')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                     </div>
@@ -379,13 +377,13 @@ export default function CompanyInfoSettings() {
 
                             {/* Headquarters Address (Hofdzetel) */}
                             <div className="bg-neutral-50 dark:bg-white/5 p-4 rounded-xl border border-neutral-200 dark:border-white/10">
-                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">Headquarters (Hofdzetel)</h4>
+                                <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-300 mb-3 uppercase tracking-wider">{t('nav.settings.headquarters')}</h4>
                                 <div className="space-y-3">
                                     <input
                                         type="text"
                                         value={profile.headquartersStreet}
                                         onChange={e => setProfile({ ...profile, headquartersStreet: e.target.value })}
-                                        placeholder="Street & Number"
+                                        placeholder={t('nav.settings.streetNumber')}
                                         className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                     />
                                     <div className="grid grid-cols-2 gap-3">
@@ -393,14 +391,14 @@ export default function CompanyInfoSettings() {
                                             type="text"
                                             value={profile.headquartersPostalCode}
                                             onChange={e => setProfile({ ...profile, headquartersPostalCode: e.target.value })}
-                                            placeholder="Postal Code"
+                                            placeholder={t('nav.settings.postalCode')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                         <input
                                             type="text"
                                             value={profile.headquartersCity}
                                             onChange={e => setProfile({ ...profile, headquartersCity: e.target.value })}
-                                            placeholder="City"
+                                            placeholder={t('nav.settings.city')}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-md px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)]"
                                         />
                                     </div>
@@ -415,23 +413,23 @@ export default function CompanyInfoSettings() {
                 <div className="mt-8 space-y-6">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                         <Globe className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                        {t.has('nav.settings.appPreferences') ? t('nav.settings.appPreferences') : 'App & Document Preferences'}
+                        {t('nav.settings.appPreferences')}
                     </h3>
                     <div className="max-w-md">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t.has('nav.settings.documentLanguage') ? t('nav.settings.documentLanguage') : 'Global Document Language'}</label>
+                        <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.documentLanguage')}</label>
                         <select
                             value={profile.documentLanguage}
                             onChange={e => setProfile({ ...profile, documentLanguage: e.target.value })}
                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
                         >
-                            <option value="">{t.has('nav.settings.fallbackOption') ? t('nav.settings.fallbackOption') : 'Fallback to Client Language'}</option>
+                            <option value="">{t('nav.settings.fallbackOption')}</option>
                             <option value="en">English</option>
                             <option value="fr">Français</option>
                             <option value="nl">Nederlands</option>
                             <option value="ro">Română</option>
                             <option value="ru">Русский</option>
                         </select>
-                        <p className="text-xs text-neutral-500 mt-2">{t.has('nav.settings.documentLanguageDesc') ? t('nav.settings.documentLanguageDesc') : "Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French."}</p>
+                        <p className="text-xs text-neutral-500 mt-2">{t('nav.settings.documentLanguageDesc')}</p>
                     </div>
                 </div>
 
@@ -439,9 +437,9 @@ export default function CompanyInfoSettings() {
                 <div className="mt-8 space-y-8">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                         <Hash className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                        Document Numbering
+                        {t('nav.settings.documentNumbering')}
                     </h3>
-                    <p className="text-xs text-neutral-500 -mt-4">Configure the automatic numbering pattern for invoices and quotations. Changes apply to newly created documents only.</p>
+                    <p className="text-xs text-neutral-500 -mt-4">{t('nav.settings.documentNumberingDesc')}</p>
 
                     {(['invoice', 'quotation'] as const).map((docType) => {
                         const prefix = profile[`${docType}Prefix` as keyof typeof profile] as string;
@@ -474,9 +472,9 @@ export default function CompanyInfoSettings() {
                         return (
                             <div key={docType} className="bg-white dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-2xl p-6 space-y-5">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-bold capitalize">{docType === 'invoice' ? 'Invoice Numbering' : 'Quotation Numbering'}</h4>
+                                    <h4 className="text-sm font-bold capitalize">{docType === 'invoice' ? t('nav.settings.invoiceNumbering') : t('nav.settings.quotationNumbering')}</h4>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Preview</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{t('nav.settings.preview')}</span>
                                         <span className="font-mono text-sm font-black tracking-wider px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5" style={{ color: 'var(--brand-color, #d35400)' }}>{preview}</span>
                                     </div>
                                 </div>
@@ -484,7 +482,7 @@ export default function CompanyInfoSettings() {
                                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                     {/* Prefix */}
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Prefix (1-5 chars)</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.prefix')}</label>
                                         <input
                                             type="text"
                                             maxLength={5}
@@ -496,7 +494,7 @@ export default function CompanyInfoSettings() {
 
                                     {/* Connector */}
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Connector</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.connector')}</label>
                                         <select
                                             value={connector}
                                             onChange={e => setProfile({ ...profile, [`${docType}Connector`]: e.target.value })}
@@ -510,7 +508,7 @@ export default function CompanyInfoSettings() {
 
                                     {/* Date Format */}
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Date Format</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.dateFormat')}</label>
                                         <select
                                             value={dateFormat}
                                             onChange={e => setProfile({ ...profile, [`${docType}DateFormat`]: e.target.value })}
@@ -529,7 +527,7 @@ export default function CompanyInfoSettings() {
 
                                     {/* Number Width */}
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Number Width</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.numberWidth')}</label>
                                         <select
                                             value={numberWidth}
                                             onChange={e => setProfile({ ...profile, [`${docType}NumberWidth`]: parseInt(e.target.value) })}
@@ -545,7 +543,7 @@ export default function CompanyInfoSettings() {
 
                                     {/* Next Number */}
                                     <div>
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Next Number</label>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.nextNumber')}</label>
                                         <input
                                             type="number"
                                             min={1}
@@ -564,9 +562,9 @@ export default function CompanyInfoSettings() {
                 <div className="mt-8 space-y-6">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b border-neutral-200 dark:border-white/10 pb-2">
                         <Palette className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                        Branding & Document Templates
+                        {t('nav.settings.branding')}
                     </h3>
-                    <p className="text-xs text-neutral-500 -mt-4">Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.</p>
+                    <p className="text-xs text-neutral-500 -mt-4">{t('nav.settings.brandingDesc')}</p>
                     <DocumentTemplatesModule />
                 </div>
 

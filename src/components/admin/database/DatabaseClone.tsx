@@ -87,6 +87,92 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     return unsub;
   }, []);
 
+  // ── Default hardcoded property schemas for free-tier CRM databases ──
+  const DEFAULT_PROPERTIES_MAP: Record<string, any[]> = {
+    'db-clients': [
+      { id: 'title', name: 'Name', type: 'text' },
+      { id: 'email', name: 'Email', type: 'email' },
+      { id: 'phone', name: 'Phone', type: 'phone' },
+      { id: 'company', name: 'Company', type: 'text' },
+      { id: 'vat', name: 'VAT Number', type: 'text' },
+      { id: 'address', name: 'Address', type: 'text' },
+      { id: 'city', name: 'City', type: 'text' },
+      { id: 'postal', name: 'Postal Code', type: 'text' },
+      { id: 'country', name: 'Country', type: 'text' },
+      { id: 'status', name: 'Status', type: 'select', config: { options: [
+        { id: 'st-lead', name: 'Lead', color: 'blue' },
+        { id: 'st-active', name: 'Active', color: 'green' },
+        { id: 'st-inactive', name: 'Inactive', color: 'gray' },
+      ]}},
+      { id: 'type', name: 'Type', type: 'select', config: { options: [
+        { id: 'tp-private', name: 'Particulier', color: 'purple' },
+        { id: 'tp-business', name: 'Professionnel', color: 'orange' },
+        { id: 'tp-government', name: 'Overheid', color: 'blue' },
+      ]}},
+      { id: 'language', name: 'Language', type: 'select', config: { options: [
+        { id: 'lang-nl', name: 'NL', color: 'orange' },
+        { id: 'lang-fr', name: 'FR', color: 'blue' },
+        { id: 'lang-en', name: 'EN', color: 'green' },
+      ]}},
+      { id: 'notes', name: 'Notes', type: 'text' },
+    ],
+    'db-suppliers': [
+      { id: 'title', name: 'Name', type: 'text' },
+      { id: 'email', name: 'Email', type: 'email' },
+      { id: 'phone', name: 'Phone', type: 'phone' },
+      { id: 'company', name: 'Company', type: 'text' },
+      { id: 'vat', name: 'VAT Number', type: 'text' },
+      { id: 'iban', name: 'IBAN', type: 'text' },
+      { id: 'bic', name: 'BIC', type: 'text' },
+      { id: 'address', name: 'Address', type: 'text' },
+      { id: 'city', name: 'City', type: 'text' },
+      { id: 'postal', name: 'Postal Code', type: 'text' },
+      { id: 'country', name: 'Country', type: 'text' },
+      { id: 'category', name: 'Category', type: 'select', config: { options: [
+        { id: 'cat-materials', name: 'Materials', color: 'orange' },
+        { id: 'cat-services', name: 'Services', color: 'blue' },
+        { id: 'cat-subcontractor', name: 'Subcontractor', color: 'purple' },
+        { id: 'cat-equipment', name: 'Equipment', color: 'green' },
+      ]}},
+      { id: 'payment', name: 'Payment Terms', type: 'select', config: { options: [
+        { id: 'pay-0', name: 'Immediate', color: 'green' },
+        { id: 'pay-30', name: '30 Days', color: 'blue' },
+        { id: 'pay-60', name: '60 Days', color: 'orange' },
+        { id: 'pay-90', name: '90 Days', color: 'red' },
+      ]}},
+      { id: 'contact_person', name: 'Contact Person', type: 'text' },
+      { id: 'website', name: 'Website', type: 'url' },
+      { id: 'notes', name: 'Notes', type: 'text' },
+    ],
+    'db-quotations': [
+      { id: 'title', name: 'Quote Number', type: 'text' },
+      { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
+      { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
+      { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
+      { id: 'date', name: 'Date', type: 'date' },
+      { id: 'betreft', name: 'Betreft', type: 'text' },
+    ],
+  };
+
+  // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
+  useEffect(() => {
+    if (!hydrated || !database) return;
+    const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId];
+    if (!expectedProps) return;
+    // Only enforce for locked CRM databases
+    if (databaseId !== 'db-clients' && databaseId !== 'db-suppliers') return;
+
+    // Check if current schema matches expected (compare IDs)
+    const currentIds = new Set(database.properties.map(p => p.id));
+    const expectedIds = new Set(expectedProps.map((p: any) => p.id));
+    const schemasMatch = expectedIds.size === currentIds.size && [...expectedIds].every(id => currentIds.has(id));
+
+    if (!schemasMatch) {
+      console.log(`[Schema Enforcement] Resetting ${databaseId} properties to canonical schema`);
+      useDatabaseStore.getState().updateDatabase(databaseId, { properties: expectedProps });
+    }
+  }, [hydrated, database, databaseId]);
+
   useEffect(() => {
     if (!hydrated) return; // Don't act before store is loaded from IndexedDB
     if (database || autoInitializing) return; // Already exists or already creating
@@ -102,18 +188,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
     if (databaseId === 'db-1') parsedName = 'Projects';
 
-    let customProps = undefined;
-    if (databaseId === 'db-quotations') {
-      customProps = [
-        { id: 'title', name: 'Quote Number', type: 'text' },
-        { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
-        { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
-        { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
-        { id: 'date', name: 'Date', type: 'date' },
-        { id: 'betreft', name: 'Betreft', type: 'text' }
-      ];
-    }
-
+    const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
     useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
   }, [database, databaseId, autoInitializing, hydrated]);
 

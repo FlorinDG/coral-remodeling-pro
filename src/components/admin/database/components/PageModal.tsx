@@ -277,13 +277,54 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     const handleVATImport = (data: { name: string; address: string; vatNumber: string }) => {
         if (data.name) updatePageProperty(databaseId, pageId, 'title', data.name);
-        // Find the address property by name (could be UUID ID from Postgres)
+
+        // Find various address-related properties and populate them
+        const findProp = (match: string) => database?.properties.find(p =>
+            p.id === match || p.name.toLowerCase() === match.toLowerCase()
+        );
+
+        // Full address field
         const addressProp = database?.properties.find(p =>
-            p.name.toLowerCase().includes('address') || p.name.toLowerCase().includes('adres') || p.id === 'prop-address-main'
+            p.name.toLowerCase().includes('address') || p.name.toLowerCase().includes('adres') || p.id === 'prop-address-main' || p.id === 'address'
         );
         if (data.address && addressProp) {
-            updatePageProperty(databaseId, pageId, addressProp.id, data.address);
+            // VIES returns address like "RUE EXAMPLE 123\n1000 BRUXELLES" — try to parse
+            const lines = data.address.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+            if (lines.length >= 2) {
+                // First line is usually street, last line is usually "postal city"
+                const streetLine = lines[0];
+                const lastLine = lines[lines.length - 1];
+
+                updatePageProperty(databaseId, pageId, addressProp.id, streetLine);
+
+                // Try to extract postal code and city from last line (e.g., "1000 BRUXELLES")
+                const postalMatch = lastLine.match(/^(\d{4,5})\s+(.+)$/);
+                const cityProp = findProp('city');
+                const postalProp = findProp('postal') || findProp('Postal Code');
+                const countryProp = findProp('country');
+
+                if (postalMatch) {
+                    if (postalProp) updatePageProperty(databaseId, pageId, postalProp.id, postalMatch[1]);
+                    if (cityProp) updatePageProperty(databaseId, pageId, cityProp.id, postalMatch[2]);
+                } else {
+                    if (cityProp) updatePageProperty(databaseId, pageId, cityProp.id, lastLine);
+                }
+
+                if (countryProp && data.vatNumber) {
+                    // Extract country from VAT prefix (e.g., "BE" from "BE0848970428")
+                    const cc = data.vatNumber.replace(/[^A-Za-z]/g, '').substring(0, 2).toUpperCase();
+                    const countryMap: Record<string, string> = { BE: 'Belgium', NL: 'Netherlands', FR: 'France', DE: 'Germany', LU: 'Luxembourg' };
+                    updatePageProperty(databaseId, pageId, countryProp.id, countryMap[cc] || cc);
+                }
+            } else {
+                updatePageProperty(databaseId, pageId, addressProp.id, data.address);
+            }
         }
+
+        // Also populate the company name prop if it exists separately
+        const companyProp = findProp('company');
+        if (data.name && companyProp) updatePageProperty(databaseId, pageId, companyProp.id, data.name);
+
         toast.success('Bedrijfsgegevens geïmporteerd uit VIES register.', { id: 'vat-import' });
     };
 

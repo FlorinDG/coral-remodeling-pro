@@ -13,15 +13,8 @@ export default function SuppliersPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={relationsTabs} groupId="relations" />
-            <div className="w-full h-full p-6 pb-10 flex flex-col hide-scrollbar overflow-y-auto">
-                <div className="flex items-center justify-between mb-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Leveranciers (Suppliers)</h1>
-                        <p className="text-neutral-500 font-medium text-sm mt-1">Manage your material providers, subcontractors, and core logistics partners.</p>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm flex-1 min-h-[600px] relative">
+            <div className="w-full h-full flex flex-col pt-6 pb-6 px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
+                <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 relative">
                     <DatabaseCloneDynamic databaseId="db-suppliers" />
                 </div>
             </div>

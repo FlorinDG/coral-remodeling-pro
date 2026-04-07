@@ -219,7 +219,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                         {isSidebarOpen && (
                             <div className="flex-1 min-w-0">
                                 <p className="text-[11px] font-bold truncate">{session?.user?.name || "Admin"}</p>
-                                <p className="text-[9px] text-neutral-500 truncate uppercase tracking-tighter">Administrator</p>
+                                <p className="text-[9px] text-neutral-500 truncate uppercase tracking-tighter">{t('layout.administrator')}</p>
                             </div>
                         )}
                     </div>
@@ -228,7 +228,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
-                        {isSidebarOpen && <span className="font-bold text-xs">Sign Out</span>}
+                        {isSidebarOpen && <span className="font-bold text-xs">{t('layout.signOut')}</span>}
                     </button>
                 </div>
             </aside>
@@ -259,7 +259,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                                 className="text-[10px] text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"
                                 style={{ backgroundColor: brandColor }}
                             >
-                                Upgrade Plan
+                                {t('layout.upgradePlan')}
                             </Link>
                         )}
 
@@ -275,12 +275,12 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                         <div className="flex items-center gap-3">
                             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                             <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                                Please verify your email address. Check your inbox for a verification link.
+                                {t('layout.verifyEmail')}
                             </p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
                             {resendSuccess ? (
-                                <span className="text-xs text-emerald-600 font-bold">Sent!</span>
+                                <span className="text-xs text-emerald-600 font-bold">{t('layout.sent')}</span>
                             ) : (
                                 <button
                                     onClick={handleResendVerification}
@@ -288,7 +288,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                                     className="text-xs font-bold text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 underline underline-offset-2 flex items-center gap-1"
                                 >
                                     {resendingVerification && <Loader2 className="w-3 h-3 animate-spin" />}
-                                    Resend
+                                    {t('layout.resend')}
                                 </button>
                             )}
                             <button
@@ -308,12 +308,12 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                                 <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mb-6" style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}>
                                     <Lock className="w-8 h-8" style={{ color: brandColor }} />
                                 </div>
-                                <h2 className="text-2xl font-black tracking-tight mb-3">Module Upgrade Required</h2>
+                                <h2 className="text-2xl font-black tracking-tight mb-3">{t('layout.moduleUpgrade')}</h2>
                                 <p className="text-neutral-500 dark:text-neutral-400 max-w-md mb-8 leading-relaxed">
-                                    This specific application module requires an active premium license. Contact the Superadmin or upgrade your tenant subscription to unlock full system capabilities.
+                                    {t('layout.moduleUpgradeDesc')}
                                 </p>
                                 <Link href="/admin/dashboard" className="px-6 py-3 rounded-lg bg-black dark:bg-white text-white dark:text-black font-bold hover:opacity-90 transition-opacity">
-                                    Return to Dashboard
+                                    {t('layout.returnDashboard')}
                                 </Link>
                             </div>
                         ) : (

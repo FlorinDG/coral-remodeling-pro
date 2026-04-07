@@ -411,7 +411,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
     if (!database || !hasHydrated) return null;
 
     return (
-        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm relative">
+        <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl shadow-sm relative">
             <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
                 <div className="flex items-end pr-2 shrink-0">
                     {renderTabs ? renderTabs : (

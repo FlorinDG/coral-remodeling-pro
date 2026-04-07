@@ -191,6 +191,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     if (databaseId === 'db-articles') parsedName = 'Material Articles';
     if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
     if (databaseId === 'db-1') parsedName = 'Projects';
+    if (databaseId === 'db-clients') parsedName = 'Contacts';
+    if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
     useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);

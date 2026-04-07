@@ -146,9 +146,13 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     ],
     'db-quotations': [
       { id: 'title', name: 'Quote Number', type: 'text' },
-      { id: 'client', name: 'Client', type: 'relation', config: { targetDatabaseId: 'db-clients' } },
-      { id: 'project', name: 'Project', type: 'relation', config: { targetDatabaseId: 'db-1' } },
-      { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt1', value: 'DRAFT', color: 'gray' }, { id: 'opt2', value: 'ACCEPTED', color: 'green' }, { id: 'opt3', value: 'REJECTED', color: 'red' }] } },
+      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
+      { id: 'status', name: 'Status', type: 'select', config: { options: [
+        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+        { id: 'opt-accepted', name: 'Accepted', color: 'green' },
+        { id: 'opt-rejected', name: 'Rejected', color: 'red' },
+        { id: 'opt-sent', name: 'Sent', color: 'blue' },
+      ]}},
       { id: 'date', name: 'Date', type: 'date' },
       { id: 'betreft', name: 'Betreft', type: 'text' },
     ],

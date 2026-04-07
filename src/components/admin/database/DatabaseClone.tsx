@@ -154,13 +154,21 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     ],
   };
 
-  // ── Migration: Patch existing databases that only have a bare 'title' property ──
+  // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
   useEffect(() => {
     if (!hydrated || !database) return;
     const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId];
     if (!expectedProps) return;
-    // Only patch if the DB currently has ≤ 1 property (just the default 'Name' title)
-    if (database.properties.length <= 1) {
+    // Only enforce for locked CRM databases
+    if (databaseId !== 'db-clients' && databaseId !== 'db-suppliers') return;
+
+    // Check if current schema matches expected (compare IDs)
+    const currentIds = new Set(database.properties.map(p => p.id));
+    const expectedIds = new Set(expectedProps.map((p: any) => p.id));
+    const schemasMatch = expectedIds.size === currentIds.size && [...expectedIds].every(id => currentIds.has(id));
+
+    if (!schemasMatch) {
+      console.log(`[Schema Enforcement] Resetting ${databaseId} properties to canonical schema`);
       useDatabaseStore.getState().updateDatabase(databaseId, { properties: expectedProps });
     }
   }, [hydrated, database, databaseId]);

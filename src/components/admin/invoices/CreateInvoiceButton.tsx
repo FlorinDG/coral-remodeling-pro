@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/routing";
 import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
@@ -35,7 +35,7 @@ export default function CreateInvoiceButton() {
             await createPrismaInvoice(newPage.id, invoiceNumber);
 
             // 3. Redirect to the engine
-            router.push(`/nl/admin/financials/income/invoices/${newPage.id}`);
+            router.push(`/admin/financials/income/invoices/${newPage.id}`);
         } catch (e) {
             console.error('Failed to create invoice:', e);
         }

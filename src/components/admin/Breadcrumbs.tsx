@@ -39,6 +39,9 @@ export default function Breadcrumbs() {
         if (key) {
             try { return t(key); } catch { /* fallback */ }
         }
+        // Don't mangle UUID-like segments (contains only hex chars and hyphens)
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(path);
+        if (isUUID) return path.toUpperCase().substring(0, 8) + '…';
         return path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
     };
     return (

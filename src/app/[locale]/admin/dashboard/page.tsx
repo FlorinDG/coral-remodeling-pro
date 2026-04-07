@@ -16,8 +16,10 @@ import { Link } from "@/i18n/routing";
 import { OverviewAreaChart, StatusBarChart } from "@/components/admin/dashboard/DashboardCharts";
 import DashboardProjectsTable from "@/components/admin/dashboard/DashboardProjectsTable";
 import { auth } from "@/auth";
+import { getTranslations } from 'next-intl/server';
 
-export default async function AdminDashboard() {
+export default async function AdminDashboard({ params }: { params: Promise<{ locale: string }> }) {
+    const { locale } = await params;
     const session = await auth();
     const tenantId = (session?.user as any)?.tenantId;
 
@@ -46,24 +48,26 @@ export default async function AdminDashboard() {
         orderBy: { createdAt: 'desc' }
     }) : [];
 
+    const t = await getTranslations('Admin');
+
     const stats = [
         ...(hasCRM ? [
-            { label: "Pending Bookings", value: pendingBookingsCount, icon: Calendar, color: "text-amber-500", bg: "bg-amber-500/10" },
-            { label: "Confirmed Visits", value: confirmedBookingsCount, icon: Clock, color: "text-green-500", bg: "bg-green-500/10" }
+            { label: t('dashboard.pendingBookings'), value: pendingBookingsCount, icon: Calendar, color: "text-amber-500", bg: "bg-amber-500/10" },
+            { label: t('dashboard.confirmedVisits'), value: confirmedBookingsCount, icon: Clock, color: "text-green-500", bg: "bg-green-500/10" }
         ] : []),
         ...(hasProjects ? [
-            { label: "Active Projects", value: activePortalsCount, icon: TrendingUp, color: "text-[var(--brand-color,#d35400)]", bg: "bg-[var(--brand-color,#d35400)]/10" }
+            { label: t('dashboard.activeProjects'), value: activePortalsCount, icon: TrendingUp, color: "text-[var(--brand-color,#d35400)]", bg: "bg-[var(--brand-color,#d35400)]/10" }
         ] : []),
         ...(hasCRM ? [
-            { label: "Open Tasks", value: openTasksCount, icon: Database, color: "text-blue-500", bg: "bg-blue-500/10" }
+            { label: t('dashboard.openTasks'), value: openTasksCount, icon: Database, color: "text-blue-500", bg: "bg-blue-500/10" }
         ] : [])
     ];
 
     const quickActions = [
-        { label: "Edit Content", href: "/admin/content", icon: LayoutDashboard, color: "text-blue-500" },
-        { label: "New Project", href: "/admin/projects/new", icon: PlusCircle, color: "text-green-500" },
-        { label: "Setup Portal", href: "/admin/portals", icon: UserPlus, color: "text-[var(--brand-color,#d35400)]" },
-        { label: "View Portfolio", href: "/admin/projects", icon: ImageIcon, color: "text-purple-500" },
+        { label: t('dashboard.editContent'), href: "/admin/content", icon: LayoutDashboard, color: "text-blue-500" },
+        { label: t('dashboard.newProject'), href: "/admin/projects/new", icon: PlusCircle, color: "text-green-500" },
+        { label: t('dashboard.setupPortal'), href: "/admin/portals", icon: UserPlus, color: "text-[var(--brand-color,#d35400)]" },
+        { label: t('dashboard.viewPortfolio'), href: "/admin/projects", icon: ImageIcon, color: "text-purple-500" },
     ];
 
     // Chart Data Generation (Last 6 Months: Financials)
@@ -75,7 +79,7 @@ export default async function AdminDashboard() {
         const d = new Date(currentMonth);
         d.setMonth(d.getMonth() - (5 - i));
         return {
-            date: d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+            date: d.toLocaleDateString(locale, { month: 'short', year: '2-digit' }),
             invoiced: 0,
             expenditures: 0,
             month: d.getMonth(),
@@ -127,16 +131,16 @@ export default async function AdminDashboard() {
         <div className="space-y-6">
             <div className="flex items-end justify-between mb-2">
                 <div>
-                    <h2 className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: 'var(--brand-color, #d35400)' }}>Administrative</h2>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+                    <h2 className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: 'var(--brand-color, #d35400)' }}>{t('dashboard.administrative')}</h2>
+                    <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
                 </div>
                 <div className="text-right">
                     <p className="text-xs text-neutral-900 dark:text-white font-bold">
-                        {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                        {new Date().toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </p>
                     <div className="flex items-center gap-1 justify-end mt-0.5">
                         <div className="w-1 h-1 rounded-full bg-green-500" />
-                        <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest leading-none">Healthy</span>
+                        <span className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest leading-none">{t('dashboard.healthy')}</span>
                     </div>
                 </div>
             </div>
@@ -148,31 +152,31 @@ export default async function AdminDashboard() {
                         <LayoutDashboard className="w-64 h-64" />
                     </div>
                     <div className="relative z-10 max-w-2xl">
-                        <h2 className="text-2xl sm:text-3xl font-black mb-2">Welcome to CoralOS Premium!</h2>
-                        <p className="text-blue-100 mb-8 text-sm leading-relaxed">Your secure workspace is officially provisioned and isolated. Let's get your first legal documents ready to send. Follow these 3 critical steps:</p>
+                        <h2 className="text-2xl sm:text-3xl font-black mb-2">{t('dashboard.welcomeTitle')}</h2>
+                        <p className="text-blue-100 mb-8 text-sm leading-relaxed">{t('dashboard.welcomeDesc')}</p>
 
                         <div className="flex flex-col gap-3">
                             <Link href="/admin/settings/company-info" className="flex items-center gap-4 bg-white/10 hover:bg-white/20 p-3 sm:p-4 rounded-xl transition-colors border border-white/10 group">
                                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold shrink-0 shadow-inner group-hover:scale-110 transition-transform">1</span>
                                 <div>
-                                    <h4 className="font-bold text-sm sm:text-base">Set up your Company Identity</h4>
-                                    <p className="text-xs text-blue-200">Upload your Logo, VAT, and IBAN so clients can legally pay you.</p>
+                                    <h4 className="font-bold text-sm sm:text-base">{t('dashboard.step1Title')}</h4>
+                                    <p className="text-xs text-blue-200">{t('dashboard.step1Desc')}</p>
                                 </div>
                             </Link>
 
                             <Link href="/admin/database/db-clients" className="flex items-center gap-4 bg-white/10 hover:bg-white/20 p-3 sm:p-4 rounded-xl transition-colors border border-white/10 group">
                                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold shrink-0 shadow-inner group-hover:scale-110 transition-transform">2</span>
                                 <div>
-                                    <h4 className="font-bold text-sm sm:text-base">Scaffold your Database</h4>
-                                    <p className="text-xs text-blue-200">Instantiate the immutable CRM systems to store your Contacts.</p>
+                                    <h4 className="font-bold text-sm sm:text-base">{t('dashboard.step2Title')}</h4>
+                                    <p className="text-xs text-blue-200">{t('dashboard.step2Desc')}</p>
                                 </div>
                             </Link>
 
                             <Link href="/admin/financials/income/invoices" className="flex items-center gap-4 bg-white/10 hover:bg-white/20 p-3 sm:p-4 rounded-xl transition-colors border border-white/10 group">
                                 <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white font-bold shrink-0 shadow-inner group-hover:scale-110 transition-transform">3</span>
                                 <div>
-                                    <h4 className="font-bold text-sm sm:text-base">Generate your first Invoice</h4>
-                                    <p className="text-xs text-blue-200">Test the mathematical engine and export your first premium PDF.</p>
+                                    <h4 className="font-bold text-sm sm:text-base">{t('dashboard.step3Title')}</h4>
+                                    <p className="text-xs text-blue-200">{t('dashboard.step3Desc')}</p>
                                 </div>
                             </Link>
                         </div>
@@ -213,9 +217,9 @@ export default async function AdminDashboard() {
                         <div>
                             <h3 className="text-sm font-bold flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
-                                Financial Overview
+                                {t('dashboard.financialOverview')}
                             </h3>
-                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">Invoiced vs Expenditures (6 Months)</p>
+                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">{t('dashboard.invoicedVsExpend')}</p>
                         </div>
                     </div>
                     {/* Render Client Chart Component */}
@@ -228,9 +232,9 @@ export default async function AdminDashboard() {
                         <div className="mb-4">
                             <h3 className="text-sm font-bold flex items-center gap-2">
                                 <Users className="w-4 h-4 text-purple-500" />
-                                Lead Status Spread
+                                {t('dashboard.leadStatusSpread')}
                             </h3>
-                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">Current volume by status</p>
+                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">{t('dashboard.currentVolume')}</p>
                         </div>
                         <div className="flex-1 flex items-end">
                             <StatusBarChart data={statusData} />
@@ -270,9 +274,9 @@ export default async function AdminDashboard() {
                                 <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between bg-neutral-50/50 dark:bg-white/[0.01]">
                                     <h3 className="text-sm font-bold flex items-center gap-2">
                                         <MessageSquare className="w-4 h-4 text-neutral-400" />
-                                        Recent Inquiries
+                                        {t('dashboard.recentInquiries')}
                                     </h3>
-                                    <Link href="/admin/leads" className="text-[10px] font-bold uppercase tracking-widest hover:underline" style={{ color: 'var(--brand-color, #d35400)' }}>View All Leads</Link>
+                                    <Link href="/admin/leads" className="text-[10px] font-bold uppercase tracking-widest hover:underline" style={{ color: 'var(--brand-color, #d35400)' }}>{t('dashboard.viewAllLeads')}</Link>
                                 </div>
                                 <div className="divide-y divide-neutral-200 dark:divide-white/5 flex-1 flex flex-col justify-start">
                                     {recentLeads.length > 0 ? recentLeads.map((lead) => (
@@ -296,7 +300,7 @@ export default async function AdminDashboard() {
                                             </div>
                                         </div>
                                     )) : (
-                                        <div className="p-12 text-center text-neutral-500 text-xs my-auto">No recent leads found in database.</div>
+                                        <div className="p-12 text-center text-neutral-500 text-xs my-auto">{t('dashboard.noRecentLeads')}</div>
                                     )}
                                 </div>
                             </div>

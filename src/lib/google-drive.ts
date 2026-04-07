@@ -1,18 +1,17 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
-// Initialize the Google Drive API Client using Service Account Auth
-// This requires GOOGLE_CLIENT_EMAIL and GOOGLE_PRIVATE_KEY in .env
-const auth = new google.auth.GoogleAuth({
-    credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        // Private keys in env might have escaped newlines
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/drive'],
+// Initialize the Google Drive API Client using OAuth2
+// Uses the existing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN
+const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+);
+oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
 
-const drive = google.drive({ version: 'v3', auth });
+const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 export async function createFolder(name: string, parentId?: string): Promise<string> {
     const fileMetadata = {

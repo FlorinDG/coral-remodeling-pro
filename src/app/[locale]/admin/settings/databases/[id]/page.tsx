@@ -219,7 +219,7 @@ export default function DatabaseSchemaConfigurator() {
                                                                         className="w-1/2 bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                                                                     >
                                                                         <option value="">-- Choose Database --</option>
-                                                                        {allDatabases.filter(d => d.id !== databaseId).map(d => (
+                                                                        {allDatabases.filter(d => d.id !== databaseId && d.name !== 'New Workspace').map(d => (
                                                                             <option key={d.id} value={d.id}>{d.icon} {d.name}</option>
                                                                         ))}
                                                                     </select>

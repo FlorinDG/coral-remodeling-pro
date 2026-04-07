@@ -18,9 +18,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Ensure we don't attempt Drive calls without proper certs being loaded
-        if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
-            console.warn('[Google Drive] Aborting generation: Credentials missing from .env');
+        // Ensure we don't attempt Drive calls without proper OAuth credentials
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REFRESH_TOKEN) {
+            console.warn('[Google Drive] Aborting: OAuth credentials missing from .env');
             return NextResponse.json({ error: 'Drive integration not configured' }, { status: 503 });
         }
 

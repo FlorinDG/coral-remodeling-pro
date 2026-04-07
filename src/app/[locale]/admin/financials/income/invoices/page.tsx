@@ -3,7 +3,7 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { financialTabs } from "@/config/tabs";
 import { FileText, Plus, Calendar, CheckCircle, AlertCircle, Clock } from "lucide-react";
 
-import Link from "next/link";
+import { Link } from "@/i18n/routing";
 import CreateInvoiceButton from "@/components/admin/invoices/CreateInvoiceButton";
 import InvoiceActionDropdown from "@/components/admin/invoices/InvoiceActionDropdown";
 import InvoiceTotalCell from "@/components/admin/invoices/InvoiceTotalCell";
@@ -66,7 +66,7 @@ export default async function SalesInvoicesPage() {
                                         <tr key={inv.id} className="border-b border-neutral-100 dark:border-white/5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors">
                                             <td className="px-6 py-4">
                                                 <Link
-                                                    href={`/nl/admin/financials/income/invoices/${inv.id}`}
+                                                    href={`/admin/financials/income/invoices/${inv.id}`}
                                                     className="flex items-center gap-3 group"
                                                 >
                                                     <div

@@ -89,8 +89,11 @@ export default function LoginPage() {
                     setLoginError('Invalid credentials');
                 }
             } else {
-                router.push('/admin/dashboard');
-                router.refresh();
+                // Fetch session to get user's stored environment language
+                const sessionRes = await fetch('/api/auth/session');
+                const sess = await sessionRes.json();
+                const userLocale = (sess?.user as any)?.environmentLanguage || 'nl';
+                window.location.href = `/${userLocale}/admin/dashboard`;
             }
         } catch {
             setLoginError('System error. Please try again.');
@@ -146,9 +149,11 @@ export default function LoginPage() {
             if (loginResult?.error) {
                 setSignupSuccess('Account created! Please sign in.');
             } else {
-                setTimeout(() => {
-                    router.push('/admin/dashboard');
-                    router.refresh();
+                setTimeout(async () => {
+                    const sessionRes = await fetch('/api/auth/session');
+                    const sess = await sessionRes.json();
+                    const userLocale = (sess?.user as any)?.environmentLanguage || 'nl';
+                    window.location.href = `/${userLocale}/admin/dashboard`;
                 }, 500);
             }
         } catch {

@@ -28,8 +28,13 @@ export default function LoginPage() {
             if (result?.error) {
                 setError('Invalid credentials');
             } else {
-                router.push('/admin/dashboard');
-                router.refresh();
+                // Fetch session to get user's stored environment language
+                const sessionRes = await fetch('/api/auth/session');
+                const session = await sessionRes.json();
+                const userLocale = (session?.user as any)?.environmentLanguage || 'nl';
+
+                // Redirect using the user's persisted locale, not the login page's URL locale
+                window.location.href = `/${userLocale}/admin/dashboard`;
             }
         } catch {
             setError('Something went wrong. Please try again.');

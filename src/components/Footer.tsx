@@ -4,6 +4,7 @@ import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import Logo from './Logo';
 import { Phone, MessageCircle, Mail, MapPin, Building, ShieldCheck } from 'lucide-react';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Footer() {
     const t = useTranslations('Footer');
@@ -113,6 +114,7 @@ export default function Footer() {
                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.3em]">
                         {t('copy')}
                     </p>
+                    <LanguageSwitcher />
                     <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
                         <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
                         <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>

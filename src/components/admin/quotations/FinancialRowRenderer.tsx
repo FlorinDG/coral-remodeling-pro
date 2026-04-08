@@ -168,7 +168,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
                 const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
                 const cCost = bPrice * (1 - dPerc / 100);
-                payload.verkoopPrice = cCost * (1 + mPerc / 100);
+                payload.verkoopPrice = Math.round(cCost * (1 + mPerc / 100) * 100) / 100;
             } else {
                 const numVerkoop = parseNumber(rawVerkoop);
                 if (numVerkoop !== undefined) {
@@ -212,14 +212,14 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             // Backwards engineering: User explicitly overwrites Verkoop, derive Marge explicitly
             const manualVerkoop = value;
             if (currentCost > 0) {
-                payload.margePercent = ((manualVerkoop / currentCost) - 1) * 100;
+                payload.margePercent = Math.round(((manualVerkoop / currentCost) - 1) * 10000) / 100;
             } else {
                 payload.margePercent = 100; // Infinity edge case lock
             }
         } else {
             // Standard Propagation: Parent variable shifted, compute resulting Verkoop
             const currentMarge = b.margePercent || 0;
-            const computedVerkoop = currentCost * (1 + currentMarge / 100);
+            const computedVerkoop = Math.round(currentCost * (1 + currentMarge / 100) * 100) / 100;
             payload.verkoopPrice = computedVerkoop;
         }
 

@@ -224,7 +224,7 @@ export default function AdminLayout({ children, activeModules = [] }: { children
                         )}
                     </div>
                     <button
-                        onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                        onClick={() => signOut({ callbackUrl: "/" })}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />

@@ -2,7 +2,6 @@
 
 import { Resend } from 'resend';
 import QuotationEmail from '@/emails/QuotationEmail';
-import prisma from '@/lib/prisma';
 import React from 'react';
 
 // Require a valid environment variable key or fallback for local development testing
@@ -22,23 +21,16 @@ export async function sendQuotationToClient(
     }
 
     try {
-        // 1. Verify Quote Exists in Database synced local cache
-        const quote = await prisma.globalPage.findUnique({
-            where: { id: quoteId }
-        });
-
-        if (!quote) throw new Error("Quote record not found in backend GlobalPages.");
-
-        // 2. Convert base64 string back into a neat binary buffer attachment
+        // Convert base64 string back into a neat binary buffer attachment
         const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
 
-        // 3. Construct Secure Magic Link pointing back to the application domain
+        // Construct Secure Magic Link pointing back to the application domain
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-        const magicLinkUrl = `${appUrl}/nl/quote/${quoteId}`; // Hardcoding locale 'nl' for BE audience
+        const magicLinkUrl = `${appUrl}/nl/quote/${quoteId}`;
 
-        // 4. Send Email via Resend
+        // Send Email via Resend
         const { data, error } = await resend.emails.send({
-            from: 'Coral Remodeling <noreply@coralremodeling.be>', // Required to be a verified domain on Resend in prod
+            from: 'Coral Remodeling <noreply@coralremodeling.be>',
             to: [clientEmail],
             subject: `Uw Offerte: ${projectName} - Coral Remodeling Pro`,
             react: React.createElement(QuotationEmail, {
@@ -61,21 +53,6 @@ export async function sendQuotationToClient(
             throw new Error(error.message);
         }
 
-        // 5. Update Status in Prisma database to "SENT" silently inside properties JSON
-        const currentProps = typeof quote.properties === 'object' && quote.properties !== null
-            ? (quote.properties as Record<string, any>)
-            : {};
-
-        await prisma.globalPage.update({
-            where: { id: quoteId },
-            data: {
-                properties: {
-                    ...currentProps,
-                    status: "SENT"
-                }
-            }
-        });
-
         return { success: true, messageId: data?.id };
 
     } catch (err: any) {
@@ -83,3 +60,4 @@ export async function sendQuotationToClient(
         return { success: false, error: err.message || "Failed to send email." };
     }
 }
+

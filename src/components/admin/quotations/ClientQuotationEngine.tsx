@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -77,9 +77,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Quotation Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
 
     const quotationTitle = quotation.properties?.['title'] || 'Draft Quotation';
-    const clientId = (quotation.properties?.['client'] as string) || '';
-    const projectId = (quotation.properties?.['project'] as string) || '';
+    const rawClient = quotation.properties?.['client'];
+    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+    const rawProject = quotation.properties?.['project'];
+    const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (quotation.properties?.['betreft'] as string) || '';
+    const quotationStatus = (quotation.properties?.['status'] as string) || '';
+    const quotationDate = (quotation.properties?.['date'] as string) || '';
 
     const blocks = quotation.blocks || [];
 
@@ -404,6 +408,33 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 </select>
                             </div>
                         )}
+
+                        {/* Status Selector */}
+                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                            <FileText className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                            <select
+                                value={quotationStatus}
+                                onChange={(e) => handleUpdateProperty('status', e.target.value)}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-32 truncate"
+                            >
+                                <option value="">Status...</option>
+                                <option value="opt-draft">Draft</option>
+                                <option value="opt-sent">Sent</option>
+                                <option value="opt-accepted">Accepted</option>
+                                <option value="opt-rejected">Rejected</option>
+                            </select>
+                        </div>
+
+                        {/* Date Input */}
+                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                            <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                            <input
+                                type="date"
+                                value={quotationDate}
+                                onChange={(e) => handleUpdateProperty('date', e.target.value)}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none cursor-pointer pl-7 pr-3 py-2 focus:ring-0 w-36"
+                            />
+                        </div>
                     </div>
 
                     {/* Action Buttons — Monocolor brand-themed */}

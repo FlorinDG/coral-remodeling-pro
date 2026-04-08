@@ -85,8 +85,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
 
     const invoiceTitle = invoice.properties?.['title'] || 'Draft Invoice';
-    const clientId = (invoice.properties?.['client'] as string) || '';
-    const projectId = (invoice.properties?.['project'] as string) || '';
+    const rawClient = invoice.properties?.['client'];
+    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+    const rawProject = invoice.properties?.['project'];
+    const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (invoice.properties?.['betreft'] as string) || '';
     const vatCalcMode = ((invoice.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
     const vatRegime = (invoice.properties?.['vatRegime'] as string) || '21';

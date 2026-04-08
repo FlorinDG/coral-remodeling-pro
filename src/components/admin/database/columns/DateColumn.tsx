@@ -111,7 +111,8 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
         const m = ((d.month % 12) + 12) % 12;
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
         onChange(dateStr);
-        onClose();
+        // Delay close so the grid commits the value before stopEditing
+        setTimeout(() => onClose(), 0);
     };
 
     // Position: below the cell, or above if not enough space
@@ -228,8 +229,7 @@ const DateComponent = ({ rowData, setRowData, focus, active, stopEditing }: Cell
 
     const handleClose = useCallback(() => {
         setShowPicker(false);
-        stopEditing();
-    }, [stopEditing]);
+    }, []);
 
     // Passive display mode
     if (!focus && !active) {

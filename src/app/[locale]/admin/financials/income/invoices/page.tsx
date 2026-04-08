@@ -31,15 +31,8 @@ export default async function SalesInvoicesPage() {
                     <CreateInvoiceButton />
                 </div>
             </div>
-            <div className="w-full h-full p-6 pb-10 flex flex-col hide-scrollbar overflow-y-auto">
-                <div className="flex items-center justify-between mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Verkoopfacturen (Sales Invoices)</h1>
-                        <p className="text-neutral-500 font-medium text-sm mt-1">Manage accounts receivable, track payments, and generate PDF invoices.</p>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl shadow-sm">
+            <div className="w-full h-full flex flex-col hide-scrollbar overflow-y-auto">
+                <div className="bg-white dark:bg-black border-b border-neutral-200 dark:border-white/10 flex-1">
                     {invoices.length === 0 ? (
                         <div className="p-12 flex flex-col items-center justify-center text-center">
                             <div className="w-16 h-16 bg-neutral-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">

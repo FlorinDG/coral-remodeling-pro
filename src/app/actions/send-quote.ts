@@ -30,7 +30,7 @@ export async function sendQuotationToClient(
 
         // Send Email via Resend
         const { data, error } = await resend.emails.send({
-            from: 'Coral Remodeling <noreply@coralremodeling.be>',
+            from: 'Coral Group <noreply@coral-group.be>',
             to: [clientEmail],
             subject: `Uw Offerte: ${projectName} - Coral Remodeling Pro`,
             react: React.createElement(QuotationEmail, {

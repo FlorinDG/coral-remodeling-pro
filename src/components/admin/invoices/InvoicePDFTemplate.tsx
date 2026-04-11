@@ -2,23 +2,34 @@ import React from 'react';
 import { Document, Page, Text, View, Image } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templateStyles';
+import { t } from '@/lib/document-i18n';
+
+interface ClientInfo {
+    name: string;
+    address?: string;
+    vatNumber?: string;
+    email?: string;
+}
 
 interface InvoicePDFProps {
     blocks: Block[];
     invoiceTitle: string;
     betreft: string;
-    clientId: string;
+    clientInfo: ClientInfo;
     projectId: string;
     grandTotal: number;
     databaseStoreState: any;
     tenantProfile?: any;
     templateId?: TemplateId;
+    language?: string;
 }
 
-export const InvoicePDFTemplate = ({ blocks, invoiceTitle, betreft, clientId, projectId, grandTotal, databaseStoreState, tenantProfile, templateId = 't1' }: InvoicePDFProps) => {
+export const InvoicePDFTemplate = ({ blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal, databaseStoreState, tenantProfile, templateId = 't1', language = 'nl' }: InvoicePDFProps) => {
 
-    const { companyName, vatNumber, iban, logoUrl, brandColor } = tenantProfile || {};
+    const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic } = tenantProfile || {};
+    const showWatermark = !planType || planType === 'FREE';
     const s = getTemplateStyles(templateId, brandColor);
+    const lang = language;
 
     const colDesc = { flex: 4, paddingRight: 8 };
     const colQty = { flex: 0.8, textAlign: 'center' as const };
@@ -135,8 +146,15 @@ export const InvoicePDFTemplate = ({ blocks, invoiceTitle, betreft, clientId, pr
     const effectiveVatPercent = grandTotal > 0 ? ((taxAmount / grandTotal) * 100) : 21;
 
     const clientSectionStyle = (s as any).clientSection || { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 20 };
-    const isElegant = templateId === 't4';
-    const isBold = templateId === 't3';
+
+    // Build company info lines
+    const companyInfoLines = [
+        vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '',
+        street ? `${street}` : '',
+        (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : '',
+        iban ? `IBAN: ${iban}` : '',
+        email ? email : '',
+    ].filter(Boolean);
 
     return (
         <Document>
@@ -148,70 +166,101 @@ export const InvoicePDFTemplate = ({ blocks, invoiceTitle, betreft, clientId, pr
                             <Image src={logoUrl} style={s.logo} />
                         ) : (
                             <Text style={s.companyFallback}>
-                                {companyName?.toUpperCase() || 'CORAL REMODELING'}
+                                {companyName?.toUpperCase() || 'CORAL ENTERPRISES'}
                             </Text>
                         )}
-                        {!isElegant && vatNumber && <Text style={s.subtitle}>BTW: {vatNumber}</Text>}
-                        {!isElegant && iban && <Text style={s.subtitle}>IBAN: {iban}</Text>}
-                        {!isElegant && !vatNumber && !iban && <Text style={s.subtitle}>Configure details in Settings</Text>}
+                        {companyInfoLines.map((line, i) => (
+                            <Text key={i} style={s.subtitle}>{line}</Text>
+                        ))}
                     </View>
-                    {isElegant && (s as any).divider && <View style={(s as any).divider} />}
+                    {(s as any).divider && <View style={(s as any).divider} />}
                     <View style={s.headerRight}>
-                        <Text style={s.title}>Invoice</Text>
+                        <Text style={{ ...s.title, fontSize: 18 }}>{t('invoice', lang)}</Text>
                         <Text style={s.subtitle}>#{invoiceTitle || 'DRAFT'}</Text>
-                        <Text style={s.subtitle}>Date: {new Date().toLocaleDateString('nl-BE')}</Text>
+                        <Text style={s.subtitle}>{t('date', lang)}: {new Date().toLocaleDateString(lang === 'fr' ? 'fr-BE' : lang === 'en' ? 'en-GB' : 'nl-BE')}</Text>
                     </View>
                 </View>
 
-                {/* Invoice-specific: Due date & Payment terms */}
+                {/* Client & Project */}
                 <View style={clientSectionStyle}>
                     <View>
-                        <Text style={s.clientLabel}>Bill To:</Text>
-                        <Text style={{ fontSize: 11 }}>{clientId ? `Client: ${clientId}` : 'Valued Client'}</Text>
-                        {isElegant && vatNumber && <Text style={{ fontSize: 9, color: '#999', marginTop: 2 }}>BTW: {vatNumber}</Text>}
+                        <Text style={s.clientLabel}>{t('bill_to', lang)}:</Text>
+                        <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{clientInfo.name || 'Klant'}</Text>
+                        {clientInfo.address && <Text style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{clientInfo.address}</Text>}
+                        {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
+                        {clientInfo.email && <Text style={{ fontSize: 9, color: '#888', marginTop: 1 }}>{clientInfo.email}</Text>}
                     </View>
                     <View style={{ alignItems: 'flex-end' as const }}>
-                        <Text style={s.clientLabel}>Project / Betreft:</Text>
-                        <Text style={s.betreftLabel}>{betreft || 'General Renovation'}</Text>
-                        <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>Payment Terms: 30 days</Text>
+                        <Text style={s.clientLabel}>{t('project_re', lang)}:</Text>
+                        <Text style={s.betreftLabel}>{betreft || '-'}</Text>
+                        <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>
                     </View>
                 </View>
 
                 {/* Table Header */}
                 <View style={s.tableHeaderRow}>
-                    <Text style={colDesc}>Description / Omschrijving</Text>
-                    <Text style={colQty}>Qte</Text>
-                    <Text style={colUnit}>Unit</Text>
-                    <Text style={colPrice}>Unit Price</Text>
-                    <Text style={colTotal}>Total (Excl)</Text>
+                    <Text style={colDesc}>{t('description', lang)}</Text>
+                    <Text style={colQty}>{t('qty', lang)}</Text>
+                    <Text style={colUnit}>{t('unit', lang)}</Text>
+                    <Text style={colPrice}>{t('unit_price', lang)}</Text>
+                    <Text style={colTotal}>{t('total_excl', lang)}</Text>
                 </View>
 
                 {/* Content */}
                 {renderBlocks(blocks)}
 
                 {/* Summary */}
-                <View style={{ alignItems: 'flex-end' as const, width: '100%', ...(isBold ? { paddingHorizontal: 24 } : {}) }}>
+                <View style={{ alignItems: 'flex-end' as const, width: '100%' }}>
                     <View style={s.summaryBox}>
                         <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>Subtotal (Excl. VAT):</Text>
+                            <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
                             <Text style={s.summaryValue}>€{grandTotal.toFixed(2)}</Text>
                         </View>
                         <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>BTW / VAT ({effectiveVatPercent.toFixed(0)}%):</Text>
+                            <Text style={s.summaryLabel}>{t('vat', lang)} ({effectiveVatPercent.toFixed(0)}%):</Text>
                             <Text style={s.summaryValue}>€{taxAmount.toFixed(2)}</Text>
                         </View>
                         <View style={{ ...s.summaryRow, marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                            <Text style={{ ...s.summaryLabel, color: isBold ? '#1a1a1a' : '#000', fontWeight: 'bold' }}>Amount Due:</Text>
+                            <Text style={{ ...s.summaryLabel, color: '#000', fontWeight: 'bold' }}>{t('amount_due', lang)}:</Text>
                             <Text style={s.grandTotalValue}>€{totalInclTax.toFixed(2)}</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* Footer */}
-                <Text style={s.footerText}>
-                    Factuur is betaalbaar binnen 30 dagen na factuurdatum. Bij niet-betaling worden intresten aangerekend conform de wet van 2/8/2002.
-                    {companyName || 'Coral Remodeling'} | {iban ? `IBAN: ${iban}` : ''} {vatNumber ? ` | BTW: ${vatNumber}` : ''}
+                {/* Legal text — above footer */}
+                <Text style={{
+                    fontSize: 7.5,
+                    color: '#999999',
+                    textAlign: 'center',
+                    marginTop: 30,
+                    paddingHorizontal: 20,
+                    lineHeight: 1.4,
+                }}>
+                    {t('invoice_legal', lang)}
                 </Text>
+
+                {/* Footer — contact info, themed */}
+                <View style={s.footerText}>
+                    <Text>
+                        {companyName || 'Coral Enterprises'}{vatNumber ? ` | ${t('vat', lang)}: ${vatNumber}` : ''}{iban ? ` | IBAN: ${iban}` : ''}{email ? ` | ${email}` : ''}
+                    </Text>
+                </View>
+
+                {/* Free tier watermark */}
+                {showWatermark && (
+                    <Text style={{
+                        position: 'absolute',
+                        bottom: 4,
+                        left: 0,
+                        right: 0,
+                        textAlign: 'center',
+                        fontSize: 6.5,
+                        color: '#c0c0c0',
+                        letterSpacing: 1.5,
+                    }}>
+                        Powered by CoralOS — coral-os.com
+                    </Text>
+                )}
             </Page>
         </Document>
     );

@@ -2,9 +2,9 @@
 
 import { Resend } from 'resend';
 import QuotationEmail from '@/emails/QuotationEmail';
+import { t } from '@/lib/document-i18n';
 import React from 'react';
 
-// Require a valid environment variable key or fallback for local development testing
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
 export async function sendQuotationToClient(
@@ -14,35 +14,40 @@ export async function sendQuotationToClient(
     projectName: string,
     quoteTotal: string,
     pdfBufferBase64: string,
-    customMessage?: string
+    customMessage?: string,
+    companyName?: string,
+    language?: string,
+    brandColor?: string
 ) {
     if (!process.env.RESEND_API_KEY) {
         console.warn('RESEND_API_KEY is missing. Email will be simulated.');
     }
 
-    try {
-        // Convert base64 string back into a neat binary buffer attachment
-        const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
+    const lang = language || 'nl';
+    const company = companyName || 'Coral Enterprises';
 
-        // Construct Secure Magic Link pointing back to the application domain
+    try {
+        const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
         const magicLinkUrl = `${appUrl}/nl/quote/${quoteId}`;
 
-        // Send Email via Resend
         const { data, error } = await resend.emails.send({
-            from: 'Coral Group <noreply@coral-group.be>',
+            from: `${company} <noreply@coral-group.be>`,
             to: [clientEmail],
-            subject: `Uw Offerte: ${projectName} - Coral Remodeling Pro`,
+            subject: `${t('subject_quote', lang)}: ${projectName} — ${company}`,
             react: React.createElement(QuotationEmail, {
                 clientName,
                 projectName,
                 quoteTotal,
                 magicLinkUrl,
-                customMessage: customMessage || 'Hierbij sturen wij u de gevraagde offerte. U kan deze online bekijken, downloaden als PDF, en veilig online ondertekenen voor akkoord.',
+                customMessage,
+                companyName: company,
+                language: lang,
+                brandColor: brandColor || '#d35400',
             }),
             attachments: [
                 {
-                    filename: `Offerte_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
+                    filename: `${t('quotation', lang)}_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
                     content: pdfBuffer,
                 }
             ]
@@ -56,8 +61,7 @@ export async function sendQuotationToClient(
         return { success: true, messageId: data?.id };
 
     } catch (err: any) {
-        console.error("Failed to execute quotation mail dispatch sequence:", err);
+        console.error("Failed to execute quotation mail dispatch:", err);
         return { success: false, error: err.message || "Failed to send email." };
     }
 }
-

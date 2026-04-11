@@ -62,12 +62,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam'].some(k => p.name.toLowerCase().includes(k)));
         const emailProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('email'));
         const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
+        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
         return clientsDb.pages.map(page => ({
             id: page.id,
             firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
             lastName: String(page.properties[lastProp?.id || ''] || ''),
             email: emailProp ? String(page.properties[emailProp.id] || '') : null,
-            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null
+            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
+            vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
+            address: addressProp ? String(page.properties[addressProp.id] || '') : null,
         }));
     }, [clientsDb]);
 
@@ -278,12 +282,24 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const grandTotal = calculateGrandTotal(blocks);
 
+    // Helper: build resolved client info for PDF templates
+    const buildClientInfo = () => {
+        const clientRecord = clients.find(c => c.id === clientId);
+        return {
+            name: `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant',
+            address: clientRecord?.address || undefined,
+            vatNumber: clientRecord?.vatNumber || undefined,
+            email: clientRecord?.email || undefined,
+        };
+    };
+
+    const docLanguage = tenantProfile?.documentLanguage || 'nl';
+
     const handleSendEmail = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de factuur te versturen.');
 
         setIsSending(true);
         try {
-            // Find client email from the relation database payload
             const clientRecord = clients.find(c => c.id === clientId);
             const clientEmail = String(clientRecord?.email || '');
             const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
@@ -295,31 +311,36 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 return;
             }
 
-            // Create React PDF document configuration
             const doc = (
                 <InvoicePDFTemplate
                     blocks={blocks}
                     invoiceTitle={String(invoiceTitle)}
                     betreft={String(betreft)}
-                    clientId={String(clientId)}
+                    clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
+                    language={docLanguage}
                 />
             );
 
-            // Dynamically generate the PDF binary buffer natively
             const asPdf = pdf(doc);
             const blob = await asPdf.toBlob();
 
-            // Convert to base64
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 const base64data = (reader.result as string).split(',')[1];
-                const response = await sendInvoiceToClient(id, clientEmail, clientName, String(projectName), `€${grandTotal.toFixed(2)}`, base64data);
+                const response = await sendInvoiceToClient(
+                    id, clientEmail, clientName, String(projectName),
+                    `€${grandTotal.toFixed(2)}`, base64data,
+                    undefined,
+                    tenantProfile?.companyName || 'Coral Enterprises',
+                    docLanguage,
+                    tenantProfile?.brandColor
+                );
 
                 if (response.success) {
                     toast.success('Factuur is succesvol verzonden!');
@@ -353,12 +374,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     blocks={blocks}
                     invoiceTitle={String(invoiceTitle)}
                     betreft={String(betreft)}
-                    clientId={String(clientId)}
+                    clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
+                    language={docLanguage}
                 />
             );
 
@@ -392,31 +414,46 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const handleSendPeppol = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant!');
+        const selectedClient = clients.find(c => c.id === clientId);
+        if (!selectedClient) return toast.error('Klant niet gevonden in database.');
+
         setIsSendingPeppol(true);
         try {
             // Wait for DB sync to ensure all row calculations are mathematically synced with the backend store
             await new Promise(r => setTimeout(r, 800));
+
+            const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
+            const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
 
             const res = await fetch('/api/peppol/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     invoiceId: id,
-                    clientId: clientId,
-                    projectId: projectId,
-                    betreft: betreft
+                    invoiceTitle: String(invoiceTitle),
+                    betreft: betreft,
+                    invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
+                    dueDate: dueDateProp ? String(dueDateProp) : undefined,
+                    blocks: blocks,
+                    client: {
+                        firstName: selectedClient.firstName,
+                        lastName: selectedClient.lastName,
+                        email: selectedClient.email,
+                        vatNumber: selectedClient.vatNumber,
+                        address: selectedClient.address,
+                    },
                 })
             });
 
             const data = await res.json();
             if (data.success) {
-                toast.success('Factuur verzonden via Peppol/Storecove!');
+                toast.success('Factuur succesvol verzonden via Peppol! ✅');
             } else {
                 toast.error(`Peppol fout: ${data.error}`);
             }
         } catch (e: any) {
             console.error(e);
-            toast.error('Systeemfout tijdens de Storecove verbinding: ' + e.message);
+            toast.error('Systeemfout bij Peppol verzending: ' + e.message);
         } finally {
             setIsSendingPeppol(false);
         }
@@ -558,12 +595,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         blocks={blocks}
                                         invoiceTitle={String(invoiceTitle)}
                                         betreft={String(betreft)}
-                                        clientId={String(clientId)}
+                                        clientInfo={buildClientInfo()}
                                         projectId={String(projectId)}
                                         grandTotal={grandTotal}
                                         databaseStoreState={useDatabaseStore.getState()}
                                         tenantProfile={tenantProfile}
-                    templateId={tenantProfile?.documentTemplate || 't1'}
+                                        templateId={tenantProfile?.documentTemplate || 't1'}
+                                        language={docLanguage}
                                     />
                                 }
                                 fileName={`Factuur_${invoiceTitle || 'Draft'}.pdf`}

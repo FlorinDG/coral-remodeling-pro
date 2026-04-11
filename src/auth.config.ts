@@ -11,6 +11,7 @@ export const authConfig = {
                 token.id = user.id;
                 token.tenantId = (user as { tenantId?: string | null }).tenantId;
                 token.emailVerified = !!(user as unknown as { emailVerified?: Date | null }).emailVerified;
+                token.environmentLanguage = (user as { environmentLanguage?: string | null }).environmentLanguage;
             }
             return token;
         },
@@ -20,6 +21,7 @@ export const authConfig = {
                 session.user.id = token.id as string;
                 (session.user as { tenantId?: string | null }).tenantId = token.tenantId as string | null;
                 (session.user as unknown as { emailVerified?: boolean }).emailVerified = token.emailVerified as boolean;
+                (session.user as any).environmentLanguage = token.environmentLanguage as string | null;
             }
             return session;
         }

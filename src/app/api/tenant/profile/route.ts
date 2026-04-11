@@ -80,7 +80,19 @@ export async function PUT(request: Request) {
             });
         }
 
-        return NextResponse.json(updatedTenant);
+        const response = NextResponse.json(updatedTenant);
+
+        // Set the NEXT_LOCALE cookie so next-intl middleware respects the preference
+        // This ensures locale consistency across all subsequent requests
+        if (data.documentLanguage) {
+            response.cookies.set('NEXT_LOCALE', data.documentLanguage, {
+                path: '/',
+                maxAge: 365 * 24 * 60 * 60, // 1 year
+                sameSite: 'lax',
+            });
+        }
+
+        return response;
     } catch (error) {
         console.error('Error updating tenant profile:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

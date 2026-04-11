@@ -85,6 +85,57 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     // Email subjects
     'subject_invoice': { nl: 'Uw Factuur', fr: 'Votre Facture', en: 'Your Invoice' },
     'subject_quote': { nl: 'Uw Offerte', fr: 'Votre Devis', en: 'Your Quotation' },
+
+    // Portal — Quote Acceptance
+    'portal_total_investment': { nl: 'Totale Investering', fr: 'Investissement Total', en: 'Total Investment' },
+    'portal_ref': { nl: 'REF', fr: 'RÉF', en: 'REF' },
+    'portal_quotation_details': { nl: 'Offerte Details', fr: 'Détails du Devis', en: 'Quotation Details' },
+    'portal_download_pdf': { nl: 'Download PDF', fr: 'Télécharger PDF', en: 'Download PDF' },
+    'portal_section': { nl: 'Sectie', fr: 'Section', en: 'Section' },
+    'portal_optional': { nl: 'Optioneel', fr: 'Optionnel', en: 'Optional' },
+    'portal_subtotal': { nl: 'Subtotaal', fr: 'Sous-total', en: 'Subtotal' },
+    'portal_vat_21': { nl: 'BTW 21%', fr: 'TVA 21%', en: 'VAT 21%' },
+    'portal_grand_total': { nl: 'Totaal incl. BTW', fr: 'Total TVAC', en: 'Total incl. VAT' },
+
+    // Portal — Signature
+    'portal_sign_title': { nl: 'Digitaal Ondertekenen', fr: 'Signature Numérique', en: 'Digital Signature' },
+    'portal_tab_draw': { nl: 'Tekenen', fr: 'Dessiner', en: 'Draw' },
+    'portal_tab_type': { nl: 'Typen', fr: 'Taper', en: 'Type' },
+    'portal_tab_upload': { nl: 'Uploaden', fr: 'Télécharger', en: 'Upload' },
+    'portal_draw_hint': { nl: 'Teken Hier', fr: 'Signez Ici', en: 'Sign Here' },
+    'portal_type_placeholder': { nl: 'Typ uw volledige naam...', fr: 'Tapez votre nom complet...', en: 'Type your full name...' },
+    'portal_upload_hint': { nl: 'Sleep een afbeelding hierheen of klik om te uploaden', fr: 'Glissez une image ici ou cliquez pour télécharger', en: 'Drag an image here or click to upload' },
+    'portal_upload_formats': { nl: 'PNG, JPG — max 2MB', fr: 'PNG, JPG — max 2 Mo', en: 'PNG, JPG — max 2MB' },
+    'portal_clear': { nl: 'Wissen', fr: 'Effacer', en: 'Clear' },
+
+    // Portal — Consent
+    'portal_consent_text': {
+        nl: 'Ik bevestig dat ik deze offerte heb gelezen en ga akkoord met de hierin beschreven voorwaarden.',
+        fr: "Je confirme avoir lu ce devis et j'accepte les conditions décrites ci-dessous.",
+        en: 'I confirm that I have reviewed this quotation and agree to the terms and conditions described herein.',
+    },
+    'portal_consent_name_label': { nl: 'Volledige naam', fr: 'Nom complet', en: 'Full name' },
+    'portal_consent_name_placeholder': { nl: 'Typ uw volledige naam...', fr: 'Tapez votre nom complet...', en: 'Type your full name...' },
+    'portal_accept_button': { nl: 'Offerte Accepteren', fr: 'Accepter le Devis', en: 'Accept Quotation' },
+    'portal_processing': { nl: 'Bezig met verwerken...', fr: 'Traitement en cours...', en: 'Processing...' },
+
+    // Portal — Errors
+    'portal_error_signature': { nl: 'Plaats a.u.b. uw handtekening.', fr: 'Veuillez signer.', en: 'Please provide your signature.' },
+    'portal_error_consent': { nl: 'U dient akkoord te gaan met de voorwaarden.', fr: 'Vous devez accepter les conditions.', en: 'You must accept the terms.' },
+    'portal_error_name': { nl: 'Vul a.u.b. uw volledige naam in.', fr: 'Veuillez entrer votre nom complet.', en: 'Please enter your full name.' },
+    'portal_error_generic': { nl: 'Er ging iets mis. Probeer het opnieuw.', fr: "Une erreur s'est produite. Veuillez réessayer.", en: 'Something went wrong. Please try again.' },
+
+    // Portal — Expiration
+    'portal_valid_until': { nl: 'Deze offerte is geldig tot', fr: 'Ce devis est valable jusqu\'au', en: 'This quotation is valid until' },
+    'portal_expired': { nl: 'Deze offerte is verlopen. Neem contact op voor een nieuw voorstel.', fr: 'Ce devis a expiré. Contactez-nous pour une nouvelle proposition.', en: 'This quotation has expired. Please contact us for a new proposal.' },
+
+    // Portal — Success
+    'portal_success_title': { nl: 'Offerte Succesvol Geaccepteerd!', fr: 'Devis Accepté avec Succès !', en: 'Quotation Successfully Accepted!' },
+    'portal_success_body': { nl: 'Bedankt voor uw vertrouwen. Wij nemen spoedig contact met u op.', fr: 'Merci pour votre confiance. Nous vous contacterons très bientôt.', en: 'Thank you for your trust. We will contact you shortly.' },
+    'portal_signed_on': { nl: 'Ondertekend op', fr: 'Signé le', en: 'Signed on' },
+
+    // Portal — Footer
+    'portal_powered_by': { nl: 'Powered by', fr: 'Propulsé par', en: 'Powered by' },
 };
 
 export function t(key: string, lang?: string): string {

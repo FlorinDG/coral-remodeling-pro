@@ -4,12 +4,29 @@ import { notFound } from 'next/navigation';
 import QuotationViewer from './QuotationViewer';
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ locale: string, id: string }> }) {
-    const quoteId = (await params).id;
+    const { locale, id: quoteId } = await params;
 
     const quote = await prisma.globalPage.findUnique({
         where: { id: quoteId },
         include: {
-            database: true
+            database: {
+                include: {
+                    tenant: {
+                        select: {
+                            companyName: true,
+                            logoUrl: true,
+                            brandColor: true,
+                            email: true,
+                            street: true,
+                            city: true,
+                            postalCode: true,
+                            vatNumber: true,
+                            documentLanguage: true,
+                            planType: true,
+                        }
+                    }
+                }
+            }
         }
     });
 
@@ -18,15 +35,24 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
         return notFound();
     }
 
+    const tenant = quote.database.tenant;
+    // Language priority: URL locale > tenant document language > 'nl'
+    const lang = locale || tenant.documentLanguage || 'nl';
+
     return (
-        <div className="min-h-screen bg-neutral-100 flex flex-col items-center py-10 w-full font-sans">
-            <div className="w-full max-w-4xl px-4">
-                <QuotationViewer
-                    quoteId={quote.id}
-                    properties={quote.properties}
-                    blocks={quote.blocks}
-                />
-            </div>
-        </div>
+        <QuotationViewer
+            quoteId={quote.id}
+            properties={quote.properties}
+            blocks={quote.blocks}
+            tenant={{
+                companyName: tenant.companyName,
+                logoUrl: tenant.logoUrl,
+                brandColor: tenant.brandColor,
+                email: tenant.email,
+                vatNumber: tenant.vatNumber,
+                planType: tenant.planType,
+            }}
+            lang={lang}
+        />
     );
 }

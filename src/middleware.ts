@@ -4,6 +4,8 @@ import { NextResponse } from "next/server"
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 
+const SUPPORTED_LOCALES = routing.locales as readonly string[];
+
 const intlMiddleware = createMiddleware(routing);
 
 const { auth } = NextAuth(authConfig);
@@ -63,6 +65,28 @@ export default auth((req) => {
             loginUrl.pathname = '/en/admin/login';
         }
         return NextResponse.redirect(loginUrl)
+    }
+
+    // ── Locale auto-correction for authenticated admin users ──
+    // Priority: NEXT_LOCALE cookie (set on save) > JWT environmentLanguage (set on login)
+    const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
+    const jwtLang = (req.auth?.user as any)?.environmentLanguage;
+    const userLang = (cookieLang && SUPPORTED_LOCALES.includes(cookieLang)) ? cookieLang
+        : (jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) ? jwtLang
+        : null;
+    const isAdminPath = virtualPath.includes('/admin');
+
+    if (isLoggedIn && isAdminPath && userLang) {
+        // Extract current locale from URL: /fr/admin/... → fr
+        const localeMatch = pathname.match(/^\/(en|fr|nl|ro|ru)(\/|$)/);
+        const currentLocale = localeMatch?.[1];
+
+        if (currentLocale && currentLocale !== userLang) {
+            const correctedPath = pathname.replace(/^\/(en|fr|nl|ro|ru)/, `/${userLang}`);
+            const redirectUrl = new URL(correctedPath, req.nextUrl.origin);
+            redirectUrl.search = req.nextUrl.search;
+            return NextResponse.redirect(redirectUrl);
+        }
     }
 
     // Pass to next-intl to resolve localization

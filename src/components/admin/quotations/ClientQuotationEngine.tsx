@@ -64,12 +64,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam'].some(k => p.name.toLowerCase().includes(k)));
         const emailProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('email'));
         const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
+        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
         return clientsDb.pages.map(page => ({
             id: page.id,
             firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
             lastName: String(page.properties[lastProp?.id || ''] || ''),
             email: emailProp ? String(page.properties[emailProp.id] || '') : null,
-            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null
+            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
+            vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
+            address: addressProp ? String(page.properties[addressProp.id] || '') : null,
         }));
     }, [clientsDb]);
 
@@ -187,12 +191,24 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     const grandTotal = calculateGrandTotal(blocks);
 
+    // Helper: build resolved client info for PDF templates
+    const buildClientInfo = () => {
+        const clientRecord = clients.find(c => c.id === clientId);
+        return {
+            name: `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant',
+            address: clientRecord?.address || undefined,
+            vatNumber: clientRecord?.vatNumber || undefined,
+            email: clientRecord?.email || undefined,
+        };
+    };
+
+    const docLanguage = tenantProfile?.documentLanguage || 'nl';
+
     const handleSendEmail = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
 
         setIsSending(true);
         try {
-            // Find client email from the relation database payload
             const clientRecord = clients.find(c => c.id === clientId);
             const clientEmail = String(clientRecord?.email || '');
             const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
@@ -204,31 +220,36 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 return;
             }
 
-            // Create React PDF document configuration
             const doc = (
                 <QuotationPDFTemplate
                     blocks={blocks}
                     quotationTitle={String(quotationTitle)}
                     betreft={String(betreft)}
-                    clientId={String(clientId)}
+                    clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
+                    language={docLanguage}
                 />
             );
 
-            // Dynamically generate the PDF binary buffer natively
             const asPdf = pdf(doc);
             const blob = await asPdf.toBlob();
 
-            // Convert to base64
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 const base64data = (reader.result as string).split(',')[1];
-                const response = await sendQuotationToClient(id, clientEmail, clientName, String(projectName), `€${grandTotal.toFixed(2)}`, base64data);
+                const response = await sendQuotationToClient(
+                    id, clientEmail, clientName, String(projectName),
+                    `€${grandTotal.toFixed(2)}`, base64data,
+                    undefined,
+                    tenantProfile?.companyName || 'Coral Enterprises',
+                    docLanguage,
+                    tenantProfile?.brandColor
+                );
 
                 if (response.success) {
                     toast.success('Offerte is succesvol verzonden!');
@@ -262,12 +283,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     blocks={blocks}
                     quotationTitle={String(quotationTitle)}
                     betreft={String(betreft)}
-                    clientId={String(clientId)}
+                    clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
+                    language={docLanguage}
                 />
             );
 
@@ -487,12 +509,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         blocks={blocks}
                                         quotationTitle={String(quotationTitle)}
                                         betreft={String(betreft)}
-                                        clientId={String(clientId)}
+                                        clientInfo={buildClientInfo()}
                                         projectId={String(projectId)}
                                         grandTotal={grandTotal}
                                         databaseStoreState={useDatabaseStore.getState()}
                                         tenantProfile={tenantProfile}
                                         templateId={tenantProfile?.documentTemplate || 't1'}
+                                        language={docLanguage}
                                     />
                                 }
                                 fileName={`Offerte_${quotationTitle || 'Draft'}.pdf`}

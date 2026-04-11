@@ -5,12 +5,12 @@ import {
     Head,
     Heading,
     Html,
-    Link,
     Preview,
     Section,
     Text,
 } from '@react-email/components';
 import * as React from 'react';
+import { t } from '@/lib/document-i18n';
 
 interface QuotationEmailProps {
     clientName: string;
@@ -19,55 +19,62 @@ interface QuotationEmailProps {
     magicLinkUrl: string;
     customMessage?: string;
     companyName?: string;
+    language?: string;
+    brandColor?: string;
 }
 
 export const QuotationEmail = ({
     clientName = "Client",
-    projectName = "Your Project",
+    projectName = "Offerte",
     quoteTotal = "€0.00",
-    magicLinkUrl = "https://coralremodeling.be",
-    customMessage = "Please find your custom quotation attached. You can review the details and securely sign online.",
-    companyName = "Coral Remodeling Pro",
-}: QuotationEmailProps) => (
-    <Html>
-        <Head />
-        <Preview>Your quotation from {companyName} is ready.</Preview>
-        <Body style={main}>
-            <Container style={container}>
-                <Heading style={h1}>Offerte: {projectName}</Heading>
+    magicLinkUrl = "https://coral-group.be",
+    customMessage,
+    companyName = "Coral Enterprises",
+    language = "nl",
+    brandColor = "#d35400",
+}: QuotationEmailProps) => {
+    const lang = language;
+    const body = customMessage || t('email_quote_body', lang);
 
-                <Text style={text}>Beste {clientName},</Text>
+    return (
+        <Html>
+            <Head />
+            <Preview>{t('email_preview_quote', lang)} — {companyName}</Preview>
+            <Body style={main}>
+                <Container style={container}>
+                    <Heading style={h1}>{t('email_quote_heading', lang)}: {projectName}</Heading>
 
-                <Text style={text}>
-                    {customMessage}
-                </Text>
+                    <Text style={text}>{t('email_dear', lang)} {clientName},</Text>
 
-                <Section style={pricingSection}>
-                    <Text style={pricingText}>Totale Investering:</Text>
-                    <Text style={pricingAmount}>{quoteTotal}</Text>
-                </Section>
+                    <Text style={text}>{body}</Text>
 
-                <Section style={buttonContainer}>
-                    <Button
-                        style={button}
-                        href={magicLinkUrl}
-                    >
-                        Bekijk en Teken Online
-                    </Button>
-                </Section>
+                    <Section style={pricingSection}>
+                        <Text style={pricingText}>{t('email_quote_total', lang)}:</Text>
+                        <Text style={pricingAmount}>{quoteTotal}</Text>
+                    </Section>
 
-                <Text style={footerText}>
-                    A PDF copy of this quotation is securely attached to this email thread for your records.
-                </Text>
+                    <Section style={buttonContainer}>
+                        <Button
+                            style={{ ...button, backgroundColor: brandColor }}
+                            href={magicLinkUrl}
+                        >
+                            {t('email_quote_button', lang)}
+                        </Button>
+                    </Section>
 
-                <Text style={companyFooter}>
-                    Met vriendelijke groeten,<br />
-                    Het team van {companyName}
-                </Text>
-            </Container>
-        </Body>
-    </Html>
-);
+                    <Text style={footerNote}>
+                        {t('email_quote_attachment', lang)}
+                    </Text>
+
+                    <Text style={companyFooter}>
+                        {t('email_regards', lang)},<br />
+                        {t('email_team', lang)} {companyName}
+                    </Text>
+                </Container>
+            </Body>
+        </Html>
+    );
+};
 
 export default QuotationEmail;
 
@@ -89,8 +96,8 @@ const container = {
 
 const h1 = {
     color: '#333',
-    fontSize: '24px',
-    fontWeight: 'bold',
+    fontSize: '22px',
+    fontWeight: 'bold' as const,
     padding: '0',
     margin: '0 0 20px',
 };
@@ -122,7 +129,7 @@ const pricingText = {
 const pricingAmount = {
     color: '#0f172a',
     fontSize: '32px',
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     margin: '0',
 };
 
@@ -132,22 +139,21 @@ const buttonContainer = {
 };
 
 const button = {
-    backgroundColor: '#d75d00',
     borderRadius: '6px',
     color: '#fff',
     fontSize: '16px',
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     textDecoration: 'none',
     textAlign: 'center' as const,
     display: 'inline-block',
     padding: '14px 28px',
 };
 
-const footerText = {
+const footerNote = {
     color: '#8898aa',
     fontSize: '14px',
     marginTop: '32px',
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
 };
 
 const companyFooter = {

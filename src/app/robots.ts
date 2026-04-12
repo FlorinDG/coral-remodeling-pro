@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: ['/admin/', '/api/'],
         },
-        sitemap: 'https://app.coral-group.be/sitemap.xml',
+        sitemap: 'https://coral-group.be/sitemap.xml',
     };
 }

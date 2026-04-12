@@ -12,7 +12,7 @@ import {
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, Plus, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
+import { Download, Upload, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
 import { selectColumn } from './columns/SelectColumn';
@@ -29,6 +29,7 @@ import { variantsColumn } from './columns/VariantsColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
+import DatabaseFooter from './components/DatabaseFooter';
 import { Property } from './types';
 
 interface NotionGridProps {
@@ -37,9 +38,10 @@ interface NotionGridProps {
     renderTabs?: React.ReactNode;
     lockedSchema?: boolean;
     preventDelete?: boolean;
+    hideFooterNew?: boolean;
 }
 
-export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew }: NotionGridProps) {
     const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -474,27 +476,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         {selectedRowIds.size > 0 && <span className="font-semibold ml-1 leading-none">{selectedRowIds.size}</span>}
                     </button>
                     )}
-
-                    {!lockedSchema && (
-                    <button
-                        onClick={() => {
-                            createPage(database.id);
-                            setTimeout(() => {
-                                const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
-                                if (gridContainer) {
-                                    gridContainer.scrollTo({
-                                        top: gridContainer.scrollHeight,
-                                        behavior: 'smooth'
-                                    });
-                                }
-                            }, 150);
-                        }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition shadow-sm"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span className="hidden md:inline">New Row</span>
-                    </button>
-                    )}
                 </div>
             </div>
 
@@ -678,6 +659,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     databaseId={database.id}
                 />
             </div>
+
+            {/* Notion-style Footer: + New button and property summaries */}
+            <DatabaseFooter
+                databaseId={database.id}
+                viewId={activeViewId}
+                lockedSchema={lockedSchema || hideFooterNew}
+                orderedVisibleProperties={orderedVisibleProperties}
+                viewStateMap={viewStateMap}
+            />
 
             <style dangerouslySetInnerHTML={{
                 __html: `

@@ -2,13 +2,12 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { validatePassword, hashPassword } from '@/lib/password';
 import { randomBytes } from 'crypto';
-import { cookies } from 'next/headers';
 import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { name, email, password } = body;
+        const { name, email, password, language } = body;
 
         // Validate required fields
         if (!name || !email || !password) {
@@ -54,9 +53,8 @@ export async function POST(req: Request) {
         // Generate verification token
         const verificationToken = randomBytes(32).toString('hex');
 
-        // Detect locale from cookie
-        const cookieStore = await cookies();
-        const nextLocale = cookieStore.get('NEXT_LOCALE')?.value || 'fr';
+        // Use the language selected by the user (fallback to nl)
+        const userLanguage = language || 'nl';
 
         // Auto-provision tenant workspace (same logic as Google OAuth in auth.ts)
         const newTenant = await prisma.tenant.create({
@@ -65,7 +63,7 @@ export async function POST(req: Request) {
                 planType: "FREE",
                 subscriptionStatus: "ACTIVE",
                 activeModules: ["INVOICING"],
-                documentLanguage: nextLocale
+                documentLanguage: userLanguage
             }
         });
 
@@ -77,7 +75,7 @@ export async function POST(req: Request) {
                 password: hashedPassword,
                 role: "TENANT_ADMIN",
                 tenantId: newTenant.id,
-                environmentLanguage: nextLocale,
+                environmentLanguage: userLanguage,
                 verificationToken,
                 verificationSentAt: new Date(),
             }

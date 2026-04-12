@@ -10,6 +10,7 @@ import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
 import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
+import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
@@ -28,6 +29,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     const [isHydrated, setIsHydrated] = useState(false);
+    const [hydrationAttempted, setHydrationAttempted] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
@@ -49,6 +51,31 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const db = state.databases.find(d => d.id === 'db-invoices');
         return db?.pages.find(p => p.id === id) || null;
     });
+
+    // Hydrate from Prisma if Zustand store doesn't have this invoice (different browser/cleared cache)
+    useEffect(() => {
+        if (!isHydrated || invoice || hydrationAttempted) return;
+        setHydrationAttempted(true);
+
+        getInvoiceById(id).then(result => {
+            if (result.success && result.invoice) {
+                const inv = result.invoice;
+                // Seed the invoice into the Zustand store
+                const createPage = useDatabaseStore.getState().createPage;
+                const db = useDatabaseStore.getState().databases.find(d => d.id === 'db-invoices');
+                if (db && !db.pages.find(p => p.id === inv.id)) {
+                    createPage('db-invoices', {
+                        title: inv.invoiceNumber,
+                        status: inv.status === 'DRAFT' ? 'opt-unpaid' : inv.status.toLowerCase(),
+                        client: inv.contactId || '',
+                        betreft: '',
+                        date: inv.issueDate,
+                        dueDate: inv.dueDate,
+                    }, inv.id);
+                }
+            }
+        }).catch(console.error);
+    }, [isHydrated, invoice, hydrationAttempted, id]);
 
     const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
 
@@ -86,6 +113,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     }, [quotationsDb]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
+    if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
     if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
 
     const invoiceTitle = invoice.properties?.['title'] || 'Draft Invoice';

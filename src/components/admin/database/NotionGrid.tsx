@@ -35,9 +35,11 @@ interface NotionGridProps {
     databaseId: string;
     viewId?: string;
     renderTabs?: React.ReactNode;
+    lockedSchema?: boolean;
+    preventDelete?: boolean;
 }
 
-export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete }: NotionGridProps) {
     const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -298,6 +300,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                                 <span>Duplicate</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
+                            {!preventDelete && (
                             <DropdownMenuItem
                                 onClick={() => deletePage(databaseIdRef, rowData.id)}
                                 className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
@@ -305,6 +308,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                                 <Trash className="w-4 h-4 mr-2" />
                                 <span>Delete</span>
                             </DropdownMenuItem>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -429,6 +433,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                     <FilterToolbar databaseId={database.id} viewId={activeViewId} />
                     <SortToolbar databaseId={database.id} viewId={activeViewId} />
 
+                    {!lockedSchema && (
                     <button
                         onClick={handleExportCSV}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -436,7 +441,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                         <Download className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Export</span>
                     </button>
+                    )}
 
+                    {!lockedSchema && (
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -444,7 +451,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                         <Upload className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">Import</span>
                     </button>
+                    )}
 
+                    {!preventDelete && (
                     <button
                         onClick={() => {
                             if (selectedRowIds.size > 0) {
@@ -464,11 +473,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                         <Trash className="w-3.5 h-3.5" />
                         {selectedRowIds.size > 0 && <span className="font-semibold ml-1 leading-none">{selectedRowIds.size}</span>}
                     </button>
+                    )}
 
+                    {!lockedSchema && (
                     <button
                         onClick={() => {
                             createPage(database.id);
-                            // Scroll to bottom so the new row is visible
                             setTimeout(() => {
                                 const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
                                 if (gridContainer) {
@@ -484,6 +494,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs }: NotionGri
                         <Plus className="w-3.5 h-3.5" />
                         <span className="hidden md:inline">New Row</span>
                     </button>
+                    )}
                 </div>
             </div>
 

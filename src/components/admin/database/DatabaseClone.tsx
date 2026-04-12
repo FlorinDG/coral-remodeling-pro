@@ -306,7 +306,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} hideFooterNew={databaseId === 'db-invoices'} />}
         {activeView.type === 'board' && <BoardViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <GanttViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

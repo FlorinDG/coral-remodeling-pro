@@ -664,7 +664,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             <DatabaseFooter
                 databaseId={database.id}
                 viewId={activeViewId}
-                lockedSchema={lockedSchema || hideFooterNew}
+                lockedSchema={lockedSchema}
+                hideNewButton={hideFooterNew}
                 orderedVisibleProperties={orderedVisibleProperties}
                 viewStateMap={viewStateMap}
             />

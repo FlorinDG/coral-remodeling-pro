@@ -13,6 +13,7 @@ interface DatabaseFooterProps {
     databaseId: string;
     viewId?: string;
     lockedSchema?: boolean;
+    hideNewButton?: boolean;
     orderedVisibleProperties: Property[];
     viewStateMap: Map<string, any>;
 }
@@ -38,6 +39,7 @@ export default function DatabaseFooter({
     databaseId,
     viewId,
     lockedSchema,
+    hideNewButton,
     orderedVisibleProperties,
     viewStateMap,
 }: DatabaseFooterProps) {
@@ -170,7 +172,7 @@ export default function DatabaseFooter({
             </div>
 
             {/* Add row button */}
-            {!lockedSchema && (
+            {!hideNewButton && (
                 <button
                     onClick={() => createPage(databaseId)}
                     className="w-full flex items-center gap-2 px-4 py-1.5 text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition border-t border-neutral-200 dark:border-white/10"

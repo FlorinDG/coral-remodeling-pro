@@ -60,7 +60,7 @@ interface DatabaseState {
     updatePropertyOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
-    createPage: (databaseId: string, initialProperties?: Record<string, any>) => Page;
+    createPage: (databaseId: string, initialProperties?: Record<string, any>, customId?: string) => Page;
     addPages: (databaseId: string, pagesProperties: Record<string, any>[]) => void;
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
@@ -259,7 +259,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
                 // Schema-locked databases: properties are hardcoded, block any additions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers'];
+                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations'];
                 if (LOCKED_DBS.includes(databaseId)) {
                     console.warn(`[Schema Lock] Cannot add property "${name}" to locked database ${databaseId}`);
                     return '';
@@ -296,7 +296,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             deleteProperty: (databaseId, propertyId) => {
                 // Schema-locked databases: properties are hardcoded, block any deletions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers'];
+                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations'];
                 if (LOCKED_DBS.includes(databaseId)) {
                     console.warn(`[Schema Lock] Cannot delete property "${propertyId}" from locked database ${databaseId}`);
                     return;
@@ -333,7 +333,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            createPage: (databaseId, initialProperties = {}) => {
+            createPage: (databaseId, initialProperties = {}, customId) => {
                 let newPage: Page | null = null;
 
                 set((state) => {
@@ -402,7 +402,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     });
 
                     newPage = {
-                        id: uuidv4(),
+                        id: customId || uuidv4(),
                         databaseId,
                         order: db.pages.length,
                         properties: fullProperties,

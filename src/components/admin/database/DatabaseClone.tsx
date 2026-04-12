@@ -47,6 +47,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
   const hasDatabases = activeModules.includes('DATABASES');
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
+  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses';
+  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || databaseId === 'db-quotations';
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -156,6 +158,35 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
       { id: 'date', name: 'Date', type: 'date' },
       { id: 'betreft', name: 'Betreft', type: 'text' },
     ],
+    'db-invoices': [
+      { id: 'title', name: 'Invoice #', type: 'text' },
+      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
+      { id: 'betreft', name: 'Betreft', type: 'text' },
+      { id: 'status', name: 'Status', type: 'select', config: { options: [
+        { id: 'opt-unpaid', name: 'Unpaid', color: 'orange' },
+        { id: 'opt-sent', name: 'Sent', color: 'blue' },
+        { id: 'opt-paid', name: 'Paid', color: 'green' },
+        { id: 'opt-overdue', name: 'Overdue', color: 'red' },
+        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+      ]}},
+      { id: 'invoiceDate', name: 'Invoice Date', type: 'date' },
+      { id: 'dueDate', name: 'Due Date', type: 'date' },
+      { id: 'quotation', name: 'Offerte', type: 'relation', config: { relationDatabaseId: 'db-quotations', relationDisplayPropertyId: 'title' } },
+    ],
+    'db-expenses': [
+      { id: 'title', name: 'Invoice #', type: 'text' },
+      { id: 'supplier', name: 'Supplier', type: 'relation', config: { relationDatabaseId: 'db-suppliers', relationDisplayPropertyId: 'title' } },
+      { id: 'betreft', name: 'Description', type: 'text' },
+      { id: 'status', name: 'Status', type: 'select', config: { options: [
+        { id: 'opt-unpaid', name: 'Unpaid', color: 'orange' },
+        { id: 'opt-paid', name: 'Paid', color: 'green' },
+        { id: 'opt-overdue', name: 'Overdue', color: 'red' },
+        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+      ]}},
+      { id: 'invoiceDate', name: 'Invoice Date', type: 'date' },
+      { id: 'dueDate', name: 'Due Date', type: 'date' },
+      { id: 'totalAmount', name: 'Total Amount', type: 'currency' },
+    ],
   };
 
   // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
@@ -163,8 +194,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     if (!hydrated || !database) return;
     const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId];
     if (!expectedProps) return;
-    // Only enforce for locked CRM databases
-    if (databaseId !== 'db-clients' && databaseId !== 'db-suppliers') return;
+    // Only enforce for locked schema databases
+    if (!isLockedSchemaDB) return;
 
     // Check if current schema matches expected (compare IDs)
     const currentIds = new Set(database.properties.map(p => p.id));
@@ -191,6 +222,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     if (databaseId === 'db-articles') parsedName = 'Material Articles';
     if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
     if (databaseId === 'db-1') parsedName = 'Projects';
+    if (databaseId === 'db-expenses') parsedName = 'Expense Invoices';
+    if (databaseId === 'db-invoices') parsedName = 'Sales Invoices';
     if (databaseId === 'db-clients') parsedName = 'Contacts';
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
 
@@ -231,8 +264,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
     <>
       {headerExtra}
 
-      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON */}
-      {(!isImmutableContactDB || hasDatabases) && (
+      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Hidden for locked schema DBs on free tier */}
+      {(!isLockedSchemaDB || hasDatabases) && (
         <Link href={`/admin/settings/databases/${databaseId}`} className="flex items-center gap-1.5 text-neutral-500 hover:text-[var(--brand-color,#d35400)] px-3 py-1 mx-2 mb-[5px] bg-neutral-100 dark:bg-white/5 hover:bg-[var(--brand-color,#d35400)]/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
           <Settings className="w-3.5 h-3.5" /> Edit Schema Fields
         </Link>
@@ -273,7 +306,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs }:
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} />}
         {activeView.type === 'board' && <BoardViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <GanttViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

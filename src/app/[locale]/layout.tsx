@@ -13,7 +13,7 @@ const oxanium = Oxanium({
     weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const baseUrl = 'https://coral-group.be';
+const baseUrl = 'https://app.coral-group.be';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;

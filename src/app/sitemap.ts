@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://coral-group.be';
+    const baseUrl = 'https://app.coral-group.be';
     const locales = ['en', 'nl', 'fr', 'ro'];
 
     // Fetch dynamic content

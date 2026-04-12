@@ -25,13 +25,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         title: `${title}`,
         description: description,
         alternates: {
-            canonical: `https://coral-group.be/${locale}/services/${slug}`,
+            canonical: `https://app.coral-group.be/${locale}/services/${slug}`,
         },
         openGraph: {
             title: `${title} | Coral Enterprises`,
             description: description,
             type: 'article',
-            url: `https://coral-group.be/${locale}/services/${slug}`,
+            url: `https://app.coral-group.be/${locale}/services/${slug}`,
             images: [
                 {
                     url: serviceData.image || '/images/kitchen-hero.png',

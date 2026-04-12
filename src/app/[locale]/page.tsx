@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         title: "Coral SaaS | Advanced Construction & Trade ERP",
         description: "The complete platform for modern contractors to manage projects, invoices, and clients in one unified workspace.",
         alternates: {
-            canonical: `https://coral-group.be/${locale}`,
+            canonical: `https://app.coral-group.be/${locale}`,
         },
     };
 }

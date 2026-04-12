@@ -36,7 +36,7 @@ export default auth((req) => {
                 loginUrl.hostname = loginUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
                 loginUrl.pathname = '/login';
             } else {
-                loginUrl.pathname = '/en/admin/login';
+                loginUrl.pathname = '/nl/admin/login';
             }
             return NextResponse.redirect(loginUrl);
         }
@@ -46,7 +46,7 @@ export default auth((req) => {
                 fallbackUrl.hostname = fallbackUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
                 fallbackUrl.pathname = '/';
             } else {
-                fallbackUrl.pathname = '/en/admin';
+                fallbackUrl.pathname = '/nl/admin';
             }
             return NextResponse.redirect(fallbackUrl);
         }
@@ -60,9 +60,9 @@ export default auth((req) => {
     if (isProtectedPath && !isLoginPage && !isTimeTrackerPath && !isLoggedIn) {
         const loginUrl = new URL(req.nextUrl.href);
         if (isAppSubdomain) {
-            loginUrl.pathname = '/en/login';
+            loginUrl.pathname = '/nl/login';
         } else {
-            loginUrl.pathname = '/en/admin/login';
+            loginUrl.pathname = '/nl/admin/login';
         }
         return NextResponse.redirect(loginUrl)
     }

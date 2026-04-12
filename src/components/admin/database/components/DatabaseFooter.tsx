@@ -173,13 +173,15 @@ export default function DatabaseFooter({
 
             {/* Add row button */}
             {!hideNewButton && (
-                <button
-                    onClick={() => createPage(databaseId)}
-                    className="w-full flex items-center gap-2 px-4 py-1.5 text-sm text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition border-t border-neutral-200 dark:border-white/10"
-                >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span className="font-medium">{newLabel}</span>
-                </button>
+                <div className="px-3 py-2 border-t border-neutral-200 dark:border-white/10">
+                    <button
+                        onClick={() => createPage(databaseId)}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-sm hover:shadow-md"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span>{newLabel}</span>
+                    </button>
+                </div>
             )}
 
             {/* Count indicator */}

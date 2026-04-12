@@ -176,7 +176,8 @@ export default function DatabaseFooter({
                 <div className="px-3 py-2 border-t border-neutral-200 dark:border-white/10">
                     <button
                         onClick={() => createPage(databaseId)}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-sm hover:shadow-md"
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 active:opacity-80 transition-all shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                     >
                         <Plus className="w-4 h-4" />
                         <span>{newLabel}</span>

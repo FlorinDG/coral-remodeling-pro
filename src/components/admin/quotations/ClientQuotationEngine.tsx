@@ -77,6 +77,30 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }));
     }, [clientsDb]);
 
+    // Sync financial summary back to database properties for the grid view
+    // Must be placed before early returns to satisfy Rules of Hooks
+    useEffect(() => {
+        if (!quotation || !isHydrated) return;
+        const blocks = quotation.blocks || [];
+        const calcTotal = (nodes: Block[]): number => {
+            return nodes.reduce((sum, block) => {
+                if (block.isOptional) return sum;
+                if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
+                    return sum + calcTotal(block.children || []);
+                }
+                return sum + ((block.verkoopPrice || 0) * (block.quantity || 1));
+            }, 0);
+        };
+        const gt = calcTotal(blocks);
+        if (gt === 0) return;
+        const roundedEx = Math.round(gt * 100) / 100;
+        const roundedVat = Math.round(gt * 0.21 * 100) / 100;
+        const roundedInc = Math.round(gt * 1.21 * 100) / 100;
+        if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty('db-quotations', quotation.id, 'totalExVat', roundedEx);
+        if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty('db-quotations', quotation.id, 'totalVat', roundedVat);
+        if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty('db-quotations', quotation.id, 'totalIncVat', roundedInc);
+    }, [quotation?.blocks, isHydrated]);
+
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Quotation Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
 
@@ -193,20 +217,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const vatAmount = grandTotal * 0.21;
     const totalIncVat = grandTotal + vatAmount;
 
-    // Sync financial summary back to database properties for the grid view
-    useEffect(() => {
-        if (!quotation || grandTotal === 0) return;
-        const currentExVat = quotation.properties?.['totalExVat'];
-        const currentVat = quotation.properties?.['totalVat'];
-        const currentIncVat = quotation.properties?.['totalIncVat'];
-        // Only update if values changed (prevents loops)
-        const roundedEx = Math.round(grandTotal * 100) / 100;
-        const roundedVat = Math.round(vatAmount * 100) / 100;
-        const roundedInc = Math.round(totalIncVat * 100) / 100;
-        if (currentExVat !== roundedEx) handleUpdateProperty('totalExVat', roundedEx);
-        if (currentVat !== roundedVat) handleUpdateProperty('totalVat', roundedVat);
-        if (currentIncVat !== roundedInc) handleUpdateProperty('totalIncVat', roundedInc);
-    }, [grandTotal]);
+
 
     // Helper: build resolved client info for PDF templates
     const buildClientInfo = () => {

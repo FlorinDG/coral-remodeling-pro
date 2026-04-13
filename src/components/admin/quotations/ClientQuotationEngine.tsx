@@ -190,6 +190,23 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     const grandTotal = calculateGrandTotal(blocks);
+    const vatAmount = grandTotal * 0.21;
+    const totalIncVat = grandTotal + vatAmount;
+
+    // Sync financial summary back to database properties for the grid view
+    useEffect(() => {
+        if (!quotation || grandTotal === 0) return;
+        const currentExVat = quotation.properties?.['totalExVat'];
+        const currentVat = quotation.properties?.['totalVat'];
+        const currentIncVat = quotation.properties?.['totalIncVat'];
+        // Only update if values changed (prevents loops)
+        const roundedEx = Math.round(grandTotal * 100) / 100;
+        const roundedVat = Math.round(vatAmount * 100) / 100;
+        const roundedInc = Math.round(totalIncVat * 100) / 100;
+        if (currentExVat !== roundedEx) handleUpdateProperty('totalExVat', roundedEx);
+        if (currentVat !== roundedVat) handleUpdateProperty('totalVat', roundedVat);
+        if (currentIncVat !== roundedInc) handleUpdateProperty('totalIncVat', roundedInc);
+    }, [grandTotal]);
 
     // Helper: build resolved client info for PDF templates
     const buildClientInfo = () => {

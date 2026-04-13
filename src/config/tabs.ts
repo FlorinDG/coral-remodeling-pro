@@ -37,11 +37,11 @@ const FINANCIAL_TAB_KEYS: Record<string, string> = {
 };
 
 const financialTabsBase = [
+    { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
+    { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
     { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
     { label: 'CREDITNOTA - VERKOOP', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
-    { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
-    { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
 ];
 
 // Returns localized financial tabs; t is optional (from useTranslations('Admin'))

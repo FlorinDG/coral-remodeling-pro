@@ -150,14 +150,17 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     'db-quotations': [
       { id: 'title', name: 'Quote Number', type: 'text' },
       { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
+      { id: 'betreft', name: 'Betreft', type: 'text' },
       { id: 'status', name: 'Status', type: 'select', config: { options: [
         { id: 'opt-draft', name: 'Draft', color: 'gray' },
+        { id: 'opt-sent', name: 'Sent', color: 'blue' },
         { id: 'opt-accepted', name: 'Accepted', color: 'green' },
         { id: 'opt-rejected', name: 'Rejected', color: 'red' },
-        { id: 'opt-sent', name: 'Sent', color: 'blue' },
       ]}},
-      { id: 'date', name: 'Date', type: 'date' },
-      { id: 'betreft', name: 'Betreft', type: 'text' },
+      { id: 'date', name: 'Expiry Date', type: 'date' },
+      { id: 'totalExVat', name: 'Total excl. VAT', type: 'currency' },
+      { id: 'totalVat', name: 'VAT', type: 'currency' },
+      { id: 'totalIncVat', name: 'Total incl. VAT', type: 'currency' },
     ],
     'db-invoices': [
       { id: 'title', name: 'Invoice #', type: 'text' },
@@ -198,10 +201,17 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     // Only enforce for locked schema databases
     if (!isLockedSchemaDB) return;
 
-    // Check if current schema matches expected (compare IDs)
-    const currentIds = new Set(database.properties.map(p => p.id));
-    const expectedIds = new Set(expectedProps.map((p: any) => p.id));
-    const schemasMatch = expectedIds.size === currentIds.size && [...expectedIds].every(id => currentIds.has(id));
+    // Deep compare: check IDs, types, names, and config match
+    const schemasMatch = expectedProps.length === database.properties.length &&
+      expectedProps.every((expected: any) => {
+        const current = database.properties.find(p => p.id === expected.id);
+        if (!current) return false;
+        if (current.type !== expected.type) return false;
+        if (current.name !== expected.name) return false;
+        // Compare config (relation targets, select options, etc.)
+        if (JSON.stringify(current.config || {}) !== JSON.stringify(expected.config || {})) return false;
+        return true;
+      });
 
     if (!schemasMatch) {
       console.log(`[Schema Enforcement] Resetting ${databaseId} properties to canonical schema`);

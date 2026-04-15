@@ -101,15 +101,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 // SaaS MVP Auto-Provisioning: If user exists but is lacking an overarching Tenant workspace, generate one dynamically.
                 if (dbUser && !dbUser.tenantId) {
+                    // Founding Users Cap (mirrors signup route)
+                    const FOUNDING_CAP = 20;
+                    const tenantCount = await prisma.tenant.count();
+                    if (tenantCount >= FOUNDING_CAP) {
+                        // OAuth user exists but can't get a workspace — beta is full
+                        return token;
+                    }
+
                     const cookieStore = await cookies();
                     const nextLocale = cookieStore.get('NEXT_LOCALE')?.value || 'fr';
 
                     const newTenant = await prisma.tenant.create({
                         data: {
                             companyName: user.name ? `${user.name}'s Workspace` : 'New Workspace',
-                            planType: "FREE",
+                            planType: "FOUNDER",
                             subscriptionStatus: "ACTIVE",
-                            activeModules: ["INVOICING"], // strictly isolated free tier default
+                            activeModules: ["INVOICING"],
                             documentLanguage: nextLocale
                         }
                     });

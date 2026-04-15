@@ -56,11 +56,24 @@ export async function POST(req: Request) {
         // Use the language selected by the user (fallback to nl)
         const userLanguage = language || 'nl';
 
-        // Auto-provision tenant workspace (same logic as Google OAuth in auth.ts)
+        // ── Founding Users Cap ──
+        // First 20 signups = FOUNDER tag (FREE modules, no Peppol cap).
+        // After 20, registration closes until billing tiers go live.
+        // Founders get free PRO upgrade when billing launches.
+        const FOUNDING_CAP = 20;
+        const tenantCount = await prisma.tenant.count();
+        if (tenantCount >= FOUNDING_CAP) {
+            return NextResponse.json(
+                { error: 'We zijn momenteel in gesloten bèta. Laat je e-mail achter op coral-group.be om op de wachtlijst te komen.' },
+                { status: 403 }
+            );
+        }
+
+        // Auto-provision tenant workspace
         const newTenant = await prisma.tenant.create({
             data: {
                 companyName: name ? `${name}'s Workspace` : 'New Workspace',
-                planType: "FREE",
+                planType: "FOUNDER",
                 subscriptionStatus: "ACTIVE",
                 activeModules: ["INVOICING"],
                 documentLanguage: userLanguage

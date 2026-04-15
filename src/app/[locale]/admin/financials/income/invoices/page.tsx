@@ -24,7 +24,7 @@ export default function SalesInvoicesPage() {
                 </div>
             </div>
             <div className="w-full h-full flex flex-col pt-6 min-h-0">
-                <DatabaseCloneDynamic databaseId="db-invoices" hideFooterNew />
+                <DatabaseCloneDynamic databaseId="db-invoices" hideFooterNew defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }} />
             </div>
         </div>
     );

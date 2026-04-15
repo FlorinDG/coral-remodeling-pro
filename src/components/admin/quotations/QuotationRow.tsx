@@ -236,10 +236,15 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                             {isContainer && (
                                 <div
                                     className={`flex items-center justify-between transition-colors w-full
-                        ${block.type === 'section' ? 'py-1 px-2 bg-[#d75d00] border-b border-[#b04b00] hover:bg-[#c25300] text-white' : ''}
-                        ${block.type === 'subsection' ? 'py-0.5 px-1.5 bg-[#d75d00]/15 dark:bg-[#d75d00]/20 border-b border-[#d75d00]/30 hover:bg-[#d75d00]/25' : ''}
+                        ${block.type === 'section' ? 'py-1 px-2 border-b text-white' : ''}
+                        ${block.type === 'subsection' ? 'py-0.5 px-1.5 border-b' : ''}
                         ${block.type === 'post' ? 'py-0.5 px-1.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-neutral-800' : ''}
                     `}
+                                    style={block.type === 'section'
+                                        ? { backgroundColor: 'var(--brand-color, #d35400)', borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 80%, black)' }
+                                        : block.type === 'subsection'
+                                        ? { backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 12%, transparent)', borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' }
+                                        : {}}
                                 >
                                     <div className="flex items-center gap-1.5 flex-1">
                                         {/* The Dynamic Icon / Drag Handle */}

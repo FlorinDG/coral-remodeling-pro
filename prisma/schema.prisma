@@ -34,6 +34,11 @@ model Tenant {
   directorLastName   String?
   brandColor         String?
 
+  // Peppol / E-Invoice.be Integration
+  eInvoiceTenantId   String?   // e-invoice.be tenant ID (e.g., tenant_abc123)
+  eInvoiceApiKey     String?   // e-invoice.be tenant API key for sending documents
+  peppolRegistered   Boolean   @default(false)
+
   // Document Numbering Patterns
   invoicePrefix      String?  @default("INV")
   invoiceConnector   String?  @default("-")

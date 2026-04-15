@@ -34,9 +34,10 @@ interface DatabaseCloneProps {
   headerExtra?: React.ReactNode;
   hideViewTabs?: boolean;
   hideFooterNew?: boolean;
+  defaultFilter?: { propertyId: string; value: string };
 }
 
-export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew }: DatabaseCloneProps) {
+export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter }: DatabaseCloneProps) {
   const database = useDatabaseStore(state => state.getDatabase(databaseId));
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -167,15 +168,16 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
       { id: 'betreft', name: 'Betreft', type: 'text' },
       { id: 'status', name: 'Status', type: 'select', config: { options: [
-        { id: 'opt-unpaid', name: 'Unpaid', color: 'orange' },
+        { id: 'opt-draft', name: 'Draft', color: 'gray' },
         { id: 'opt-sent', name: 'Sent', color: 'blue' },
         { id: 'opt-paid', name: 'Paid', color: 'green' },
         { id: 'opt-overdue', name: 'Overdue', color: 'red' },
-        { id: 'opt-draft', name: 'Draft', color: 'gray' },
       ]}},
       { id: 'invoiceDate', name: 'Invoice Date', type: 'date' },
       { id: 'dueDate', name: 'Due Date', type: 'date' },
-      { id: 'quotation', name: 'Offerte', type: 'relation', config: { relationDatabaseId: 'db-quotations', relationDisplayPropertyId: 'title' } },
+      { id: 'totalExVat', name: 'Total excl. VAT', type: 'currency' },
+      { id: 'totalVat', name: 'VAT', type: 'currency' },
+      { id: 'totalIncVat', name: 'Total incl. VAT', type: 'currency' },
     ],
     'db-expenses': [
       { id: 'title', name: 'Invoice #', type: 'text' },
@@ -218,6 +220,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       useDatabaseStore.getState().updateDatabase(databaseId, { properties: expectedProps });
     }
   }, [hydrated, database, databaseId]);
+
 
   useEffect(() => {
     if (!hydrated) return; // Don't act before store is loaded from IndexedDB
@@ -317,7 +320,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} hideFooterNew={!!hideFooterNew} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
         {activeView.type === 'board' && <BoardViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <GanttViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

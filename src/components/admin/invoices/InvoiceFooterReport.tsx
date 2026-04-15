@@ -2,6 +2,13 @@
 
 import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
+import { useRouter } from 'next/navigation';
+
+interface CreditNoteInfo {
+    id: string;
+    title: string;
+    amount: number;
+}
 
 interface InvoiceFooterReportProps {
     blocks: Block[];
@@ -12,6 +19,11 @@ interface InvoiceFooterReportProps {
     vatRegime: string;
     onVatCalcModeChange: (mode: 'lines' | 'total') => void;
     onVatRegimeChange: (regime: string) => void;
+    onInvoiceDateChange?: (date: string) => void;
+    onDueDateChange?: (date: string) => void;
+    creditedAmount?: number;
+    creditNoteCount?: number;
+    creditNotes?: CreditNoteInfo[];
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -27,7 +39,13 @@ export default function InvoiceFooterReport({
     vatRegime: vatRegimeProp,
     onVatCalcModeChange,
     onVatRegimeChange,
+    onInvoiceDateChange,
+    onDueDateChange,
+    creditedAmount = 0,
+    creditNoteCount = 0,
+    creditNotes = [],
 }: InvoiceFooterReportProps) {
+    const router = useRouter();
     const vatRegime = vatRegimeProp as VatRegime;
 
     const { subtotal, vatBreakdown, lineCount, hasLineMedecontractant } = useMemo(() => {
@@ -133,16 +151,51 @@ export default function InvoiceFooterReport({
                                 <span className="font-bold text-neutral-800 dark:text-neutral-200 font-mono text-xs tracking-wide">{invoiceTitle}</span>
                             </div>
                         )}
-                        {invoiceDate && (
-                            <div className="flex items-center justify-between gap-4">
-                                <span className="text-neutral-400 dark:text-neutral-500">Datum</span>
-                                <span className="font-medium text-neutral-700 dark:text-neutral-300">{invoiceDate}</span>
+                        <div className="flex items-center justify-between gap-4">
+                            <span className="text-neutral-400 dark:text-neutral-500">Datum</span>
+                            <input
+                                type="date"
+                                value={invoiceDate || ''}
+                                onChange={(e) => onInvoiceDateChange?.(e.target.value)}
+                                className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer"
+                            />
+                        </div>
+                        <div className={`flex items-center justify-between gap-4 ${!invoiceDate ? 'opacity-40 pointer-events-none' : ''}`}>
+                            <span className="text-neutral-400 dark:text-neutral-500">Vervaldatum</span>
+                            <div className="flex items-center gap-1">
+                                <input
+                                    type="date"
+                                    value={dueDate || ''}
+                                    onChange={(e) => onDueDateChange?.(e.target.value)}
+                                    disabled={!invoiceDate}
+                                    className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer disabled:cursor-not-allowed"
+                                />
                             </div>
-                        )}
-                        {dueDate && (
-                            <div className="flex items-center justify-between gap-4">
-                                <span className="text-neutral-400 dark:text-neutral-500">Vervaldatum</span>
-                                <span className="font-medium text-neutral-700 dark:text-neutral-300">{dueDate}</span>
+                        </div>
+                        {/* Due date presets */}
+                        {onDueDateChange && invoiceDate && (
+                            <div className="flex items-center gap-1 pt-0.5">
+                                <span className="text-[10px] text-neutral-400 mr-auto">Termijn:</span>
+                                <button
+                                    onClick={() => {
+                                        const base = new Date(invoiceDate);
+                                        base.setDate(base.getDate() + 14);
+                                        onDueDateChange(base.toISOString().split('T')[0]);
+                                    }}
+                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition text-neutral-600 dark:text-neutral-400"
+                                >
+                                    14 dagen
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const base = new Date(invoiceDate);
+                                        base.setDate(base.getDate() + 30);
+                                        onDueDateChange(base.toISOString().split('T')[0]);
+                                    }}
+                                    className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-neutral-200 dark:border-white/10 hover:bg-white dark:hover:bg-white/5 transition text-neutral-600 dark:text-neutral-400"
+                                >
+                                    30 dagen
+                                </button>
                             </div>
                         )}
                         <div className="flex items-center justify-between gap-4">
@@ -280,6 +333,74 @@ export default function InvoiceFooterReport({
                             {formatCurrency(totalInclVAT)}
                         </span>
                     </div>
+
+                    {/* Credit Note Status — shown inside the footer when credit notes exist */}
+                    {creditNoteCount > 0 && (
+                        <>
+                            <div
+                                className="flex items-center justify-between px-5 py-2.5 border-t"
+                                style={{
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 4%, white)',
+                                }}
+                            >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                        className="text-[11px] font-bold uppercase tracking-widest"
+                                        style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 70%, black)' }}
+                                    >Creditnota</span>
+                                    {creditNotes.length > 0 ? (
+                                        <div className="flex items-center gap-1.5">
+                                            {creditNotes.map((cn, idx) => (
+                                                <button
+                                                    key={cn.id}
+                                                    onClick={() => router.push(`/admin/financials/income/invoices/${cn.id}`)}
+                                                    className="text-[11px] font-bold underline decoration-1 underline-offset-2 cursor-pointer hover:opacity-70 transition-opacity"
+                                                    style={{ color: 'var(--brand-color, #d35400)' }}
+                                                    title={`Open ${cn.title}`}
+                                                >
+                                                    {cn.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="text-[11px] font-medium" style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 50%, black)' }}>
+                                            ({creditNoteCount} {creditNoteCount > 1 ? 'notes' : 'note'})
+                                        </span>
+                                    )}
+                                </div>
+                                <span
+                                    className="text-[13px] font-semibold tabular-nums"
+                                    style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 80%, black)' }}
+                                >
+                                    − {formatCurrency(creditedAmount)}
+                                    {subtotal > 0 && (
+                                        <span className="text-[11px] ml-1.5" style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 50%, black)' }}>({((creditedAmount / subtotal) * 100).toFixed(1)}%)</span>
+                                    )}
+                                </span>
+                            </div>
+                            <div
+                                className="flex items-center justify-between px-5 py-3 border-t-2"
+                                style={{
+                                    borderColor: 'var(--brand-color, #d35400)',
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 8%, white)',
+                                }}
+                            >
+                                <span
+                                    className="text-[13px] font-bold uppercase tracking-wide"
+                                    style={{ color: 'var(--brand-color, #d35400)' }}
+                                >
+                                    Te betalen
+                                </span>
+                                <span
+                                    className="text-xl font-extrabold tabular-nums"
+                                    style={{ color: 'var(--brand-color, #d35400)' }}
+                                >
+                                    {formatCurrency(Math.max(0, totalInclVAT - creditedAmount))}
+                                </span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

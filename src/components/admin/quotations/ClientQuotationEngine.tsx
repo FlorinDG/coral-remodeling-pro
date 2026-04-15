@@ -82,20 +82,40 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     useEffect(() => {
         if (!quotation || !isHydrated) return;
         const blocks = quotation.blocks || [];
-        const calcTotal = (nodes: Block[]): number => {
-            return nodes.reduce((sum, block) => {
-                if (block.isOptional) return sum;
+
+        const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
+            return nodes.reduce((acc, block) => {
+                if (block.isOptional) return acc;
                 if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                    return sum + calcTotal(block.children || []);
+                    const childTotals = calcTotals(block.children || []);
+                    return { exVat: acc.exVat + childTotals.exVat, vat: acc.vat + childTotals.vat };
                 }
-                return sum + ((block.verkoopPrice || 0) * (block.quantity || 1));
-            }, 0);
+                const lineTotal = (block.verkoopPrice || 0) * (block.quantity || 1);
+                const lineVatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
+                return { exVat: acc.exVat + lineTotal, vat: acc.vat + lineTotal * (lineVatRate / 100) };
+            }, { exVat: 0, vat: 0 });
         };
-        const gt = calcTotal(blocks);
-        if (gt === 0) return;
-        const roundedEx = Math.round(gt * 100) / 100;
-        const roundedVat = Math.round(gt * 0.21 * 100) / 100;
-        const roundedInc = Math.round(gt * 1.21 * 100) / 100;
+
+        const vatMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (quotation.properties?.['vatRegime'] as string) || '21';
+
+        let totalExVat = 0;
+        let totalVat = 0;
+
+        if (vatMode === 'total') {
+            const totals = calcTotals(blocks);
+            totalExVat = totals.exVat;
+            const rate = vatReg === 'medecontractant' ? 0 : parseFloat(vatReg) / 100;
+            totalVat = totalExVat * rate;
+        } else {
+            const totals = calcTotals(blocks);
+            totalExVat = totals.exVat;
+            totalVat = totals.vat;
+        }
+
+        const roundedEx = Math.round(totalExVat * 100) / 100;
+        const roundedVat = Math.round(totalVat * 100) / 100;
+        const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
         if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty('db-quotations', quotation.id, 'totalExVat', roundedEx);
         if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty('db-quotations', quotation.id, 'totalVat', roundedVat);
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty('db-quotations', quotation.id, 'totalIncVat', roundedInc);
@@ -112,6 +132,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
+    const vatCalcMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+    const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
 
     const blocks = quotation.blocks || [];
 
@@ -638,8 +660,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         </button>
                     </div>
 
-                    {/* Phase 10: Profitability Engine & Signature Block */}
-                    <QuotationFooterReport blocks={blocks} />
+                    {/* Phase 10: Financial Summary & Profitability */}
+                    <QuotationFooterReport
+                        blocks={blocks}
+                        quotationTitle={String(quotationTitle)}
+                        expiryDate={quotationDate}
+                        vatCalcMode={vatCalcMode}
+                        vatRegime={vatRegime}
+                        onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
+                        onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
+                    />
 
                 </div>
             </div>

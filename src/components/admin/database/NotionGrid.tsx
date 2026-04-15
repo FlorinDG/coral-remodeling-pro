@@ -39,9 +39,10 @@ interface NotionGridProps {
     lockedSchema?: boolean;
     preventDelete?: boolean;
     hideFooterNew?: boolean;
+    hardFilter?: { propertyId: string; value: string };
 }
 
-export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter }: NotionGridProps) {
     const router = useRouter();
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -138,6 +139,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         ...titleColumn(prop.id, (row) => {
                             if (databaseIdRef === 'db-quotations') {
                                 router.push(`/admin/quotations/${row.id}`);
+                            } else if (databaseIdRef === 'db-invoices') {
+                                router.push(`/admin/financials/income/invoices/${row.id}`);
                             } else {
                                 setActivePageId(row.id);
                             }
@@ -205,7 +208,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     baseColumn = dateColumn as any;
                 } else if (prop.type === 'currency' || prop.type === 'number') {
                     const symbol = prop.config?.format === 'dollar' ? '$' : '€';
-                    baseColumn = currencyColumn(prop.id, prop.type === 'currency' ? symbol : '') as any; // Empty symbol acts as pure number column natively
+                    const isComputed = ['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id);
+                    baseColumn = currencyColumn(prop.id, prop.type === 'currency' ? symbol : '', isComputed) as any;
                 } else if (prop.type === 'variants') {
                     baseColumn = variantsColumn as any;
                 }
@@ -325,6 +329,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         const activeFilters = activeView?.filters || database.activeFilters || [];
 
         return database.pages.filter(page => {
+            // Apply immutable hard filter first (e.g. docType partitioning)
+            if (hardFilter) {
+                const cellVal = page.properties[hardFilter.propertyId];
+                const resolvedVal = cellVal ? String(cellVal) : 'opt-invoice'; // Backwards compat: existing records without docType are invoices
+                if (resolvedVal !== hardFilter.value) return false;
+            }
+
             if (!activeFilters || activeFilters.length === 0) return true;
 
             return activeFilters.every(filter => {
@@ -341,7 +352,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 }
             });
         });
-    }, [database?.pages, activeView?.filters, database?.activeFilters]);
+    }, [database?.pages, activeView?.filters, database?.activeFilters, hardFilter]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
@@ -377,8 +388,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const rowData = useMemo(() => sortedPages.map(page => ({
         ...page,
         ...page.properties,
-        _isSelected: selectedRowIds.has(page.id)
+        _isSelected: selectedRowIds.has(page.id),
+        // Force DSG cell re-render when property values change by including a lightweight hash
+        _propHash: JSON.stringify(page.properties)
     })), [sortedPages, selectedRowIds]);
+
 
     const handleExportCSV = () => {
         if (!database) return;
@@ -608,6 +622,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                                         database.properties.forEach(prop => {
                                             if (prop.type === 'rollup' || prop.type === 'formula') return;
+                                            // Skip computed financial properties — they're set by the engine, not manual edits
+                                            if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
 
                                             let newVal;
                                             if (prop.id === 'title' || (prop.type as string) === 'relation') {

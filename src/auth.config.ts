@@ -29,6 +29,11 @@ export const authConfig = {
     providers: [], // Add providers with an empty array for edge compatibility
     session: {
         strategy: "jwt",
+        // OWASP-compliant session timeouts for SaaS:
+        // - maxAge: 8 hours absolute timeout (session dies regardless of activity)
+        // - updateAge: 30 minutes (token refreshed on activity, acts as idle timeout)
+        maxAge: 8 * 60 * 60,    // 8 hours absolute
+        updateAge: 30 * 60,     // 30 min idle refresh
     },
     secret: process.env.AUTH_SECRET || "coral-secret-12345",
 } satisfies NextAuthConfig;

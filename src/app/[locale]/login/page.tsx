@@ -494,9 +494,15 @@ export default function LoginPage() {
             </div>
 
             {/* Footer */}
-            <p className="mt-6 text-center text-neutral-500 text-[10px] uppercase tracking-widest font-medium">
-                By continuing, you agree to the automated provisioning of an isolated workspace on the CoralOS network.
-            </p>
+            <div className="mt-6 flex flex-col items-center gap-2 z-10 relative">
+                <p className="text-center text-neutral-500 text-[10px] uppercase tracking-widest font-medium">
+                    Door verder te gaan, ga je akkoord met onze{' '}
+                    <a href="/nl/terms" className="text-blue-500 hover:text-blue-600 transition-colors">voorwaarden</a>
+                </p>
+                <a href="/nl/help" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
+                    Help & Documentatie
+                </a>
+            </div>
 
             {/* Background blurs */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 dark:bg-blue-900/20 blur-[120px] rounded-full pointer-events-none" />

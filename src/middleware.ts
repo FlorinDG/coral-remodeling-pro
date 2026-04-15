@@ -19,6 +19,10 @@ export default auth((req) => {
     const isSysSubdomain = host.startsWith("sys.") || host.startsWith("coral-sys.");
     const isAppSubdomain = host.startsWith("app.");
 
+    // ── Route classification (used by ALL protection blocks below) ──
+    const isLoginPage = pathname.includes("/login");
+    const isPublicPage = pathname.includes("/help") || pathname.includes("/terms") || pathname.includes("/privacy");
+
     // Virtualize paths so we protect correctly BEFORE the rewrite actually occurs
     const virtualPath = isSysSubdomain && !pathname.startsWith('/superadmin')
         ? `/superadmin${pathname === '/' ? '' : pathname}`
@@ -26,23 +30,20 @@ export default auth((req) => {
             ? `/admin${pathname === '/' ? '' : pathname}`
             : pathname;
 
-    // Protect Superadmin endpoints fundamentally
+    // ── Superadmin protection (coral-sys.coral-group.be) ──
+    // Skip login and public pages — those must remain accessible
     const isSuperadminPath = virtualPath.includes("/superadmin");
-    if (isSuperadminPath) {
+    if (isSuperadminPath && !isLoginPage && !isPublicPage) {
         if (!isLoggedIn) {
+            // Stay on coral-sys domain — let next-intl handle locale prefix
             const loginUrl = new URL(req.nextUrl.href);
-            if (isSysSubdomain) {
-                // Bridge them explicitly to the app.* subdomain for logging in
-                loginUrl.hostname = loginUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
-                loginUrl.pathname = '/login';
-            } else {
-                loginUrl.pathname = '/nl/admin/login';
-            }
+            loginUrl.pathname = '/login';
             return NextResponse.redirect(loginUrl);
         }
         if (role !== "SUPERADMIN") {
             const fallbackUrl = new URL(req.nextUrl.href);
             if (isSysSubdomain) {
+                // Non-superadmin → send to the regular ERP
                 fallbackUrl.hostname = fallbackUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
                 fallbackUrl.pathname = '/';
             } else {
@@ -52,12 +53,12 @@ export default auth((req) => {
         }
     }
 
-    // Match any admin or portal path but NOT the login page and NOT API routes
+    // ── Admin/Portal protection (app.coral-group.be) ──
+    // Skip login, public pages, and time tracker (public feature)
     const isProtectedPath = virtualPath.includes("/admin") || virtualPath.includes("/portal");
-    const isLoginPage = virtualPath.includes("/login");
     const isTimeTrackerPath = virtualPath.includes("/admin/time-tracker");
 
-    if (isProtectedPath && !isLoginPage && !isTimeTrackerPath && !isLoggedIn) {
+    if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
         const loginUrl = new URL(req.nextUrl.href);
         if (isAppSubdomain) {
             loginUrl.pathname = '/nl/login';
@@ -97,7 +98,8 @@ export default auth((req) => {
         return intlResponse;
     }
 
-    // Extract next-intl's internal rewrite target (it generates the /locale bounds)
+    // ── Subdomain path rewrites ──
+    // Rewrite paths so the same codebase serves different route trees per subdomain
     const rewriteUrl = intlResponse.headers.get('x-middleware-rewrite');
 
     if (rewriteUrl) {
@@ -109,7 +111,8 @@ export default auth((req) => {
             const locale = parts[1];
             const rest = parts.slice(2).join('/');
 
-            if (!rest.startsWith('superadmin')) {
+            // Don't rewrite login or public pages — they live at /[locale]/login, /[locale]/help etc.
+            if (!rest.startsWith('superadmin') && !rest.startsWith('login') && !isPublicPage) {
                 url.pathname = `/${locale}/superadmin${rest ? `/${rest}` : ''}`;
                 shouldRewrite = true;
             }
@@ -118,7 +121,8 @@ export default auth((req) => {
             const locale = parts[1];
             const rest = parts.slice(2).join('/');
 
-            if (!rest.startsWith('admin') && !rest.startsWith('login')) {
+            // Don't rewrite login or public pages — they live at /[locale]/login, /[locale]/help etc.
+            if (!rest.startsWith('admin') && !rest.startsWith('login') && !isPublicPage) {
                 url.pathname = `/${locale}/admin${rest ? `/${rest}` : ''}`;
                 shouldRewrite = true;
             }
@@ -128,6 +132,14 @@ export default auth((req) => {
         if (shouldRewrite) {
             intlResponse.headers.set('x-middleware-rewrite', url.toString());
         }
+    }
+
+    // ── Cache control for ERP subdomains ──
+    // Prevent aggressive browser caching (esp. Arc) from serving stale content
+    // across domain contexts. The main site (coral-group.be) can cache normally.
+    if (isAppSubdomain || isSysSubdomain) {
+        intlResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        intlResponse.headers.set('Pragma', 'no-cache');
     }
 
     return intlResponse;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Oxanium } from "next/font/google";
+import { headers } from 'next/headers';
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
@@ -17,6 +18,25 @@ const baseUrl = 'https://coral-group.be';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const isERP = host.startsWith('app.') || host.startsWith('sys.') || host.startsWith('coral-sys.');
+
+    // ── ERP subdomains: CoralOS branding ──
+    if (isERP) {
+        return {
+            metadataBase: new URL(`https://${host}`),
+            title: {
+                default: 'CoralOS',
+                template: '%s | CoralOS',
+            },
+            description: 'The workspace for modern contractors',
+            robots: { index: false, follow: false },
+            icons: { icon: '/icon.svg' },
+        };
+    }
+
+    // ── Main site: Coral Enterprises construction company branding ──
     const t = await getTranslations({ locale, namespace: 'Metadata' });
 
     return {
@@ -88,61 +108,70 @@ export default async function RootLayout({
 }>) {
     const { locale } = await params;
     const messages = await getMessages();
+    const headersList = await headers();
+    const host = headersList.get('host') || '';
+    const isMainSite = !host.startsWith('app.') && !host.startsWith('sys.') && !host.startsWith('coral-sys.');
 
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>
             <head>
-                <link rel="manifest" href="/manifest.json" />
+                {/* Manifest only on main site — ERP doesn't need PWA behavior */}
+                {isMainSite && <link rel="manifest" href="/manifest.json" />}
                 <meta name="theme-color" content="#000000" />
 
-                {/* Google Consent Mode */}
-                <Script
-                    id="consent-mode"
-                    strategy="beforeInteractive"
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                          window.dataLayer = window.dataLayer || [];
-                          function gtag(){dataLayer.push(arguments);}
-                          
-                          // Set default consent for analytics to granted so it runs immediately
-                          gtag('consent', 'default', {
-                            'ad_storage': 'denied',
-                            'ad_user_data': 'denied',
-                            'ad_personalization': 'denied',
-                            'analytics_storage': 'granted',
-                            'wait_for_update': 500
-                          });
-                        `
-                    }}
-                />
+                {/* Google Consent Mode — main site only */}
+                {isMainSite && (
+                    <Script
+                        id="consent-mode"
+                        strategy="beforeInteractive"
+                        dangerouslySetInnerHTML={{
+                            __html: `
+                              window.dataLayer = window.dataLayer || [];
+                              function gtag(){dataLayer.push(arguments);}
+                              
+                              gtag('consent', 'default', {
+                                'ad_storage': 'denied',
+                                'ad_user_data': 'denied',
+                                'ad_personalization': 'denied',
+                                'analytics_storage': 'granted',
+                                'wait_for_update': 500
+                              });
+                            `
+                        }}
+                    />
+                )}
 
-                {/* Google tag (gtag.js) */}
-                <Script
-                    id="google-analytics-script"
-                    strategy="afterInteractive"
-                    src="https://www.googletagmanager.com/gtag/js?id=G-N0NPGEPJKN"
-                />
-                <Script
-                    id="google-ads-script"
-                    strategy="afterInteractive"
-                    src="https://www.googletagmanager.com/gtag/js?id=AW-17978966291"
-                />
-                <Script
-                    id="google-analytics-config"
-                    strategy="afterInteractive"
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                          window.dataLayer = window.dataLayer || [];
-                          function gtag(){dataLayer.push(arguments);}
-                          gtag('js', new Date());
+                {/* Google Analytics — main site only */}
+                {isMainSite && (
+                    <>
+                        <Script
+                            id="google-analytics-script"
+                            strategy="afterInteractive"
+                            src="https://www.googletagmanager.com/gtag/js?id=G-N0NPGEPJKN"
+                        />
+                        <Script
+                            id="google-ads-script"
+                            strategy="afterInteractive"
+                            src="https://www.googletagmanager.com/gtag/js?id=AW-17978966291"
+                        />
+                        <Script
+                            id="google-analytics-config"
+                            strategy="afterInteractive"
+                            dangerouslySetInnerHTML={{
+                                __html: `
+                                  window.dataLayer = window.dataLayer || [];
+                                  function gtag(){dataLayer.push(arguments);}
+                                  gtag('js', new Date());
 
-                          gtag('config', 'G-N0NPGEPJKN', {
-                            page_path: window.location.pathname,
-                          });
-                          gtag('config', 'AW-17978966291');
-                        `
-                    }}
-                />
+                                  gtag('config', 'G-N0NPGEPJKN', {
+                                    page_path: window.location.pathname,
+                                  });
+                                  gtag('config', 'AW-17978966291');
+                                `
+                            }}
+                        />
+                    </>
+                )}
             </head>
             <body
                 className={`${oxanium.variable} antialiased selection:bg-[#d75d00]/30 overflow-y-scroll`}
@@ -155,22 +184,21 @@ export default async function RootLayout({
                         enableSystem
                         disableTransitionOnChange
                     >
-                        <PromotionalBanner locale={locale} />
+                        {/* Promotional banner — main site only */}
+                        {isMainSite && <PromotionalBanner locale={locale} />}
                         <CookieConsent />
                         {children}
                     </ThemeProvider>
                 </NextIntlClientProvider>
 
-                {/* Service Worker Setup */}
+                {/* Trigger SW self-destruct for users who had it registered */}
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
                           if ('serviceWorker' in navigator) {
-                            window.addEventListener('load', function() {
-                              navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                              }, function(err) {
-                                console.log('ServiceWorker registration failed: ', err);
+                            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                              registrations.forEach(function(registration) {
+                                registration.unregister();
                               });
                             });
                           }

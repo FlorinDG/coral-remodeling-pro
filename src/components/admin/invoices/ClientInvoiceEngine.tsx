@@ -3,7 +3,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText } from 'lucide-react';
+import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import InvoiceRow from './InvoiceRow';
@@ -24,6 +25,8 @@ const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientInvoiceEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
+    const { activeModules } = useTenant();
+    const hasProjects = activeModules.includes('PROJECTS');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -112,6 +115,74 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }));
     }, [quotationsDb]);
 
+    // Sync financial summary back to database properties for the grid view
+    // Must be placed before early returns to satisfy Rules of Hooks
+    useEffect(() => {
+        if (!invoice || !isHydrated) return;
+        const blocks = invoice.blocks || [];
+
+        // Recursive totals calc with per-line VAT
+        const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
+            return nodes.reduce((acc, block) => {
+                if (block.isOptional) return acc;
+                if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
+                    const childTotals = calcTotals(block.children || []);
+                    return { exVat: acc.exVat + childTotals.exVat, vat: acc.vat + childTotals.vat };
+                }
+                const lineTotal = (block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1);
+                const lineVatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
+                return { exVat: acc.exVat + lineTotal, vat: acc.vat + lineTotal * (lineVatRate / 100) };
+            }, { exVat: 0, vat: 0 });
+        };
+
+        const vatMode = ((invoice.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (invoice.properties?.['vatRegime'] as string) || '21';
+
+        let totalExVat = 0;
+        let totalVat = 0;
+
+        if (vatMode === 'total') {
+            // Total-based: flat rate on entire sum
+            const totals = calcTotals(blocks);
+            totalExVat = totals.exVat;
+            const rate = vatReg === 'medecontractant' ? 0 : parseFloat(vatReg) / 100;
+            totalVat = totalExVat * rate;
+        } else {
+            // Per-line: each block uses its own vatRate
+            const totals = calcTotals(blocks);
+            totalExVat = totals.exVat;
+            totalVat = totals.vat;
+        }
+
+        const roundedEx = Math.round(totalExVat * 100) / 100;
+        const roundedVat = Math.round(totalVat * 100) / 100;
+        const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
+
+        if (invoice.properties?.['totalExVat'] !== roundedEx) updatePageProperty('db-invoices', invoice.id, 'totalExVat', roundedEx);
+        if (invoice.properties?.['totalVat'] !== roundedVat) updatePageProperty('db-invoices', invoice.id, 'totalVat', roundedVat);
+        if (invoice.properties?.['totalIncVat'] !== roundedInc) updatePageProperty('db-invoices', invoice.id, 'totalIncVat', roundedInc);
+    }, [invoice?.blocks, isHydrated]);
+
+    // Find credit notes linked to this invoice — MUST be before early returns (Rules of Hooks)
+    const creditNotes = useMemo(() => {
+        if (!invoice) return [];
+        const db = useDatabaseStore.getState().databases.find(d => d.id === 'db-invoices');
+        if (!db) return [];
+        const invoiceNum = String(invoice.properties?.['title'] || '');
+        if (!invoiceNum) return [];
+        return db.pages.filter(p => {
+            const title = String(p.properties['title'] || '');
+            return title.startsWith('CN-') && title.includes(invoiceNum);
+        });
+    }, [invoice, id]);
+
+    const creditedTotal = creditNotes.reduce((sum, cn) => sum + (Number(cn.properties['totalIncVat']) || 0), 0);
+    const creditNoteInfos = creditNotes.map(cn => ({
+        id: cn.id,
+        title: String(cn.properties['title'] || 'Credit Note'),
+        amount: Number(cn.properties['totalIncVat']) || 0,
+    }));
+
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
     if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
@@ -124,8 +195,25 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const betreft = (invoice.properties?.['betreft'] as string) || '';
     const vatCalcMode = ((invoice.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
     const vatRegime = (invoice.properties?.['vatRegime'] as string) || '21';
+    const invoiceStatus = (invoice.properties?.['status'] as string) || 'opt-draft';
+    const isDraft = invoiceStatus === 'opt-draft';
+    const isCreditNote = String(invoiceTitle).startsWith('CN-');
 
     const blocks = invoice.blocks || [];
+
+    // Create Credit Nota from this invoice
+    const handleCreateCreditNote = () => {
+        const createPage = useDatabaseStore.getState().createPage;
+        const invoiceNum = String(invoiceTitle);
+        const cnNumber = `CN-${invoiceNum}`;
+        const newPage = createPage('db-invoices', {
+            title: cnNumber,
+            client: clientId,
+            status: 'opt-draft',
+            betreft: `Creditnota voor ${invoiceNum}`,
+        });
+        router.push(`/admin/financials/income/invoices/${newPage.id}`);
+    };
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
         const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
@@ -487,7 +575,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
     };
 
-    const linkedQuotation = (invoice?.properties?.['quotation'] as string) || '';
+    const rawQuotation = invoice?.properties?.['quotation'];
+    const linkedQuotation = Array.isArray(rawQuotation) ? (rawQuotation[0] || '') : (rawQuotation as string) || '';
 
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
@@ -507,12 +596,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             type="text"
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
-                            placeholder="Draft Invoice"
-                            className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px]"
+                            placeholder={isCreditNote ? 'Credit Note' : 'Draft Invoice'}
+                            disabled={!isDraft}
+                            className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px] disabled:opacity-70"
                         />
-                        <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
-                            Factuur {invoiceTitle}
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
+                                {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
+                            </p>
+                            {!isDraft && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 12%, transparent)', color: 'var(--brand-color, #d35400)' }}>{invoiceStatus.replace('opt-', '')}</span>}
+                        </div>
                     </div>
 
                     {/* Separator */}
@@ -526,7 +619,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             <select
                                 value={clientId}
                                 onChange={(e) => handleUpdateProperty('client', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
+                                disabled={!isDraft}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate disabled:opacity-60 disabled:cursor-default"
                             >
                                 <option value="">Klant selecteren...</option>
                                 {clients.map(client => (
@@ -537,13 +631,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             </select>
                         </div>
 
-                        {/* Project Selector */}
+                        {/* Project Selector — only for tenants with project management */}
+                        {hasProjects && (
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
                             <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
                             <select
                                 value={projectId}
                                 onChange={(e) => handleUpdateProperty('project', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
+                                disabled={!isDraft}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate disabled:opacity-60 disabled:cursor-default"
                             >
                                 <option value="">Project koppelen...</option>
                                 {projects.map(project => (
@@ -553,6 +649,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 ))}
                             </select>
                         </div>
+                        )}
 
                         {/* Offerte Selector */}
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
@@ -560,7 +657,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             <select
                                 value={linkedQuotation}
                                 onChange={(e) => handleOfferteSelect(e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
+                                disabled={!isDraft}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate disabled:opacity-60 disabled:cursor-default"
                             >
                                 <option value="">Offerte koppelen...</option>
                                 {quotations.map(q => (
@@ -574,6 +672,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
                     {/* Action Buttons — Monocolor brand-themed */}
                     <div className="flex items-center gap-1.5 shrink-0">
+                        {/* Create Credit Nota button — available for all invoices (not credit notes) */}
+                        {isHydrated && !isCreditNote && (
+                            <button
+                                onClick={handleCreateCreditNote}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                    color: 'var(--brand-color, #d35400)',
+                                }}
+                            >
+                                <ReceiptText className="w-3.5 h-3.5" /> Credit Nota
+                            </button>
+                        )}
                         {isHydrated && (
                             <button
                                 onClick={handleSendEmail}
@@ -683,6 +795,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
                                             vatCalcMode={vatCalcMode}
+                                            readOnly={!isDraft}
                                         />
                                     ))}
                                     {provided.placeholder}
@@ -691,7 +804,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         </Droppable>
                     </DragDropContext>
 
-                    <div className="flex items-center gap-2 mt-2">
+                    {isDraft && <div className="flex items-center gap-2 mt-2">
                         <button
                             onClick={() => handleAddBlock('section')}
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
@@ -722,7 +835,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         >
                             <Bot className="w-3.5 h-3.5" /> AI PDF Import
                         </button>
-                    </div>
+                    </div>}
 
                     {/* Invoice Summary — Totals & VAT */}
                     <InvoiceFooterReport
@@ -734,6 +847,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         vatRegime={vatRegime}
                         onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
                         onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
+                        onInvoiceDateChange={(date) => handleUpdateProperty('invoiceDate', date)}
+                        onDueDateChange={(date) => handleUpdateProperty('dueDate', date)}
+                        creditedAmount={creditedTotal}
+                        creditNoteCount={creditNotes.length}
+                        creditNotes={creditNoteInfos}
                     />
 
                 </div>

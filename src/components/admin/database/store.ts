@@ -571,6 +571,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
+                                // Automations for Invoice: status → 'sent' sets invoiceDate to today
+                                if (databaseId === 'db-invoices' && propertyId === 'status') {
+                                    if (value === 'opt-sent' && !newProps['invoiceDate']) {
+                                        newProps['invoiceDate'] = new Date().toISOString().split('T')[0];
+                                    }
+                                }
+
                                 return {
                                     ...page,
                                     properties: newProps,

@@ -26,7 +26,8 @@ export default function CreateInvoiceButton() {
             // 1. Add to client-side Zustand store for the Document Engine
             const newPage = createPage('db-invoices', {
                 title: invoiceNumber,
-                status: 'opt-unpaid',
+                docType: 'opt-invoice',
+                status: 'opt-draft',
             });
 
             if (!newPage) { setIsCreating(false); return; }

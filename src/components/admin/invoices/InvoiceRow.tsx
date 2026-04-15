@@ -16,9 +16,10 @@ interface InvoiceRowProps {
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
     vatCalcMode?: 'lines' | 'total';
+    readOnly?: boolean;
 }
 
-export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplicate, vatCalcMode = 'lines' }: InvoiceRowProps) {
+export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplicate, vatCalcMode = 'lines', readOnly }: InvoiceRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -109,21 +110,22 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
         <div
             {...provided.dragHandleProps}
             onClick={(e) => {
+                if (readOnly) return;
                 e.stopPropagation();
-                // Imperatively fire Radix only on pure click (drag gestures swallow click events natively)
                 contextTriggerRef.current?.click();
             }}
-            className="p-1 rounded cursor-grab active:cursor-grabbing hover:bg-black/10 dark:hover:bg-white/10 transition-colors group/icon relative flex items-center justify-center shrink-0 w-7 h-7"
+            onDragStart={readOnly ? (e: any) => e.preventDefault() : undefined}
+            className={`p-1 rounded transition-colors group/icon relative flex items-center justify-center shrink-0 w-7 h-7 ${readOnly ? 'cursor-default pointer-events-none' : 'cursor-grab active:cursor-grabbing hover:bg-black/10 dark:hover:bg-white/10'}`}
             title={getTypeLabel(block.type)}
         >
             <div className="opacity-100 group-hover/icon:opacity-0 transition-opacity absolute flex items-center justify-center pointer-events-none">
                 {getTypeIcon(block.type)}
             </div>
-            <div className="opacity-0 group-hover/icon:opacity-100 transition-opacity absolute flex items-center justify-center pointer-events-none">
+            {!readOnly && <div className="opacity-0 group-hover/icon:opacity-100 transition-opacity absolute flex items-center justify-center pointer-events-none">
                 <GripVertical className="w-4 h-4 text-neutral-500" />
-            </div>
+            </div>}
 
-            <DropdownMenu modal={false}>
+            {!readOnly && <DropdownMenu modal={false}>
                 <DropdownMenuTrigger ref={contextTriggerRef} className="absolute inset-0 opacity-0 pointer-events-none hidden" />
                 <DropdownMenuContent align="start" className="w-56 z-[100]">
                     <div className="px-2 py-1.5 text-xs font-semibold text-neutral-500">Transform Matrix Target</div>
@@ -183,7 +185,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                         <Trash className="w-4 h-4 mr-2" /> Delete Block
                     </DropdownMenuItem>
                 </DropdownMenuContent>
-            </DropdownMenu>
+            </DropdownMenu>}
         </div>
     );
 
@@ -281,6 +283,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                 placeholder={`${block.type.charAt(0).toUpperCase() + block.type.slice(1)} Title...`}
                                                 value={block.content || ''}
                                                 onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+                                                disabled={readOnly}
                                                 className={`bg-transparent border-none outline-none flex-1 font-bold placeholder:font-normal leading-tight
                                         ${block.type === 'section' ? 'text-lg text-white placeholder:text-white/70' : 'text-black dark:text-white placeholder:opacity-50'}
                                         ${block.type === 'subsection' ? 'text-base' : ''}
@@ -338,12 +341,13 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
                                                     vatCalcMode={vatCalcMode}
+                                                    readOnly={readOnly}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}
 
                                             {/* Contextual Spawners for deep depths */}
-                                            <div className="flex items-center gap-2 mt-1 py-1">
+                                            {!readOnly && <div className="flex items-center gap-2 mt-1 py-1">
                                                 {block.type === 'section' && (
                                                     <button
                                                         onClick={() => handleAddChild('subsection')}
@@ -358,7 +362,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                 >
                                                     <Plus className="w-3 h-3" /> Add Line
                                                 </button>
-                                            </div>
+                                            </div>}
                                         </div>
                                     )}
                                 </Droppable>
@@ -385,8 +389,8 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                             </>
                                         )}
 
-                                        {/* Action Toolbar (Universally available for base rows to prevent undeletable orphans) */}
-                                        <div className="flex justify-start pl-2 py-0.5 mt-0.5 border-t border-neutral-100 dark:border-neutral-800">
+                                        {/* Action Toolbar — hidden in read-only mode */}
+                                        {!readOnly && <div className="flex justify-start pl-2 py-0.5 mt-0.5 border-t border-neutral-100 dark:border-neutral-800">
                                             <div className="flex items-center gap-4 py-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                                                 {(block.articleId || block.bestekId) && (
                                                     <button onClick={() => setIsReferenceModalOpen(true)} className="flex items-center hover:text-[#d75d00] transition-colors">
@@ -467,7 +471,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     {block.articleId || block.bestekId ? "Update Library" : "Save to Library"}
                                                 </button>
                                             </div>
-                                        </div>
+                                        </div>}
 
                                         {/* Dynamic Subcomponents Rendering Block */}
                                         {block.children && block.children.length > 0 && (
@@ -487,6 +491,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                     onDelete={handleChildDelete}
                                                                     onDuplicate={handleChildDuplicate}
                                                                     vatCalcMode={vatCalcMode}
+                                                                    readOnly={readOnly}
                                                                 />
                                                             ))}
                                                             {provided.placeholder}
@@ -569,6 +574,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
                                                     vatCalcMode={vatCalcMode}
+                                                    readOnly={readOnly}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}

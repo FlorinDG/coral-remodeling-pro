@@ -4,9 +4,10 @@ import { CellProps, Column } from 'react-datasheet-grid';
 interface CurrencyComponentProps extends CellProps<any, any> {
     propertyId: string;
     symbol: string;
+    readOnly?: boolean;
 }
 
-const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, symbol }: CurrencyComponentProps) => {
+const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, symbol, readOnly }: CurrencyComponentProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     useLayoutEffect(() => {
@@ -16,16 +17,18 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
         }
     }, [focus]);
 
-    const val = rowData ? rowData[propertyId] : null;
+    // keyColumn wraps the value: rowData can be a primitive (number) for computed/synced values,
+    // or an object { [propertyId]: value } for manually edited cells.
+    const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
 
-    if (!active) {
+    if (!active || readOnly) {
         if (val === undefined || val === null || val === '') {
             return <div className="w-full h-full flex items-center px-3 py-1 text-neutral-400 text-sm tracking-wide">-</div>;
         }
         const numeric = Number(val);
         const formatted = isNaN(numeric) ? String(val) : numeric.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return (
-            <div className="w-full h-full flex items-center justify-end px-3 py-1 text-sm font-medium tracking-wide text-neutral-700 dark:text-neutral-300 tabular-nums">
+            <div className={`w-full h-full flex items-center justify-end px-3 py-1 text-sm font-medium tracking-wide tabular-nums ${readOnly ? 'text-neutral-500 dark:text-neutral-400 bg-neutral-50/50 dark:bg-white/[0.02]' : 'text-neutral-700 dark:text-neutral-300'}`}>
                 <span className="text-neutral-400 mr-auto select-none opacity-70">{symbol}</span>
                 {formatted}
             </div>
@@ -59,17 +62,24 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
     );
 };
 
-export const currencyColumn = (propertyId: string, symbol: string = '€'): Column<any, any> => ({
-    component: (props) => <CurrencyComponent {...props} propertyId={propertyId} symbol={symbol} />,
-    keepFocus: true,
-    deleteValue: ({ rowData }) => ({ ...(rowData || {}), [propertyId]: null }),
-    pasteValue: ({ rowData, value }) => {
-        const parsed = parseFloat(String(value).replace(/,/g, '.'));
-        return { ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed };
-    },
+export const currencyColumn = (propertyId: string, symbol: string = '€', readOnly: boolean = false): Column<any, any> => ({
+    component: (props) => <CurrencyComponent {...props} propertyId={propertyId} symbol={symbol} readOnly={readOnly} />,
+    keepFocus: !readOnly,
+    deleteValue: readOnly
+        ? ({ rowData }) => rowData  // No-op: don't allow deleting computed values
+        : ({ rowData }) => ({ ...(rowData || {}), [propertyId]: null }),
+    pasteValue: readOnly
+        ? ({ rowData }) => rowData  // No-op: don't allow pasting over computed values
+        : ({ rowData, value }) => {
+            const parsed = parseFloat(String(value).replace(/,/g, '.'));
+            return { ...(rowData || {}), [propertyId]: isNaN(parsed) ? null : parsed };
+        },
     copyValue: ({ rowData }) => {
-        const val = rowData ? rowData[propertyId] : null;
+        const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
         return val !== undefined && val !== null ? String(val) : '';
     },
-    isCellEmpty: ({ rowData }) => !rowData || rowData[propertyId] === undefined || rowData[propertyId] === null || rowData[propertyId] === '',
+    isCellEmpty: ({ rowData }) => {
+        const val = rowData != null && typeof rowData === 'object' ? rowData[propertyId] : rowData;
+        return val === undefined || val === null || val === '';
+    },
 });

@@ -185,11 +185,9 @@ export async function POST(req: Request) {
             invoicePayload.note = betreft;
         }
 
-        // 5. Check for API key — mock mode if absent
-        const E_INVOICE_API_KEY = process.env.E_INVOICE_API_KEY;
-        const E_INVOICE_BASE_URL = process.env.E_INVOICE_ENVIRONMENT === 'production'
-            ? 'https://api.e-invoice.be'
-            : 'https://api-dev.e-invoice.be';
+        // 5. Check for tenant-specific e-invoice.be API key (provisioned via onboarding)
+        const E_INVOICE_API_KEY = tenant.eInvoiceApiKey;
+        const E_INVOICE_BASE_URL = process.env.E_INVOICE_BASE_URL || 'https://api.e-invoice.be';
 
         if (!E_INVOICE_API_KEY) {
             // ── MANUAL DISPATCH MODE ──
@@ -296,11 +294,13 @@ export async function POST(req: Request) {
         });
         const validateData = await validateRes.json();
 
-        if (!validateRes.ok || !validateData.valid) {
-            console.error('[e-invoice.be] Validation failed:', validateData);
-            const errorMsg = validateData.errors
-                ? validateData.errors.map((e: any) => `${e.field}: ${e.message}`).join('; ')
-                : validateData.message || 'Validatiefout';
+        // API returns { is_valid: bool, issues: [...], ubl_document?: string }
+        if (!validateRes.ok || validateData.is_valid === false) {
+            console.error('[e-invoice.be] Validation failed:', JSON.stringify(validateData, null, 2));
+            const issues = validateData.issues || validateData.errors || [];
+            const errorMsg = Array.isArray(issues) && issues.length > 0
+                ? issues.map((e: any) => `${e.severity || 'ERROR'}: ${e.message || e.field || JSON.stringify(e)}`).join('; ')
+                : validateData.message || validateData.detail || 'Validatiefout';
             return NextResponse.json({
                 error: `Peppol validatiefout: ${errorMsg}`,
                 success: false,
@@ -342,6 +342,11 @@ export async function POST(req: Request) {
             sendParams.set('receiver_peppol_scheme', '0208');
             sendParams.set('receiver_peppol_id', customerVat.replace('BE', ''));
         }
+        // In test mode, the API needs an email for UBL delivery
+        // Pass vendor email as fallback destination
+        if (invoicePayload.vendor_email) {
+            sendParams.set('email', invoicePayload.vendor_email);
+        }
         if (sendParams.toString()) {
             sendUrl += `?${sendParams.toString()}`;
         }
@@ -355,7 +360,7 @@ export async function POST(req: Request) {
         if (!sendRes.ok) {
             console.error('[e-invoice.be] Send failed:', sendData);
             return NextResponse.json({
-                error: `Peppol verzenden mislukt: ${sendData.message || 'Netwerk fout'}`,
+                error: `Peppol verzenden mislukt: ${sendData.detail || sendData.message || 'Netwerk fout'}`,
                 success: false,
                 details: sendData,
             }, { status: 400 });

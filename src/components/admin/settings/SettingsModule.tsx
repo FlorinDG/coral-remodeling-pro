@@ -120,6 +120,152 @@ function CompanyProfileTab() {
     );
 }
 
+function PeppolIntegrationSection() {
+    const [status, setStatus] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [connecting, setConnecting] = useState(false);
+
+    useEffect(() => {
+        fetchStatus();
+    }, []);
+
+    const fetchStatus = async () => {
+        try {
+            const res = await fetch('/api/peppol/onboard');
+            if (res.ok) {
+                const data = await res.json();
+                setStatus(data);
+            }
+        } catch (e) {
+            console.error('Failed to fetch Peppol status:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleConnect = async () => {
+        setConnecting(true);
+        try {
+            const res = await fetch('/api/peppol/onboard', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                toast.success(data.message || 'Peppol verbinding actief!');
+                setStatus(data);
+                fetchStatus(); // Refresh
+            } else {
+                toast.error(data.error || 'Onboarding mislukt');
+            }
+        } catch (e: any) {
+            toast.error('Verbinding mislukt: ' + (e.message || 'Onbekende fout'));
+        } finally {
+            setConnecting(false);
+        }
+    };
+
+    const isConnected = status?.connected || status?.alreadyConnected;
+    const isPeppolActive = status?.peppolRegistered;
+
+    return (
+        <div className="mt-8 p-6 border border-neutral-200 dark:border-neutral-800 rounded-xl bg-neutral-50/50 dark:bg-neutral-900/20">
+            <div className="flex items-start justify-between mb-6">
+                <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        Peppol E-Invoicing
+                    </h3>
+                    <p className="text-sm text-neutral-500 mt-1 max-w-xl">
+                        Verbind met het Peppol netwerk om UBL e-facturen rechtstreeks naar klanten te verzenden via het Belgische e-invoicing systeem.
+                    </p>
+                </div>
+
+                {!isConnected && (
+                    <button
+                        onClick={handleConnect}
+                        disabled={connecting || loading}
+                        className="px-4 py-2 text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2 hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+                        style={{ backgroundColor: 'var(--brand-color, #10B981)' }}
+                    >
+                        {connecting ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 10V3L4 14h7v7l9-11h-7z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        )}
+                        {connecting ? 'Verbinden...' : 'Activeer Peppol'}
+                    </button>
+                )}
+            </div>
+
+            <div className="bg-white dark:bg-black rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
+                {loading ? (
+                    <div className="text-sm text-neutral-500 flex items-center gap-2 py-2">
+                        <RefreshCw className="w-4 h-4 animate-spin" /> Verbindingsstatus ophalen...
+                    </div>
+                ) : isConnected ? (
+                    <div className="space-y-4">
+                        {/* Connection status */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${isPeppolActive ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
+                                <div>
+                                    <p className="text-sm font-bold">{isPeppolActive ? 'Peppol Actief' : 'E-Invoice Verbonden'}</p>
+                                    <p className="text-[10px] text-neutral-500 uppercase tracking-wider">
+                                        {isPeppolActive ? 'Klaar om e-facturen te verzenden' : 'Wacht op Peppol registratie'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400">
+                                <Check className="w-3 h-3" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">Verbonden</span>
+                            </div>
+                        </div>
+
+                        {/* Details grid */}
+                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                            {status.peppolId && (
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Peppol ID</p>
+                                    <p className="text-sm font-mono font-medium text-neutral-700 dark:text-neutral-300">{status.peppolId}</p>
+                                </div>
+                            )}
+                            {status.eInvoiceTenantId && (
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Tenant ID</p>
+                                    <p className="text-sm font-mono font-medium text-neutral-700 dark:text-neutral-300">{status.eInvoiceTenantId}</p>
+                                </div>
+                            )}
+                            {status.peppolStatus && (
+                                <div>
+                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Netwerk Status</p>
+                                    <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 capitalize">{status.peppolStatus}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Info banner */}
+                        <div className="mt-2 flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30">
+                            <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                            <p className="text-xs text-blue-600 dark:text-blue-400 leading-relaxed">
+                                Klik op <strong>"Peppol Verzenden"</strong> in een factuur om deze als UBL e-factuur via het Peppol netwerk te versturen.
+                                {isPeppolActive ? ' Documenten worden direct verstuurd.' : ' In testmodus worden UBL-documenten per mail verzonden.'}
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="text-sm text-neutral-500 flex items-center gap-2 py-2">
+                        <AlertCircle className="w-4 h-4 text-neutral-400" />
+                        {!status?.hasVatNumber
+                            ? 'Vul eerst je BTW-nummer in bij Company Profile om Peppol te activeren.'
+                            : 'Nog niet verbonden met het Peppol netwerk. Klik op "Activeer Peppol" om te starten.'
+                        }
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function SettingsModule() {
     const [activeTab, setActiveTab] = useState<'profile' | 'integrations'>('profile');
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(true);
@@ -291,6 +437,9 @@ export default function SettingsModule() {
                             </div>
                         </div>
                         {/* End Google Drive Section */}
+
+                        {/* Peppol E-Invoicing Section */}
+                        <PeppolIntegrationSection />
                     </div>
                 )}
             </div>

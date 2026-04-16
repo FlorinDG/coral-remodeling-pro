@@ -86,17 +86,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Always land on the ERP app subdomain after authentication.
         // Without this, NextAuth follows NEXTAUTH_URL (may be coral-group.be / coral-sys)
         // instead of app.coral-group.be, causing the "routes back to coral-sys" bug.
+        // The app subdomain is a fixed constant — no env var needed.
         async redirect({ url, baseUrl }) {
-            const APP_URL = process.env.APP_URL || "https://app.coral-group.be";
+            const APP_ORIGIN = "https://app.coral-group.be";
 
             // Already on the right domain — honour the destination.
-            if (url.startsWith(APP_URL)) return url;
+            if (url.startsWith(APP_ORIGIN)) return url;
 
             // Relative path (/nl/admin, /login, etc.) — prefix with app domain.
-            if (url.startsWith("/")) return `${APP_URL}${url}`;
+            if (url.startsWith("/")) return `${APP_ORIGIN}${url}`;
 
             // Anything else (e.g. wrong domain) — send to app root.
-            return `${APP_URL}/`;
+            return `${APP_ORIGIN}/`;
         },
 
         // ── JWT — token enrichment & Google auto-provisioning ────────────────────

@@ -10,16 +10,31 @@ export default async function SuperadminDashboardPage() {
     }
 
     const tenants = await prisma.tenant.findMany({
-        include: {
+        select: {
+            id: true,
+            companyName: true,
+            email: true,
+            logoUrl: true,
+            planType: true,
+            subscriptionStatus: true,
+            activeModules: true,
+            peppolSentThisMonth: true,
+            peppolReceivedThisMonth: true,
+            createdAt: true,
+            users: {
+                select: { email: true, name: true, role: true },
+                orderBy: { role: "asc" }, // TENANT_ADMIN sorts before EMPLOYEE
+                take: 5,
+            },
             _count: {
                 select: {
                     users: true,
                     clientPortals: true,
                     internalProjects: true,
-                }
-            }
+                },
+            },
         },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
     });
 
     return (

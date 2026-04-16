@@ -32,12 +32,20 @@ export default auth((req) => {
     const { pathname } = req.nextUrl;
     const role = (req.auth?.user as any)?.role;
 
-    const host = req.headers.get("host") || "";
+    // ── Host detection ───────────────────────────────────────────────────────
+    // On Vercel Edge, req.nextUrl.hostname is always the actual request hostname.
+    // req.headers.get("host") can be unreliable behind the Vercel proxy.
+    // We use nextUrl.hostname as primary, with header fallbacks for completeness.
+    const hostname = req.nextUrl.hostname
+        || req.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+        || req.headers.get("host")?.split(":")[0]
+        || "";
 
     // ── Domain classification ────────────────────────────────────────────────
-    const isStoreSubdomain = host.startsWith("coral-sys.");     // CoralOS storefront
-    const isAppSubdomain   = host.startsWith("app.");           // CoralOS ERP
-    // Everything else (coral-group.be, localhost, preview) → main construction site
+    const isStoreSubdomain = hostname.startsWith("coral-sys.");     // CoralOS storefront
+    const isAppSubdomain   = hostname.startsWith("app.");           // CoralOS ERP
+    // Everything else (www.coral-group.be, coral-group.be, localhost, preview) → main site
+
 
     // ── Public path classification ───────────────────────────────────────────
     const isLoginPage  = pathname.includes("/login");

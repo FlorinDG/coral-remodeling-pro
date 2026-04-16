@@ -19,9 +19,11 @@ const baseUrl = 'https://coral-group.be';
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
     const { locale } = await params;
     const headersList = await headers();
-    const host = headersList.get('host') || '';
+    const rawHost = headersList.get('x-forwarded-host') || headersList.get('host') || '';
+    const host = rawHost.split(':')[0].split(',')[0].trim();
     const isERP = host.startsWith('app.');
     const isStorefront = host.startsWith('coral-sys.');
+
 
     // ── CoralOS storefront (coral-sys.coral-group.be) ──
     if (isStorefront) {
@@ -131,7 +133,10 @@ export default async function RootLayout({
     const { locale } = await params;
     const messages = await getMessages();
     const headersList = await headers();
-    const host = headersList.get('host') || '';
+    const headersList2 = headersList;
+    // On Vercel, x-forwarded-host is the real hostname; fall back to host
+    const rawHost = headersList2.get('x-forwarded-host') || headersList2.get('host') || '';
+    const host = rawHost.split(':')[0].split(',')[0].trim();
     const isMainSite = !host.startsWith('app.') && !host.startsWith('coral-sys.');
 
     return (
@@ -213,17 +218,31 @@ export default async function RootLayout({
                     </ThemeProvider>
                 </NextIntlClientProvider>
 
-                {/* Trigger SW self-destruct for users who had it registered */}
+                {/* Aggressively kill any stale service workers + caches on non-main-site domains.
+                    Safari non-incognito can serve cached main-site content on subdomains
+                    unless we explicitly purge both SW registrations and Cache API entries. */}
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
-                          if ('serviceWorker' in navigator) {
-                            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                              registrations.forEach(function(registration) {
-                                registration.unregister();
-                              });
-                            });
-                          }
+                          (function() {
+                            try {
+                              // Unregister all service workers
+                              if ('serviceWorker' in navigator) {
+                                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                                  regs.forEach(function(r) { r.unregister(); });
+                                });
+                              }
+                              // Nuke all Cache API entries on ERP/storefront subdomains
+                              var subdomain = window.location.hostname;
+                              if (subdomain.startsWith('app.') || subdomain.startsWith('coral-sys.')) {
+                                if ('caches' in window) {
+                                  caches.keys().then(function(keys) {
+                                    keys.forEach(function(key) { caches.delete(key); });
+                                  });
+                                }
+                              }
+                            } catch(e) {}
+                          })();
                         `
                     }}
                 />

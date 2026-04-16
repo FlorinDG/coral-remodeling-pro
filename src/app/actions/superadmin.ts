@@ -3,11 +3,13 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 async function verifySuperadmin() {
     const session = await auth();
-    if ((session?.user as any)?.role !== "SUPERADMIN") {
-        throw new Error("Unauthorized Access: Superadmin permission required.");
+    const role = (session?.user as any)?.role;
+    if (!PLATFORM_ADMIN_ROLES.includes(role)) {
+        throw new Error("Unauthorized: Platform admin role required.");
     }
 }
 

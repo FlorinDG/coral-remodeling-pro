@@ -28,7 +28,7 @@ export async function sendInvoiceToClient(
 
     try {
         const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
         const magicLinkUrl = `${appUrl}/nl/invoice/${invoiceId}`;
 
         const { data, error } = await resend.emails.send({

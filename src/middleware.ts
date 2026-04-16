@@ -4,6 +4,7 @@ import { NextResponse } from "next/server"
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import type { NextRequest } from 'next/server';
+import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
 const SUPPORTED_LOCALES = routing.locales as readonly string[];
 const DEFAULT_LOCALE = routing.defaultLocale as string;
@@ -124,7 +125,8 @@ export default auth((req) => {
                 const url = new URL('/nl/login', req.nextUrl.origin);
                 return NextResponse.redirect(url);
             }
-            if (role !== "SUPERADMIN") {
+            if (!PLATFORM_ADMIN_ROLES.includes(role as any)) {
+                // Non-platform-admin (e.g. APP_MANAGER) → redirect to their ERP
                 const url = new URL('/nl/admin', req.nextUrl.origin);
                 return NextResponse.redirect(url);
             }

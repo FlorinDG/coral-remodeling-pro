@@ -13,6 +13,7 @@ import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import { canAccess } from '@/lib/feature-flags';
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -22,10 +23,11 @@ const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
-    const { activeModules } = useTenant();
-    const hasProjects = activeModules.includes('PROJECTS');
-    const hasCRM = activeModules.includes('CRM');
-    const hasDatabases = activeModules.includes('DATABASES');
+    const { activeModules, planType } = useTenant();
+    const hasProjects  = activeModules.includes('PROJECTS');
+    const hasCRM       = activeModules.includes('CRM');
+    // Library access: PRO+ feature (article search, save-to-library, PDF library import)
+    const hasLibraryAccess = canAccess('QUOTATION_LIBRARY_SEARCH', planType);
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -618,7 +620,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             onUpdate={handleUpdateBlock}
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
-                                            hasLibraryAccess={hasDatabases}
+                                            hasLibraryAccess={hasLibraryAccess}
                                         />
                                     ))}
                                     {provided.placeholder}

@@ -46,6 +46,8 @@ export default function LoginPage() {
     const [signupConfirm, setSignupConfirm] = useState('');
     const [signupError, setSignupError] = useState('');
     const [signupSuccess, setSignupSuccess] = useState('');
+    const [signupDone, setSignupDone] = useState(false);   // shows the verify-email card
+    const [signupDoneEmail, setSignupDoneEmail] = useState('');  // which address to check
     const [showSignupPassword, setShowSignupPassword] = useState(false);
     const [signupLanguage, setSignupLanguage] = useState('nl');
 
@@ -139,22 +141,10 @@ export default function LoginPage() {
                 return;
             }
 
-            setSignupSuccess('Account created! Signing you in...');
-
-            // Auto-login after successful signup
-            const loginResult = await signIn('credentials', {
-                email: signupEmail,
-                password: signupPassword,
-                redirect: false,
-            });
-
-            if (loginResult?.error) {
-                setSignupSuccess('Account created! Please sign in.');
-            } else {
-                setTimeout(async () => {
-                    window.location.href = `/${signupLanguage}/admin/dashboard`;
-                }, 500);
-            }
+            // Account created — user needs to verify email before they can log in.
+            // Show the verification prompt card instead of auto-signing in.
+            setSignupDoneEmail(signupEmail);
+            setSignupDone(true);
         } catch {
             setSignupError('System error. Please try again.');
         } finally {
@@ -345,8 +335,55 @@ export default function LoginPage() {
                     </button>
                 </div>
 
-                {/* ─── CREATE ACCOUNT ─── */}
-                <div className="bg-white dark:bg-neutral-900/50 p-6 rounded-2xl border border-neutral-200 dark:border-white/10 shadow-xl backdrop-blur-xl">
+                {/* ─── CREATE ACCOUNT / VERIFY EMAIL ─── */}
+                {signupDone ? (
+                    /* ── Post-signup: verify email prompt ── */
+                    <div className="bg-white dark:bg-neutral-900/50 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 shadow-xl backdrop-blur-xl flex flex-col items-center text-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
+                            <Mail className="w-7 h-7 text-emerald-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-1">
+                                Check your inbox
+                            </h2>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                                We sent a verification link to
+                            </p>
+                            <p className="text-sm font-bold text-neutral-800 dark:text-white mt-0.5 break-all">
+                                {signupDoneEmail}
+                            </p>
+                        </div>
+                        <div className="w-full bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/40 rounded-xl px-4 py-3 text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed text-left">
+                            <strong>Next steps:</strong>
+                            <ol className="mt-1.5 space-y-1 list-decimal list-inside">
+                                <li>Open the email from CoralOS</li>
+                                <li>Click the verification link inside</li>
+                                <li>Return here and sign in</li>
+                            </ol>
+                        </div>
+                        <p className="text-[11px] text-neutral-400">
+                            Didn&apos;t receive it? Check your spam folder or{' '}
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setResendLoading(true);
+                                    setBlockedEmail(signupDoneEmail);
+                                    await handleResendVerification();
+                                    setResendLoading(false);
+                                }}
+                                disabled={resendLoading}
+                                className="text-blue-500 hover:text-blue-600 underline disabled:opacity-50"
+                            >
+                                {resendLoading ? 'Sending...' : 'resend it'}
+                            </button>.
+                        </p>
+                        {resendSuccess && (
+                            <p className="text-xs text-emerald-600 font-semibold">{resendSuccess}</p>
+                        )}
+                    </div>
+                ) : (
+                    /* ── Signup form ── */
+                    <div className="bg-white dark:bg-neutral-900/50 p-6 rounded-2xl border border-neutral-200 dark:border-white/10 shadow-xl backdrop-blur-xl">
                     <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-5 flex items-center gap-2">
                         <User className="w-4 h-4 text-emerald-500" />
                         Create Account
@@ -449,11 +486,6 @@ export default function LoginPage() {
                                 {signupError}
                             </p>
                         )}
-                        {signupSuccess && (
-                            <p className="text-emerald-600 text-xs font-bold text-center bg-emerald-500/10 py-2 rounded-lg border border-emerald-500/20">
-                                {signupSuccess}
-                            </p>
-                        )}
 
                         <button
                             type="submit"
@@ -491,6 +523,7 @@ export default function LoginPage() {
                         )}
                     </button>
                 </div>
+                )}
             </div>
 
             {/* Footer */}

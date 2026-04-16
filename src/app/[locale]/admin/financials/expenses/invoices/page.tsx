@@ -7,6 +7,7 @@ import { financialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { RefreshCw, Plus, Loader2, FileText, Receipt, ArrowDownToLine } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -24,6 +25,9 @@ export default function ExpensesInvoicesPage() {
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+    const [quotaWarning, setQuotaWarning] = useState<{
+        overQuota: boolean; current: number; limit: number; plan: string;
+    } | null>(null);
 
     const createPage = useDatabaseStore(s => s.createPage);
 
@@ -38,6 +42,9 @@ export default function ExpensesInvoicesPage() {
                 setSyncResult({ count: 0, error: data.error || 'Sync failed' });
                 return;
             }
+
+            // Surface quota warning if FREE tenant is over received limit
+            if (data.quota) setQuotaWarning(data.quota);
 
             const existingDb = useDatabaseStore.getState().getDatabase('db-expenses');
             const existingPeppolIds = new Set(
@@ -89,6 +96,16 @@ export default function ExpensesInvoicesPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={financialTabs} groupId="financials" />
+
+            {/* Peppol received quota banner — shown between tabs and action bar */}
+            {quotaWarning?.overQuota && (
+                <PeppolQuotaBanner
+                    type="received"
+                    current={quotaWarning.current}
+                    limit={quotaWarning.limit!}
+                    plan={quotaWarning.plan}
+                />
+            )}
             <div className="w-full h-full flex flex-col min-h-0">
                 {/* Action bar */}
                 <div className="flex items-center justify-between px-6 pt-4 pb-2">

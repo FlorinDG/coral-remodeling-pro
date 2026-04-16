@@ -56,42 +56,45 @@ export async function POST(req: Request) {
         // Use the language selected by the user (fallback to nl)
         const userLanguage = language || 'nl';
 
-        // ── Founding Users Cap ──
-        // First 20 signups = FOUNDER tag (FREE modules, no Peppol cap).
-        // After 20, registration closes until billing tiers go live.
-        // Founders get free PRO upgrade when billing launches.
+        // ── Founding Users Cap (atomic — race-condition safe) ────────────────
+        // First 20 tenants = FOUNDER (free, unlimited Peppol).
+        // The count + create run inside a serializable transaction so two
+        // simultaneous signups can't both slip through at count=19.
         const FOUNDING_CAP = 20;
-        const tenantCount = await prisma.tenant.count();
-        if (tenantCount >= FOUNDING_CAP) {
-            return NextResponse.json(
-                { error: 'We zijn momenteel in gesloten bèta. Laat je e-mail achter op coral-group.be om op de wachtlijst te komen.' },
-                { status: 403 }
-            );
-        }
 
-        // Auto-provision tenant workspace
-        const newTenant = await prisma.tenant.create({
-            data: {
-                companyName: name ? `${name}'s Workspace` : 'New Workspace',
-                planType: "FOUNDER",
-                subscriptionStatus: "ACTIVE",
-                activeModules: ["INVOICING"],
-                documentLanguage: userLanguage
+        const { newTenant, user } = await prisma.$transaction(async (tx) => {
+            const tenantCount = await tx.tenant.count();
+            if (tenantCount >= FOUNDING_CAP) {
+                throw Object.assign(
+                    new Error('We zijn momenteel in gesloten bèta. Laat je e-mail achter op coral-group.be om op de wachtlijst te komen.'),
+                    { code: 'FOUNDER_CAP_REACHED' }
+                );
             }
-        });
 
-        // Create the user
-        const user = await prisma.user.create({
-            data: {
-                name: name.trim(),
-                email: email.toLowerCase().trim(),
-                password: hashedPassword,
-                role: "TENANT_ADMIN",
-                tenantId: newTenant.id,
-                environmentLanguage: userLanguage,
-                verificationToken,
-                verificationSentAt: new Date(),
-            }
+            const newTenant = await tx.tenant.create({
+                data: {
+                    companyName: name ? `${name}'s Workspace` : 'New Workspace',
+                    planType: 'FOUNDER',
+                    subscriptionStatus: 'ACTIVE',
+                    activeModules: ['INVOICING'],
+                    documentLanguage: userLanguage,
+                },
+            });
+
+            const user = await tx.user.create({
+                data: {
+                    name: name.trim(),
+                    email: email.toLowerCase().trim(),
+                    password: hashedPassword,
+                    role: 'TENANT_ADMIN',
+                    tenantId: newTenant.id,
+                    environmentLanguage: userLanguage,
+                    verificationToken,
+                    verificationSentAt: new Date(),
+                },
+            });
+
+            return { newTenant, user };
         });
 
         // Send verification email
@@ -109,6 +112,12 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
+        if (error?.code === 'FOUNDER_CAP_REACHED') {
+            return NextResponse.json(
+                { error: error.message },
+                { status: 403 }
+            );
+        }
         console.error('[Signup Error]', error);
         return NextResponse.json(
             { error: 'Internal server error', details: error.message },

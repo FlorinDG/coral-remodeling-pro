@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { generatePeppolUBL, type UBLLineItem } from '@/lib/peppol-ubl';
 import { Resend } from 'resend';
+import { maybeResetMonthlyCounters, assertPeppolSentLimit, incrementPeppolSent } from '@/lib/plan-limits';
 
 // ──────────────────────────────────────────────────────────
 // Peppol E-Invoice Dispatch via e-invoice.be API
@@ -109,6 +110,19 @@ export async function POST(req: Request) {
         if (!tenant) {
             return NextResponse.json({ error: 'Bedrijfsprofiel niet gevonden. Configureer eerst je bedrijfsinstellingen.', success: false }, { status: 404 });
         }
+
+        // ── Plan quota check ────────────────────────────────────────
+        try {
+            await maybeResetMonthlyCounters(tenantId);
+            await assertPeppolSentLimit(tenantId);
+        } catch (limitErr: any) {
+            return NextResponse.json({
+                error: limitErr.message,
+                code: limitErr.code || 'PEPPOL_SEND_LIMIT',
+                success: false,
+            }, { status: 429 });
+        }
+        // ────────────────────────────────────────────────────────────
 
         if (!tenant.vatNumber) {
             return NextResponse.json({ error: 'BTW-nummer ontbreekt in je bedrijfsprofiel. Ga naar Instellingen → Bedrijfsinfo.', success: false }, { status: 400 });
@@ -272,6 +286,7 @@ export async function POST(req: Request) {
             }
 
             // Return seamless success to the tenant
+            await incrementPeppolSent(tenantId);
             return NextResponse.json({
                 success: true,
                 message: 'Factuur succesvol verzonden via Peppol!',
@@ -367,6 +382,8 @@ export async function POST(req: Request) {
         }
 
         console.log(`[e-invoice.be] ✓ Invoice sent successfully! State: ${sendData.state}`);
+
+        await incrementPeppolSent(tenantId);
 
         return NextResponse.json({
             success: true,

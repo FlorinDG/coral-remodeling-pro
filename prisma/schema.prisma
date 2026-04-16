@@ -59,6 +59,11 @@ model Tenant {
   subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL
   activeModules      String[] @default(["CRM", "PROJECTS", "INVOICING", "CALENDAR", "DATABASES"])
 
+  // Peppol monthly usage counters (reset on 1st of each calendar month)
+  peppolSentThisMonth      Int      @default(0)
+  peppolReceivedThisMonth  Int      @default(0)
+  peppolCounterResetAt     DateTime @default(now())
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

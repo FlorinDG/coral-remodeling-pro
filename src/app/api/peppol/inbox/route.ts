@@ -8,6 +8,11 @@ import {
     rejectInboxDocument,
     parseUBLToInvoice,
 } from '@/lib/e-invoice-inbox';
+import {
+    maybeResetMonthlyCounters,
+    checkPeppolReceivedQuota,
+    incrementPeppolReceived,
+} from '@/lib/plan-limits';
 
 /**
  * GET /api/peppol/inbox
@@ -36,10 +41,18 @@ export async function GET() {
 
         const inbox = await listInboxDocuments(tenant.eInvoiceApiKey);
 
+        // Reset monthly counters if needed, then check quota
+        await maybeResetMonthlyCounters(tenantId);
+        const quotaInfo = await checkPeppolReceivedQuota(tenantId);
+
         // Parse each document into our internal format
+        // Also increment received counter for new documents (always stored — bookkeeping is never broken)
         const parsedDocs = await Promise.all(
             (inbox.documents || []).map(async (doc) => {
                 try {
+                    // Increment received counter for each document fetched from the network
+                    await incrementPeppolReceived(tenantId);
+
                     // If inline UBL is available, parse it
                     if (doc.ubl_xml) {
                         const parsed = parseUBLToInvoice(doc.ubl_xml, doc.id);
@@ -76,6 +89,7 @@ export async function GET() {
         return NextResponse.json({
             documents: parsedDocs,
             total: inbox.total,
+            quota: quotaInfo,       // { overQuota, current, limit, plan }
         });
 
     } catch (error: any) {

@@ -2,13 +2,21 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import Logo from '@/components/Logo';
 import {
-    FileText, Users, Send, Database, Calendar, Shield,
+    FileText, Users, Send, Database, Shield,
     Check, ArrowRight, Zap, Building2, Mail, ChevronDown,
-    BarChart3, Package, Clock, Star, Globe, Lock
+    BarChart3, Package, Clock, Star, Globe, Lock,
+    Sun, Moon
 } from 'lucide-react';
+
+const LANGS = [
+    { code: 'nl', label: 'NL' },
+    { code: 'fr', label: 'FR' },
+    { code: 'en', label: 'EN' },
+] as const;
 
 // ── Translations ───────────────────────────────────────────────────────────────
 
@@ -241,11 +249,23 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function StorePage() {
-    const params = useParams();
-    const locale = (params?.locale as string) || 'nl';
-    const t = T[locale as keyof typeof T] || T.nl;
+    const params  = useParams();
+    const router  = useRouter();
+    const { theme, setTheme, resolvedTheme } = useTheme();
+    const locale  = (params?.locale as string) || 'nl';
+    const t       = T[locale as keyof typeof T] || T.nl;
     const featureDescs = FEATURE_DESCS[locale as keyof typeof FEATURE_DESCS] || FEATURE_DESCS.nl;
-    const features = FEATURES(t);
+    const features     = FEATURES(t);
+
+    const isDark = resolvedTheme === 'dark';
+
+    function switchLang(code: string) {
+        router.push(`/${code}/store`);
+    }
+
+    function toggleTheme() {
+        setTheme(isDark ? 'light' : 'dark');
+    }
 
     return (
         <div className="min-h-screen bg-white dark:bg-[#0a0a12] text-neutral-900 dark:text-white overflow-x-hidden transition-colors duration-300">
@@ -267,8 +287,37 @@ export default function StorePage() {
                             <Globe className="w-3.5 h-3.5" />coral-group.be
                         </a>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Link href="/login" className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors px-4 py-2">
+                    <div className="flex items-center gap-2">
+                        {/* ── Language switcher ── */}
+                        <div className="flex items-center bg-neutral-100 dark:bg-white/[0.06] rounded-lg p-0.5 gap-0.5">
+                            {LANGS.map(lang => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => switchLang(lang.code)}
+                                    title={lang.label}
+                                    className={`text-[11px] font-bold px-2 py-1 rounded-md transition-all ${
+                                        locale === lang.code
+                                            ? 'bg-white dark:bg-white/20 text-neutral-900 dark:text-white shadow-sm'
+                                            : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
+                                    }`}
+                                >
+                                    {lang.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* ── Theme toggle ── */}
+                        <button
+                            onClick={toggleTheme}
+                            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-100 dark:bg-white/[0.06] hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all"
+                        >
+                            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        </button>
+
+                        <div className="w-px h-5 bg-neutral-200 dark:bg-white/10 mx-1" />
+
+                        <Link href="/login" className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors px-3 py-2">
                             {t.login}
                         </Link>
                         <Link href="/login" className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-blue-600/20">

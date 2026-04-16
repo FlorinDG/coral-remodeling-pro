@@ -49,7 +49,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const hasDatabases = activeModules.includes('DATABASES');
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
-  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses';
+  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets';
   const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || databaseId === 'db-quotations';
 
   const handleCloseProjectModal = () => {
@@ -183,15 +183,53 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'title', name: 'Invoice #', type: 'text' },
       { id: 'supplier', name: 'Supplier', type: 'relation', config: { relationDatabaseId: 'db-suppliers', relationDisplayPropertyId: 'title' } },
       { id: 'betreft', name: 'Description', type: 'text' },
+      { id: 'source', name: 'Source', type: 'select', config: { options: [
+        { id: 'src-peppol', name: 'Peppol', color: 'blue' },
+        { id: 'src-manual', name: 'Manual', color: 'gray' },
+        { id: 'src-pdf', name: 'PDF Import', color: 'purple' },
+      ]}},
       { id: 'status', name: 'Status', type: 'select', config: { options: [
+        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+        { id: 'opt-received', name: 'Received', color: 'blue' },
         { id: 'opt-unpaid', name: 'Unpaid', color: 'orange' },
         { id: 'opt-paid', name: 'Paid', color: 'green' },
         { id: 'opt-overdue', name: 'Overdue', color: 'red' },
-        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+        { id: 'opt-disputed', name: 'Disputed', color: 'pink' },
       ]}},
       { id: 'invoiceDate', name: 'Invoice Date', type: 'date' },
       { id: 'dueDate', name: 'Due Date', type: 'date' },
-      { id: 'totalAmount', name: 'Total Amount', type: 'currency' },
+      { id: 'totalExVat', name: 'Total excl. VAT', type: 'currency' },
+      { id: 'totalVat', name: 'VAT', type: 'currency' },
+      { id: 'totalIncVat', name: 'Total incl. VAT', type: 'currency' },
+      { id: 'peppolDocId', name: 'Peppol Doc ID', type: 'text' },
+    ],
+    'db-tickets': [
+      { id: 'title', name: 'Merchant / Description', type: 'text' },
+      { id: 'date', name: 'Date', type: 'date' },
+      { id: 'amount', name: 'Total Amount', type: 'currency' },
+      { id: 'vatAmount', name: 'VAT Amount', type: 'currency' },
+      { id: 'category', name: 'Category', type: 'select', config: { options: [
+        { id: 'cat-fuel', name: 'Fuel', color: 'orange' },
+        { id: 'cat-restaurant', name: 'Restaurant', color: 'red' },
+        { id: 'cat-office', name: 'Office Supplies', color: 'blue' },
+        { id: 'cat-tools', name: 'Tools', color: 'gray' },
+        { id: 'cat-materials', name: 'Materials', color: 'yellow' },
+        { id: 'cat-parking', name: 'Parking', color: 'purple' },
+        { id: 'cat-transport', name: 'Transport', color: 'green' },
+        { id: 'cat-other', name: 'Other', color: 'default' },
+      ]}},
+      { id: 'currency', name: 'Currency', type: 'select', config: { options: [
+        { id: 'cur-eur', name: 'EUR', color: 'blue' },
+        { id: 'cur-usd', name: 'USD', color: 'green' },
+        { id: 'cur-gbp', name: 'GBP', color: 'purple' },
+      ]}},
+      { id: 'paymentMethod', name: 'Payment Method', type: 'select', config: { options: [
+        { id: 'pm-cash', name: 'Cash', color: 'green' },
+        { id: 'pm-card', name: 'Card', color: 'blue' },
+        { id: 'pm-transfer', name: 'Bank Transfer', color: 'purple' },
+      ]}},
+      { id: 'receiptUrl', name: 'Receipt Image', type: 'url' },
+      { id: 'notes', name: 'Notes', type: 'text' },
     ],
   };
 
@@ -236,7 +274,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-articles') parsedName = 'Material Articles';
     if (databaseId === 'db-bestek') parsedName = 'Bestek Templates';
     if (databaseId === 'db-1') parsedName = 'Projects';
-    if (databaseId === 'db-expenses') parsedName = 'Expense Invoices';
+    if (databaseId === 'db-expenses') parsedName = 'Purchase Invoices';
+    if (databaseId === 'db-tickets') parsedName = 'Expense Tickets';
     if (databaseId === 'db-invoices') parsedName = 'Sales Invoices';
     if (databaseId === 'db-clients') parsedName = 'Contacts';
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';

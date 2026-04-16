@@ -20,7 +20,29 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     const { locale } = await params;
     const headersList = await headers();
     const host = headersList.get('host') || '';
-    const isERP = host.startsWith('app.') || host.startsWith('sys.') || host.startsWith('coral-sys.');
+    const isERP = host.startsWith('app.');
+    const isStorefront = host.startsWith('coral-sys.');
+
+    // ── CoralOS storefront (coral-sys.coral-group.be) ──
+    if (isStorefront) {
+        return {
+            metadataBase: new URL(`https://${host}`),
+            title: {
+                default: 'CoralOS — Platform voor Belgische aannemers',
+                template: '%s | CoralOS',
+            },
+            description: 'Facturatie, Peppol e-invoicing, CRM en projectbeheer voor aannemers. Gratis starten, Peppol-klaar voor 2026.',
+            robots: { index: true, follow: true },
+            icons: { icon: '/icon.svg' },
+            openGraph: {
+                title: 'CoralOS — Platform voor Belgische aannemers',
+                description: 'Facturatie, Peppol e-invoicing, CRM en projectbeheer. Gratis starten.',
+                url: `https://${host}`,
+                siteName: 'CoralOS',
+                type: 'website',
+            },
+        };
+    }
 
     // ── ERP subdomains: CoralOS branding ──
     if (isERP) {
@@ -110,7 +132,7 @@ export default async function RootLayout({
     const messages = await getMessages();
     const headersList = await headers();
     const host = headersList.get('host') || '';
-    const isMainSite = !host.startsWith('app.') && !host.startsWith('sys.') && !host.startsWith('coral-sys.');
+    const isMainSite = !host.startsWith('app.') && !host.startsWith('coral-sys.');
 
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>

@@ -1,26 +1,145 @@
 "use client";
 
+import React, { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-
 import { financialTabs } from "@/config/tabs";
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { RefreshCw, Plus, Loader2, FileText, Receipt, ArrowDownToLine } from 'lucide-react';
+import { useDatabaseStore } from '@/components/admin/database/store';
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
-    { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Expenses Database...</div> }
+    { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Database...</div> }
 );
 
-import { usePageTitle } from '@/hooks/usePageTitle';
+const PurchaseInvoiceEngine = dynamic(
+    () => import('@/components/admin/expenses/PurchaseInvoiceEngine'),
+    { ssr: false }
+);
 
 export default function ExpensesInvoicesPage() {
-    usePageTitle('Expense Invoices');
+    usePageTitle('Purchase Invoices');
+
+    const [syncing, setSyncing] = useState(false);
+    const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+
+    const createPage = useDatabaseStore(s => s.createPage);
+
+    const handleSyncPeppol = useCallback(async () => {
+        setSyncing(true);
+        setSyncResult(null);
+        try {
+            const res = await fetch('/api/peppol/inbox');
+            const data = await res.json();
+
+            if (!res.ok) {
+                setSyncResult({ count: 0, error: data.error || 'Sync failed' });
+                return;
+            }
+
+            const existingDb = useDatabaseStore.getState().getDatabase('db-expenses');
+            const existingPeppolIds = new Set(
+                (existingDb?.pages || [])
+                    .filter(p => p.properties.peppolDocId)
+                    .map(p => String(p.properties.peppolDocId))
+            );
+
+            let imported = 0;
+            for (const doc of (data.documents || [])) {
+                if (existingPeppolIds.has(doc.id)) continue;
+
+                const parsed = doc.parsed;
+                if (!parsed) continue;
+
+                createPage('db-expenses', {
+                    title: parsed.invoiceNumber || doc.invoice_number || doc.id,
+                    betreft: parsed.lines?.[0]?.description || '',
+                    source: 'src-peppol',
+                    status: 'opt-received',
+                    invoiceDate: parsed.issueDate || doc.issue_date || '',
+                    dueDate: parsed.dueDate || doc.due_date || '',
+                    totalExVat: parsed.totalExVat || 0,
+                    totalVat: parsed.totalVat || 0,
+                    totalIncVat: parsed.totalIncVat || doc.total_amount || 0,
+                    peppolDocId: doc.id,
+                    supplier: [], // Can't auto-match supplier relation without VAT lookup
+                });
+                imported++;
+            }
+
+            setSyncResult({ count: imported });
+        } catch (err: any) {
+            setSyncResult({ count: 0, error: err.message || 'Network error' });
+        } finally {
+            setSyncing(false);
+        }
+    }, [createPage]);
+
+    const handleNewManual = () => {
+        const page = createPage('db-expenses', {
+            source: 'src-manual',
+            status: 'opt-draft',
+            invoiceDate: new Date().toISOString().split('T')[0],
+        });
+        setSelectedInvoiceId(page.id);
+    };
 
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={financialTabs} groupId="financials" />
-            <div className="w-full h-full flex flex-col pt-6 min-h-0">
-                <DatabaseCloneDynamic databaseId="db-expenses" />
+            <div className="w-full h-full flex flex-col min-h-0">
+                {/* Action bar */}
+                <div className="flex items-center justify-between px-6 pt-4 pb-2">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleSyncPeppol}
+                            disabled={syncing}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/40 border border-blue-200 dark:border-blue-800/30 text-blue-700 dark:text-blue-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                        >
+                            {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                            Sync Peppol Inbox
+                        </button>
+                        <button
+                            onClick={handleNewManual}
+                            className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            Manual Invoice
+                        </button>
+                    </div>
+
+                    {/* Sync result badge */}
+                    {syncResult && (
+                        <div className={`text-xs font-semibold px-3 py-1.5 rounded-lg ${
+                            syncResult.error
+                                ? 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400'
+                                : 'bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400'
+                        }`}>
+                            {syncResult.error
+                                ? `⚠️ ${syncResult.error}`
+                                : syncResult.count > 0
+                                    ? `✓ Imported ${syncResult.count} new invoice${syncResult.count > 1 ? 's' : ''}`
+                                    : '✓ Inbox up to date'
+                            }
+                        </div>
+                    )}
+                </div>
+
+                {/* Database grid */}
+                <div className="flex-1 min-h-0">
+                    <DatabaseCloneDynamic databaseId="db-expenses" />
+                </div>
             </div>
+
+            {/* Purchase Invoice Engine modal */}
+            {selectedInvoiceId && (
+                <PurchaseInvoiceEngine
+                    pageId={selectedInvoiceId}
+                    onClose={() => setSelectedInvoiceId(null)}
+                />
+            )}
         </div>
     );
 }

@@ -10,143 +10,163 @@ const intlMiddleware = createMiddleware(routing);
 
 const { auth } = NextAuth(authConfig);
 
+/**
+ * Domain Routing Rules (single Vercel deployment, 3 domains):
+ *
+ *  coral-group.be              → Construction company presentation site
+ *                                Serves: /[locale]/page.tsx (Hero, Services, Projects)
+ *                                No auth required.
+ *
+ *  coral-sys.coral-group.be    → CoralOS SaaS marketing / front-store
+ *                                Rewrites: / → /[locale]/store
+ *                                Fully public. No auth required.
+ *
+ *  app.coral-group.be          → CoralOS ERP application
+ *                                Rewrites: / → /[locale]/admin
+ *                                Auth required for /admin and /portal routes.
+ *                                SUPERADMIN users can also access /superadmin from here.
+ */
+
 export default auth((req) => {
-    const isLoggedIn = !!req.auth
-    const { pathname } = req.nextUrl
-    const role = (req.auth?.user as any)?.role
+    const isLoggedIn = !!req.auth;
+    const { pathname } = req.nextUrl;
+    const role = (req.auth?.user as any)?.role;
 
     const host = req.headers.get("host") || "";
-    const isSysSubdomain = host.startsWith("sys.") || host.startsWith("coral-sys.");
-    const isAppSubdomain = host.startsWith("app.");
 
-    // ── Route classification (used by ALL protection blocks below) ──
-    const isLoginPage = pathname.includes("/login");
-    const isPublicPage = pathname.includes("/help") || pathname.includes("/terms") || pathname.includes("/privacy");
+    // ── Domain classification ────────────────────────────────────────────────
+    const isStoreSubdomain = host.startsWith("coral-sys.");     // CoralOS storefront
+    const isAppSubdomain   = host.startsWith("app.");           // CoralOS ERP
+    // Everything else (coral-group.be, localhost, preview) → main construction site
 
-    // Virtualize paths so we protect correctly BEFORE the rewrite actually occurs
-    const virtualPath = isSysSubdomain && !pathname.startsWith('/superadmin')
-        ? `/superadmin${pathname === '/' ? '' : pathname}`
-        : isAppSubdomain && !pathname.startsWith('/admin')
-            ? `/admin${pathname === '/' ? '' : pathname}`
-            : pathname;
+    // ── Public path classification ───────────────────────────────────────────
+    const isLoginPage  = pathname.includes("/login");
+    const isPublicPage = pathname.includes("/help") ||
+                         pathname.includes("/terms") ||
+                         pathname.includes("/privacy") ||
+                         pathname.includes("/store");
 
-    // ── Superadmin protection (coral-sys.coral-group.be) ──
-    // Skip login and public pages — those must remain accessible
-    const isSuperadminPath = virtualPath.includes("/superadmin");
-    if (isSuperadminPath && !isLoginPage && !isPublicPage) {
-        if (!isLoggedIn) {
-            // Stay on coral-sys domain — let next-intl handle locale prefix
-            const loginUrl = new URL(req.nextUrl.href);
-            loginUrl.pathname = '/login';
-            return NextResponse.redirect(loginUrl);
-        }
-        if (role !== "SUPERADMIN") {
-            const fallbackUrl = new URL(req.nextUrl.href);
-            if (isSysSubdomain) {
-                // Non-superadmin → send to the regular ERP
-                fallbackUrl.hostname = fallbackUrl.hostname.replace(/^(coral-)?sys\./, 'app.');
-                fallbackUrl.pathname = '/';
-            } else {
-                fallbackUrl.pathname = '/nl/admin';
+    // ════════════════════════════════════════════════════════════════════════
+    // BRANCH A: coral-sys.coral-group.be → CoralOS public storefront
+    // Fully public — no auth, no redirects, just rewrite to /store
+    // ════════════════════════════════════════════════════════════════════════
+    if (isStoreSubdomain) {
+        const intlResponse = intlMiddleware(req);
+
+        // Apply rewrite: any path on coral-sys → /[locale]/store
+        const rewriteUrl = intlResponse.headers.get('x-middleware-rewrite');
+        if (rewriteUrl && intlResponse.status === 200) {
+            const url = new URL(rewriteUrl);
+            const parts = url.pathname.split('/');
+            const locale = parts[1]; // e.g. 'nl'
+            const rest = parts.slice(2).join('/');
+
+            // Only rewrite if not already on /store, /login, /help, /terms
+            const noRewritePaths = ['store', 'login', 'help', 'terms', 'privacy'];
+            if (!noRewritePaths.some(p => rest.startsWith(p))) {
+                url.pathname = `/${locale}/store`;
+                intlResponse.headers.set('x-middleware-rewrite', url.toString());
             }
-            return NextResponse.redirect(fallbackUrl);
         }
-    }
 
-    // ── Admin/Portal protection (app.coral-group.be) ──
-    // Skip login, public pages, and time tracker (public feature)
-    const isProtectedPath = virtualPath.includes("/admin") || virtualPath.includes("/portal");
-    const isTimeTrackerPath = virtualPath.includes("/admin/time-tracker");
+        // No caching for SaaS subdomain
+        intlResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+        intlResponse.headers.set('Pragma', 'no-cache');
 
-    if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
-        const loginUrl = new URL(req.nextUrl.href);
-        if (isAppSubdomain) {
-            loginUrl.pathname = '/nl/login';
-        } else {
-            loginUrl.pathname = '/nl/admin/login';
-        }
-        return NextResponse.redirect(loginUrl)
-    }
-
-    // ── Locale auto-correction for authenticated admin users ──
-    // Priority: NEXT_LOCALE cookie (set on save) > JWT environmentLanguage (set on login)
-    const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
-    const jwtLang = (req.auth?.user as any)?.environmentLanguage;
-    const userLang = (cookieLang && SUPPORTED_LOCALES.includes(cookieLang)) ? cookieLang
-        : (jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) ? jwtLang
-        : null;
-    const isAdminPath = virtualPath.includes('/admin');
-
-    if (isLoggedIn && isAdminPath && userLang) {
-        // Extract current locale from URL: /fr/admin/... → fr
-        const localeMatch = pathname.match(/^\/(en|fr|nl|ro|ru)(\/|$)/);
-        const currentLocale = localeMatch?.[1];
-
-        if (currentLocale && currentLocale !== userLang) {
-            const correctedPath = pathname.replace(/^\/(en|fr|nl|ro|ru)/, `/${userLang}`);
-            const redirectUrl = new URL(correctedPath, req.nextUrl.origin);
-            redirectUrl.search = req.nextUrl.search;
-            return NextResponse.redirect(redirectUrl);
-        }
-    }
-
-    // Pass to next-intl to resolve localization
-    const intlResponse = intlMiddleware(req);
-
-    // If next-intl generated a redirect natively, bypass our rewrite engine and return
-    if (intlResponse.status !== 200) {
         return intlResponse;
     }
 
-    // ── Subdomain path rewrites ──
-    // Rewrite paths so the same codebase serves different route trees per subdomain
-    const rewriteUrl = intlResponse.headers.get('x-middleware-rewrite');
+    // ════════════════════════════════════════════════════════════════════════
+    // BRANCH B: app.coral-group.be → CoralOS ERP
+    // ════════════════════════════════════════════════════════════════════════
+    if (isAppSubdomain) {
+        // Compute virtual path to apply protection BEFORE rewriting
+        const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin')
+            ? `/admin${pathname === '/' ? '' : pathname}`
+            : pathname;
 
-    if (rewriteUrl) {
-        const url = new URL(rewriteUrl);
-        let shouldRewrite = false;
-
-        if (isSysSubdomain) {
-            const parts = url.pathname.split('/');
-            const locale = parts[1];
-            const rest = parts.slice(2).join('/');
-
-            // Don't rewrite login or public pages — they live at /[locale]/login, /[locale]/help etc.
-            if (!rest.startsWith('superadmin') && !rest.startsWith('login') && !isPublicPage) {
-                url.pathname = `/${locale}/superadmin${rest ? `/${rest}` : ''}`;
-                shouldRewrite = true;
+        // ── Superadmin protection ──
+        // /superadmin is accessible from app subdomain for SUPERADMIN role only
+        const isSuperadminPath = virtualPath.startsWith('/superadmin') || pathname.includes('/superadmin');
+        if (isSuperadminPath && !isLoginPage && !isPublicPage) {
+            if (!isLoggedIn) {
+                const loginUrl = new URL(req.nextUrl.href);
+                loginUrl.pathname = '/nl/login';
+                return NextResponse.redirect(loginUrl);
             }
-        } else if (isAppSubdomain) {
+            if (role !== "SUPERADMIN") {
+                const fallbackUrl = new URL(req.nextUrl.href);
+                fallbackUrl.pathname = '/nl/admin';
+                return NextResponse.redirect(fallbackUrl);
+            }
+        }
+
+        // ── Admin / Portal protection ──
+        const isProtectedPath = virtualPath.startsWith('/admin') || virtualPath.startsWith('/portal');
+        const isTimeTrackerPath = virtualPath.includes('/admin/time-tracker');
+
+        if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
+            const loginUrl = new URL(req.nextUrl.href);
+            loginUrl.pathname = '/nl/login';
+            return NextResponse.redirect(loginUrl);
+        }
+
+        // ── Locale auto-correction for authenticated admin users ──
+        const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
+        const jwtLang = (req.auth?.user as any)?.environmentLanguage;
+        const userLang = (cookieLang && SUPPORTED_LOCALES.includes(cookieLang)) ? cookieLang
+            : (jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) ? jwtLang
+            : null;
+        const isAdminPath = virtualPath.startsWith('/admin');
+
+        if (isLoggedIn && isAdminPath && userLang) {
+            const localeMatch = pathname.match(/^\/(en|fr|nl|ro|ru)(\/|$)/);
+            const currentLocale = localeMatch?.[1];
+            if (currentLocale && currentLocale !== userLang) {
+                const correctedPath = pathname.replace(/^\/(en|fr|nl|ro|ru)/, `/${userLang}`);
+                const redirectUrl = new URL(correctedPath, req.nextUrl.origin);
+                redirectUrl.search = req.nextUrl.search;
+                return NextResponse.redirect(redirectUrl);
+            }
+        }
+
+        // ── Pass to next-intl ──
+        const intlResponse = intlMiddleware(req);
+        if (intlResponse.status !== 200) {
+            intlResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+            return intlResponse;
+        }
+
+        // ── Rewrite: / → /[locale]/admin ──
+        const rewriteUrl = intlResponse.headers.get('x-middleware-rewrite');
+        if (rewriteUrl) {
+            const url = new URL(rewriteUrl);
             const parts = url.pathname.split('/');
             const locale = parts[1];
             const rest = parts.slice(2).join('/');
 
-            // Don't rewrite login or public pages — they live at /[locale]/login, /[locale]/help etc.
-            if (!rest.startsWith('admin') && !rest.startsWith('login') && !isPublicPage) {
+            // Don't touch paths that are already admin, superadmin, login, or public pages
+            const noRewritePaths = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store'];
+            if (!noRewritePaths.some(p => rest.startsWith(p))) {
                 url.pathname = `/${locale}/admin${rest ? `/${rest}` : ''}`;
-                shouldRewrite = true;
+                intlResponse.headers.set('x-middleware-rewrite', url.toString());
             }
         }
 
-        // Finalize the subdomain mutation
-        if (shouldRewrite) {
-            intlResponse.headers.set('x-middleware-rewrite', url.toString());
-        }
-    }
-
-    // ── Cache control for ERP subdomains ──
-    // Prevent aggressive browser caching (esp. Arc) from serving stale content
-    // across domain contexts. The main site (coral-group.be) can cache normally.
-    if (isAppSubdomain || isSysSubdomain) {
+        // Prevent stale content across domain contexts
         intlResponse.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
         intlResponse.headers.set('Pragma', 'no-cache');
+
+        return intlResponse;
     }
 
-    return intlResponse;
+    // ════════════════════════════════════════════════════════════════════════
+    // BRANCH C: coral-group.be → Construction company presentation site
+    // No rewrites needed. next-intl handles locale prefix and redirection.
+    // ════════════════════════════════════════════════════════════════════════
+    return intlMiddleware(req);
 })
 
 export const config = {
-    // Matcher for next-intl + next-auth
-    // Skip all internal paths (_next) and static assets (images, etc)
     matcher: ["/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|manifest.json|sw.js).*)"],
 }

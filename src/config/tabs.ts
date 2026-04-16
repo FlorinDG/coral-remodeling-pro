@@ -30,6 +30,7 @@ export const projectsTabs = [
 // Financial tab i18n key map (fallback to hardcoded if no translator provided)
 const FINANCIAL_TAB_KEYS: Record<string, string> = {
     'fin-aankoop': 'purchaseInvoices',
+    'fin-tickets': 'expenseTickets',
     'fin-cred-aankoop': 'purchaseCreditNotes',
     'fin-cred-verkoop': 'salesCreditNotes',
     'fin-facturen': 'salesInvoices',
@@ -40,6 +41,7 @@ const financialTabsBase = [
     { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
     { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
+    { label: 'ONKOSTENFICHES', href: '/admin/financials/expenses/tickets', id: 'fin-tickets' },
     { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },
     { label: 'CREDITNOTA - VERKOOP', href: '/admin/financials/income/credit-notes', id: 'fin-cred-verkoop' },
 ];

@@ -259,7 +259,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
                 // Schema-locked databases: properties are hardcoded, block any additions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations'];
+                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations', 'db-tickets'];
                 if (LOCKED_DBS.includes(databaseId)) {
                     console.warn(`[Schema Lock] Cannot add property "${name}" to locked database ${databaseId}`);
                     return '';
@@ -296,7 +296,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             deleteProperty: (databaseId, propertyId) => {
                 // Schema-locked databases: properties are hardcoded, block any deletions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations'];
+                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-quotations', 'db-tickets'];
                 if (LOCKED_DBS.includes(databaseId)) {
                     console.warn(`[Schema Lock] Cannot delete property "${propertyId}" from locked database ${databaseId}`);
                     return;

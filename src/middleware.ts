@@ -122,8 +122,10 @@ export default auth((req) => {
         const isSuperadminPath = virtualPath.startsWith('/superadmin') || pathname.includes('/superadmin');
         if (isSuperadminPath && !isLoginPage && !isPublicPage) {
             if (!isLoggedIn) {
-                const url = new URL('/nl/login', req.nextUrl.origin);
-                return NextResponse.redirect(url);
+                const loginUrl = new URL('/nl/login', req.nextUrl.origin);
+                // Preserve where they were trying to go — auth.ts redirect callback will honour it
+                loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
+                return NextResponse.redirect(loginUrl);
             }
             if (!PLATFORM_ADMIN_ROLES.includes(role as any)) {
                 // Non-platform-admin (e.g. APP_MANAGER) → redirect to their ERP

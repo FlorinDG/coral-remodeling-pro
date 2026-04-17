@@ -142,7 +142,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                         where: { id: dbUser.id },
                         data: {
                             tenantId:            newTenant.id,
-                            role:                "TENANT_ADMIN",
+                            role:                "APP_MANAGER",
                             environmentLanguage: nextLocale,
                         },
                     });

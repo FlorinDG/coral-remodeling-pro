@@ -2,11 +2,13 @@ import prisma from "@/lib/prisma";
 import TenantsGrid from "./TenantsGrid";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 export default async function SuperadminDashboardPage() {
     const session = await auth();
-    if ((session?.user as any)?.role !== "SUPERADMIN") {
-        redirect("/en/admin");
+    const role = (session?.user as any)?.role;
+    if (!PLATFORM_ADMIN_ROLES.includes(role)) {
+        redirect("/nl/admin");
     }
 
     const tenants = await prisma.tenant.findMany({
@@ -23,7 +25,7 @@ export default async function SuperadminDashboardPage() {
             createdAt: true,
             users: {
                 select: { email: true, name: true, role: true },
-                orderBy: { role: "asc" }, // TENANT_ADMIN sorts before EMPLOYEE
+                orderBy: { role: "asc" },
                 take: 5,
             },
             _count: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import React, { useState, useTransition } from "react";
 import {
     Building2, Users, LayoutTemplate, Loader2, Check,
     RefreshCw, Trash2, Mail, ChevronDown, Activity,
@@ -155,10 +155,9 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                             const recvCap    = t.planType === "FREE" ? 10 : null;
 
                             return (
-                                <>
+                                <React.Fragment key={t.id}>
                                     {/* ── Main row ── */}
                                     <tr
-                                        key={t.id}
                                         className={`border-b border-neutral-100 dark:border-white/[0.06] transition-colors
                                             ${isPending ? "opacity-50 pointer-events-none" : ""}
                                             ${isExpanded ? "bg-neutral-50/80 dark:bg-white/[0.04]" : "hover:bg-neutral-50/50 dark:hover:bg-white/[0.03]"}
@@ -325,7 +324,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
 
                                     {/* ── Expanded detail row ── */}
                                     {isExpanded && (
-                                        <tr key={`${t.id}-exp`} className="bg-neutral-50/80 dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/10">
+                                        <tr className="bg-neutral-50/80 dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/10">
                                             <td colSpan={9} className="px-8 py-4">
                                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
@@ -416,7 +415,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </tbody>

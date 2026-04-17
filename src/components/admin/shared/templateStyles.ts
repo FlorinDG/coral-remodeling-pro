@@ -1,140 +1,153 @@
 /**
- * Template Styles — 4 distinct PDF themes for documents.
- * 
- * t1: Classic — Standard left-logo, right-address, orange accents
- * t2: Minimalist — Clean whitespace, thin lines, monochrome with subtle accent
- * t3: Bold Corporate — Full-width accent header band, dark table headers
- * t4: Elegant — Centered header, serif-like typography, ornamental dividers
+ * Template Styles — 4 distinct PDF themes.
+ *
+ * t1: BLOCK  — High-contrast black/white impact (Happy Tooth ref)
+ * t2: MIST   — Soft sage background, brand-color accents (Valley Farms ref)
+ * t3: NAVY   — Classic corporate dark-navy bands (First Up ref)
+ * t4: PRISM  — Geometric diagonal SVG header (blueprint ref)
  */
 
 export type TemplateId = 't1' | 't2' | 't3' | 't4';
 
-const ACCENT = '#ea580c'; // Default accent — overridden by brandColor
+const ACCENT = '#ea580c';
 
 export function getTemplateStyles(templateId: TemplateId, brandColor?: string) {
     const accent = brandColor || ACCENT;
-    const accentLight = accent + '1a'; // ~10% opacity hex
-
     switch (templateId) {
-        case 't2': return minimalistStyles(accent);
-        case 't3': return boldCorporateStyles(accent);
-        case 't4': return elegantStyles(accent);
-        default:   return classicStyles(accent);
+        case 't2': return mistStyles(accent);
+        case 't3': return navyStyles(accent);
+        case 't4': return prismStyles(accent);
+        default:   return blockStyles(accent);
     }
 }
 
-// ─── T1: Classic ────────────────────────────────────────────
-function classicStyles(accent: string) {
+// ─── T1: BLOCK — Black/White Impact ─────────────────────────────────────────
+function blockStyles(accent: string) {
     return {
-        page: { padding: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#1a1a1a' },
-        headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 30, borderBottom: `2px solid ${accent}`, paddingBottom: 20 },
-        headerLeft: { flexDirection: 'column' as const, gap: 4 },
-        headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 4 },
-        logo: { width: 120, marginBottom: 8 },
-        title: { fontSize: 24, fontWeight: 'bold' as const, color: '#000000', textTransform: 'uppercase' as const, letterSpacing: 1 },
-        subtitle: { fontSize: 12, color: '#666666' },
-        tableHeaderRow: { flexDirection: 'row' as const, backgroundColor: '#f3f4f6', borderBottom: '1px solid #e5e7eb', padding: 6, marginTop: 20, fontWeight: 'bold' as const, fontSize: 9, textTransform: 'uppercase' as const, color: '#4b5563' },
-        tableRow: { flexDirection: 'row' as const, borderBottom: '1px solid #f3f4f6', paddingVertical: 6, paddingHorizontal: 6, fontSize: 9 },
-        sectionRow: { flexDirection: 'row' as const, backgroundColor: '#fff7ed', borderTop: `1px solid ${accent}`, borderBottom: `1px solid ${accent}`, paddingVertical: 8, paddingHorizontal: 6, marginTop: 10, marginBottom: 4 },
-        sectionText: { fontWeight: 'bold' as const, color: accent, fontSize: 11 },
-        subsectionRow: { flexDirection: 'row' as const, backgroundColor: '#fafaf9', borderBottom: '1px solid #d6d3d1', paddingVertical: 6, paddingHorizontal: 6, marginTop: 8, marginLeft: 10 },
-        summaryBox: { marginTop: 30, borderTop: `2px solid ${accent}`, paddingTop: 10, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 6 },
-        summaryRow: { flexDirection: 'row' as const, width: 250, justifyContent: 'space-between' as const },
-        summaryLabel: { fontSize: 10, color: '#666666', textTransform: 'uppercase' as const },
-        summaryValue: { fontSize: 11, fontWeight: 'bold' as const },
-        grandTotalValue: { fontSize: 16, fontWeight: 'bold' as const, color: accent },
-        footerText: { position: 'absolute' as const, bottom: 30, left: 40, right: 40, fontSize: 8, color: '#999999', textAlign: 'center' as const, borderTop: '1px solid #e5e7eb', paddingTop: 10 },
+        // page has no padding — header blocks bleed to edges
+        page: { padding: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
+        // headerRow rendered custom in template (isT1 branch)
+        headerRow: { flexDirection: 'row' as const, alignItems: 'stretch' as const, marginBottom: 0 },
+        headerLeft:  { flexDirection: 'column' as const, justifyContent: 'flex-end' as const, backgroundColor: '#111111', padding: 28, flex: 0.55 },
+        headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, justifyContent: 'flex-end' as const, padding: 28, flex: 0.45 },
+        logo:             { width: 110, marginBottom: 8 },
+        title:            { fontSize: 20, fontWeight: 'bold' as const, color: '#111111', textTransform: 'uppercase' as const, letterSpacing: 1 },
+        subtitle:         { fontSize: 9, color: '#555555' },
+        companyInfoText:  { fontSize: 8.5, color: '#aaaaaa' },
+        companyFallback:  { fontSize: 22, fontWeight: 'bold' as const, color: '#ffffff', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 },
+        clientLabel:      { fontSize: 8, fontWeight: 'bold' as const, color: '#999999', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 3 },
+        betreftLabel:     { fontSize: 12, fontWeight: 'bold' as const, color: '#111111' },
+        clientSection:    { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 0, paddingHorizontal: 28, paddingTop: 22, paddingBottom: 18, borderBottom: '0.5px solid #e0e0e0' },
+        tableHeaderRow:   { flexDirection: 'row' as const, borderTop: '1px solid #111111', borderBottom: '1px solid #111111', paddingVertical: 7, paddingHorizontal: 28, fontWeight: 'bold' as const, fontSize: 8, textTransform: 'uppercase' as const, color: '#111111', letterSpacing: 0.5 },
+        tableRow:         { flexDirection: 'row' as const, borderBottom: '0.5px solid #e0e0e0', paddingVertical: 6, paddingHorizontal: 28, fontSize: 9 },
+        sectionRow:       { flexDirection: 'row' as const, backgroundColor: '#f5f5f5', borderTop: '0.5px solid #bbb', borderBottom: '0.5px solid #bbb', paddingVertical: 7, paddingHorizontal: 28, marginTop: 10, marginBottom: 2 },
+        sectionText:      { fontWeight: 'bold' as const, color: '#111111', fontSize: 10, textTransform: 'uppercase' as const },
+        subsectionRow:    { flexDirection: 'row' as const, borderBottom: '0.5px solid #e8e8e8', paddingVertical: 5, paddingHorizontal: 28 },
+        summaryBox:       { marginTop: 24, paddingHorizontal: 28, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryRow:       { flexDirection: 'row' as const, width: 250, justifyContent: 'space-between' as const },
+        summaryLabel:     { fontSize: 8.5, color: '#777777', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+        summaryValue:     { fontSize: 10, fontWeight: 'bold' as const },
+        grandTotalValue:  { fontSize: 17, fontWeight: 'bold' as const, color: '#111111' },
+        footerText:       { position: 'absolute' as const, bottom: 0, left: 0, right: 0, fontSize: 8, color: '#777777', textAlign: 'center' as const, backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingVertical: 11, paddingHorizontal: 28 },
         accentColor: accent,
-        clientLabel: { fontSize: 10, fontWeight: 'bold' as const, marginBottom: 4 },
-        betreftLabel: { fontSize: 12, fontWeight: 'bold' as const, color: accent },
-        companyFallback: { fontSize: 24, fontWeight: 'heavy' as const, color: accent, marginBottom: 4 },
     };
 }
 
-// ─── T2: Minimalist ─────────────────────────────────────────
-function minimalistStyles(accent: string) {
+// ─── T2: MIST — Sage Soft ───────────────────────────────────────────────────
+function mistStyles(accent: string) {
     return {
-        page: { padding: 50, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 9.5, color: '#333333' },
-        headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 40, borderBottom: '0.5px solid #d4d4d4', paddingBottom: 24 },
-        headerLeft: { flexDirection: 'column' as const, gap: 3 },
+        page: { padding: 0, backgroundColor: '#eef2f0', fontFamily: 'Helvetica', fontSize: 10, color: '#2c3a34' },
+        headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, padding: 32, paddingBottom: 24, backgroundColor: '#eef2f0' },
+        headerLeft:  { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14 },
         headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 3 },
-        logo: { width: 80, marginBottom: 10 },
-        title: { fontSize: 18, fontWeight: 'bold' as const, color: '#1a1a1a', letterSpacing: 3, textTransform: 'uppercase' as const },
-        subtitle: { fontSize: 10, color: '#888888' },
-        tableHeaderRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #999', padding: 5, marginTop: 24, fontWeight: 'bold' as const, fontSize: 8, textTransform: 'uppercase' as const, color: '#888888', letterSpacing: 1 },
-        tableRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #eeeeee', paddingVertical: 5, paddingHorizontal: 5, fontSize: 9 },
-        sectionRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #999', paddingVertical: 6, paddingHorizontal: 5, marginTop: 14, marginBottom: 4 },
-        sectionText: { fontWeight: 'bold' as const, color: '#1a1a1a', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' as const },
-        subsectionRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #ddd', paddingVertical: 5, paddingHorizontal: 5, marginTop: 6, marginLeft: 8 },
-        summaryBox: { marginTop: 36, borderTop: '0.5px solid #999', paddingTop: 12, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
-        summaryRow: { flexDirection: 'row' as const, width: 220, justifyContent: 'space-between' as const },
-        summaryLabel: { fontSize: 9, color: '#888888', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
-        summaryValue: { fontSize: 10, fontWeight: 'bold' as const },
-        grandTotalValue: { fontSize: 14, fontWeight: 'bold' as const, color: '#1a1a1a' },
-        footerText: { position: 'absolute' as const, bottom: 30, left: 50, right: 50, fontSize: 7, color: '#bbbbbb', textAlign: 'center' as const, borderTop: '0.5px solid #ddd', paddingTop: 8 },
-        accentColor: accent,
-        clientLabel: { fontSize: 9, fontWeight: 'bold' as const, marginBottom: 3, color: '#888', textTransform: 'uppercase' as const, letterSpacing: 1 },
-        betreftLabel: { fontSize: 11, fontWeight: 'bold' as const, color: '#1a1a1a' },
-        companyFallback: { fontSize: 18, fontWeight: 'bold' as const, color: '#1a1a1a', marginBottom: 4, letterSpacing: 3 },
-    };
-}
-
-// ─── T3: Bold Corporate ─────────────────────────────────────
-function boldCorporateStyles(accent: string) {
-    return {
-        page: { padding: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#1a1a1a' },
-        headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, marginBottom: 0, backgroundColor: '#ffffff', padding: 24, paddingBottom: 24, borderBottom: `3px solid ${accent}` },
-        headerLeft: { flexDirection: 'column' as const, gap: 3 },
-        headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 3 },
-        logo: { width: 100, marginBottom: 6 },
-        title: { fontSize: 22, fontWeight: 'bold' as const, color: accent, textTransform: 'uppercase' as const, letterSpacing: 2 },
-        subtitle: { fontSize: 10, color: '#666666' },
-        tableHeaderRow: { flexDirection: 'row' as const, backgroundColor: accent + '15', borderBottom: `1.5px solid ${accent}`, padding: 8, marginTop: 12, marginHorizontal: 24, fontWeight: 'bold' as const, fontSize: 8.5, textTransform: 'uppercase' as const, color: accent, letterSpacing: 0.5 },
-        tableRow: { flexDirection: 'row' as const, borderBottom: '1px solid #f0f0f0', paddingVertical: 6, paddingHorizontal: 8, fontSize: 9, marginHorizontal: 24 },
-        sectionRow: { flexDirection: 'row' as const, backgroundColor: accent + '12', borderLeft: `4px solid ${accent}`, paddingVertical: 6, paddingHorizontal: 8, marginTop: 10, marginHorizontal: 24, marginBottom: 2 },
-        sectionText: { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const, letterSpacing: 1 },
-        subsectionRow: { flexDirection: 'row' as const, backgroundColor: '#f5f5f5', borderLeft: `3px solid ${accent}`, paddingVertical: 5, paddingHorizontal: 8, marginTop: 6, marginHorizontal: 24, marginLeft: 34 },
-        summaryBox: { marginTop: 24, backgroundColor: '#fafafa', padding: 16, marginHorizontal: 24, borderTop: `4px solid ${accent}`, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 6 },
-        summaryRow: { flexDirection: 'row' as const, width: 260, justifyContent: 'space-between' as const },
-        summaryLabel: { fontSize: 10, color: '#555555', textTransform: 'uppercase' as const, fontWeight: 'bold' as const },
-        summaryValue: { fontSize: 11, fontWeight: 'bold' as const },
-        grandTotalValue: { fontSize: 18, fontWeight: 'bold' as const, color: accent },
-        footerText: { position: 'absolute' as const, bottom: 0, left: 0, right: 0, fontSize: 7.5, color: '#ffffff', textAlign: 'center' as const, backgroundColor: accent, padding: 12 },
-        accentColor: accent,
-        clientLabel: { fontSize: 10, fontWeight: 'bold' as const, marginBottom: 4, color: '#555', textTransform: 'uppercase' as const },
-        betreftLabel: { fontSize: 13, fontWeight: 'bold' as const, color: accent },
-        companyFallback: { fontSize: 22, fontWeight: 'bold' as const, color: accent, marginBottom: 2, letterSpacing: 2 },
-        // Extra: client/project section needs padding
-        clientSection: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 12, paddingHorizontal: 24, paddingTop: 20 },
-    };
-}
-
-// ─── T4: Elegant ────────────────────────────────────────────
-function elegantStyles(accent: string) {
-    return {
-        page: { padding: 48, backgroundColor: '#ffffff', fontFamily: 'Times-Roman', fontSize: 10, color: '#2a2a2a' },
-        headerRow: { flexDirection: 'column' as const, alignItems: 'center' as const, marginBottom: 30, paddingBottom: 20 },
-        headerLeft: { flexDirection: 'column' as const, alignItems: 'center' as const, gap: 3, marginBottom: 8 },
-        headerRight: { flexDirection: 'column' as const, alignItems: 'center' as const, gap: 3 },
-        logo: { width: 90, marginBottom: 10 },
-        title: { fontSize: 22, fontWeight: 'bold' as const, color: accent, letterSpacing: 4, textTransform: 'uppercase' as const },
-        subtitle: { fontSize: 11, color: '#777777', fontStyle: 'italic' as const },
-        // Ornamental center divider
-        divider: { width: 60, height: 1, backgroundColor: accent, marginVertical: 10, alignSelf: 'center' as const },
-        tableHeaderRow: { flexDirection: 'row' as const, borderBottom: `1.5px solid ${accent}`, borderTop: `0.5px solid #ddd`, padding: 6, marginTop: 20, fontWeight: 'bold' as const, fontSize: 9, color: accent, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
-        tableRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #eee', paddingVertical: 6, paddingHorizontal: 6, fontSize: 9.5 },
-        sectionRow: { flexDirection: 'row' as const, borderTop: `0.5px solid ${accent}`, borderBottom: `0.5px solid ${accent}`, paddingVertical: 7, paddingHorizontal: 6, marginTop: 12, marginBottom: 4, backgroundColor: '#fefcfa' },
-        sectionText: { fontWeight: 'bold' as const, color: accent, fontSize: 11, fontStyle: 'italic' as const },
-        subsectionRow: { flexDirection: 'row' as const, borderBottom: '0.5px solid #e8e8e8', paddingVertical: 5, paddingHorizontal: 6, marginTop: 6, marginLeft: 12 },
-        summaryBox: { marginTop: 30, borderTop: `1.5px solid ${accent}`, paddingTop: 12, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
-        summaryRow: { flexDirection: 'row' as const, width: 240, justifyContent: 'space-between' as const },
-        summaryLabel: { fontSize: 10, color: '#777777', fontStyle: 'italic' as const },
-        summaryValue: { fontSize: 11, fontWeight: 'bold' as const },
+        logo:            { width: 48, height: 48, borderRadius: 6 },
+        title:           { fontSize: 28, fontWeight: 'bold' as const, color: accent },
+        subtitle:        { fontSize: 9, color: '#6b8c7a' },
+        companyInfoText: { fontSize: 9, color: '#6b8c7a' },
+        companyFallback: { fontSize: 18, fontWeight: 'bold' as const, color: '#2c3a34', marginBottom: 2 },
+        clientLabel:     { fontSize: 8, fontWeight: 'bold' as const, color: '#7aaa8e', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 3 },
+        betreftLabel:    { fontSize: 12, fontWeight: 'bold' as const, color: accent },
+        clientSection:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, backgroundColor: '#e4ece7', marginBottom: 0, padding: 24 },
+        tableHeaderRow:  { flexDirection: 'row' as const, backgroundColor: accent, paddingVertical: 8, paddingHorizontal: 32, fontWeight: 'bold' as const, fontSize: 8.5, textTransform: 'uppercase' as const, color: '#ffffff', letterSpacing: 0.3 },
+        tableRow:        { flexDirection: 'row' as const, backgroundColor: '#ffffff', borderBottom: '1px solid #dde8e2', paddingVertical: 7, paddingHorizontal: 32, fontSize: 9 },
+        sectionRow:      { flexDirection: 'row' as const, backgroundColor: accent + '1a', borderLeft: `3px solid ${accent}`, paddingVertical: 7, paddingHorizontal: 32, marginTop: 0, marginBottom: 0 },
+        sectionText:     { fontWeight: 'bold' as const, color: accent, fontSize: 10 },
+        subsectionRow:   { flexDirection: 'row' as const, backgroundColor: '#f4f8f5', paddingVertical: 6, paddingHorizontal: 32, borderBottom: '0.5px solid #dde8e2' },
+        summaryBox:      { marginTop: 20, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryRow:      { flexDirection: 'row' as const, width: 240, justifyContent: 'space-between' as const },
+        summaryLabel:    { fontSize: 8.5, color: '#6b8c7a', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+        summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },
         grandTotalValue: { fontSize: 16, fontWeight: 'bold' as const, color: accent },
-        footerText: { position: 'absolute' as const, bottom: 30, left: 48, right: 48, fontSize: 8, color: '#aaaaaa', textAlign: 'center' as const, borderTop: `0.5px solid ${accent}`, paddingTop: 10, fontStyle: 'italic' as const },
+        footerText:      { position: 'absolute' as const, bottom: 0, left: 0, right: 0, fontSize: 8, color: '#7aaa8e', textAlign: 'center' as const, backgroundColor: '#dce8e2', paddingVertical: 12 },
         accentColor: accent,
-        clientLabel: { fontSize: 10, fontWeight: 'bold' as const, marginBottom: 4, fontStyle: 'italic' as const, color: '#777' },
-        betreftLabel: { fontSize: 12, fontWeight: 'bold' as const, color: accent, fontStyle: 'italic' as const },
-        companyFallback: { fontSize: 22, fontWeight: 'bold' as const, color: accent, marginBottom: 4, letterSpacing: 4 },
+    };
+}
+
+// ─── T3: NAVY — Classic Corporate ───────────────────────────────────────────
+function navyStyles(accent: string) {
+    const navy = '#1a3a5c';
+    const navyMid = '#245076';
+    return {
+        page: { padding: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
+        headerRow:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 20 },
+        headerLeft:  { flexDirection: 'column' as const, gap: 2, flex: 0.6 },
+        headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, flex: 0.4 },
+        logo:            { width: 100, marginBottom: 6 },
+        title:           { fontSize: 38, fontWeight: 'bold' as const, color: '#111111', textTransform: 'uppercase' as const },
+        subtitle:        { fontSize: 9, color: '#666666' },
+        companyInfoText: { fontSize: 8.5, color: '#555555' },
+        companyFallback: { fontSize: 15, fontWeight: 'bold' as const, color: navy, marginBottom: 4 },
+        clientLabel:     { fontSize: 8, fontWeight: 'bold' as const, color: '#ffffff', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+        betreftLabel:    { fontSize: 12, fontWeight: 'bold' as const, color: navy },
+        clientSection:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginBottom: 16, backgroundColor: navyMid, padding: 10 },
+        tableHeaderRow:  { flexDirection: 'row' as const, backgroundColor: navy, paddingVertical: 7, paddingHorizontal: 8, fontWeight: 'bold' as const, fontSize: 8.5, textTransform: 'uppercase' as const, color: '#ffffff', letterSpacing: 0.3, marginTop: 0 },
+        tableRow:        { flexDirection: 'row' as const, borderBottom: '1px solid #eaeff4', paddingVertical: 6, paddingHorizontal: 8, fontSize: 9 },
+        sectionRow:      { flexDirection: 'row' as const, backgroundColor: '#eaf0f7', borderLeft: `4px solid ${navy}`, paddingVertical: 7, paddingHorizontal: 8, marginTop: 10, marginBottom: 2 },
+        sectionText:     { fontWeight: 'bold' as const, color: navy, fontSize: 10, textTransform: 'uppercase' as const },
+        subsectionRow:   { flexDirection: 'row' as const, backgroundColor: '#f5f8fc', borderBottom: '1px solid #e4ecf4', paddingVertical: 5, paddingHorizontal: 8, marginLeft: 12 },
+        summaryBox:      { marginTop: 16, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 4 },
+        summaryRow:      { flexDirection: 'row' as const, width: 265, justifyContent: 'space-between' as const },
+        summaryLabel:    { fontSize: 9, color: '#666666', textTransform: 'uppercase' as const, fontWeight: 'bold' as const },
+        summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },
+        grandTotalValue: { fontSize: 16, fontWeight: 'bold' as const, color: '#ffffff' },
+        footerText:      { position: 'absolute' as const, bottom: 30, left: 40, right: 40, fontSize: 8, color: '#999999', textAlign: 'center' as const, borderTop: '1px solid #e0e0e0', paddingTop: 8 },
+        accentColor: accent,
+        // Extra keys used in template navy-specific rendering
+        navyColor:   navy,
+        navyMid:     navyMid,
+    };
+}
+
+// ─── T4: PRISM — Geometric Diagonal ─────────────────────────────────────────
+function prismStyles(accent: string) {
+    const navy = '#1c2e4a';
+    const navyMid = '#26405e';
+    return {
+        page: { padding: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#222222' },
+        headerRow:   { flexDirection: 'row' as const, alignItems: 'center' as const },
+        headerLeft:  { flexDirection: 'column' as const, gap: 3 },
+        headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 3 },
+        logo:            { width: 70, marginBottom: 6 },
+        title:           { fontSize: 26, fontWeight: 'bold' as const, color: navy, textTransform: 'uppercase' as const, letterSpacing: 2 },
+        subtitle:        { fontSize: 9, color: '#666666' },
+        companyInfoText: { fontSize: 8, color: 'rgba(255,255,255,0.7)' },
+        companyFallback: { fontSize: 20, fontWeight: 'bold' as const, color: '#ffffff', letterSpacing: 0.5 },
+        clientLabel:     { fontSize: 8, fontWeight: 'bold' as const, color: '#888888', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 3 },
+        betreftLabel:    { fontSize: 12, fontWeight: 'bold' as const, color: navy },
+        clientSection:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, paddingHorizontal: 32, marginBottom: 14, paddingTop: 10 },
+        tableHeaderRow:  { flexDirection: 'row' as const, backgroundColor: navy, paddingVertical: 8, paddingHorizontal: 32, fontWeight: 'bold' as const, fontSize: 8.5, textTransform: 'uppercase' as const, color: '#ffffff', letterSpacing: 0.3 },
+        tableRow:        { flexDirection: 'row' as const, borderBottom: '0.5px solid #eeeeee', paddingVertical: 6, paddingHorizontal: 32, fontSize: 9 },
+        sectionRow:      { flexDirection: 'row' as const, backgroundColor: navy + '12', borderLeft: `3px solid ${navy}`, paddingVertical: 7, paddingHorizontal: 32, marginTop: 8, marginBottom: 0 },
+        sectionText:     { fontWeight: 'bold' as const, color: navy, fontSize: 10, textTransform: 'uppercase' as const },
+        subsectionRow:   { flexDirection: 'row' as const, borderBottom: '0.5px solid #e8e8e8', paddingVertical: 5, paddingHorizontal: 32, marginLeft: 12 },
+        summaryBox:      { marginTop: 20, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryRow:      { flexDirection: 'row' as const, width: 250, justifyContent: 'space-between' as const },
+        summaryLabel:    { fontSize: 8.5, color: '#666666', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+        summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },
+        grandTotalValue: { fontSize: 16, fontWeight: 'bold' as const, color: navy },
+        footerText:      { position: 'absolute' as const, bottom: 0, left: 0, right: 0, fontSize: 8, color: '#ffffff', textAlign: 'center' as const, backgroundColor: navy, paddingVertical: 12 },
+        accentColor: accent,
+        navyColor:  navy,
+        navyMid:    navyMid,
     };
 }

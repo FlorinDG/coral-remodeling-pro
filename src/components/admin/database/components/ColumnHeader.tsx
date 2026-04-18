@@ -3,6 +3,7 @@ import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
+import { useTranslations } from 'next-intl';
 
 const typeIcons: Record<string, React.ElementType> = {
     text: Type,
@@ -44,6 +45,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
     const updateProperty = useDatabaseStore(state => state.updateProperty);
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
     const { activeModules } = useTenant();
+    const t = useTranslations('Admin');
     const hasDatabases = activeModules.includes('DATABASES');
     const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
     const canEditSchema = !isImmutableContactDB || hasDatabases;
@@ -160,7 +162,9 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
                     }}
                 >
                     <Icon className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                    <span className="font-medium truncate flex-1 select-none pointer-events-none">{property.name}</span>
+                    <span className="font-medium truncate flex-1 select-none pointer-events-none">
+                        {t.has('db.col.' + property.id) ? t('db.col.' + property.id as any) : property.name}
+                    </span>
                 </button>
             </div>
 

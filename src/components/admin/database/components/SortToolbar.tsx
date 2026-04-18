@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useDatabaseStore } from '../store';
 import { SortRule, SortDirection } from '../types';
 import { ArrowUpDown, X, Plus } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface SortToolbarProps {
     databaseId: string;
@@ -23,6 +24,7 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
     const clearSorts = useDatabaseStore(state => state.clearSorts);
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = React.useRef<HTMLDivElement>(null);
+    const t = useTranslations('Admin');
 
     // Close when clicking outside the popover
     React.useEffect(() => {
@@ -78,7 +80,7 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
                         }`}
                 >
                     <ArrowUpDown className="w-3.5 h-3.5" />
-                    Sort
+                    {t('db.toolbar.sort')}
                     {activeSorts.length > 0 && (
                         <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
                             {activeSorts.length}
@@ -93,7 +95,7 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
                     {activeSorts.map((sort, index) => (
                         <div key={sort.id} className="flex items-center gap-2 text-sm">
                             <span className="text-neutral-500 min-w-[60px]">
-                                {index === 0 ? 'Sort by' : 'Then by'}
+                                {index === 0 ? t('db.toolbar.sortBy') : t('db.toolbar.thenBy')}
                             </span>
 
                             {/* Property Selector */}

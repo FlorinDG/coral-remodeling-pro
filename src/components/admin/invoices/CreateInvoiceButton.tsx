@@ -6,11 +6,13 @@ import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export default function CreateInvoiceButton() {
     const router = useRouter();
     const createPage = useDatabaseStore(state => state.createPage);
     const [isCreating, setIsCreating] = useState(false);
+    const t = useTranslations('Admin');
 
     const handleCreate = async () => {
         if (isCreating) return;
@@ -55,7 +57,7 @@ export default function CreateInvoiceButton() {
             ) : (
                 <Plus className="w-4 h-4" />
             )}
-            {isCreating ? 'Creating...' : 'Create Invoice'}
+            {isCreating ? t('db.toolbar.creating') : t('db.toolbar.createInvoice')}
         </button>
     );
 }

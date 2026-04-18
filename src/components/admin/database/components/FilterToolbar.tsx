@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useDatabaseStore } from '../store';
 import { FilterOperator } from '../types';
 import { Filter, X, Plus, Trash2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface FilterToolbarProps {
     databaseId: string;
@@ -27,6 +28,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
     const clearFilters = useDatabaseStore(state => state.clearFilters);
     const [isOpen, setIsOpen] = useState(false);
     const popoverRef = React.useRef<HTMLDivElement>(null);
+    const t = useTranslations('Admin');
 
     // Close when clicking outside the popover
     React.useEffect(() => {
@@ -78,7 +80,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                         }`}
                 >
                     <Filter className="w-3.5 h-3.5" />
-                    Filter
+                    {t('db.toolbar.filter')}
                     {activeFilters.length > 0 && (
                         <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
                             {activeFilters.length}
@@ -93,7 +95,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                     {activeFilters.map((filter, index) => (
                         <div key={filter.id} className="flex items-center gap-2 text-sm">
                             <span className="text-neutral-500 min-w-[50px]">
-                                {index === 0 ? 'Where' : 'And'}
+                            {index === 0 ? 'Where' : 'And'}
                             </span>
 
                             {/* Property Selector */}

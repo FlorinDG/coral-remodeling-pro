@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
 import { Settings2, Eye, EyeOff, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { useTranslations } from 'next-intl';
 
 interface PropertiesDropdownProps {
     databaseId: string;
@@ -19,6 +20,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
     const buttonRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
+    const t = useTranslations('Admin');
 
     // Position the panel relative to the button
     const updatePosition = useCallback(() => {
@@ -118,7 +120,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
                                                             <GripVertical size={14} />
                                                         </div>
                                                         <span className={`truncate ${isHidden ? 'text-neutral-400 dark:text-neutral-500' : 'text-neutral-700 dark:text-neutral-200'} ${isTitle ? 'font-medium' : ''}`}>
-                                                            {prop.name}
+                                                            {t.has('db.col.' + prop.id) ? t('db.col.' + prop.id as any) : prop.name}
                                                         </span>
                                                     </div>
                                                     <button
@@ -155,7 +157,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
                 className={`flex items-center gap-1.5 px-2 py-1 text-sm font-medium transition ${isOpen ? 'text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'}`}
             >
                 <Settings2 className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Properties</span>
+                <span className="hidden md:inline">{t('db.toolbar.properties')}</span>
             </button>
             {panel}
         </>

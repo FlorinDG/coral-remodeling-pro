@@ -200,8 +200,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                         className="group cursor-pointer border-2 border-dashed border-neutral-300 dark:border-white/20 rounded-xl p-8 text-center hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 transition-all"
                                     >
                                         <Upload className="w-8 h-8 text-neutral-400 group-hover:text-orange-500 mx-auto mb-3 transition-colors" />
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Upload Receipt</p>
-                                        <p className="text-xs text-neutral-500 mt-1">Click or drag a photo/PDF</p>
+                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                                            {isInvoiceMode ? 'Upload Invoice' : 'Upload Receipt'}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                            {isInvoiceMode ? 'Click or drag a photo or PDF' : 'Click or drag a photo/PDF'}
+                                        </p>
                                     </div>
 
                                     <div className="flex items-center gap-3">
@@ -232,7 +236,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept="image/*,application/pdf"
+                                accept={isInvoiceMode ? 'image/*,application/pdf' : 'image/*'}
                                 className="hidden"
                                 onChange={handleInputChange}
                             />

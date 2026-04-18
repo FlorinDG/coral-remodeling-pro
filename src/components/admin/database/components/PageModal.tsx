@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
-import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, ExternalLink } from 'lucide-react';
+import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, ExternalLink, ChevronDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
@@ -12,10 +12,11 @@ import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import { Property, VariantsConfig } from '../types';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Check } from 'lucide-react';
 import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
+import { COLOR_STYLES } from '../columns/SelectColumn';
 
 const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const databases = useDatabaseStore(state => state.databases);
@@ -179,6 +180,184 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                 </div>,
                 document.body
             )}
+        </div>
+    );
+};
+
+// ─── Premium PropertySelectPicker ──────────────────────────────────────────
+const PropertySelectPicker = ({ value, options, onChange }: { value: string; options: any[]; onChange: (v: string) => void }) => {
+    const [open, setOpen] = useState(false);
+    const ref = React.useRef<HTMLDivElement>(null);
+    const selected = options.find(o => o.id === value);
+    const styles = selected ? (COLOR_STYLES[selected.color] || COLOR_STYLES.gray) : null;
+
+    React.useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative w-full">
+            <button
+                onClick={() => setOpen(!open)}
+                className="flex items-center gap-2 w-full text-left group"
+            >
+                {selected && styles ? (
+                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold ${styles.badge}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${styles.dot} flex-shrink-0`} />
+                        {selected.name}
+                    </span>
+                ) : (
+                    <span className="text-neutral-400 text-sm italic">Empty</span>
+                )}
+                <ChevronDown className="w-3 h-3 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+            </button>
+
+            {open && (
+                <div className="absolute top-full left-0 mt-1 z-[99999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-100">
+                    <button
+                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
+                        onClick={() => { onChange(''); setOpen(false); }}
+                    >
+                        <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                            {!value && <Check className="w-3 h-3 text-neutral-400" />}
+                        </span>
+                        <span className="text-xs text-neutral-400 italic font-medium">Empty</span>
+                    </button>
+                    <div className="h-px bg-neutral-100 dark:bg-neutral-800 mx-2 my-0.5" />
+                    {options.map((opt: any) => {
+                        const c = COLOR_STYLES[opt.color] || COLOR_STYLES.gray;
+                        const isSelected = opt.id === value;
+                        return (
+                            <button
+                                key={opt.id}
+                                className={`w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors ${isSelected ? 'bg-neutral-50 dark:bg-neutral-800/50' : ''}`}
+                                onClick={() => { onChange(opt.id); setOpen(false); }}
+                            >
+                                <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+                                    {isSelected && <Check className="w-3 h-3 text-neutral-400" />}
+                                </span>
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold ${c.badge}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${c.dot} flex-shrink-0`} />
+                                    {opt.name}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─── Purchase Invoice Paper View ────────────────────────────────────────────
+const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; pageId: string }) => {
+    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
+    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    const supplierDb = useDatabaseStore(state => state.databases.find(db => db.id === 'db-suppliers'));
+    const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+
+    if (!page || !database) return null;
+
+    const fmt = (val: any) => {
+        if (!val && val !== 0) return '—';
+        return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(Number(val));
+    };
+    const fmtDate = (val: any) => {
+        if (!val) return '—';
+        try { return new Date(val).toLocaleDateString('fr-BE'); } catch { return String(val); }
+    };
+
+    const statusProp = database.properties.find(p => p.id === 'status');
+    const statusOpt = statusProp?.config?.options?.find((o: any) => o.id === page.properties['status']);
+    const statusStyles = statusOpt ? (COLOR_STYLES[statusOpt.color] || COLOR_STYLES.gray) : null;
+
+    const sourceProp = database.properties.find(p => p.id === 'source');
+    const sourceOpt = sourceProp?.config?.options?.find((o: any) => o.id === page.properties['source']);
+
+    const supplierIds = page.properties['supplier'] as string[] | undefined;
+    const supplierId = Array.isArray(supplierIds) ? supplierIds[0] : undefined;
+    const supplierPage = supplierId ? supplierDb?.pages.find(p => p.id === supplierId) : undefined;
+    const supplierName = supplierPage ? String(supplierPage.properties['title'] || '') : '';
+
+    const totalExVat = page.properties['totalExVat'];
+    const totalVat = page.properties['totalVat'];
+    const totalIncVat = page.properties['totalIncVat'];
+    const description = page.properties['betreft'];
+    const invoiceDate = page.properties['invoiceDate'];
+    const dueDate = page.properties['dueDate'];
+    const peppolDocId = page.properties['peppolDocId'];
+
+    return (
+        <div className="mt-6 mb-8 max-w-3xl">
+            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/60 rounded-2xl shadow-sm overflow-hidden">
+                {/* Header band */}
+                <div className="flex items-start justify-between px-8 pt-8 pb-6 border-b border-neutral-100 dark:border-neutral-800">
+                    <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">
+                            {sourceOpt ? sourceOpt.name : 'Purchase Invoice'}
+                        </p>
+                        <h2 className="text-2xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                            {String(page.properties['title'] || 'Untitled')}
+                        </h2>
+                        {supplierName && (
+                            <p className="text-sm text-neutral-500 mt-1 font-medium">{supplierName}</p>
+                        )}
+                        {peppolDocId && (
+                            <p className="text-xs text-neutral-400 mt-0.5 font-mono">{String(peppolDocId)}</p>
+                        )}
+                    </div>
+                    {statusOpt && statusStyles && (
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${statusStyles.badge}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${statusStyles.dot}`} />
+                            {statusOpt.name}
+                        </span>
+                    )}
+                </div>
+
+                {/* Date row */}
+                <div className="grid grid-cols-2 gap-0 divide-x divide-neutral-100 dark:divide-neutral-800 border-b border-neutral-100 dark:border-neutral-800">
+                    <div className="px-8 py-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Invoice Date</p>
+                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{fmtDate(invoiceDate)}</p>
+                    </div>
+                    <div className="px-8 py-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Due Date</p>
+                        <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{fmtDate(dueDate)}</p>
+                    </div>
+                </div>
+
+                {/* Description */}
+                {description && (
+                    <div className="px-8 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Description</p>
+                        <p className="text-sm text-neutral-700 dark:text-neutral-300">{String(description)}</p>
+                    </div>
+                )}
+
+                {/* Totals */}
+                <div className="px-8 py-6">
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-neutral-500">Total Excl. VAT</span>
+                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{fmt(totalExVat)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-neutral-500">VAT</span>
+                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{fmt(totalVat)}</span>
+                        </div>
+                        <div className="h-px bg-neutral-200 dark:bg-neutral-700 my-3" />
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold text-neutral-900 dark:text-white">Total Incl. VAT</span>
+                            <span className="text-lg font-bold text-neutral-900 dark:text-white">{fmt(totalIncVat)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
@@ -471,16 +650,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                             </span>
                                         </label>
                                     ) : prop.type === 'select' ? (
-                                        <select
-                                            className="w-full h-full bg-transparent outline-none cursor-pointer text-neutral-700 dark:text-neutral-200 font-medium appearance-none"
+                                        <PropertySelectPicker
                                             value={(page.properties[prop.id] as string) || ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
-                                        >
-                                            <option value="" className="text-neutral-400">Empty</option>
-                                            {prop.config?.options?.map((opt: any) => (
-                                                <option key={opt.id} value={opt.id}>{opt.name}</option>
-                                            ))}
-                                        </select>
+                                            options={prop.config?.options || []}
+                                            onChange={(v) => updatePageProperty(databaseId, pageId, prop.id, v)}
+                                        />
                                     ) : prop.type === 'multi_select' ? (
                                         <textarea
                                             className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
@@ -563,29 +737,13 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} />
                     </div>
 
-                    {/* Block Editor */}
+                    {/* Content / Invoice Preview */}
                     <div className="mt-8 mb-12 px-6 md:px-0">
-                        <h2 className="text-xl font-bold text-foreground mb-4">Content</h2>
-                        <BlockEditor databaseId={databaseId} pageId={pageId} />
-                    </div>
-
-                    {/* Appended File Manager (Scoped Context) */}
-                    <div className="mt-8 pb-12">
-                        <h2 className="text-xl font-bold text-foreground mb-4">File Explorer</h2>
-                        <div className="h-[500px] border border-border/50 rounded-xl overflow-hidden shadow-sm">
-                            {page.driveFolderId ? (
-                                <DriveFileExplorer
-                                    rootFolderId={page.driveFolderId}
-                                    rootFolderName={String(page.properties['title'] || 'Workspace')}
-                                />
-                            ) : (
-                                <FileManager
-                                    contextType="project"
-                                    contextId={pageId}
-                                    driveFolderId={undefined}
-                                />
-                            )}
-                        </div>
+                        {databaseId === 'db-expenses' ? (
+                            <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
+                        ) : (
+                            <BlockEditor databaseId={databaseId} pageId={pageId} />
+                        )}
                     </div>
                 </div>
             </div>

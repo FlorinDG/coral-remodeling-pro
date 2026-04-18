@@ -190,7 +190,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ]}},
       { id: 'status', name: 'Status', type: 'select', config: { options: [
         { id: 'opt-draft', name: 'Draft', color: 'gray' },
-        { id: 'opt-received', name: 'Received', color: 'blue' },
         { id: 'opt-unpaid', name: 'Unpaid', color: 'orange' },
         { id: 'opt-paid', name: 'Paid', color: 'green' },
         { id: 'opt-overdue', name: 'Overdue', color: 'red' },
@@ -256,6 +255,20 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (!schemasMatch) {
       console.log(`[Schema Enforcement] Resetting ${databaseId} properties to canonical schema`);
       useDatabaseStore.getState().updateDatabase(databaseId, { properties: expectedProps });
+    }
+
+    // Default column visibility for purchase invoices: hide secondary columns that clutter the table view
+    if (databaseId === 'db-expenses') {
+      const HIDDEN_BY_DEFAULT = ['betreft', 'source', 'peppolDocId'];
+      const store = useDatabaseStore.getState();
+      database.views.forEach(view => {
+        HIDDEN_BY_DEFAULT.forEach(propId => {
+          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
+          if (!hasState) {
+            store.updateViewPropertyState(databaseId, view.id, propId, { hidden: true });
+          }
+        });
+      });
     }
   }, [hydrated, database, databaseId]);
 

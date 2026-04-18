@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt } from 'lucide-react';
+import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 
 interface TicketCaptureModalProps {
@@ -42,10 +42,13 @@ const PAYMENT_METHODS = [
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
-    const [step, setStep] = useState<'capture' | 'form'>('capture');
+    const [step, setStep] = useState<'capture' | 'split-confirm' | 'form'>('capture');
     const [isProcessing, setIsProcessing] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [ocrRawText, setOcrRawText] = useState<string>('');
+    const [pdfPageCount, setPdfPageCount] = useState(0);
+    const [pdfPageTexts, setPdfPageTexts] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,44 +69,70 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     };
 
     const handleFileSelected = useCallback(async (file: File) => {
-        // Show preview
-        const url = URL.createObjectURL(file);
-        setPreviewUrl(url);
+        const url = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+        if (url) setPreviewUrl(url);
         setIsProcessing(true);
 
         try {
-            // Dynamically import OCR to avoid loading Tesseract on page load
             const { recognizeReceipt } = await import('@/lib/ocr');
             const result = await recognizeReceipt(file);
 
             setOcrRawText(result.rawText);
 
-            // Pre-fill form with OCR results (import-first: fill what we can)
+            // For multi-page PDFs in invoice mode: ask user how to split
+            if (isInvoiceMode && result.pageCount > 1 && result.pageTexts) {
+                setPdfPageCount(result.pageCount);
+                setPdfPageTexts(result.pageTexts);
+                setIsProcessing(false);
+                setStep('split-confirm');
+                return;
+            }
+
             setForm(prev => ({
                 ...prev,
                 merchant: result.extractedMerchant || prev.merchant,
                 date: result.extractedDate || prev.date,
                 amount: result.extractedAmount ? result.extractedAmount.toFixed(2) : prev.amount,
                 vatAmount: result.extractedVatAmount ? result.extractedVatAmount.toFixed(2) : prev.vatAmount,
-                // Category left blank — can't infer from OCR reliably
             }));
 
             setStep('form');
         } catch (err) {
             console.error('OCR failed:', err);
-            // Still proceed to form even if OCR fails
             setStep('form');
         } finally {
             setIsProcessing(false);
         }
-    }, []);
+    }, [isInvoiceMode]);
 
     const handleUploadClick = () => fileInputRef.current?.click();
     const handleCameraClick = () => cameraInputRef.current?.click();
 
+    // ── Drag and drop ──────────────────────────────────────────────────────────
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) handleFileSelected(file);
+    }, [handleFileSelected]);
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) handleFileSelected(file);
+        // Reset input so same file can be re-selected
+        e.target.value = '';
     };
 
     const handleSkipToManual = () => {
@@ -161,6 +190,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             <p className="text-xs text-neutral-500">
                                 {step === 'capture'
                                     ? (isInvoiceMode ? 'Upload or scan a purchase invoice' : 'Upload or scan a receipt')
+                                    : step === 'split-confirm'
+                                    ? `Multi-page PDF detected — ${pdfPageCount} pages`
                                     : 'Complete the details'
                                 }
                             </p>
@@ -197,9 +228,19 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 <>
                                     <div
                                         onClick={handleUploadClick}
-                                        className="group cursor-pointer border-2 border-dashed border-neutral-300 dark:border-white/20 rounded-xl p-8 text-center hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 transition-all"
+                                        onDragOver={handleDragOver}
+                                        onDragEnter={handleDragOver}
+                                        onDragLeave={handleDragLeave}
+                                        onDrop={handleDrop}
+                                        className={`group cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                                            isDragging
+                                                ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20 scale-[1.01]'
+                                                : 'border-neutral-300 dark:border-white/20 hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
+                                        }`}
                                     >
-                                        <Upload className="w-8 h-8 text-neutral-400 group-hover:text-orange-500 mx-auto mb-3 transition-colors" />
+                                        <Upload className={`w-8 h-8 mx-auto mb-3 transition-colors ${
+                                            isDragging ? 'text-orange-500' : 'text-neutral-400 group-hover:text-orange-500'
+                                        }`} />
                                         <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
                                             {isInvoiceMode ? 'Upload Invoice' : 'Upload Receipt'}
                                         </p>
@@ -248,6 +289,71 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 className="hidden"
                                 onChange={handleInputChange}
                             />
+                        </div>
+                    )}
+
+                    {/* Split confirmation — multi-page PDF */}
+                    {step === 'split-confirm' && (
+                        <div className="space-y-5 py-2">
+                            <div className="text-center">
+                                <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mx-auto mb-4">
+                                    <FileText className="w-7 h-7 text-blue-500" />
+                                </div>
+                                <p className="text-base font-bold text-neutral-900 dark:text-white">
+                                    {pdfPageCount}-page PDF detected
+                                </p>
+                                <p className="text-sm text-neutral-500 mt-1">
+                                    How would you like to import this document?
+                                </p>
+                            </div>
+
+                            {/* Option A: one document */}
+                            <button
+                                onClick={() => setStep('form')}
+                                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-neutral-200 dark:border-white/10 hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 text-left transition-all group"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
+                                    <Copy className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-300">One document</p>
+                                    <p className="text-xs text-neutral-500">All {pdfPageCount} pages combined into a single invoice record</p>
+                                </div>
+                            </button>
+
+                            {/* Option B: split into N */}
+                            <button
+                                onClick={() => {
+                                    pdfPageTexts.forEach((_, i) => {
+                                        createPage('db-expenses', {
+                                            title: `Page ${i + 1}`,
+                                            source: 'src-pdf',
+                                            status: 'opt-draft',
+                                            invoiceDate: new Date().toISOString().split('T')[0],
+                                            supplier: [],
+                                        });
+                                    });
+                                    onClose();
+                                }}
+                                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-neutral-200 dark:border-white/10 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/10 text-left transition-all group"
+                            >
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                    <Scissors className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300">
+                                        Split into {pdfPageCount} documents
+                                    </p>
+                                    <p className="text-xs text-neutral-500">Each page becomes a separate draft invoice</p>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={() => setStep('capture')}
+                                className="w-full text-center text-xs text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 py-1 transition-colors"
+                            >
+                                ← Upload a different file
+                            </button>
                         </div>
                     )}
 

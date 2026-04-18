@@ -1,95 +1,96 @@
 /**
  * Client-side OCR utility for expense ticket / invoice scanning.
- * Supports both image files (JPG, PNG, WebP) and PDF files.
+ * Supports image files (JPG, PNG, WebP) and multi-page PDFs.
  *
- * PDF strategy: use pdf.js to render the first page to a canvas, then OCR that bitmap.
- * Image strategy: convert to grayscale + high-contrast canvas for better Tesseract accuracy.
+ * PDF strategy:
+ *   - Render each page to a high-resolution canvas (2× scale) via pdf.js
+ *   - OCR each page separately via Tesseract.js
+ *   - Concatenate full text; surface page count so caller can ask
+ *     "import as one document or split into N separate invoices?"
+ *
+ * Image strategy:
+ *   - Convert to high-contrast grayscale bitmap via Canvas API for Tesseract
  */
 
 export interface OCRResult {
     rawText: string;
     extractedAmount: number | null;
     extractedVatAmount: number | null;
-    extractedDate: string | null;  // ISO yyyy-mm-dd
+    extractedDate: string | null;   // ISO yyyy-mm-dd
     extractedMerchant: string | null;
     confidence: number;
-    pageCount?: number; // how many PDF pages were detected
+    pageCount: number;              // 1 for images; N for PDFs
+    /** Raw text per page — only populated for multi-page PDFs */
+    pageTexts?: string[];
 }
 
 let tesseractWorker: any = null;
 
-/**
- * Lazily initializes the Tesseract.js worker.
- */
+// ─── Tesseract ───────────────────────────────────────────────────────────────
+
 async function getWorker() {
     if (tesseractWorker) return tesseractWorker;
-
     const Tesseract = await import('tesseract.js');
     tesseractWorker = await Tesseract.createWorker('nld+fra+eng', undefined, {
         logger: () => {},
     });
-
     return tesseractWorker;
 }
 
-/**
- * Renders the first page of a PDF to a canvas data URL.
- * Uses pdf.js loaded dynamically to avoid SSR issues.
- */
-async function renderPdfFirstPage(file: File): Promise<string> {
-    const arrayBuffer = await file.arrayBuffer();
+// ─── PDF rendering ────────────────────────────────────────────────────────────
 
-    // Dynamically import pdf.js — avoid blocking initial page load
+/**
+ * Renders every page of a PDF to an array of PNG data URLs.
+ * Uses the legacy CJS build (aliased in next.config.ts) to avoid Webpack conflicts.
+ */
+async function renderPdfPages(file: File): Promise<string[]> {
+    const arrayBuffer = await file.arrayBuffer();
     const pdfjsLib = await import('pdfjs-dist');
 
-    // Point the worker at the same version bundled by npm.
-    // Using CDN to avoid separate webpack worker bundle complexity.
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+    // Worker script: point to the matching CDN version so we don't need a separate webpack worker
+    const version = (pdfjsLib as any).version ?? '5.0.0';
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
 
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1);
+    const pageCount = pdf.numPages;
+    const dataUrls: string[] = [];
 
-    // Render at 2x scale for better OCR resolution
-    const scale = 2.0;
-    const viewport = page.getViewport({ scale });
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
+        const page = await pdf.getPage(pageNum);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+        // 2× scale = better OCR resolution
+        const viewport = page.getViewport({ scale: 2.0 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
 
-    const ctx = canvas.getContext('2d')!;
-    // pdfjs-dist v5: canvas (HTMLCanvasElement) is the required field; canvasContext is optional
-    await page.render({ canvas, canvasContext: ctx, viewport } as any).promise;
+        const ctx = canvas.getContext('2d')!;
+        // pdfjs-dist v5: `canvas` is the primary param; `canvasContext` is legacy-supported
+        await page.render({ canvas, canvasContext: ctx as any, viewport } as any).promise;
 
-    // Store page count on the canvas as a side-channel (returned separately below)
-    (canvas as any).__pdfPageCount = pdf.numPages;
+        dataUrls.push(canvas.toDataURL('image/png'));
+        canvas.remove();
+    }
 
-    return canvas.toDataURL('image/png');
+    return dataUrls;
 }
 
-/**
- * Preprocesses an image file for better OCR accuracy.
- * Converts to high-contrast grayscale using Canvas API.
- */
+// ─── Image preprocessing ──────────────────────────────────────────────────────
+
 async function preprocessImageFile(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
 
         img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-                URL.revokeObjectURL(url);
-                resolve(url);
-                return;
-            }
-
             // Upscale small images for better OCR
             const scale = Math.max(1, 2000 / Math.max(img.width, img.height));
+            const canvas = document.createElement('canvas');
             canvas.width = img.width * scale;
             canvas.height = img.height * scale;
 
+            const ctx = canvas.getContext('2d')!;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -97,8 +98,7 @@ async function preprocessImageFile(file: File): Promise<string> {
 
             for (let i = 0; i < data.length; i += 4) {
                 const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-                const contrast = 1.5;
-                const adjusted = Math.min(255, Math.max(0, ((gray - 128) * contrast) + 128));
+                const adjusted = Math.min(255, Math.max(0, ((gray - 128) * 1.5) + 128));
                 const final = adjusted > 140 ? 255 : 0;
                 data[i] = final;
                 data[i + 1] = final;
@@ -119,78 +119,88 @@ async function preprocessImageFile(file: File): Promise<string> {
     });
 }
 
-/**
- * Routes preprocessing based on file type.
- * PDFs are rendered via pdf.js; images are preprocessed via Canvas.
- */
-async function prepareForOCR(file: File): Promise<{ dataUrl: string; pageCount?: number }> {
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-
-    if (isPdf) {
-        const dataUrl = await renderPdfFirstPage(file);
-        return { dataUrl, pageCount: (document.createElement('canvas') as any).__pdfPageCount };
-    }
-
-    const dataUrl = await preprocessImageFile(file);
-    return { dataUrl };
-}
+// ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
- * Recognizes text from a receipt/invoice file (image or PDF) and extracts structured data.
+ * Recognizes text from a file (image or PDF) and extracts structured data.
+ *
+ * For multi-page PDFs:
+ *   - All pages are OCR'd and the full text is concatenated.
+ *   - `pageTexts` contains per-page raw text.
+ *   - `pageCount` > 1 so the caller can ask the user whether to split.
  */
 export async function recognizeReceipt(file: File): Promise<OCRResult> {
     const worker = await getWorker();
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-    const { dataUrl, pageCount } = await prepareForOCR(file);
+    if (isPdf) {
+        const pageDataUrls = await renderPdfPages(file);
+        const pageCount = pageDataUrls.length;
 
+        const pageTexts: string[] = [];
+        let totalConfidence = 0;
+
+        for (const dataUrl of pageDataUrls) {
+            const { data } = await worker.recognize(dataUrl);
+            pageTexts.push(data.text);
+            totalConfidence += data.confidence;
+        }
+
+        const rawText = pageTexts.join('\n\n--- PAGE BREAK ---\n\n');
+        const confidence = totalConfidence / pageCount;
+
+        return {
+            rawText,
+            extractedAmount: extractAmount(rawText),
+            extractedVatAmount: extractVatAmount(rawText),
+            extractedDate: extractDate(rawText),
+            extractedMerchant: extractMerchant(rawText),
+            confidence,
+            pageCount,
+            pageTexts: pageCount > 1 ? pageTexts : undefined,
+        };
+    }
+
+    // Image path
+    const dataUrl = await preprocessImageFile(file);
     const { data } = await worker.recognize(dataUrl);
-    const rawText = data.text;
-    const confidence = data.confidence;
 
     return {
-        rawText,
-        extractedAmount: extractAmount(rawText),
-        extractedVatAmount: extractVatAmount(rawText),
-        extractedDate: extractDate(rawText),
-        extractedMerchant: extractMerchant(rawText),
-        confidence,
-        pageCount,
+        rawText: data.text,
+        extractedAmount: extractAmount(data.text),
+        extractedVatAmount: extractVatAmount(data.text),
+        extractedDate: extractDate(data.text),
+        extractedMerchant: extractMerchant(data.text),
+        confidence: data.confidence,
+        pageCount: 1,
     };
 }
 
-// ─── Extraction helpers ──────────────────────────────────────────────────────
+// ─── Extraction helpers ───────────────────────────────────────────────────────
 
 function extractAmount(text: string): number | null {
     const amounts: number[] = [];
-
     const patterns = [
         /(?:TOTAA?L|TOTAL|TE BETALEN|BEDRAG|AMOUNT|SUBTOTAL|SOUS-TOTAL)\s*:?\s*€?\s*([\d]+[.,]\d{2})/gi,
         /€\s*([\d]+[.,]\d{2})/g,
         /([\d]+[.,]\d{2})\s*(?:EUR|€)/g,
     ];
-
     for (const pattern of patterns) {
         let match;
         while ((match = pattern.exec(text)) !== null) {
             const val = parseFloat(match[1].replace(',', '.'));
-            if (!isNaN(val) && val > 0 && val < 100000) amounts.push(val);
+            if (!isNaN(val) && val > 0 && val < 100_000) amounts.push(val);
         }
     }
-
     return amounts.length > 0 ? Math.max(...amounts) : null;
 }
 
 function extractVatAmount(text: string): number | null {
-    const patterns = [
-        /(?:BTW|TVA|VAT)\s*(?:\d{1,2}%?)?\s*:?\s*€?\s*([\d]+[.,]\d{2})/gi,
-    ];
-
-    for (const pattern of patterns) {
-        const match = pattern.exec(text);
-        if (match) {
-            const val = parseFloat(match[1].replace(',', '.'));
-            if (!isNaN(val) && val > 0) return val;
-        }
+    const pattern = /(?:BTW|TVA|VAT)\s*(?:\d{1,2}%?)?\s*:?\s*€?\s*([\d]+[.,]\d{2})/gi;
+    const match = pattern.exec(text);
+    if (match) {
+        const val = parseFloat(match[1].replace(',', '.'));
+        if (!isNaN(val) && val > 0) return val;
     }
     return null;
 }
@@ -198,14 +208,11 @@ function extractVatAmount(text: string): number | null {
 function extractDate(text: string): string | null {
     const datePattern = /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/g;
     let match;
-
     while ((match = datePattern.exec(text)) !== null) {
-        let day = parseInt(match[1]);
-        let month = parseInt(match[2]);
+        const day = parseInt(match[1]);
+        const month = parseInt(match[2]);
         let year = parseInt(match[3]);
-
         if (year < 100) year += 2000;
-
         if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 2020 && year <= 2030) {
             return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         }
@@ -215,22 +222,16 @@ function extractDate(text: string): string | null {
 
 function extractMerchant(text: string): string | null {
     const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-
     for (const line of lines.slice(0, 5)) {
         if (/^\d+$/.test(line)) continue;
         if (/^(datum|date|tijd|time|kasbon|receipt|factuur|nr|tel|fax)/i.test(line)) continue;
         if (/^[€$\d\s.,]+$/.test(line)) continue;
-
         const cleaned = line.replace(/[^\w\s&'.\-àáâãäåæçèéêëìíîïðñòóôõöùúûüý]/gi, '').trim();
         if (cleaned.length >= 3) return cleaned.substring(0, 60);
     }
-
     return null;
 }
 
-/**
- * Cleanup: terminate the Tesseract worker when no longer needed.
- */
 export async function terminateOCR() {
     if (tesseractWorker) {
         await tesseractWorker.terminate();

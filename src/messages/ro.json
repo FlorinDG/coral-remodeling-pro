@@ -316,6 +316,7 @@
             },
             "financialTabs": {
                 "purchaseInvoices": "FACTURI ACHIZIȚIE",
+                "expenseTickets": "FIȘE DE CHELTUIELI",
                 "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
                 "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
                 "salesInvoices": "FACTURI",
@@ -328,7 +329,8 @@
                 "noInvoicesDesc": "Creați prima factură pentru a începe.",
                 "createInvoice": "Creează Factură",
                 "dashboard": "Panou de Control",
-                "administrative": "Administrativ"
+                "administrative": "Administrativ",
+                "scanUploadTicket": "Scanează Ticket"
             },
             "settings": {
                 "companyInfo": "INFO COMPANIE",

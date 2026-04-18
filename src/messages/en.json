@@ -317,6 +317,7 @@
             },
             "financialTabs": {
                 "purchaseInvoices": "PURCHASE INVOICES",
+                "expenseTickets": "EXPENSE TICKETS",
                 "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
                 "salesCreditNotes": "CREDIT NOTE - SALES",
                 "salesInvoices": "INVOICES",
@@ -329,7 +330,8 @@
                 "noInvoicesDesc": "Create your first invoice to get started with invoicing.",
                 "createInvoice": "Create Invoice",
                 "dashboard": "Dashboard",
-                "administrative": "Administrative"
+                "administrative": "Administrative",
+                "scanUploadTicket": "Scan / Upload Ticket"
             },
             "settings": {
                 "companyInfo": "COMPANY INFO",

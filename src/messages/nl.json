@@ -317,6 +317,7 @@
             },
             "financialTabs": {
                 "purchaseInvoices": "AANKOOPFACTUREN",
+                "expenseTickets": "ONKOSTENFICHES",
                 "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
                 "salesCreditNotes": "CREDITNOTA - VERKOOP",
                 "salesInvoices": "FACTUREN",
@@ -329,7 +330,8 @@
                 "noInvoicesDesc": "Maak uw eerste factuur om aan de slag te gaan.",
                 "createInvoice": "Factuur Aanmaken",
                 "dashboard": "Dashboard",
-                "administrative": "Administratief"
+                "administrative": "Administratief",
+                "scanUploadTicket": "Ticket Scannen"
             },
             "settings": {
                 "companyInfo": "BEDRIJFSINFO",

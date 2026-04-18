@@ -316,6 +316,7 @@
             },
             "financialTabs": {
                 "purchaseInvoices": "FACTURES D'ACHAT",
+                "expenseTickets": "NOTES DE FRAIS",
                 "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
                 "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
                 "salesInvoices": "FACTURES",
@@ -328,7 +329,8 @@
                 "noInvoicesDesc": "Créez votre première facture pour commencer.",
                 "createInvoice": "Créer une Facture",
                 "dashboard": "Tableau de Bord",
-                "administrative": "Administratif"
+                "administrative": "Administratif",
+                "scanUploadTicket": "Scanner / Télécharger Ticket"
             },
             "settings": {
                 "companyInfo": "INFOS SOCIÉTÉ",

@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { financialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { RefreshCw, Plus, Loader2, FileText, Receipt, ArrowDownToLine } from 'lucide-react';
+import { RefreshCw, Plus, Loader2, Camera } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
 
@@ -19,12 +19,18 @@ const PurchaseInvoiceEngine = dynamic(
     { ssr: false }
 );
 
+const TicketCaptureModal = dynamic(
+    () => import('@/components/admin/expenses/TicketCaptureModal'),
+    { ssr: false }
+);
+
 export default function ExpensesInvoicesPage() {
     usePageTitle('Purchase Invoices');
 
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+    const [showScanUpload, setShowScanUpload] = useState(false);
     const [quotaWarning, setQuotaWarning] = useState<{
         overQuota: boolean; current: number; limit: number; plan: string;
     } | null>(null);
@@ -64,14 +70,17 @@ export default function ExpensesInvoicesPage() {
                     title: parsed.invoiceNumber || doc.invoice_number || doc.id,
                     betreft: parsed.lines?.[0]?.description || '',
                     source: 'src-peppol',
-                    status: 'opt-received',
+                    status: 'opt-unpaid',
                     invoiceDate: parsed.issueDate || doc.issue_date || '',
                     dueDate: parsed.dueDate || doc.due_date || '',
                     totalExVat: parsed.totalExVat || 0,
                     totalVat: parsed.totalVat || 0,
                     totalIncVat: parsed.totalIncVat || doc.total_amount || 0,
                     peppolDocId: doc.id,
-                    supplier: [], // Can't auto-match supplier relation without VAT lookup
+                    invoiceLines: JSON.stringify(parsed.lines || []),
+                    supplierName: parsed.supplierName || doc.sender_name || '',
+                    supplierVat: parsed.supplierVat || doc.sender_peppol_id || '',
+                    supplier: [],
                 });
                 imported++;
             }
@@ -119,6 +128,13 @@ export default function ExpensesInvoicesPage() {
                             Sync Peppol Inbox
                         </button>
                         <button
+                            onClick={() => setShowScanUpload(true)}
+                            className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/40 border border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-300 text-xs font-bold rounded-lg transition-colors"
+                        >
+                            <Camera className="w-3.5 h-3.5" />
+                            Scan / Upload
+                        </button>
+                        <button
                             onClick={handleNewManual}
                             className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
                         >
@@ -155,6 +171,14 @@ export default function ExpensesInvoicesPage() {
                 <PurchaseInvoiceEngine
                     pageId={selectedInvoiceId}
                     onClose={() => setSelectedInvoiceId(null)}
+                />
+            )}
+
+            {/* Scan / Upload invoice modal (reuses ticket capture flow, saves to db-expenses) */}
+            {showScanUpload && (
+                <TicketCaptureModal
+                    onClose={() => setShowScanUpload(false)}
+                    targetDatabaseId="db-expenses"
                 />
             )}
         </div>

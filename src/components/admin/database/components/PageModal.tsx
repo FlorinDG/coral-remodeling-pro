@@ -292,6 +292,13 @@ const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; page
     const dueDate = page.properties['dueDate'];
     const peppolDocId = page.properties['peppolDocId'];
 
+    // Parse stored Peppol line items
+    let lines: Array<{ description: string; quantity: number; unitCode: string; unitPrice: number; vatRate: number; lineTotal: number }> = [];
+    try {
+        const raw = page.properties['invoiceLines'];
+        if (raw && typeof raw === 'string') lines = JSON.parse(raw);
+    } catch { /* no lines */ }
+
     return (
         <div className="mt-6 mb-8 max-w-3xl">
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/60 rounded-2xl shadow-sm overflow-hidden">
@@ -331,29 +338,59 @@ const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; page
                     </div>
                 </div>
 
-                {/* Description */}
-                {description && (
+                {/* Description (only when no line items) */}
+                {description && lines.length === 0 && (
                     <div className="px-8 py-4 border-b border-neutral-100 dark:border-neutral-800">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1">Description</p>
                         <p className="text-sm text-neutral-700 dark:text-neutral-300">{String(description)}</p>
                     </div>
                 )}
 
+                {/* Line items table (Peppol / parsed invoices) */}
+                {lines.length > 0 && (
+                    <div className="border-b border-neutral-100 dark:border-neutral-800">
+                        <table className="w-full text-xs">
+                            <thead>
+                                <tr className="bg-neutral-50 dark:bg-neutral-800/50">
+                                    <th className="text-left px-8 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400">Description</th>
+                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Qty</th>
+                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Unit Price</th>
+                                    <th className="text-right px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">VAT %</th>
+                                    <th className="text-right px-8 py-3 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                {lines.map((line, i) => (
+                                    <tr key={i} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/20 transition-colors">
+                                        <td className="px-8 py-3 text-neutral-700 dark:text-neutral-300 font-medium">{line.description || '—'}</td>
+                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">
+                                            {line.quantity} <span className="text-neutral-400">{line.unitCode}</span>
+                                        </td>
+                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">{fmt(line.unitPrice)}</td>
+                                        <td className="px-4 py-3 text-right text-neutral-600 dark:text-neutral-400 tabular-nums">{line.vatRate}%</td>
+                                        <td className="px-8 py-3 text-right font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(line.lineTotal)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
                 {/* Totals */}
                 <div className="px-8 py-6">
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-w-xs ml-auto">
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-neutral-500">Total Excl. VAT</span>
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{fmt(totalExVat)}</span>
+                            <span className="font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(totalExVat)}</span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
                             <span className="text-neutral-500">VAT</span>
-                            <span className="font-semibold text-neutral-800 dark:text-neutral-200">{fmt(totalVat)}</span>
+                            <span className="font-semibold text-neutral-800 dark:text-neutral-200 tabular-nums">{fmt(totalVat)}</span>
                         </div>
                         <div className="h-px bg-neutral-200 dark:bg-neutral-700 my-3" />
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-bold text-neutral-900 dark:text-white">Total Incl. VAT</span>
-                            <span className="text-lg font-bold text-neutral-900 dark:text-white">{fmt(totalIncVat)}</span>
+                            <span className="text-lg font-bold text-neutral-900 dark:text-white tabular-nums">{fmt(totalIncVat)}</span>
                         </div>
                     </div>
                 </div>

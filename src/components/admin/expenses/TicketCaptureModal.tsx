@@ -6,6 +6,8 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
+    /** If provided, saves the record to this database instead of db-tickets (default) */
+    targetDatabaseId?: string;
 }
 
 interface TicketFormData {
@@ -37,8 +39,9 @@ const PAYMENT_METHODS = [
     { id: 'pm-transfer', label: 'Bank Transfer' },
 ];
 
-export default function TicketCaptureModal({ onClose }: TicketCaptureModalProps) {
+export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
     const createPage = useDatabaseStore(s => s.createPage);
+    const isInvoiceMode = targetDatabaseId === 'db-expenses';
     const [step, setStep] = useState<'capture' | 'form'>('capture');
     const [isProcessing, setIsProcessing] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -110,17 +113,34 @@ export default function TicketCaptureModal({ onClose }: TicketCaptureModalProps)
     const handleSave = () => {
         if (!form.merchant.trim() && !form.amount.trim()) return;
 
-        createPage('db-tickets', {
-            title: form.merchant || 'Unnamed Expense',
-            date: form.date,
-            amount: form.amount ? parseFloat(form.amount) : 0,
-            vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : 0,
-            category: form.category || '',
-            currency: form.currency,
-            paymentMethod: form.paymentMethod,
-            receiptUrl: form.receiptUrl || previewUrl || '',
-            notes: form.notes,
-        });
+        if (isInvoiceMode) {
+            // Save as a purchase invoice in db-expenses
+            createPage('db-expenses', {
+                title: form.merchant || 'Unnamed Invoice',
+                betreft: form.notes || '',
+                source: 'src-pdf',
+                status: 'opt-draft',
+                invoiceDate: form.date,
+                totalExVat: form.amount ? parseFloat(form.amount) : 0,
+                totalVat: form.vatAmount ? parseFloat(form.vatAmount) : 0,
+                totalIncVat: form.amount && form.vatAmount
+                    ? parseFloat(form.amount) + parseFloat(form.vatAmount)
+                    : form.amount ? parseFloat(form.amount) : 0,
+                supplier: [],
+            });
+        } else {
+            createPage('db-tickets', {
+                title: form.merchant || 'Unnamed Expense',
+                date: form.date,
+                amount: form.amount ? parseFloat(form.amount) : 0,
+                vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : 0,
+                category: form.category || '',
+                currency: form.currency,
+                paymentMethod: form.paymentMethod,
+                receiptUrl: form.receiptUrl || previewUrl || '',
+                notes: form.notes,
+            });
+        }
 
         onClose();
     };
@@ -135,9 +155,14 @@ export default function TicketCaptureModal({ onClose }: TicketCaptureModalProps)
                             <Receipt className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
-                            <h2 className="text-base font-bold text-neutral-900 dark:text-white">New Expense Ticket</h2>
+                            <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                                {isInvoiceMode ? 'Scan / Upload Invoice' : 'New Expense Ticket'}
+                            </h2>
                             <p className="text-xs text-neutral-500">
-                                {step === 'capture' ? 'Upload or scan a receipt' : 'Complete the details'}
+                                {step === 'capture'
+                                    ? (isInvoiceMode ? 'Upload or scan a purchase invoice' : 'Upload or scan a receipt')
+                                    : 'Complete the details'
+                                }
                             </p>
                         </div>
                     </div>
@@ -376,7 +401,7 @@ export default function TicketCaptureModal({ onClose }: TicketCaptureModalProps)
                             disabled={!form.merchant.trim() && !form.amount.trim()}
                             className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold rounded-xl shadow-sm hover:shadow-md transition-all"
                         >
-                            Save Ticket
+                            {isInvoiceMode ? 'Save Invoice' : 'Save Ticket'}
                         </button>
                     </div>
                 )}

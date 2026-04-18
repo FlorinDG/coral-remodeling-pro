@@ -19,6 +19,7 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'payment_terms': { nl: 'Betalingstermijn', fr: 'Conditions de paiement', en: 'Payment Terms' },
     'payment_terms_30': { nl: 'Betaling binnen 30 dagen', fr: 'Paiement sous 30 jours', en: 'Payment due within 30 days' },
     'offer_number': { nl: 'Offerte', fr: 'Devis', en: 'Offer' },
+    'invoice_num': { nl: 'Offerte Nr.', fr: 'N° Devis', en: 'Invoice #' },
 
     // Table columns
     'description': { nl: 'Omschrijving', fr: 'Description', en: 'Description' },

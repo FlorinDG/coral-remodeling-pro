@@ -110,7 +110,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 });
             }
 
-            // On initial sign-in, inject DB user properties into the token
+            // Handle session.update() calls — e.g., after saving language preference
+            // This keeps the JWT in sync without requiring a full sign-out/sign-in.
+            if (trigger === 'update' && session) {
+                if (session.environmentLanguage !== undefined) token.environmentLanguage = session.environmentLanguage;
+                if (session.role              !== undefined) token.role              = session.role;
+                if (session.tenantId          !== undefined) token.tenantId          = session.tenantId;
+            }
+
             if (user && user.email) {
                 let dbUser = await prisma.user.findUnique({
                     where: { email: user.email },

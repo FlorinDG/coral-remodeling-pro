@@ -7,9 +7,11 @@ import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
 
 export default function CompanyInfoSettings() {
     const t = useTranslations('Admin');
+    const { update: updateSession } = useSession();
 
     const [profile, setProfile] = useState({
         companyName: '',
@@ -98,12 +100,13 @@ export default function CompanyInfoSettings() {
             if (res.ok) {
                 toast.success('Company profile saved securely!');
 
-                // If document language was set, switch the admin UI locale to match
+                // Patch the JWT immediately so middleware locale correction uses the new language
                 const newLang = profile.documentLanguage;
                 const supportedLocales = ['en', 'fr', 'nl', 'ro', 'ru'];
                 if (newLang && supportedLocales.includes(newLang)) {
+                    await updateSession({ environmentLanguage: newLang });
+
                     const currentPath = window.location.pathname;
-                    // Replace the locale segment in the URL (e.g., /en/admin/... → /fr/admin/...)
                     const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
                     if (localeRegex.test(currentPath)) {
                         const newPath = currentPath.replace(localeRegex, `/${newLang}$2`);

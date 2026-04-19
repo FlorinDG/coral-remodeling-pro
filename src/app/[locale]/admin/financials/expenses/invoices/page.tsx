@@ -35,7 +35,8 @@ export default function ExpensesInvoicesPage() {
         overQuota: boolean; current: number; limit: number; plan: string;
     } | null>(null);
 
-    const createPage = useDatabaseStore(s => s.createPage);
+    const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
+    const [isCreatingNew, setIsCreatingNew] = useState(false);
 
     const handleSyncPeppol = useCallback(async () => {
         setSyncing(true);
@@ -59,6 +60,8 @@ export default function ExpensesInvoicesPage() {
                     .map(p => String(p.properties.peppolDocId))
             );
 
+            const { createPageServerFirst } = await import('@/app/actions/pages');
+
             let imported = 0;
             for (const doc of (data.documents || [])) {
                 if (existingPeppolIds.has(doc.id)) continue;
@@ -66,7 +69,7 @@ export default function ExpensesInvoicesPage() {
                 const parsed = doc.parsed;
                 if (!parsed) continue;
 
-                createPage('db-expenses', {
+                const result = await createPageServerFirst('db-expenses', {
                     title: parsed.invoiceNumber || doc.invoice_number || doc.id,
                     betreft: parsed.lines?.[0]?.description || '',
                     source: 'src-peppol',
@@ -82,7 +85,13 @@ export default function ExpensesInvoicesPage() {
                     supplierVat: parsed.supplierVat || doc.sender_peppol_id || '',
                     supplier: [],
                 });
-                imported++;
+
+                if (result.success) {
+                    addConfirmedPage(result.page);
+                    imported++;
+                } else {
+                    console.error('[Peppol sync] Failed to save:', result.error);
+                }
             }
 
             setSyncResult({ count: imported });
@@ -91,16 +100,29 @@ export default function ExpensesInvoicesPage() {
         } finally {
             setSyncing(false);
         }
-    }, [createPage]);
+    }, [addConfirmedPage]);
 
-    const handleNewManual = () => {
-        const page = createPage('db-expenses', {
-            source: 'src-manual',
-            status: 'opt-draft',
-            invoiceDate: new Date().toISOString().split('T')[0],
-        });
-        setSelectedInvoiceId(page.id);
-    };
+    const handleNewManual = useCallback(async () => {
+        if (isCreatingNew) return;
+        setIsCreatingNew(true);
+        try {
+            const { createPageServerFirst } = await import('@/app/actions/pages');
+            const result = await createPageServerFirst('db-expenses', {
+                source: 'src-manual',
+                status: 'opt-draft',
+                invoiceDate: new Date().toISOString().split('T')[0],
+                supplier: [],
+            });
+            if (result.success) {
+                addConfirmedPage(result.page);
+                setSelectedInvoiceId(result.page.id);
+            }
+        } catch (e) {
+            console.error('[handleNewManual] failed:', e);
+        } finally {
+            setIsCreatingNew(false);
+        }
+    }, [isCreatingNew, addConfirmedPage]);
 
     return (
         <div className="flex flex-col w-full h-full">
@@ -136,10 +158,11 @@ export default function ExpensesInvoicesPage() {
                         </button>
                         <button
                             onClick={handleNewManual}
-                            className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
+                            disabled={isCreatingNew}
+                            className="flex items-center gap-2 px-3 py-2 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-60"
                         >
-                            <Plus className="w-3.5 h-3.5" />
-                            Manual Invoice
+                            {isCreatingNew ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                            {isCreatingNew ? 'Creating…' : 'Manual Invoice'}
                         </button>
                     </div>
 

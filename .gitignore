@@ -49,3 +49,4 @@ next-env.d.ts
 *.db-journal
 .next.nosync/
 dev.log
+.env*.local

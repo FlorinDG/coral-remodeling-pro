@@ -8,7 +8,8 @@ export const runtime = 'nodejs';
 // Allow up to 30 seconds for GPT-4o vision on large images
 export const maxDuration = 30;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// DO NOT instantiate OpenAI at module level — the key is not available at build time.
+// It is instantiated inside the POST handler at runtime.
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ Rules:
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function extractFromImage(buffer: Buffer, mimeType: string, isInvoice: boolean) {
+async function extractFromImage(openai: OpenAI, buffer: Buffer, mimeType: string, isInvoice: boolean) {
     const base64 = buffer.toString('base64');
     const response = await openai.chat.completions.create({
         model: 'gpt-4o',
@@ -77,7 +78,7 @@ async function extractFromImage(buffer: Buffer, mimeType: string, isInvoice: boo
     return response.choices[0].message.content ?? '{}';
 }
 
-async function extractFromPdfText(text: string, isInvoice: boolean) {
+async function extractFromPdfText(openai: OpenAI, text: string, isInvoice: boolean) {
     const safeText = text.slice(0, 100_000);
     const response = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -100,6 +101,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Instantiate at runtime — OPENAI_API_KEY is not available during build
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
@@ -117,21 +121,17 @@ export async function POST(req: Request) {
         let rawJson: string;
 
         if (isPdf) {
-            // Use pdf-parse to get text, then GPT-4o-mini (cheaper, text-only)
             const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
             const parsed = await pdfParse(buffer);
             if (!parsed.text?.trim()) {
-                // Scanned PDF with no text layer — treat first page as image
-                // (pdf-parse can't help; tell the user to upload as image)
                 return NextResponse.json({
                     error: 'This PDF appears to be a scanned image with no text layer. Please upload a photo instead.',
                     code: 'NO_TEXT_LAYER'
                 }, { status: 422 });
             }
-            rawJson = await extractFromPdfText(parsed.text, isInvoice);
+            rawJson = await extractFromPdfText(openai, parsed.text, isInvoice);
         } else {
-            // Image — use GPT-4o vision
-            rawJson = await extractFromImage(buffer, file.type || 'image/jpeg', isInvoice);
+            rawJson = await extractFromImage(openai, buffer, file.type || 'image/jpeg', isInvoice);
         }
 
         // Parse the GPT response

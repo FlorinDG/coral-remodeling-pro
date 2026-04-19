@@ -187,6 +187,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
 // ─── Premium PropertySelectPicker ──────────────────────────────────────────
 const PropertySelectPicker = ({ value, options, onChange }: { value: string; options: any[]; onChange: (v: string) => void }) => {
     const [open, setOpen] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const ref = React.useRef<HTMLDivElement>(null);
     const selected = options.find(o => o.id === value);
     const styles = selected ? (COLOR_STYLES[selected.color] || COLOR_STYLES.gray) : null;
@@ -194,7 +195,11 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
     React.useEffect(() => {
         if (!open) return;
         const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+            // Close if click is outside the trigger AND outside any portal dropdown
+            const target = e.target as Node;
+            const inRef = ref.current && ref.current.contains(target);
+            const inPortal = (target as Element)?.closest?.('[data-select-portal]');
+            if (!inRef && !inPortal) setOpen(false);
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
@@ -203,7 +208,13 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
     return (
         <div ref={ref} className="relative w-full">
             <button
-                onClick={() => setOpen(!open)}
+                onClick={(e) => {
+                    if (!open) {
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+                    }
+                    setOpen(!open);
+                }}
                 className="flex items-center gap-2 w-full text-left group"
             >
                 {selected && styles ? (
@@ -217,8 +228,12 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
                 <ChevronDown className="w-3 h-3 text-neutral-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </button>
 
-            {open && (
-                <div className="absolute top-full left-0 mt-1 z-[99999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-100">
+            {open && typeof document !== 'undefined' && createPortal(
+                <div
+                    data-select-portal
+                    style={{ top: dropdownPos.top, left: dropdownPos.left }}
+                    className="fixed z-[999999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-100"
+                >
                     <button
                         className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
                         onClick={() => { onChange(''); setOpen(false); }}
@@ -248,7 +263,8 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
                             </button>
                         );
                     })}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

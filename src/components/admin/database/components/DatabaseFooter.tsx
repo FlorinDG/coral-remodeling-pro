@@ -6,6 +6,7 @@ import { useDatabaseStore } from '../store';
 import { useLocale } from 'next-intl';
 import { Property } from '../types';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { createPageServerFirst } from '@/app/actions/pages';
 
 type SummaryType = 'none' | 'count' | 'sum' | 'average' | 'min' | 'max';
 
@@ -28,11 +29,11 @@ const SUMMARY_LABELS: Record<SummaryType, string> = {
 };
 
 const NEW_LABELS: Record<string, string> = {
-    nl: '+ Nieuw',
-    fr: '+ Nouveau',
-    en: '+ New',
-    ro: '+ Nou',
-    ru: '+ Новый',
+    nl: 'Nieuw',
+    fr: 'Nouveau',
+    en: 'New',
+    ro: 'Nou',
+    ru: 'Новый',
 };
 
 export default function DatabaseFooter({
@@ -58,7 +59,6 @@ export default function DatabaseFooter({
         if (FINANCIAL_DBS.has(databaseId)) {
             setIsCreating(true);
             try {
-                const { createPageServerFirst } = await import('@/app/actions/pages');
                 const result = await createPageServerFirst(databaseId, {});
                 if (result.success) addConfirmedPage(result.page);
             } finally {

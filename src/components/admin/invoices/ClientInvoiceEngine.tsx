@@ -17,6 +17,7 @@ import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import { toast } from 'sonner';
+import { createPageServerFirst } from '@/app/actions/pages';
 
 import { Bot, Mail, CloudUpload, Send, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -213,7 +214,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
         const cnNumber = `CN-${invoiceNum}`;
-        const { createPageServerFirst } = await import('@/app/actions/pages');
         const result = await createPageServerFirst('db-invoices', {
             title: cnNumber,
             client: clientId,

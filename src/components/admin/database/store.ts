@@ -9,8 +9,20 @@ import { saveGlobalDatabase, saveGlobalPage, deleteGlobalDatabase, deleteGlobalP
 const syncDb = (db: Database | undefined) => {
     if (db) saveGlobalDatabase(db).catch(console.error);
 };
-const syncPage = (page: Page | undefined) => {
-    if (page) saveGlobalPage(page).catch(console.error);
+
+/**
+ * Save a page to Postgres. If the parent DB is provided and may not yet exist
+ * in Postgres (first-session race for locked DBs like db-expenses), we upsert
+ * the DB first to satisfy the foreign-key constraint, then save the page.
+ */
+const syncPage = (page: Page | undefined, parentDb?: Database) => {
+    if (!page) return;
+    const doSave = () => saveGlobalPage(page).catch(console.error);
+    if (parentDb) {
+        saveGlobalDatabase(parentDb).then(doSave).catch(doSave);
+    } else {
+        doSave();
+    }
 };
 
 // Custom IndexedDB storage object to bypass the 5MB browser localStorage limit
@@ -441,7 +453,9 @@ export const useDatabaseStore = create<DatabaseState>()(
                     };
                 }
 
-                syncPage(newPage);
+                // Pass the parent DB so syncPage can guarantee the DB exists in Postgres first
+                const parentDb = get().databases.find(d => d.id === databaseId);
+                syncPage(newPage, parentDb);
                 return newPage;
             },
 
@@ -530,7 +544,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                         })
                     };
                 });
-                createdPages.forEach((p: Page) => syncPage(p));
+                createdPages.forEach((p: Page) => {
+                    const parentDb = get().databases.find(d => d.id === databaseId);
+                    syncPage(p, parentDb);
+                });
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {

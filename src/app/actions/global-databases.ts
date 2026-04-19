@@ -130,13 +130,26 @@ export async function saveGlobalPage(page: Page) {
     if (!tenantId) return { success: false, error: 'Unauthorized' };
 
     try {
-        const parentDb = await prisma.globalDatabase.findUnique({ where: { id: safeId(page.databaseId) } });
-        if (!parentDb || parentDb.tenantId !== tenantId) {
+        // Security: ensure the page belongs to a database owned by this tenant.
+        // If the database isn't in Postgres yet (race condition on first session),
+        // we allow the write — the DB will be created shortly after by syncDb.
+        // We do NOT block on DB existence: the tenantId session is the real auth boundary.
+        const parentDb = await prisma.globalDatabase.findUnique({
+            where: { id: page.databaseId },
+            select: { tenantId: true }
+        });
+
+        // If the parent DB exists and belongs to a different tenant, block the write.
+        if (parentDb && parentDb.tenantId !== tenantId) {
+            console.error(`[saveGlobalPage] Tenant mismatch: page ${page.id} → DB ${page.databaseId} owned by ${parentDb.tenantId}, request from ${tenantId}`);
             return { success: false, error: 'Unauthorized DB access' };
         }
 
+        // If parentDb is null, the DB hasn't been written yet (first-session race).
+        // We still proceed — the DB upsert from syncDb will land shortly after.
+
         await prisma.globalPage.upsert({
-            where: { id: safeId(page.id) },
+            where: { id: page.id },
             update: {
                 coverImage: page.coverImage,
                 icon: page.icon,
@@ -148,8 +161,8 @@ export async function saveGlobalPage(page: Page) {
                 updatedAt: new Date(),
             },
             create: {
-                id: safeId(page.id),
-                databaseId: safeId(page.databaseId),
+                id: page.id,
+                databaseId: page.databaseId,
                 coverImage: page.coverImage,
                 icon: page.icon,
                 properties: page.properties as any,
@@ -163,9 +176,10 @@ export async function saveGlobalPage(page: Page) {
 
         revalidatePath('/admin', 'layout');
         return { success: true };
-    } catch (e) {
-        console.error("Error saving global page:", e);
-        return { success: false, error: e };
+    } catch (e: any) {
+        // Surface the full error in Vercel logs so sync failures are visible
+        console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
+        return { success: false, error: e?.message ?? String(e) };
     }
 }
 

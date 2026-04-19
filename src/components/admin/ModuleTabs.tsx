@@ -37,18 +37,29 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
 
     const allowedTabs = useMemo(() => {
         const SETTINGS_MODULE_MAP: Record<string, string[]> = {
+            // CRM-dependent settings
             'opt-relations': ['CRM'],
-            'opt-tasks': ['CRM'],
-            'opt-projects': ['PROJECTS'],
-            'opt-calendar': ['CALENDAR'],
-            'opt-hr': ['HR'],
-            'opt-library': ['DATABASES'],
-            'databases': ['DATABASES'],
-            'pipeline': ['CRM'],
-            'opt-website': ['HR'],
-            'ui': ['CRM'],           // Bind Layout mapping to Pro
-            'integrations': ['CRM'],  // Bind Integrations mapping to Pro
-            'opt-financials': ['CRM'] // Strip off Financial Settings from Free
+            'opt-tasks':     ['CRM'],
+            'pipeline':      ['CRM'],
+
+            // Module-specific settings
+            'opt-projects':  ['PROJECTS'],
+            'opt-calendar':  ['CALENDAR'],
+            'opt-hr':        ['HR'],
+            'opt-library':   ['DATABASES'],
+            'databases':     ['DATABASES'],
+
+            // Financial settings — available to anyone with INVOICING (i.e. all plans)
+            // Was incorrectly bound to CRM, blocking FREE-tier financial configuration
+            'opt-financials': ['INVOICING'],
+
+            // Website/frontend module — requires WEBSITES module (ENTERPRISE+)
+            'opt-website':   ['WEBSITES'],
+
+            // UI layout + integrations — available to all active tenants (no gate)
+            // Previously locked to CRM which prevented FREE users from customizing layout
+            // 'ui': ungated
+            // 'integrations': ungated
         };
         return resolvedTabs.filter(tab => {
             const req = SETTINGS_MODULE_MAP[tab.id];

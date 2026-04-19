@@ -120,7 +120,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         'financials': ['INVOICING'],
         'calendar': ['CALENDAR'],
         'library': ['DATABASES'],
-        'frontend': ['ENTERPRISE']
+        'frontend': ['WEBSITES'],   // Requires WEBSITES module (ENTERPRISE+), not planType string
     };
 
     const filteredItems = menuItems.filter(item => {
@@ -253,7 +253,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                         <ThemeToggle />
 
-                        {(!activeModules.includes('HR') || !activeModules.includes('DATABASES')) && (
+                        {(planType === 'FREE') && (
                             <Link
                                 href="/admin/settings"
                                 className="text-[10px] text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"

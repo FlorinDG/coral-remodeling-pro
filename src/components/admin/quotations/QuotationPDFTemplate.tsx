@@ -3,6 +3,7 @@ import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pd
 import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
+import { canAccess } from '@/lib/feature-flags';
 
 interface ClientInfo {
     name: string;
@@ -30,7 +31,7 @@ export const QuotationPDFTemplate = ({
 }: QuotationPDFProps) => {
 
     const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic } = tenantProfile || {};
-    const showWatermark = !planType || planType === 'FREE';
+    const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
 

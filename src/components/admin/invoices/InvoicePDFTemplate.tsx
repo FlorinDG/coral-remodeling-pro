@@ -3,6 +3,7 @@ import { Document, Page, Text, View, Image } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
+import { canAccess } from '@/lib/feature-flags';
 
 interface ClientInfo {
     name: string;
@@ -27,7 +28,7 @@ interface InvoicePDFProps {
 export const InvoicePDFTemplate = ({ blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal, databaseStoreState, tenantProfile, templateId = 't1', language = 'nl' }: InvoicePDFProps) => {
 
     const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic } = tenantProfile || {};
-    const showWatermark = !planType || planType === 'FREE';
+    const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
 

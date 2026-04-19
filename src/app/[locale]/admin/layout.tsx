@@ -9,8 +9,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
     const session = await auth();
     const tenantId = (session?.user as any)?.tenantId;
 
-    // Defaults — safe fallback (most restrictive)
-    let activeModules: string[] = ["CRM", "PROJECTS", "INVOICING", "CALENDAR", "DATABASES"];
+    // Defaults — most restrictive safe fallback (matches new-tenant provisioning)
+    let activeModules: string[] = ["INVOICING"];
     let planType: string = "FREE";
 
     if (tenantId) {

@@ -76,7 +76,10 @@ export async function POST(req: Request) {
                     companyName: name ? `${name}'s Workspace` : 'New Workspace',
                     planType: 'FOUNDER',
                     subscriptionStatus: 'ACTIVE',
-                    activeModules: ['INVOICING'],
+                    // FOUNDER = all current stable modules.
+                    // Add new modules here as they reach production quality.
+                    // Existing FOUNDER tenants are updated via DB migration when modules mature.
+                    activeModules: ['INVOICING', 'CRM', 'DATABASES'],
                     documentLanguage: userLanguage,
                 },
             });

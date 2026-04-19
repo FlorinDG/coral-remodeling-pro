@@ -140,7 +140,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             companyName:        user.name ? `${user.name}'s Workspace` : "New Workspace",
                             planType:           "FOUNDER",
                             subscriptionStatus: "ACTIVE",
-                            activeModules:      ["INVOICING"],
+                            activeModules:      ["INVOICING", "CRM", "DATABASES"],
                             documentLanguage:   nextLocale,
                         },
                     });

@@ -155,7 +155,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                 icon: Receipt,
                 color: "text-amber-500",
                 bg: "bg-amber-500/10",
-                href: "/admin/financials/expenses/aankoopfacturen",
+                href: "/admin/financials/expenses/invoices",
             },
             {
                 label: 'Clients',
@@ -171,7 +171,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                 icon: ShoppingCart,
                 color: "text-green-500",
                 bg: "bg-green-500/10",
-                href: "/admin/financials/income/offertes",
+                href: "/admin/quotations",
             },
         ] : []),
         ...(hasCRM ? [

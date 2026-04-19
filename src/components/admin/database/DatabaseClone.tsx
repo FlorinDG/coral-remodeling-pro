@@ -313,6 +313,23 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0] || database.views[0];
 
+  // Guard: database exists but has no views yet (newly provisioned stub with views: []).
+  // Create a default table view and wait for it to be stored before rendering.
+  if (!activeView) {
+    if (!autoInitializing) {
+      setAutoInitializing(true);
+      useDatabaseStore.getState().addView(resolvedId, { name: 'All', type: 'table', propertiesState: [] });
+      // addView is synchronous in the store — next render will have a view.
+      setAutoInitializing(false);
+    }
+    return (
+      <div className="flex flex-col items-center justify-center h-[500px] bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 p-8 text-center space-y-4 m-6">
+        <div className="w-8 h-8 border-2 border-neutral-300 border-t-[var(--brand-color,#d35400)] rounded-full animate-spin" />
+        <p className="text-sm text-neutral-500 font-medium">Initializing view...</p>
+      </div>
+    );
+  }
+
   const getViewIcon = (type: string) => {
     switch (type) {
       case 'table': return <Table2 className="w-4 h-4" />;

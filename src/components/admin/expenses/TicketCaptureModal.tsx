@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
+import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -161,7 +162,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             // Manual entry — server-first (same reliability as scanned)
             setStep('saving');
             try {
-                const { createPageServerFirst } = await import('@/app/actions/pages');
+                // static import — dynamic import of server actions fails silently in Next.js App Router
                 if (isInvoiceMode) {
                     const result = await createPageServerFirst('db-expenses', {
                         title: form.merchant || 'Manual Invoice',
@@ -204,7 +205,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         setSaveError('');
 
         try {
-            const { updatePageServerFirst } = await import('@/app/actions/pages');
+            // static import — see top of file
 
             // Build new properties from the already-saved page + user edits
             const currentProps = scanResult.page.properties as Record<string, any>;

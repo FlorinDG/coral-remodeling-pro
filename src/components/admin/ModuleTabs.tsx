@@ -37,29 +37,27 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
 
     const allowedTabs = useMemo(() => {
         const SETTINGS_MODULE_MAP: Record<string, string[]> = {
-            // CRM-dependent settings
-            'opt-relations': ['CRM'],
-            'opt-tasks':     ['CRM'],
-            'pipeline':      ['CRM'],
+            // Financial settings — requires INVOICING but ALSO at least one other module
+            // (i.e. not shown to pure FREE/INVOICING-only tenants — they configure via Company Info)
+            'opt-financials': ['CRM', 'PROJECTS', 'CALENDAR', 'HR', 'DATABASES', 'WEBSITES'],
 
-            // Module-specific settings
-            'opt-projects':  ['PROJECTS'],
+            // UI Layout — power-user feature, shown when tenant has any non-base module
+            'ui':            ['CRM', 'PROJECTS', 'CALENDAR', 'HR', 'DATABASES', 'WEBSITES'],
+
+            // Module-specific settings — gated behind their own module
             'opt-calendar':  ['CALENDAR'],
             'opt-hr':        ['HR'],
             'opt-library':   ['DATABASES'],
             'databases':     ['DATABASES'],
+            'opt-projects':  ['PROJECTS'],
+            'opt-relations': ['CRM'],
+            'opt-tasks':     ['CRM'],
+            'pipeline':      ['CRM'],
 
-            // Financial settings — available to anyone with INVOICING (i.e. all plans)
-            // Was incorrectly bound to CRM, blocking FREE-tier financial configuration
-            'opt-financials': ['INVOICING'],
-
-            // Website/frontend module — requires WEBSITES module (ENTERPRISE+)
+            // Website/frontend — ENTERPRISE+
             'opt-website':   ['WEBSITES'],
 
-            // UI layout + integrations — available to all active tenants (no gate)
-            // Previously locked to CRM which prevented FREE users from customizing layout
-            // 'ui': ungated
-            // 'integrations': ungated
+            // company-info — always visible (no entry = no gate)
         };
         return resolvedTabs.filter(tab => {
             const req = SETTINGS_MODULE_MAP[tab.id];

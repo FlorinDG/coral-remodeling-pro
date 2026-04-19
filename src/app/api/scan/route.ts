@@ -60,7 +60,12 @@ Rules:
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function extractFromImage(openai: OpenAI, buffer: Buffer, mimeType: string, isInvoice: boolean) {
+    // Mobile camera images often arrive with empty or incorrect MIME type
+    const safeMime = (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType))
+        ? mimeType
+        : 'image/jpeg';
     const base64 = buffer.toString('base64');
+
     const response = await openai.chat.completions.create({
         model: 'gpt-4o',
         max_tokens: 2000,
@@ -70,7 +75,7 @@ async function extractFromImage(openai: OpenAI, buffer: Buffer, mimeType: string
                 role: 'user',
                 content: [
                     { type: 'text', text: 'Extract all structured data from this document image.' },
-                    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } }
+                    { type: 'image_url', image_url: { url: `data:${safeMime};base64,${base64}`, detail: 'high' } }
                 ]
             }
         ]
@@ -117,19 +122,40 @@ export async function POST(req: Request) {
         const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
         const buffer = Buffer.from(await file.arrayBuffer());
 
+        // ── Validate API key ─────────────────────────────────────────────────
+        if (!process.env.OPENAI_API_KEY) {
+            return NextResponse.json({
+                error: 'OCR service not configured. Please contact support.',
+                code: 'NO_API_KEY'
+            }, { status: 503 });
+        }
+
         // ── Extract structured data ──────────────────────────────────────────
         let rawJson: string;
 
         if (isPdf) {
-            const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-            const parsed = await pdfParse(buffer);
-            if (!parsed.text?.trim()) {
+            let pdfText: string;
+            try {
+                const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
+                const parsed = await pdfParse(buffer);
+                pdfText = parsed.text?.trim() ?? '';
+            } catch (pdfErr: any) {
+                // pdf-parse throws "The string did not match the expected pattern"
+                // on malformed/encrypted PDFs — surface a clear message
+                console.warn('[/api/scan] pdf-parse failed:', pdfErr?.message);
+                return NextResponse.json({
+                    error: 'This PDF could not be read. It may be encrypted, corrupted, or password-protected. Try uploading a photo of the document instead.',
+                    code: 'PDF_PARSE_ERROR'
+                }, { status: 422 });
+            }
+
+            if (!pdfText) {
                 return NextResponse.json({
                     error: 'This PDF appears to be a scanned image with no text layer. Please upload a photo instead.',
                     code: 'NO_TEXT_LAYER'
                 }, { status: 422 });
             }
-            rawJson = await extractFromPdfText(openai, parsed.text, isInvoice);
+            rawJson = await extractFromPdfText(openai, pdfText, isInvoice);
         } else {
             rawJson = await extractFromImage(openai, buffer, file.type || 'image/jpeg', isInvoice);
         }

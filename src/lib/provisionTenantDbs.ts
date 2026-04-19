@@ -1,17 +1,18 @@
 /**
- * provisionTenantDbs.ts
+ * provisionTenantDbs.ts — SERVER ONLY
  *
  * Creates the 6 locked GlobalDatabase rows for a new tenant and stores
  * their IDs in Tenant.lockedDbIds. Safe to call multiple times (idempotent).
  *
- * Each tenant gets uniquely-scoped IDs like:
- *   db-invoices-a1b2c3d4   (where a1b2c3d4 = first 8 chars of tenantId)
- *
- * Legacy tenants (FOUNDER) have lockedDbIds = {} and fall back to
- * bare IDs via getLockedDbId().
+ * DO NOT import this file from client components — it imports PrismaClient.
+ * For client-safe utilities, use @/lib/lockedDbUtils instead.
  */
 
 import { PrismaClient } from '@prisma/client';
+import { LockedDbKey, LockedDbIds, BASE_TO_KEY, getLockedDbId } from '@/lib/lockedDbUtils';
+
+export type { LockedDbKey, LockedDbIds };
+export { getLockedDbId };
 
 // The 6 locked databases every tenant must have
 export const LOCKED_DB_BASES = [
@@ -23,10 +24,6 @@ export const LOCKED_DB_BASES = [
     'db-quotations',
 ] as const;
 
-export type LockedDbKey = 'invoices' | 'clients' | 'suppliers' | 'expenses' | 'tickets' | 'quotations';
-
-export type LockedDbIds = Record<LockedDbKey, string>;
-
 // Maps base ID → display name
 const DB_NAMES: Record<string, string> = {
     'db-invoices':   'Sales Invoices',
@@ -36,26 +33,6 @@ const DB_NAMES: Record<string, string> = {
     'db-tickets':    'Expense Tickets',
     'db-quotations': 'Quotations',
 };
-
-// Maps base ID → lockedDbIds key
-const BASE_TO_KEY: Record<string, LockedDbKey> = {
-    'db-invoices':   'invoices',
-    'db-clients':    'clients',
-    'db-suppliers':  'suppliers',
-    'db-expenses':   'expenses',
-    'db-tickets':    'tickets',
-    'db-quotations': 'quotations',
-};
-
-/**
- * Returns the actual tenant-scoped DB ID for a given base name.
- * Falls back to the bare base ID for legacy tenants (lockedDbIds = {}).
- */
-export function getLockedDbId(base: string, lockedDbIds: Record<string, string>): string {
-    const key = BASE_TO_KEY[base];
-    if (key && lockedDbIds[key]) return lockedDbIds[key];
-    return base; // Legacy fallback — FOUNDER tenant bare IDs
-}
 
 /**
  * Provisions the 6 locked GlobalDatabase rows for a tenant.

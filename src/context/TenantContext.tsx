@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, ReactNode } from "react";
-import { getLockedDbId } from "@/lib/provisionTenantDbs";
+import { getLockedDbId } from "@/lib/lockedDbUtils";
 
 interface TenantContextProps {
     activeModules: string[];

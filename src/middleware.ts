@@ -143,6 +143,42 @@ export default auth((req) => {
             return NextResponse.redirect(url);
         }
 
+        // ── Module-based route gating ────────────────────────────────────────
+        // activeModules comes from the JWT (set at login, refreshed on updateAge).
+        // This is enforced server-side — client-side UI bypass doesn't help.
+        // Superadmin roles bypass all module gates.
+        const activeModules = (req.auth?.user as any)?.activeModules as string[] | undefined;
+        const isSuperadmin  = PLATFORM_ADMIN_ROLES.includes(role as any);
+
+        // Map: path segment → required module
+        const MODULE_GATE: Record<string, string> = {
+            'financials':          'INVOICING',
+            'quotations':          'INVOICING',
+            'suppliers':           'INVOICING',
+            'contacts':            'CRM',
+            'projects-management': 'PROJECTS',
+            'hr':                  'HR',
+            'calendar':            'CALENDAR',
+            'websites':            'WEBSITES',
+            'databases':           'DATABASES',
+            'library':             'INVOICING',
+        };
+
+        if (isLoggedIn && !isSuperadmin && activeModules) {
+            // Strip locale prefix to get the admin sub-path
+            // pathname examples: /nl/admin/financials/..., /admin/contacts
+            const stripped = pathname.replace(/^\/(en|fr|nl|ro|ru)/, '').replace(/^\/admin\/?/, '');
+            const segment  = stripped.split('/')[0];
+
+            const requiredModule = MODULE_GATE[segment];
+            if (requiredModule && !activeModules.includes(requiredModule)) {
+                // Hard redirect — not a soft 403, so the user sees a clean dashboard
+                const locale   = resolveLocale(req);
+                const blocked  = new URL(`/${locale}/admin?blocked=${requiredModule}`, req.nextUrl.origin);
+                return NextResponse.redirect(blocked);
+            }
+        }
+
         // ── Locale auto-correction for authenticated admin users ──
         const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
         const jwtLang    = (req.auth?.user as any)?.environmentLanguage;

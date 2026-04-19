@@ -160,6 +160,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     token.tenantId            = dbUser.tenantId;
                     token.environmentLanguage = dbUser.environmentLanguage;
                     token.emailVerified       = dbUser.emailVerified ? true : false;
+
+                    // Fetch activeModules + planType for middleware route gating.
+                    // Stored in JWT so the edge middleware can read them without a DB call.
+                    // Refreshed on every sign-in — stale window = updateAge (30 min max).
+                    if (dbUser.tenantId) {
+                        const tenant = await prisma.tenant.findUnique({
+                            where:  { id: dbUser.tenantId },
+                            select: { activeModules: true, planType: true },
+                        });
+                        token.activeModules = tenant?.activeModules ?? ['INVOICING'];
+                        token.planType      = tenant?.planType ?? 'FREE';
+                    }
                 }
             }
             return token;
@@ -171,6 +183,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 (session.user as any).tenantId            = token.tenantId;
                 (session.user as any).environmentLanguage = token.environmentLanguage;
                 (session.user as any).emailVerified       = token.emailVerified;
+                (session.user as any).activeModules       = token.activeModules ?? ['INVOICING'];
+                (session.user as any).planType            = token.planType ?? 'FREE';
             }
             return session;
         },

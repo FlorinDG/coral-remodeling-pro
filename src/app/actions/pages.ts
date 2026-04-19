@@ -5,6 +5,24 @@ import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
 import { Page } from '@/components/admin/database/types';
 
+// Infer required module from locked DB ID prefix.
+// Works for both bare IDs ('db-invoices') and scoped IDs ('db-invoices-abc12345').
+const DB_ID_MODULE_MAP: Array<[string, string]> = [
+    ['db-invoices',   'INVOICING'],
+    ['db-expenses',   'INVOICING'],
+    ['db-tickets',    'INVOICING'],
+    ['db-quotations', 'INVOICING'],
+    ['db-clients',    'CRM'],
+    ['db-suppliers',  'INVOICING'],
+];
+
+function requiredModuleForDb(databaseId: string): string | null {
+    for (const [prefix, module] of DB_ID_MODULE_MAP) {
+        if (databaseId === prefix || databaseId.startsWith(prefix + '-')) return module;
+    }
+    return null; // Non-locked DBs (projects, articles, etc.) — no module gate
+}
+
 /**
  * Server-first page creation.
  * Unlike the store's fire-and-forget syncPage, this awaits the Postgres write
@@ -18,6 +36,24 @@ export async function createPageServerFirst(
     const session = await auth();
     const tenantId = (session?.user as any)?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
+
+    // Module-level authorization — enforced server-side regardless of UI state.
+    // A FREE tenant calling this directly for a INVOICING/CRM database gets denied.
+    const requiredModule = requiredModuleForDb(databaseId);
+    if (requiredModule) {
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { activeModules: true, planType: true },
+        });
+        const role = (session?.user as any)?.role as string;
+        const isSuperadmin = ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role);
+        if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
+            return {
+                success: false,
+                error: `Access denied — module '${requiredModule}' is not active on your plan.`,
+            };
+        }
+    }
 
     try {
         // Ensure parent DB exists — upsert a stub if it's a first-session locked DB

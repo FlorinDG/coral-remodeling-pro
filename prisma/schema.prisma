@@ -68,6 +68,11 @@ model Tenant {
   scanQuota          Int      @default(30)   // FREE tier default; PRO=300, ENTERPRISE=-1 (unlimited)
   scanCountResetAt   DateTime @default(now())
 
+  // Per-tenant locked database IDs
+  // { invoices: 'db-invoices-<tenantId8>', clients: 'db-clients-<tenantId8>', ... }
+  // Empty {} for legacy tenants — they fall back to bare IDs ('db-invoices' etc.)
+  lockedDbIds        Json     @default("{}")
+
   // Peppol monthly usage counters (reset on 1st of each calendar month)
   peppolSentThisMonth      Int      @default(0)
   peppolReceivedThisMonth  Int      @default(0)

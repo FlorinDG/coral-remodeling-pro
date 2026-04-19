@@ -8,6 +8,8 @@ import { usePageTitle } from '@/hooks/usePageTitle';
 import { RefreshCw, Plus, Loader2, Camera } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
+import { createPageServerFirst } from '@/app/actions/pages';
+import { useTenant } from '@/context/TenantContext';
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -26,6 +28,9 @@ const TicketCaptureModal = dynamic(
 
 export default function ExpensesInvoicesPage() {
     usePageTitle('Purchase Invoices');
+
+    const { resolveDbId } = useTenant();
+    const expensesDbId = resolveDbId('db-expenses');
 
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
@@ -53,14 +58,14 @@ export default function ExpensesInvoicesPage() {
             // Surface quota warning if FREE tenant is over received limit
             if (data.quota) setQuotaWarning(data.quota);
 
-            const existingDb = useDatabaseStore.getState().getDatabase('db-expenses');
+            const existingDb = useDatabaseStore.getState().getDatabase(expensesDbId);
             const existingPeppolIds = new Set(
                 (existingDb?.pages || [])
                     .filter(p => p.properties.peppolDocId)
                     .map(p => String(p.properties.peppolDocId))
             );
 
-            const { createPageServerFirst } = await import('@/app/actions/pages');
+            const { createPageServerFirst: _unused2 } = { createPageServerFirst }; // already statically imported
 
             let imported = 0;
             for (const doc of (data.documents || [])) {
@@ -69,7 +74,7 @@ export default function ExpensesInvoicesPage() {
                 const parsed = doc.parsed;
                 if (!parsed) continue;
 
-                const result = await createPageServerFirst('db-expenses', {
+                const result = await createPageServerFirst(expensesDbId, {
                     title: parsed.invoiceNumber || doc.invoice_number || doc.id,
                     betreft: parsed.lines?.[0]?.description || '',
                     source: 'src-peppol',
@@ -106,8 +111,7 @@ export default function ExpensesInvoicesPage() {
         if (isCreatingNew) return;
         setIsCreatingNew(true);
         try {
-            const { createPageServerFirst } = await import('@/app/actions/pages');
-            const result = await createPageServerFirst('db-expenses', {
+            const result = await createPageServerFirst(expensesDbId, {
                 source: 'src-manual',
                 status: 'opt-draft',
                 invoiceDate: new Date().toISOString().split('T')[0],

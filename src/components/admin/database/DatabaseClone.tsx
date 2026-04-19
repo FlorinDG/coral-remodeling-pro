@@ -38,13 +38,15 @@ interface DatabaseCloneProps {
 }
 
 export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter }: DatabaseCloneProps) {
-  const database = useDatabaseStore(state => state.getDatabase(databaseId));
+  // Resolve the base locked DB name to the tenant-scoped actual ID
+  const { activeModules, resolveDbId } = useTenant();
+  const resolvedId = resolveDbId(databaseId);
+  const database = useDatabaseStore(state => state.getDatabase(resolvedId));
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const projectIdParam = searchParams.get('projectId');
 
-  const { activeModules } = useTenant();
   const hasCRM = activeModules.includes('CRM');
   const hasDatabases = activeModules.includes('DATABASES');
 
@@ -150,7 +152,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     ],
     'db-quotations': [
       { id: 'title', name: 'Quote Number', type: 'text' },
-      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
+      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
       { id: 'betreft', name: 'Betreft', type: 'text' },
       { id: 'status', name: 'Status', type: 'select', config: { options: [
         { id: 'opt-draft', name: 'Draft', color: 'gray' },
@@ -165,7 +167,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     ],
     'db-invoices': [
       { id: 'title', name: 'Invoice #', type: 'text' },
-      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: 'db-clients', relationDisplayPropertyId: 'title' } },
+      { id: 'client', name: 'Client', type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
       { id: 'betreft', name: 'Betreft', type: 'text' },
       { id: 'status', name: 'Status', type: 'select', config: { options: [
         { id: 'opt-draft', name: 'Draft', color: 'gray' },
@@ -181,7 +183,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     ],
     'db-expenses': [
       { id: 'title', name: 'Invoice #', type: 'text' },
-      { id: 'supplier', name: 'Supplier', type: 'relation', config: { relationDatabaseId: 'db-suppliers', relationDisplayPropertyId: 'title' } },
+      { id: 'supplier', name: 'Supplier', type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
       { id: 'betreft', name: 'Description', type: 'text' },
       { id: 'source', name: 'Source', type: 'select', config: { options: [
         { id: 'src-peppol', name: 'Peppol', color: 'blue' },
@@ -235,29 +237,25 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
   useEffect(() => {
     if (!hydrated || !database) return;
-    const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId];
+    const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId]; // lookup by base ID
     if (!expectedProps) return;
-    // Only enforce for locked schema databases
     if (!isLockedSchemaDB) return;
 
-    // Deep compare: check IDs, types, names, and config match
     const schemasMatch = expectedProps.length === database.properties.length &&
       expectedProps.every((expected: any) => {
         const current = database.properties.find(p => p.id === expected.id);
         if (!current) return false;
         if (current.type !== expected.type) return false;
         if (current.name !== expected.name) return false;
-        // Compare config (relation targets, select options, etc.)
         if (JSON.stringify(current.config || {}) !== JSON.stringify(expected.config || {})) return false;
         return true;
       });
 
     if (!schemasMatch) {
-      console.log(`[Schema Enforcement] Resetting ${databaseId} properties to canonical schema`);
-      useDatabaseStore.getState().updateDatabase(databaseId, { properties: expectedProps });
+      console.log(`[Schema Enforcement] Resetting ${resolvedId} properties to canonical schema`);
+      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: expectedProps }); // use resolvedId
     }
 
-    // Default column visibility for purchase invoices: hide secondary columns that clutter the table view
     if (databaseId === 'db-expenses') {
       const HIDDEN_BY_DEFAULT = ['betreft', 'source', 'peppolDocId'];
       const store = useDatabaseStore.getState();
@@ -265,20 +263,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         HIDDEN_BY_DEFAULT.forEach(propId => {
           const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
           if (!hasState) {
-            store.updateViewPropertyState(databaseId, view.id, propId, { hidden: true });
+            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true }); // use resolvedId
           }
         });
       });
     }
-  }, [hydrated, database, databaseId]);
+  }, [hydrated, database, databaseId, resolvedId]);
 
 
   useEffect(() => {
-    if (!hydrated) return; // Don't act before store is loaded from IndexedDB
-    if (database || autoInitializing) return; // Already exists or already creating
+    if (!hydrated) return;
+    if (database || autoInitializing) return;
 
-    // Double-check the store directly (in case of race condition)
-    const existing = useDatabaseStore.getState().getDatabase(databaseId);
+    const existing = useDatabaseStore.getState().getDatabase(resolvedId); // use resolvedId
     if (existing) return;
 
     setAutoInitializing(true);
@@ -294,8 +291,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
-    useDatabaseStore.getState().createDatabase(parsedName, undefined, databaseId, customProps as any);
-  }, [database, databaseId, autoInitializing, hydrated]);
+    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps as any); // use resolvedId
+  }, [database, databaseId, resolvedId, autoInitializing, hydrated]);
 
   if (!database) {
     return (

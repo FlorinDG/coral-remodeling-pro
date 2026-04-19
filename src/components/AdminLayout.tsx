@@ -63,7 +63,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     tasks: 'sidebar.dashboard', // fallback
 };
 
-export default function AdminLayout({ children, activeModules = [], planType = 'FREE' }: { children: React.ReactNode, activeModules?: string[], planType?: string }) {
+export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {} }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string> }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -302,7 +302,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 )}
 
                 <div className="flex-1 p-4 pb-16 overflow-y-auto min-h-0 flex flex-col relative w-full">
-                    <TenantProvider activeModules={activeModules} planType={planType}>
+                    <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
                         {isBlocked ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 m-4">
                                 <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mb-6" style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}>

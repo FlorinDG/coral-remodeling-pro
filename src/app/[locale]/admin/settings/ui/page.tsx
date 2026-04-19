@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { useSidebarStore, defaultSidebarItems } from "@/store/useSidebarStore";
 import {
@@ -24,20 +24,48 @@ import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useTabStore } from "@/store/useTabStore";
 import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
+import { useTenant } from "@/context/TenantContext";
 
 import { settingsTabs } from "@/config/tabs";
 
 import { usePageTitle } from '@/hooks/usePageTitle';
 
+// Same mapping as AdminLayout — which module key requires which activeModule string(s)
+const SIDEBAR_MODULE_MAP: Record<string, string[]> = {
+    calendar:   ['CALENDAR'],
+    email:      ['CRM'],
+    tasks:      ['CRM'],
+    files:      ['PROJECTS'],
+    projects:   ['PROJECTS'],
+    hr:         ['HR'],
+    library:    ['DATABASES'],
+    frontend:   ['WEBSITES'],
+    // Always visible regardless of modules:
+    // dashboard, financials, contacts, suppliers, settings
+};
+
 export default function SidebarOrderSettings() {
     usePageTitle('UI & Layouts');
+    const { activeModules } = useTenant();
     const { items, setItems, resetToDefault } = useSidebarStore();
-    const [localItems, setLocalItems] = useState(items);
 
-    // Sync local state if global state changes (e.g. from reset)
-    useEffect(() => {
-        setLocalItems(items);
-    }, [items]);
+    // Filter to only the items the tenant has access to
+    const allowedItems = useMemo(() =>
+        defaultSidebarItems.filter(item => {
+            const required = SIDEBAR_MODULE_MAP[item.id];
+            if (!required) return true; // no gate → always show
+            return required.some(m => activeModules.includes(m));
+        }),
+        [activeModules]
+    );
+
+    // Local drag state seeded from allowed items (merge with persisted order)
+    const [localItems, setLocalItems] = useState(() =>
+        // Respect saved order but only keep allowed entries
+        items
+            .filter(i => allowedItems.some(a => a.id === i.id))
+            .concat(allowedItems.filter(a => !items.some(i => i.id === a.id)))
+    );
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -59,19 +87,33 @@ export default function SidebarOrderSettings() {
         }
     };
 
+    // Sync local list when allowedItems changes (e.g. after TenantContext loads)
+    useEffect(() => {
+        setLocalItems(
+            items
+                .filter(i => allowedItems.some(a => a.id === i.id))
+                .concat(allowedItems.filter(a => !items.some(i => i.id === a.id)))
+        );
+    }, [allowedItems]);
+
     const handleSave = () => {
+        // Persist only the allowed items (never leak ungated items back to store)
         setItems(localItems);
         toast.success("Sidebar layout saved successfully");
     };
 
     const handleReset = () => {
         if (confirm("Are you sure you want to reset the sidebar to default order?")) {
-            resetToDefault();
+            setLocalItems(allowedItems);
+            setItems(allowedItems);
             toast.info("Sidebar reset to default layout");
         }
     }
 
-    const hasChanges = JSON.stringify(localItems) !== JSON.stringify(items);
+    const hasChanges = JSON.stringify(localItems) !== JSON.stringify(
+        items.filter(i => allowedItems.some(a => a.id === i.id))
+            .concat(allowedItems.filter(a => !items.some(i => i.id === a.id)))
+    );
 
     const { tabOrders, setTabOrder, resetTabOrder, getAllGroups, getGroupConfig } = useTabStore();
     const allGroups = getAllGroups();

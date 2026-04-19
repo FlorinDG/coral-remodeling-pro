@@ -63,18 +63,26 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         getInvoiceById(id).then(result => {
             if (result.success && result.invoice) {
                 const inv = result.invoice;
-                // Seed the invoice into the Zustand store
-                const createPage = useDatabaseStore.getState().createPage;
                 const db = useDatabaseStore.getState().databases.find(d => d.id === 'db-invoices');
                 if (db && !db.pages.find(p => p.id === inv.id)) {
-                    createPage('db-invoices', {
-                        title: inv.invoiceNumber,
-                        status: inv.status === 'DRAFT' ? 'opt-unpaid' : inv.status.toLowerCase(),
-                        client: inv.contactId || '',
-                        betreft: '',
-                        date: inv.issueDate,
-                        dueDate: inv.dueDate,
-                    }, inv.id);
+                    // Use addConfirmedPage: data is already from Postgres, no need to re-sync
+                    useDatabaseStore.getState().addConfirmedPage({
+                        id: inv.id,
+                        databaseId: 'db-invoices',
+                        createdBy: '',
+                        lastEditedBy: '',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        properties: {
+                            title: inv.invoiceNumber,
+                            status: inv.status === 'DRAFT' ? 'opt-unpaid' : inv.status.toLowerCase(),
+                            client: inv.contactId || '',
+                            betreft: '',
+                            date: inv.issueDate,
+                            dueDate: inv.dueDate,
+                        },
+                        blocks: [],
+                    });
                 }
             }
         }).catch(console.error);
@@ -202,17 +210,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const blocks = invoice.blocks || [];
 
     // Create Credit Nota from this invoice
-    const handleCreateCreditNote = () => {
-        const createPage = useDatabaseStore.getState().createPage;
+    const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
         const cnNumber = `CN-${invoiceNum}`;
-        const newPage = createPage('db-invoices', {
+        const { createPageServerFirst } = await import('@/app/actions/pages');
+        const result = await createPageServerFirst('db-invoices', {
             title: cnNumber,
             client: clientId,
             status: 'opt-draft',
             betreft: `Creditnota voor ${invoiceNum}`,
         });
-        router.push(`/admin/financials/income/invoices/${newPage.id}`);
+        if (result.success) {
+            useDatabaseStore.getState().addConfirmedPage(result.page);
+            router.push(`/admin/financials/income/invoices/${result.page.id}`);
+        }
     };
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {

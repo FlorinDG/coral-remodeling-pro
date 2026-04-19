@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/time-tracker/components/ui/dialog';
-import { Save, AlertTriangle, ArrowRight, Check } from 'lucide-react';
+import { Save, AlertTriangle, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { Block, Database } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
 
 interface SaveToLibraryModalProps {
     isOpen: boolean;
@@ -47,7 +48,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         }
     }, [isOpen, block.articleId]);
 
-    const handleConfirm = () => {
+    const handleConfirm = async () => {
         if (!db) return;
         setIsSaving(true);
 
@@ -65,26 +66,44 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         if (propMap.unit && block.unit !== undefined) updates[propMap.unit] = block.unit;
         if (propMap.type && block.calculationType !== undefined) updates[propMap.type] = block.calculationType;
 
-        const store = useDatabaseStore.getState();
-        let targetId = block.articleId;
+        try {
+            let targetId: string;
 
-        if (existingArticle) {
-            // Overwrite existing article in global DB
-            Object.entries(updates).forEach(([prodId, val]) => {
-                store.updatePageProperty('db-articles', existingArticle.id, prodId, val);
-            });
-            targetId = existingArticle.id;
-        } else {
-            // Create new article
-            const newPage = store.createPage('db-articles', updates);
-            targetId = newPage.id;
-        }
+            if (existingArticle) {
+                // Update existing article — server-first
+                const currentProps = existingArticle.properties as Record<string, any>;
+                const merged = { ...currentProps, ...updates };
 
-        setTimeout(() => {
-            setIsSaving(false);
-            onSaveSuccess(targetId as string);
+                const result = await updatePageServerFirst(existingArticle.id, merged);
+                if (result.success) {
+                    // Reflect in store
+                    Object.entries(updates).forEach(([propId, val]) =>
+                        useDatabaseStore.getState().updatePageProperty('db-articles', existingArticle.id, propId, val)
+                    );
+                    targetId = existingArticle.id;
+                } else {
+                    console.error('[SaveToLibraryModal] update failed:', result.error);
+                    targetId = existingArticle.id; // Still pass ID for linking
+                }
+            } else {
+                // Create new article — server-first
+                const result = await createPageServerFirst('db-articles', updates);
+                if (result.success) {
+                    useDatabaseStore.getState().addConfirmedPage(result.page);
+                    targetId = result.page.id;
+                } else {
+                    console.error('[SaveToLibraryModal] create failed:', result.error);
+                    // Fallback: optimistic create so the UI doesn't stall
+                    const fallback = useDatabaseStore.getState().createPage('db-articles', updates);
+                    targetId = fallback.id;
+                }
+            }
+
+            onSaveSuccess(targetId);
             onClose();
-        }, 600); // UI feedback delay
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     if (!isOpen || !db) return null;

@@ -152,12 +152,19 @@ export default function CalendarModule() {
             if (res.ok) {
                 // If the user requested an associated task and this is a NEW event
                 if (newEvent.createTask && !newEvent.id) {
-                    useDatabaseStore.getState().createPage('db-tasks', {
-                        'title': `[Event Task] ${newEvent.title}`,
-                        'prop-task-due': newEvent.start.split('T')[0],
-                        'prop-task-priority': 'opt-med',
-                        'prop-task-status': 'opt-todo'
-                    });
+                    // Server-first task creation
+                    import('@/app/actions/pages').then(({ createPageServerFirst }) =>
+                        createPageServerFirst('db-tasks', {
+                            'title': `[Event Task] ${newEvent.title}`,
+                            'prop-task-due': newEvent.start.split('T')[0],
+                            'prop-task-priority': 'opt-med',
+                            'prop-task-status': 'opt-todo'
+                        }).then(result => {
+                            if (result.success) {
+                                useDatabaseStore.getState().addConfirmedPage(result.page);
+                            }
+                        })
+                    );
                     toast.success('Event and Task created successfully!');
                 } else {
                     toast.success('Event saved successfully!');
@@ -712,17 +719,20 @@ export default function CalendarModule() {
                             <button
                                 disabled={!taskData.title.trim()}
                                 className="px-5 py-2 text-sm font-medium bg-[var(--brand-color,var(--brand-color, #d35400))] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm"
-                                onClick={() => {
+                                onClick={async () => {
                                     if (taskData.title.trim()) {
-                                        useDatabaseStore.getState().createPage('db-tasks', {
+                                        const { createPageServerFirst } = await import('@/app/actions/pages');
+                                        const result = await createPageServerFirst('db-tasks', {
                                             'title': taskData.title,
                                             'prop-task-due': taskData.dueDate,
                                             'prop-task-priority': taskData.priority,
-                                            'prop-task-status': 'opt-todo' // Default to "To Do"
+                                            'prop-task-status': 'opt-todo'
                                         });
+                                        if (result.success) {
+                                            useDatabaseStore.getState().addConfirmedPage(result.page);
+                                        }
                                         toast.success('Task created successfully!');
                                         setIsTaskModalOpen(false);
-                                        // Reset state for next use
                                         setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
                                     }
                                 }}

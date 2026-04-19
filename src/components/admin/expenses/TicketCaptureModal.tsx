@@ -158,33 +158,44 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     // ── Save (update the already-saved record with user edits) ────────────────
     const handleSave = async () => {
         if (!scanResult) {
-            // Manual entry — use createPage (fire-and-forget is acceptable for manual, lower stakes)
-            if (isInvoiceMode) {
-                createPage('db-expenses', {
-                    title: form.merchant || 'Manual Invoice',
-                    source: 'src-manual',
-                    status: 'opt-draft',
-                    invoiceDate: form.date,
-                    supplier: [],
-                    totalExVat: form.amount ? parseFloat(form.amount) : 0,
-                    totalVat: form.vatAmount ? parseFloat(form.vatAmount) : 0,
-                    totalIncVat: form.amount && form.vatAmount
-                        ? parseFloat(form.amount) + parseFloat(form.vatAmount)
-                        : form.amount ? parseFloat(form.amount) : 0,
-                });
-            } else {
-                createPage('db-tickets', {
-                    title: form.merchant || 'Unnamed Expense',
-                    date: form.date,
-                    amount: form.amount ? parseFloat(form.amount) : 0,
-                    vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : 0,
-                    category: form.category || '',
-                    currency: form.currency,
-                    paymentMethod: form.paymentMethod,
-                    notes: form.notes,
-                });
+            // Manual entry — server-first (same reliability as scanned)
+            setStep('saving');
+            try {
+                const { createPageServerFirst } = await import('@/app/actions/pages');
+                if (isInvoiceMode) {
+                    const result = await createPageServerFirst('db-expenses', {
+                        title: form.merchant || 'Manual Invoice',
+                        source: 'src-manual',
+                        status: 'opt-draft',
+                        invoiceDate: form.date,
+                        supplier: [],
+                        totalExVat: form.amount ? parseFloat(form.amount) : 0,
+                        totalVat: form.vatAmount ? parseFloat(form.vatAmount) : 0,
+                        totalIncVat: form.amount && form.vatAmount
+                            ? parseFloat(form.amount) + parseFloat(form.vatAmount)
+                            : form.amount ? parseFloat(form.amount) : 0,
+                    });
+                    if (result.success) addConfirmedPage(result.page);
+                } else {
+                    const result = await createPageServerFirst('db-tickets', {
+                        title: form.merchant || 'Unnamed Expense',
+                        date: form.date,
+                        amount: form.amount ? parseFloat(form.amount) : 0,
+                        vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : 0,
+                        category: form.category || '',
+                        currency: form.currency,
+                        paymentMethod: form.paymentMethod,
+                        notes: form.notes,
+                    });
+                    if (result.success) addConfirmedPage(result.page);
+                }
+                setStep('done');
+                setTimeout(() => onClose(), 1200);
+            } catch (e) {
+                console.error('[TicketCaptureModal] manual save failed:', e);
+                setSaveError('Failed to save. Please try again.');
+                setStep('review');
             }
-            onClose();
             return;
         }
 

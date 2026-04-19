@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Plus, X, FolderKanban, Loader2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { createPageServerFirst } from '@/app/actions/pages';
 
 const createDriveFolder = async (name: string, parentId?: string) => {
     const formData = new FormData();
@@ -33,33 +34,33 @@ export default function NewProjectButton() {
         if (!formData.name) return;
 
         setIsLoading(true);
-        setStatusText("Saving project record...");
+        setStatusText("Building Google Drive context...");
 
         try {
-            // 1. Create the NotionGrid Row directly
-            const createPage = useDatabaseStore.getState().createPage;
-
-            setStatusText("Building Google Drive context...");
-            // Use the form data for folder creation since it has no ID yet
             const rootProjectId = await createDriveFolder(`Project: ${formData.name}`);
 
             setStatusText("Scaffolding operational directories...");
             const subfolders = ['Offertes', 'Vorderingen', 'Facturen', 'Bestellingen', 'Suppliers', 'Media'];
             await Promise.all(subfolders.map(folderName => createDriveFolder(folderName, rootProjectId)));
 
-            // Save row to db-1 and inject Drive folder ID linking into memory
+            setStatusText("Saving project record...");
             const propertiesToInject: Record<string, any> = {
                 'title': formData.name,
                 'prop-start-date': formData.startDate || '',
                 'prop-end-date': formData.targetEndDate || '',
             };
-
             if (formData.budget) {
                 propertiesToInject['prop-budget'] = parseFloat(formData.budget);
             }
 
-            // Create page synchronously in memory (syncs to postgres behind the scenes)
-            createPage('db-1', propertiesToInject);
+            // Server-first: await Postgres write before closing modal
+            const result = await createPageServerFirst('db-1', propertiesToInject);
+            if (result.success) {
+                useDatabaseStore.getState().addConfirmedPage(result.page);
+            } else {
+                console.error('[NewProjectButton] DB write failed:', result.error);
+                // Don't block the user — Drive scaffolding succeeded, DB will retry via syncPage
+            }
 
             setIsOpen(false);
             setFormData({ name: '', budget: '', startDate: '', targetEndDate: '' });

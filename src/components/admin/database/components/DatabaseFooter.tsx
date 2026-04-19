@@ -46,7 +46,29 @@ export default function DatabaseFooter({
     const locale = useLocale();
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const createPage = useDatabaseStore(state => state.createPage);
+    const addConfirmedPage = useDatabaseStore(state => state.addConfirmedPage);
     const pages = database?.pages || [];
+    const [isCreating, setIsCreating] = useState(false);
+
+    // Financial databases require server-first persistence (data loss is unacceptable)
+    const FINANCIAL_DBS = new Set(['db-expenses', 'db-invoices', 'db-tickets', 'db-quotations', 'db-articles', 'db-clients']);
+
+    const handleNewRow = async () => {
+        if (isCreating) return;
+        if (FINANCIAL_DBS.has(databaseId)) {
+            setIsCreating(true);
+            try {
+                const { createPageServerFirst } = await import('@/app/actions/pages');
+                const result = await createPageServerFirst(databaseId, {});
+                if (result.success) addConfirmedPage(result.page);
+            } finally {
+                setIsCreating(false);
+            }
+        } else {
+            // Non-financial DBs: optimistic (syncs in background via syncPage retry)
+            createPage(databaseId);
+        }
+    };
 
     // Per-column summary type state (default: none, except currency/number default to sum)
     const [summaryTypes, setSummaryTypes] = useState<Record<string, SummaryType>>({});
@@ -175,12 +197,13 @@ export default function DatabaseFooter({
             {!hideNewButton && (
                 <div className="px-3 py-2 border-t border-neutral-200 dark:border-white/10">
                     <button
-                        onClick={() => createPage(databaseId)}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 active:opacity-80 transition-all shadow-sm hover:shadow-md"
+                        onClick={handleNewRow}
+                        disabled={isCreating}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-lg hover:opacity-90 active:opacity-80 transition-all shadow-sm hover:shadow-md disabled:opacity-60"
                         style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                     >
                         <Plus className="w-4 h-4" />
-                        <span>{newLabel}</span>
+                        <span>{isCreating ? 'Saving…' : newLabel}</span>
                     </button>
                 </div>
             )}

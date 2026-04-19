@@ -5,12 +5,13 @@ import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
+import { createPageServerFirst } from "@/app/actions/pages";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 export default function CreateInvoiceButton() {
     const router = useRouter();
-    const createPage = useDatabaseStore(state => state.createPage);
+    const addConfirmedPage = useDatabaseStore(state => state.addConfirmedPage);
     const [isCreating, setIsCreating] = useState(false);
     const t = useTranslations('Admin');
 
@@ -19,26 +20,32 @@ export default function CreateInvoiceButton() {
         setIsCreating(true);
 
         try {
-            // Get the next invoice number from the tenant's configured pattern
             const result = await getNextDocumentNumber('invoice');
             const invoiceNumber = result.success && result.number
                 ? result.number
                 : `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
 
-            // 1. Add to client-side Zustand store for the Document Engine
-            const newPage = createPage('db-invoices', {
+            // 1. Server-first: create the page in Postgres, get confirmed ID back
+            const pageResult = await createPageServerFirst('db-invoices', {
                 title: invoiceNumber,
                 docType: 'opt-invoice',
                 status: 'opt-draft',
             });
 
-            if (!newPage) { setIsCreating(false); return; }
+            if (!pageResult.success) {
+                console.error('[CreateInvoiceButton] page create failed:', pageResult.error);
+                setIsCreating(false);
+                return;
+            }
 
-            // 2. Add to server-side Prisma store for the List view
-            await createPrismaInvoice(newPage.id, invoiceNumber);
+            // 2. Inject confirmed page into the Zustand store (no duplicate sync)
+            addConfirmedPage(pageResult.page);
 
-            // 3. Redirect to the engine
-            router.push(`/admin/financials/income/invoices/${newPage.id}`);
+            // 3. Create the Prisma invoice record with the confirmed page ID
+            await createPrismaInvoice(pageResult.page.id, invoiceNumber);
+
+            // 4. Redirect to the engine
+            router.push(`/admin/financials/income/invoices/${pageResult.page.id}`);
         } catch (e) {
             console.error('Failed to create invoice:', e);
         }

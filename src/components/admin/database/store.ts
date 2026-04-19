@@ -14,10 +14,27 @@ const syncDb = (db: Database | undefined) => {
  * Save a page to Postgres. If the parent DB is provided and may not yet exist
  * in Postgres (first-session race for locked DBs like db-expenses), we upsert
  * the DB first to satisfy the foreign-key constraint, then save the page.
+ * Tracks sync status in the store for the UI badge.
  */
 const syncPage = (page: Page | undefined, parentDb?: Database) => {
     if (!page) return;
-    const doSave = () => saveGlobalPage(page).catch(console.error);
+    const store = useDatabaseStore.getState();
+    store._syncStart();
+
+    const doSave = () => saveGlobalPage(page)
+        .then(result => {
+            if (result?.success === false) {
+                console.warn('[syncPage] Server rejected page save:', result.error);
+                // Retry once after 3s
+                setTimeout(() => saveGlobalPage(page)
+                    .then(() => store._syncDone())
+                    .catch(() => store._syncError()), 3000);
+            } else {
+                store._syncDone();
+            }
+        })
+        .catch(() => store._syncError());
+
     if (parentDb) {
         saveGlobalDatabase(parentDb).then(doSave).catch(doSave);
     } else {
@@ -51,6 +68,13 @@ interface DatabaseState {
     databases: Database[];
     hydrateDatabases: (databases: Database[]) => void;
 
+    // Sync status (for UI indicators)
+    syncStatus: 'idle' | 'saving' | 'error';
+    pendingSyncs: number;
+    _syncStart: () => void;
+    _syncDone: () => void;
+    _syncError: () => void;
+
     // Database Operations
     createDatabase: (name: string, description?: string, specificId?: string, properties?: Property[]) => Database;
     updateDatabase: (id: string, updates: Partial<Database>) => void;
@@ -73,6 +97,8 @@ interface DatabaseState {
 
     // Page (Row) Operations
     createPage: (databaseId: string, initialProperties?: Record<string, any>, customId?: string) => Page;
+    /** Add a page that was already confirmed by the server (e.g. from /api/scan or createPageServerFirst) */
+    addConfirmedPage: (page: Page) => void;
     addPages: (databaseId: string, pagesProperties: Record<string, any>[]) => void;
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
@@ -98,6 +124,18 @@ export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
             databases: [],
+            syncStatus: 'idle' as const,
+            pendingSyncs: 0,
+
+            _syncStart: () => set(s => ({ pendingSyncs: s.pendingSyncs + 1, syncStatus: 'saving' as const })),
+            _syncDone: () => set(s => {
+                const next = s.pendingSyncs - 1;
+                return { pendingSyncs: Math.max(0, next), syncStatus: next <= 0 ? 'idle' as const : 'saving' as const };
+            }),
+            _syncError: () => set(s => ({
+                pendingSyncs: Math.max(0, s.pendingSyncs - 1),
+                syncStatus: 'error' as const
+            })),
 
             hydrateDatabases: (serverDatabases) => {
                 set({ databases: serverDatabases });
@@ -457,6 +495,23 @@ export const useDatabaseStore = create<DatabaseState>()(
                 const parentDb = get().databases.find(d => d.id === databaseId);
                 syncPage(newPage, parentDb);
                 return newPage;
+            },
+
+            addConfirmedPage: (page: Page) => {
+                set(state => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== page.databaseId) return db;
+                        // Avoid duplicates if the page somehow already exists
+                        const exists = db.pages.some((p: Page) => p.id === page.id);
+                        if (exists) return db;
+                        return {
+                            ...db,
+                            pages: [...db.pages, page],
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+                // Already in Postgres — no syncPage needed
             },
 
             addPages: (databaseId, pagesProperties) => {

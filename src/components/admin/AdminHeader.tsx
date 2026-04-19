@@ -1,6 +1,9 @@
+"use client";
+
 import Logo from '@/components/Logo';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import SyncStatusBadge from './SyncStatusBadge';
 
 export default function AdminHeader() {
     const t = useTranslations('Admin.header');
@@ -18,6 +21,7 @@ export default function AdminHeader() {
                     </div>
                 </Link>
                 <div className="flex items-center gap-4">
+                    <SyncStatusBadge />
                     <Link href="/" target="_blank" className="text-xs font-bold uppercase tracking-widest text-neutral-500 hover:text-[var(--brand-color,#d35400)] dark:hover:text-white transition-colors">
                         {t('viewLive')}
                     </Link>

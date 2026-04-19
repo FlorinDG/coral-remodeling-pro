@@ -59,6 +59,15 @@ model Tenant {
   subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL
   activeModules      String[] @default(["CRM", "PROJECTS", "INVOICING", "CALENDAR", "DATABASES"])
 
+  // OCR Engine — superadmin-configurable per tenant
+  // Supported values: GPT4O (default), MINDEE, VERYFI
+  ocrEngine          String   @default("GPT4O")
+
+  // Scan quota — monthly limit, reset automatically
+  scanCount          Int      @default(0)
+  scanQuota          Int      @default(30)   // FREE tier default; PRO=300, ENTERPRISE=-1 (unlimited)
+  scanCountResetAt   DateTime @default(now())
+
   // Peppol monthly usage counters (reset on 1st of each calendar month)
   peppolSentThisMonth      Int      @default(0)
   peppolReceivedThisMonth  Int      @default(0)

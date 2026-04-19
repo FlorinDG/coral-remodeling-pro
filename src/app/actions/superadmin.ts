@@ -64,3 +64,41 @@ export async function deleteTenant(tenantId: string) {
     await prisma.tenant.delete({ where: { id: tenantId } });
     revalidatePath("/superadmin");
 }
+
+/** Set the OCR engine for a specific tenant. GPT4O is the default.
+ *  Supported: 'GPT4O' | 'MINDEE' | 'VERYFI'
+ */
+export async function setTenantOcrEngine(tenantId: string, engine: string) {
+    await verifySuperadmin();
+    const VALID_ENGINES = ['GPT4O', 'MINDEE', 'VERYFI'];
+    if (!VALID_ENGINES.includes(engine)) {
+        throw new Error(`Invalid OCR engine: ${engine}. Must be one of: ${VALID_ENGINES.join(', ')}`);
+    }
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { ocrEngine: engine },
+    });
+    revalidatePath("/superadmin");
+}
+
+/** Override the monthly scan quota for a tenant.
+ *  -1 = unlimited (ENTERPRISE), 0 = disabled, positive int = limit.
+ */
+export async function setTenantScanQuota(tenantId: string, quota: number) {
+    await verifySuperadmin();
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { scanQuota: quota },
+    });
+    revalidatePath("/superadmin");
+}
+
+/** Manually reset the scan counter for a tenant (e.g. after a plan upgrade mid-month). */
+export async function resetScanCount(tenantId: string) {
+    await verifySuperadmin();
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data: { scanCount: 0, scanCountResetAt: new Date() },
+    });
+    revalidatePath("/superadmin");
+}

@@ -124,7 +124,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const pathname = usePathname();
 
     const MODULE_MAP: Record<string, string[]> = {
-        'contacts':  ['CRM'],
+        // 'contacts' intentionally omitted — available on all tiers (db-clients is always provisioned)
         'suppliers': ['INVOICING'],
         'email':     ['CRM'],
         'tasks':     ['CRM'],

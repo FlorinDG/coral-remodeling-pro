@@ -1,498 +1,503 @@
 {
-    "Metadata": {
-        "title": "Coral Enterprises | Rénovation Totale de Luxe & Cuisines",
-        "description": "Rénovations résidentielles haut de gamme en Belgique. Spécialiste en cuisines de luxe, salles de bain wellness et design d'intérieur sur mesure.",
-        "keywords": [
-            "rénovation",
-            "entrepreneur général",
-            "rénovation de cuisine",
-            "installation de salle de bain",
-            "extension de maison",
-            "rénovation totale",
-            "Belgique",
-            "Bruxelles",
-            "aménagement intérieur",
-            "luxe"
-        ]
+  "Metadata": {
+    "title": "Coral Enterprises | Rénovation Totale de Luxe & Cuisines",
+    "description": "Rénovations résidentielles haut de gamme en Belgique. Spécialiste en cuisines de luxe, salles de bain wellness et design d'intérieur sur mesure.",
+    "keywords": [
+      "rénovation",
+      "entrepreneur général",
+      "rénovation de cuisine",
+      "installation de salle de bain",
+      "extension de maison",
+      "rénovation totale",
+      "Belgique",
+      "Bruxelles",
+      "aménagement intérieur",
+      "luxe"
+    ]
+  },
+  "Navbar": {
+    "home": "Accueil",
+    "services": "Services",
+    "projects": "Projets",
+    "book": "RÉSERVER",
+    "back": "RETOUR",
+    "logoTitle": "Logo de Coral Enterprises",
+    "logoAria": "Logo de Coral Enterprises",
+    "topbarTitle": "CORAL ENTERPRISES",
+    "topbarTitlePortal": "PORTAIL CLIENT CORAL ENTERPRISES",
+    "fastInterventions": {
+      "label": "Interventions Rapides 24/7",
+      "number": "+32 472 74 10 25"
     },
-    "Navbar": {
-        "home": "Accueil",
-        "services": "Services",
-        "projects": "Projets",
-        "book": "RÉSERVER",
-        "back": "RETOUR",
-        "logoTitle": "Logo de Coral Enterprises",
-        "logoAria": "Logo de Coral Enterprises",
-        "topbarTitle": "CORAL ENTERPRISES",
-        "topbarTitlePortal": "PORTAIL CLIENT CORAL ENTERPRISES",
-        "fastInterventions": {
-            "label": "Interventions Rapides 24/7",
-            "number": "+32 472 74 10 25"
-        },
-        "contact": {
-            "call": "Appelez-nous",
-            "whatsapp": "WhatsApp",
-            "email": "E-mail"
-        }
-    },
-    "Services": {
-        "title": "Notre Expertise",
-        "kitchen": {
-            "title": "Cuisine Design",
-            "subtitle": "Excellence Culinaire",
-            "description": "Espaces culinaires sur mesure adaptés à votre style de vie.",
-            "fullDescription": "Notre service de Design de Cuisine est dédié à la création d'espaces culinaires sur mesure qui sont non seulement visuellement superbes, mais aussi extrêmement fonctionnels.\n\nNous croyons que la cuisine est le cœur de la maison, un lieu où les souvenirs se créent et où les chefs-d'œuvre culinaires voient le jour.\n\nNotre processus commence par la compréhension de votre style de vie unique et de vos habitudes culinaires. Que vous soyez un chef professionnel ayant besoin d'équipements industriels, ou une famille ayant besoin d'un espace durable et accueillant, nous adaptons chaque détail à vos besoins.",
-            "features": [
-                "Armoires sur mesure & Menuiserie d'intérieur",
-                "Intégration d'appareils haut de gamme",
-                "Optimisation de l'agencement ergonomique",
-                "Plans de travail en pierre premium (Marbre, Quartz, Granit)",
-                "Plans d'éclairage spécialisés"
-            ]
-        },
-        "bath": {
-            "title": "Rénovation de Bain",
-            "subtitle": "Sanctuaires Personnels",
-            "description": "Transformez votre routine quotidienne en expérience spa.",
-            "fullDescription": "Transformez votre routine quotidienne en une expérience spa luxueuse avec notre service de Rénovation de Salle de Bain. Nous transformons les salles de bain ordinaires en sanctuaires privés de détente et de rajeunissement.\n\nDes suites parentales aux salles d'eau pour invités, nous apportons un élément d'élégance raffinée à chaque espace. Nos designs se concentrent sur la tranquillité, utilisant des palettes apaisantes, des matériaux naturels et des installations de pointe.",
-            "features": [
-                "Baignoires îlots",
-                "Douches à effet de pluie avec options vapeur",
-                "Chauffage au sol & Sèche-serviette",
-                "Vanités sur mesure avec rangement intégré",
-                "Éclairage d'ambiance & Contrôle de l'atmosphère"
-            ]
-        },
-        "additions": {
-            "title": "Extensions Sur Mesure",
-            "subtitle": "Élargissez Vos Horizons",
-            "description": "Extensions de maison transparentes qui s'intègrent parfaitement.",
-            "fullDescription": "Notre service d'Extension sur Mesure vous permet d'agrandir votre espace de vie sans compromettre l'intégrité architecturale de votre maison. Nous nous spécialisons dans les extensions fluides qui semblent avoir toujours fait partie de la structure originale.\n\nQue vous ayez besoin d'une nouvelle suite parentale, d'une véranda, d'un bureau à domicile ou d'un espace de divertissement étendu, nous gérons tout le processus, de la planification architecturale à la dernière couche de peinture.",
-            "features": [
-                "Construction d'un deuxième étage",
-                "Conversions de garage",
-                "Vérandas & Conservatoires",
-                "Unités d'habitation accessoires (ADU)",
-                "Salons & Salles à manger agrandis"
-            ]
-        },
-        "wholeHome": {
-            "title": "Maison Complète",
-            "subtitle": "Transformation Totale",
-            "description": "Réinventez votre espace de vie entier depuis la base.",
-            "fullDescription": "Pour ceux qui cherchent une réinvention complète de leur environnement de vie, notre service de Rénovation de Maison Complète offre une solution globale. C'est pour le propriétaire qui aime son emplacement mais qui a besoin d'une maison qui reflète mieux ses goûts et son style de vie actuels.\n\nNous réinterprétons le flux, la fonction et l'esthétique de l'ensemble de votre propriété. C'est une approche holistique qui assure un langage de design cohérent dans chaque pièce.",
-            "features": [
-                "Modifications structurelles & Plans ouverts",
-                "Révision complète de l'électricité & de la plomberie",
-                "Sols, finitions murales & menuiserie",
-                "Intégration Maison Intelligente (Smart Home)",
-                "Rénovation de façade & Attrait extérieur"
-            ]
-        },
-        "explore": "DÉCOUVRIR"
-    },
-    "Hero": {
-        "title": "Luxury. Redefined.",
-        "subtitle": "Aligné. Sur Mesure. Professionnel.",
-        "tagline": "ALIGNÉ. SUR MESURE. PROFESSIONNEL.",
-        "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme.",
-        "stats": {
-            "projects": "PROJETS RÉALISÉS",
-            "projectsCount": "150+",
-            "experience": "ANNÉES D'EXPÉRIENCE",
-            "experienceCount": "12+"
-        }
-    },
-    "LeadForm": {
-        "messages": {
-            "inquiryWarning": "Pour laisser une demande, vous devez nous fournir vos coordonnées.",
-            "bookingWarning": "Pour réserver une visite, vous devez nous fournir une adresse et des coordonnées."
-        },
-        "tabs": {
-            "inquiry": "Demande",
-            "booking": "Planifier Visite"
-        },
-        "placeholders": {
-            "name": "Nom",
-            "surname": "Prénom",
-            "street": "Rue + numéro",
-            "postalCode": "Code postal",
-            "town": "Ville",
-            "email": "Adresse E-mail",
-            "phone": "Numéro de Téléphone (Optionnel)",
-            "message": "Parlez-nous de votre projet...",
-            "yourName": "Votre Nom",
-            "yourEmail": "Votre E-mail",
-            "file": "Télécharger un fichier (Optionnel)"
-        },
-        "services": {
-            "kitchen": "Rénovation Cuisine",
-            "bathroom": "Rénovation Salle de Bain",
-            "addition": "Extension"
-        },
-        "buttons": {
-            "submit": "ENVOYER LA DEMANDE",
-            "sending": "ENVOI EN COURS...",
-            "sent": "ENVOYÉ !",
-            "chooseDate": "CHOISIR DATE & HEURE",
-            "confirm": "CONFIRMER LA VISITE",
-            "confirming": "CONFIRMATION...",
-            "confirmed": "CONFIRMÉ !",
-            "back": "RETOUR",
-            "close": "FERMER",
-            "yesBook": "OUI, RÉSERVER",
-            "later": "PLUS TARD"
-        },
-        "success": {
-            "inquiryTitle": "Demande Reçue !",
-            "inquirySub": "Souhaitez-vous également planifier une visite professionnelle sur place ?",
-            "allSet": "Tout est prêt !",
-            "touchShortly": "Notre équipe vous contactera sous peu.",
-            "anotherInquiry": "Envoyer une autre demande",
-            "visitConfirmed": "Visite Confirmée !",
-            "scheduledFor": "Prévu le {date} à {time}.",
-            "anotherVisit": "Planifier une autre visite"
-        },
-        "errors": {
-            "generic": "Une erreur est survenue. Veuillez réessayer.",
-            "connection": "Échec de la connexion au serveur. Veuillez vérifier votre connexion.",
-            "required": "Ce champ est obligatoire"
-        },
-        "timeFormat": "HH:mm",
-        "directContact": {
-            "title": "Ou contactez-nous directement:",
-            "whatsapp": "WhatsApp",
-            "call": "Appeler",
-            "email": "E-mail"
-        }
-    },
-    "Sections": {
-        "expertise": {
-            "title": "Notre Expertise"
-        },
-        "portfolio": {
-            "title": "Portfolio Récent",
-            "tagline": "Un aperçu du luxe"
-        }
-    },
-    "Projects": {
-        "kitchenLoft": {
-            "title": "Cuisine de Maison Patricienne",
-            "location": "Sint-Martens-Latem, BE",
-            "caption1": "Vue principale de la cuisine à aire ouverte entièrement rénovée.",
-            "caption2": "Perspective secondaire montrant l'îlot en marbre et les appareils intégrés.",
-            "captionBefore": "La cuisine originale des années 90 avant la transformation complète."
-        },
-        "masterBath": {
-            "title": "Salle de Bain Wellness Zoute",
-            "location": "Knokke-Heist, BE",
-            "caption1": "L'espace spa principal avec baignoire îlot et vue panoramique.",
-            "caption2": "Vue de la douche à effet pluie avec verre sans cadre et pierre naturelle.",
-            "captionBefore": "La salle de bain originale exiguë avec carrelage bleu démodé."
-        },
-        "contemporaryKitchen": {
-            "title": "Cuisine de Chef du Béguinage",
-            "location": "Gand, BE",
-            "caption1": "Cuisine de chef professionnelle conçue pour l'excellence domestique.",
-            "caption2": "Vue détaillée de la cave à vin intégrée et de la station café.",
-            "captionBefore": "La cuisine de base avant d'être réimaginée pour un gourmet."
-        },
-        "masterSuite": {
-            "title": "Suite de Maison de Maître",
-            "location": "Anvers, BE",
-            "caption1": "La salle d'eau d'inspiration spa terminée dans la suite parentale.",
-            "caption2": "Vue alternative montrant la baignoire îlot et les accents en bois naturel.",
-            "captionBefore": "Les combles inutilisés et poussiéreux avant la conversion en suite de luxe."
-        }
-    },
-    "ProjectGallery": {
-        "viewProject": "Voir le Projet",
-        "details": "Détails du Projet",
-        "tooltips": {
-            "whatsapp": "WhatsApp",
-            "email": "E-mail",
-            "location": "Emplacement"
-        },
-        "fallbackCaption": "Découvrez l'élégance de nos solutions de design sur mesure. Chaque détail est soigné pour améliorer votre style de vie, alliant fonctionnalité et esthétique intemporelle.",
-        "perspective": "Cette perspective souligne l'attention méticuleuse portée à la sélection des matériaux et à l'intégration de l'éclairage, créant une atmosphère d'élégance raffinée."
-    },
-    "BookingModal": {
-        "title": "Planifier une Visite",
-        "subtitle": "Réservez une visite professionnelle pour votre projet de rénovation."
-    },
-    "ServiceDetail": {
-        "back": "RETOUR AUX SERVICES",
-        "ready": "Prêt à Commencer ?",
-        "schedule": "Planifiez une consultation pour discuter de votre projet de {service}.",
-        "bookConsultation": "RÉSERVER CONSULTATION",
-        "notFound": "Service non trouvé",
-        "specializeIn": "Nous nous spécialisons dans :",
-        "keyFeatures": "Les caractéristiques clés incluent :"
-    },
-    "Portal": {
-        "header": "PORTAIL CLIENT",
-        "navTitle": "Aperçu du Projet",
-        "welcome": "Bienvenue, {name}",
-        "trackProgress": "Suivez l'avancement de votre rénovation et communiquez avec notre équipe.",
-        "latestUpdates": "Dernières Mises à jour",
-        "noUpdates": "Aucune mise à jour pour le moment.",
-        "projectManager": "Chef de Projet",
-        "tasks": "Tâches du Projet",
-        "remaining": "{count} restantes",
-        "noTasks": "Aucune tâche active.",
-        "addTask": "Ajouter une nouvelle tâche...",
-        "documents": "Documents",
-        "noDocs": "Aucun document.",
-        "addDocPrompt": "Nom du document :",
-        "addUrlPrompt": "URL du document :",
-        "projectMedia": "Médias du Projet",
-        "media": "Médias",
-        "noMedia": "Aucun média.",
-        "directMessage": "Message Direct",
-        "noMessages": "Pas encore de messages. Commencez la conversation !",
-        "typeMessage": "Tapez un message..."
-    },
-    "Admin": {
-        "loading": "Chargement des données...",
-        "failedCreate": "Échec de la création du portail",
-        "namePrompt": "Nom du Client :",
-        "emailPrompt": "E-mail du Client :",
-        "header": {
-            "title": "Tableau de Bord Admin",
-            "subtitle": "Gérez les leads, les réservations et les portails clients.",
-            "logout": "Déconnexion",
-            "viewLive": "Voir le Site"
-        },
-        "portals": {
-            "title": "Portails Clients",
-            "create": "Nouveau Portail",
-            "view": "Voir le Portail",
-            "back": "Retour au Tableau de Bord",
-            "clientView": "Vue Client",
-            "postUpdate": "Publier une Mise à jour",
-            "recentUpdates": "Mises à jour Récentes",
-            "form": {
-                "title": "Titre",
-                "details": "Détails...",
-                "post": "Publier"
-            }
-        },
-        "leads": {
-            "title": "Leads Récents",
-            "noLeads": "Aucun lead trouvé."
-        },
-        "bookings": {
-            "title": "Réservations Récentes",
-            "noBookings": "Aucune réservation trouvée."
-        },
-        "filter": {
-            "all": "Tous les statuts",
-            "search": "Rechercher...",
-            "searchClient": "Rechercher un client..."
-        },
-        "status": {
-            "NEW": "Nouveau",
-            "CONTACTED": "Contacté",
-            "CONVERTED": "Converti",
-            "ARCHIVED": "Archivé",
-            "PENDING": "En attente",
-            "CONFIRMED": "Confirmé",
-            "CANCELLED": "Annulé",
-            "ACTIVE": "Actif",
-            "COMPLETED": "Terminé"
-        },
-        "nav": {
-            "sidebar": {
-                "dashboard": "TABLEAU DE BORD",
-                "financials": "FINANCES",
-                "contacts": "CONTACTS",
-                "suppliers": "FOURNISSEURS",
-                "settings": "PARAMÈTRES",
-                "hr": "RH",
-                "library": "BIBLIOTHÈQUE",
-                "website": "SITE WEB",
-                "crm": "CRM",
-                "projects": "PROJETS"
-            },
-            "financialTabs": {
-                "purchaseInvoices": "FACTURES D'ACHAT",
-                "expenseTickets": "REÇUS",
-                "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
-                "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
-                "salesInvoices": "FACTURES",
-                "quotations": "DEVIS"
-            },
-            "pages": {
-                "salesInvoices": "Factures de Vente",
-                "salesInvoicesDesc": "Gérez les comptes débiteurs, suivez les paiements et générez des factures PDF.",
-                "noInvoices": "Aucune facture de vente",
-                "noInvoicesDesc": "Créez votre première facture pour commencer.",
-                "createInvoice": "Créer une Facture",
-                "dashboard": "Tableau de Bord",
-                "administrative": "Administratif",
-                "scanUploadTicket": "Scanner / Télécharger Ticket"
-            },
-            "settings": {
-                "companyInfo": "INFOS SOCIÉTÉ",
-                "uiLayout": "MISE EN PAGE",
-                "calendar": "CALENDRIER",
-                "financials": "FINANCES",
-                "hr": "RH",
-                "library": "BIBLIOTHÈQUE",
-                "projects": "PROJETS",
-                "relations": "RELATIONS",
-                "tasks": "TÂCHES",
-                "website": "SITE WEB",
-                "appPreferences": "Préférences d'Application & Documents",
-                "documentLanguage": "Langue des Documents",
-                "documentLanguageDesc": "Définit la langue par défaut pour les PDF générés (Devis, Factures). Si vide, utilise la langue du client ou le français.",
-                "fallbackOption": "Utiliser la langue du client",
-                "documentNumbering": "Numérotation des Documents",
-                "documentNumberingDesc": "Configurez le modèle de numérotation automatique pour les factures et les devis. Les changements s'appliquent uniquement aux nouveaux documents.",
-                "save": "Enregistrer le Profil",
-                "saving": "Sauvegarde...",
-                "pageTitle": "Identité de l'Entreprise",
-                "pageSubtitle": "Gérez les informations commerciales et les données de facturation Peppol.",
-                "businessIdentity": "Identité Commerciale",
-                "addressesLocations": "Adresses & Localisations",
-                "companyNameLegal": "Raison Sociale",
-                "commercialName": "Nom Commercial",
-                "vatNumber": "Numéro de TVA (BCE)",
-                "defaultEmail": "E-mail par Défaut",
-                "directorFirstName": "Prénom du Gérant",
-                "directorLastName": "Nom du Gérant",
-                "ibanAccount": "Compte IBAN",
-                "bicCode": "Code BIC",
-                "invoicingAddress": "Adresse de Facturation",
-                "deliveryAddress": "Adresse de Livraison",
-                "headquarters": "Siège Social",
-                "streetNumber": "Rue & Numéro",
-                "postalCode": "Code Postal",
-                "city": "Ville",
-                "peppolTitle": "Intégration Peppol",
-                "peppolDesc": "Votre compte nécessite un profil Peppol actif pour livrer instantanément des factures B2B dans l'Union Européenne. Entrez votre numéro de TVA ci-dessous, puis cliquez sur \"Rechercher\" pour récupérer vos données.",
-                "searchRegistry": "Rechercher Registre Peppol",
-                "searching": "Recherche...",
-                "enterManually": "Saisir Manuellement",
-                "branding": "Marque & Modèles de Documents",
-                "brandingDesc": "Configurez votre couleur de marque, téléchargez un logo, choisissez une mise en page PDF ou un papier à en-tête personnalisé.",
-                "invoiceNumbering": "Numérotation des Factures",
-                "quotationNumbering": "Numérotation des Devis",
-                "prefix": "Préfixe (1-5 car.)",
-                "connector": "Connecteur",
-                "dateFormat": "Format de Date",
-                "numberWidth": "Largeur du Numéro",
-                "nextNumber": "Numéro Suivant",
-                "preview": "Aperçu"
-            }
-        },
-        "dashboard": {
-            "administrative": "Administratif",
-            "title": "Tableau de Bord",
-            "healthy": "Opérationnel",
-            "pendingBookings": "Réservations en Attente",
-            "confirmedVisits": "Visites Confirmées",
-            "activeProjects": "Projets Actifs",
-            "openTasks": "Tâches Ouvertes",
-            "financialOverview": "Aperçu Financier",
-            "invoicedVsExpend": "Facturé vs Dépenses (6 Mois)",
-            "leadStatusSpread": "Répartition des Leads",
-            "currentVolume": "Volume actuel par statut",
-            "recentInquiries": "Demandes Récentes",
-            "viewAllLeads": "Voir Tous les Leads",
-            "noRecentLeads": "Aucun lead récent trouvé.",
-            "editContent": "Modifier Contenu",
-            "newProject": "Nouveau Projet",
-            "setupPortal": "Configurer Portail",
-            "viewPortfolio": "Voir Portfolio",
-            "welcomeTitle": "Bienvenue sur CoralOS Premium !",
-            "welcomeDesc": "Votre espace de travail sécurisé est officiellement provisionné. Préparez vos premiers documents légaux en suivant ces 3 étapes :",
-            "step1Title": "Configurez votre Identité d'Entreprise",
-            "step1Desc": "Téléchargez votre logo, TVA et IBAN pour que vos clients puissent vous payer.",
-            "step2Title": "Initialisez votre Base de Données",
-            "step2Desc": "Instanciez les systèmes CRM pour stocker vos Contacts.",
-            "step3Title": "Générez votre première Facture",
-            "step3Desc": "Testez le moteur de calcul et exportez votre premier PDF premium."
-        },
-        "layout": {
-            "upgradePlan": "Mettre à Niveau",
-            "signOut": "Déconnexion",
-            "administrator": "Administrateur",
-            "verifyEmail": "Veuillez vérifier votre adresse e-mail. Consultez votre boîte de réception pour le lien de vérification.",
-            "resend": "Renvoyer",
-            "sent": "Envoyé !",
-            "moduleUpgrade": "Mise à Niveau Requise",
-            "moduleUpgradeDesc": "Ce module nécessite une licence premium active. Contactez le super-administrateur ou mettez à niveau votre abonnement.",
-            "returnDashboard": "Retour au Tableau de Bord"
-        },
-        "db": {
-            "toolbar": {
-                "filter": "Filtrer",
-                "sort": "Trier",
-                "properties": "Propriétés",
-                "export": "Exporter",
-                "import": "Importer",
-                "sortBy": "Trier par",
-                "thenBy": "Puis par",
-                "createInvoice": "Créer une Facture",
-                "creating": "Création..."
-            },
-            "col": {
-                "email": "E-mail",
-                "phone": "Téléphone",
-                "company": "Société",
-                "vat": "N° TVA",
-                "address": "Adresse",
-                "city": "Ville",
-                "postal": "Code Postal",
-                "country": "Pays",
-                "status": "Statut",
-                "type": "Type",
-                "language": "Langue",
-                "notes": "Notes",
-                "iban": "IBAN",
-                "bic": "BIC",
-                "category": "Catégorie",
-                "payment": "Conditions de Paiement",
-                "contact_person": "Contact",
-                "website": "Site Web",
-                "betreft": "Objet",
-                "invoiceDate": "Date Facture",
-                "dueDate": "Échéance",
-                "totalExVat": "Total HTVA",
-                "totalVat": "TVA",
-                "totalIncVat": "Total TVAC",
-                "peppolDocId": "Ref. Peppol",
-                "date": "Date",
-                "amount": "Montant Total",
-                "vatAmount": "Montant TVA",
-                "currency": "Devise",
-                "paymentMethod": "Mode de Paiement",
-                "source": "Source",
-                "supplier": "Fournisseur",
-                "client": "Client",
-                "clientName": "Client",
-                "description": "Description",
-                "name": "Nom"
-            }
-        }
-    },
-    "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS.",
-        "description": "Espaces culinaires sur mesure et sanctuaires personnels méticuleusement conçus pour un art de vivre d'exception.",
-        "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgique",
-        "vat": "BE 1018.865.828",
-        "quickLinks": "Liens Rapides",
-        "contact": "Contactez-nous",
-        "office": "Bureau",
-        "legal": "Mentions Légales",
-        "fastInterventions": "Interventions Rapides"
-    },
-    "CookieConsent": {
-        "title": "Nous attachons de l'importance à votre vie privée",
-        "description": "Pour améliorer votre expérience, nous utilisons des cookies. Lisez notre {link}.",
-        "linkText": "Politique de Cookies",
-        "accept": "Accepter",
-        "decline": "Refuser"
+    "contact": {
+      "call": "Appelez-nous",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail"
     }
+  },
+  "Services": {
+    "title": "Notre Expertise",
+    "kitchen": {
+      "title": "Cuisine Design",
+      "subtitle": "Excellence Culinaire",
+      "description": "Espaces culinaires sur mesure adaptés à votre style de vie.",
+      "fullDescription": "Notre service de Design de Cuisine est dédié à la création d'espaces culinaires sur mesure qui sont non seulement visuellement superbes, mais aussi extrêmement fonctionnels.\n\nNous croyons que la cuisine est le cœur de la maison, un lieu où les souvenirs se créent et où les chefs-d'œuvre culinaires voient le jour.\n\nNotre processus commence par la compréhension de votre style de vie unique et de vos habitudes culinaires. Que vous soyez un chef professionnel ayant besoin d'équipements industriels, ou une famille ayant besoin d'un espace durable et accueillant, nous adaptons chaque détail à vos besoins.",
+      "features": [
+        "Armoires sur mesure & Menuiserie d'intérieur",
+        "Intégration d'appareils haut de gamme",
+        "Optimisation de l'agencement ergonomique",
+        "Plans de travail en pierre premium (Marbre, Quartz, Granit)",
+        "Plans d'éclairage spécialisés"
+      ]
+    },
+    "bath": {
+      "title": "Rénovation de Bain",
+      "subtitle": "Sanctuaires Personnels",
+      "description": "Transformez votre routine quotidienne en expérience spa.",
+      "fullDescription": "Transformez votre routine quotidienne en une expérience spa luxueuse avec notre service de Rénovation de Salle de Bain. Nous transformons les salles de bain ordinaires en sanctuaires privés de détente et de rajeunissement.\n\nDes suites parentales aux salles d'eau pour invités, nous apportons un élément d'élégance raffinée à chaque espace. Nos designs se concentrent sur la tranquillité, utilisant des palettes apaisantes, des matériaux naturels et des installations de pointe.",
+      "features": [
+        "Baignoires îlots",
+        "Douches à effet de pluie avec options vapeur",
+        "Chauffage au sol & Sèche-serviette",
+        "Vanités sur mesure avec rangement intégré",
+        "Éclairage d'ambiance & Contrôle de l'atmosphère"
+      ]
+    },
+    "additions": {
+      "title": "Extensions Sur Mesure",
+      "subtitle": "Élargissez Vos Horizons",
+      "description": "Extensions de maison transparentes qui s'intègrent parfaitement.",
+      "fullDescription": "Notre service d'Extension sur Mesure vous permet d'agrandir votre espace de vie sans compromettre l'intégrité architecturale de votre maison. Nous nous spécialisons dans les extensions fluides qui semblent avoir toujours fait partie de la structure originale.\n\nQue vous ayez besoin d'une nouvelle suite parentale, d'une véranda, d'un bureau à domicile ou d'un espace de divertissement étendu, nous gérons tout le processus, de la planification architecturale à la dernière couche de peinture.",
+      "features": [
+        "Construction d'un deuxième étage",
+        "Conversions de garage",
+        "Vérandas & Conservatoires",
+        "Unités d'habitation accessoires (ADU)",
+        "Salons & Salles à manger agrandis"
+      ]
+    },
+    "wholeHome": {
+      "title": "Maison Complète",
+      "subtitle": "Transformation Totale",
+      "description": "Réinventez votre espace de vie entier depuis la base.",
+      "fullDescription": "Pour ceux qui cherchent une réinvention complète de leur environnement de vie, notre service de Rénovation de Maison Complète offre une solution globale. C'est pour le propriétaire qui aime son emplacement mais qui a besoin d'une maison qui reflète mieux ses goûts et son style de vie actuels.\n\nNous réinterprétons le flux, la fonction et l'esthétique de l'ensemble de votre propriété. C'est une approche holistique qui assure un langage de design cohérent dans chaque pièce.",
+      "features": [
+        "Modifications structurelles & Plans ouverts",
+        "Révision complète de l'électricité & de la plomberie",
+        "Sols, finitions murales & menuiserie",
+        "Intégration Maison Intelligente (Smart Home)",
+        "Rénovation de façade & Attrait extérieur"
+      ]
+    },
+    "explore": "DÉCOUVRIR"
+  },
+  "Hero": {
+    "title": "Luxury. Redefined.",
+    "subtitle": "Aligné. Sur Mesure. Professionnel.",
+    "tagline": "ALIGNÉ. SUR MESURE. PROFESSIONNEL.",
+    "description": "Découvrez l'ultime transformation de l'habitat avec nos services de rénovation de cuisine et de salle de bain haut de gamme.",
+    "stats": {
+      "projects": "PROJETS RÉALISÉS",
+      "projectsCount": "150+",
+      "experience": "ANNÉES D'EXPÉRIENCE",
+      "experienceCount": "12+"
+    }
+  },
+  "LeadForm": {
+    "messages": {
+      "inquiryWarning": "Pour laisser une demande, vous devez nous fournir vos coordonnées.",
+      "bookingWarning": "Pour réserver une visite, vous devez nous fournir une adresse et des coordonnées."
+    },
+    "tabs": {
+      "inquiry": "Demande",
+      "booking": "Planifier Visite"
+    },
+    "placeholders": {
+      "name": "Nom",
+      "surname": "Prénom",
+      "street": "Rue + numéro",
+      "postalCode": "Code postal",
+      "town": "Ville",
+      "email": "Adresse E-mail",
+      "phone": "Numéro de Téléphone (Optionnel)",
+      "message": "Parlez-nous de votre projet...",
+      "yourName": "Votre Nom",
+      "yourEmail": "Votre E-mail",
+      "file": "Télécharger un fichier (Optionnel)"
+    },
+    "services": {
+      "kitchen": "Rénovation Cuisine",
+      "bathroom": "Rénovation Salle de Bain",
+      "addition": "Extension"
+    },
+    "buttons": {
+      "submit": "ENVOYER LA DEMANDE",
+      "sending": "ENVOI EN COURS...",
+      "sent": "ENVOYÉ !",
+      "chooseDate": "CHOISIR DATE & HEURE",
+      "confirm": "CONFIRMER LA VISITE",
+      "confirming": "CONFIRMATION...",
+      "confirmed": "CONFIRMÉ !",
+      "back": "RETOUR",
+      "close": "FERMER",
+      "yesBook": "OUI, RÉSERVER",
+      "later": "PLUS TARD"
+    },
+    "success": {
+      "inquiryTitle": "Demande Reçue !",
+      "inquirySub": "Souhaitez-vous également planifier une visite professionnelle sur place ?",
+      "allSet": "Tout est prêt !",
+      "touchShortly": "Notre équipe vous contactera sous peu.",
+      "anotherInquiry": "Envoyer une autre demande",
+      "visitConfirmed": "Visite Confirmée !",
+      "scheduledFor": "Prévu le {date} à {time}.",
+      "anotherVisit": "Planifier une autre visite"
+    },
+    "errors": {
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "connection": "Échec de la connexion au serveur. Veuillez vérifier votre connexion.",
+      "required": "Ce champ est obligatoire"
+    },
+    "timeFormat": "HH:mm",
+    "directContact": {
+      "title": "Ou contactez-nous directement:",
+      "whatsapp": "WhatsApp",
+      "call": "Appeler",
+      "email": "E-mail"
+    }
+  },
+  "Sections": {
+    "expertise": {
+      "title": "Notre Expertise"
+    },
+    "portfolio": {
+      "title": "Portfolio Récent",
+      "tagline": "Un aperçu du luxe"
+    }
+  },
+  "Projects": {
+    "kitchenLoft": {
+      "title": "Cuisine de Maison Patricienne",
+      "location": "Sint-Martens-Latem, BE",
+      "caption1": "Vue principale de la cuisine à aire ouverte entièrement rénovée.",
+      "caption2": "Perspective secondaire montrant l'îlot en marbre et les appareils intégrés.",
+      "captionBefore": "La cuisine originale des années 90 avant la transformation complète."
+    },
+    "masterBath": {
+      "title": "Salle de Bain Wellness Zoute",
+      "location": "Knokke-Heist, BE",
+      "caption1": "L'espace spa principal avec baignoire îlot et vue panoramique.",
+      "caption2": "Vue de la douche à effet pluie avec verre sans cadre et pierre naturelle.",
+      "captionBefore": "La salle de bain originale exiguë avec carrelage bleu démodé."
+    },
+    "contemporaryKitchen": {
+      "title": "Cuisine de Chef du Béguinage",
+      "location": "Gand, BE",
+      "caption1": "Cuisine de chef professionnelle conçue pour l'excellence domestique.",
+      "caption2": "Vue détaillée de la cave à vin intégrée et de la station café.",
+      "captionBefore": "La cuisine de base avant d'être réimaginée pour un gourmet."
+    },
+    "masterSuite": {
+      "title": "Suite de Maison de Maître",
+      "location": "Anvers, BE",
+      "caption1": "La salle d'eau d'inspiration spa terminée dans la suite parentale.",
+      "caption2": "Vue alternative montrant la baignoire îlot et les accents en bois naturel.",
+      "captionBefore": "Les combles inutilisés et poussiéreux avant la conversion en suite de luxe."
+    }
+  },
+  "ProjectGallery": {
+    "viewProject": "Voir le Projet",
+    "details": "Détails du Projet",
+    "tooltips": {
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "location": "Emplacement"
+    },
+    "fallbackCaption": "Découvrez l'élégance de nos solutions de design sur mesure. Chaque détail est soigné pour améliorer votre style de vie, alliant fonctionnalité et esthétique intemporelle.",
+    "perspective": "Cette perspective souligne l'attention méticuleuse portée à la sélection des matériaux et à l'intégration de l'éclairage, créant une atmosphère d'élégance raffinée."
+  },
+  "BookingModal": {
+    "title": "Planifier une Visite",
+    "subtitle": "Réservez une visite professionnelle pour votre projet de rénovation."
+  },
+  "ServiceDetail": {
+    "back": "RETOUR AUX SERVICES",
+    "ready": "Prêt à Commencer ?",
+    "schedule": "Planifiez une consultation pour discuter de votre projet de {service}.",
+    "bookConsultation": "RÉSERVER CONSULTATION",
+    "notFound": "Service non trouvé",
+    "specializeIn": "Nous nous spécialisons dans :",
+    "keyFeatures": "Les caractéristiques clés incluent :"
+  },
+  "Portal": {
+    "header": "PORTAIL CLIENT",
+    "navTitle": "Aperçu du Projet",
+    "welcome": "Bienvenue, {name}",
+    "trackProgress": "Suivez l'avancement de votre rénovation et communiquez avec notre équipe.",
+    "latestUpdates": "Dernières Mises à jour",
+    "noUpdates": "Aucune mise à jour pour le moment.",
+    "projectManager": "Chef de Projet",
+    "tasks": "Tâches du Projet",
+    "remaining": "{count} restantes",
+    "noTasks": "Aucune tâche active.",
+    "addTask": "Ajouter une nouvelle tâche...",
+    "documents": "Documents",
+    "noDocs": "Aucun document.",
+    "addDocPrompt": "Nom du document :",
+    "addUrlPrompt": "URL du document :",
+    "projectMedia": "Médias du Projet",
+    "media": "Médias",
+    "noMedia": "Aucun média.",
+    "directMessage": "Message Direct",
+    "noMessages": "Pas encore de messages. Commencez la conversation !",
+    "typeMessage": "Tapez un message..."
+  },
+  "Admin": {
+    "loading": "Chargement des données...",
+    "failedCreate": "Échec de la création du portail",
+    "namePrompt": "Nom du Client :",
+    "emailPrompt": "E-mail du Client :",
+    "header": {
+      "title": "Tableau de Bord Admin",
+      "subtitle": "Gérez les leads, les réservations et les portails clients.",
+      "logout": "Déconnexion",
+      "viewLive": "Voir le Site"
+    },
+    "portals": {
+      "title": "Portails Clients",
+      "create": "Nouveau Portail",
+      "view": "Voir le Portail",
+      "back": "Retour au Tableau de Bord",
+      "clientView": "Vue Client",
+      "postUpdate": "Publier une Mise à jour",
+      "recentUpdates": "Mises à jour Récentes",
+      "form": {
+        "title": "Titre",
+        "details": "Détails...",
+        "post": "Publier"
+      }
+    },
+    "leads": {
+      "title": "Leads Récents",
+      "noLeads": "Aucun lead trouvé."
+    },
+    "bookings": {
+      "title": "Réservations Récentes",
+      "noBookings": "Aucune réservation trouvée."
+    },
+    "filter": {
+      "all": "Tous les statuts",
+      "search": "Rechercher...",
+      "searchClient": "Rechercher un client..."
+    },
+    "status": {
+      "NEW": "Nouveau",
+      "CONTACTED": "Contacté",
+      "CONVERTED": "Converti",
+      "ARCHIVED": "Archivé",
+      "PENDING": "En attente",
+      "CONFIRMED": "Confirmé",
+      "CANCELLED": "Annulé",
+      "ACTIVE": "Actif",
+      "COMPLETED": "Terminé"
+    },
+    "nav": {
+      "sidebar": {
+        "dashboard": "TABLEAU DE BORD",
+        "financials": "FINANCES",
+        "contacts": "CONTACTS",
+        "suppliers": "FOURNISSEURS",
+        "settings": "PARAMÈTRES",
+        "hr": "RH",
+        "library": "BIBLIOTHÈQUE",
+        "website": "SITE WEB",
+        "crm": "CRM",
+        "projects": "PROJETS",
+        "email": "MESSAGERIE",
+        "tasks": "TÂCHES",
+        "calendar": "AGENDA",
+        "files": "FICHIERS",
+        "sales": "VENTES"
+      },
+      "financialTabs": {
+        "purchaseInvoices": "FACTURES D'ACHAT",
+        "expenseTickets": "REÇUS",
+        "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
+        "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
+        "salesInvoices": "FACTURES",
+        "quotations": "DEVIS"
+      },
+      "pages": {
+        "salesInvoices": "Factures de Vente",
+        "salesInvoicesDesc": "Gérez les comptes débiteurs, suivez les paiements et générez des factures PDF.",
+        "noInvoices": "Aucune facture de vente",
+        "noInvoicesDesc": "Créez votre première facture pour commencer.",
+        "createInvoice": "Créer une Facture",
+        "dashboard": "Tableau de Bord",
+        "administrative": "Administratif",
+        "scanUploadTicket": "Scanner / Télécharger Ticket"
+      },
+      "settings": {
+        "companyInfo": "INFOS SOCIÉTÉ",
+        "uiLayout": "MISE EN PAGE",
+        "calendar": "CALENDRIER",
+        "financials": "FINANCES",
+        "hr": "RH",
+        "library": "BIBLIOTHÈQUE",
+        "projects": "PROJETS",
+        "relations": "RELATIONS",
+        "tasks": "TÂCHES",
+        "website": "SITE WEB",
+        "appPreferences": "Préférences d'Application & Documents",
+        "documentLanguage": "Langue des Documents",
+        "documentLanguageDesc": "Définit la langue par défaut pour les PDF générés (Devis, Factures). Si vide, utilise la langue du client ou le français.",
+        "fallbackOption": "Utiliser la langue du client",
+        "documentNumbering": "Numérotation des Documents",
+        "documentNumberingDesc": "Configurez le modèle de numérotation automatique pour les factures et les devis. Les changements s'appliquent uniquement aux nouveaux documents.",
+        "save": "Enregistrer le Profil",
+        "saving": "Sauvegarde...",
+        "pageTitle": "Identité de l'Entreprise",
+        "pageSubtitle": "Gérez les informations commerciales et les données de facturation Peppol.",
+        "businessIdentity": "Identité Commerciale",
+        "addressesLocations": "Adresses & Localisations",
+        "companyNameLegal": "Raison Sociale",
+        "commercialName": "Nom Commercial",
+        "vatNumber": "Numéro de TVA (BCE)",
+        "defaultEmail": "E-mail par Défaut",
+        "directorFirstName": "Prénom du Gérant",
+        "directorLastName": "Nom du Gérant",
+        "ibanAccount": "Compte IBAN",
+        "bicCode": "Code BIC",
+        "invoicingAddress": "Adresse de Facturation",
+        "deliveryAddress": "Adresse de Livraison",
+        "headquarters": "Siège Social",
+        "streetNumber": "Rue & Numéro",
+        "postalCode": "Code Postal",
+        "city": "Ville",
+        "peppolTitle": "Intégration Peppol",
+        "peppolDesc": "Votre compte nécessite un profil Peppol actif pour livrer instantanément des factures B2B dans l'Union Européenne. Entrez votre numéro de TVA ci-dessous, puis cliquez sur \"Rechercher\" pour récupérer vos données.",
+        "searchRegistry": "Rechercher Registre Peppol",
+        "searching": "Recherche...",
+        "enterManually": "Saisir Manuellement",
+        "branding": "Marque & Modèles de Documents",
+        "brandingDesc": "Configurez votre couleur de marque, téléchargez un logo, choisissez une mise en page PDF ou un papier à en-tête personnalisé.",
+        "invoiceNumbering": "Numérotation des Factures",
+        "quotationNumbering": "Numérotation des Devis",
+        "prefix": "Préfixe (1-5 car.)",
+        "connector": "Connecteur",
+        "dateFormat": "Format de Date",
+        "numberWidth": "Largeur du Numéro",
+        "nextNumber": "Numéro Suivant",
+        "preview": "Aperçu"
+      }
+    },
+    "dashboard": {
+      "administrative": "Administratif",
+      "title": "Tableau de Bord",
+      "healthy": "Opérationnel",
+      "pendingBookings": "Réservations en Attente",
+      "confirmedVisits": "Visites Confirmées",
+      "activeProjects": "Projets Actifs",
+      "openTasks": "Tâches Ouvertes",
+      "financialOverview": "Aperçu Financier",
+      "invoicedVsExpend": "Facturé vs Dépenses (6 Mois)",
+      "leadStatusSpread": "Répartition des Leads",
+      "currentVolume": "Volume actuel par statut",
+      "recentInquiries": "Demandes Récentes",
+      "viewAllLeads": "Voir Tous les Leads",
+      "noRecentLeads": "Aucun lead récent trouvé.",
+      "editContent": "Modifier Contenu",
+      "newProject": "Nouveau Projet",
+      "setupPortal": "Configurer Portail",
+      "viewPortfolio": "Voir Portfolio",
+      "welcomeTitle": "Bienvenue sur CoralOS Premium !",
+      "welcomeDesc": "Votre espace de travail sécurisé est officiellement provisionné. Préparez vos premiers documents légaux en suivant ces 3 étapes :",
+      "step1Title": "Configurez votre Identité d'Entreprise",
+      "step1Desc": "Téléchargez votre logo, TVA et IBAN pour que vos clients puissent vous payer.",
+      "step2Title": "Initialisez votre Base de Données",
+      "step2Desc": "Instanciez les systèmes CRM pour stocker vos Contacts.",
+      "step3Title": "Générez votre première Facture",
+      "step3Desc": "Testez le moteur de calcul et exportez votre premier PDF premium."
+    },
+    "layout": {
+      "upgradePlan": "Mettre à Niveau",
+      "signOut": "Déconnexion",
+      "administrator": "Administrateur",
+      "verifyEmail": "Veuillez vérifier votre adresse e-mail. Consultez votre boîte de réception pour le lien de vérification.",
+      "resend": "Renvoyer",
+      "sent": "Envoyé !",
+      "moduleUpgrade": "Mise à Niveau Requise",
+      "moduleUpgradeDesc": "Ce module nécessite une licence premium active. Contactez le super-administrateur ou mettez à niveau votre abonnement.",
+      "returnDashboard": "Retour au Tableau de Bord"
+    },
+    "db": {
+      "toolbar": {
+        "filter": "Filtrer",
+        "sort": "Trier",
+        "properties": "Propriétés",
+        "export": "Exporter",
+        "import": "Importer",
+        "sortBy": "Trier par",
+        "thenBy": "Puis par",
+        "createInvoice": "Créer une Facture",
+        "creating": "Création..."
+      },
+      "col": {
+        "email": "E-mail",
+        "phone": "Téléphone",
+        "company": "Société",
+        "vat": "N° TVA",
+        "address": "Adresse",
+        "city": "Ville",
+        "postal": "Code Postal",
+        "country": "Pays",
+        "status": "Statut",
+        "type": "Type",
+        "language": "Langue",
+        "notes": "Notes",
+        "iban": "IBAN",
+        "bic": "BIC",
+        "category": "Catégorie",
+        "payment": "Conditions de Paiement",
+        "contact_person": "Contact",
+        "website": "Site Web",
+        "betreft": "Objet",
+        "invoiceDate": "Date Facture",
+        "dueDate": "Échéance",
+        "totalExVat": "Total HTVA",
+        "totalVat": "TVA",
+        "totalIncVat": "Total TVAC",
+        "peppolDocId": "Ref. Peppol",
+        "date": "Date",
+        "amount": "Montant Total",
+        "vatAmount": "Montant TVA",
+        "currency": "Devise",
+        "paymentMethod": "Mode de Paiement",
+        "source": "Source",
+        "supplier": "Fournisseur",
+        "client": "Client",
+        "clientName": "Client",
+        "description": "Description",
+        "name": "Nom"
+      }
+    }
+  },
+  "Footer": {
+    "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS.",
+    "description": "Espaces culinaires sur mesure et sanctuaires personnels méticuleusement conçus pour un art de vivre d'exception.",
+    "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgique",
+    "vat": "BE 1018.865.828",
+    "quickLinks": "Liens Rapides",
+    "contact": "Contactez-nous",
+    "office": "Bureau",
+    "legal": "Mentions Légales",
+    "fastInterventions": "Interventions Rapides"
+  },
+  "CookieConsent": {
+    "title": "Nous attachons de l'importance à votre vie privée",
+    "description": "Pour améliorer votre expérience, nous utilisons des cookies. Lisez notre {link}.",
+    "linkText": "Politique de Cookies",
+    "accept": "Accepter",
+    "decline": "Refuser"
+  }
 }

@@ -56,30 +56,14 @@ export async function POST(req: Request) {
         // Use the language selected by the user (fallback to nl)
         const userLanguage = language || 'nl';
 
-        // ── Founding Users Cap (atomic — race-condition safe) ────────────────
-        // First 20 tenants = FOUNDER (free, unlimited Peppol).
-        // The count + create run inside a serializable transaction so two
-        // simultaneous signups can't both slip through at count=19.
-        const FOUNDING_CAP = 20;
-
         const { newTenant, user } = await prisma.$transaction(async (tx) => {
-            const tenantCount = await tx.tenant.count();
-            if (tenantCount >= FOUNDING_CAP) {
-                throw Object.assign(
-                    new Error('We zijn momenteel in gesloten bèta. Laat je e-mail achter op coral-group.be om op de wachtlijst te komen.'),
-                    { code: 'FOUNDER_CAP_REACHED' }
-                );
-            }
-
             const newTenant = await tx.tenant.create({
                 data: {
                     companyName: name ? `${name}'s Workspace` : 'New Workspace',
-                    planType: 'FOUNDER',
+                    // FREE tier: INVOICING only. FOUNDER is promoted manually via superadmin.
+                    planType: 'FREE',
                     subscriptionStatus: 'ACTIVE',
-                    // FOUNDER = all current stable modules.
-                    // Add new modules here as they reach production quality.
-                    // Existing FOUNDER tenants are updated via DB migration when modules mature.
-                    activeModules: ['INVOICING', 'CRM', 'DATABASES'],
+                    activeModules: ['INVOICING'],
                     documentLanguage: userLanguage,
                 },
             });

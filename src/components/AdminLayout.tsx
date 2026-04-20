@@ -30,7 +30,8 @@ import {
     Library,
     Mail,
     ShieldAlert,
-    Loader2
+    Loader2,
+    TrendingUp
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
@@ -50,17 +51,18 @@ import { TenantProvider } from "@/context/TenantContext";
 const SIDEBAR_I18N_MAP: Record<string, string> = {
     dashboard: 'sidebar.dashboard',
     financials: 'sidebar.financials',
-    contacts: 'sidebar.contacts',
-    suppliers: 'sidebar.suppliers',
-    settings: 'sidebar.settings',
-    hr: 'sidebar.hr',
-    library: 'sidebar.library',
-    frontend: 'sidebar.website',
-    projects: 'sidebar.projects',
-    calendar: 'sidebar.dashboard', // fallback
-    email: 'sidebar.dashboard', // fallback
-    files: 'sidebar.dashboard', // fallback
-    tasks: 'sidebar.dashboard', // fallback
+    contacts:   'sidebar.contacts',
+    suppliers:  'sidebar.suppliers',
+    settings:   'sidebar.settings',
+    hr:         'sidebar.hr',
+    library:    'sidebar.library',
+    frontend:   'sidebar.website',
+    projects:   'sidebar.projects',
+    calendar:   'sidebar.calendar',
+    email:      'sidebar.email',
+    files:      'sidebar.files',
+    tasks:      'sidebar.tasks',
+    sales:      'sidebar.sales',
 };
 
 export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {} }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string> }) {
@@ -103,6 +105,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 if (d.logoUrl) setLogoUrl(d.logoUrl);
             }
         }).catch(() => {});
+
+        // Listen for brand color changes from DocumentTemplatesModule
+        const handleBrandColorChanged = (e: Event) => {
+            const color = (e as CustomEvent<string>).detail;
+            if (color) setBrandColor(color);
+        };
+        window.addEventListener('brandColorChanged', handleBrandColorChanged);
+        return () => window.removeEventListener('brandColorChanged', handleBrandColorChanged);
     }, []);
 
     const { items: menuItems } = useSidebarStore();
@@ -110,17 +120,18 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const pathname = usePathname();
 
     const MODULE_MAP: Record<string, string[]> = {
-        'contacts': ['INVOICING'],
+        'contacts':  ['CRM'],
         'suppliers': ['INVOICING'],
-        'email': ['CRM'],
-        'tasks': ['CRM'],
-        'projects': ['PROJECTS'],
-        'hr': ['HR'],
-        'files': ['PROJECTS'],
-        'financials': ['INVOICING'],
-        'calendar': ['CALENDAR'],
-        'library': ['DATABASES'],
-        'frontend': ['WEBSITES'],   // Requires WEBSITES module (ENTERPRISE+), not planType string
+        'email':     ['CRM'],
+        'tasks':     ['CRM'],
+        'projects':  ['PROJECTS'],
+        'hr':        ['HR'],
+        'files':     ['PROJECTS'],
+        'financials':['INVOICING'],
+        'calendar':  ['CALENDAR'],
+        'library':   ['DATABASES'],
+        'frontend':  ['WEBSITES'],
+        'sales':     ['CRM'],
     };
 
     const filteredItems = menuItems.filter(item => {

@@ -1,498 +1,503 @@
 {
-    "Metadata": {
-        "title": "Coral Enterprises | Renovări Premium și Bucătării de Lux",
-        "description": "Renovări rezidențiale de lux în Belgia. Specialiști în bucătării personalizate, băi tip wellness și design interior exclusivist.",
-        "keywords": [
-            "renovare",
-            "amenajări interioare",
-            "firme de constructii",
-            "constructor",
-            "renovare bucătărie",
-            "renovare baie",
-            "extensie casă",
-            "renovare totală",
-            "Belgia",
-            "Bruxelles",
-            "lux"
-        ]
+  "Metadata": {
+    "title": "Coral Enterprises | Renovări Premium și Bucătării de Lux",
+    "description": "Renovări rezidențiale de lux în Belgia. Specialiști în bucătării personalizate, băi tip wellness și design interior exclusivist.",
+    "keywords": [
+      "renovare",
+      "amenajări interioare",
+      "firme de constructii",
+      "constructor",
+      "renovare bucătărie",
+      "renovare baie",
+      "extensie casă",
+      "renovare totală",
+      "Belgia",
+      "Bruxelles",
+      "lux"
+    ]
+  },
+  "Navbar": {
+    "home": "Acasă",
+    "services": "Servicii",
+    "projects": "Proiecte",
+    "book": "RESERVĂ",
+    "back": "ÎNAPOI",
+    "logoTitle": "Logo Coral Enterprises",
+    "logoAria": "Logo Coral Enterprises",
+    "topbarTitle": "CORAL ENTERPRISES",
+    "topbarTitlePortal": "PORTAL CLIENȚI CORAL ENTERPRISES",
+    "fastInterventions": {
+      "label": "Intervenții Rapide 24/7",
+      "number": "+32 472 74 10 25"
     },
-    "Navbar": {
-        "home": "Acasă",
-        "services": "Servicii",
-        "projects": "Proiecte",
-        "book": "RESERVĂ",
-        "back": "ÎNAPOI",
-        "logoTitle": "Logo Coral Enterprises",
-        "logoAria": "Logo Coral Enterprises",
-        "topbarTitle": "CORAL ENTERPRISES",
-        "topbarTitlePortal": "PORTAL CLIENȚI CORAL ENTERPRISES",
-        "fastInterventions": {
-            "label": "Intervenții Rapide 24/7",
-            "number": "+32 472 74 10 25"
-        },
-        "contact": {
-            "call": "Sună-ne",
-            "whatsapp": "WhatsApp",
-            "email": "E-mail"
-        }
-    },
-    "Services": {
-        "title": "Expertiza Noastră",
-        "kitchen": {
-            "title": "Design Bucătărie",
-            "subtitle": "Excelență Culinară",
-            "description": "Spații culinare personalizate adaptate stilului tău de viață.",
-            "fullDescription": "Serviciul nostru de Design de Bucătărie este dedicat creării de spații culinare personalizate care nu sunt doar superbe vizual, ci și extrem de funcționale.\n\nCredem că bucătăria este inima casei, un loc unde se creează amintiri și unde iau naștere capodopere culinare.\n\nProcesul nostru începe prin înțelegerea stilului tău unic de viață și a obiceiurilor tale culinare. Fie că ești un bucătar profesionist care are nevoie de echipamente industriale, fie o familie care are nevoie de un spațiu durabil și primitor, adaptăm fiecare detaliu nevoilor tale.",
-            "features": [
-                "Mobilier la Comandă & Tâmplărie de Interior",
-                "Integrare Echipamente High-End",
-                "Optimizare Ergonomică a Fluxului",
-                "Blaturi din Piatră Premium (Marmură, Cuarț, Granit)",
-                "Planuri de Iluminat Specializate"
-            ]
-        },
-        "bath": {
-            "title": "Renovare Baie",
-            "subtitle": "Sanctuare Personale",
-            "description": "Transformă-ți rutina zilnică într-o experiență spa.",
-            "fullDescription": "Transformă-ți rutina zilnică într-o experiență spa luxoasă cu serviciul nostru de Renovare Baie. Transformăm băile obișnuite în sanctuare private de relaxare și reîinerire.\n\nDe la băi matrimoniale la toalete de serviciu, aducem un element de eleganță rafinată în fiecare spațiu. Design-urile noastre se concentrează pe liniște, utilizând palete calmante, materiale naturale și instalații de ultimă generație.",
-            "features": [
-                "Căzi de Baie de sine stătătoare (Freestanding)",
-                "Dușuri de tip Rain-Shower cu opțiuni de abur",
-                "Încălzire în Pardoseală & Încălzitoare de Prosoape",
-                "Gheridoane la Comandă cu Depozitare Integrată",
-                "Iluminat Ambiental & Controlul Atmosferei"
-            ]
-        },
-        "additions": {
-            "title": "Extensii la Comandă",
-            "subtitle": "Extinde-ți Orizonturile",
-            "description": "Extensii de casă care se integrează perfect.",
-            "fullDescription": "Serviciul nostru de Extensii la Comandă îți permite să îți mărești spațiul de locuit fără a compromite integritatea arhitecturală a casei tale. Suntem specializați în extensii fluide care par să fi făcut întotdeauna parte din structura originală.\n\nFie că ai nevoie de un nou dormitor matrimonial, de o verandă, un birou de acasă sau un spațiu de divertisment extins, gestionăm întregul proces, de la planificarea arhitecturală până la ultimul strat de vopsea.",
-            "features": [
-                "Construcție Etaj Suplimentar",
-                "Conversii de Garaj",
-                "Verande & Conservatoare",
-                "Unități Locative Accesorii (ADU)",
-                "Sufragerii & Zone de Dining Extinse"
-            ]
-        },
-        "wholeHome": {
-            "title": "Casă Completă",
-            "subtitle": "Transformare Totală",
-            "description": "Spațiul tău de locuit reinventat de la zero.",
-            "fullDescription": "Pentru cei care caută o reinventare completă a mediului lor de viață, serviciul nostru de Renovare Casă Completă oferă o soluție globală. Este pentru proprietarul care își iubește locația, dar are nevoie de o casă care să reflecte mai bine gusturile și stilul său de viață actual.\n\nReinterpretăm fluxul, funcția și estetica întregii proprietăți. Este o abordare holistică ce asigură un limbaj de design coerent în fiecare cameră.",
-            "features": [
-                "Modificări Structurale & Planuri Deschise",
-                "Revizie Completă Electrică & Instalații Sanitare",
-                "Pardoseli, Finisaje de Pereți & Tâmplărie",
-                "Integrare Smart Home",
-                "Renovare Fațadă & Design Exterior (Curb Appeal)"
-            ]
-        },
-        "explore": "DETALII"
-    },
-    "Hero": {
-        "title": "Luxury. Redefined.",
-        "subtitle": "Aliniat. Personalizat. Profesional.",
-        "tagline": "ALINIAT. PERSONALIZAT. PROFESIONAL.",
-        "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare pentru bucătării și băi.",
-        "stats": {
-            "projects": "PROIECTE FINALIZATE",
-            "experience": "ANI DE EXPERIENȚĂ",
-            "projectsCount": "150+",
-            "experienceCount": "12+"
-        }
-    },
-    "LeadForm": {
-        "messages": {
-            "inquiryWarning": "Pentru a lăsa o solicitare, trebuie să ne oferiți detaliile dumneavoastră.",
-            "bookingWarning": "Pentru a rezerva o vizită, trebuie să ne oferiți o adresă și detalii."
-        },
-        "tabs": {
-            "inquiry": "Solicitare",
-            "booking": "Programare Vizită"
-        },
-        "placeholders": {
-            "name": "Nume",
-            "surname": "Prenume",
-            "street": "Stradă + număr",
-            "postalCode": "Cod poștal",
-            "town": "Oraș",
-            "email": "Adresă de E-mail",
-            "phone": "Număr de Telefon (Opțional)",
-            "message": "Spune-ne despre proiectul tău...",
-            "yourName": "Numele Tău",
-            "yourEmail": "E-mailul Tău",
-            "file": "Încărcați un fișier (Opțional)"
-        },
-        "services": {
-            "kitchen": "Renovare Bucătărie",
-            "bathroom": "Renovare Baie",
-            "addition": "Extensie"
-        },
-        "buttons": {
-            "submit": "TRIMITE SOLICITAREA",
-            "sending": "SE TRIMITE...",
-            "sent": "TRIMIS!",
-            "chooseDate": "ALEGE DATA ȘI ORA",
-            "confirm": "CONFIRMĂ VIZITA",
-            "confirming": "SE CONFIRMĂ...",
-            "confirmed": "CONFIRMAT!",
-            "back": "ÎNAPOI",
-            "close": "ÎNCHIDE",
-            "yesBook": "DA, REZERVĂ ACUM",
-            "later": "MAI TÂRZIU"
-        },
-        "success": {
-            "inquiryTitle": "Solicitare Primită!",
-            "inquirySub": "Dorești să programezi și o vizită profesională la locație?",
-            "allSet": "Totul este pregătit!",
-            "touchShortly": "Echipa noastră te va contacta în curând.",
-            "anotherInquiry": "Trimite o altă solicitare",
-            "visitConfirmed": "Vizită Confirmată!",
-            "scheduledFor": "Programat pe {date} la ora {time}.",
-            "anotherVisit": "Programează o altă vizită"
-        },
-        "errors": {
-            "generic": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
-            "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea."
-        },
-        "timeFormat": "HH:mm",
-        "directContact": {
-            "title": "Sau contactați-ne direct:",
-            "whatsapp": "WhatsApp",
-            "call": "Sună",
-            "email": "E-mail"
-        }
-    },
-    "Sections": {
-        "expertise": {
-            "title": "Expertiza Noastră"
-        },
-        "portfolio": {
-            "title": "Portofoliu Recent",
-            "tagline": "O privire asupra luxului"
-        }
-    },
-    "Projects": {
-        "kitchenLoft": {
-            "title": "Bucătărie Casă Patriciană",
-            "location": "Sint-Martens-Latem, BE",
-            "caption1": "Vedere principală a bucătăriei open-concept complet renovate.",
-            "caption2": "Perspectivă secundară cu insula de marmură și aparate integrate.",
-            "captionBefore": "Bucătăria originală învechită din anii '90 înainte de transformarea de lux."
-        },
-        "masterBath": {
-            "title": "Baie Wellness Zoute",
-            "location": "Knokke-Heist, BE",
-            "caption1": "Zona principală de spa cu cadă freestanding și vedere panoramică.",
-            "caption2": "Vedere a dușului cu efect de ploaie, sticlă fără ramă și piatră naturală.",
-            "captionBefore": "Baia originală înghesuită, cu gresie albastră demodată."
-        },
-        "contemporaryKitchen": {
-            "title": "Bucătărie Chef Beguinage",
-            "location": "Ghent, BE",
-            "caption1": "Bucătărie profesională adaptată pentru excelență domestică.",
-            "caption2": "Vedere detaliată a cramei integrate și a stației de cafea.",
-            "captionBefore": "Bucătăria de bază înainte de a fi reimaginată pentru un expert culinar."
-        },
-        "masterSuite": {
-            "title": "Suită Casă Boierească",
-            "location": "Anvers, BE",
-            "caption1": "Zona de spa finalizată în suita matrimonială.",
-            "caption2": "Vedere alternativă cu cada freestanding și accente de lemn natural.",
-            "captionBefore": "Podul nefolosit și prăfuit înainte de conversia într-o suită de lux."
-        }
-    },
-    "ProjectGallery": {
-        "viewProject": "Vezi Proiectul",
-        "details": "Detalii Proiect",
-        "tooltips": {
-            "whatsapp": "WhatsApp",
-            "email": "E-mail",
-            "location": "Locație"
-        },
-        "fallbackCaption": "Experimentați viața de lux cu soluțiile noastre de design personalizate. Fiecare detaliu este curatoriat pentru a vă îmbunătăți stilul de viață, îmbinând funcționalitatea cu estetica atemporală.",
-        "perspective": "Această perspectivă evidențiază atenția meticuloasă acordată selecției materialelor și integrării iluminatului, creând o atmosferă de eleganță rafinată."
-    },
-    "BookingModal": {
-        "title": "Programează o Vizită",
-        "subtitle": "Rezervă o vizită profesională pentru proiectul tău de renovare."
-    },
-    "ServiceDetail": {
-        "back": "ÎNAPOI LA SERVICII",
-        "ready": "Pregătit să Începi?",
-        "schedule": "Programează o consultație pentru a discuta despre proiectul tău de {service}.",
-        "bookConsultation": "RESERVĂ CONSULTAȚIE",
-        "notFound": "Serviciul nu a fost găsit",
-        "specializeIn": "Suntem specializați în:",
-        "keyFeatures": "Caracteristicile cheie includ:"
-    },
-    "Portal": {
-        "header": "PORTAL CLIENT",
-        "navTitle": "Prezentare Proiect",
-        "welcome": "Bun venit, {name}",
-        "trackProgress": "Urmărește progresul renovării tale și comunică cu echipa noastră.",
-        "latestUpdates": "Ultimele Noutăți",
-        "noUpdates": "Nicio noutate postată momentan.",
-        "projectManager": "Manager de Proiect",
-        "tasks": "Sarcini Proiect",
-        "remaining": "{count} Rămase",
-        "noTasks": "Nicio sarcină activă.",
-        "addTask": "Adaugă o sarcină nouă...",
-        "documents": "Documente",
-        "noDocs": "Niciun document.",
-        "addDocPrompt": "Nume Document:",
-        "addUrlPrompt": "URL Document:",
-        "projectMedia": "Media Proiect",
-        "media": "Media",
-        "noMedia": "Niciun element media.",
-        "directMessage": "Mesaj Direct",
-        "noMessages": "Niciun mesaj încă. Începe conversația!",
-        "typeMessage": "Scrie un mesaj..."
-    },
-    "Admin": {
-        "loading": "Se încarcă datele...",
-        "failedCreate": "Crearea portalului a eșuat",
-        "namePrompt": "Nume Client:",
-        "emailPrompt": "E-mail Client:",
-        "header": {
-            "title": "Panou de Administrare",
-            "subtitle": "Gestionează lead-uri, rezervări și portaluri clienți.",
-            "logout": "Deconectare",
-            "viewLive": "Vezi Site-ul"
-        },
-        "portals": {
-            "title": "Portaluri Clienți",
-            "create": "Portal Nou",
-            "view": "Vezi Portalul",
-            "back": "Înapoi la Panou",
-            "clientView": "Vizualizare Client",
-            "postUpdate": "Postează Noutate",
-            "recentUpdates": "Noutăți Recente",
-            "form": {
-                "title": "Titlu",
-                "details": "Detalii...",
-                "post": "Postează"
-            }
-        },
-        "leads": {
-            "title": "Lead-uri Recente",
-            "noLeads": "Niciun lead găsit."
-        },
-        "bookings": {
-            "title": "Rezervări Recente",
-            "noBookings": "Nicio rezervare găsită."
-        },
-        "filter": {
-            "all": "Toate Statusurile",
-            "search": "Caută...",
-            "searchClient": "Caută Client..."
-        },
-        "status": {
-            "NEW": "Nou",
-            "CONTACTED": "Contactat",
-            "CONVERTED": "Convertit",
-            "ARCHIVED": "Arhivat",
-            "PENDING": "În așteptare",
-            "CONFIRMED": "Confirmat",
-            "CANCELLED": "Anulat",
-            "ACTIVE": "Activ",
-            "COMPLETED": "Finalizat"
-        },
-        "nav": {
-            "sidebar": {
-                "dashboard": "PANOU CONTROL",
-                "financials": "FINANCIAR",
-                "contacts": "CONTACTE",
-                "suppliers": "FURNIZORI",
-                "settings": "SETĂRI",
-                "hr": "HR",
-                "library": "BIBLIOTECĂ",
-                "website": "WEBSITE",
-                "crm": "CRM",
-                "projects": "PROIECTE"
-            },
-            "financialTabs": {
-                "purchaseInvoices": "FACTURI ACHIZIȚIE",
-                "expenseTickets": "TICHETE",
-                "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
-                "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
-                "salesInvoices": "FACTURI",
-                "quotations": "OFERTE"
-            },
-            "pages": {
-                "salesInvoices": "Facturi de Vânzare",
-                "salesInvoicesDesc": "Gestionați conturile de încasat, urmăriți plățile și generați facturi PDF.",
-                "noInvoices": "Nicio factură de vânzare",
-                "noInvoicesDesc": "Creați prima factură pentru a începe.",
-                "createInvoice": "Creează Factură",
-                "dashboard": "Panou de Control",
-                "administrative": "Administrativ",
-                "scanUploadTicket": "Scanează Ticket"
-            },
-            "settings": {
-                "companyInfo": "INFO COMPANIE",
-                "uiLayout": "ASPECT UI",
-                "calendar": "CALENDAR",
-                "financials": "FINANCIAR",
-                "hr": "HR",
-                "library": "BIBLIOTECĂ",
-                "projects": "PROIECTE",
-                "relations": "RELAȚII",
-                "tasks": "SARCINI",
-                "website": "WEBSITE",
-                "appPreferences": "Preferințe Aplicație & Documente",
-                "documentLanguage": "Limba Documentelor",
-                "documentLanguageDesc": "Setează limba implicită pentru PDF-urile generate (Oferte, Facturi). Dacă este gol, folosește limba clientului sau franceza.",
-                "fallbackOption": "Folosește limba clientului",
-                "documentNumbering": "Numerotare Documente",
-                "documentNumberingDesc": "Configurați modelul de numerotare automată pentru facturi și oferte. Modificările se aplică doar documentelor nou create.",
-                "save": "Salvează Profilul",
-                "saving": "Se salvează...",
-                "pageTitle": "Identitate Companie",
-                "pageSubtitle": "Gestionați datele comerciale și informațiile de facturare Peppol.",
-                "businessIdentity": "Identitate Comercială",
-                "addressesLocations": "Adrese & Locații",
-                "companyNameLegal": "Denumire Societate (Juridică)",
-                "commercialName": "Denumire Comercială",
-                "vatNumber": "Număr TVA (CUI)",
-                "defaultEmail": "E-mail Implicit",
-                "directorFirstName": "Prenume Administrator",
-                "directorLastName": "Nume Administrator",
-                "ibanAccount": "Cont IBAN",
-                "bicCode": "Cod BIC",
-                "invoicingAddress": "Adresă de Facturare",
-                "deliveryAddress": "Adresă de Livrare",
-                "headquarters": "Sediu Social",
-                "streetNumber": "Stradă & Număr",
-                "postalCode": "Cod Poștal",
-                "city": "Localitate",
-                "peppolTitle": "Integrare Peppol",
-                "peppolDesc": "Contul dvs. necesită un profil Peppol activ pentru a livra instantaneu facturi B2B în Uniunea Europeană. Introduceți numărul de TVA mai jos, apoi faceți clic pe \"Caută\" pentru a prelua datele companiei.",
-                "searchRegistry": "Caută în Registrul Peppol",
-                "searching": "Se caută...",
-                "enterManually": "Introdu Manual",
-                "branding": "Branding & Șabloane Documente",
-                "brandingDesc": "Configurați culoarea brandului, încărcați un logo, alegeți un aspect PDF sau încărcați antet personalizat.",
-                "invoiceNumbering": "Numerotare Facturi",
-                "quotationNumbering": "Numerotare Oferte",
-                "prefix": "Prefix (1-5 car.)",
-                "connector": "Conector",
-                "dateFormat": "Format Dată",
-                "numberWidth": "Lățime Număr",
-                "nextNumber": "Numărul Următor",
-                "preview": "Previzualizare"
-            }
-        },
-        "dashboard": {
-            "administrative": "Administrativ",
-            "title": "Panou de Control",
-            "healthy": "Operațional",
-            "pendingBookings": "Rezervări în Așteptare",
-            "confirmedVisits": "Vizite Confirmate",
-            "activeProjects": "Proiecte Active",
-            "openTasks": "Sarcini Deschise",
-            "financialOverview": "Prezentare Financiară",
-            "invoicedVsExpend": "Facturat vs Cheltuieli (6 Luni)",
-            "leadStatusSpread": "Distribuție Lead-uri",
-            "currentVolume": "Volum actual per status",
-            "recentInquiries": "Solicitări Recente",
-            "viewAllLeads": "Vezi Toate Lead-urile",
-            "noRecentLeads": "Niciun lead recent găsit.",
-            "editContent": "Editare Conținut",
-            "newProject": "Proiect Nou",
-            "setupPortal": "Configurare Portal",
-            "viewPortfolio": "Vezi Portofoliu",
-            "welcomeTitle": "Bun venit pe CoralOS Premium!",
-            "welcomeDesc": "Spațiul dvs. de lucru securizat este provizionat. Pregătiți-vă primele documente legale urmând acești 3 pași:",
-            "step1Title": "Configurați Identitatea Companiei",
-            "step1Desc": "Încărcați logo-ul, TVA-ul și IBAN-ul pentru ca clienții să vă poată plăti.",
-            "step2Title": "Inițializați Baza de Date",
-            "step2Desc": "Instanțiați sistemele CRM pentru a stoca Contactele dvs.",
-            "step3Title": "Generați prima Factură",
-            "step3Desc": "Testați motorul de calcul și exportați primul PDF premium."
-        },
-        "layout": {
-            "upgradePlan": "Actualizare Plan",
-            "signOut": "Deconectare",
-            "administrator": "Administrator",
-            "verifyEmail": "Vă rugăm să verificați adresa de e-mail. Verificați inbox-ul pentru linkul de verificare.",
-            "resend": "Retrimite",
-            "sent": "Trimis!",
-            "moduleUpgrade": "Actualizare Modul Necesară",
-            "moduleUpgradeDesc": "Acest modul necesită o licență premium activă. Contactați super-administratorul sau actualizați abonamentul.",
-            "returnDashboard": "Înapoi la Panoul de Control"
-        },
-        "db": {
-            "toolbar": {
-                "filter": "Filtrare",
-                "sort": "Sortare",
-                "properties": "Proprietăți",
-                "export": "Export",
-                "import": "Import",
-                "sortBy": "Sortare după",
-                "thenBy": "Apoi după",
-                "createInvoice": "Creare Factură",
-                "creating": "Se creează..."
-            },
-            "col": {
-                "email": "E-mail",
-                "phone": "Telefon",
-                "company": "Societate",
-                "vat": "Nr. TVA",
-                "address": "Adresă",
-                "city": "Oraș",
-                "postal": "Cod Poștal",
-                "country": "Țară",
-                "status": "Status",
-                "type": "Tip",
-                "language": "Limbă",
-                "notes": "Note",
-                "iban": "IBAN",
-                "bic": "BIC",
-                "category": "Categorie",
-                "payment": "Condiții de Plată",
-                "contact_person": "Persoană de Contact",
-                "website": "Website",
-                "betreft": "Subiect",
-                "invoiceDate": "Data Facturii",
-                "dueDate": "Scadență",
-                "totalExVat": "Total Excl. TVA",
-                "totalVat": "TVA",
-                "totalIncVat": "Total Incl. TVA",
-                "peppolDocId": "Ref. Peppol",
-                "date": "Data",
-                "amount": "Sumă Totală",
-                "vatAmount": "Sumă TVA",
-                "currency": "Monedă",
-                "paymentMethod": "Metodă de Plată",
-                "source": "Sursă",
-                "supplier": "Furnizor",
-                "client": "Client",
-                "clientName": "Client",
-                "description": "Descriere",
-                "name": "Nume"
-            }
-        }
-    },
-    "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE.",
-        "description": "Spații culinare personalizate și sanctuare personale create meticulos pentru un stil de viață de elită.",
-        "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgia",
-        "vat": "BE 1018.865.828",
-        "quickLinks": "Link-uri Rapide",
-        "contact": "Contact",
-        "office": "Birou",
-        "legal": "Legal",
-        "fastInterventions": "Intervenții Rapide"
-    },
-    "CookieConsent": {
-        "title": "Apreciem confidențialitatea dvs.",
-        "description": "Pentru a vă îmbunătăți experiența, folosim cookie-uri. Citiți {link} noastră.",
-        "linkText": "Politica de Cookie-uri",
-        "accept": "Acceptă",
-        "decline": "Refuză"
+    "contact": {
+      "call": "Sună-ne",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail"
     }
+  },
+  "Services": {
+    "title": "Expertiza Noastră",
+    "kitchen": {
+      "title": "Design Bucătărie",
+      "subtitle": "Excelență Culinară",
+      "description": "Spații culinare personalizate adaptate stilului tău de viață.",
+      "fullDescription": "Serviciul nostru de Design de Bucătărie este dedicat creării de spații culinare personalizate care nu sunt doar superbe vizual, ci și extrem de funcționale.\n\nCredem că bucătăria este inima casei, un loc unde se creează amintiri și unde iau naștere capodopere culinare.\n\nProcesul nostru începe prin înțelegerea stilului tău unic de viață și a obiceiurilor tale culinare. Fie că ești un bucătar profesionist care are nevoie de echipamente industriale, fie o familie care are nevoie de un spațiu durabil și primitor, adaptăm fiecare detaliu nevoilor tale.",
+      "features": [
+        "Mobilier la Comandă & Tâmplărie de Interior",
+        "Integrare Echipamente High-End",
+        "Optimizare Ergonomică a Fluxului",
+        "Blaturi din Piatră Premium (Marmură, Cuarț, Granit)",
+        "Planuri de Iluminat Specializate"
+      ]
+    },
+    "bath": {
+      "title": "Renovare Baie",
+      "subtitle": "Sanctuare Personale",
+      "description": "Transformă-ți rutina zilnică într-o experiență spa.",
+      "fullDescription": "Transformă-ți rutina zilnică într-o experiență spa luxoasă cu serviciul nostru de Renovare Baie. Transformăm băile obișnuite în sanctuare private de relaxare și reîinerire.\n\nDe la băi matrimoniale la toalete de serviciu, aducem un element de eleganță rafinată în fiecare spațiu. Design-urile noastre se concentrează pe liniște, utilizând palete calmante, materiale naturale și instalații de ultimă generație.",
+      "features": [
+        "Căzi de Baie de sine stătătoare (Freestanding)",
+        "Dușuri de tip Rain-Shower cu opțiuni de abur",
+        "Încălzire în Pardoseală & Încălzitoare de Prosoape",
+        "Gheridoane la Comandă cu Depozitare Integrată",
+        "Iluminat Ambiental & Controlul Atmosferei"
+      ]
+    },
+    "additions": {
+      "title": "Extensii la Comandă",
+      "subtitle": "Extinde-ți Orizonturile",
+      "description": "Extensii de casă care se integrează perfect.",
+      "fullDescription": "Serviciul nostru de Extensii la Comandă îți permite să îți mărești spațiul de locuit fără a compromite integritatea arhitecturală a casei tale. Suntem specializați în extensii fluide care par să fi făcut întotdeauna parte din structura originală.\n\nFie că ai nevoie de un nou dormitor matrimonial, de o verandă, un birou de acasă sau un spațiu de divertisment extins, gestionăm întregul proces, de la planificarea arhitecturală până la ultimul strat de vopsea.",
+      "features": [
+        "Construcție Etaj Suplimentar",
+        "Conversii de Garaj",
+        "Verande & Conservatoare",
+        "Unități Locative Accesorii (ADU)",
+        "Sufragerii & Zone de Dining Extinse"
+      ]
+    },
+    "wholeHome": {
+      "title": "Casă Completă",
+      "subtitle": "Transformare Totală",
+      "description": "Spațiul tău de locuit reinventat de la zero.",
+      "fullDescription": "Pentru cei care caută o reinventare completă a mediului lor de viață, serviciul nostru de Renovare Casă Completă oferă o soluție globală. Este pentru proprietarul care își iubește locația, dar are nevoie de o casă care să reflecte mai bine gusturile și stilul său de viață actual.\n\nReinterpretăm fluxul, funcția și estetica întregii proprietăți. Este o abordare holistică ce asigură un limbaj de design coerent în fiecare cameră.",
+      "features": [
+        "Modificări Structurale & Planuri Deschise",
+        "Revizie Completă Electrică & Instalații Sanitare",
+        "Pardoseli, Finisaje de Pereți & Tâmplărie",
+        "Integrare Smart Home",
+        "Renovare Fațadă & Design Exterior (Curb Appeal)"
+      ]
+    },
+    "explore": "DETALII"
+  },
+  "Hero": {
+    "title": "Luxury. Redefined.",
+    "subtitle": "Aliniat. Personalizat. Profesional.",
+    "tagline": "ALINIAT. PERSONALIZAT. PROFESIONAL.",
+    "description": "Experimentează transformarea supremă a locuinței cu serviciile noastre premium de renovare pentru bucătării și băi.",
+    "stats": {
+      "projects": "PROIECTE FINALIZATE",
+      "experience": "ANI DE EXPERIENȚĂ",
+      "projectsCount": "150+",
+      "experienceCount": "12+"
+    }
+  },
+  "LeadForm": {
+    "messages": {
+      "inquiryWarning": "Pentru a lăsa o solicitare, trebuie să ne oferiți detaliile dumneavoastră.",
+      "bookingWarning": "Pentru a rezerva o vizită, trebuie să ne oferiți o adresă și detalii."
+    },
+    "tabs": {
+      "inquiry": "Solicitare",
+      "booking": "Programare Vizită"
+    },
+    "placeholders": {
+      "name": "Nume",
+      "surname": "Prenume",
+      "street": "Stradă + număr",
+      "postalCode": "Cod poștal",
+      "town": "Oraș",
+      "email": "Adresă de E-mail",
+      "phone": "Număr de Telefon (Opțional)",
+      "message": "Spune-ne despre proiectul tău...",
+      "yourName": "Numele Tău",
+      "yourEmail": "E-mailul Tău",
+      "file": "Încărcați un fișier (Opțional)"
+    },
+    "services": {
+      "kitchen": "Renovare Bucătărie",
+      "bathroom": "Renovare Baie",
+      "addition": "Extensie"
+    },
+    "buttons": {
+      "submit": "TRIMITE SOLICITAREA",
+      "sending": "SE TRIMITE...",
+      "sent": "TRIMIS!",
+      "chooseDate": "ALEGE DATA ȘI ORA",
+      "confirm": "CONFIRMĂ VIZITA",
+      "confirming": "SE CONFIRMĂ...",
+      "confirmed": "CONFIRMAT!",
+      "back": "ÎNAPOI",
+      "close": "ÎNCHIDE",
+      "yesBook": "DA, REZERVĂ ACUM",
+      "later": "MAI TÂRZIU"
+    },
+    "success": {
+      "inquiryTitle": "Solicitare Primită!",
+      "inquirySub": "Dorești să programezi și o vizită profesională la locație?",
+      "allSet": "Totul este pregătit!",
+      "touchShortly": "Echipa noastră te va contacta în curând.",
+      "anotherInquiry": "Trimite o altă solicitare",
+      "visitConfirmed": "Vizită Confirmată!",
+      "scheduledFor": "Programat pe {date} la ora {time}.",
+      "anotherVisit": "Programează o altă vizită"
+    },
+    "errors": {
+      "generic": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
+      "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea."
+    },
+    "timeFormat": "HH:mm",
+    "directContact": {
+      "title": "Sau contactați-ne direct:",
+      "whatsapp": "WhatsApp",
+      "call": "Sună",
+      "email": "E-mail"
+    }
+  },
+  "Sections": {
+    "expertise": {
+      "title": "Expertiza Noastră"
+    },
+    "portfolio": {
+      "title": "Portofoliu Recent",
+      "tagline": "O privire asupra luxului"
+    }
+  },
+  "Projects": {
+    "kitchenLoft": {
+      "title": "Bucătărie Casă Patriciană",
+      "location": "Sint-Martens-Latem, BE",
+      "caption1": "Vedere principală a bucătăriei open-concept complet renovate.",
+      "caption2": "Perspectivă secundară cu insula de marmură și aparate integrate.",
+      "captionBefore": "Bucătăria originală învechită din anii '90 înainte de transformarea de lux."
+    },
+    "masterBath": {
+      "title": "Baie Wellness Zoute",
+      "location": "Knokke-Heist, BE",
+      "caption1": "Zona principală de spa cu cadă freestanding și vedere panoramică.",
+      "caption2": "Vedere a dușului cu efect de ploaie, sticlă fără ramă și piatră naturală.",
+      "captionBefore": "Baia originală înghesuită, cu gresie albastră demodată."
+    },
+    "contemporaryKitchen": {
+      "title": "Bucătărie Chef Beguinage",
+      "location": "Ghent, BE",
+      "caption1": "Bucătărie profesională adaptată pentru excelență domestică.",
+      "caption2": "Vedere detaliată a cramei integrate și a stației de cafea.",
+      "captionBefore": "Bucătăria de bază înainte de a fi reimaginată pentru un expert culinar."
+    },
+    "masterSuite": {
+      "title": "Suită Casă Boierească",
+      "location": "Anvers, BE",
+      "caption1": "Zona de spa finalizată în suita matrimonială.",
+      "caption2": "Vedere alternativă cu cada freestanding și accente de lemn natural.",
+      "captionBefore": "Podul nefolosit și prăfuit înainte de conversia într-o suită de lux."
+    }
+  },
+  "ProjectGallery": {
+    "viewProject": "Vezi Proiectul",
+    "details": "Detalii Proiect",
+    "tooltips": {
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "location": "Locație"
+    },
+    "fallbackCaption": "Experimentați viața de lux cu soluțiile noastre de design personalizate. Fiecare detaliu este curatoriat pentru a vă îmbunătăți stilul de viață, îmbinând funcționalitatea cu estetica atemporală.",
+    "perspective": "Această perspectivă evidențiază atenția meticuloasă acordată selecției materialelor și integrării iluminatului, creând o atmosferă de eleganță rafinată."
+  },
+  "BookingModal": {
+    "title": "Programează o Vizită",
+    "subtitle": "Rezervă o vizită profesională pentru proiectul tău de renovare."
+  },
+  "ServiceDetail": {
+    "back": "ÎNAPOI LA SERVICII",
+    "ready": "Pregătit să Începi?",
+    "schedule": "Programează o consultație pentru a discuta despre proiectul tău de {service}.",
+    "bookConsultation": "RESERVĂ CONSULTAȚIE",
+    "notFound": "Serviciul nu a fost găsit",
+    "specializeIn": "Suntem specializați în:",
+    "keyFeatures": "Caracteristicile cheie includ:"
+  },
+  "Portal": {
+    "header": "PORTAL CLIENT",
+    "navTitle": "Prezentare Proiect",
+    "welcome": "Bun venit, {name}",
+    "trackProgress": "Urmărește progresul renovării tale și comunică cu echipa noastră.",
+    "latestUpdates": "Ultimele Noutăți",
+    "noUpdates": "Nicio noutate postată momentan.",
+    "projectManager": "Manager de Proiect",
+    "tasks": "Sarcini Proiect",
+    "remaining": "{count} Rămase",
+    "noTasks": "Nicio sarcină activă.",
+    "addTask": "Adaugă o sarcină nouă...",
+    "documents": "Documente",
+    "noDocs": "Niciun document.",
+    "addDocPrompt": "Nume Document:",
+    "addUrlPrompt": "URL Document:",
+    "projectMedia": "Media Proiect",
+    "media": "Media",
+    "noMedia": "Niciun element media.",
+    "directMessage": "Mesaj Direct",
+    "noMessages": "Niciun mesaj încă. Începe conversația!",
+    "typeMessage": "Scrie un mesaj..."
+  },
+  "Admin": {
+    "loading": "Se încarcă datele...",
+    "failedCreate": "Crearea portalului a eșuat",
+    "namePrompt": "Nume Client:",
+    "emailPrompt": "E-mail Client:",
+    "header": {
+      "title": "Panou de Administrare",
+      "subtitle": "Gestionează lead-uri, rezervări și portaluri clienți.",
+      "logout": "Deconectare",
+      "viewLive": "Vezi Site-ul"
+    },
+    "portals": {
+      "title": "Portaluri Clienți",
+      "create": "Portal Nou",
+      "view": "Vezi Portalul",
+      "back": "Înapoi la Panou",
+      "clientView": "Vizualizare Client",
+      "postUpdate": "Postează Noutate",
+      "recentUpdates": "Noutăți Recente",
+      "form": {
+        "title": "Titlu",
+        "details": "Detalii...",
+        "post": "Postează"
+      }
+    },
+    "leads": {
+      "title": "Lead-uri Recente",
+      "noLeads": "Niciun lead găsit."
+    },
+    "bookings": {
+      "title": "Rezervări Recente",
+      "noBookings": "Nicio rezervare găsită."
+    },
+    "filter": {
+      "all": "Toate Statusurile",
+      "search": "Caută...",
+      "searchClient": "Caută Client..."
+    },
+    "status": {
+      "NEW": "Nou",
+      "CONTACTED": "Contactat",
+      "CONVERTED": "Convertit",
+      "ARCHIVED": "Arhivat",
+      "PENDING": "În așteptare",
+      "CONFIRMED": "Confirmat",
+      "CANCELLED": "Anulat",
+      "ACTIVE": "Activ",
+      "COMPLETED": "Finalizat"
+    },
+    "nav": {
+      "sidebar": {
+        "dashboard": "PANOU CONTROL",
+        "financials": "FINANCIAR",
+        "contacts": "CONTACTE",
+        "suppliers": "FURNIZORI",
+        "settings": "SETĂRI",
+        "hr": "HR",
+        "library": "BIBLIOTECĂ",
+        "website": "WEBSITE",
+        "crm": "CRM",
+        "projects": "PROIECTE",
+        "email": "INBOX",
+        "tasks": "SARCINI",
+        "calendar": "CALENDAR",
+        "files": "FIȘIERE",
+        "sales": "VÂNZĂRI"
+      },
+      "financialTabs": {
+        "purchaseInvoices": "FACTURI ACHIZIȚIE",
+        "expenseTickets": "TICHETE",
+        "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
+        "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
+        "salesInvoices": "FACTURI",
+        "quotations": "OFERTE"
+      },
+      "pages": {
+        "salesInvoices": "Facturi de Vânzare",
+        "salesInvoicesDesc": "Gestionați conturile de încasat, urmăriți plățile și generați facturi PDF.",
+        "noInvoices": "Nicio factură de vânzare",
+        "noInvoicesDesc": "Creați prima factură pentru a începe.",
+        "createInvoice": "Creează Factură",
+        "dashboard": "Panou de Control",
+        "administrative": "Administrativ",
+        "scanUploadTicket": "Scanează Ticket"
+      },
+      "settings": {
+        "companyInfo": "INFO COMPANIE",
+        "uiLayout": "ASPECT UI",
+        "calendar": "CALENDAR",
+        "financials": "FINANCIAR",
+        "hr": "HR",
+        "library": "BIBLIOTECĂ",
+        "projects": "PROIECTE",
+        "relations": "RELAȚII",
+        "tasks": "SARCINI",
+        "website": "WEBSITE",
+        "appPreferences": "Preferințe Aplicație & Documente",
+        "documentLanguage": "Limba Documentelor",
+        "documentLanguageDesc": "Setează limba implicită pentru PDF-urile generate (Oferte, Facturi). Dacă este gol, folosește limba clientului sau franceza.",
+        "fallbackOption": "Folosește limba clientului",
+        "documentNumbering": "Numerotare Documente",
+        "documentNumberingDesc": "Configurați modelul de numerotare automată pentru facturi și oferte. Modificările se aplică doar documentelor nou create.",
+        "save": "Salvează Profilul",
+        "saving": "Se salvează...",
+        "pageTitle": "Identitate Companie",
+        "pageSubtitle": "Gestionați datele comerciale și informațiile de facturare Peppol.",
+        "businessIdentity": "Identitate Comercială",
+        "addressesLocations": "Adrese & Locații",
+        "companyNameLegal": "Denumire Societate (Juridică)",
+        "commercialName": "Denumire Comercială",
+        "vatNumber": "Număr TVA (CUI)",
+        "defaultEmail": "E-mail Implicit",
+        "directorFirstName": "Prenume Administrator",
+        "directorLastName": "Nume Administrator",
+        "ibanAccount": "Cont IBAN",
+        "bicCode": "Cod BIC",
+        "invoicingAddress": "Adresă de Facturare",
+        "deliveryAddress": "Adresă de Livrare",
+        "headquarters": "Sediu Social",
+        "streetNumber": "Stradă & Număr",
+        "postalCode": "Cod Poștal",
+        "city": "Localitate",
+        "peppolTitle": "Integrare Peppol",
+        "peppolDesc": "Contul dvs. necesită un profil Peppol activ pentru a livra instantaneu facturi B2B în Uniunea Europeană. Introduceți numărul de TVA mai jos, apoi faceți clic pe \"Caută\" pentru a prelua datele companiei.",
+        "searchRegistry": "Caută în Registrul Peppol",
+        "searching": "Se caută...",
+        "enterManually": "Introdu Manual",
+        "branding": "Branding & Șabloane Documente",
+        "brandingDesc": "Configurați culoarea brandului, încărcați un logo, alegeți un aspect PDF sau încărcați antet personalizat.",
+        "invoiceNumbering": "Numerotare Facturi",
+        "quotationNumbering": "Numerotare Oferte",
+        "prefix": "Prefix (1-5 car.)",
+        "connector": "Conector",
+        "dateFormat": "Format Dată",
+        "numberWidth": "Lățime Număr",
+        "nextNumber": "Numărul Următor",
+        "preview": "Previzualizare"
+      }
+    },
+    "dashboard": {
+      "administrative": "Administrativ",
+      "title": "Panou de Control",
+      "healthy": "Operațional",
+      "pendingBookings": "Rezervări în Așteptare",
+      "confirmedVisits": "Vizite Confirmate",
+      "activeProjects": "Proiecte Active",
+      "openTasks": "Sarcini Deschise",
+      "financialOverview": "Prezentare Financiară",
+      "invoicedVsExpend": "Facturat vs Cheltuieli (6 Luni)",
+      "leadStatusSpread": "Distribuție Lead-uri",
+      "currentVolume": "Volum actual per status",
+      "recentInquiries": "Solicitări Recente",
+      "viewAllLeads": "Vezi Toate Lead-urile",
+      "noRecentLeads": "Niciun lead recent găsit.",
+      "editContent": "Editare Conținut",
+      "newProject": "Proiect Nou",
+      "setupPortal": "Configurare Portal",
+      "viewPortfolio": "Vezi Portofoliu",
+      "welcomeTitle": "Bun venit pe CoralOS Premium!",
+      "welcomeDesc": "Spațiul dvs. de lucru securizat este provizionat. Pregătiți-vă primele documente legale urmând acești 3 pași:",
+      "step1Title": "Configurați Identitatea Companiei",
+      "step1Desc": "Încărcați logo-ul, TVA-ul și IBAN-ul pentru ca clienții să vă poată plăti.",
+      "step2Title": "Inițializați Baza de Date",
+      "step2Desc": "Instanțiați sistemele CRM pentru a stoca Contactele dvs.",
+      "step3Title": "Generați prima Factură",
+      "step3Desc": "Testați motorul de calcul și exportați primul PDF premium."
+    },
+    "layout": {
+      "upgradePlan": "Actualizare Plan",
+      "signOut": "Deconectare",
+      "administrator": "Administrator",
+      "verifyEmail": "Vă rugăm să verificați adresa de e-mail. Verificați inbox-ul pentru linkul de verificare.",
+      "resend": "Retrimite",
+      "sent": "Trimis!",
+      "moduleUpgrade": "Actualizare Modul Necesară",
+      "moduleUpgradeDesc": "Acest modul necesită o licență premium activă. Contactați super-administratorul sau actualizați abonamentul.",
+      "returnDashboard": "Înapoi la Panoul de Control"
+    },
+    "db": {
+      "toolbar": {
+        "filter": "Filtrare",
+        "sort": "Sortare",
+        "properties": "Proprietăți",
+        "export": "Export",
+        "import": "Import",
+        "sortBy": "Sortare după",
+        "thenBy": "Apoi după",
+        "createInvoice": "Creare Factură",
+        "creating": "Se creează..."
+      },
+      "col": {
+        "email": "E-mail",
+        "phone": "Telefon",
+        "company": "Societate",
+        "vat": "Nr. TVA",
+        "address": "Adresă",
+        "city": "Oraș",
+        "postal": "Cod Poștal",
+        "country": "Țară",
+        "status": "Status",
+        "type": "Tip",
+        "language": "Limbă",
+        "notes": "Note",
+        "iban": "IBAN",
+        "bic": "BIC",
+        "category": "Categorie",
+        "payment": "Condiții de Plată",
+        "contact_person": "Persoană de Contact",
+        "website": "Website",
+        "betreft": "Subiect",
+        "invoiceDate": "Data Facturii",
+        "dueDate": "Scadență",
+        "totalExVat": "Total Excl. TVA",
+        "totalVat": "TVA",
+        "totalIncVat": "Total Incl. TVA",
+        "peppolDocId": "Ref. Peppol",
+        "date": "Data",
+        "amount": "Sumă Totală",
+        "vatAmount": "Sumă TVA",
+        "currency": "Monedă",
+        "paymentMethod": "Metodă de Plată",
+        "source": "Sursă",
+        "supplier": "Furnizor",
+        "client": "Client",
+        "clientName": "Client",
+        "description": "Descriere",
+        "name": "Nume"
+      }
+    }
+  },
+  "Footer": {
+    "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE.",
+    "description": "Spații culinare personalizate și sanctuare personale create meticulos pentru un stil de viață de elită.",
+    "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgia",
+    "vat": "BE 1018.865.828",
+    "quickLinks": "Link-uri Rapide",
+    "contact": "Contact",
+    "office": "Birou",
+    "legal": "Legal",
+    "fastInterventions": "Intervenții Rapide"
+  },
+  "CookieConsent": {
+    "title": "Apreciem confidențialitatea dvs.",
+    "description": "Pentru a vă îmbunătăți experiența, folosim cookie-uri. Citiți {link} noastră.",
+    "linkText": "Politica de Cookie-uri",
+    "accept": "Acceptă",
+    "decline": "Refuză"
+  }
 }

@@ -1,499 +1,504 @@
 {
-    "Metadata": {
-        "title": "Coral Enterprises | Exclusieve Totaalrenovatie & Luxekeukens",
-        "description": "Hoogwaardige totaalrenovaties in België. Specialist in luxekeukens, wellness badkamers en Japandi interieurontwerp op maat.",
-        "keywords": [
-            "renovatie",
-            "verbouwing",
-            "aannemer",
-            "keukenrenovatie",
-            "badkamer plaatsen",
-            "aanbouw",
-            "totaalrenovatie",
-            "België",
-            "Brussel",
-            "interieurontwerp",
-            "luxe"
-        ]
+  "Metadata": {
+    "title": "Coral Enterprises | Exclusieve Totaalrenovatie & Luxekeukens",
+    "description": "Hoogwaardige totaalrenovaties in België. Specialist in luxekeukens, wellness badkamers en Japandi interieurontwerp op maat.",
+    "keywords": [
+      "renovatie",
+      "verbouwing",
+      "aannemer",
+      "keukenrenovatie",
+      "badkamer plaatsen",
+      "aanbouw",
+      "totaalrenovatie",
+      "België",
+      "Brussel",
+      "interieurontwerp",
+      "luxe"
+    ]
+  },
+  "Navbar": {
+    "home": "Home",
+    "services": "Diensten",
+    "projects": "Projecten",
+    "book": "BOEK NU",
+    "back": "TERUG",
+    "logoTitle": "Coral Enterprises Logo",
+    "logoAria": "Coral Enterprises Logo",
+    "topbarTitle": "CORAL ENTERPRISES",
+    "topbarTitlePortal": "CORAL ENTERPRISES KLANTPORTAAL",
+    "fastInterventions": {
+      "label": "Snelle Interventies 24/7",
+      "number": "+32 472 74 10 25"
     },
-    "Navbar": {
-        "home": "Home",
-        "services": "Diensten",
-        "projects": "Projecten",
-        "book": "BOEK NU",
-        "back": "TERUG",
-        "logoTitle": "Coral Enterprises Logo",
-        "logoAria": "Coral Enterprises Logo",
-        "topbarTitle": "CORAL ENTERPRISES",
-        "topbarTitlePortal": "CORAL ENTERPRISES KLANTPORTAAL",
-        "fastInterventions": {
-            "label": "Snelle Interventies 24/7",
-            "number": "+32 472 74 10 25"
-        },
-        "contact": {
-            "call": "Bel Ons",
-            "whatsapp": "WhatsApp",
-            "email": "E-mail"
-        }
-    },
-    "Services": {
-        "title": "Onze Expertise",
-        "kitchen": {
-            "title": "Keuken Ontwerp",
-            "subtitle": "Culinaire Uitmuntendheid",
-            "description": "Op maat gemaakte culinaire ruimtes.",
-            "fullDescription": "Onze Keuken Ontwerp service is gewijd aan het creëren van op maat gemaakte culinaire ruimtes die niet alleen visueel prachtig zijn, maar ook uiterst functioneel.\n\nWij geloven dat de keuken het hart van het huis is, een plek waar herinneringen worden gemaakt en culinaire meesterwerken worden geboren.\n\nOns proces begint met het begrijpen van uw unieke levensstijl en kookgewoonten. Of u nu een professionele chef bent die industriële apparatuur en workflow nodig heeft, of een gezin dat behoefte heeft aan een duurzame, gastvrije plek voor ontbijt en huiswerk, we passen elk detail aan u aan.",
-            "features": [
-                "Maatwerk Kastwerk & Interieurbouw",
-                "Integratie van High-End Apparatuur",
-                "Ergonomische Layout Optimalisatie",
-                "Premium Stenen Werkbladen (Marmer, Kwarts, Graniet)",
-                "Gespecialiseerde Verlichtingsplannen"
-            ]
-        },
-        "bath": {
-            "title": "Badkamer Renovatie",
-            "subtitle": "Persoonlijke Heiligdommen",
-            "description": "Transformeer uw routine in een spa-ervaring.",
-            "fullDescription": "Transformeer uw dagelijkse routine in een luxueuze spa-ervaring met onze Badkamer Renovatie service. Wij veranderen gewone badkamers in privé-heiligdommen van ontspanning en verjonging.\n\nVan master en-suites tot gastentoiletten, wij brengen een element van verfijnde elegantie naar elke natte ruimte. Onze ontwerpen richten zich op rust, met gebruik van kalmerende paletten, natuurlijke materialen en geavanceerde armaturen.",
-            "features": [
-                "Vrijstaande Ligbaden",
-                "Regendouches met Stoomopties",
-                "Vloerverwarming & Handdoekwarmers",
-                "Maatwerk Wastafels met Geïntegreerde Opbergruimte",
-                "Sfeerverlichting & Ambiance Controle"
-            ]
-        },
-        "additions": {
-            "title": "Aanbouw op Maat",
-            "subtitle": "Verbreed uw Horizon",
-            "description": "Naadloze huisuitbreidingen.",
-            "fullDescription": "Onze Aanbouw op Maat service stelt u in staat uw leefruimte uit te breiden zonder de architecturale integriteit van uw woning aan te tasten. Wij zijn gespecialiseerd in naadloze uitbreidingen die eruitzien en voelen alsof ze altijd al deel uitmaakten van de originele structuur.\n\nOf u nu behoefte heeft aan een nieuwe master suite, een serre, een thuiskantoor of een uitgebreide entertainmentruimte, wij beheren het gehele proces van architecturale planning tot de laatste verflaag.",
-            "features": [
-                "Opbouw van een Tweede Verdieping",
-                "Garage Verbouwingen",
-                "Serres & Conservatoria",
-                "Kangoeroewoningen (ADU's)",
-                "Uitgebreide Woonkamers & Eetgedeelten"
-            ]
-        },
-        "wholeHome": {
-            "title": "Complete Woning",
-            "subtitle": "Volledige Transformatie",
-            "description": "Woonruimte volledig opnieuw uitgevonden.",
-            "fullDescription": "Voor degenen die een volledige heruitvinding van hun leefomgeving zoeken, biedt onze Complete Woning Renovatie service een allesomvattende oplossing. Dit is voor de huiseigenaar die van hun locatie houdt, maar een woning nodig heeft die hun huidige smaak en levensstijl beter weerspiegelt.\n\nWe strippen de lagen terug en herinterpreteren de stroom, functie en esthetiek van uw gehele eigendom. Dit is een holistische benadering die zorgt voor een consistente designtaal in elke kamer.",
-            "features": [
-                "Structurele Wijzigingen & Open Plattegronden",
-                "Volledige Revisie van Elektra & Loodgieterswerk",
-                "Vloeren, Wandafwerking & Timmerwerk",
-                "Smart Home Integratie",
-                "Gevelrenovatie & Curb Appeal"
-            ]
-        },
-        "explore": "BEKIJK DETAILS"
-    },
-    "Hero": {
-        "title": "Luxury. Redefined.",
-        "subtitle": "Afgesteemd. Op Maat. Professioneel.",
-        "tagline": "AFGESTEMD. OP MAAT. PROFESSIONEEL.",
-        "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten.",
-        "stats": {
-            "projects": "PROJECTEN VOLTOOID",
-            "projectsCount": "150+",
-            "experience": "JAAR ERVARING",
-            "experienceCount": "12+"
-        }
-    },
-    "LeadForm": {
-        "messages": {
-            "inquiryWarning": "Om een aanvraag in te dienen, dient u uw gegevens in te vullen.",
-            "bookingWarning": "Om een bezoek in te plannen, dient u een adres en uw gegevens in te vullen."
-        },
-        "tabs": {
-            "inquiry": "Aanvraag",
-            "booking": "Bezoek Plannen"
-        },
-        "placeholders": {
-            "name": "Naam",
-            "surname": "Achternaam",
-            "street": "Straat + huisnummer",
-            "postalCode": "Postcode",
-            "town": "Woonplaats",
-            "email": "E-mailadres",
-            "phone": "Telefoonnummer (Optioneel)",
-            "message": "Vertel ons over uw project...",
-            "yourName": "Uw Naam",
-            "yourEmail": "Uw E-mailadres",
-            "file": "Bestand uploaden (Optioneel)"
-        },
-        "services": {
-            "kitchen": "Keukenrenovatie",
-            "bathroom": "Badkamerrenovatie",
-            "addition": "Aanbouw"
-        },
-        "buttons": {
-            "submit": "AANVRAAG VERSTUREN",
-            "sending": "VERZENDEN...",
-            "sent": "VERZONDEN!",
-            "chooseDate": "KIES DATUM & TIJD",
-            "confirm": "BEVESTIG BEZOEK",
-            "confirming": "BEVESTIGEN...",
-            "confirmed": "BEVESTIGD!",
-            "back": "TERUG",
-            "close": "SLUITEN",
-            "yesBook": "JA, BOEK NU",
-            "later": "LATER"
-        },
-        "success": {
-            "inquiryTitle": "Aanvraag Ontvangen!",
-            "inquirySub": "Wilt u ook direct een professioneel locatiebezoek inplannen?",
-            "allSet": "Alles Geregeld!",
-            "touchShortly": "Ons team neemt binnenkort contact met u op.",
-            "anotherInquiry": "Nog een aanvraag versturen",
-            "visitConfirmed": "Bezoek Bevestigd!",
-            "scheduledFor": "Gepland op {date} om {time}.",
-            "anotherVisit": "Nog een bezoek plannen"
-        },
-        "errors": {
-            "generic": "Er is iets misgegaan. Probeer het opnieuw.",
-            "connection": "Kan de server niet bereiken. Controleer uw verbinding.",
-            "required": "Dit veld is verplicht"
-        },
-        "timeFormat": "HH:mm",
-        "directContact": {
-            "title": "Of neem direct contact op:",
-            "whatsapp": "WhatsApp",
-            "call": "Bellen",
-            "email": "E-mail"
-        }
-    },
-    "Sections": {
-        "expertise": {
-            "title": "Onze Expertise"
-        },
-        "portfolio": {
-            "title": "Recent Portfolio",
-            "tagline": "Een blik op luxe"
-        }
-    },
-    "Projects": {
-        "kitchenLoft": {
-            "title": "Patriciërswoning Keuken",
-            "location": "Sint-Martens-Latem, BE",
-            "caption1": "Hoofdaanzicht van de volledig gerenoveerde open keuken.",
-            "caption2": "Secundair perspectief met het marmeren eiland en geïntegreerde apparatuur.",
-            "captionBefore": "De originele verouderde keuken uit de jaren 90 voor de luxe transformatie."
-        },
-        "masterBath": {
-            "title": "Zoute Wellness Badkamer",
-            "location": "Knokke-Heist, BE",
-            "caption1": "De belangrijkste spa-ruimte met een vrijstaand bad en panoramisch uitzicht.",
-            "caption2": "Een zicht op de regendouche met frameloos glas en natuursteen.",
-            "captionBefore": "De originele krappe badkamer met verouderde blauwe tegels en beperkte ruimte."
-        },
-        "contemporaryKitchen": {
-            "title": "Begijnhof Chef's Keuken",
-            "location": "Gent, BE",
-            "caption1": "Professionele chef-kok keuken op maat gemaakt voor uitmuntendheid.",
-            "caption2": "Gedetailleerd zicht op de wijnopslag en het koffiestation.",
-            "captionBefore": "De eenvoudige keuken voordat deze werd heringericht voor een fijnproever."
-        },
-        "masterSuite": {
-            "title": "Herenhuis Suite",
-            "location": "Antwerpen, BE",
-            "caption1": "De voltooide spa-geïnspireerde natte cel in de master suite.",
-            "caption2": "Alternatief zicht met het vrijstaande bad en natuurlijke houtaccenten.",
-            "captionBefore": "De originele ongebruikte zolderruimte voor de transformatie naar een luxe suite."
-        }
-    },
-    "ProjectGallery": {
-        "viewProject": "Bekijk Project",
-        "details": "Project Details",
-        "tooltips": {
-            "whatsapp": "WhatsApp",
-            "email": "E-mail",
-            "location": "Locatie"
-        },
-        "fallbackCaption": "Ervaar luxe wonen met onze op maat gemaakte ontwerpoplossingen. Elk detail is samengesteld om uw levensstijl te verbeteren, waarbij functionaliteit wordt gecombineerd met tijdloze esthetiek.",
-        "perspective": "Dit perspectief benadrukt de nauwgezette aandacht voor materiaalkeuze en lichtintegratie, wat een sfeer van verfijnde elegantie creëert."
-    },
-    "BookingModal": {
-        "title": "Bezoek Inplannen",
-        "subtitle": "Boek een professioneel locatiebezoek voor uw renovatieproject."
-    },
-    "ServiceDetail": {
-        "back": "TERUG NAAR DIENSTEN",
-        "ready": "Klaar om te Beginnen?",
-        "schedule": "Plan een consultatie met ons ontwerpteam om uw {service} project te bespreken.",
-        "bookConsultation": "BOEK CONSULTATIE",
-        "notFound": "Dienst niet gevonden",
-        "specializeIn": "Wij zijn gespecialiseerd in:",
-        "keyFeatures": "Onze expertise omvat:"
-    },
-    "Portal": {
-        "header": "KLANTPORTAAL",
-        "navTitle": "Projectoverzicht",
-        "welcome": "Welkom, {name}",
-        "trackProgress": "Volg de voortgang van uw renovatie, beheer taken en communiceer met ons team—alles op één plek.",
-        "latestUpdates": "Laatste Updates",
-        "noUpdates": "Nog geen updates geplaatst.",
-        "projectManager": "Project Manager",
-        "tasks": "Project Taken",
-        "remaining": "{count} Resterend",
-        "noTasks": "Geen actieve taken.",
-        "addTask": "Nieuwe taak toevoegen...",
-        "documents": "Documenten",
-        "noDocs": "Geen documenten.",
-        "addDocPrompt": "Document Naam:",
-        "addUrlPrompt": "Document URL (bijv. Dropbox/Google Drive link):",
-        "projectMedia": "Project Media",
-        "media": "Media",
-        "noMedia": "Geen media.",
-        "directMessage": "Direct Bericht",
-        "noMessages": "Nog geen berichten. Start het gesprek!",
-        "typeMessage": "Typ een bericht..."
-    },
-    "Admin": {
-        "loading": "Systeemgegevens laden...",
-        "failedCreate": "Aanmaken van portal mislukt",
-        "namePrompt": "Naam Klant:",
-        "emailPrompt": "E-mail Klant:",
-        "header": {
-            "title": "Beheer Dashboard",
-            "subtitle": "Beheer leads, boekingen en klantportalen.",
-            "logout": "Uitloggen",
-            "viewLive": "Live Site Bekijken"
-        },
-        "portals": {
-            "title": "Klantportalen",
-            "create": "Nieuw Portal",
-            "view": "Bekijk Portal",
-            "back": "Terug naar Dashboard",
-            "clientView": "Klantweergave",
-            "postUpdate": "Update Plaatsen",
-            "recentUpdates": "Recente Updates",
-            "form": {
-                "title": "Titel",
-                "details": "Details...",
-                "post": "Plaatsen"
-            }
-        },
-        "leads": {
-            "title": "Recente Leads",
-            "noLeads": "Geen leads gevonden."
-        },
-        "bookings": {
-            "title": "Recente Boekingen",
-            "noBookings": "Geen boekingen gevonden."
-        },
-        "filter": {
-            "all": "Alle Statussen",
-            "search": "Zoeken...",
-            "searchClient": "Klant Zoeken..."
-        },
-        "status": {
-            "NEW": "Nieuw",
-            "CONTACTED": "Gecontacteerd",
-            "CONVERTED": "Geconverteerd",
-            "ARCHIVED": "Gearchiveerd",
-            "PENDING": "In afwachting",
-            "CONFIRMED": "Bevestigd",
-            "CANCELLED": "Geannuleerd",
-            "ACTIVE": "Actief",
-            "COMPLETED": "Voltooid"
-        },
-        "nav": {
-            "sidebar": {
-                "dashboard": "DASHBOARD",
-                "financials": "FINANCIEEL",
-                "contacts": "CONTACTEN",
-                "suppliers": "LEVERANCIERS",
-                "settings": "INSTELLINGEN",
-                "hr": "HR",
-                "library": "BIBLIOTHEEK",
-                "website": "WEBSITE",
-                "crm": "CRM",
-                "projects": "PROJECTEN"
-            },
-            "financialTabs": {
-                "purchaseInvoices": "AANKOOPFACTUREN",
-                "expenseTickets": "KASSATICKETEN",
-                "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
-                "salesCreditNotes": "CREDITNOTA - VERKOOP",
-                "salesInvoices": "FACTUREN",
-                "quotations": "OFFERTES"
-            },
-            "pages": {
-                "salesInvoices": "Verkoopfacturen",
-                "salesInvoicesDesc": "Beheer debiteuren, volg betalingen en genereer PDF-facturen.",
-                "noInvoices": "Geen verkoopfacturen",
-                "noInvoicesDesc": "Maak uw eerste factuur om aan de slag te gaan.",
-                "createInvoice": "Factuur Aanmaken",
-                "dashboard": "Dashboard",
-                "administrative": "Administratief",
-                "scanUploadTicket": "Ticket Scannen"
-            },
-            "settings": {
-                "companyInfo": "BEDRIJFSINFO",
-                "uiLayout": "UI LAYOUT",
-                "calendar": "KALENDER",
-                "financials": "FINANCIEEL",
-                "hr": "HR",
-                "library": "BIBLIOTHEEK",
-                "projects": "PROJECTEN",
-                "relations": "RELATIES",
-                "tasks": "TAKEN",
-                "website": "WEBSITE",
-                "appPreferences": "App- & Documentvoorkeuren",
-                "documentLanguage": "Globale Documenttaal",
-                "documentLanguageDesc": "Stelt de standaard uitvoertaal in voor gegenereerde PDF's (Offertes, Facturen). Indien leeg, wordt de taal van de klant of Frans gebruikt.",
-                "fallbackOption": "Terugvallen op klanttaal",
-                "documentNumbering": "Documentnummering",
-                "documentNumberingDesc": "Configureer het automatische nummeringpatroon voor facturen en offertes. Wijzigingen gelden alleen voor nieuw aangemaakte documenten.",
-                "save": "Profiel Opslaan",
-                "saving": "Opslaan...",
-                "pageTitle": "Bedrijfsidentiteit",
-                "pageSubtitle": "Beheer bedrijfsgegevens en Peppol-facturatiedata.",
-                "businessIdentity": "Bedrijfsidentiteit",
-                "addressesLocations": "Adressen & Locaties",
-                "companyNameLegal": "Maatschappelijke Naam",
-                "commercialName": "Handelsnaam",
-                "vatNumber": "BTW-nummer (KBO)",
-                "defaultEmail": "Standaard E-mail",
-                "directorFirstName": "Voornaam Zaakvoerder",
-                "directorLastName": "Achternaam Zaakvoerder",
-                "ibanAccount": "IBAN Rekening",
-                "bicCode": "BIC Code",
-                "invoicingAddress": "Facturatieadres",
-                "deliveryAddress": "Leveringsadres",
-                "headquarters": "Maatschappelijke Zetel",
-                "streetNumber": "Straat & Nummer",
-                "postalCode": "Postcode",
-                "city": "Gemeente",
-                "peppolTitle": "Peppol Integratie",
-                "peppolDesc": "Uw account vereist een actief Peppol-profiel om B2B-facturen direct te versturen binnen de Europese Unie. Vul uw BTW-nummer hieronder in en klik op \"Zoeken\" om uw bedrijfsgegevens op te halen.",
-                "searchRegistry": "Peppol Register Doorzoeken",
-                "searching": "Zoeken...",
-                "enterManually": "Handmatig Invoeren",
-                "branding": "Huisstijl & Documentsjablonen",
-                "brandingDesc": "Configureer uw merkkleur, upload een logo, kies een PDF-layout of upload aangepast briefpapier.",
-                "invoiceNumbering": "Factuurnummering",
-                "quotationNumbering": "Offertenummering",
-                "prefix": "Voorvoegsel (1-5 tek.)",
-                "connector": "Verbindingsteken",
-                "dateFormat": "Datumformaat",
-                "numberWidth": "Nummerbreedte",
-                "nextNumber": "Volgend Nummer",
-                "preview": "Voorbeeld"
-            }
-        },
-        "dashboard": {
-            "administrative": "Administratief",
-            "title": "Dashboard",
-            "healthy": "Operationeel",
-            "pendingBookings": "Lopende Boekingen",
-            "confirmedVisits": "Bevestigde Bezoeken",
-            "activeProjects": "Actieve Projecten",
-            "openTasks": "Openstaande Taken",
-            "financialOverview": "Financieel Overzicht",
-            "invoicedVsExpend": "Gefactureerd vs Uitgaven (6 Maanden)",
-            "leadStatusSpread": "Leads per Status",
-            "currentVolume": "Huidig volume per status",
-            "recentInquiries": "Recente Aanvragen",
-            "viewAllLeads": "Alle Leads Bekijken",
-            "noRecentLeads": "Geen recente leads gevonden.",
-            "editContent": "Inhoud Bewerken",
-            "newProject": "Nieuw Project",
-            "setupPortal": "Portal Instellen",
-            "viewPortfolio": "Portfolio Bekijken",
-            "welcomeTitle": "Welkom bij CoralOS Premium!",
-            "welcomeDesc": "Uw beveiligde werkruimte is officieel ingericht. Maak uw eerste juridische documenten klaar in 3 stappen:",
-            "step1Title": "Stel uw Bedrijfsidentiteit in",
-            "step1Desc": "Upload uw logo, BTW-nummer en IBAN zodat klanten u legaal kunnen betalen.",
-            "step2Title": "Initialiseer uw Database",
-            "step2Desc": "Stel de CRM-systemen in om uw Contacten op te slaan.",
-            "step3Title": "Genereer uw eerste Factuur",
-            "step3Desc": "Test de rekenmotor en exporteer uw eerste premium PDF."
-        },
-        "layout": {
-            "upgradePlan": "Upgraden",
-            "signOut": "Uitloggen",
-            "administrator": "Beheerder",
-            "verifyEmail": "Verifieer uw e-mailadres. Controleer uw inbox voor de verificatielink.",
-            "resend": "Opnieuw Verzenden",
-            "sent": "Verzonden!",
-            "moduleUpgrade": "Module Upgrade Vereist",
-            "moduleUpgradeDesc": "Deze module vereist een actieve premiumlicentie. Neem contact op met de beheerder of upgrade uw abonnement.",
-            "returnDashboard": "Terug naar Dashboard"
-        },
-        "db": {
-            "toolbar": {
-                "filter": "Filter",
-                "sort": "Sorteren",
-                "properties": "Eigenschappen",
-                "export": "Exporteren",
-                "import": "Importeren",
-                "sortBy": "Sorteren op",
-                "thenBy": "Dan op",
-                "createInvoice": "Factuur Aanmaken",
-                "creating": "Aanmaken..."
-            },
-            "col": {
-                "email": "E-mail",
-                "phone": "Telefoon",
-                "company": "Bedrijf",
-                "vat": "BTW-nummer",
-                "address": "Adres",
-                "city": "Stad",
-                "postal": "Postcode",
-                "country": "Land",
-                "status": "Status",
-                "type": "Type",
-                "language": "Taal",
-                "notes": "Notities",
-                "iban": "IBAN",
-                "bic": "BIC",
-                "category": "Categorie",
-                "payment": "Betalingstermijnen",
-                "contact_person": "Contactpersoon",
-                "website": "Website",
-                "betreft": "Betreft",
-                "invoiceDate": "Factuurdatum",
-                "dueDate": "Vervaldatum",
-                "totalExVat": "Totaal excl. BTW",
-                "totalVat": "BTW",
-                "totalIncVat": "Totaal incl. BTW",
-                "peppolDocId": "Peppol Ref.",
-                "date": "Datum",
-                "amount": "Totaalbedrag",
-                "vatAmount": "BTW-bedrag",
-                "currency": "Valuta",
-                "paymentMethod": "Betaalwijze",
-                "source": "Bron",
-                "supplier": "Leverancier",
-                "client": "Klant",
-                "clientName": "Klant",
-                "description": "Omschrijving",
-                "name": "Naam"
-            }
-        }
-    },
-    "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN.",
-        "description": "Op maat gemaakte culinaire ruimtes en persoonlijke heiligdommen, zorgvuldig vervaardigd voor een elite levensstijl.",
-        "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), België",
-        "vat": "BE 1018.865.828",
-        "quickLinks": "Snelle Links",
-        "contact": "Contact",
-        "office": "Kantoor",
-        "legal": "Juridisch",
-        "fastInterventions": "Snelle Interventies"
-    },
-    "CookieConsent": {
-        "title": "Wij waarderen uw privacy",
-        "description": "Om uw ervaring te verbeteren, gebruiken we cookies. Lees ons {link}.",
-        "linkText": "Cookiebeleid",
-        "accept": "Accepteren",
-        "decline": "Weigeren"
+    "contact": {
+      "call": "Bel Ons",
+      "whatsapp": "WhatsApp",
+      "email": "E-mail"
     }
+  },
+  "Services": {
+    "title": "Onze Expertise",
+    "kitchen": {
+      "title": "Keuken Ontwerp",
+      "subtitle": "Culinaire Uitmuntendheid",
+      "description": "Op maat gemaakte culinaire ruimtes.",
+      "fullDescription": "Onze Keuken Ontwerp service is gewijd aan het creëren van op maat gemaakte culinaire ruimtes die niet alleen visueel prachtig zijn, maar ook uiterst functioneel.\n\nWij geloven dat de keuken het hart van het huis is, een plek waar herinneringen worden gemaakt en culinaire meesterwerken worden geboren.\n\nOns proces begint met het begrijpen van uw unieke levensstijl en kookgewoonten. Of u nu een professionele chef bent die industriële apparatuur en workflow nodig heeft, of een gezin dat behoefte heeft aan een duurzame, gastvrije plek voor ontbijt en huiswerk, we passen elk detail aan u aan.",
+      "features": [
+        "Maatwerk Kastwerk & Interieurbouw",
+        "Integratie van High-End Apparatuur",
+        "Ergonomische Layout Optimalisatie",
+        "Premium Stenen Werkbladen (Marmer, Kwarts, Graniet)",
+        "Gespecialiseerde Verlichtingsplannen"
+      ]
+    },
+    "bath": {
+      "title": "Badkamer Renovatie",
+      "subtitle": "Persoonlijke Heiligdommen",
+      "description": "Transformeer uw routine in een spa-ervaring.",
+      "fullDescription": "Transformeer uw dagelijkse routine in een luxueuze spa-ervaring met onze Badkamer Renovatie service. Wij veranderen gewone badkamers in privé-heiligdommen van ontspanning en verjonging.\n\nVan master en-suites tot gastentoiletten, wij brengen een element van verfijnde elegantie naar elke natte ruimte. Onze ontwerpen richten zich op rust, met gebruik van kalmerende paletten, natuurlijke materialen en geavanceerde armaturen.",
+      "features": [
+        "Vrijstaande Ligbaden",
+        "Regendouches met Stoomopties",
+        "Vloerverwarming & Handdoekwarmers",
+        "Maatwerk Wastafels met Geïntegreerde Opbergruimte",
+        "Sfeerverlichting & Ambiance Controle"
+      ]
+    },
+    "additions": {
+      "title": "Aanbouw op Maat",
+      "subtitle": "Verbreed uw Horizon",
+      "description": "Naadloze huisuitbreidingen.",
+      "fullDescription": "Onze Aanbouw op Maat service stelt u in staat uw leefruimte uit te breiden zonder de architecturale integriteit van uw woning aan te tasten. Wij zijn gespecialiseerd in naadloze uitbreidingen die eruitzien en voelen alsof ze altijd al deel uitmaakten van de originele structuur.\n\nOf u nu behoefte heeft aan een nieuwe master suite, een serre, een thuiskantoor of een uitgebreide entertainmentruimte, wij beheren het gehele proces van architecturale planning tot de laatste verflaag.",
+      "features": [
+        "Opbouw van een Tweede Verdieping",
+        "Garage Verbouwingen",
+        "Serres & Conservatoria",
+        "Kangoeroewoningen (ADU's)",
+        "Uitgebreide Woonkamers & Eetgedeelten"
+      ]
+    },
+    "wholeHome": {
+      "title": "Complete Woning",
+      "subtitle": "Volledige Transformatie",
+      "description": "Woonruimte volledig opnieuw uitgevonden.",
+      "fullDescription": "Voor degenen die een volledige heruitvinding van hun leefomgeving zoeken, biedt onze Complete Woning Renovatie service een allesomvattende oplossing. Dit is voor de huiseigenaar die van hun locatie houdt, maar een woning nodig heeft die hun huidige smaak en levensstijl beter weerspiegelt.\n\nWe strippen de lagen terug en herinterpreteren de stroom, functie en esthetiek van uw gehele eigendom. Dit is een holistische benadering die zorgt voor een consistente designtaal in elke kamer.",
+      "features": [
+        "Structurele Wijzigingen & Open Plattegronden",
+        "Volledige Revisie van Elektra & Loodgieterswerk",
+        "Vloeren, Wandafwerking & Timmerwerk",
+        "Smart Home Integratie",
+        "Gevelrenovatie & Curb Appeal"
+      ]
+    },
+    "explore": "BEKIJK DETAILS"
+  },
+  "Hero": {
+    "title": "Luxury. Redefined.",
+    "subtitle": "Afgesteemd. Op Maat. Professioneel.",
+    "tagline": "AFGESTEMD. OP MAAT. PROFESSIONEEL.",
+    "description": "Ervaar de ultieme woningtransformatie met onze premium keuken- en badkamerrenovatiediensten.",
+    "stats": {
+      "projects": "PROJECTEN VOLTOOID",
+      "projectsCount": "150+",
+      "experience": "JAAR ERVARING",
+      "experienceCount": "12+"
+    }
+  },
+  "LeadForm": {
+    "messages": {
+      "inquiryWarning": "Om een aanvraag in te dienen, dient u uw gegevens in te vullen.",
+      "bookingWarning": "Om een bezoek in te plannen, dient u een adres en uw gegevens in te vullen."
+    },
+    "tabs": {
+      "inquiry": "Aanvraag",
+      "booking": "Bezoek Plannen"
+    },
+    "placeholders": {
+      "name": "Naam",
+      "surname": "Achternaam",
+      "street": "Straat + huisnummer",
+      "postalCode": "Postcode",
+      "town": "Woonplaats",
+      "email": "E-mailadres",
+      "phone": "Telefoonnummer (Optioneel)",
+      "message": "Vertel ons over uw project...",
+      "yourName": "Uw Naam",
+      "yourEmail": "Uw E-mailadres",
+      "file": "Bestand uploaden (Optioneel)"
+    },
+    "services": {
+      "kitchen": "Keukenrenovatie",
+      "bathroom": "Badkamerrenovatie",
+      "addition": "Aanbouw"
+    },
+    "buttons": {
+      "submit": "AANVRAAG VERSTUREN",
+      "sending": "VERZENDEN...",
+      "sent": "VERZONDEN!",
+      "chooseDate": "KIES DATUM & TIJD",
+      "confirm": "BEVESTIG BEZOEK",
+      "confirming": "BEVESTIGEN...",
+      "confirmed": "BEVESTIGD!",
+      "back": "TERUG",
+      "close": "SLUITEN",
+      "yesBook": "JA, BOEK NU",
+      "later": "LATER"
+    },
+    "success": {
+      "inquiryTitle": "Aanvraag Ontvangen!",
+      "inquirySub": "Wilt u ook direct een professioneel locatiebezoek inplannen?",
+      "allSet": "Alles Geregeld!",
+      "touchShortly": "Ons team neemt binnenkort contact met u op.",
+      "anotherInquiry": "Nog een aanvraag versturen",
+      "visitConfirmed": "Bezoek Bevestigd!",
+      "scheduledFor": "Gepland op {date} om {time}.",
+      "anotherVisit": "Nog een bezoek plannen"
+    },
+    "errors": {
+      "generic": "Er is iets misgegaan. Probeer het opnieuw.",
+      "connection": "Kan de server niet bereiken. Controleer uw verbinding.",
+      "required": "Dit veld is verplicht"
+    },
+    "timeFormat": "HH:mm",
+    "directContact": {
+      "title": "Of neem direct contact op:",
+      "whatsapp": "WhatsApp",
+      "call": "Bellen",
+      "email": "E-mail"
+    }
+  },
+  "Sections": {
+    "expertise": {
+      "title": "Onze Expertise"
+    },
+    "portfolio": {
+      "title": "Recent Portfolio",
+      "tagline": "Een blik op luxe"
+    }
+  },
+  "Projects": {
+    "kitchenLoft": {
+      "title": "Patriciërswoning Keuken",
+      "location": "Sint-Martens-Latem, BE",
+      "caption1": "Hoofdaanzicht van de volledig gerenoveerde open keuken.",
+      "caption2": "Secundair perspectief met het marmeren eiland en geïntegreerde apparatuur.",
+      "captionBefore": "De originele verouderde keuken uit de jaren 90 voor de luxe transformatie."
+    },
+    "masterBath": {
+      "title": "Zoute Wellness Badkamer",
+      "location": "Knokke-Heist, BE",
+      "caption1": "De belangrijkste spa-ruimte met een vrijstaand bad en panoramisch uitzicht.",
+      "caption2": "Een zicht op de regendouche met frameloos glas en natuursteen.",
+      "captionBefore": "De originele krappe badkamer met verouderde blauwe tegels en beperkte ruimte."
+    },
+    "contemporaryKitchen": {
+      "title": "Begijnhof Chef's Keuken",
+      "location": "Gent, BE",
+      "caption1": "Professionele chef-kok keuken op maat gemaakt voor uitmuntendheid.",
+      "caption2": "Gedetailleerd zicht op de wijnopslag en het koffiestation.",
+      "captionBefore": "De eenvoudige keuken voordat deze werd heringericht voor een fijnproever."
+    },
+    "masterSuite": {
+      "title": "Herenhuis Suite",
+      "location": "Antwerpen, BE",
+      "caption1": "De voltooide spa-geïnspireerde natte cel in de master suite.",
+      "caption2": "Alternatief zicht met het vrijstaande bad en natuurlijke houtaccenten.",
+      "captionBefore": "De originele ongebruikte zolderruimte voor de transformatie naar een luxe suite."
+    }
+  },
+  "ProjectGallery": {
+    "viewProject": "Bekijk Project",
+    "details": "Project Details",
+    "tooltips": {
+      "whatsapp": "WhatsApp",
+      "email": "E-mail",
+      "location": "Locatie"
+    },
+    "fallbackCaption": "Ervaar luxe wonen met onze op maat gemaakte ontwerpoplossingen. Elk detail is samengesteld om uw levensstijl te verbeteren, waarbij functionaliteit wordt gecombineerd met tijdloze esthetiek.",
+    "perspective": "Dit perspectief benadrukt de nauwgezette aandacht voor materiaalkeuze en lichtintegratie, wat een sfeer van verfijnde elegantie creëert."
+  },
+  "BookingModal": {
+    "title": "Bezoek Inplannen",
+    "subtitle": "Boek een professioneel locatiebezoek voor uw renovatieproject."
+  },
+  "ServiceDetail": {
+    "back": "TERUG NAAR DIENSTEN",
+    "ready": "Klaar om te Beginnen?",
+    "schedule": "Plan een consultatie met ons ontwerpteam om uw {service} project te bespreken.",
+    "bookConsultation": "BOEK CONSULTATIE",
+    "notFound": "Dienst niet gevonden",
+    "specializeIn": "Wij zijn gespecialiseerd in:",
+    "keyFeatures": "Onze expertise omvat:"
+  },
+  "Portal": {
+    "header": "KLANTPORTAAL",
+    "navTitle": "Projectoverzicht",
+    "welcome": "Welkom, {name}",
+    "trackProgress": "Volg de voortgang van uw renovatie, beheer taken en communiceer met ons team—alles op één plek.",
+    "latestUpdates": "Laatste Updates",
+    "noUpdates": "Nog geen updates geplaatst.",
+    "projectManager": "Project Manager",
+    "tasks": "Project Taken",
+    "remaining": "{count} Resterend",
+    "noTasks": "Geen actieve taken.",
+    "addTask": "Nieuwe taak toevoegen...",
+    "documents": "Documenten",
+    "noDocs": "Geen documenten.",
+    "addDocPrompt": "Document Naam:",
+    "addUrlPrompt": "Document URL (bijv. Dropbox/Google Drive link):",
+    "projectMedia": "Project Media",
+    "media": "Media",
+    "noMedia": "Geen media.",
+    "directMessage": "Direct Bericht",
+    "noMessages": "Nog geen berichten. Start het gesprek!",
+    "typeMessage": "Typ een bericht..."
+  },
+  "Admin": {
+    "loading": "Systeemgegevens laden...",
+    "failedCreate": "Aanmaken van portal mislukt",
+    "namePrompt": "Naam Klant:",
+    "emailPrompt": "E-mail Klant:",
+    "header": {
+      "title": "Beheer Dashboard",
+      "subtitle": "Beheer leads, boekingen en klantportalen.",
+      "logout": "Uitloggen",
+      "viewLive": "Live Site Bekijken"
+    },
+    "portals": {
+      "title": "Klantportalen",
+      "create": "Nieuw Portal",
+      "view": "Bekijk Portal",
+      "back": "Terug naar Dashboard",
+      "clientView": "Klantweergave",
+      "postUpdate": "Update Plaatsen",
+      "recentUpdates": "Recente Updates",
+      "form": {
+        "title": "Titel",
+        "details": "Details...",
+        "post": "Plaatsen"
+      }
+    },
+    "leads": {
+      "title": "Recente Leads",
+      "noLeads": "Geen leads gevonden."
+    },
+    "bookings": {
+      "title": "Recente Boekingen",
+      "noBookings": "Geen boekingen gevonden."
+    },
+    "filter": {
+      "all": "Alle Statussen",
+      "search": "Zoeken...",
+      "searchClient": "Klant Zoeken..."
+    },
+    "status": {
+      "NEW": "Nieuw",
+      "CONTACTED": "Gecontacteerd",
+      "CONVERTED": "Geconverteerd",
+      "ARCHIVED": "Gearchiveerd",
+      "PENDING": "In afwachting",
+      "CONFIRMED": "Bevestigd",
+      "CANCELLED": "Geannuleerd",
+      "ACTIVE": "Actief",
+      "COMPLETED": "Voltooid"
+    },
+    "nav": {
+      "sidebar": {
+        "dashboard": "DASHBOARD",
+        "financials": "FINANCIEEL",
+        "contacts": "CONTACTEN",
+        "suppliers": "LEVERANCIERS",
+        "settings": "INSTELLINGEN",
+        "hr": "HR",
+        "library": "BIBLIOTHEEK",
+        "website": "WEBSITE",
+        "crm": "CRM",
+        "projects": "PROJECTEN",
+        "email": "INBOX",
+        "tasks": "TAKEN",
+        "calendar": "AGENDA",
+        "files": "ARCHIEF",
+        "sales": "SALES"
+      },
+      "financialTabs": {
+        "purchaseInvoices": "AANKOOPFACTUREN",
+        "expenseTickets": "KASSATICKETEN",
+        "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
+        "salesCreditNotes": "CREDITNOTA - VERKOOP",
+        "salesInvoices": "FACTUREN",
+        "quotations": "OFFERTES"
+      },
+      "pages": {
+        "salesInvoices": "Verkoopfacturen",
+        "salesInvoicesDesc": "Beheer debiteuren, volg betalingen en genereer PDF-facturen.",
+        "noInvoices": "Geen verkoopfacturen",
+        "noInvoicesDesc": "Maak uw eerste factuur om aan de slag te gaan.",
+        "createInvoice": "Factuur Aanmaken",
+        "dashboard": "Dashboard",
+        "administrative": "Administratief",
+        "scanUploadTicket": "Ticket Scannen"
+      },
+      "settings": {
+        "companyInfo": "BEDRIJFSINFO",
+        "uiLayout": "UI LAYOUT",
+        "calendar": "KALENDER",
+        "financials": "FINANCIEEL",
+        "hr": "HR",
+        "library": "BIBLIOTHEEK",
+        "projects": "PROJECTEN",
+        "relations": "RELATIES",
+        "tasks": "TAKEN",
+        "website": "WEBSITE",
+        "appPreferences": "App- & Documentvoorkeuren",
+        "documentLanguage": "Globale Documenttaal",
+        "documentLanguageDesc": "Stelt de standaard uitvoertaal in voor gegenereerde PDF's (Offertes, Facturen). Indien leeg, wordt de taal van de klant of Frans gebruikt.",
+        "fallbackOption": "Terugvallen op klanttaal",
+        "documentNumbering": "Documentnummering",
+        "documentNumberingDesc": "Configureer het automatische nummeringpatroon voor facturen en offertes. Wijzigingen gelden alleen voor nieuw aangemaakte documenten.",
+        "save": "Profiel Opslaan",
+        "saving": "Opslaan...",
+        "pageTitle": "Bedrijfsidentiteit",
+        "pageSubtitle": "Beheer bedrijfsgegevens en Peppol-facturatiedata.",
+        "businessIdentity": "Bedrijfsidentiteit",
+        "addressesLocations": "Adressen & Locaties",
+        "companyNameLegal": "Maatschappelijke Naam",
+        "commercialName": "Handelsnaam",
+        "vatNumber": "BTW-nummer (KBO)",
+        "defaultEmail": "Standaard E-mail",
+        "directorFirstName": "Voornaam Zaakvoerder",
+        "directorLastName": "Achternaam Zaakvoerder",
+        "ibanAccount": "IBAN Rekening",
+        "bicCode": "BIC Code",
+        "invoicingAddress": "Facturatieadres",
+        "deliveryAddress": "Leveringsadres",
+        "headquarters": "Maatschappelijke Zetel",
+        "streetNumber": "Straat & Nummer",
+        "postalCode": "Postcode",
+        "city": "Gemeente",
+        "peppolTitle": "Peppol Integratie",
+        "peppolDesc": "Uw account vereist een actief Peppol-profiel om B2B-facturen direct te versturen binnen de Europese Unie. Vul uw BTW-nummer hieronder in en klik op \"Zoeken\" om uw bedrijfsgegevens op te halen.",
+        "searchRegistry": "Peppol Register Doorzoeken",
+        "searching": "Zoeken...",
+        "enterManually": "Handmatig Invoeren",
+        "branding": "Huisstijl & Documentsjablonen",
+        "brandingDesc": "Configureer uw merkkleur, upload een logo, kies een PDF-layout of upload aangepast briefpapier.",
+        "invoiceNumbering": "Factuurnummering",
+        "quotationNumbering": "Offertenummering",
+        "prefix": "Voorvoegsel (1-5 tek.)",
+        "connector": "Verbindingsteken",
+        "dateFormat": "Datumformaat",
+        "numberWidth": "Nummerbreedte",
+        "nextNumber": "Volgend Nummer",
+        "preview": "Voorbeeld"
+      }
+    },
+    "dashboard": {
+      "administrative": "Administratief",
+      "title": "Dashboard",
+      "healthy": "Operationeel",
+      "pendingBookings": "Lopende Boekingen",
+      "confirmedVisits": "Bevestigde Bezoeken",
+      "activeProjects": "Actieve Projecten",
+      "openTasks": "Openstaande Taken",
+      "financialOverview": "Financieel Overzicht",
+      "invoicedVsExpend": "Gefactureerd vs Uitgaven (6 Maanden)",
+      "leadStatusSpread": "Leads per Status",
+      "currentVolume": "Huidig volume per status",
+      "recentInquiries": "Recente Aanvragen",
+      "viewAllLeads": "Alle Leads Bekijken",
+      "noRecentLeads": "Geen recente leads gevonden.",
+      "editContent": "Inhoud Bewerken",
+      "newProject": "Nieuw Project",
+      "setupPortal": "Portal Instellen",
+      "viewPortfolio": "Portfolio Bekijken",
+      "welcomeTitle": "Welkom bij CoralOS Premium!",
+      "welcomeDesc": "Uw beveiligde werkruimte is officieel ingericht. Maak uw eerste juridische documenten klaar in 3 stappen:",
+      "step1Title": "Stel uw Bedrijfsidentiteit in",
+      "step1Desc": "Upload uw logo, BTW-nummer en IBAN zodat klanten u legaal kunnen betalen.",
+      "step2Title": "Initialiseer uw Database",
+      "step2Desc": "Stel de CRM-systemen in om uw Contacten op te slaan.",
+      "step3Title": "Genereer uw eerste Factuur",
+      "step3Desc": "Test de rekenmotor en exporteer uw eerste premium PDF."
+    },
+    "layout": {
+      "upgradePlan": "Upgraden",
+      "signOut": "Uitloggen",
+      "administrator": "Beheerder",
+      "verifyEmail": "Verifieer uw e-mailadres. Controleer uw inbox voor de verificatielink.",
+      "resend": "Opnieuw Verzenden",
+      "sent": "Verzonden!",
+      "moduleUpgrade": "Module Upgrade Vereist",
+      "moduleUpgradeDesc": "Deze module vereist een actieve premiumlicentie. Neem contact op met de beheerder of upgrade uw abonnement.",
+      "returnDashboard": "Terug naar Dashboard"
+    },
+    "db": {
+      "toolbar": {
+        "filter": "Filter",
+        "sort": "Sorteren",
+        "properties": "Eigenschappen",
+        "export": "Exporteren",
+        "import": "Importeren",
+        "sortBy": "Sorteren op",
+        "thenBy": "Dan op",
+        "createInvoice": "Factuur Aanmaken",
+        "creating": "Aanmaken..."
+      },
+      "col": {
+        "email": "E-mail",
+        "phone": "Telefoon",
+        "company": "Bedrijf",
+        "vat": "BTW-nummer",
+        "address": "Adres",
+        "city": "Stad",
+        "postal": "Postcode",
+        "country": "Land",
+        "status": "Status",
+        "type": "Type",
+        "language": "Taal",
+        "notes": "Notities",
+        "iban": "IBAN",
+        "bic": "BIC",
+        "category": "Categorie",
+        "payment": "Betalingstermijnen",
+        "contact_person": "Contactpersoon",
+        "website": "Website",
+        "betreft": "Betreft",
+        "invoiceDate": "Factuurdatum",
+        "dueDate": "Vervaldatum",
+        "totalExVat": "Totaal excl. BTW",
+        "totalVat": "BTW",
+        "totalIncVat": "Totaal incl. BTW",
+        "peppolDocId": "Peppol Ref.",
+        "date": "Datum",
+        "amount": "Totaalbedrag",
+        "vatAmount": "BTW-bedrag",
+        "currency": "Valuta",
+        "paymentMethod": "Betaalwijze",
+        "source": "Bron",
+        "supplier": "Leverancier",
+        "client": "Klant",
+        "clientName": "Klant",
+        "description": "Omschrijving",
+        "name": "Naam"
+      }
+    }
+  },
+  "Footer": {
+    "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN.",
+    "description": "Op maat gemaakte culinaire ruimtes en persoonlijke heiligdommen, zorgvuldig vervaardigd voor een elite levensstijl.",
+    "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), België",
+    "vat": "BE 1018.865.828",
+    "quickLinks": "Snelle Links",
+    "contact": "Contact",
+    "office": "Kantoor",
+    "legal": "Juridisch",
+    "fastInterventions": "Snelle Interventies"
+  },
+  "CookieConsent": {
+    "title": "Wij waarderen uw privacy",
+    "description": "Om uw ervaring te verbeteren, gebruiken we cookies. Lees ons {link}.",
+    "linkText": "Cookiebeleid",
+    "accept": "Accepteren",
+    "decline": "Weigeren"
+  }
 }

@@ -1,499 +1,504 @@
 {
-    "Metadata": {
-        "title": "Coral Enterprises | Lux Renovations & Custom Kitchens",
-        "description": "Expert total home renovations in Belgium. Specializing in luxury kitchens, wellness bathrooms, and bespoke interior design.",
-        "keywords": [
-            "renovation",
-            "home remodeling",
-            "general contractor",
-            "kitchen renovation",
-            "bathroom remodel",
-            "house extension",
-            "total renovation",
-            "Belgium",
-            "Brussels",
-            "interior design",
-            "luxury"
-        ]
+  "Metadata": {
+    "title": "Coral Enterprises | Lux Renovations & Custom Kitchens",
+    "description": "Expert total home renovations in Belgium. Specializing in luxury kitchens, wellness bathrooms, and bespoke interior design.",
+    "keywords": [
+      "renovation",
+      "home remodeling",
+      "general contractor",
+      "kitchen renovation",
+      "bathroom remodel",
+      "house extension",
+      "total renovation",
+      "Belgium",
+      "Brussels",
+      "interior design",
+      "luxury"
+    ]
+  },
+  "Navbar": {
+    "home": "Home",
+    "services": "Services",
+    "projects": "Projects",
+    "book": "BOOK NOW",
+    "back": "BACK",
+    "logoTitle": "Coral Enterprises Logo",
+    "logoAria": "Coral Enterprises Logo",
+    "topbarTitle": "CORAL ENTERPRISES",
+    "topbarTitlePortal": "CORAL ENTERPRISES CLIENT PORTAL",
+    "fastInterventions": {
+      "label": "Fast Interventions 24/7",
+      "number": "+32 472 74 10 25"
     },
-    "Navbar": {
-        "home": "Home",
-        "services": "Services",
-        "projects": "Projects",
-        "book": "BOOK NOW",
-        "back": "BACK",
-        "logoTitle": "Coral Enterprises Logo",
-        "logoAria": "Coral Enterprises Logo",
-        "topbarTitle": "CORAL ENTERPRISES",
-        "topbarTitlePortal": "CORAL ENTERPRISES CLIENT PORTAL",
-        "fastInterventions": {
-            "label": "Fast Interventions 24/7",
-            "number": "+32 472 74 10 25"
-        },
-        "contact": {
-            "call": "Call Us",
-            "whatsapp": "WhatsApp",
-            "email": "Email"
-        }
-    },
-    "Services": {
-        "title": "Our Expertise",
-        "kitchen": {
-            "title": "Kitchen Design",
-            "subtitle": "Culinary Excellence",
-            "description": "Bespoke culinary spaces meticulously crafted for elite living.",
-            "fullDescription": "Our Kitchen Design service is dedicated to creating bespoke culinary spaces that are not only visually stunning but also highly functional.\n\nWe believe the kitchen is the heart of the home, a place where memories are made and culinary masterpieces are born.\n\nOur process begins with understanding your unique lifestyle and cooking habits. Whether you're a professional chef needing industrial-grade appliances and workflow, or a family needing a durable, welcoming space for breakfast and homework, we tailor every detail to you.",
-            "features": [
-                "Custom Cabinetry & Joinery",
-                "High-End Appliance Integration",
-                "Ergonomic Layout Optimization",
-                "Premium Stone Countertops (Marble, Quartz, Granite)",
-                "Specialized Lighting Schemes"
-            ]
-        },
-        "bath": {
-            "title": "Bath Restoration",
-            "subtitle": "Personal Sanctuaries",
-            "description": "Transform your daily ritual into a restorative spa experience.",
-            "fullDescription": "Transform your daily routine into a luxurious spa experience with our Bath Restoration service. We turn ordinary bathrooms into private sanctuaries of relaxation and rejuvenation.\n\nFrom master en-suites to guest powder rooms, we bring an element of refined elegance to every wet area. Our designs focus on tranquility, using calming palettes, natural materials, and advanced fixtures.",
-            "features": [
-                "Freestanding Soaking Tubs",
-                "Rainfall Showers with Steam Capabilities",
-                "Heated Floors & Towel Warmers",
-                "Custom Vanities with Integrated Storage",
-                "Mood Lighting & Ambience Control"
-            ]
-        },
-        "additions": {
-            "title": "Custom Additions",
-            "subtitle": "Expand Your Horizons",
-            "description": "Seamless home extensions that blend perfectly.",
-            "fullDescription": "Our Custom Additions service allows you to expand your living space without compromising the architectural integrity of your home. We specialize in seamless extensions that look and feel like they were always part of the original structure.\n\nWhether you need a new master suite, a sunroom, a home office, or an expanded entertainment area, we manage the entire process from architectural planning to the final coat of paint.",
-            "features": [
-                "Second-Story Additions",
-                "Garage Conversions",
-                "Sunrooms & Conservatories",
-                "In-Law Suites (ADUs)",
-                "Expanded Living Rooms & Dining Areas"
-            ]
-        },
-        "wholeHome": {
-            "title": "Whole Home",
-            "subtitle": "Complete Transformation",
-            "description": "Reimagine your entire living space from the ground up.",
-            "fullDescription": "For those seeking a complete reinvention of their living environment, our Whole Home Renovation service offers a comprehensive solution. This is for the homeowner who loves their location but needs a home that better reflects their current taste and lifestyle.\n\nWe strip back the layers and reimagine the flow, function, and aesthetic of your entire property. This is a holistic approach ensuring consistent design language throughout every room.",
-            "features": [
-                "Structural Alterations & Open Floor Plans",
-                "Complete Electrical & Plumbing Overhauls",
-                "Flooring, Wall Treatments & Millwork",
-                "Smart Home Integration",
-                "Exterior Facelifts & Curb Appeal"
-            ]
-        },
-        "explore": "EXPLORE DETAILS"
-    },
-    "Hero": {
-        "title": "Luxury. Redefined.",
-        "subtitle": "Aligned. Bespoke. Professional.",
-        "tagline": "ALIGNED. BESPOKE. PROFESSIONAL.",
-        "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services.",
-        "stats": {
-            "projects": "PROJECTS COMPLETED",
-            "projectsCount": "150+",
-            "experience": "YEARS OF EXPERIENCE",
-            "experienceCount": "12+"
-        }
-    },
-    "LeadForm": {
-        "messages": {
-            "inquiryWarning": "In order to leave a request you need to give us your details.",
-            "bookingWarning": "In order to book a visit you need to give us an address and details."
-        },
-        "tabs": {
-            "inquiry": "Inquiry",
-            "booking": "Book Visit"
-        },
-        "placeholders": {
-            "name": "Name",
-            "surname": "Surname",
-            "street": "Street + number",
-            "postalCode": "Postal Code",
-            "town": "Town",
-            "email": "Email Address",
-            "phone": "Phone Number (Optional)",
-            "message": "Tell us about your project...",
-            "yourName": "Your Name",
-            "yourEmail": "Your Email",
-            "file": "Upload file (Optional)"
-        },
-        "services": {
-            "kitchen": "Kitchen Remodeling",
-            "bathroom": "Bathroom Remodeling",
-            "addition": "Home Addition"
-        },
-        "buttons": {
-            "submit": "REQUEST CONSULTATION",
-            "sending": "SENDING...",
-            "sent": "SENT!",
-            "chooseDate": "CHOOSE DATE & TIME",
-            "confirm": "CONFIRM VISIT",
-            "confirming": "CONFIRMING...",
-            "confirmed": "CONFIRMED!",
-            "back": "BACK",
-            "close": "CLOSE",
-            "yesBook": "YES, BOOK NOW",
-            "later": "LATER"
-        },
-        "success": {
-            "inquiryTitle": "Inquiry Received!",
-            "inquirySub": "Would you also like to schedule a professional site visit right now?",
-            "allSet": "All Set!",
-            "touchShortly": "Our team will be in touch shortly.",
-            "anotherInquiry": "Send another inquiry",
-            "visitConfirmed": "Visit Confirmed!",
-            "scheduledFor": "Scheduled for {date} at {time}.",
-            "anotherVisit": "Schedule another visit"
-        },
-        "errors": {
-            "generic": "Something went wrong. Please try again.",
-            "connection": "Failed to reach the server. Please check your connection.",
-            "required": "This field is required"
-        },
-        "timeFormat": "hh:mm a",
-        "directContact": {
-            "title": "Or contact us directly:",
-            "whatsapp": "WhatsApp",
-            "call": "Call",
-            "email": "Email"
-        }
-    },
-    "Sections": {
-        "expertise": {
-            "title": "Our Expertise"
-        },
-        "portfolio": {
-            "title": "Recent Portfolio",
-            "tagline": "A glimpse into luxury"
-        }
-    },
-    "Projects": {
-        "kitchenLoft": {
-            "title": "Patrician House Kitchen",
-            "location": "Sint-Martens-Latem, BE",
-            "caption1": "Primary view of the fully renovated open-concept kitchen.",
-            "caption2": "Secondary perspective showing the custom marble island and integrated appliances.",
-            "captionBefore": "The original outdated 90s kitchen before the full luxury transformation."
-        },
-        "masterBath": {
-            "title": "Zoute Wellness Bathroom",
-            "location": "Knokke-Heist, BE",
-            "caption1": "The main spa area featuring a freestanding tub and panoramic views.",
-            "caption2": "A view of the rainfall shower with frameless glass and natural stone.",
-            "captionBefore": "The original cramped bathroom with dated blue tiles and limited space."
-        },
-        "contemporaryKitchen": {
-            "title": "Beguinage Chef's Kitchen",
-            "location": "Ghent, BE",
-            "caption1": "Professional grade chef's kitchen tailored for home excellence.",
-            "caption2": "Detailed view of the integrated wine storage and custom coffee station.",
-            "captionBefore": "The basic, uninspired kitchen before being reimagined for a gourmand."
-        },
-        "masterSuite": {
-            "title": "Manor House Suite",
-            "location": "Antwerp, BE",
-            "caption1": "The completed spa-inspired wet room in the master suite.",
-            "caption2": "Alternative view showcasing the freestanding tub and natural wood accents.",
-            "captionBefore": "The original unused, dusty attic space before its conversion into a luxury suite."
-        }
-    },
-    "ProjectGallery": {
-        "viewProject": "View Project",
-        "details": "Project Details",
-        "tooltips": {
-            "whatsapp": "WhatsApp",
-            "email": "Email",
-            "location": "Location"
-        },
-        "fallbackCaption": "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics.",
-        "perspective": "This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance."
-    },
-    "BookingModal": {
-        "title": "Schedule Your Visit",
-        "subtitle": "Book a professional site consultation for your remodeling project."
-    },
-    "ServiceDetail": {
-        "back": "BACK TO SERVICES",
-        "ready": "Ready to Start?",
-        "schedule": "Schedule a consultation with our design team to discuss your {service} project.",
-        "bookConsultation": "BOOK CONSULTATION",
-        "notFound": "Service not found",
-        "specializeIn": "We specialize in:",
-        "keyFeatures": "Key features often include:"
-    },
-    "Portal": {
-        "header": "CLIENT PORTAL",
-        "navTitle": "Project Dashboard",
-        "welcome": "Welcome, {name}",
-        "trackProgress": "Track your renovation progress, manage tasks, and communicate with our team—all in one place.",
-        "latestUpdates": "Latest Updates",
-        "noUpdates": "No updates posted yet.",
-        "projectManager": "Project Manager",
-        "tasks": "Project Tasks",
-        "remaining": "{count} Remaining",
-        "noTasks": "No active tasks.",
-        "addTask": "Add a new task...",
-        "documents": "Documents",
-        "noDocs": "No documents.",
-        "addDocPrompt": "Document Name:",
-        "addUrlPrompt": "Document URL (e.g., Dropbox/Google Drive link):",
-        "projectMedia": "Project Media",
-        "media": "Media",
-        "noMedia": "No media.",
-        "directMessage": "Direct Message",
-        "noMessages": "No messages yet. Start the conversation!",
-        "typeMessage": "Type a message..."
-    },
-    "Admin": {
-        "loading": "Loading System Data...",
-        "failedCreate": "Failed to create portal",
-        "namePrompt": "Client Name:",
-        "emailPrompt": "Client Email:",
-        "header": {
-            "title": "Admin Dashboard",
-            "subtitle": "Manage leads, bookings, and client portals.",
-            "logout": "Logout",
-            "viewLive": "View Live Site"
-        },
-        "portals": {
-            "title": "Client Portals",
-            "create": "New Portal",
-            "view": "View Portal",
-            "back": "Back to Dashboard",
-            "clientView": "Client View",
-            "postUpdate": "Post Update",
-            "recentUpdates": "Recent Updates",
-            "form": {
-                "title": "Title",
-                "details": "Details...",
-                "post": "Post"
-            }
-        },
-        "leads": {
-            "title": "Recent Leads",
-            "noLeads": "No leads found."
-        },
-        "bookings": {
-            "title": "Recent Bookings",
-            "noBookings": "No bookings found."
-        },
-        "filter": {
-            "all": "All Status",
-            "search": "Search...",
-            "searchClient": "Search Client..."
-        },
-        "status": {
-            "NEW": "New",
-            "CONTACTED": "Contacted",
-            "CONVERTED": "Converted",
-            "ARCHIVED": "Archived",
-            "PENDING": "Pending",
-            "CONFIRMED": "Confirmed",
-            "CANCELLED": "Cancelled",
-            "ACTIVE": "Active",
-            "COMPLETED": "Completed"
-        },
-        "nav": {
-            "sidebar": {
-                "dashboard": "DASHBOARD",
-                "financials": "FINANCIALS",
-                "contacts": "CONTACTS",
-                "suppliers": "SUPPLIERS",
-                "settings": "SETTINGS",
-                "hr": "HR",
-                "library": "LIBRARY",
-                "website": "WEBSITE",
-                "crm": "CRM",
-                "projects": "PROJECTS"
-            },
-            "financialTabs": {
-                "purchaseInvoices": "PURCHASE INVOICES",
-                "expenseTickets": "RECEIPTS",
-                "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
-                "salesCreditNotes": "CREDIT NOTE - SALES",
-                "salesInvoices": "INVOICES",
-                "quotations": "QUOTATIONS"
-            },
-            "pages": {
-                "salesInvoices": "Sales Invoices",
-                "salesInvoicesDesc": "Manage accounts receivable, track payments, and generate PDF invoices.",
-                "noInvoices": "No Sales Invoices Generated",
-                "noInvoicesDesc": "Create your first invoice to get started with invoicing.",
-                "createInvoice": "Create Invoice",
-                "dashboard": "Dashboard",
-                "administrative": "Administrative",
-                "scanUploadTicket": "Scan / Upload Ticket"
-            },
-            "settings": {
-                "companyInfo": "COMPANY INFO",
-                "uiLayout": "UI LAYOUT",
-                "calendar": "CALENDAR",
-                "financials": "FINANCIALS",
-                "hr": "HR",
-                "library": "LIBRARY",
-                "projects": "PROJECTS",
-                "relations": "RELATIONS",
-                "tasks": "TASKS",
-                "website": "WEBSITE",
-                "appPreferences": "App & Document Preferences",
-                "documentLanguage": "Global Document Language",
-                "documentLanguageDesc": "Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French.",
-                "fallbackOption": "Fallback to Client Language",
-                "documentNumbering": "Document Numbering",
-                "documentNumberingDesc": "Configure the automatic numbering pattern for invoices and quotations. Changes apply to newly created documents only.",
-                "save": "Save Profile",
-                "saving": "Saving...",
-                "pageTitle": "Company Identity",
-                "pageSubtitle": "Manage global business details and Peppol invoicing data.",
-                "businessIdentity": "Business Identity",
-                "addressesLocations": "Addresses & Locations",
-                "companyNameLegal": "Company Name (Legal)",
-                "commercialName": "Commercial Name",
-                "vatNumber": "VAT Number (KBO)",
-                "defaultEmail": "Default Email",
-                "directorFirstName": "Director First Name",
-                "directorLastName": "Director Last Name",
-                "ibanAccount": "IBAN Account",
-                "bicCode": "BIC Code",
-                "invoicingAddress": "Invoicing Address",
-                "deliveryAddress": "Delivery Address",
-                "headquarters": "Headquarters (Registered Office)",
-                "streetNumber": "Street & Number",
-                "postalCode": "Postal Code",
-                "city": "City",
-                "peppolTitle": "Peppol Invoicing Integration",
-                "peppolDesc": "Your account requires an active Peppol profile to instantly deliver B2B invoices across the European Union. Enter your VAT number below, then click \"Auto-Fetch\" to retrieve your company details securely.",
-                "searchRegistry": "Search Peppol Registry",
-                "searching": "Searching...",
-                "enterManually": "Enter Manually",
-                "branding": "Branding & Document Templates",
-                "brandingDesc": "Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.",
-                "invoiceNumbering": "Invoice Numbering",
-                "quotationNumbering": "Quotation Numbering",
-                "prefix": "Prefix (1-5 chars)",
-                "connector": "Connector",
-                "dateFormat": "Date Format",
-                "numberWidth": "Number Width",
-                "nextNumber": "Next Number",
-                "preview": "Preview"
-            }
-        },
-        "dashboard": {
-            "administrative": "Administrative",
-            "title": "Dashboard",
-            "healthy": "Healthy",
-            "pendingBookings": "Pending Bookings",
-            "confirmedVisits": "Confirmed Visits",
-            "activeProjects": "Active Projects",
-            "openTasks": "Open Tasks",
-            "financialOverview": "Financial Overview",
-            "invoicedVsExpend": "Invoiced vs Expenditures (6 Months)",
-            "leadStatusSpread": "Lead Status Spread",
-            "currentVolume": "Current volume by status",
-            "recentInquiries": "Recent Inquiries",
-            "viewAllLeads": "View All Leads",
-            "noRecentLeads": "No recent leads found in database.",
-            "editContent": "Edit Content",
-            "newProject": "New Project",
-            "setupPortal": "Setup Portal",
-            "viewPortfolio": "View Portfolio",
-            "welcomeTitle": "Welcome to CoralOS Premium!",
-            "welcomeDesc": "Your secure workspace is officially provisioned and isolated. Let's get your first legal documents ready to send. Follow these 3 critical steps:",
-            "step1Title": "Set up your Company Identity",
-            "step1Desc": "Upload your Logo, VAT, and IBAN so clients can legally pay you.",
-            "step2Title": "Scaffold your Database",
-            "step2Desc": "Instantiate the immutable CRM systems to store your Contacts.",
-            "step3Title": "Generate your first Invoice",
-            "step3Desc": "Test the mathematical engine and export your first premium PDF."
-        },
-        "layout": {
-            "upgradePlan": "Upgrade Plan",
-            "signOut": "Sign Out",
-            "administrator": "Administrator",
-            "verifyEmail": "Please verify your email address. Check your inbox for a verification link.",
-            "resend": "Resend",
-            "sent": "Sent!",
-            "moduleUpgrade": "Module Upgrade Required",
-            "moduleUpgradeDesc": "This specific application module requires an active premium license. Contact the Superadmin or upgrade your tenant subscription to unlock full system capabilities.",
-            "returnDashboard": "Return to Dashboard"
-        },
-        "db": {
-            "toolbar": {
-                "filter": "Filter",
-                "sort": "Sort",
-                "properties": "Properties",
-                "export": "Export",
-                "import": "Import",
-                "sortBy": "Sort by",
-                "thenBy": "Then by",
-                "createInvoice": "Create Invoice",
-                "creating": "Creating..."
-            },
-            "col": {
-                "email": "Email",
-                "phone": "Phone",
-                "company": "Company",
-                "vat": "VAT Number",
-                "address": "Address",
-                "city": "City",
-                "postal": "Postal Code",
-                "country": "Country",
-                "status": "Status",
-                "type": "Type",
-                "language": "Language",
-                "notes": "Notes",
-                "iban": "IBAN",
-                "bic": "BIC",
-                "category": "Category",
-                "payment": "Payment Terms",
-                "contact_person": "Contact Person",
-                "website": "Website",
-                "betreft": "Subject",
-                "invoiceDate": "Invoice Date",
-                "dueDate": "Due Date",
-                "totalExVat": "Total Excl. VAT",
-                "totalVat": "VAT",
-                "totalIncVat": "Total Incl. VAT",
-                "peppolDocId": "Peppol Doc ID",
-                "date": "Date",
-                "amount": "Total Amount",
-                "vatAmount": "VAT Amount",
-                "currency": "Currency",
-                "paymentMethod": "Payment Method",
-                "source": "Source",
-                "supplier": "Supplier",
-                "client": "Client",
-                "clientName": "Client",
-                "description": "Description",
-                "name": "Name"
-            }
-        }
-    },
-    "Footer": {
-        "copy": "&copy; 2026 CORAL ENTERPRISES. ALL RIGHTS RESERVED.",
-        "description": "Bespoke culinary spaces and personal sanctuaries meticulously crafted for elite living.",
-        "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgium",
-        "vat": "BE 1018.865.828",
-        "quickLinks": "Quick Links",
-        "contact": "Contact Us",
-        "office": "Office",
-        "legal": "Legal",
-        "fastInterventions": "Fast Interventions"
-    },
-    "CookieConsent": {
-        "title": "We value your privacy",
-        "description": "To enhance your experience, we use cookies. Read our {link}.",
-        "linkText": "Cookie Policy",
-        "accept": "Accept",
-        "decline": "Decline"
+    "contact": {
+      "call": "Call Us",
+      "whatsapp": "WhatsApp",
+      "email": "Email"
     }
+  },
+  "Services": {
+    "title": "Our Expertise",
+    "kitchen": {
+      "title": "Kitchen Design",
+      "subtitle": "Culinary Excellence",
+      "description": "Bespoke culinary spaces meticulously crafted for elite living.",
+      "fullDescription": "Our Kitchen Design service is dedicated to creating bespoke culinary spaces that are not only visually stunning but also highly functional.\n\nWe believe the kitchen is the heart of the home, a place where memories are made and culinary masterpieces are born.\n\nOur process begins with understanding your unique lifestyle and cooking habits. Whether you're a professional chef needing industrial-grade appliances and workflow, or a family needing a durable, welcoming space for breakfast and homework, we tailor every detail to you.",
+      "features": [
+        "Custom Cabinetry & Joinery",
+        "High-End Appliance Integration",
+        "Ergonomic Layout Optimization",
+        "Premium Stone Countertops (Marble, Quartz, Granite)",
+        "Specialized Lighting Schemes"
+      ]
+    },
+    "bath": {
+      "title": "Bath Restoration",
+      "subtitle": "Personal Sanctuaries",
+      "description": "Transform your daily ritual into a restorative spa experience.",
+      "fullDescription": "Transform your daily routine into a luxurious spa experience with our Bath Restoration service. We turn ordinary bathrooms into private sanctuaries of relaxation and rejuvenation.\n\nFrom master en-suites to guest powder rooms, we bring an element of refined elegance to every wet area. Our designs focus on tranquility, using calming palettes, natural materials, and advanced fixtures.",
+      "features": [
+        "Freestanding Soaking Tubs",
+        "Rainfall Showers with Steam Capabilities",
+        "Heated Floors & Towel Warmers",
+        "Custom Vanities with Integrated Storage",
+        "Mood Lighting & Ambience Control"
+      ]
+    },
+    "additions": {
+      "title": "Custom Additions",
+      "subtitle": "Expand Your Horizons",
+      "description": "Seamless home extensions that blend perfectly.",
+      "fullDescription": "Our Custom Additions service allows you to expand your living space without compromising the architectural integrity of your home. We specialize in seamless extensions that look and feel like they were always part of the original structure.\n\nWhether you need a new master suite, a sunroom, a home office, or an expanded entertainment area, we manage the entire process from architectural planning to the final coat of paint.",
+      "features": [
+        "Second-Story Additions",
+        "Garage Conversions",
+        "Sunrooms & Conservatories",
+        "In-Law Suites (ADUs)",
+        "Expanded Living Rooms & Dining Areas"
+      ]
+    },
+    "wholeHome": {
+      "title": "Whole Home",
+      "subtitle": "Complete Transformation",
+      "description": "Reimagine your entire living space from the ground up.",
+      "fullDescription": "For those seeking a complete reinvention of their living environment, our Whole Home Renovation service offers a comprehensive solution. This is for the homeowner who loves their location but needs a home that better reflects their current taste and lifestyle.\n\nWe strip back the layers and reimagine the flow, function, and aesthetic of your entire property. This is a holistic approach ensuring consistent design language throughout every room.",
+      "features": [
+        "Structural Alterations & Open Floor Plans",
+        "Complete Electrical & Plumbing Overhauls",
+        "Flooring, Wall Treatments & Millwork",
+        "Smart Home Integration",
+        "Exterior Facelifts & Curb Appeal"
+      ]
+    },
+    "explore": "EXPLORE DETAILS"
+  },
+  "Hero": {
+    "title": "Luxury. Redefined.",
+    "subtitle": "Aligned. Bespoke. Professional.",
+    "tagline": "ALIGNED. BESPOKE. PROFESSIONAL.",
+    "description": "Experience the ultimate in home transformation with our premium kitchen and bath remodeling services.",
+    "stats": {
+      "projects": "PROJECTS COMPLETED",
+      "projectsCount": "150+",
+      "experience": "YEARS OF EXPERIENCE",
+      "experienceCount": "12+"
+    }
+  },
+  "LeadForm": {
+    "messages": {
+      "inquiryWarning": "In order to leave a request you need to give us your details.",
+      "bookingWarning": "In order to book a visit you need to give us an address and details."
+    },
+    "tabs": {
+      "inquiry": "Inquiry",
+      "booking": "Book Visit"
+    },
+    "placeholders": {
+      "name": "Name",
+      "surname": "Surname",
+      "street": "Street + number",
+      "postalCode": "Postal Code",
+      "town": "Town",
+      "email": "Email Address",
+      "phone": "Phone Number (Optional)",
+      "message": "Tell us about your project...",
+      "yourName": "Your Name",
+      "yourEmail": "Your Email",
+      "file": "Upload file (Optional)"
+    },
+    "services": {
+      "kitchen": "Kitchen Remodeling",
+      "bathroom": "Bathroom Remodeling",
+      "addition": "Home Addition"
+    },
+    "buttons": {
+      "submit": "REQUEST CONSULTATION",
+      "sending": "SENDING...",
+      "sent": "SENT!",
+      "chooseDate": "CHOOSE DATE & TIME",
+      "confirm": "CONFIRM VISIT",
+      "confirming": "CONFIRMING...",
+      "confirmed": "CONFIRMED!",
+      "back": "BACK",
+      "close": "CLOSE",
+      "yesBook": "YES, BOOK NOW",
+      "later": "LATER"
+    },
+    "success": {
+      "inquiryTitle": "Inquiry Received!",
+      "inquirySub": "Would you also like to schedule a professional site visit right now?",
+      "allSet": "All Set!",
+      "touchShortly": "Our team will be in touch shortly.",
+      "anotherInquiry": "Send another inquiry",
+      "visitConfirmed": "Visit Confirmed!",
+      "scheduledFor": "Scheduled for {date} at {time}.",
+      "anotherVisit": "Schedule another visit"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again.",
+      "connection": "Failed to reach the server. Please check your connection.",
+      "required": "This field is required"
+    },
+    "timeFormat": "hh:mm a",
+    "directContact": {
+      "title": "Or contact us directly:",
+      "whatsapp": "WhatsApp",
+      "call": "Call",
+      "email": "Email"
+    }
+  },
+  "Sections": {
+    "expertise": {
+      "title": "Our Expertise"
+    },
+    "portfolio": {
+      "title": "Recent Portfolio",
+      "tagline": "A glimpse into luxury"
+    }
+  },
+  "Projects": {
+    "kitchenLoft": {
+      "title": "Patrician House Kitchen",
+      "location": "Sint-Martens-Latem, BE",
+      "caption1": "Primary view of the fully renovated open-concept kitchen.",
+      "caption2": "Secondary perspective showing the custom marble island and integrated appliances.",
+      "captionBefore": "The original outdated 90s kitchen before the full luxury transformation."
+    },
+    "masterBath": {
+      "title": "Zoute Wellness Bathroom",
+      "location": "Knokke-Heist, BE",
+      "caption1": "The main spa area featuring a freestanding tub and panoramic views.",
+      "caption2": "A view of the rainfall shower with frameless glass and natural stone.",
+      "captionBefore": "The original cramped bathroom with dated blue tiles and limited space."
+    },
+    "contemporaryKitchen": {
+      "title": "Beguinage Chef's Kitchen",
+      "location": "Ghent, BE",
+      "caption1": "Professional grade chef's kitchen tailored for home excellence.",
+      "caption2": "Detailed view of the integrated wine storage and custom coffee station.",
+      "captionBefore": "The basic, uninspired kitchen before being reimagined for a gourmand."
+    },
+    "masterSuite": {
+      "title": "Manor House Suite",
+      "location": "Antwerp, BE",
+      "caption1": "The completed spa-inspired wet room in the master suite.",
+      "caption2": "Alternative view showcasing the freestanding tub and natural wood accents.",
+      "captionBefore": "The original unused, dusty attic space before its conversion into a luxury suite."
+    }
+  },
+  "ProjectGallery": {
+    "viewProject": "View Project",
+    "details": "Project Details",
+    "tooltips": {
+      "whatsapp": "WhatsApp",
+      "email": "Email",
+      "location": "Location"
+    },
+    "fallbackCaption": "Experience luxury living with our bespoke design solutions. Every detail is curated to enhance your lifestyle, blending functionality with timeless aesthetics.",
+    "perspective": "This perspective highlights the meticulous attention to material selection and lighting integration, creating an atmosphere of refined elegance."
+  },
+  "BookingModal": {
+    "title": "Schedule Your Visit",
+    "subtitle": "Book a professional site consultation for your remodeling project."
+  },
+  "ServiceDetail": {
+    "back": "BACK TO SERVICES",
+    "ready": "Ready to Start?",
+    "schedule": "Schedule a consultation with our design team to discuss your {service} project.",
+    "bookConsultation": "BOOK CONSULTATION",
+    "notFound": "Service not found",
+    "specializeIn": "We specialize in:",
+    "keyFeatures": "Key features often include:"
+  },
+  "Portal": {
+    "header": "CLIENT PORTAL",
+    "navTitle": "Project Dashboard",
+    "welcome": "Welcome, {name}",
+    "trackProgress": "Track your renovation progress, manage tasks, and communicate with our team—all in one place.",
+    "latestUpdates": "Latest Updates",
+    "noUpdates": "No updates posted yet.",
+    "projectManager": "Project Manager",
+    "tasks": "Project Tasks",
+    "remaining": "{count} Remaining",
+    "noTasks": "No active tasks.",
+    "addTask": "Add a new task...",
+    "documents": "Documents",
+    "noDocs": "No documents.",
+    "addDocPrompt": "Document Name:",
+    "addUrlPrompt": "Document URL (e.g., Dropbox/Google Drive link):",
+    "projectMedia": "Project Media",
+    "media": "Media",
+    "noMedia": "No media.",
+    "directMessage": "Direct Message",
+    "noMessages": "No messages yet. Start the conversation!",
+    "typeMessage": "Type a message..."
+  },
+  "Admin": {
+    "loading": "Loading System Data...",
+    "failedCreate": "Failed to create portal",
+    "namePrompt": "Client Name:",
+    "emailPrompt": "Client Email:",
+    "header": {
+      "title": "Admin Dashboard",
+      "subtitle": "Manage leads, bookings, and client portals.",
+      "logout": "Logout",
+      "viewLive": "View Live Site"
+    },
+    "portals": {
+      "title": "Client Portals",
+      "create": "New Portal",
+      "view": "View Portal",
+      "back": "Back to Dashboard",
+      "clientView": "Client View",
+      "postUpdate": "Post Update",
+      "recentUpdates": "Recent Updates",
+      "form": {
+        "title": "Title",
+        "details": "Details...",
+        "post": "Post"
+      }
+    },
+    "leads": {
+      "title": "Recent Leads",
+      "noLeads": "No leads found."
+    },
+    "bookings": {
+      "title": "Recent Bookings",
+      "noBookings": "No bookings found."
+    },
+    "filter": {
+      "all": "All Status",
+      "search": "Search...",
+      "searchClient": "Search Client..."
+    },
+    "status": {
+      "NEW": "New",
+      "CONTACTED": "Contacted",
+      "CONVERTED": "Converted",
+      "ARCHIVED": "Archived",
+      "PENDING": "Pending",
+      "CONFIRMED": "Confirmed",
+      "CANCELLED": "Cancelled",
+      "ACTIVE": "Active",
+      "COMPLETED": "Completed"
+    },
+    "nav": {
+      "sidebar": {
+        "dashboard": "DASHBOARD",
+        "financials": "FINANCIALS",
+        "contacts": "CONTACTS",
+        "suppliers": "SUPPLIERS",
+        "settings": "SETTINGS",
+        "hr": "HR",
+        "library": "LIBRARY",
+        "website": "WEBSITE",
+        "crm": "CRM",
+        "projects": "PROJECTS",
+        "email": "INBOX",
+        "tasks": "TASKS",
+        "calendar": "CALENDAR",
+        "files": "FILES",
+        "sales": "SALES"
+      },
+      "financialTabs": {
+        "purchaseInvoices": "PURCHASE INVOICES",
+        "expenseTickets": "RECEIPTS",
+        "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
+        "salesCreditNotes": "CREDIT NOTE - SALES",
+        "salesInvoices": "INVOICES",
+        "quotations": "QUOTATIONS"
+      },
+      "pages": {
+        "salesInvoices": "Sales Invoices",
+        "salesInvoicesDesc": "Manage accounts receivable, track payments, and generate PDF invoices.",
+        "noInvoices": "No Sales Invoices Generated",
+        "noInvoicesDesc": "Create your first invoice to get started with invoicing.",
+        "createInvoice": "Create Invoice",
+        "dashboard": "Dashboard",
+        "administrative": "Administrative",
+        "scanUploadTicket": "Scan / Upload Ticket"
+      },
+      "settings": {
+        "companyInfo": "COMPANY INFO",
+        "uiLayout": "UI LAYOUT",
+        "calendar": "CALENDAR",
+        "financials": "FINANCIALS",
+        "hr": "HR",
+        "library": "LIBRARY",
+        "projects": "PROJECTS",
+        "relations": "RELATIONS",
+        "tasks": "TASKS",
+        "website": "WEBSITE",
+        "appPreferences": "App & Document Preferences",
+        "documentLanguage": "Global Document Language",
+        "documentLanguageDesc": "Sets the default output language for generated PDFs (Estimates, Invoices). If left empty, falls back to the client's language preference or French.",
+        "fallbackOption": "Fallback to Client Language",
+        "documentNumbering": "Document Numbering",
+        "documentNumberingDesc": "Configure the automatic numbering pattern for invoices and quotations. Changes apply to newly created documents only.",
+        "save": "Save Profile",
+        "saving": "Saving...",
+        "pageTitle": "Company Identity",
+        "pageSubtitle": "Manage global business details and Peppol invoicing data.",
+        "businessIdentity": "Business Identity",
+        "addressesLocations": "Addresses & Locations",
+        "companyNameLegal": "Company Name (Legal)",
+        "commercialName": "Commercial Name",
+        "vatNumber": "VAT Number (KBO)",
+        "defaultEmail": "Default Email",
+        "directorFirstName": "Director First Name",
+        "directorLastName": "Director Last Name",
+        "ibanAccount": "IBAN Account",
+        "bicCode": "BIC Code",
+        "invoicingAddress": "Invoicing Address",
+        "deliveryAddress": "Delivery Address",
+        "headquarters": "Headquarters (Registered Office)",
+        "streetNumber": "Street & Number",
+        "postalCode": "Postal Code",
+        "city": "City",
+        "peppolTitle": "Peppol Invoicing Integration",
+        "peppolDesc": "Your account requires an active Peppol profile to instantly deliver B2B invoices across the European Union. Enter your VAT number below, then click \"Auto-Fetch\" to retrieve your company details securely.",
+        "searchRegistry": "Search Peppol Registry",
+        "searching": "Searching...",
+        "enterManually": "Enter Manually",
+        "branding": "Branding & Document Templates",
+        "brandingDesc": "Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.",
+        "invoiceNumbering": "Invoice Numbering",
+        "quotationNumbering": "Quotation Numbering",
+        "prefix": "Prefix (1-5 chars)",
+        "connector": "Connector",
+        "dateFormat": "Date Format",
+        "numberWidth": "Number Width",
+        "nextNumber": "Next Number",
+        "preview": "Preview"
+      }
+    },
+    "dashboard": {
+      "administrative": "Administrative",
+      "title": "Dashboard",
+      "healthy": "Healthy",
+      "pendingBookings": "Pending Bookings",
+      "confirmedVisits": "Confirmed Visits",
+      "activeProjects": "Active Projects",
+      "openTasks": "Open Tasks",
+      "financialOverview": "Financial Overview",
+      "invoicedVsExpend": "Invoiced vs Expenditures (6 Months)",
+      "leadStatusSpread": "Lead Status Spread",
+      "currentVolume": "Current volume by status",
+      "recentInquiries": "Recent Inquiries",
+      "viewAllLeads": "View All Leads",
+      "noRecentLeads": "No recent leads found in database.",
+      "editContent": "Edit Content",
+      "newProject": "New Project",
+      "setupPortal": "Setup Portal",
+      "viewPortfolio": "View Portfolio",
+      "welcomeTitle": "Welcome to CoralOS Premium!",
+      "welcomeDesc": "Your secure workspace is officially provisioned and isolated. Let's get your first legal documents ready to send. Follow these 3 critical steps:",
+      "step1Title": "Set up your Company Identity",
+      "step1Desc": "Upload your Logo, VAT, and IBAN so clients can legally pay you.",
+      "step2Title": "Scaffold your Database",
+      "step2Desc": "Instantiate the immutable CRM systems to store your Contacts.",
+      "step3Title": "Generate your first Invoice",
+      "step3Desc": "Test the mathematical engine and export your first premium PDF."
+    },
+    "layout": {
+      "upgradePlan": "Upgrade Plan",
+      "signOut": "Sign Out",
+      "administrator": "Administrator",
+      "verifyEmail": "Please verify your email address. Check your inbox for a verification link.",
+      "resend": "Resend",
+      "sent": "Sent!",
+      "moduleUpgrade": "Module Upgrade Required",
+      "moduleUpgradeDesc": "This specific application module requires an active premium license. Contact the Superadmin or upgrade your tenant subscription to unlock full system capabilities.",
+      "returnDashboard": "Return to Dashboard"
+    },
+    "db": {
+      "toolbar": {
+        "filter": "Filter",
+        "sort": "Sort",
+        "properties": "Properties",
+        "export": "Export",
+        "import": "Import",
+        "sortBy": "Sort by",
+        "thenBy": "Then by",
+        "createInvoice": "Create Invoice",
+        "creating": "Creating..."
+      },
+      "col": {
+        "email": "Email",
+        "phone": "Phone",
+        "company": "Company",
+        "vat": "VAT Number",
+        "address": "Address",
+        "city": "City",
+        "postal": "Postal Code",
+        "country": "Country",
+        "status": "Status",
+        "type": "Type",
+        "language": "Language",
+        "notes": "Notes",
+        "iban": "IBAN",
+        "bic": "BIC",
+        "category": "Category",
+        "payment": "Payment Terms",
+        "contact_person": "Contact Person",
+        "website": "Website",
+        "betreft": "Subject",
+        "invoiceDate": "Invoice Date",
+        "dueDate": "Due Date",
+        "totalExVat": "Total Excl. VAT",
+        "totalVat": "VAT",
+        "totalIncVat": "Total Incl. VAT",
+        "peppolDocId": "Peppol Doc ID",
+        "date": "Date",
+        "amount": "Total Amount",
+        "vatAmount": "VAT Amount",
+        "currency": "Currency",
+        "paymentMethod": "Payment Method",
+        "source": "Source",
+        "supplier": "Supplier",
+        "client": "Client",
+        "clientName": "Client",
+        "description": "Description",
+        "name": "Name"
+      }
+    }
+  },
+  "Footer": {
+    "copy": "&copy; 2026 CORAL ENTERPRISES. ALL RIGHTS RESERVED.",
+    "description": "Bespoke culinary spaces and personal sanctuaries meticulously crafted for elite living.",
+    "address": "Z.5 Industriezone 230, 1730 Mollem (Asse), Belgium",
+    "vat": "BE 1018.865.828",
+    "quickLinks": "Quick Links",
+    "contact": "Contact Us",
+    "office": "Office",
+    "legal": "Legal",
+    "fastInterventions": "Fast Interventions"
+  },
+  "CookieConsent": {
+    "title": "We value your privacy",
+    "description": "To enhance your experience, we use cookies. Read our {link}.",
+    "linkText": "Cookie Policy",
+    "accept": "Accept",
+    "decline": "Decline"
+  }
 }

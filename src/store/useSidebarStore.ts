@@ -17,6 +17,7 @@ import {
     Library,
     Settings,
     Briefcase,
+    TrendingUp,
 } from 'lucide-react';
 
 export type SidebarItem = {
@@ -47,24 +48,26 @@ export const getIconComponent = (iconName: string) => {
         case 'Calendar': return Calendar;
         case 'Library': return Library;
         case 'Settings': return Settings;
+        case 'TrendingUp': return TrendingUp;
         default: return LayoutDashboard;
     }
 };
 
 export const defaultSidebarItems: SidebarItem[] = [
-    { id: 'calendar', iconName: 'Calendar', label: 'CALENDAR', href: '/admin/calendar' },
-    { id: 'dashboard', iconName: 'LayoutDashboard', label: 'DASHBOARD', href: '/admin/dashboard' },
-    { id: 'email', iconName: 'Mail', label: 'EMAIL', href: '/admin/email' },
-    { id: 'files', iconName: 'Library', label: 'FILES', href: '/admin/files' },
-    { id: 'financials', iconName: 'Landmark', label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
-    { id: 'frontend', iconName: 'Globe', label: 'WEBSITE', href: '/admin/content' },
-    { id: 'hr', iconName: 'CircleDollarSign', label: 'HR', href: '/admin/hr/time-tracker' },
-    { id: 'library', iconName: 'Library', label: 'LIBRARY', href: '/admin/library/articles' },
-    { id: 'projects', iconName: 'Briefcase', label: 'PROJECTS', href: '/admin/projects-management' },
-    { id: 'contacts', iconName: 'Users', label: 'CONTACTS', href: '/admin/contacts' },
-    { id: 'suppliers', iconName: 'Truck', label: 'SUPPLIERS', href: '/admin/suppliers' },
-    { id: 'settings', iconName: 'Settings', label: 'SETTINGS', href: '/admin/settings/company-info' },
-    { id: 'tasks', iconName: 'BriefcaseBusiness', label: 'TASKS', href: '/admin/tasks' },
+    { id: 'dashboard',  iconName: 'LayoutDashboard', label: 'DASHBOARD',  href: '/admin/dashboard' },
+    { id: 'email',      iconName: 'Mail',             label: 'EMAIL',      href: '/admin/email' },
+    { id: 'financials', iconName: 'Landmark',         label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
+    { id: 'library',    iconName: 'Library',          label: 'LIBRARY',    href: '/admin/library/articles' },
+    { id: 'contacts',   iconName: 'Users',            label: 'CONTACTS',   href: '/admin/contacts' },
+    { id: 'suppliers',  iconName: 'Truck',            label: 'SUPPLIERS',  href: '/admin/suppliers' },
+    { id: 'sales',      iconName: 'TrendingUp',       label: 'SALES',      href: '/admin/crm' },
+    { id: 'projects',   iconName: 'Briefcase',        label: 'PROJECTS',   href: '/admin/projects-management' },
+    { id: 'hr',         iconName: 'CircleDollarSign', label: 'HR',         href: '/admin/hr/time-tracker' },
+    { id: 'calendar',   iconName: 'Calendar',         label: 'CALENDAR',   href: '/admin/calendar' },
+    { id: 'tasks',      iconName: 'BriefcaseBusiness',label: 'TASKS',      href: '/admin/tasks' },
+    { id: 'files',      iconName: 'Library',          label: 'FILES',      href: '/admin/files' },
+    { id: 'frontend',   iconName: 'Globe',            label: 'WEBSITE',    href: '/admin/content' },
+    { id: 'settings',   iconName: 'Settings',         label: 'SETTINGS',   href: '/admin/settings/company-info' },
 ];
 
 interface SidebarStore {
@@ -82,9 +85,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 13, // bump version to fix settings default redirect
+            version: 14, // bump: added SALES top-level item + reordered defaults
             migrate: (persistedState: any, version: number) => {
-                if (version < 13) {
+                if (version < 14) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

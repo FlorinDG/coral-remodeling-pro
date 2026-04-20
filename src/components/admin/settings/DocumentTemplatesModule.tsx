@@ -53,13 +53,13 @@ const TEMPLATES = [
                 <line x1="4" y1="33" x2="44" y2="33" stroke="#e0e0e0" strokeWidth="0.4" />
                 <rect x="4" y="33.5" width="40" height="5" fill="#fafafa" />
                 <line x1="4" y1="38.5" x2="44" y2="38.5" stroke="#e0e0e0" strokeWidth="0.4" />
-                {/* Summary right-aligned */}
+                {/* Summary right-aligned — brand color accent */}
                 <rect x="28" y="42" width="16" height="1.5" fill="#cccccc" />
                 <rect x="28" y="45.5" width="16" height="1.5" fill="#cccccc" />
-                <rect x="28" y="49" width="16" height="3" fill="#222222" />
-                {/* Footer: gray left + black right block */}
+                <rect x="28" y="49" width="16" height="3" fill={color} />
+                {/* Footer: gray left + brand color right block */}
                 <rect x="0" y="59" width="31" height="5" fill="#f2f2f2" />
-                <rect x="31" y="59" width="17" height="5" fill="#111111" />
+                <rect x="31" y="59" width="17" height="5" fill={color} />
                 <rect x="33" y="61" width="11" height="1.5" fill="#ffffff" opacity="0.7" />
             </svg>
         ),
@@ -129,8 +129,8 @@ const TEMPLATES = [
                 <line x1="0" y1="36.5" x2="48" y2="36.5" stroke="#eaeff4" strokeWidth="0.5" />
                 <rect x="0" y="36.5" width="48" height="4" fill="#ffffff" />
                 <line x1="0" y1="40.5" x2="48" y2="40.5" stroke="#eaeff4" strokeWidth="0.5" />
-                {/* Navy total bar */}
-                <rect x="28" y="47" width="20" height="4.5" fill="#1a3a5c" />
+                {/* Brand color total bar */}
+                <rect x="28" y="47" width="20" height="4.5" fill={color} />
                 <rect x="30" y="48.5" width="15" height="1.5" fill="#ffffff" opacity="0.7" />
                 {/* Footer thin line */}
                 <line x1="4" y1="59" x2="44" y2="59" stroke="#e0e0e0" strokeWidth="0.5" />
@@ -156,23 +156,25 @@ const TEMPLATES = [
                 <rect x="3" y="3" width="16" height="2.5" fill="#ffffff" opacity="0.95" />
                 <rect x="3" y="7" width="10" height="1.5" fill="#ffffff" opacity="0.5" />
                 <rect x="3" y="9.5" width="7" height="1" fill="#ffffff" opacity="0.35" />
+                {/* Brand color accent stripe below header */}
+                <rect x="0" y="17" width="48" height="2" fill={color} opacity="0.85" />
                 {/* Invoice label below header right-aligned */}
-                <rect x="28" y="19" width="17" height="3.5" fill="#1c2e4a" opacity="0.75" rx="0.3" />
-                <rect x="30" y="20.2" width="13" height="1.5" fill="#ffffff" opacity="0.6" />
+                <rect x="28" y="21" width="17" height="3.5" fill="#1c2e4a" opacity="0.75" rx="0.3" />
+                <rect x="30" y="22.2" width="13" height="1.5" fill="#ffffff" opacity="0.6" />
                 {/* Client section */}
-                <rect x="3" y="25" width="9" height="1.5" fill="#888888" />
-                <rect x="3" y="28" width="16" height="2" fill="#222222" />
+                <rect x="3" y="27" width="9" height="1.5" fill="#888888" />
+                <rect x="3" y="30" width="16" height="2" fill="#222222" />
                 {/* Navy table header */}
-                <rect x="0" y="33" width="48" height="4.5" fill="#1c2e4a" />
-                <rect x="3" y="34.5" width="15" height="1.5" fill="#ffffff" opacity="0.75" />
+                <rect x="0" y="35" width="48" height="4.5" fill="#1c2e4a" />
+                <rect x="3" y="36.5" width="15" height="1.5" fill="#ffffff" opacity="0.75" />
                 {/* Table rows */}
-                <rect x="0" y="37.5" width="48" height="4" fill="#fafafa" />
-                <line x1="0" y1="41.5" x2="48" y2="41.5" stroke="#eeeeee" strokeWidth="0.5" />
-                <rect x="0" y="41.5" width="48" height="4" fill="#ffffff" />
-                <line x1="0" y1="45.5" x2="48" y2="45.5" stroke="#eeeeee" strokeWidth="0.5" />
+                <rect x="0" y="39.5" width="48" height="4" fill="#fafafa" />
+                <line x1="0" y1="43.5" x2="48" y2="43.5" stroke="#eeeeee" strokeWidth="0.5" />
+                <rect x="0" y="43.5" width="48" height="4" fill="#ffffff" />
+                <line x1="0" y1="47.5" x2="48" y2="47.5" stroke="#eeeeee" strokeWidth="0.5" />
                 {/* Summary */}
-                <rect x="28" y="49" width="16" height="1.5" fill="#888888" />
-                <rect x="28" y="52.5" width="16" height="3" fill="#1c2e4a" opacity="0.65" />
+                <rect x="28" y="51" width="16" height="1.5" fill="#888888" />
+                <rect x="28" y="54.5" width="16" height="3" fill={color} opacity="0.85" />
                 {/* Navy footer bar */}
                 <rect x="0" y="59" width="48" height="5" fill="#1c2e4a" />
                 <rect x="14" y="60.5" width="20" height="1.5" fill="#ffffff" opacity="0.4" />
@@ -221,6 +223,7 @@ export default function DocumentTemplatesModule() {
             });
             if (res.ok) {
                 document.documentElement.style.setProperty('--brand-color', primaryColor);
+                window.dispatchEvent(new CustomEvent('brandColorChanged', { detail: primaryColor }));
                 setTenantProfile((p: any) => ({ ...p, brandColor: primaryColor, documentTemplate: selectedTemplate }));
                 toast.success('Branding settings saved');
             } else {

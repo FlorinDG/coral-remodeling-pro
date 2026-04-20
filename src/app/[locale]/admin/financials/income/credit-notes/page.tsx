@@ -15,7 +15,7 @@ export default function IncomeCreditNotesPage() {
         <div className="flex flex-col w-full h-full">
             <PageTitle title="Sales Credit Notes" />
             <ModuleTabs tabs={financialTabs} groupId="financials" />
-            <div className="w-full h-full flex flex-col pt-6 min-h-0">
+            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-invoices" defaultFilter={{ propertyId: 'docType', value: 'opt-credit-note' }} />
             </div>
         </div>

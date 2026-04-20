@@ -361,7 +361,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     </div>
                 )}
 
-                <div className="flex-1 p-4 pb-16 overflow-y-auto min-h-0 flex flex-col relative w-full">
+                <div className="flex-1 p-4 overflow-hidden min-h-0 flex flex-col relative w-full">
                     <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
                         {isBlocked ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 m-4">

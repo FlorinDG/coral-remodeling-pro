@@ -15,7 +15,7 @@ export default function ProjectPlanningPage() {
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={projectsTabs} groupId="projects" />
 
-            <div className="w-full h-full flex flex-col pt-6 px-6 pb-10 min-h-0 bg-neutral-50/50 dark:bg-black/50">
+            <div className="w-full flex-1 flex flex-col pt-6 px-6 pb-10 min-h-0 bg-neutral-50/50 dark:bg-black/50">
                 <div className="mb-2 flex items-center gap-3">
                     <div className="w-10 h-10 bg-blue-500/10 text-blue-500 rounded-xl flex items-center justify-center">
                         <Calendar className="w-5 h-5" />

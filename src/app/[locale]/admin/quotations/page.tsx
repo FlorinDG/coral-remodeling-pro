@@ -25,7 +25,7 @@ export default function QuotationsPage() {
             </div>
 
             {/* Grid — footer New hidden, row click already navigates to engine */}
-            <div className="w-full h-full flex flex-col pt-6 min-h-0">
+            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-quotations" hideFooterNew />
             </div>
         </div>

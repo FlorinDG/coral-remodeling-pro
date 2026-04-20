@@ -18,7 +18,7 @@ export default function ArticlesPage() {
                 <h1 className="text-2xl font-bold">Articles Master Library</h1>
             </div>
 
-            <div className="w-full h-full flex flex-col pt-4 min-h-0">
+            <div className="w-full flex-1 flex flex-col pt-4 min-h-0">
                 <DatabaseCloneDynamic databaseId="db-articles" />
             </div>
         </div>

@@ -20,7 +20,7 @@ export default function Page() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={hrTabs} groupId="hr" />
-            <div className="w-full h-full flex flex-col pt-6 min-h-0">
+            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
                 <ScheduleManagement />
             </div>
         </div>

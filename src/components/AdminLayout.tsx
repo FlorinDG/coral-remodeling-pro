@@ -31,7 +31,11 @@ import {
     Mail,
     ShieldAlert,
     Loader2,
-    TrendingUp
+    TrendingUp,
+    ShieldCheck,
+    SlidersHorizontal,
+    ExternalLink,
+    Building2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
@@ -65,7 +69,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     sales:      'sidebar.sales',
 };
 
-export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {} }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string> }) {
+export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -176,7 +180,51 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     {isSidebarOpen && <span className="font-bold tracking-tight text-sm truncate">{companyName || 'Admin CMS'}</span>}
                 </div>
 
-                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-2 overflow-y-auto">
+
+                    {/* ── Platform owner quick-links (Coral Enterprises only) ── */}
+                    {isOwner && (
+                        <>
+                            {isSidebarOpen && (
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-600 px-3 pt-3 pb-1.5">
+                                    Platform
+                                </p>
+                            )}
+                            {([
+                                { href: '/superadmin',                  label: 'Superadmin',    Icon: ShieldCheck },
+                                { href: '/admin/settings/company-info', label: 'ERP Config',    Icon: SlidersHorizontal },
+                                { href: '/admin/content',               label: 'Website CMS',   Icon: Building2 },
+                            ] as const).map(({ href, label, Icon }) => (
+                                <a
+                                    key={href}
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors group"
+                                >
+                                    <Icon className="w-4 h-4 flex-shrink-0" />
+                                    {isSidebarOpen && (
+                                        <>
+                                            <span className="text-xs font-bold flex-1">{label}</span>
+                                            <ExternalLink className="w-3 h-3 opacity-30 group-hover:opacity-60 transition-opacity" />
+                                        </>
+                                    )}
+                                </a>
+                            ))}
+
+                            {/* Divider */}
+                            <div className="mx-3 my-3 border-t border-neutral-200 dark:border-white/10" />
+
+                            {isSidebarOpen && (
+                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-600 px-3 pb-1.5">
+                                    Workspace
+                                </p>
+                            )}
+                        </>
+                    )}
+
+                    {/* ── Tenant-tier sidebar items ── */}
+                    <div className="space-y-1">
                     {filteredItems.map((item) => {
                         const IconComponent = getIconComponent(item.iconName || "");
 
@@ -220,6 +268,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                             </div>
                         )
                     })}
+                    </div>
                 </nav>
 
                 <div className="p-3 mt-auto border-t border-neutral-200 dark:border-white/10">

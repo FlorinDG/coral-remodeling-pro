@@ -6,6 +6,10 @@ import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 
+// Coral Enterprises tenant — the platform owner workspace.
+// Set OWNER_TENANT_ID in .env to override the production ID.
+const OWNER_TENANT_ID = process.env.OWNER_TENANT_ID ?? 'cmneyas2b0000veqvkgl2luz1';
+
 export default async function Layout({ children }: { children: React.ReactNode }) {
     const session = await auth();
     const tenantId = (session?.user as any)?.tenantId;
@@ -39,12 +43,15 @@ export default async function Layout({ children }: { children: React.ReactNode }
         }
     }
 
+    // Is this the Coral Enterprises (platform owner) workspace?
+    const isOwner = tenantId === OWNER_TENANT_ID;
+
     const databases = await getGlobalDatabases();
 
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>{children}</AdminLayout>
+            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner}>{children}</AdminLayout>
         </AuthProvider>
     );
 }

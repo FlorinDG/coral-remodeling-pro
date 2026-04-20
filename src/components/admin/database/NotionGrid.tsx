@@ -137,9 +137,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 if (prop.id === 'title') {
                     return {
                         ...titleColumn(prop.id, (row) => {
-                            if (databaseIdRef === 'db-quotations') {
+                            // Use prefix matching to handle both bare ('db-quotations')
+                            // and tenant-scoped ('db-quotations-abc12345') IDs
+                            if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
                                 router.push(`/admin/quotations/${row.id}`);
-                            } else if (databaseIdRef === 'db-invoices') {
+                            } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
                                 router.push(`/admin/financials/income/invoices/${row.id}`);
                             } else {
                                 setActivePageId(row.id);

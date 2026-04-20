@@ -498,19 +498,47 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             addConfirmedPage: (page: Page) => {
-                set(state => ({
-                    databases: state.databases.map(db => {
-                        if (db.id !== page.databaseId) return db;
-                        // Avoid duplicates if the page somehow already exists
-                        const exists = db.pages.some((p: Page) => p.id === page.id);
-                        if (exists) return db;
+                set(state => {
+                    const dbExists = state.databases.some(db => db.id === page.databaseId);
+
+                    if (!dbExists) {
+                        // Race condition: DB was just provisioned but GlobalDatabaseSyncer
+                        // hasn't fetched it yet. Create a minimal in-memory stub so the
+                        // page is visible immediately without waiting for next sync.
                         return {
-                            ...db,
-                            pages: [...db.pages, page],
-                            updatedAt: new Date().toISOString()
+                            databases: [
+                                ...state.databases,
+                                {
+                                    id: page.databaseId,
+                                    name: page.databaseId,
+                                    pages: [page],
+                                    properties: [],
+                                    views: [],
+                                    activeFilters: [],
+                                    activeSorts: [],
+                                    isTemplate: false,
+                                    tenantId: '',
+                                    ownerId: 'system',
+                                    updatedAt: new Date().toISOString(),
+                                }
+                            ]
                         };
-                    })
-                }));
+                    }
+
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== page.databaseId) return db;
+                            // Avoid duplicates if the page somehow already exists
+                            const exists = db.pages.some((p: Page) => p.id === page.id);
+                            if (exists) return db;
+                            return {
+                                ...db,
+                                pages: [...db.pages, page],
+                                updatedAt: new Date().toISOString()
+                            };
+                        })
+                    };
+                });
                 // Already in Postgres — no syncPage needed
             },
 

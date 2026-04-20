@@ -9,7 +9,7 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling component
 import QuotationFooterReport from './QuotationFooterReport';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
@@ -23,7 +23,7 @@ const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
-    const { activeModules, planType } = useTenant();
+    const { activeModules, planType, resolveDbId } = useTenant();
     const hasProjects  = activeModules.includes('PROJECTS');
     const hasCRM       = activeModules.includes('CRM');
     // Library access: PRO+ feature (article search, save-to-library, PDF library import)
@@ -33,10 +33,15 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
 
+    // Resolve tenant-scoped DB IDs once — stable across re-renders via useTenant context
+    const quotationsDbId = resolveDbId('db-quotations');
+    const clientsDbId    = resolveDbId('db-clients');
+
     const [isHydrated, setIsHydrated] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<any>(null);
 
     useEffect(() => {
@@ -50,14 +55,14 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     }, []);
 
     const quotation = useDatabaseStore(state => {
-        const db = state.databases.find(d => d.id === 'db-quotations');
+        const db = state.databases.find(d => d.id === quotationsDbId);
         return db?.pages.find(p => p.id === id) || null;
     });
 
     const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
 
-    // Read the raw db-clients database from Zustand (stable reference)
-    const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === 'db-clients'));
+    // Read the resolved clients database from Zustand
+    const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
 
     // Derive client list with useMemo to avoid infinite re-render loops
     const clients = useMemo(() => {
@@ -118,9 +123,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const roundedEx = Math.round(totalExVat * 100) / 100;
         const roundedVat = Math.round(totalVat * 100) / 100;
         const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
-        if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty('db-quotations', quotation.id, 'totalExVat', roundedEx);
-        if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty('db-quotations', quotation.id, 'totalVat', roundedVat);
-        if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty('db-quotations', quotation.id, 'totalIncVat', roundedInc);
+        if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty(quotationsDbId, quotation.id, 'totalExVat', roundedEx);
+        if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty(quotationsDbId, quotation.id, 'totalVat', roundedVat);
+        if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
     }, [quotation?.blocks, isHydrated]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
@@ -141,7 +146,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
         const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
-        updatePageBlocks('db-quotations', id, newBlocks);
+        updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
     const handleDragEnd = (result: any) => {
@@ -189,13 +194,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         extractNode(newBlocks);
         if (movedBlock) {
             insertNode(newBlocks, destination.droppableId);
-            updatePageBlocks('db-quotations', id, newBlocks);
+            updatePageBlocks(quotationsDbId, id, newBlocks);
         }
     };
 
     const handleDeleteBlock = (blockId: string) => {
         const newBlocks = blocks.filter(b => b.id !== blockId);
-        updatePageBlocks('db-quotations', id, newBlocks);
+        updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
     const handleDuplicateBlock = (blockId: string) => {
@@ -208,12 +213,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const newBlocks = [...blocks];
         newBlocks.splice(index + 1, 0, newBlock);
 
-        updatePageBlocks('db-quotations', id, newBlocks);
+        updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
     const handleAddBlock = (type: Block['type'] = 'line') => {
         const newBlock: Block = { id: crypto.randomUUID(), type, content: '' };
-        updatePageBlocks('db-quotations', id, [...blocks, newBlock]);
+        updatePageBlocks(quotationsDbId, id, [...blocks, newBlock]);
     };
 
     const handleImportComplete = (newBlocks: Block[]) => {
@@ -222,7 +227,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     const handleUpdateProperty = (key: string, value: any) => {
         if (!quotation) return;
-        updatePageProperty('db-quotations', quotation.id, key, value);
+        updatePageProperty(quotationsDbId, quotation.id, key, value);
     };
 
     // Deep recursive total calculation mapping for all mathematical block mutations
@@ -555,33 +560,46 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </button>
                         )}
                         {isHydrated && (
-                            <PDFDownloadLink
-                                document={
-                                    <QuotationPDFTemplate
-                                        blocks={blocks}
-                                        quotationTitle={String(quotationTitle)}
-                                        betreft={String(betreft)}
-                                        clientInfo={buildClientInfo()}
-                                        projectId={String(projectId)}
-                                        grandTotal={grandTotal}
-                                        databaseStoreState={useDatabaseStore.getState()}
-                                        tenantProfile={tenantProfile}
-                                        templateId={tenantProfile?.documentTemplate || 't1'}
-                                        language={docLanguage}
-                                    />
-                                }
-                                fileName={`Offerte_${quotationTitle || 'Draft'}.pdf`}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90"
+                            <button
+                                onClick={async () => {
+                                    if (isDownloading) return;
+                                    setIsDownloading(true);
+                                    try {
+                                        const doc = (
+                                            <QuotationPDFTemplate
+                                                blocks={blocks}
+                                                quotationTitle={String(quotationTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenantProfile}
+                                                templateId={tenantProfile?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                            />
+                                        );
+                                        const blob = await pdf(doc).toBlob();
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Offerte_${quotationTitle || 'Draft'}.pdf`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                    } catch (e) {
+                                        console.error('[PDF] export failed:', e);
+                                        toast.error('PDF genereren mislukt.');
+                                    } finally {
+                                        setIsDownloading(false);
+                                    }
+                                }}
+                                disabled={isDownloading}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
-                                {({ blob, url, loading, error }) =>
-                                    loading ? 'Generating...' : (
-                                        <>
-                                            <FileText className="w-3.5 h-3.5" /> Export PDF
-                                        </>
-                                    )
-                                }
-                            </PDFDownloadLink>
+                                <FileText className="w-3.5 h-3.5" />
+                                {isDownloading ? 'Generating...' : 'Export PDF'}
+                            </button>
                         )}
                     </div>
                 </div>

@@ -6,11 +6,13 @@ import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
 import { createPageServerFirst } from "@/app/actions/pages";
+import { useTenant } from "@/context/TenantContext";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
 export default function CreateInvoiceButton() {
     const router = useRouter();
+    const { resolveDbId } = useTenant();
     const addConfirmedPage = useDatabaseStore(state => state.addConfirmedPage);
     const [isCreating, setIsCreating] = useState(false);
     const t = useTranslations('Admin');
@@ -25,8 +27,11 @@ export default function CreateInvoiceButton() {
                 ? result.number
                 : `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
 
+            // Resolve tenant-scoped DB ID — falls back to bare 'db-invoices' for legacy FOUNDER accounts
+            const invoicesDbId = resolveDbId('db-invoices');
+
             // 1. Server-first: create the page in Postgres, get confirmed ID back
-            const pageResult = await createPageServerFirst('db-invoices', {
+            const pageResult = await createPageServerFirst(invoicesDbId, {
                 title: invoiceNumber,
                 docType: 'opt-invoice',
                 status: 'opt-draft',

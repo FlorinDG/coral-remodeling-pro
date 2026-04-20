@@ -73,6 +73,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const isMounted = useRef(false);
     const headerScrollRef = useRef<HTMLDivElement>(null);
     const gridWrapperRef = useRef<HTMLDivElement>(null);
+    const gridAreaRef = useRef<HTMLDivElement>(null);
+    const [gridHeight, setGridHeight] = useState(400);
 
     // Removed vanilla scroll observer interval loop - migrated natively to React capture phases.
     useEffect(() => {
@@ -88,6 +90,19 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             isMounted.current = false;
             clearTimeout(timer);
         };
+    }, []);
+
+    // Measure the grid area and pass pixel height to DataSheetGrid so it fills
+    // the container instead of sizing to content (~400 px default).
+    useEffect(() => {
+        const el = gridAreaRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver((entries) => {
+            const h = entries[0]?.contentRect.height;
+            if (h > 0) setGridHeight(h);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
     }, []);
 
     // Use properties reference directly to avoid recreating columns when page data updates (which changes database reference)
@@ -617,7 +632,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             </div>
                         </div>
 
-                        <div className="flex-1 w-full relative z-10">
+                        <div ref={gridAreaRef} className="flex-1 w-full relative z-10 min-h-0">
                             <DataSheetGrid
                                 key={columnWidthsHash}
                                 value={rowData}
@@ -678,7 +693,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 lockRows={false}
                                 addRowsComponent={false}
                                 headerRowHeight={0}
-                                className="h-full database-grid-custom tracking-wider"
+                                height={gridHeight}
+                                className="database-grid-custom tracking-wider"
                             />
                         </div>
                     </div>

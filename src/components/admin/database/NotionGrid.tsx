@@ -150,18 +150,26 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                 // Because TitleColumn operates on the full row data, we handle it separately
                 if (prop.id === 'title') {
+                    const isFinancialDb =
+                        databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-') ||
+                        databaseIdRef === 'db-invoices'   || databaseIdRef.startsWith('db-invoices-');
+
                     return {
-                        ...titleColumn(prop.id, (row) => {
-                            // Use prefix matching to handle both bare ('db-quotations')
-                            // and tenant-scoped ('db-quotations-abc12345') IDs
-                            if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
-                                router.push(`/admin/quotations/${row.id}`);
-                            } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
-                                router.push(`/admin/financials/income/invoices/${row.id}`);
-                            } else {
-                                setActivePageId(row.id);
-                            }
-                        }),
+                        ...titleColumn(
+                            prop.id,
+                            // Primary OPEN / click: financial DBs navigate to engine; others open PageModal
+                            (row) => {
+                                if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
+                                    router.push(`/admin/quotations/${row.id}`);
+                                } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
+                                    router.push(`/admin/financials/income/invoices/${row.id}`);
+                                } else {
+                                    setActivePageId(row.id);
+                                }
+                            },
+                            // Secondary ↗ icon: non-financial DBs get a full-page record link
+                            !isFinancialDb ? (row) => router.push(`/admin/database/${databaseIdRef}/${row.id}`) : undefined,
+                        ),
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,

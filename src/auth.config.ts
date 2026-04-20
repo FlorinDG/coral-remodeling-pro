@@ -30,10 +30,29 @@ export const authConfig = {
     session: {
         strategy: "jwt",
         // OWASP-compliant session timeouts for SaaS:
-        // - maxAge: 8 hours absolute timeout (session dies regardless of activity)
-        // - updateAge: 30 minutes (token refreshed on activity, acts as idle timeout)
-        maxAge: 8 * 60 * 60,    // 8 hours absolute
+        // - maxAge: 8 hours → sets the JWT exp claim (absolute timeout while browser is open)
+        // - updateAge: 30 minutes → token is only re-issued every 30 min (idle-refresh window)
+        // The cookie itself is a SESSION COOKIE (see `cookies` block below) — no Max-Age/Expires
+        // attribute, so the browser deletes it the moment all windows are closed.
+        maxAge: 8 * 60 * 60,    // 8 h absolute (JWT exp claim only, not on cookie)
         updateAge: 30 * 60,     // 30 min idle refresh
+    },
+    // ── Session cookie: deleted on browser close ─────────────────────────────
+    // Omitting maxAge/expires from the cookie options strips those attributes
+    // from the Set-Cookie header. Browsers treat such cookies as session cookies
+    // and discard them when the window/tab context is fully closed.
+    // The JWT exp claim (8 h above) still enforces the absolute timeout while
+    // the browser remains open.
+    cookies: {
+        sessionToken: {
+            options: {
+                httpOnly: true,
+                sameSite: 'lax' as const,
+                path: '/',
+                secure: process.env.NODE_ENV === 'production',
+                // ← no maxAge here → session cookie
+            },
+        },
     },
     secret: process.env.AUTH_SECRET || "coral-secret-12345",
 } satisfies NextAuthConfig;

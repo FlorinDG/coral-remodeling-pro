@@ -125,22 +125,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 // Auto-provision a Tenant workspace for first-time Google OAuth users
                 if (dbUser && !dbUser.tenantId) {
-                    const FOUNDING_CAP = 20;
-                    const tenantCount  = await prisma.tenant.count();
-                    if (tenantCount >= FOUNDING_CAP) {
-                        // Beta is full — token without tenantId (handled gracefully in UI)
-                        return token;
-                    }
-
                     const cookieStore = await cookies();
                     const nextLocale  = cookieStore.get("NEXT_LOCALE")?.value || "fr";
 
                     const newTenant = await prisma.tenant.create({
                         data: {
                             companyName:        user.name ? `${user.name}'s Workspace` : "New Workspace",
-                            planType:           "FOUNDER",
+                            // FREE tier — FOUNDER promoted manually via superadmin
+                            planType:           "FREE",
                             subscriptionStatus: "ACTIVE",
-                            activeModules:      ["INVOICING", "CRM", "DATABASES"],
+                            activeModules:      ["INVOICING"],
                             documentLanguage:   nextLocale,
                         },
                     });

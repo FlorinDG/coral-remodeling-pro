@@ -3,16 +3,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
-import QuotationRow from './QuotationRow'; // Assuming QuotationRow is a sibling component
+import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { pdf } from '@react-pdf/renderer';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import { canAccess } from '@/lib/feature-flags';
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
@@ -43,6 +44,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<any>(null);
+    const [showProperties, setShowProperties] = useState(false);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -599,8 +601,21 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             >
                                 <FileText className="w-3.5 h-3.5" />
                                 {isDownloading ? 'Generating...' : 'Export PDF'}
-                            </button>
+                             </button>
                         )}
+
+                        {/* Properties panel toggle */}
+                        <button
+                            onClick={() => setShowProperties(v => !v)}
+                            title={showProperties ? 'Hide properties' : 'Show record properties'}
+                            className={`p-2 rounded-lg border transition-all ${
+                                showProperties
+                                    ? 'border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                                    : 'border-neutral-200 dark:border-white/10 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5'
+                            }`}
+                        >
+                            <PanelRight className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -617,81 +632,95 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 </div>
             )}
 
-            {/* Main Canvas Workspace */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
-                <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
+            {/* Main Canvas + optional Properties Panel */}
+            <div className="flex flex-1 overflow-hidden">
+                {/* Canvas */}
+                <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
+                    <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
-                    {/* Mathematical Blocks */}
-                    <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="root" type="block">
-                            {(provided) => (
-                                <div
-                                    {...provided.droppableProps}
-                                    ref={provided.innerRef}
-                                    className="flex flex-col gap-1 w-full"
-                                >
-                                    {blocks.map((block, index) => (
-                                        <QuotationRow
-                                            key={block.id}
-                                            block={block}
-                                            index={index}
-                                            onUpdate={handleUpdateBlock}
-                                            onDelete={handleDeleteBlock}
-                                            onDuplicate={handleDuplicateBlock}
-                                            hasLibraryAccess={hasLibraryAccess}
-                                        />
-                                    ))}
-                                    {provided.placeholder}
-                                </div>
-                            )}
-                        </Droppable>
-                    </DragDropContext>
+                        {/* Mathematical Blocks */}
+                        <DragDropContext onDragEnd={handleDragEnd}>
+                            <Droppable droppableId="root" type="block">
+                                {(provided) => (
+                                    <div
+                                        {...provided.droppableProps}
+                                        ref={provided.innerRef}
+                                        className="flex flex-col gap-1 w-full"
+                                    >
+                                        {blocks.map((block, index) => (
+                                            <QuotationRow
+                                                key={block.id}
+                                                block={block}
+                                                index={index}
+                                                onUpdate={handleUpdateBlock}
+                                                onDelete={handleDeleteBlock}
+                                                onDuplicate={handleDuplicateBlock}
+                                                hasLibraryAccess={hasLibraryAccess}
+                                            />
+                                        ))}
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
+                        </DragDropContext>
 
-                    <div className="flex items-center gap-2 mt-2">
-                        <button
-                            onClick={() => handleAddBlock('section')}
-                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
-                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-                        >
-                            <span className="text-sm leading-none">+</span> Add Section
-                        </button>
-                        <button
-                            onClick={() => handleAddBlock('line')}
-                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
-                            style={{
-                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
-                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
-                                color: 'var(--brand-color, #d35400)',
-                            }}
-                        >
-                            <span className="text-sm leading-none">+</span> Add Line
-                        </button>
-                        <div className="flex-1" />
-                        <button
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
-                            style={{
-                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
-                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
-                                color: 'var(--brand-color, #d35400)',
-                            }}
-                        >
-                            <Bot className="w-3.5 h-3.5" /> AI PDF Import
-                        </button>
+                        <div className="flex items-center gap-2 mt-2">
+                            <button
+                                onClick={() => handleAddBlock('section')}
+                                className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
+                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                            >
+                                <span className="text-sm leading-none">+</span> Add Section
+                            </button>
+                            <button
+                                onClick={() => handleAddBlock('line')}
+                                className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                    color: 'var(--brand-color, #d35400)',
+                                }}
+                            >
+                                <span className="text-sm leading-none">+</span> Add Line
+                            </button>
+                            <div className="flex-1" />
+                            <button
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                    color: 'var(--brand-color, #d35400)',
+                                }}
+                            >
+                                <Bot className="w-3.5 h-3.5" /> AI PDF Import
+                            </button>
+                        </div>
+
+                        {/* Phase 10: Financial Summary & Profitability */}
+                        <QuotationFooterReport
+                            blocks={blocks}
+                            quotationTitle={String(quotationTitle)}
+                            expiryDate={quotationDate}
+                            vatCalcMode={vatCalcMode}
+                            vatRegime={vatRegime}
+                            onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
+                            onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
+                        />
+
                     </div>
-
-                    {/* Phase 10: Financial Summary & Profitability */}
-                    <QuotationFooterReport
-                        blocks={blocks}
-                        quotationTitle={String(quotationTitle)}
-                        expiryDate={quotationDate}
-                        vatCalcMode={vatCalcMode}
-                        vatRegime={vatRegime}
-                        onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
-                        onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
-                    />
-
                 </div>
+
+                {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
+                {showProperties && (
+                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
+                        <DbPropertiesPanel
+                            databaseId={quotationsDbId}
+                            pageId={id}
+                            title="Record Properties"
+                        />
+                    </aside>
+                )}
             </div>
 
             <PDFImportModal

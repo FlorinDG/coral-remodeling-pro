@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -16,6 +16,7 @@ import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
+import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
 
@@ -44,6 +45,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<any>(null);
+    const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
 
     useEffect(() => {
@@ -784,6 +786,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 {isDownloading ? 'Generating...' : 'Export PDF'}
                             </button>
                         )}
+
+                        {/* Properties panel toggle */}
+                        <button
+                            onClick={() => setShowProperties(v => !v)}
+                            title={showProperties ? 'Hide properties' : 'Show record properties'}
+                            className={`p-2 rounded-lg border transition-all ${
+                                showProperties
+                                    ? 'border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20'
+                                    : 'border-neutral-200 dark:border-white/10 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5'
+                            }`}
+                        >
+                            <PanelRight className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -800,8 +815,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 </div>
             )}
 
-            {/* Main Canvas Workspace */}
-            <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
+            {/* Main Canvas + optional Properties Panel */}
+            <div className="flex flex-1 overflow-hidden">
+                {/* Canvas */}
+                <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                     {/* Mathematical Blocks */}
@@ -882,7 +899,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     />
 
                 </div>
+                </div>
+
+                {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
+                {showProperties && (
+                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
+                        <DbPropertiesPanel
+                            databaseId={invoicesDbId}
+                            pageId={id}
+                            title="Record Properties"
+                        />
+                    </aside>
+                )}
             </div>
+
 
             <PDFImportModal
                 isOpen={isImportModalOpen}

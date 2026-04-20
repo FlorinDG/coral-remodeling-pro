@@ -4,8 +4,12 @@ import { CellProps, Column } from 'react-datasheet-grid';
 import { SelectOption } from '../types';
 import { Check } from 'lucide-react';
 
-interface SelectColumnOptions {
+export interface SelectColumnOptions {
     choices: SelectOption[];
+    /** The property key within the full row object (e.g. 'status') */
+    propId: string;
+    /** Direct commit callback — bypasses DSG onChange race condition entirely */
+    onCommit: (rowId: string, value: string | null) => void;
 }
 
 export const COLOR_STYLES: Record<string, { badge: string; dot: string }> = {
@@ -19,9 +23,16 @@ export const COLOR_STYLES: Record<string, { badge: string; dot: string }> = {
     orange:  { badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200', dot: 'bg-orange-400' },
 };
 
-const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, columnData }: CellProps<any, SelectColumnOptions>) => {
+/**
+ * SelectComponent — receives the FULL row as rowData (no keyColumn wrapping).
+ * This gives us access to rowData.id for direct onCommit calls, eliminating
+ * the DSG setRowData → onChange → updatePageProperty timing race.
+ */
+const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEditing, columnData }: CellProps<any, SelectColumnOptions>) => {
     const containerRef = useRef<HTMLDivElement>(null);
-    const value = rowData;
+
+    // Extract just the cell value from the full row
+    const value = fullRow?.[columnData.propId] ?? null;
     const choices = columnData.choices || [];
     const selectedOption = choices.find(c => c.id === value);
     const styles = selectedOption ? (COLOR_STYLES[selectedOption.color] || COLOR_STYLES.gray) : null;
@@ -43,8 +54,17 @@ const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, colu
     }, [focus, active]);
 
     const handleSelect = (choiceId: string | null) => {
-        setRowData(choiceId);
-        setTimeout(() => stopEditing(), 10);
+        if (!fullRow?.id) return;
+
+        // 1. Direct persist — no DSG onChange timing dependency
+        columnData.onCommit(fullRow.id, choiceId);
+
+        // 2. Update DSG's controlled value so the cell renders the new badge immediately
+        setRowData({ ...fullRow, [columnData.propId]: choiceId });
+
+        // 3. Close dropdown and exit edit mode
+        setDropdownPos(null);
+        stopEditing({ nextRow: false });
     };
 
     return (
@@ -69,6 +89,7 @@ const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, colu
                     {/* Empty option */}
                     <button
                         className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left group"
+                        onMouseDown={e => e.preventDefault()}
                         onClick={() => handleSelect(null)}
                     >
                         <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
@@ -88,6 +109,7 @@ const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, colu
                             <button
                                 key={choice.id}
                                 className={`w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors ${isSelected ? 'bg-neutral-50 dark:bg-neutral-800/50' : ''}`}
+                                onMouseDown={e => e.preventDefault()}
                                 onClick={() => handleSelect(choice.id)}
                             >
                                 <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
@@ -107,19 +129,25 @@ const SelectComponent = ({ rowData, setRowData, focus, active, stopEditing, colu
     );
 };
 
-export const selectColumn = (options: SelectColumnOptions): Column<string | null, SelectColumnOptions> => ({
+/**
+ * Creates a select column that does NOT use keyColumn.
+ * The full row is passed as rowData so the component can access rowData.id
+ * and call onCommit directly — no DSG onChange race condition.
+ */
+export const selectColumn = (options: SelectColumnOptions): Column<any, SelectColumnOptions> => ({
     component: SelectComponent,
     columnData: options,
     disableKeys: true,
     keepFocus: true,
-    deleteValue: () => null,
-    copyValue: ({ rowData }) => {
-        const choice = options.choices.find(c => c.id === rowData);
+    deleteValue: (row) => ({ ...row, [options.propId]: null }),
+    copyValue: ({ rowData: fullRow }) => {
+        const val = fullRow?.[options.propId];
+        const choice = options.choices.find(c => c.id === val);
         return choice ? choice.name : '';
     },
-    pasteValue: ({ value }) => {
+    pasteValue: ({ value, rowData: fullRow }) => {
         const choice = options.choices.find(c => c.name.toLowerCase() === value.toLowerCase());
-        return choice ? choice.id : null;
+        return { ...fullRow, [options.propId]: choice ? choice.id : null };
     },
-    isCellEmpty: ({ rowData }) => !rowData,
+    isCellEmpty: ({ rowData: fullRow }) => !fullRow?.[options.propId],
 });

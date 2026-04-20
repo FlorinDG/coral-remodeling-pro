@@ -205,7 +205,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 if (prop.type === 'checkbox') {
                     baseColumn = checkboxColumn as any;
                 } else if (prop.type === 'select' || prop.type === 'multi_select') {
-                    baseColumn = selectColumn({ choices: prop.config?.options || [] }) as any;
+                    // Full-row column — no keyColumn wrapping needed.
+                    // onCommit calls updatePageProperty directly, bypassing the
+                    // setRowData → onChange → updatePageProperty timing race.
+                    baseColumn = selectColumn({
+                        choices: prop.config?.options || [],
+                        propId: prop.id,
+                        onCommit: (rowId, value) => database && updatePageProperty(database.id, rowId, prop.id, value),
+                    }) as any;
                 } else if (prop.type === 'date') {
                     baseColumn = dateColumn as any;
                 } else if (prop.type === 'currency' || prop.type === 'number') {
@@ -216,6 +223,21 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     baseColumn = variantsColumn as any;
                 }
                 // More custom columns like Number will go here later
+
+                // Select/multi_select use keyColumn for all OTHER types:
+                // they directly call onCommit — no keyColumn needed.
+                if (prop.type === 'select' || prop.type === 'multi_select') {
+                    return {
+                        ...baseColumn,
+                        title: GhostHeader,
+                        basis: columnWidth,
+                        grow: 0,
+                        shrink: 0,
+                        minWidth: columnWidth,
+                        maxWidth: columnWidth,
+                        cellClassName: `dsg-col-${prop.id}`
+                    };
+                }
 
                 return {
                     ...keyColumn(prop.id, baseColumn),
@@ -626,6 +648,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (prop.type === 'rollup' || prop.type === 'formula') return;
                                             // Skip computed financial properties — they're set by the engine, not manual edits
                                             if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
+                                            // Skip select/multi_select — committed directly via onCommit in SelectColumn,
+                                            // bypassing this path to avoid a DSG stopEditing timing race
+                                            if (prop.type === 'select' || prop.type === 'multi_select') return;
 
                                             let newVal;
                                             if (prop.id === 'title' || (prop.type as string) === 'relation') {

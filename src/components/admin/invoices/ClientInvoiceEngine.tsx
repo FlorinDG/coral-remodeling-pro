@@ -9,7 +9,7 @@ import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
-import { PDFDownloadLink, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
@@ -26,11 +26,15 @@ const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientInvoiceEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
-    const { activeModules } = useTenant();
+    const { activeModules, resolveDbId } = useTenant();
     const hasProjects = activeModules.includes('PROJECTS');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+
+    // Resolve tenant-scoped DB IDs — handles both bare ('db-invoices') and scoped ('db-invoices-xxx')
+    const invoicesDbId = resolveDbId('db-invoices');
+    const clientsDbId  = resolveDbId('db-clients');
 
     const [isHydrated, setIsHydrated] = useState(false);
     const [hydrationAttempted, setHydrationAttempted] = useState(false);
@@ -38,6 +42,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<any>(null);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
 
@@ -52,7 +57,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     }, []);
 
     const invoice = useDatabaseStore(state => {
-        const db = state.databases.find(d => d.id === 'db-invoices');
+        const db = state.databases.find(d => d.id === invoicesDbId);
         return db?.pages.find(p => p.id === id) || null;
     });
 
@@ -64,12 +69,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         getInvoiceById(id).then(result => {
             if (result.success && result.invoice) {
                 const inv = result.invoice;
-                const db = useDatabaseStore.getState().databases.find(d => d.id === 'db-invoices');
+                const db = useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId);
                 if (db && !db.pages.find(p => p.id === inv.id)) {
-                    // Use addConfirmedPage: data is already from Postgres, no need to re-sync
                     useDatabaseStore.getState().addConfirmedPage({
                         id: inv.id,
-                        databaseId: 'db-invoices',
+                        databaseId: invoicesDbId,
                         createdBy: '',
                         lastEditedBy: '',
                         createdAt: new Date().toISOString(),
@@ -91,8 +95,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
 
-    // Read the raw db-clients database from Zustand (stable reference)
-    const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === 'db-clients'));
+    const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
 
     // Derive client list with useMemo to avoid infinite re-render loops
     const clients = useMemo(() => {
@@ -167,15 +170,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const roundedVat = Math.round(totalVat * 100) / 100;
         const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
 
-        if (invoice.properties?.['totalExVat'] !== roundedEx) updatePageProperty('db-invoices', invoice.id, 'totalExVat', roundedEx);
-        if (invoice.properties?.['totalVat'] !== roundedVat) updatePageProperty('db-invoices', invoice.id, 'totalVat', roundedVat);
-        if (invoice.properties?.['totalIncVat'] !== roundedInc) updatePageProperty('db-invoices', invoice.id, 'totalIncVat', roundedInc);
+        if (invoice.properties?.['totalExVat'] !== roundedEx) updatePageProperty(invoicesDbId, invoice.id, 'totalExVat', roundedEx);
+        if (invoice.properties?.['totalVat'] !== roundedVat) updatePageProperty(invoicesDbId, invoice.id, 'totalVat', roundedVat);
+        if (invoice.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(invoicesDbId, invoice.id, 'totalIncVat', roundedInc);
     }, [invoice?.blocks, isHydrated]);
 
     // Find credit notes linked to this invoice — MUST be before early returns (Rules of Hooks)
     const creditNotes = useMemo(() => {
         if (!invoice) return [];
-        const db = useDatabaseStore.getState().databases.find(d => d.id === 'db-invoices');
+        const db = useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId);
         if (!db) return [];
         const invoiceNum = String(invoice.properties?.['title'] || '');
         if (!invoiceNum) return [];
@@ -214,7 +217,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
         const cnNumber = `CN-${invoiceNum}`;
-        const result = await createPageServerFirst('db-invoices', {
+        const result = await createPageServerFirst(invoicesDbId, {
             title: cnNumber,
             client: clientId,
             status: 'opt-draft',
@@ -228,7 +231,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
         const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
-        updatePageBlocks('db-invoices', id, newBlocks);
+        updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 
     const handleDragEnd = (result: any) => {
@@ -276,13 +279,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         extractNode(newBlocks);
         if (movedBlock) {
             insertNode(newBlocks, destination.droppableId);
-            updatePageBlocks('db-invoices', id, newBlocks);
+            updatePageBlocks(invoicesDbId, id, newBlocks);
         }
     };
 
     const handleDeleteBlock = (blockId: string) => {
         const newBlocks = blocks.filter(b => b.id !== blockId);
-        updatePageBlocks('db-invoices', id, newBlocks);
+        updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 
     const handleDuplicateBlock = (blockId: string) => {
@@ -295,21 +298,21 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const newBlocks = [...blocks];
         newBlocks.splice(index + 1, 0, newBlock);
 
-        updatePageBlocks('db-invoices', id, newBlocks);
+        updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 
     const handleAddBlock = (type: Block['type'] = 'line') => {
         const newBlock: Block = { id: crypto.randomUUID(), type, content: '' };
-        updatePageBlocks('db-invoices', id, [...blocks, newBlock]);
+        updatePageBlocks(invoicesDbId, id, [...blocks, newBlock]);
     };
 
     const handleImportComplete = (newBlocks: Block[]) => {
-        updatePageBlocks('db-invoices', id, [...blocks, ...newBlocks]);
+        updatePageBlocks(invoicesDbId, id, [...blocks, ...newBlocks]);
     };
 
     const handleUpdateProperty = (key: string, value: any) => {
         if (!invoice) return;
-        updatePageProperty('db-invoices', invoice.id, key, value);
+        updatePageProperty(invoicesDbId, invoice.id, key, value);
         // Persist client relationship to Prisma
         if (key === 'client') {
             updateInvoiceContact(id, value).catch(console.error);
@@ -391,7 +394,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         const pricedBlocks = filterPricedBlocks(quotationPage.blocks || []);
         const clonedBlocks = deepCloneBlocks(pricedBlocks);
-        updatePageBlocks('db-invoices', id, [...blocks, ...clonedBlocks]);
+        updatePageBlocks(invoicesDbId, id, [...blocks, ...clonedBlocks]);
         toast.success(`${offerteImportDialog.lineCount} regels geïmporteerd uit "${offerteImportDialog.quotationTitle}".`);
     };
 
@@ -740,33 +743,46 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             </button>
                         )}
                         {isHydrated && (
-                            <PDFDownloadLink
-                                document={
-                                    <InvoicePDFTemplate
-                                        blocks={blocks}
-                                        invoiceTitle={String(invoiceTitle)}
-                                        betreft={String(betreft)}
-                                        clientInfo={buildClientInfo()}
-                                        projectId={String(projectId)}
-                                        grandTotal={grandTotal}
-                                        databaseStoreState={useDatabaseStore.getState()}
-                                        tenantProfile={tenantProfile}
-                                        templateId={tenantProfile?.documentTemplate || 't1'}
-                                        language={docLanguage}
-                                    />
-                                }
-                                fileName={`Factuur_${invoiceTitle || 'Draft'}.pdf`}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90"
+                            <button
+                                onClick={async () => {
+                                    if (isDownloading) return;
+                                    setIsDownloading(true);
+                                    try {
+                                        const doc = (
+                                            <InvoicePDFTemplate
+                                                blocks={blocks}
+                                                invoiceTitle={String(invoiceTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenantProfile}
+                                                templateId={tenantProfile?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                            />
+                                        );
+                                        const blob = await pdf(doc).toBlob();
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Factuur_${invoiceTitle || 'Draft'}.pdf`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                    } catch (e) {
+                                        console.error('[PDF] export failed:', e);
+                                        toast.error('PDF genereren mislukt.');
+                                    } finally {
+                                        setIsDownloading(false);
+                                    }
+                                }}
+                                disabled={isDownloading}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
-                                {({ blob, url, loading, error }) =>
-                                    loading ? 'Generating...' : (
-                                        <>
-                                            <FileText className="w-3.5 h-3.5" /> Export PDF
-                                        </>
-                                    )
-                                }
-                            </PDFDownloadLink>
+                                <FileText className="w-3.5 h-3.5" />
+                                {isDownloading ? 'Generating...' : 'Export PDF'}
+                            </button>
                         )}
                     </div>
                 </div>

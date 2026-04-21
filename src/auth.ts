@@ -15,6 +15,7 @@ const WARNING_PERIOD_MS = 4 * 24 * 60 * 60 * 1000; // 4 days total — after thi
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
+    trustHost: true, // Required on Vercel custom domains — derives base URL from X-Forwarded-Host header
     adapter: PrismaAdapter(prisma),
     providers: [
         GoogleProvider({

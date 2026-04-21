@@ -186,7 +186,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     {isOwner && (
                         <>
                             {isSidebarOpen && (
-                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-600 px-3 pt-3 pb-1.5">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400 px-3 pt-3 pb-1.5">
                                     Platform
                                 </p>
                             )}
@@ -200,13 +200,13 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                     href={href}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-neutral-800 dark:hover:text-neutral-200 transition-colors group"
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 hover:text-neutral-900 dark:hover:text-white transition-colors group"
                                 >
                                     <Icon className="w-4 h-4 flex-shrink-0" />
                                     {isSidebarOpen && (
                                         <>
-                                            <span className="text-xs font-bold flex-1">{label}</span>
-                                            <ExternalLink className="w-3 h-3 opacity-30 group-hover:opacity-60 transition-opacity" />
+                                            <span className="text-sm font-bold flex-1">{label}</span>
+                                            <ExternalLink className="w-3 h-3 opacity-40 group-hover:opacity-70 transition-opacity" />
                                         </>
                                     )}
                                 </a>
@@ -216,7 +216,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                             <div className="mx-3 my-3 border-t border-neutral-200 dark:border-white/10" />
 
                             {isSidebarOpen && (
-                                <p className="text-[9px] font-black uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-600 px-3 pb-1.5">
+                                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400 px-3 pb-1.5">
                                     Workspace
                                 </p>
                             )}
@@ -250,7 +250,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                             href={resolvedHref}
                                             className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors group ${isActive
                                                 ? ''
-                                                : 'hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-900 dark:text-neutral-200'
+                                                : 'hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-800 dark:text-neutral-200'
                                                 }`}
                                             style={isActive ? { color: brandColor } : {}}
                                         >
@@ -259,9 +259,9 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                                     <RhombusLogo size={20} color={brandColor} />
                                                 </div>
                                             ) : (
-                                                IconComponent && <IconComponent className="w-4 h-4 text-neutral-500 transition-colors" style={{}} />
+                                                IconComponent && <IconComponent className="w-4 h-4 text-neutral-400 dark:text-neutral-400 transition-colors" style={{}} />
                                             )}
-                                            {isSidebarOpen && <span className="text-xs font-bold">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
+                                            {isSidebarOpen && <span className="text-sm font-semibold">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
                                         </Link>
                                     );
                                 })()}
@@ -278,8 +278,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         </div>
                         {isSidebarOpen && (
                             <div className="flex-1 min-w-0">
-                                <p className="text-[11px] font-bold truncate">{session?.user?.name || "Admin"}</p>
-                                <p className="text-[9px] text-neutral-500 truncate uppercase tracking-tighter">{t('layout.administrator')}</p>
+                                <p className="text-sm font-bold truncate">{session?.user?.name || "Admin"}</p>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400 truncate uppercase tracking-tighter">{t('layout.administrator')}</p>
                             </div>
                         )}
                     </div>
@@ -288,7 +288,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
-                        {isSidebarOpen && <span className="font-bold text-xs">{t('layout.signOut')}</span>}
+                        {isSidebarOpen && <span className="font-bold text-sm">{t('layout.signOut')}</span>}
                     </button>
                 </div>
             </aside>
@@ -316,14 +316,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         {(planType === 'FREE') && (
                             <Link
                                 href="/admin/settings"
-                                className="text-[10px] text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"
+                                className="text-xs text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"
                                 style={{ backgroundColor: brandColor }}
                             >
                                 {t('layout.upgradePlan')}
                             </Link>
                         )}
 
-                        <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-4 ml-2" style={{ color: brandColor }}>
+                        <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-4 ml-2" style={{ color: brandColor }}>
                             Coral Group
                         </a>
                     </div>

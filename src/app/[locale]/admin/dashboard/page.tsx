@@ -17,6 +17,7 @@ import { Link } from "@/i18n/routing";
 import { OverviewAreaChart, StatusBarChart } from "@/components/admin/dashboard/DashboardCharts";
 import { auth } from "@/auth";
 import { getTranslations } from 'next-intl/server';
+import { getLockedDbId } from '@/lib/lockedDbUtils';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -97,13 +98,22 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
-        select: { activeModules: true, companyName: true, vatNumber: true, planType: true },
+        select: { activeModules: true, companyName: true, vatNumber: true, planType: true, lockedDbIds: true },
     });
 
     const activeModules = tenant?.activeModules || [];
     const hasInvoicing = activeModules.includes("INVOICING");
     const hasCRM = activeModules.includes("CRM");
     const hasProjects = activeModules.includes("PROJECTS");
+
+    // Resolve tenant-scoped DB IDs (falls back to bare IDs for legacy tenants)
+    const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
+    const dbInvoices   = getLockedDbId('db-invoices', ldb);
+    const dbExpenses   = getLockedDbId('db-expenses', ldb);
+    const dbClients    = getLockedDbId('db-clients', ldb);
+    const dbSuppliers  = getLockedDbId('db-suppliers', ldb);
+    const dbQuotations = getLockedDbId('db-quotations', ldb);
+    // Tasks and projects are not locked DBs — use bare IDs
 
     const t = await getTranslations('Admin');
 
@@ -127,15 +137,15 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
         openTasksCount,
         draftInvoicesCount,
     ] = await Promise.all([
-        hasInvoicing ? countPages('db-invoices', tenantId) : Promise.resolve(0),
-        hasInvoicing ? countPages('db-expenses', tenantId) : Promise.resolve(0),
-        hasInvoicing ? countPages('db-clients', tenantId) : Promise.resolve(0),
-        hasInvoicing ? countPages('db-suppliers', tenantId) : Promise.resolve(0),
-        hasInvoicing ? countPages('db-quotations', tenantId) : Promise.resolve(0),
+        hasInvoicing ? countPages(dbInvoices, tenantId) : Promise.resolve(0),
+        hasInvoicing ? countPages(dbExpenses, tenantId) : Promise.resolve(0),
+        hasInvoicing ? countPages(dbClients, tenantId) : Promise.resolve(0),
+        hasInvoicing ? countPages(dbSuppliers, tenantId) : Promise.resolve(0),
+        hasInvoicing ? countPages(dbQuotations, tenantId) : Promise.resolve(0),
         hasCRM ? countPages('db-tasks', tenantId) : Promise.resolve(0),
         hasProjects ? countPages('db-projects', tenantId) : Promise.resolve(0),
         hasCRM ? countPagesByStatus('db-tasks', tenantId, 'prop-task-status', 'opt-todo') : Promise.resolve(0),
-        hasInvoicing ? countPagesByStatus('db-invoices', tenantId, 'status', 'opt-draft') : Promise.resolve(0),
+        hasInvoicing ? countPagesByStatus(dbInvoices, tenantId, 'status', 'opt-draft') : Promise.resolve(0),
     ]);
 
     // ── Stats strips ──────────────────────────────────────────────────────────
@@ -211,8 +221,8 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
     if (hasInvoicing) {
         const [salesPages, purchasePages] = await Promise.all([
-            getMonthlyFinancials('db-invoices', tenantId, sixMonthsAgo),
-            getMonthlyFinancials('db-expenses', tenantId, sixMonthsAgo),
+            getMonthlyFinancials(dbInvoices, tenantId, sixMonthsAgo),
+            getMonthlyFinancials(dbExpenses, tenantId, sixMonthsAgo),
         ]);
 
         for (const page of salesPages) {
@@ -243,12 +253,12 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     let statusData: { name: string; value: number }[] = [];
     if (hasInvoicing) {
         const db = await prisma.globalDatabase.findUnique({
-            where: { id: 'db-invoices' },
+            where: { id: dbInvoices },
             select: { id: true, tenantId: true },
         });
         if (db && db.tenantId === tenantId) {
             const pages = await prisma.globalPage.findMany({
-                where: { databaseId: 'db-invoices' },
+                where: { databaseId: dbInvoices },
                 select: { properties: true },
             });
             const counts: Record<string, number> = {};
@@ -272,7 +282,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     }
 
     // ── Recent invoices for activity feed ─────────────────────────────────────
-    const recentInvoicePages = hasInvoicing ? await getRecentPages('db-invoices', tenantId, 5) : [];
+    const recentInvoicePages = hasInvoicing ? await getRecentPages(dbInvoices, tenantId, 5) : [];
     const recentInvoices = recentInvoicePages.map(p => {
         const props = p.properties as Record<string, any>;
         return {

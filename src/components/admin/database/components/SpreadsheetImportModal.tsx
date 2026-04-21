@@ -11,6 +11,32 @@ interface SpreadsheetImportModalProps {
     databaseId: string;
 }
 
+// ── Display helpers (cosmetic only — values/mapping are unaffected) ────────────
+/** Split camelCase and PascalCase into words: PriceExcl → Price Excl */
+function splitCamelCase(s: string): string {
+    return s
+        .replace(/([a-z])([A-Z])/g, '$1 $2')   // camelCase split
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // ABCDef → ABC Def
+        .trim();
+}
+
+/** Human-readable type labels for the dropdown */
+const FRIENDLY_TYPES: Record<string, string> = {
+    text:         'Text',
+    number:       'Number',
+    currency:     'Currency',
+    select:       'Select',
+    multi_select: 'Multi-select',
+    date:         'Date',
+    relation:     'Relation',
+    rollup:       'Rollup',
+    formula:      'Formula',
+    checkbox:     'Checkbox',
+    url:          'URL',
+    email:        'Email',
+    phone:        'Phone',
+};
+
 export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: SpreadsheetImportModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [isParsing, setIsParsing] = useState(false);
@@ -502,8 +528,10 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                                     )}
                                                     <optgroup label={`Master Database Fields (${targetDb.name})`}>
                                                         {targetDb.properties.map(p => (
-                                                            <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
-                                                        ))}
+                                                        <option key={p.id} value={p.id}>
+                                                            {splitCamelCase(p.name)}  —  {FRIENDLY_TYPES[p.type] ?? p.type}
+                                                        </option>
+                                                    ))}
                                                     </optgroup>
                                                 </select>
                                             </div>

@@ -26,9 +26,9 @@ export default function ExpenseTicketsPage() {
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={financialTabs} groupId="financials" />
-            <div className="w-full h-full flex flex-col min-h-0">
+            <div className="w-full flex-1 flex flex-col min-h-0">
                 {/* Action bar */}
-                <div className="flex items-center gap-2 px-6 pt-4 pb-2">
+                <div className="flex items-center gap-2 px-6 pt-4 pb-2 shrink-0">
                     <button
                         onClick={() => setShowCapture(true)}
                         className="flex items-center gap-2 px-3 py-2 bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/40 border border-orange-200 dark:border-orange-800/30 text-orange-700 dark:text-orange-300 text-xs font-bold rounded-lg transition-colors"

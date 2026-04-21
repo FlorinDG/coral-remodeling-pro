@@ -95,11 +95,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     // Measure the grid area and pass pixel height to DataSheetGrid so it fills
     // the container instead of sizing to content (~400 px default).
     useEffect(() => {
-        const el = gridAreaRef.current;
+        // Observe the outer flex-1 wrapper — it fills all remaining viewport height.
+        // gridAreaRef (inner) starts at DataSheetGrid's own default height, creating
+        // a circular measurement trap. Watching the wrapper avoids this.
+        const el = gridWrapperRef.current;
         if (!el) return;
+        const HEADER_OFFSET = 36; // height of the floating column-header row (pt-9 = 36px)
         const ro = new ResizeObserver((entries) => {
             const h = entries[0]?.contentRect.height;
-            if (h > 0) setGridHeight(h);
+            if (h > 0) setGridHeight(h - HEADER_OFFSET);
         });
         ro.observe(el);
         return () => ro.disconnect();

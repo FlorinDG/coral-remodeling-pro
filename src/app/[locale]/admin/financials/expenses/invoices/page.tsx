@@ -141,9 +141,9 @@ export default function ExpensesInvoicesPage() {
                     plan={quotaWarning.plan}
                 />
             )}
-            <div className="w-full h-full flex flex-col min-h-0">
+            <div className="w-full flex-1 flex flex-col min-h-0">
                 {/* Action bar */}
-                <div className="flex items-center justify-between px-6 pt-4 pb-2">
+                <div className="flex items-center justify-between px-6 pt-4 pb-2 shrink-0">
                     <div className="flex items-center gap-2">
                         <button
                             onClick={handleSyncPeppol}

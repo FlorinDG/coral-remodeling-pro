@@ -2,6 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { FolderKanban } from "lucide-react";
+import { useTenant } from "@/context/TenantContext";
+import LockedFeature from "@/components/admin/LockedFeature";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -11,7 +13,9 @@ const DatabaseCloneDynamic = dynamic(
     }
 );
 
-export default function InternalProjectsPage() {
+export default function TasksPage() {
+    const { planType, isPro } = useTenant();
+
     return (
         <div className="flex flex-col w-full h-full">
             <div className="w-full h-full p-4 lg:p-6 pb-10 flex flex-col hide-scrollbar overflow-y-auto">
@@ -27,12 +31,21 @@ export default function InternalProjectsPage() {
                     </div>
                 </div>
 
-                <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
-                    <DatabaseCloneDynamic
-                        databaseId="db-tasks"
-                        hideViewTabs={false}
+                {!isPro ? (
+                    <LockedFeature
+                        label="Task Manager"
+                        requiredPlan="PRO"
+                        currentPlan={planType}
+                        description="Create, assign, and track tasks across your workspace. PRO gets standalone task management; ENTERPRISE adds relations, rollups, and workforce assignment."
                     />
-                </div>
+                ) : (
+                    <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
+                        <DatabaseCloneDynamic
+                            databaseId="db-tasks"
+                            hideViewTabs={false}
+                        />
+                    </div>
+                )}
             </div>
         </div>
     );

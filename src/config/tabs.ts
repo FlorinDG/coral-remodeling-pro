@@ -95,3 +95,29 @@ export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string
 
 export const settingsTabs = settingsTabsBase;
 
+/**
+ * Map settings tab IDs to the module that must be active for them to appear.
+ * Tabs not listed here are always visible (company-info, ui).
+ */
+const SETTINGS_MODULE_MAP: Record<string, string> = {
+    'opt-calendar':   'CALENDAR',
+    'opt-financials': 'INVOICING',
+    'opt-hr':         'HR',
+    'opt-library':    'INVOICING',
+    'opt-projects':   'PROJECTS',
+    'opt-relations':  'CRM',
+    'opt-tasks':      'TASKS',
+    'opt-website':    'WEBSITES',
+};
+
+/**
+ * Returns settings tabs filtered by which modules are active.
+ * Company Info and UI Layout are always shown.
+ */
+export function getFilteredSettingsTabs(activeModules: string[]): typeof settingsTabsBase {
+    return settingsTabsBase.filter(tab => {
+        const requiredModule = SETTINGS_MODULE_MAP[tab.id];
+        if (!requiredModule) return true; // always visible (company-info, ui)
+        return activeModules.includes(requiredModule);
+    });
+}

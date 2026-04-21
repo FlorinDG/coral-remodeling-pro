@@ -1,29 +1,36 @@
+"use client";
+
 import React from 'react';
 import FileManager from '@/components/admin/file-manager/FileManager';
-import { useTranslations } from 'next-intl';
+import { useTenant } from "@/context/TenantContext";
+import LockedFeature from "@/components/admin/LockedFeature";
 
-export default function LibraryPage() {
-    const t = useTranslations('admin'); // Fallback translation if needed, though we'll hardcode some English for the prototype
+export default function FilesPage() {
+    const { planType, isPro } = useTenant();
 
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] bg-background">
-            <div className="flex items-center justify-between px-8 py-4 border-b border-border bg-card">
+        <div className="flex flex-col h-[calc(100vh-4rem)]">
+            <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-black">
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Global Library</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
+                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Global Library</h1>
+                    <p className="text-sm text-neutral-500 mt-1">
                         Manage all your centralized assets, marketing materials, and project files.
                     </p>
                 </div>
             </div>
 
-            {/* 
-        We pass NO context props here. 
-        This tells the FileManager to mount in "Global / Standalone" mode,
-        giving us the full sidebar directory tree and search capabilities.
-      */}
-            <div className="flex-1 w-full h-full overflow-hidden relative">
-                <FileManager />
-            </div>
+            {!isPro ? (
+                <LockedFeature
+                    label="File Manager"
+                    requiredPlan="PRO"
+                    currentPlan={planType}
+                    description="Upload, organize, and share files across your workspace. Auto-generated PDFs from invoices and quotations are always accessible on all plans."
+                />
+            ) : (
+                <div className="flex-1 w-full h-full overflow-hidden relative">
+                    <FileManager />
+                </div>
+            )}
         </div>
     );
 }

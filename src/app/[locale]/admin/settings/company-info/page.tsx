@@ -1,13 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { settingsTabs } from "@/config/tabs";
+import { getFilteredSettingsTabs } from "@/config/tabs";
 import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette } from "lucide-react";
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
+import { useTenant } from '@/context/TenantContext';
 
 export default function CompanyInfoSettings() {
     const t = useTranslations('Admin');
@@ -163,9 +164,12 @@ export default function CompanyInfoSettings() {
         }
     };
 
+    const { activeModules } = useTenant();
+    const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={settingsTabs} groupId="settings" />
+            <ModuleTabs tabs={filteredSettingsTabs} groupId="settings" />
             <div className="w-full flex-1 overflow-y-auto p-6 pb-16 max-w-4xl space-y-12">
 
                 {/* Header */}

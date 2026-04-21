@@ -26,7 +26,7 @@ import { useTabStore } from "@/store/useTabStore";
 import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
 import { useTenant } from "@/context/TenantContext";
 
-import { settingsTabs } from "@/config/tabs";
+import { getFilteredSettingsTabs } from "@/config/tabs";
 
 import { usePageTitle } from '@/hooks/usePageTitle';
 
@@ -183,7 +183,7 @@ export default function SidebarOrderSettings() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={settingsTabs} groupId="settings" />
+            <ModuleTabs tabs={getFilteredSettingsTabs(activeModules)} groupId="settings" />
             <div className="w-full h-full p-6 pb-10 max-w-4xl space-y-12">
 
                 {/* 1. SIDEBAR LAYOUT CONFIG */}

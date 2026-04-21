@@ -45,7 +45,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
 
     // Parsed File State
     const [headers, setHeaders] = useState<string[]>([]);
-    const [previewData, setPreviewData] = useState<any[]>([]);
+    const [previewData, setPreviewData] = useState<Record<string, unknown>[]>([]);
 
     // Mapping State: { [csvHeaderName]: targetDatabasePropertyId }
     const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -76,7 +76,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     header: true,
                     skipEmptyLines: true,
                     complete: (results) => {
-                        const parsedData = results.data as any[];
+                        const parsedData = results.data as Record<string, unknown>[];
                         if (parsedData.length === 0) throw new Error("CSV file is empty");
 
                         // Strip trailing or fully empty parsing artifacts
@@ -99,7 +99,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
 
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-                const parsedData = xlsx.utils.sheet_to_json(worksheet, { defval: "" }) as any[];
+                const parsedData = xlsx.utils.sheet_to_json(worksheet, { defval: "" }) as Record<string, unknown>[];
 
                 if (parsedData.length === 0) throw new Error("Excel sheet is empty");
 
@@ -113,14 +113,14 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 throw new Error("Unsupported file format. Please upload .csv or .xlsx");
             }
 
-        } catch (e: any) {
-            setError(e.message || "Failed to parse spreadsheet file");
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : 'Failed to parse spreadsheet file');
             setFile(null);
             setIsParsing(false);
         }
     };
 
-    const setupMapping = (extractedHeaders: string[], data: any[]) => {
+    const setupMapping = (extractedHeaders: string[], data: Record<string, unknown>[]) => {
         setHeaders(extractedHeaders);
         setPreviewData(data);
 
@@ -231,7 +231,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             if (targetPropId === 'create_new') {
                 // Determine plausible property type heuristically (quick inference)
                 const sampleValues = previewData.slice(0, 10).map(row => row[header]).filter(Boolean);
-                let targetType: any = 'text';
+                let targetType: 'text' | 'number' = 'text';
 
                 if (sampleValues.every(val => !isNaN(Number(String(val).replace(/,/g, '.'))) && String(val).trim() !== '')) {
                     targetType = 'number';
@@ -264,10 +264,10 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         const relationCache: Record<string, string> = {};
 
         const pagesToCreate = previewData.map(row => {
-            const props: Record<string, any> = {};
+            const props: Record<string, unknown> = {};
 
             // Pluck mapped values from the row
-            refreshedDb.properties.forEach((dbProp: any) => {
+            refreshedDb.properties.forEach((dbProp) => {
                 const sourceHeader = invertedMap[dbProp.id];
                 if (sourceHeader && row[sourceHeader] !== undefined) {
                     let val = row[sourceHeader];
@@ -312,7 +312,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
 
                         // Edge case manual mapping logic: Group Codes
                         if (databaseId === 'db-articles' && dbProp.name === 'Artikelgroep') {
-                            const lg = val.toLowerCase();
+                            const lg = String(val).toLowerCase();
                             if (lg.includes('ruwbouw')) val = 'opt-ruwbouw';
                             else if (lg.includes('afwerking')) val = 'opt-afwerking';
                             else if (lg.includes('elektriciteit') || lg.includes('elec')) val = 'opt-elektriciteit';
@@ -324,8 +324,8 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     }
                     else if (dbProp.type === 'relation') {
                         const rawName = String(val ?? '').trim();
-                        if (rawName && (dbProp as any).relationDatabaseId) {
-                            const relDbId = (dbProp as any).relationDatabaseId as string;
+                        const relDbId = dbProp.config?.relationDatabaseId;
+                        if (rawName && relDbId) {
                             const cacheKey = `${relDbId}::${rawName.toLowerCase()}`;
 
                             if (relationCache[cacheKey]) {
@@ -335,7 +335,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                 // Search related DB for a page whose title matches
                                 const relatedDb = useDatabaseStore.getState().getDatabase(relDbId);
                                 if (relatedDb) {
-                                    const existing = relatedDb.pages.find((p: any) => {
+                                    const existing = relatedDb.pages.find((p) => {
                                         const t = p.properties.title ?? p.properties.name ?? p.properties.naam ?? '';
                                         return String(t).toLowerCase().trim() === rawName.toLowerCase();
                                     });
@@ -367,7 +367,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             });
 
             // Enforce default fallback protections
-            const titlePropId = refreshedDb.properties.find((p: any) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
+            const titlePropId = refreshedDb.properties.find((p) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
             if (!props[titlePropId]) props[titlePropId] = 'Imported Row';
 
             // ART-XX-XXXX Generation Loop Component (Articles specific)
@@ -389,7 +389,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 counters[groupCode]++;
 
                 // Assign explicitly
-                const autoIdProp = refreshedDb.properties.find((p: any) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
+                const autoIdProp = refreshedDb.properties.find((p) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
                 if (autoIdProp) {
                     props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
                 }

@@ -19,13 +19,15 @@ const PLAN_TYPES        = ["FREE", "PRO", "ENTERPRISE", "FOUNDER", "CUSTOM"] as 
 const SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIAL", "INACTIVE", "CANCELLED"] as const;
 
 const MODULES: { key: string; label: string }[] = [
-    { key: "INVOICING",  label: "INV"  },
-    { key: "CRM",        label: "CRM"  },
-    { key: "DATABASES",  label: "DB"   },
-    { key: "PROJECTS",   label: "PRJ"  },
-    { key: "CALENDAR",   label: "CAL"  },
-    { key: "HR",         label: "HR"   },
-    { key: "WEBSITES",   label: "WEB"  },
+    { key: "INVOICING",  label: "INV"   },
+    { key: "CRM",        label: "CRM"   },
+    { key: "DATABASES",  label: "DB"    },
+    { key: "PROJECTS",   label: "PRJ"   },
+    { key: "CALENDAR",   label: "CAL"   },
+    { key: "HR",         label: "HR"    },
+    { key: "WEBSITES",   label: "WEB"   },
+    { key: "TASKS",      label: "TASKS" },
+    { key: "EMAIL",      label: "MAIL"  },
 ];
 
 const PLAN_USER_LIMITS: Record<string, number | null> = {

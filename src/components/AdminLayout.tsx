@@ -126,14 +126,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const MODULE_MAP: Record<string, string[]> = {
         // 'contacts' intentionally omitted — available on all tiers (db-clients is always provisioned)
         'suppliers': ['INVOICING'],
-        'email':     ['CRM'],
-        'tasks':     ['CRM'],
+        'email':     ['EMAIL'],
+        'tasks':     ['TASKS'],
         'projects':  ['PROJECTS'],
         'hr':        ['HR'],
         'files':     ['PROJECTS'],
         'financials':['INVOICING'],
         'calendar':  ['CALENDAR'],
-        'library':   ['DATABASES'],
+        'library':   ['INVOICING'],
         'frontend':  ['WEBSITES'],
         'sales':     ['CRM'],
     };

@@ -179,6 +179,8 @@ export default async function middleware(req: NextRequest) {
             'websites':            'WEBSITES',
             'databases':           'DATABASES',
             'library':             'INVOICING',
+            'tasks':               'TASKS',
+            'email':               'EMAIL',
         };
 
         if (isLoggedIn && !isSuperadmin && activeModules) {

@@ -6,12 +6,13 @@ import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Has
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
 
 export default function CompanyInfoSettings() {
     const t = useTranslations('Admin');
-    const { update: updateSession } = useSession();
+    const currentLocale = useLocale();
+    const { data: session, update: updateSession } = useSession();
 
     const [profile, setProfile] = useState({
         companyName: '',
@@ -418,21 +419,58 @@ export default function CompanyInfoSettings() {
                         <Globe className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
                         {t('nav.settings.appPreferences')}
                     </h3>
-                    <div className="max-w-md">
-                        <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.documentLanguage')}</label>
-                        <select
-                            value={profile.documentLanguage}
-                            onChange={e => setProfile({ ...profile, documentLanguage: e.target.value })}
-                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
-                        >
-                            <option value="">{t('nav.settings.fallbackOption')}</option>
-                            <option value="en">English</option>
-                            <option value="fr">Français</option>
-                            <option value="nl">Nederlands</option>
-                            <option value="ro">Română</option>
-                            <option value="ru">Русский</option>
-                        </select>
-                        <p className="text-xs text-neutral-500 mt-2">{t('nav.settings.documentLanguageDesc')}</p>
+                    <div className="max-w-md space-y-6">
+
+                        {/* Interface Language — changes admin UI locale immediately */}
+                        <div>
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">
+                                Interface Language
+                            </label>
+                            <select
+                                value={session?.user ? (session.user as Record<string, string>).environmentLanguage ?? currentLocale : currentLocale}
+                                onChange={async (e) => {
+                                    const lang = e.target.value;
+                                    const supported = ['en', 'fr', 'nl', 'ro', 'ru'];
+                                    if (!supported.includes(lang)) return;
+                                    await updateSession({ environmentLanguage: lang });
+                                    const currentPath = window.location.pathname;
+                                    const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
+                                    const newPath = localeRegex.test(currentPath)
+                                        ? currentPath.replace(localeRegex, `/${lang}$2`)
+                                        : `/${lang}${currentPath}`;
+                                    window.location.href = newPath;
+                                }}
+                                className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
+                            >
+                                <option value="nl">Nederlands</option>
+                                <option value="fr">Français</option>
+                                <option value="en">English</option>
+                                <option value="ro">Română</option>
+                                <option value="ru">Русский</option>
+                            </select>
+                            <p className="text-xs text-neutral-500 mt-2">
+                                Changes the language of the admin interface immediately. Applies only to this workspace.
+                            </p>
+                        </div>
+
+                        {/* Document Language — controls PDF/email output language */}
+                        <div>
+                            <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.documentLanguage')}</label>
+                            <select
+                                value={profile.documentLanguage}
+                                onChange={e => setProfile({ ...profile, documentLanguage: e.target.value })}
+                                className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
+                            >
+                                <option value="">{t('nav.settings.fallbackOption')}</option>
+                                <option value="en">English</option>
+                                <option value="fr">Français</option>
+                                <option value="nl">Nederlands</option>
+                                <option value="ro">Română</option>
+                                <option value="ru">Русский</option>
+                            </select>
+                            <p className="text-xs text-neutral-500 mt-2">{t('nav.settings.documentLanguageDesc')}</p>
+                        </div>
+
                     </div>
                 </div>
 

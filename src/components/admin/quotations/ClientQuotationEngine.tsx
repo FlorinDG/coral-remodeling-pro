@@ -224,7 +224,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     const handleImportComplete = (newBlocks: Block[]) => {
-        updatePageBlocks('db-quotations', id, [...blocks, ...newBlocks]);
+        updatePageBlocks(quotationsDbId, id, [...blocks, ...newBlocks]);
     };
 
     const handleUpdateProperty = (key: string, value: any) => {

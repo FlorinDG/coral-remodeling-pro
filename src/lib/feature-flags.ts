@@ -27,6 +27,8 @@ export const FEATURE_FLAGS = {
     QUOTATION_SAVE_TO_LIBRARY:      { minTier: 'PRO'         as Tier },
     /** PDF import with direct library injection option */
     QUOTATION_PDF_IMPORT_LIBRARY:   { minTier: 'PRO'         as Tier },
+    /** Duplicate-line detection during PDF import (flags & pre-deselects existing content) */
+    QUOTATION_PDF_IMPORT_DEDUP:     { minTier: 'PRO'         as Tier },
 
     // ── Peppol (volume enforced separately in plan-limits.ts) ────────
     /** Send Peppol invoices (5/month hard cap on FREE) */

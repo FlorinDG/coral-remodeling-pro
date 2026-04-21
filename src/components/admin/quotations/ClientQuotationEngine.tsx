@@ -41,6 +41,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const hasCRM       = activeModules.includes('CRM');
     // Library access: PRO+ feature (article search, save-to-library, PDF library import)
     const hasLibraryAccess = canAccess('QUOTATION_LIBRARY_SEARCH', planType);
+    // Dedup: PRO+ feature — detect lines already present in the quotation before import
+    const canDedup         = canAccess('QUOTATION_PDF_IMPORT_DEDUP', planType);
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -739,6 +741,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImportComplete={handleImportComplete}
+                existingBlocks={blocks}
+                canDedup={canDedup}
             />
         </div >
     );

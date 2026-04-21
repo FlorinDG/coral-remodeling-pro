@@ -142,9 +142,14 @@ export default async function RootLayout({
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>
             <head>
-                {/* Manifest only on main site — ERP doesn't need PWA behavior */}
-                {isMainSite && <link rel="manifest" href="/manifest.json" />}
-                <meta name="theme-color" content="#000000" />
+                {/* Manifest: main site gets construction manifest, app gets CoralOS PWA manifest */}
+                {isMainSite
+                    ? <link rel="manifest" href="/manifest.json" />
+                    : <link rel="manifest" href="/manifest.json" />
+                }
+                {/* Apple touch icon — used by iOS home screen and Chrome PWA on Mac */}
+                <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+                <meta name="theme-color" content={isMainSite ? '#000000' : '#c2440f'} />
 
                 {/* Google Consent Mode — main site only */}
                 {isMainSite && (

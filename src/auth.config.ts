@@ -5,6 +5,11 @@ export const authConfig = {
         signIn: "/login",
     },
     callbacks: {
+        // Always allow the request through — our middleware (middleware.ts, Branches A/B/C)
+        // handles all authorization, rate-limiting, and routing. Without this callback,
+        // NextAuth v5 defaults to `authorized: ({ auth }) => !!auth` which would redirect
+        // every unauthenticated visitor (including coral-sys storefront users) to /login.
+        authorized: () => true,
         async jwt({ token, user }) {
             if (user) {
                 token.role = (user as { role?: string }).role;

@@ -2,18 +2,20 @@
 
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { relationsTabs } from "@/config/tabs";
+import { getFilteredRelationsTabs } from "@/config/tabs";
+import { useState } from 'react';
+import { usePageTitle } from '@/hooks/usePageTitle';
+import { useTenant } from '@/context/TenantContext';
+import LockedFeature from "@/components/admin/LockedFeature";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing CRM Environment...</div> }
 );
 
-import { useState } from 'react';
-import { usePageTitle } from '@/hooks/usePageTitle';
-
 export default function CRMPage() {
     usePageTitle('CRM Module');
+    const { planType, isPro } = useTenant();
     const [activeDb, setActiveDb] = useState<'db-crm' | 'db-bobex'>('db-crm');
 
     const headerTabs = (
@@ -41,13 +43,23 @@ export default function CRMPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={relationsTabs} groupId="relations" />
-            <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
-                {/* Sub-database Render */}
-                <div className="flex-1 w-full min-h-0">
-                    <DatabaseCloneDynamic key={activeDb} databaseId={activeDb} headerExtra={headerTabs} hideViewTabs />
+            <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" />
+
+            {!isPro ? (
+                <LockedFeature
+                    label="Sales Pipeline"
+                    requiredPlan="PRO"
+                    currentPlan={planType}
+                    description="Manage your sales pipeline with customizable stages, deal tracking, and revenue forecasting. PRO gets 1 pipeline; ENTERPRISE gets unlimited pipelines with automation."
+                />
+            ) : (
+                <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
+                    {/* Sub-database Render */}
+                    <div className="flex-1 w-full min-h-0">
+                        <DatabaseCloneDynamic key={activeDb} databaseId={activeDb} headerExtra={headerTabs} hideViewTabs />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

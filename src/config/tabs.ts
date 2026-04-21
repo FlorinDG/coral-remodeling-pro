@@ -10,6 +10,23 @@ export const relationsTabs = [
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
 ];
 
+/**
+ * Relations tabs filtered by plan — Sales Pipeline hidden for FREE.
+ */
+const REL_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;
+const REL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {
+    'pipeline': 'PRO',
+};
+export function getFilteredRelationsTabs(planType: string): typeof relationsTabs {
+    if (planType === 'FOUNDER' || planType === 'CUSTOM') return relationsTabs;
+    const curIdx = REL_TIER_ORDER.indexOf(planType as typeof REL_TIER_ORDER[number]);
+    return relationsTabs.filter(tab => {
+        const minTier = REL_PLAN_GATE[tab.id];
+        if (!minTier) return true;
+        return curIdx >= REL_TIER_ORDER.indexOf(minTier);
+    });
+}
+
 export const frontendTabs = [
     { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
     { label: 'SERVICES', href: '/admin/services', id: 'services' },

@@ -25,6 +25,7 @@ const MODULES: { key: string; label: string }[] = [
     { key: "PROJECTS",   label: "PRJ"  },
     { key: "CALENDAR",   label: "CAL"  },
     { key: "HR",         label: "HR"   },
+    { key: "WEBSITES",   label: "WEB"  },
 ];
 
 const PLAN_USER_LIMITS: Record<string, number | null> = {

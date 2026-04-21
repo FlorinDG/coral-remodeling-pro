@@ -133,5 +133,58 @@ When starting a new session on this project:
 
 ---
 
+---
+
+## Complete Module Registry (validated 2026-04-21)
+
+The full set of modules enforced across middleware → AdminLayout → moduleGuard → superadmin toggle:
+
+| Module key | Superadmin label | Routes gated |
+|---|---|---|
+| `INVOICING` | INV | financials, quotations, suppliers, library |
+| `CRM` | CRM | contacts, email, tasks, sales |
+| `DATABASES` | DB | databases |
+| `PROJECTS` | PRJ | projects-management, files |
+| `CALENDAR` | CAL | calendar |
+| `HR` | HR | hr |
+| `WEBSITES` | WEB | websites (frontend) |
+
+**Rule**: any new module must be added to ALL FOUR locations simultaneously:
+1. `src/middleware.ts` → `MODULE_GATE`
+2. `src/components/AdminLayout.tsx` → `MODULE_MAP`
+3. `src/lib/moduleGuard.ts` → route map
+4. `src/app/[locale]/superadmin/TenantsGrid.tsx` → `MODULES` array
+
+Missing from any one = invisible gap in enforcement.
+
+---
+
+## On Tier-Based Feature Separation Within Modules
+
+The toggle is **binary** (module: on / off). It answers: *can this tenant enter the module?*
+
+Plan type (`FREE`, `FOUNDER`, `PRO`, etc.) answers: *what feature depth do they get inside?*
+
+These are **orthogonal** — a 2D access matrix:
+
+```
+                FREE          FOUNDER/PRO
+INVOICING ON:   Basic inv     Full + Peppol quota
+CRM ON:         Contacts      + Email + Sales + Advanced
+DATABASES ON:   Basic         + Advanced formulas
+WEBSITES ON:    Single site   + Multi-site
+```
+
+**Current enforcement**:
+- Module access (row): middleware + AdminLayout sidebar + moduleGuard
+- Feature depth (column): `planType` checks inside individual pages/components
+
+**Known gap**: `planType` checks are not consistently implemented across all module pages.
+When a module is toggled ON for a FREE tenant, they may get FOUNDER-level features
+because the component doesn't check `planType`. This is technical debt to address
+module-by-module as each is hardened for production use.
+
+---
+
 *Written: 2026-04-21. Author: Florin + Antigravity.*
 *This file is a living document. Update the premises table after each validated change.*

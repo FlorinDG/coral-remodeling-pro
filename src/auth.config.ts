@@ -60,4 +60,7 @@ export const authConfig = {
         },
     },
     secret: process.env.AUTH_SECRET || "coral-secret-12345",
+    // Trust host headers forwarded by Vercel so Auth.js accepts requests from
+    // ALL subdomains (coral-sys, app, coral-group.be), not just NEXTAUTH_URL.
+    trustHost: true,
 } satisfies NextAuthConfig;

@@ -67,7 +67,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
                 // Parse Excel Natively
                 const buffer = await uploadedFile.arrayBuffer();
-                const workbook = xlsx.read(buffer, { type: 'array' });
+                const workbook = xlsx.read(buffer, { type: 'array', cellDates: true });
 
                 if (workbook.SheetNames.length === 0) throw new Error("Excel file is empty");
 
@@ -117,23 +117,51 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         if (!targetDb) return null;
         const normalized = headerName.toLowerCase().trim();
 
-        const map = {
-            title: ['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving', 'description', 'contact', 'client', 'supplier'],
-            bruto: ['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop', 'excl'],
-            discount: ['korting', 'remise', 'discount', 'disc'],
-            unit: ['eenheid', 'unit', 'maat', 'eeh'],
-            brand: ['merk', 'brand', 'fabricant', 'manufacturer'],
-            packaging: ['packaging', 'verpakking', 'colis'],
-            minOrder: ['min', 'minimum', 'moq'],
-            group: ['groep', 'group', 'categorie', 'category']
+        // Per-property keyword sets (Dutch + English) matched against column headers
+        const idKeywords: Record<string, string[]> = {
+            title:          ['naam', 'titel', 'title', 'name', 'artikel', 'code',
+                             'factuur #', 'factuur#', 'invoice #', 'invoice#', 'offerte'],
+            email:          ['email', 'e-mail', 'mail', 'courriel'],
+            phone:          ['telefoon', 'phone', 'tel', 'gsm', 'mobiel', 'fax'],
+            company:        ['bedrijf', 'bedrijfsnaam', 'company', 'firma', 'handelsnaam'],
+            vat:            ['btw-nr', 'btwnr', 'btw nr', 'vat number', 'kbo', 'btw'],
+            iban:           ['iban'],
+            bic:            ['bic', 'swift'],
+            address:        ['adres', 'address', 'straat', 'street', 'rue'],
+            city:           ['gemeente', 'stad', 'city', 'ville', 'woonplaats'],
+            postal:         ['postcode', 'postal', 'zip', 'plz'],
+            country:        ['land', 'country', 'pays'],
+            contact_person: ['contactpersoon', 'contact person', 'verantwoordelijke'],
+            website:        ['website', 'url', 'www', 'site'],
+            notes:          ['notitie', 'opmerking', 'note', 'remark', 'comment'],
+            // Financial
+            betreft:        ['betreft', 'beschrijving', 'description', 'omschrijving', 'subject'],
+            invoiceDate:    ['factuurdatum', 'invoice date', 'datum factuur', 'date facture'],
+            dueDate:        ['vervaldatum', 'due date', 'vervaldag', 'betaaldatum'],
+            totalExVat:     ['excl btw', 'ex btw', 'excl. btw', 'ex vat', 'netto', 'htva'],
+            totalVat:       ['btw bedrag', 'vat amount', 'tva'],
+            totalIncVat:    ['incl btw', 'inc btw', 'incl. btw', 'inc vat', 'totaal incl', 'ttc'],
+            // Articles
+            bruto:          ['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop', 'excl'],
+            discount:       ['korting', 'remise', 'discount', 'disc'],
+            unit:           ['eenheid', 'unit', 'maat', 'eeh'],
+            brand:          ['merk', 'brand', 'fabricant', 'manufacturer'],
+            packaging:      ['packaging', 'verpakking', 'colis'],
+            minOrder:       ['min bestelling', 'minimum', 'moq'],
+            group:          ['groep', 'group', 'categorie', 'category', 'artikelgroep'],
         };
 
         const findPropId = (keywords: string[]) =>
-            targetDb.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
+            targetDb.properties.find(p =>
+                p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase()))
+            )?.id ?? targetDb.properties.find(p =>
+                p.id && keywords.some(k => p.id.toLowerCase().includes(k.toLowerCase()))
+            )?.id;
 
-        for (const [key, keywords] of Object.entries(map)) {
+        for (const [, keywords] of Object.entries(idKeywords)) {
             if (keywords.some(k => normalized.includes(k))) {
-                return findPropId(keywords);
+                const found = findPropId(keywords);
+                if (found) return found;
             }
         }
         return null;
@@ -184,7 +212,12 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 }
 
                 const newPropId = useDatabaseStore.getState().addProperty(databaseId, header, targetType);
-                localMapping[header] = newPropId; // Inject explicitly back into mapping pipeline
+                // addProperty returns '' for locked schemas — treat as skip
+                if (newPropId) {
+                    localMapping[header] = newPropId;
+                } else {
+                    localMapping[header] = 'ignore';
+                }
             }
         }
 
@@ -214,10 +247,38 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     let val = row[sourceHeader];
 
                     // Specific Type Castings
-                    if (dbProp.type === 'number') {
+                    if (dbProp.type === 'number' || dbProp.type === 'currency') {
                         // strip currency strings gracefully
                         const numStr = String(val).replace(/[^0-9.,-]/g, '').replace(',', '.');
                         val = parseFloat(numStr) || 0;
+                    }
+                    else if (dbProp.type === 'date') {
+                        // Excel cellDates:true → JS Date object
+                        if (val instanceof Date) {
+                            val = val.toISOString().split('T')[0];
+                        }
+                        // Excel serial number (days since Dec 30 1899, typically 40000-65000 for 2009-2077)
+                        else if (typeof val === 'number' && val > 30000 && val < 80000) {
+                            const jsDate = new Date(Math.round((val - 25569) * 86400 * 1000));
+                            val = jsDate.toISOString().split('T')[0];
+                        }
+                        // String date: parse and normalise to YYYY-MM-DD
+                        else if (typeof val === 'string' && val.trim()) {
+                            const raw = val.trim();
+                            // Handle DD/MM/YYYY or DD-MM-YYYY (Belgian common format)
+                            const ddmm = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+                            if (ddmm) {
+                                const [, d, m, y] = ddmm;
+                                val = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                            } else {
+                                const parsed = new Date(raw);
+                                if (!isNaN(parsed.getTime())) {
+                                    val = parsed.toISOString().split('T')[0];
+                                }
+                            }
+                        } else {
+                            val = '';
+                        }
                     }
                     else if (dbProp.type === 'select') {
                         // Clean whitespace
@@ -436,7 +497,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                                     className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded p-1.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none truncate"
                                                 >
                                                     <option value="ignore" className="italic text-neutral-500">❌ Ignore (Skip Data)</option>
-                                                    {databaseId !== 'db-clients' && databaseId !== 'db-suppliers' && (
+                                                    {!['db-clients','db-suppliers','db-invoices','db-expenses','db-quotations','db-tickets'].includes(databaseId) && (
                                                         <option value="create_new" className="font-semibold text-orange-600">✨ Create New Property</option>
                                                     )}
                                                     <optgroup label={`Master Database Fields (${targetDb.name})`}>

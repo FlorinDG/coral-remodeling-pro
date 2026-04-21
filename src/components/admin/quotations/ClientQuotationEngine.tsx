@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
-import { DragDropContext, Droppable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
@@ -13,6 +13,7 @@ import { pdf } from '@react-pdf/renderer';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import { canAccess } from '@/lib/feature-flags';
 
@@ -21,6 +22,17 @@ import { Link } from '@/i18n/routing';
 import { toast } from 'sonner';
 
 const FALLBACK_PAGES: Page[] = [];
+
+interface TenantProfile {
+    companyName?: string;
+    vatNumber?: string;
+    brandColor?: string;
+    documentTemplate?: TemplateId;
+    documentLanguage?: string;
+    logoUrl?: string;
+    planType?: string;
+    [key: string]: unknown;
+}
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
@@ -43,7 +55,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [tenantProfile, setTenantProfile] = useState<any>(null);
+    const [tenantProfile, setTenantProfile] = useState<TenantProfile | null>(null);
     const [showProperties, setShowProperties] = useState(false);
 
     useEffect(() => {
@@ -151,7 +163,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
-    const handleDragEnd = (result: any) => {
+    const handleDragEnd = (result: DropResult) => {
         if (!result.destination) return;
 
         const { source, destination, draggableId } = result;
@@ -227,7 +239,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageBlocks(quotationsDbId, id, [...blocks, ...newBlocks]);
     };
 
-    const handleUpdateProperty = (key: string, value: any) => {
+    const handleUpdateProperty = (key: string, value: unknown) => {
         if (!quotation) return;
         updatePageProperty(quotationsDbId, quotation.id, key, value);
     };
@@ -372,9 +384,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             } else {
                 toast.error(`Drive fout: ${data.error}`);
             }
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error(e);
-            toast.error('Er is iets misgegaan tijdens het opslaan: ' + e.message);
+            toast.error('Er is iets misgegaan tijdens het opslaan: ' + (e instanceof Error ? e.message : String(e)));
         } finally {
             setIsSavingToDrive(false);
         }

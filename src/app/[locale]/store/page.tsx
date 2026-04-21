@@ -317,12 +317,12 @@ export default function StorePage() {
 
                         <div className="w-px h-5 bg-neutral-200 dark:bg-white/10 mx-1" />
 
-                        <Link href="/login" className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors px-3 py-2">
+                        <a href="https://app.coral-group.be/login" className="text-sm text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors px-3 py-2">
                             {t.login}
-                        </Link>
-                        <Link href="/login" className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-blue-600/20">
+                        </a>
+                        <a href="https://app.coral-group.be/login?plan=free" className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-blue-600/20">
                             {t.ctaPrimary}
-                        </Link>
+                        </a>
                     </div>
                 </div>
             </nav>
@@ -348,9 +348,9 @@ export default function StorePage() {
                         {t.heroSub}
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <Link href="/login" className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-2xl shadow-blue-600/20 text-base">
+                        <a href="https://app.coral-group.be/login?plan=free" className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-2xl shadow-blue-600/20 text-base">
                             {t.ctaPrimary} <ArrowRight className="w-5 h-5" />
-                        </Link>
+                        </a>
                         <a href="#pricing" className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors text-base font-medium px-6 py-4">
                             {t.ctaSub}
                         </a>
@@ -422,9 +422,9 @@ export default function StorePage() {
                                     </li>
                                 ))}
                             </ul>
-                            <Link href="/login" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 text-sm">
+                            <a href="https://app.coral-group.be/login?plan=free" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 text-sm">
                                 {t.peppolCta} <ArrowRight className="w-4 h-4" />
-                            </Link>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -487,12 +487,15 @@ export default function StorePage() {
                                         </li>
                                     ))}
                                 </ul>
-                                <Link href="/login" className={`w-full text-center font-bold py-3 rounded-xl transition-all text-sm ${plan.highlight
-                                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
-                                    : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 text-neutral-900 dark:text-white'
-                                }`}>
+                                <a
+                                    href={plan.id === 'enterprise' ? 'mailto:info@coral-group.be' : `https://app.coral-group.be/login?plan=${plan.id}`}
+                                    className={`w-full text-center font-bold py-3 rounded-xl transition-all text-sm ${plan.highlight
+                                        ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/20'
+                                        : 'bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 text-neutral-900 dark:text-white'
+                                    }`}
+                                >
                                     {plan.cta}
-                                </Link>
+                                </a>
                             </div>
                         ))}
                     </div>
@@ -500,7 +503,7 @@ export default function StorePage() {
                         <p className="text-amber-600 dark:text-amber-400 font-bold text-sm mb-1">{t.founderNote}</p>
                         <p className="text-neutral-600 dark:text-neutral-400 text-sm">
                             {t.founderSub}{' '}
-                            <Link href="/login" className="text-amber-600 dark:text-amber-400 hover:underline font-semibold">{t.founderCta}</Link>.
+                            <a href="https://app.coral-group.be/login" className="text-amber-600 dark:text-amber-400 hover:underline font-semibold">{t.founderCta}</a>.
                         </p>
                     </div>
                 </div>
@@ -523,9 +526,9 @@ export default function StorePage() {
                         <div className="relative">
                             <h2 className="text-3xl font-bold mb-4 text-neutral-900 dark:text-white">{t.ctaBottomTitle}</h2>
                             <p className="text-neutral-500 mb-8">{t.ctaBottomSub}</p>
-                            <Link href="/login" className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-2xl shadow-blue-600/20 text-base">
+                            <a href="https://app.coral-group.be/login?plan=free" className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-2xl shadow-blue-600/20 text-base">
                                 {t.ctaBottomBtn} <ArrowRight className="w-5 h-5" />
-                            </Link>
+                            </a>
                         </div>
                     </div>
                 </div>

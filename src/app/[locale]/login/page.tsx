@@ -6,7 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Loader2, Mail, Lock, User, Check, X, Eye, EyeOff, ShieldCheck, AlertTriangle, Globe } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Check, X, Eye, EyeOff, ShieldCheck, AlertTriangle, Globe, ArrowRight } from 'lucide-react';
 
 /* ─── Password validation ─── */
 function validatePasswordRules(pw: string) {
@@ -57,8 +57,10 @@ export default function LoginPage() {
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState('');
 
+    const [isAppDomain, setIsAppDomain] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
+    const planParam = searchParams.get('plan');
 
     // Parse URL parameters for verification status
     const verifiedStatus = searchParams.get('verified');
@@ -175,6 +177,14 @@ export default function LoginPage() {
         setIsLoading(true);
         await signIn('google', { callbackUrl: '/admin/dashboard' });
     };
+
+    /* ─── App domain detection (client-side only) ─── */
+    useEffect(() => {
+        setIsAppDomain(window.location.hostname === 'app.coral-group.be');
+    }, []);
+
+    // Gate: direct navigation to app.coral-group.be/login without a plan → redirect to store
+    const showSignupGate = isAppDomain && !planParam;
 
     /* ─── Password rule indicator ─── */
     const RuleCheck = ({ passed, label }: { passed: boolean; label: string }) => (
@@ -336,7 +346,27 @@ export default function LoginPage() {
                 </div>
 
                 {/* ─── CREATE ACCOUNT / VERIFY EMAIL ─── */}
-                {signupDone ? (
+                {showSignupGate ? (
+                    /* ── Funnel gate — direct navigation without ?plan → send to store ── */
+                    <div className="bg-white dark:bg-neutral-900/50 p-8 rounded-2xl border border-neutral-200 dark:border-white/10 shadow-xl backdrop-blur-xl flex flex-col items-center text-center gap-6">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-200 dark:border-blue-500/20 flex items-center justify-center">
+                            <ArrowRight className="w-8 h-8 text-blue-500" />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-bold text-neutral-900 dark:text-white mb-2">Start for free</h2>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                                Choose your plan on our website to create your CoralOS account — it takes 30 seconds, no credit card needed.
+                            </p>
+                        </div>
+                        <a
+                            href="https://coral-group.be/nl/store#pricing"
+                            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 text-sm"
+                        >
+                            View Plans &amp; Start for Free <ArrowRight className="w-4 h-4" />
+                        </a>
+                        <p className="text-[11px] text-neutral-400">Already have an account? Sign in on the left.</p>
+                    </div>
+                ) : signupDone ? (
                     /* ── Post-signup: verify email prompt ── */
                     <div className="bg-white dark:bg-neutral-900/50 p-6 rounded-2xl border border-emerald-200 dark:border-emerald-800/40 shadow-xl backdrop-blur-xl flex flex-col items-center text-center gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">

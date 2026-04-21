@@ -219,7 +219,13 @@ export default function DocumentTemplatesModule() {
             const res = await fetch('/api/tenant/profile', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ brandColor: primaryColor, documentTemplate: selectedTemplate }),
+                body: JSON.stringify({
+                    brandColor: primaryColor,
+                    documentTemplate: selectedTemplate,
+                    // Always include logoUrl — if unchanged it's idempotent,
+                    // if a new file was uploaded it's the new base64 data URL.
+                    logoUrl: logoUrl,
+                }),
             });
             if (res.ok) {
                 document.documentElement.style.setProperty('--brand-color', primaryColor);
@@ -281,7 +287,11 @@ export default function DocumentTemplatesModule() {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onloadend = () => setLogoPreview(reader.result as string);
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            setLogoPreview(result); // shows immediately in the UI
+            setLogoUrl(result);     // will be persisted on next Save Branding click
+        };
         reader.readAsDataURL(file);
     };
 

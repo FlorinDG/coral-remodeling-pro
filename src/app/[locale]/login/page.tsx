@@ -91,11 +91,8 @@ export default function LoginPage() {
                     setLoginError('Invalid credentials');
                 }
             } else {
-                // Fetch session to get user's stored environment language
-                const sessionRes = await fetch('/api/auth/session');
-                const sess = await sessionRes.json();
-                const userLocale = (sess?.user as { environmentLanguage?: string })?.environmentLanguage || 'nl';
-                window.location.href = `/${userLocale}/admin/dashboard`;
+                // Navigate to admin. Middleware syncs NEXT_LOCALE cookie from JWT on the first request.
+                window.location.href = '/admin/dashboard';
             }
         } catch {
             setLoginError('System error. Please try again.');
@@ -356,7 +353,7 @@ export default function LoginPage() {
                             </p>
                         </div>
                         <a
-                            href="https://coral-group.be/nl/store#pricing"
+                            href="https://coral-sys.coral-group.be#pricing"
                             className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-xl transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 text-sm"
                         >
                             View Plans &amp; Start for Free <ArrowRight className="w-4 h-4" />

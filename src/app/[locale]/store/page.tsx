@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { useRouter as useI18nRouter } from '@/i18n/routing';
 import { useTheme } from 'next-themes';
 import Logo from '@/components/Logo';
 import {
@@ -251,6 +252,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function StorePage() {
     const params  = useParams();
     const router  = useRouter();
+    const i18nRouter = useI18nRouter();
     const { setTheme, resolvedTheme } = useTheme();
     const locale  = (params?.locale as string) || 'nl';
     const t       = T[locale as keyof typeof T] || T.nl;
@@ -260,7 +262,8 @@ export default function StorePage() {
     const isDark = resolvedTheme === 'dark';
 
     function switchLang(code: string) {
-        router.push(`/${code}/store`);
+        // Use next-intl's locale-aware router — sets NEXT_LOCALE cookie automatically.
+        i18nRouter.push('/store', { locale: code });
     }
 
     function toggleTheme() {

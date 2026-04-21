@@ -3,6 +3,13 @@ import { authConfig } from "./auth.config"
 import { NextResponse } from "next/server"
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
+
+// Typed shape of extra fields we add to the NextAuth JWT/session user.
+type ExtendedUser = {
+    role?: string;
+    environmentLanguage?: string;
+    activeModules?: string[];
+};
 import type { NextRequest } from 'next/server';
 import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
@@ -46,7 +53,7 @@ function hasLocalePrefix(pathname: string): boolean {
 export default auth((req) => {
     const isLoggedIn = !!req.auth;
     const { pathname } = req.nextUrl;
-    const role = (req.auth?.user as any)?.role;
+    const role = (req.auth?.user as ExtendedUser)?.role;
 
     // ── Host detection ──────────────────────────────────────────────────────
     // req.nextUrl.hostname is always correct on Vercel Edge.
@@ -116,14 +123,13 @@ export default auth((req) => {
         const isSuperadminPath = virtualPath.startsWith('/superadmin') || pathname.includes('/superadmin');
         if (isSuperadminPath && !isLoginPage && !isPublicPage) {
             if (!isLoggedIn) {
-                const loginUrl = new URL('/nl/login', req.nextUrl.origin);
-                // Preserve where they were trying to go — auth.ts redirect callback will honour it
+                const loginUrl = new URL('/login', req.nextUrl.origin);
                 loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
                 return NextResponse.redirect(loginUrl);
             }
-            if (!PLATFORM_ADMIN_ROLES.includes(role as any)) {
+            if (!PLATFORM_ADMIN_ROLES.includes(role as (typeof PLATFORM_ADMIN_ROLES)[number])) {
                 // Non-platform-admin (e.g. APP_MANAGER) → redirect to their ERP
-                const url = new URL('/nl/admin', req.nextUrl.origin);
+                const url = new URL('/admin', req.nextUrl.origin);
                 return NextResponse.redirect(url);
             }
         }
@@ -133,7 +139,7 @@ export default auth((req) => {
         const isTimeTrackerPath = virtualPath.includes('/admin/time-tracker');
 
         if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
-            const url = new URL('/nl/login', req.nextUrl.origin);
+            const url = new URL('/login', req.nextUrl.origin);
             return NextResponse.redirect(url);
         }
 
@@ -141,8 +147,8 @@ export default auth((req) => {
         // activeModules comes from the JWT (set at login, refreshed on updateAge).
         // This is enforced server-side — client-side UI bypass doesn't help.
         // Superadmin roles bypass all module gates.
-        const activeModules = (req.auth?.user as any)?.activeModules as string[] | undefined;
-        const isSuperadmin  = PLATFORM_ADMIN_ROLES.includes(role as any);
+        const activeModules = (req.auth?.user as ExtendedUser)?.activeModules;
+        const isSuperadmin  = PLATFORM_ADMIN_ROLES.includes(role as (typeof PLATFORM_ADMIN_ROLES)[number]);
 
         // Map: path segment → required module
         const MODULE_GATE: Record<string, string> = {
@@ -173,45 +179,34 @@ export default auth((req) => {
             }
         }
 
-        // ── Locale auto-correction for authenticated admin users ──
-        const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
-        const jwtLang    = (req.auth?.user as any)?.environmentLanguage;
-        const userLang   = (cookieLang && SUPPORTED_LOCALES.includes(cookieLang)) ? cookieLang
-            : (jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) ? jwtLang
-            : null;
-
-        if (isLoggedIn && virtualPath.startsWith('/admin') && userLang) {
-            const localeMatch  = pathname.match(/^\/(en|fr|nl|ro|ru)(\/|$)/);
-            const currentLocale = localeMatch?.[1];
-            if (currentLocale && currentLocale !== userLang) {
-                const corrected = new URL(
-                    pathname.replace(/^\/(en|fr|nl|ro|ru)/, `/${userLang}`),
-                    req.nextUrl.origin
-                );
-                corrected.search = req.nextUrl.search;
-                return NextResponse.redirect(corrected);
+        // ── Sync NEXT_LOCALE cookie from JWT language preference ──
+        // With localePrefix: 'never', locale lives in the cookie, not the URL.
+        // If the user's stored language differs from the current cookie, update it
+        // so the next-intl middleware picks up the correct locale on the next request.
+        const jwtLang = (req.auth?.user as { environmentLanguage?: string })?.environmentLanguage;
+        if (isLoggedIn && jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) {
+            const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
+            if (cookieLang !== jwtLang) {
+                // Let the request proceed, but stamp the correct locale cookie.
+                // The next page load will use the updated value.
+                const syncRes = NextResponse.next();
+                syncRes.cookies.set('NEXT_LOCALE', jwtLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+                Object.entries(noCache()).forEach(([k, v]) => syncRes.headers.set(k, v));
+                return syncRes;
             }
         }
 
-        // ── Rewrite: map root/non-admin paths → /[locale]/admin ──
+        // ── Rewrite: map root / non-admin paths → /[locale]/admin ──
+        // With localePrefix: 'never', paths never carry a locale segment in the URL.
+        // intlMiddleware (called below) handles the internal /[locale]/* rewrite.
         const locale = resolveLocale(req);
-
-        // Paths that should pass through as-is (already have correct prefix)
         const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', '_next', 'api'];
         let rewriteTarget: string | null = null;
 
-        if (hasLocalePrefix(pathname)) {
-            const parts = pathname.split('/');
-            const locSeg = parts[1];
-            const rest   = parts.slice(2).join('/');
-            if (!noRewriteSegs.some(s => rest.startsWith(s))) {
-                rewriteTarget = `/${locSeg}/admin${rest ? `/${rest}` : ''}`;
-            }
-        } else {
-            const rest = pathname.replace(/^\//, '');
-            if (!noRewriteSegs.some(s => rest.startsWith(s))) {
-                rewriteTarget = `/${locale}/admin${rest ? `/${rest}` : ''}`;
-            }
+        const rest = pathname.replace(/^\//, '');
+        if (!noRewriteSegs.some(s => rest.startsWith(s))) {
+            // Root or unknown path → send to /[locale]/admin
+            rewriteTarget = `/${locale}/admin${rest ? `/${rest}` : ''}`;
         }
 
         if (rewriteTarget) {

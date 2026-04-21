@@ -7,7 +7,11 @@ export const routing = defineRouting({
 
     // Used when no locale matches
     defaultLocale: 'nl',
-    localeDetection: true
+    localeDetection: true,
+
+    // Never put /nl/ (or any locale) in the URL.
+    // Locale is resolved from the NEXT_LOCALE cookie + Accept-Language header.
+    localePrefix: 'never',
 });
 
 // Lightweight wrappers around Next.js' navigation APIs

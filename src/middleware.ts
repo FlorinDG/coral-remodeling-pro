@@ -65,23 +65,18 @@ export default auth((req) => {
 
     // ══════════════════════════════════════════════════════════════════════
     // BRANCH A: coral-sys.coral-group.be → CoralOS SaaS storefront
-    // Fully public. Rewrite root + any non-specific path → /[locale]/store
+    // Fully public. Everything that isn't a Next.js internal → /[locale]/store
+    // Login is NOT accessible here — always rewrite back to store.
     // ══════════════════════════════════════════════════════════════════════
     if (isStoreSubdomain) {
-        const locale = resolveLocale(req);
-
-        // Paths that should be served as-is (already locale-prefixed store, or public pages)
-        const passthrough = ['/store', '/help', '/terms', '/privacy', '/login', '/_next', '/api'];
-        const isPassthrough = passthrough.some(p => pathname.includes(p));
-
-        // If already has a locale prefix and is a passthrough path, just proxy it
-        if (isPassthrough && hasLocalePrefix(pathname)) {
+        // Next.js internals and API routes must pass through untouched
+        if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
             const res = NextResponse.next();
             Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
             return res;
         }
 
-        // Extract path past locale prefix, or treat full pathname as "rest"
+        const locale = resolveLocale(req);
         let targetLocale = locale;
         let rest = '';
 
@@ -93,18 +88,17 @@ export default auth((req) => {
             rest = pathname.replace(/^\//, '');
         }
 
-        // Determine target path
-        const isAlreadyStore = rest.startsWith('store');
-        const isPublicPath   = ['help','terms','privacy','login'].some(p => rest.startsWith(p));
-        const targetPath = isAlreadyStore || isPublicPath
-            ? `/${targetLocale}/${rest}`
-            : `/${targetLocale}/store`;
+        // Only allow store, help, terms, privacy pages — anything else (incl. /login) → store
+        const ALLOWED_STORE_PATHS = ['store', 'help', 'terms', 'privacy'];
+        const isAllowedPath = ALLOWED_STORE_PATHS.some(p => rest.startsWith(p));
+        const targetPath = isAllowedPath ? `/${targetLocale}/${rest}` : `/${targetLocale}/store`;
 
         const rewriteUrl = new URL(targetPath, req.nextUrl.origin);
         const res = NextResponse.rewrite(rewriteUrl);
         Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
         return res;
     }
+
 
     // ══════════════════════════════════════════════════════════════════════
     // BRANCH B: app.coral-group.be → CoralOS ERP

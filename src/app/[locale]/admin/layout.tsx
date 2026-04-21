@@ -11,48 +11,69 @@ import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 const OWNER_TENANT_ID = process.env.OWNER_TENANT_ID ?? 'cmneyas2b0000veqvkgl2luz1';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-    const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
-
-    // Defaults — most restrictive safe fallback (matches new-tenant provisioning)
+    // ── Safe defaults (most restrictive — matches new-tenant provisioning) ──
+    // Every block below falls back to these. A failure in one block does NOT
+    // cascade — the layout always renders and tenants always see a working UI.
     let activeModules: string[] = ["INVOICING"];
     let planType: string = "FREE";
     let lockedDbIds: Record<string, string> = {};
+    let tenantId: string | null = null;
+    let isOwner = false;
 
+    // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
+    // Middleware already guards /admin, so if auth() itself throws we still
+    // render — the user sees a restricted but working UI, not a 500.
+    try {
+        const session = await auth();
+        tenantId = (session?.user as { tenantId?: string | null })?.tenantId ?? null;
+        isOwner  = tenantId === OWNER_TENANT_ID;
+    } catch (e) {
+        console.error('[layout] auth() failed:', e);
+    }
+
+    // ── 2. Tenant data — safe fallback: restricted defaults ─────────────────
     if (tenantId) {
-        const tenant = await prisma.tenant.findUnique({
-            where: { id: tenantId },
-            select: { activeModules: true, planType: true, lockedDbIds: true },
-        });
-        if (tenant?.activeModules) activeModules = tenant.activeModules;
-        if (tenant?.planType)     planType       = tenant.planType;
+        try {
+            const tenant = await prisma.tenant.findUnique({
+                where:  { id: tenantId },
+                select: { activeModules: true, planType: true, lockedDbIds: true },
+            });
+            if (tenant?.activeModules) activeModules = tenant.activeModules;
+            if (tenant?.planType)      planType       = tenant.planType;
 
-        const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
-
-        if (persistedIds && Object.keys(persistedIds).length > 0) {
-            lockedDbIds = persistedIds;
-        } else {
-            // First login for this tenant — provision locked DBs now
-            // (also handles the case where signup provisioning was skipped)
-            try {
-                lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
-            } catch (e) {
-                console.error('[layout] provisionLockedDatabases failed:', e);
-                // Fall through with bare IDs — legacy FOUNDER tenant behavior
+            const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
+            if (persistedIds && Object.keys(persistedIds).length > 0) {
+                lockedDbIds = persistedIds;
+            } else {
+                // First login — provision locked DBs
+                try {
+                    lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                } catch (e) {
+                    console.error('[layout] provisionLockedDatabases failed:', e);
+                    // Fall through — legacy FOUNDER tenant uses bare IDs
+                }
             }
+        } catch (e) {
+            console.error('[layout] prisma.tenant.findUnique failed:', e);
+            // Render with safe defaults — tenant sees restricted but working UI
         }
     }
 
-    // Is this the Coral Enterprises (platform owner) workspace?
-    const isOwner = tenantId === OWNER_TENANT_ID;
-
-    const databases = await getGlobalDatabases();
+    // ── 3. Global databases — safe fallback: empty list ─────────────────────
+    // GlobalDatabaseSyncer handles an empty array gracefully.
+    let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
+    try {
+        databases = await getGlobalDatabases();
+    } catch (e) {
+        console.error('[layout] getGlobalDatabases failed:', e);
+    }
 
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner}>{children}</AdminLayout>
+            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner}>
+                {children}
+            </AdminLayout>
         </AuthProvider>
     );
 }
-

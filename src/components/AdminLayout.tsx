@@ -80,7 +80,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const [resendingVerification, setResendingVerification] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
 
-    const isEmailVerified = (session?.user as any)?.emailVerified;
+    const isEmailVerified = (session?.user as unknown as { emailVerified?: boolean })?.emailVerified;
     const userEmail = session?.user?.email;
 
     const handleResendVerification = async () => {

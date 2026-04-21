@@ -1,35 +1,51 @@
-import NextAuth from "next-auth"
-import { authConfig } from "./auth.config"
-import { NextResponse } from "next/server"
+import { decode } from 'next-auth/jwt';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
+import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
-// Typed shape of extra fields we add to the NextAuth JWT/session user.
-type ExtendedUser = {
+// ── Types ──────────────────────────────────────────────────────────────────
+type DecodedToken = {
     role?: string;
     environmentLanguage?: string;
     activeModules?: string[];
+    email?: string;
+    sub?: string;
+    exp?: number;
 };
-import type { NextRequest } from 'next/server';
-import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
+// ── Constants ──────────────────────────────────────────────────────────────
 const SUPPORTED_LOCALES = routing.locales as readonly string[];
-const DEFAULT_LOCALE = routing.defaultLocale as string;
+const DEFAULT_LOCALE    = routing.defaultLocale as string;
+const AUTH_SECRET       = process.env.AUTH_SECRET ?? 'coral-secret-12345';
+
+// Cookie name differs by environment (Auth.js v5 default naming)
+const SESSION_COOKIE = process.env.NODE_ENV === 'production'
+    ? '__Secure-authjs.session-token'
+    : 'authjs.session-token';
 
 const intlMiddleware = createMiddleware(routing);
 
-const { auth } = NextAuth(authConfig);
+// ── Helpers ────────────────────────────────────────────────────────────────
 
-/**
- * Domain Routing Rules (single Vercel deployment, 3 domains):
- *
- *  www.coral-group.be / coral-group.be  → Construction company site
- *  coral-sys.coral-group.be             → CoralOS SaaS storefront (/[locale]/store)
- *  app.coral-group.be                   → CoralOS ERP (/[locale]/admin)
- *
- * KEY: We use NextResponse.rewrite() directly for subdomain routing.
- * Mutating x-middleware-rewrite on next-intl's response does NOT work in Next.js 15.
- */
+/** Decode the Auth.js v5 JWT from the session cookie — Edge-runtime safe. */
+async function getToken(req: NextRequest): Promise<DecodedToken | null> {
+    const raw = req.cookies.get(SESSION_COOKIE)?.value;
+    if (!raw) return null;
+    try {
+        const token = await decode({
+            token:  raw,
+            secret: AUTH_SECRET,
+            salt:   SESSION_COOKIE,
+        }) as DecodedToken | null;
+        // Reject expired tokens
+        if (!token || (token.exp && token.exp * 1000 < Date.now())) return null;
+        return token;
+    } catch {
+        return null;
+    }
+}
 
 /** Extract locale from request: cookie → accept-language → default */
 function resolveLocale(req: NextRequest): string {
@@ -44,39 +60,41 @@ function resolveLocale(req: NextRequest): string {
     return DEFAULT_LOCALE;
 }
 
-/** Check if pathname already has a locale prefix */
+/** True when pathname already has a locale segment (e.g. /nl/store) */
 function hasLocalePrefix(pathname: string): boolean {
     const seg = pathname.split('/')[1];
     return SUPPORTED_LOCALES.includes(seg);
 }
 
-export default auth((req) => {
-    const isLoggedIn = !!req.auth;
+/**
+ * Domain Routing Rules (single Vercel deployment, 3 domains):
+ *
+ *  www.coral-group.be / coral-group.be  → Construction company site  (Branch C)
+ *  coral-sys.coral-group.be             → CoralOS SaaS storefront     (Branch A)
+ *  app.coral-group.be                   → CoralOS ERP                 (Branch B)
+ *
+ * We use NextResponse.rewrite() directly for subdomain routing.
+ */
+export default async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
-    const role = (req.auth?.user as ExtendedUser)?.role;
+    const hostname = req.nextUrl.hostname || '';
 
-    // ── Host detection ──────────────────────────────────────────────────────
-    // req.nextUrl.hostname is always correct on Vercel Edge.
-    const hostname = req.nextUrl.hostname || "";
-
-    // ── Domain classification ───────────────────────────────────────────────
-    const isStoreSubdomain = hostname === "coral-sys.coral-group.be" || hostname.startsWith("coral-sys.");
-    const isAppSubdomain   = hostname === "app.coral-group.be"       || hostname.startsWith("app.");
+    const isStoreSubdomain = hostname === 'coral-sys.coral-group.be' || hostname.startsWith('coral-sys.');
+    const isAppSubdomain   = hostname === 'app.coral-group.be'       || hostname.startsWith('app.');
 
     // No-cache headers for all subdomain responses
     const noCache = () => ({
         'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
+        'Pragma':        'no-cache',
         'Surrogate-Control': 'no-store',
     });
 
     // ══════════════════════════════════════════════════════════════════════
     // BRANCH A: coral-sys.coral-group.be → CoralOS SaaS storefront
-    // Fully public. Everything that isn't a Next.js internal → /[locale]/store
-    // Login is NOT accessible here — always rewrite back to store.
+    // Fully public — no auth check whatsoever.
+    // Everything that isn't a Next.js internal → /[locale]/store
     // ══════════════════════════════════════════════════════════════════════
     if (isStoreSubdomain) {
-        // Next.js internals and API routes must pass through untouched
         if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
             const res = NextResponse.next();
             Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
@@ -95,7 +113,6 @@ export default auth((req) => {
             rest = pathname.replace(/^\//, '');
         }
 
-        // Only allow store, help, terms, privacy pages — anything else (incl. /login) → store
         const ALLOWED_STORE_PATHS = ['store', 'help', 'terms', 'privacy'];
         const isAllowedPath = ALLOWED_STORE_PATHS.some(p => rest.startsWith(p));
         const targetPath = isAllowedPath ? `/${targetLocale}/${rest}` : `/${targetLocale}/store`;
@@ -111,10 +128,15 @@ export default auth((req) => {
     // BRANCH B: app.coral-group.be → CoralOS ERP
     // ══════════════════════════════════════════════════════════════════════
     if (isAppSubdomain) {
+        // Decode session once — used throughout Branch B
+        const token     = await getToken(req);
+        const isLoggedIn = !!token;
+        const role       = token?.role;
+
         const isLoginPage  = pathname.includes('/login');
         const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy');
 
-        // Virtualise path for auth checks (pretend we're already under /admin)
+        // Virtualise path for auth checks
         const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin')
             ? `/admin${pathname === '/' ? '' : pathname}`
             : pathname;
@@ -128,14 +150,13 @@ export default auth((req) => {
                 return NextResponse.redirect(loginUrl);
             }
             if (!PLATFORM_ADMIN_ROLES.includes(role as (typeof PLATFORM_ADMIN_ROLES)[number])) {
-                // Non-platform-admin (e.g. APP_MANAGER) → redirect to their ERP
                 const url = new URL('/admin', req.nextUrl.origin);
                 return NextResponse.redirect(url);
             }
         }
 
         // ── Admin / Portal protection ──
-        const isProtectedPath  = virtualPath.startsWith('/admin') || virtualPath.startsWith('/portal');
+        const isProtectedPath   = virtualPath.startsWith('/admin') || virtualPath.startsWith('/portal');
         const isTimeTrackerPath = virtualPath.includes('/admin/time-tracker');
 
         if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
@@ -143,14 +164,10 @@ export default auth((req) => {
             return NextResponse.redirect(url);
         }
 
-        // ── Module-based route gating ────────────────────────────────────────
-        // activeModules comes from the JWT (set at login, refreshed on updateAge).
-        // This is enforced server-side — client-side UI bypass doesn't help.
-        // Superadmin roles bypass all module gates.
-        const activeModules = (req.auth?.user as ExtendedUser)?.activeModules;
+        // ── Module-based route gating ─────────────────────────────────────
+        const activeModules = token?.activeModules;
         const isSuperadmin  = PLATFORM_ADMIN_ROLES.includes(role as (typeof PLATFORM_ADMIN_ROLES)[number]);
 
-        // Map: path segment → required module
         const MODULE_GATE: Record<string, string> = {
             'financials':          'INVOICING',
             'quotations':          'INVOICING',
@@ -165,30 +182,21 @@ export default auth((req) => {
         };
 
         if (isLoggedIn && !isSuperadmin && activeModules) {
-            // Strip locale prefix to get the admin sub-path
-            // pathname examples: /nl/admin/financials/..., /admin/contacts
             const stripped = pathname.replace(/^\/(en|fr|nl|ro|ru)/, '').replace(/^\/admin\/?/, '');
             const segment  = stripped.split('/')[0];
-
             const requiredModule = MODULE_GATE[segment];
             if (requiredModule && !activeModules.includes(requiredModule)) {
-                // Hard redirect — not a soft 403, so the user sees a clean dashboard
-                const locale   = resolveLocale(req);
-                const blocked  = new URL(`/${locale}/admin?blocked=${requiredModule}`, req.nextUrl.origin);
+                const locale  = resolveLocale(req);
+                const blocked = new URL(`/${locale}/admin?blocked=${requiredModule}`, req.nextUrl.origin);
                 return NextResponse.redirect(blocked);
             }
         }
 
-        // ── Sync NEXT_LOCALE cookie from JWT language preference ──
-        // With localePrefix: 'never', locale lives in the cookie, not the URL.
-        // If the user's stored language differs from the current cookie, update it
-        // so the next-intl middleware picks up the correct locale on the next request.
-        const jwtLang = (req.auth?.user as { environmentLanguage?: string })?.environmentLanguage;
+        // ── Sync NEXT_LOCALE cookie from JWT language preference ──────────
+        const jwtLang = token?.environmentLanguage;
         if (isLoggedIn && jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) {
             const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
             if (cookieLang !== jwtLang) {
-                // Let the request proceed, but stamp the correct locale cookie.
-                // The next page load will use the updated value.
                 const syncRes = NextResponse.next();
                 syncRes.cookies.set('NEXT_LOCALE', jwtLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
                 Object.entries(noCache()).forEach(([k, v]) => syncRes.headers.set(k, v));
@@ -196,16 +204,13 @@ export default auth((req) => {
             }
         }
 
-        // ── Rewrite: map root / non-admin paths → /[locale]/admin ──
-        // With localePrefix: 'never', paths never carry a locale segment in the URL.
-        // intlMiddleware (called below) handles the internal /[locale]/* rewrite.
+        // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
         const locale = resolveLocale(req);
         const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', '_next', 'api'];
+        const rest = pathname.replace(/^\//, '');
         let rewriteTarget: string | null = null;
 
-        const rest = pathname.replace(/^\//, '');
         if (!noRewriteSegs.some(s => rest.startsWith(s))) {
-            // Root or unknown path → send to /[locale]/admin
             rewriteTarget = `/${locale}/admin${rest ? `/${rest}` : ''}`;
         }
 
@@ -216,7 +221,7 @@ export default auth((req) => {
             return res;
         }
 
-        // Path already correctly prefixed — just add no-cache and continue
+        // Path already correctly prefixed — add no-cache and let intl handle it
         const intlRes = intlMiddleware(req);
         Object.entries(noCache()).forEach(([k, v]) => intlRes.headers.set(k, v));
         return intlRes;
@@ -224,11 +229,10 @@ export default auth((req) => {
 
     // ══════════════════════════════════════════════════════════════════════
     // BRANCH C: www.coral-group.be / coral-group.be → Construction site
-    // Let next-intl handle locale detection and redirection normally.
     // ══════════════════════════════════════════════════════════════════════
     return intlMiddleware(req);
-})
+}
 
 export const config = {
-    matcher: ["/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|manifest.json|sw.js).*)"],
-}
+    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|manifest.json|sw.js).*)'],
+};

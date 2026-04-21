@@ -58,6 +58,28 @@ export function getFinancialTabs(t?: (key: string) => string, tHas?: (key: strin
 // Backward compat: export the base tabs as default
 export const financialTabs = financialTabsBase;
 
+/**
+ * Financial tabs gated by plan type.
+ * - fin-cred-verkoop (Sales Credit Notes) → PRO+ only
+ */
+const FINANCIAL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {
+    'fin-cred-verkoop': 'PRO',
+};
+
+const FIN_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;
+
+export function getFilteredFinancialTabs(planType: string): typeof financialTabsBase {
+    // FOUNDER/CUSTOM bypass all gates
+    if (planType === 'FOUNDER' || planType === 'CUSTOM') return financialTabsBase;
+    const curIdx = FIN_TIER_ORDER.indexOf(planType as typeof FIN_TIER_ORDER[number]);
+    return financialTabsBase.filter(tab => {
+        const minTier = FINANCIAL_PLAN_GATE[tab.id];
+        if (!minTier) return true;
+        const reqIdx = FIN_TIER_ORDER.indexOf(minTier);
+        return curIdx >= reqIdx;
+    });
+}
+
 // Settings tabs i18n key map
 const SETTINGS_TAB_KEYS: Record<string, string> = {
     'company-info': 'companyInfo',

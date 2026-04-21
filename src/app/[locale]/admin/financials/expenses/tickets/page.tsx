@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { financialTabs } from "@/config/tabs";
+import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Plus, Camera } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useTenant } from '@/context/TenantContext';
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -22,10 +23,11 @@ export default function ExpenseTicketsPage() {
     usePageTitle('Expense Tickets');
     const [showCapture, setShowCapture] = useState(false);
     const t = useTranslations('Admin');
+    const { planType } = useTenant();
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={financialTabs} groupId="financials" />
+            <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
             <div className="w-full flex-1 flex flex-col min-h-0">
                 {/* Action bar */}
                 <div className="flex items-center gap-2 px-6 pt-4 pb-2 shrink-0">

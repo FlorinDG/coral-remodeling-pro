@@ -2,7 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { financialTabs } from "@/config/tabs";
+import { getFilteredFinancialTabs } from "@/config/tabs";
+import { useTenant } from '@/context/TenantContext';
 import CreateInvoiceButton from "@/components/admin/invoices/CreateInvoiceButton";
 
 import { usePageTitle } from '@/hooks/usePageTitle';
@@ -15,10 +16,12 @@ const DatabaseCloneDynamic = dynamic(
 export default function SalesInvoicesPage() {
     usePageTitle('Sales Invoices');
 
+    const { planType } = useTenant();
+
     return (
         <div className="flex flex-col w-full h-full">
             <div className="relative">
-                <ModuleTabs tabs={financialTabs} groupId="financials" />
+                <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20">
                     <CreateInvoiceButton />
                 </div>

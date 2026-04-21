@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { financialTabs } from "@/config/tabs";
+import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { RefreshCw, Plus, Loader2, Camera } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -29,7 +29,7 @@ const TicketCaptureModal = dynamic(
 export default function ExpensesInvoicesPage() {
     usePageTitle('Purchase Invoices');
 
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, planType } = useTenant();
     const expensesDbId = resolveDbId('db-expenses');
 
     const [syncing, setSyncing] = useState(false);
@@ -130,7 +130,7 @@ export default function ExpensesInvoicesPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={financialTabs} groupId="financials" />
+            <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
 
             {/* Peppol received quota banner — shown between tabs and action bar */}
             {quotaWarning?.overQuota && (

@@ -200,6 +200,10 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             }
         });
 
+        // Cache: relatedDbId::lowerCaseName → resolved pageId
+        // Prevents duplicate stub creation when many rows share the same relation value
+        const relationCache: Record<string, string> = {};
+
         const pagesToCreate = previewData.map(row => {
             const props: Record<string, any> = {};
 
@@ -232,8 +236,40 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                         }
                     }
                     else if (dbProp.type === 'relation') {
-                        if (val) val = [String(val).trim()];
-                        else val = [];
+                        const rawName = String(val ?? '').trim();
+                        if (rawName && (dbProp as any).relationDatabaseId) {
+                            const relDbId = (dbProp as any).relationDatabaseId as string;
+                            const cacheKey = `${relDbId}::${rawName.toLowerCase()}`;
+
+                            if (relationCache[cacheKey]) {
+                                // Already resolved or created this run — reuse
+                                val = [relationCache[cacheKey]];
+                            } else {
+                                // Search related DB for a page whose title matches
+                                const relatedDb = useDatabaseStore.getState().getDatabase(relDbId);
+                                if (relatedDb) {
+                                    const existing = relatedDb.pages.find((p: any) => {
+                                        const t = p.properties.title ?? p.properties.name ?? p.properties.naam ?? '';
+                                        return String(t).toLowerCase().trim() === rawName.toLowerCase();
+                                    });
+                                    if (existing) {
+                                        // Found — link to existing record
+                                        relationCache[cacheKey] = existing.id;
+                                        val = [existing.id];
+                                    } else {
+                                        // Not found — auto-create a minimal stub record in the related DB
+                                        const newPage = useDatabaseStore.getState().createPage(relDbId, { title: rawName });
+                                        relationCache[cacheKey] = newPage.id;
+                                        val = [newPage.id];
+                                    }
+                                } else {
+                                    // Related DB not loaded yet — fall back to empty
+                                    val = [];
+                                }
+                            }
+                        } else {
+                            val = [];
+                        }
                     }
                     else if (dbProp.type === 'multi_select') {
                         if (val) val = String(val).split(',').map(s => s.trim()).filter(Boolean);

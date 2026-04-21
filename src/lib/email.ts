@@ -22,7 +22,7 @@ export async function sendLeadNotification(lead: {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@coral-group.be';
         await resend.emails.send({
             from: `Coral Remodeling <${fromEmail}>`,
             to: RECIPIENT_EMAIL,
@@ -92,8 +92,8 @@ export async function sendVerificationEmail(params: {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
-        await resend.emails.send({
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@coral-group.be';
+        const result = await resend.emails.send({
             from: `CoralOS <${fromEmail}>`,
             to: params.to,
             subject: 'Verify your CoralOS account',
@@ -117,15 +117,17 @@ export async function sendVerificationEmail(params: {
                     </p>
                     <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
                     <p style="color: #bbb; font-size: 10px; text-align: center;">
-                        © ${new Date().getFullYear()} Coral Group · coral-group.be
+                        &copy; ${new Date().getFullYear()} Coral Group &middot; coral-group.be
                     </p>
                 </div>
             `,
         });
-        console.log(`[Verification] Email sent to ${params.to}`);
+        console.log(`[Verification] Email sent to ${params.to} — Resend ID: ${(result as any)?.data?.id ?? 'unknown'}`);
     } catch (error) {
         console.error('[Verification] Failed to send email:', error);
-        // Fallback: log the URL so verification is still possible
+        // Log fallback URL for emergency manual verification
         console.log(`[Verification] Fallback URL for ${params.to}: ${params.verificationUrl}`);
+        // Re-throw so the signup route surfaces the real error rather than silently dropping the email
+        throw error;
     }
 }

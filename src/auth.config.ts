@@ -26,7 +26,7 @@ export const authConfig = {
                 session.user.id = token.id as string;
                 (session.user as { tenantId?: string | null }).tenantId = token.tenantId as string | null;
                 (session.user as unknown as { emailVerified?: boolean }).emailVerified = token.emailVerified as boolean;
-                (session.user as any).environmentLanguage = token.environmentLanguage as string | null;
+                (session.user as unknown as { environmentLanguage?: string | null }).environmentLanguage = token.environmentLanguage as string | null;
             }
             return session;
         }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { signIn } from 'next-auth/react';
-import { useRouter } from '@/i18n/routing';
+import { Link } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -45,7 +45,7 @@ export default function LoginPage() {
     const [signupPassword, setSignupPassword] = useState('');
     const [signupConfirm, setSignupConfirm] = useState('');
     const [signupError, setSignupError] = useState('');
-    const [signupSuccess, setSignupSuccess] = useState('');
+    const [_signupSuccess, setSignupSuccess] = useState('');
     const [signupDone, setSignupDone] = useState(false);   // shows the verify-email card
     const [signupDoneEmail, setSignupDoneEmail] = useState('');  // which address to check
     const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -58,13 +58,10 @@ export default function LoginPage() {
     const [resendSuccess, setResendSuccess] = useState('');
 
     const [isAppDomain, setIsAppDomain] = useState(false);
-    const router = useRouter();
     const searchParams = useSearchParams();
     const planParam = searchParams.get('plan');
 
-    // Parse URL parameters for verification status
     const verifiedStatus = searchParams.get('verified');
-    const errorParam = searchParams.get('error');
 
     const pwRules = useMemo(() => validatePasswordRules(signupPassword), [signupPassword]);
     const allRulesPassed = Object.values(pwRules).every(Boolean);
@@ -97,7 +94,7 @@ export default function LoginPage() {
                 // Fetch session to get user's stored environment language
                 const sessionRes = await fetch('/api/auth/session');
                 const sess = await sessionRes.json();
-                const userLocale = (sess?.user as any)?.environmentLanguage || 'nl';
+                const userLocale = (sess?.user as { environmentLanguage?: string })?.environmentLanguage || 'nl';
                 window.location.href = `/${userLocale}/admin/dashboard`;
             }
         } catch {
@@ -560,11 +557,11 @@ export default function LoginPage() {
             <div className="mt-6 flex flex-col items-center gap-2 z-10 relative">
                 <p className="text-center text-neutral-500 text-[10px] uppercase tracking-widest font-medium">
                     Door verder te gaan, ga je akkoord met onze{' '}
-                    <a href="/nl/terms" className="text-blue-500 hover:text-blue-600 transition-colors">voorwaarden</a>
+                    <Link href="/terms" className="text-blue-500 hover:text-blue-600 transition-colors">voorwaarden</Link>
                 </p>
-                <a href="/nl/help" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
-                    Help & Documentatie
-                </a>
+                <Link href="/help" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
+                    Help &amp; Documentatie
+                </Link>
             </div>
 
             {/* Background blurs */}

@@ -173,7 +173,7 @@ const T = {
     },
 };
 
-const FEATURES = (t: typeof T.nl) => [
+const FEATURES = (_t: typeof T.nl) => [
     { icon: FileText,   title: 'Facturatie / Facturation / Invoicing',         color: 'blue'    },
     { icon: Send,       title: 'Peppol E-facturatie',                          color: 'indigo'  },
     { icon: Users,      title: 'CRM & Contacten',                              color: 'violet'  },
@@ -251,7 +251,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 export default function StorePage() {
     const params  = useParams();
     const router  = useRouter();
-    const { theme, setTheme, resolvedTheme } = useTheme();
+    const { setTheme, resolvedTheme } = useTheme();
     const locale  = (params?.locale as string) || 'nl';
     const t       = T[locale as keyof typeof T] || T.nl;
     const featureDescs = FEATURE_DESCS[locale as keyof typeof FEATURE_DESCS] || FEATURE_DESCS.nl;
@@ -442,7 +442,7 @@ export default function StorePage() {
                                         <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                                     ))}
                                 </div>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-5">"{item.text}"</p>
+                                <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-5">&ldquo;{item.text}&rdquo;</p>
                                 <div>
                                     <p className="text-sm font-semibold text-neutral-900 dark:text-white">{item.name}</p>
                                     <p className="text-xs text-neutral-400">{item.role}</p>

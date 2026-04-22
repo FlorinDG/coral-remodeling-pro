@@ -9,9 +9,7 @@ import { verifyPassword } from "@/lib/password";
 
 console.log("[DEBUG AUTH] Google Client ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
 
-// Verification lifecycle thresholds (in milliseconds)
-const GRACE_PERIOD_MS   = 3 * 24 * 60 * 60 * 1000; // 3 days — unverified but active
-const WARNING_PERIOD_MS = 4 * 24 * 60 * 60 * 1000; // 4 days total — after this, hard block
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
@@ -56,13 +54,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
                 if (!isPasswordValid) return null;
 
-                // Verification lifecycle check
-                if (!user.emailVerified && user.verificationSentAt) {
-                    const elapsed = Date.now() - new Date(user.verificationSentAt).getTime();
-                    if (elapsed > WARNING_PERIOD_MS) throw new Error("VERIFICATION_HARD_BLOCK");
-                    if (elapsed > GRACE_PERIOD_MS)   throw new Error("VERIFICATION_WARNING_BLOCK");
-                    // Within grace period — allow login but unverified
-                }
+                // Email verification is encouraged via the AdminLayout banner
+                // but never blocks login — users can always access their workspace
 
                 return {
                     id:            user.id,

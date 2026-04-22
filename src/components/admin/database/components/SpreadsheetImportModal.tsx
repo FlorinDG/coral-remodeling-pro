@@ -284,36 +284,35 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                         if (val instanceof Date) {
                             val = val.toISOString().split('T')[0];
                         }
-                        // Excel serial number (days since Dec 30 1899, typically 40000-65000 for 2009-2077)
-                        else if (typeof val === 'number' && val > 30000 && val < 80000) {
-                            const jsDate = new Date(Math.round((val - 25569) * 86400 * 1000));
-                            val = jsDate.toISOString().split('T')[0];
-                        }
-                        // String date: parse and normalise to YYYY-MM-DD
-                        else if (typeof val === 'string' && val.trim()) {
-                            const raw = val.trim();
-                            // Handle DD/MM/YYYY or DD-MM-YYYY (Belgian common format)
-                            const ddmm = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
-                            if (ddmm) {
-                                const [, d, m, y] = ddmm;
-                                val = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
-                            } else {
-                                const parsed = new Date(raw);
-                                if (!isNaN(parsed.getTime())) {
-                                    val = parsed.toISOString().split('T')[0];
-                                }
+                        // Excel serial number OR string-encoded serial (CSV gives strings like "45737")
+                        else {
+                            const numVal = typeof val === 'number' ? val : (typeof val === 'string' && /^\d{4,5}$/.test(val.trim()) ? Number(val.trim()) : NaN);
+                            if (!isNaN(numVal) && numVal > 30000 && numVal < 80000) {
+                                const jsDate = new Date(Math.round((numVal - 25569) * 86400 * 1000));
+                                val = jsDate.toISOString().split('T')[0];
                             }
-                        } else {
-                            val = '';
+                            else if (typeof val === 'string' && val.trim()) {
+                                const raw = val.trim();
+                                const ddmm = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+                                if (ddmm) {
+                                    const [, d, m, y] = ddmm;
+                                    val = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+                                } else {
+                                    const parsed = new Date(raw);
+                                    if (!isNaN(parsed.getTime())) {
+                                        val = parsed.toISOString().split('T')[0];
+                                    }
+                                }
+                            } else {
+                                val = '';
+                            }
                         }
                     }
                     else if (dbProp.type === 'select') {
-                        // Clean whitespace
-                        val = String(val).trim();
+                        const rawVal = String(val).trim();
 
-                        // Edge case manual mapping logic: Group Codes
                         if (databaseId === 'db-articles' && dbProp.name === 'Artikelgroep') {
-                            const lg = String(val).toLowerCase();
+                            const lg = rawVal.toLowerCase();
                             if (lg.includes('ruwbouw')) val = 'opt-ruwbouw';
                             else if (lg.includes('afwerking')) val = 'opt-afwerking';
                             else if (lg.includes('elektriciteit') || lg.includes('elec')) val = 'opt-elektriciteit';
@@ -321,6 +320,26 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                             else if (lg.includes('ventilatie') || lg.includes('hvac')) val = 'opt-ventilatie';
                             else if (lg.includes('verwarming')) val = 'opt-verwarming';
                             else val = 'opt-general';
+                        } else {
+                            // Generic: match imported text against option display names
+                            const options = dbProp.config?.options || [];
+                            const exactMatch = options.find(o => o.id === rawVal);
+                            if (exactMatch) {
+                                val = rawVal;
+                            } else {
+                                const nameMatch = options.find(o =>
+                                    o.name.toLowerCase().trim() === rawVal.toLowerCase()
+                                );
+                                if (nameMatch) {
+                                    val = nameMatch.id;
+                                } else {
+                                    const fuzzyMatch = options.find(o =>
+                                        o.name.toLowerCase().includes(rawVal.toLowerCase()) ||
+                                        rawVal.toLowerCase().includes(o.name.toLowerCase())
+                                    );
+                                    val = fuzzyMatch ? fuzzyMatch.id : rawVal;
+                                }
+                            }
                         }
                     }
                     else if (dbProp.type === 'relation') {
@@ -330,10 +349,8 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                             const cacheKey = `${relDbId}::${rawName.toLowerCase()}`;
 
                             if (relationCache[cacheKey]) {
-                                // Already resolved or created this run — reuse
                                 val = [relationCache[cacheKey]];
                             } else {
-                                // Search related DB for a page whose title matches
                                 const relatedDb = useDatabaseStore.getState().getDatabase(relDbId);
                                 if (relatedDb) {
                                     const existing = relatedDb.pages.find((p) => {
@@ -341,17 +358,14 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                         return String(t).toLowerCase().trim() === rawName.toLowerCase();
                                     });
                                     if (existing) {
-                                        // Found — link to existing record
                                         relationCache[cacheKey] = existing.id;
                                         val = [existing.id];
                                     } else {
-                                        // Not found — auto-create a minimal stub record in the related DB
                                         const newPage = useDatabaseStore.getState().createPage(relDbId, { title: rawName });
                                         relationCache[cacheKey] = newPage.id;
                                         val = [newPage.id];
                                     }
                                 } else {
-                                    // Related DB not loaded yet — fall back to empty
                                     val = [];
                                 }
                             }

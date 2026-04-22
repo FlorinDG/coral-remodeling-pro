@@ -154,8 +154,20 @@ export interface DatabaseView {
     name: string;
     type: ViewType;
     config?: {
-        groupByPropertyId?: string; // For Board view (select/status)
-        datePropertyId?: string; // For Calendar view (date)
+        // Board / Kanban
+        groupByPropertyId?: string;        // Column grouping (select/status)
+        kanbanCardCoverPropertyId?: string; // Image property for card cover
+        kanbanWipLimits?: Record<string, number>; // Column ID → max cards
+        kanbanCollapsedColumns?: string[];  // IDs of collapsed columns
+
+        // Calendar
+        datePropertyId?: string;           // Date column
+
+        // Timeline
+        startDatePropertyId?: string;      // Bar left edge
+        endDatePropertyId?: string;        // Bar right edge
+        timelineGroupByPropertyId?: string; // Row grouping (select/person)
+        timelineScale?: 'day' | 'week' | 'month' | 'quarter';
     };
     filters?: FilterRule[]; // View-specific filters
     sorts?: SortRule[];     // View-specific sorts

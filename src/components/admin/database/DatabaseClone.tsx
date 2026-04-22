@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon } from 'lucide-react';
+import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon, Clock } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import PageModal from '@/components/admin/database/components/PageModal';
@@ -14,8 +14,8 @@ const NotionGridDynamic = dynamic(
   { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
 );
 
-const BoardViewDynamic = dynamic(
-  () => import('@/components/admin/database/views/BoardView'),
+const KanbanViewDynamic = dynamic(
+  () => import('@/components/admin/database/views/KanbanView'),
   { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
 );
 
@@ -24,8 +24,8 @@ const CalendarViewDynamic = dynamic(
   { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
 );
 
-const GanttViewDynamic = dynamic(
-  () => import('@/components/admin/database/views/GanttView'),
+const TimelineViewDynamic = dynamic(
+  () => import('@/components/admin/database/views/TimelineView'),
   { ssr: false, loading: () => <div className="w-full h-[600px] bg-neutral-50 dark:bg-neutral-900/50 animate-pulse rounded-b-xl border-x border-b border-neutral-200 dark:border-white/10" /> }
 );
 
@@ -62,14 +62,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   // Initialize synchronously to avoid a second re-render after mounting
   const [activeViewId, setActiveViewId] = useState<string | null>(() => {
-    const supportedViews = database?.views?.filter(v => v.type !== 'timeline') || [];
+    const supportedViews = database?.views || [];
     return supportedViews.length > 0 ? supportedViews[0].id : null;
   });
 
   // Keep activeViewId synced if the current view is somehow deleted
   useEffect(() => {
     if (database && activeViewId) {
-      const supportedViews = database.views.filter(v => v.type !== 'timeline');
+      const supportedViews = database.views;
       const viewExists = supportedViews.some(v => v.id === activeViewId);
       if (!viewExists && supportedViews.length > 0) {
         setActiveViewId(supportedViews[0].id);
@@ -304,7 +304,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   }
 
   // Restrict to Single View "All Contacts" for Free Tier on Contact Databases
-  let supportedViews = database.views.filter(v => v.type !== 'timeline');
+  let supportedViews = [...database.views];
   if (isImmutableContactDB && !hasCRM) {
     if (supportedViews.length > 0) {
       supportedViews = [supportedViews.find(v => v.name.toLowerCase().includes('all')) || supportedViews[0]];
@@ -335,7 +335,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       case 'table': return <Table2 className="w-4 h-4" />;
       case 'board': return <LayoutGrid className="w-4 h-4" />;
       case 'calendar': return <CalendarIcon className="w-4 h-4" />;
-      case 'timeline': return <GanttChartSquare className="w-4 h-4" />;
+      case 'timeline': return <Clock className="w-4 h-4" />;
       default: return <Table2 className="w-4 h-4" />;
     }
   };
@@ -387,9 +387,9 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
         {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices'} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
-        {activeView.type === 'board' && <BoardViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
+        {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
-        {activeView.type === 'timeline' && <GanttViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
+        {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
       </div>
 
       {projectIdParam && (

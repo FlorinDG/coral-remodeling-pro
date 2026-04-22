@@ -628,7 +628,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     <div className="h-8 w-px bg-neutral-200 dark:bg-white/10 shrink-0" />
 
                     {/* Selectors */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto no-scrollbar">
                         {/* Client Selector */}
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
                             <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />

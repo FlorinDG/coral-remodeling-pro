@@ -359,7 +359,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             <DropdownMenuSeparator />
                             {!preventDelete && (
                             <DropdownMenuItem
-                                onClick={() => deletePage(databaseIdRef, rowData.id)}
+                                onClick={() => {
+                                    if (window.confirm('Permanently delete this record?')) {
+                                        deletePage(databaseIdRef, rowData.id);
+                                    }
+                                }}
                                 className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
                             >
                                 <Trash className="w-4 h-4 mr-2" />
@@ -662,6 +666,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     const deletedRows = rowData.filter(r => !newRowIds.has(r.id));
 
                                     deletedRows.forEach(deleted => {
+                                        // Confirmation already handled at UI level for context-menu / toolbar deletes.
+                                        // DSG native deletes (backspace key) bypass UI — propagate directly.
                                         deletePage(database.id, deleted.id);
                                     });
 

@@ -208,13 +208,22 @@ export const useDatabaseStore = create<DatabaseState>()(
                 deleteGlobalDatabase(id).catch(console.error);
             },
 
-            clearDatabase: (databaseId) => set((state) => ({
-                databases: state.databases.map(db =>
-                    db.id === databaseId
-                        ? { ...db, pages: [] }
-                        : db
-                )
-            })),
+            clearDatabase: (databaseId) => {
+                // Capture page IDs before clearing locally
+                const db = get().databases.find(d => d.id === databaseId);
+                const pageIds = db?.pages.map((p: Page) => p.id) || [];
+
+                set((state) => ({
+                    databases: state.databases.map(d =>
+                        d.id === databaseId
+                            ? { ...d, pages: [] }
+                            : d
+                    )
+                }));
+
+                // Propagate each deletion to Prisma
+                pageIds.forEach((pid: string) => deleteGlobalPage(pid).catch(console.error));
+            },
 
             getDatabase: (id) => {
                 return get().databases.find(db => db.id === id);
@@ -788,6 +797,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
+                // Propagate each deletion to Prisma
+                pageIds.forEach(pid => deleteGlobalPage(pid).catch(console.error));
             },
 
             updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => {

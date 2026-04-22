@@ -38,6 +38,7 @@ function assembleNumber(
     numberWidth: number,
     sequenceNumber: number
 ): string {
+    const joiner = connector === 'none' ? '' : connector;
     const parts: string[] = [];
     
     if (prefix) parts.push(prefix);
@@ -45,9 +46,9 @@ function assembleNumber(
     const datePart = formatDate(dateFormat);
     if (datePart) parts.push(datePart);
     
-    parts.push(String(sequenceNumber).padStart(numberWidth, '0'));
+    parts.push(numberWidth === 0 ? String(sequenceNumber) : String(sequenceNumber).padStart(numberWidth, '0'));
     
-    return parts.join(connector);
+    return parts.join(joiner);
 }
 
 /**
@@ -80,10 +81,10 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
 
         if (!tenant) return { success: false, error: 'Tenant not found' };
 
-        const prefix = tenant[prefixField] || (docType === 'invoice' ? 'INV' : 'OFF');
+        const prefix = tenant[prefixField] || '';
         const connector = tenant[connectorField] || '-';
         const dateFormat = tenant[dateFormatField] || 'YYYY';
-        const numberWidth = tenant[numberWidthField] || 3;
+        const numberWidth = tenant[numberWidthField] ?? 3;
         const currentNumber = tenant[nextNumberField] || 1;
 
         // Generate the formatted number
@@ -125,10 +126,10 @@ export async function previewDocumentNumber(docType: DocType): Promise<string> {
         if (!tenant) return '---';
 
         return assembleNumber(
-            tenant[`${docType}Prefix`] || (docType === 'invoice' ? 'INV' : 'OFF'),
+            tenant[`${docType}Prefix`] || '',
             tenant[`${docType}Connector`] || '-',
             tenant[`${docType}DateFormat`] || 'YYYY',
-            tenant[`${docType}NumberWidth`] || 3,
+            tenant[`${docType}NumberWidth`] ?? 3,
             tenant[`${docType}NextNumber`] || 1
         );
     } catch {

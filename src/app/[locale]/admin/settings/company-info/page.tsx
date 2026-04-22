@@ -508,11 +508,12 @@ export default function CompanyInfoSettings() {
                                 default: return '';
                             }
                         })();
+                        const joiner = connector === 'none' ? '' : connector;
                         const parts: string[] = [];
                         if (prefix) parts.push(prefix);
                         if (datePart) parts.push(datePart);
-                        parts.push(String(nextNumber).padStart(numberWidth, '0'));
-                        const preview = parts.join(connector);
+                        parts.push(numberWidth === 0 ? String(nextNumber) : String(nextNumber).padStart(numberWidth, '0'));
+                        const preview = parts.join(joiner);
 
                         return (
                             <div key={docType} className="bg-white dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-2xl p-6 space-y-5">
@@ -545,6 +546,7 @@ export default function CompanyInfoSettings() {
                                             onChange={e => setProfile({ ...profile, [`${docType}Connector`]: e.target.value })}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-[var(--brand-color)] transition-colors"
                                         >
+                                        <option value="none">None</option>
                                             <option value="-">Hyphen ( - )</option>
                                             <option value=".">Dot ( . )</option>
                                             <option value=" ">Space ( )</option>
@@ -578,6 +580,7 @@ export default function CompanyInfoSettings() {
                                             onChange={e => setProfile({ ...profile, [`${docType}NumberWidth`]: parseInt(e.target.value) })}
                                             className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-[var(--brand-color)] transition-colors"
                                         >
+                                            <option value={0}>— (no padding)</option>
                                             <option value={1}>x (1)</option>
                                             <option value={2}>xx (01)</option>
                                             <option value={3}>xxx (001)</option>

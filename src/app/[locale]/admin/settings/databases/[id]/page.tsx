@@ -148,7 +148,6 @@ export default function DatabaseSchemaConfigurator() {
                                                             <input
                                                                 value={prop.name}
                                                                 onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
-                                                                disabled={isTitle}
                                                                 className="bg-transparent text-sm font-semibold text-neutral-900 dark:text-neutral-100 border-b border-transparent hover:border-neutral-300 focus:border-blue-500 outline-none px-1 py-0.5 transition w-full max-w-[200px]"
                                                             />
                                                             {isTitle && <span className="text-[10px] px-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wider">Primary Key</span>}

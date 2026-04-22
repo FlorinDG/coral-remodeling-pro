@@ -52,7 +52,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
   const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets';
-  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || databaseId === 'db-quotations';
+  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB;
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());

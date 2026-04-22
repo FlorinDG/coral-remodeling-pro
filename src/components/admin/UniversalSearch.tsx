@@ -254,7 +254,7 @@ export default function UniversalSearch() {
 
             {/* ── Search Modal ── */}
             {isOpen && (
-                <div ref={panelRef} className="fixed inset-0 z-[200]">
+                <div ref={panelRef} className="fixed inset-0" style={{ zIndex: 100000 }}>
                     <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
                     <div className="absolute top-[12vh] left-1/2 -translate-x-1/2 w-full max-w-xl px-4" style={{ animation: 'searchFlyoutIn 150ms ease-out' }}>

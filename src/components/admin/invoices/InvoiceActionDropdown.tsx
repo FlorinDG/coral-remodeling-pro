@@ -53,7 +53,7 @@ export default function InvoiceActionDropdown({ invoiceId, invoiceNumber }: Prop
             </button>
 
             {open && (
-                <div className="absolute right-0 mt-1.5 w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl z-50 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                <div className="absolute right-0 mt-1.5 w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/80 rounded-xl shadow-2xl z-50 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                     <button
                         onClick={handleEdit}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-left"

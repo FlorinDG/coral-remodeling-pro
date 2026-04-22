@@ -341,7 +341,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             </div>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent align="start" className="w-48 z-[100] shadow-xl">
+                        <DropdownMenuContent align="start" className="w-48 z-[100]">
                             <DropdownMenuItem onClick={() => setActivePageId(rowData.id)} className="cursor-pointer">
                                 <Maximize2 className="w-4 h-4 mr-2" />
                                 <span>Open</span>

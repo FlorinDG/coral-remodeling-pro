@@ -173,7 +173,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
     const dropdown = showResults && dropdownPos && createPortal(
         <div
             id="vat-lookup-dropdown"
-            className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-t-0 border-blue-400 dark:border-blue-500 rounded-b-lg shadow-2xl overflow-hidden"
+            className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-t-0 border-neutral-200 dark:border-neutral-700/80 rounded-b-xl shadow-2xl overflow-hidden"
             style={{
                 top: dropdownPos.top,
                 left: dropdownPos.left,
@@ -255,7 +255,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
             {/* Search input */}
             <div className={`flex items-center gap-2 bg-white dark:bg-neutral-900 border rounded-lg px-3 py-1.5 transition-all ${
                 showResults
-                    ? 'border-blue-400 dark:border-blue-500 ring-1 ring-blue-400/30 rounded-b-none'
+                    ? 'border-neutral-300 dark:border-neutral-600 ring-1 ring-neutral-300/30 rounded-b-none'
                     : 'border-neutral-200 dark:border-neutral-700'
             }`}>
                 <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />

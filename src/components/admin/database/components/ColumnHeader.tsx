@@ -175,7 +175,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
             />
 
             {isOpen && (
-                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-800 rounded-md shadow-lg border border-neutral-200 dark:border-white/10 z-50 p-1 flex flex-col gap-1 text-sm font-normal">
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-200 dark:border-neutral-700/80 z-50 py-1.5 flex flex-col gap-0.5 text-sm font-normal">
                     {isEditing ? (
                         <div className="p-1 px-2">
                             <input

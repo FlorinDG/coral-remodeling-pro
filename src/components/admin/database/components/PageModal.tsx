@@ -126,7 +126,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
 
             {isOpen && ref.current && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-blue-500 shadow-xl rounded-md w-64 p-2 animate-in fade-in duration-200"
+                    className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/80 shadow-2xl rounded-xl w-64 p-2 animate-in fade-in duration-200"
                     style={{
                         top: ref.current.getBoundingClientRect().bottom + 4,
                         left: ref.current.getBoundingClientRect().left
@@ -620,7 +620,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                     <MoreHorizontal className="w-3 h-3" />
                                                 </button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 z-[110] shadow-xl">
+                                            <DropdownMenuContent align="end" className="w-48 z-[110]">
                                                 <DropdownMenuItem onClick={() => {
                                                     const newName = prompt('Enter new property name:', prop.name);
                                                     if (newName) {

@@ -92,7 +92,7 @@ export function Header() {
                 <span className="hidden sm:inline">{currentLanguage.nativeName}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-popover z-50">
+            <DropdownMenuContent align="end" className="z-50">
               {languages.map((lang) => (
                 <DropdownMenuItem
                   key={lang.code}

@@ -248,7 +248,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                         {/* Autocomplete Combobox Dropdown */}
                         {showDropdown && searchResults.length > 0 && (
-                            <div className="absolute top-full left-0 mt-1 w-full sm:w-[500px] max-w-[90vw] bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-2xl z-50 max-h-[350px] overflow-y-auto">
+                            <div className="absolute top-full left-0 mt-1 w-full sm:w-[500px] max-w-[90vw] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/80 rounded-xl shadow-2xl z-50 max-h-[350px] overflow-y-auto">
                                 <div className="px-3 py-2 text-[10px] font-bold tracking-widest uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 backdrop-blur-md sticky top-0">
                                     Search Results
                                 </div>

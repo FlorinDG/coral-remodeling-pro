@@ -571,7 +571,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </button>
                             ) : null;
                         })()}
-                        {hasCRM && isHydrated && (
+                        {isHydrated && (
                             <button
                                 onClick={handleSendEmail}
                                 disabled={isSending || !clientId}

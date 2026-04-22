@@ -105,32 +105,6 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
                 )}
             </button>
 
-            {/* ── Active Sort Chips ── */}
-            {activeSorts.length > 0 && !isOpen && (
-                <div className="absolute top-full left-0 mt-1 flex items-center gap-1 z-50">
-                    {activeSorts.slice(0, 3).map((sort) => {
-                        const prop = database.properties.find(p => p.id === sort.propertyId);
-                        return (
-                            <button
-                                key={sort.id}
-                                onClick={() => setIsOpen(true)}
-                                className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 rounded-md hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors whitespace-nowrap"
-                            >
-                                {sort.direction === 'ascending' ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
-                                <span className="font-semibold">{prop?.name || '?'}</span>
-                            </button>
-                        );
-                    })}
-                    <button
-                        onClick={handleClearAll}
-                        className="p-0.5 text-neutral-400 hover:text-red-500 rounded transition-colors ml-0.5"
-                        title="Clear all sorts"
-                    >
-                        <X className="w-3 h-3" />
-                    </button>
-                </div>
-            )}
-
             {/* ── Flyout Panel ── */}
             {isOpen && (
                 <div

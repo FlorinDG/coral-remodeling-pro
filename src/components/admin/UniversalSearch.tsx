@@ -238,8 +238,9 @@ export default function UniversalSearch() {
         setIsOpen(false);
     };
 
-    if (!isOpen) {
-        return (
+    return (
+        <>
+            {/* ── Trigger Button (always rendered to hold header layout) ── */}
             <button
                 onClick={() => setIsOpen(true)}
                 className="w-full max-w-md flex items-center gap-2.5 px-4 py-1.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100/80 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 hover:text-neutral-600 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20 transition-all cursor-pointer"
@@ -250,118 +251,122 @@ export default function UniversalSearch() {
                     ⌘K
                 </kbd>
             </button>
-        );
-    }
 
-    return (
-        <div ref={panelRef} className="relative z-[200]">
-            {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-[199]" onClick={() => setIsOpen(false)} />
+            {/* ── Search Modal ── */}
+            {isOpen && (
+                <div ref={panelRef} className="fixed inset-0 z-[200]">
+                    <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
-            {/* Search Panel */}
-            <div className="fixed top-[10vh] left-1/2 -translate-x-1/2 w-full max-w-xl z-[200] animate-in fade-in zoom-in-95 duration-150">
-                <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden">
-                    {/* Search Input */}
-                    <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-white/10">
-                        <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={query}
-                            onChange={e => { setQuery(e.target.value); setSelectedIndex(0); }}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Search records, pages, navigation..."
-                            className="flex-1 bg-transparent outline-none text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400"
-                        />
-                        <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-white/10 rounded transition-colors">
-                            <X className="w-3.5 h-3.5 text-neutral-400" />
-                        </button>
-                    </div>
-
-                    {/* Results */}
-                    <div className="max-h-[60vh] overflow-y-auto">
-                        {!query.trim() && (
-                            <div className="p-6 text-center text-sm text-neutral-400">
-                                <p className="font-medium mb-1">Type to search across all records</p>
-                                <p className="text-xs">Contacts, invoices, quotations, articles, tasks, and more</p>
+                    <div className="absolute top-[12vh] left-1/2 -translate-x-1/2 w-full max-w-xl px-4" style={{ animation: 'searchFlyoutIn 150ms ease-out' }}>
+                        <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden">
+                            {/* Input */}
+                            <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-200 dark:border-white/10">
+                                <Search className="w-4 h-4 text-neutral-400 flex-shrink-0" />
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={query}
+                                    onChange={e => { setQuery(e.target.value); setSelectedIndex(0); }}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Search records, pages, navigation..."
+                                    className="flex-1 bg-transparent outline-none text-sm text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                />
+                                <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-neutral-100 dark:hover:bg-white/10 rounded transition-colors">
+                                    <X className="w-3.5 h-3.5 text-neutral-400" />
+                                </button>
                             </div>
-                        )}
 
-                        {query.trim() && totalResults === 0 && (
-                            <div className="p-6 text-center text-sm text-neutral-400">
-                                <p className="font-medium">No results found</p>
-                                <p className="text-xs mt-1">Try a different search term</p>
+                            {/* Results */}
+                            <div className="max-h-[60vh] overflow-y-auto">
+                                {!query.trim() && (
+                                    <div className="p-6 text-center text-sm text-neutral-400">
+                                        <p className="font-medium mb-1">Type to search across all records</p>
+                                        <p className="text-xs">Contacts, invoices, quotations, articles, tasks, and more</p>
+                                    </div>
+                                )}
+
+                                {query.trim() && totalResults === 0 && (
+                                    <div className="p-6 text-center text-sm text-neutral-400">
+                                        <p className="font-medium">No results found</p>
+                                        <p className="text-xs mt-1">Try a different search term</p>
+                                    </div>
+                                )}
+
+                                {navResults.length > 0 && (
+                                    <div>
+                                        <div className="px-4 pt-3 pb-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Navigation</span>
+                                        </div>
+                                        {navResults.map((item, idx) => (
+                                            <button
+                                                key={item.path}
+                                                onClick={() => navigateTo(`/${locale}${item.path}`)}
+                                                onMouseEnter={() => setSelectedIndex(idx)}
+                                                className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
+                                                    selectedIndex === idx
+                                                        ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                                                        : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                                }`}
+                                            >
+                                                <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
+                                                <span className="font-medium">{item.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {recordResults.length > 0 && (
+                                    <div>
+                                        <div className="px-4 pt-3 pb-1 border-t border-neutral-100 dark:border-white/5">
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Records</span>
+                                        </div>
+                                        {recordResults.map((item, idx) => {
+                                            const globalIdx = navResults.length + idx;
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    onClick={() => navigateTo(item.path)}
+                                                    onMouseEnter={() => setSelectedIndex(globalIdx)}
+                                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
+                                                        selectedIndex === globalIdx
+                                                            ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
+                                                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                                    }`}
+                                                >
+                                                    <span className="flex-shrink-0 opacity-50">{item.icon}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-medium truncate">{item.title}</div>
+                                                        {item.subtitle && (
+                                                            <div className="text-xs text-neutral-400 truncate">{item.subtitle}</div>
+                                                        )}
+                                                    </div>
+                                                    <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-500 dark:text-neutral-400">
+                                                        {item.dbName}
+                                                    </span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
                             </div>
-                        )}
 
-                        {/* Navigation Results */}
-                        {navResults.length > 0 && (
-                            <div>
-                                <div className="px-4 pt-3 pb-1">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Navigation</span>
-                                </div>
-                                {navResults.map((item, idx) => (
-                                    <button
-                                        key={item.path}
-                                        onClick={() => navigateTo(`/${locale}${item.path}`)}
-                                        onMouseEnter={() => setSelectedIndex(idx)}
-                                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
-                                            selectedIndex === idx
-                                                ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
-                                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                        }`}
-                                    >
-                                        <ArrowRight className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-                                        <span className="font-medium">{item.label}</span>
-                                    </button>
-                                ))}
+                            {/* Footer */}
+                            <div className="flex items-center gap-4 px-4 py-2 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 text-[10px] text-neutral-400">
+                                <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">↑↓</kbd> Navigate</span>
+                                <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">↵</kbd> Open</span>
+                                <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">esc</kbd> Close</span>
                             </div>
-                        )}
-
-                        {/* Record Results */}
-                        {recordResults.length > 0 && (
-                            <div>
-                                <div className="px-4 pt-3 pb-1 border-t border-neutral-100 dark:border-white/5">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Records</span>
-                                </div>
-                                {recordResults.map((item, idx) => {
-                                    const globalIdx = navResults.length + idx;
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            onClick={() => navigateTo(item.path)}
-                                            onMouseEnter={() => setSelectedIndex(globalIdx)}
-                                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors ${
-                                                selectedIndex === globalIdx
-                                                    ? 'bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300'
-                                                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                            }`}
-                                        >
-                                            <span className="flex-shrink-0 opacity-50">{item.icon}</span>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-medium truncate">{item.title}</div>
-                                                {item.subtitle && (
-                                                    <div className="text-xs text-neutral-400 truncate">{item.subtitle}</div>
-                                                )}
-                                            </div>
-                                            <span className="flex-shrink-0 text-[10px] font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-500 dark:text-neutral-400">
-                                                {item.dbName}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex items-center gap-4 px-4 py-2 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-950 text-[10px] text-neutral-400">
-                        <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">↑↓</kbd> Navigate</span>
-                        <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">↵</kbd> Open</span>
-                        <span className="flex items-center gap-1"><kbd className="px-1 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 rounded text-[9px]">esc</kbd> Close</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            )}
+
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes searchFlyoutIn {
+                    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            `}} />
+        </>
     );
 }

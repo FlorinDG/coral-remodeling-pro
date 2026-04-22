@@ -96,7 +96,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
     const activeOp = (op: FilterOperator) => OPERATORS.find(o => o.value === op);
 
     return (
-        <div className="relative">
+        <div className="relative flex items-center gap-1">
             {/* ── Trigger Button ── */}
             <button
                 ref={triggerRef}
@@ -104,7 +104,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                     if (activeFilters.length === 0) handleAddFilter();
                     else setIsOpen(!isOpen);
                 }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-md transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-md transition-all flex-shrink-0 ${
                     activeFilters.length > 0
                         ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'
                         : isOpen
@@ -120,45 +120,6 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                     </span>
                 )}
             </button>
-
-            {/* ── Active Filter Chips (Notion-style inline pills) ── */}
-            {activeFilters.length > 0 && !isOpen && (
-                <div className="absolute top-full left-0 mt-1 flex items-center gap-1 z-50">
-                    {activeFilters.slice(0, 3).map((filter) => {
-                        const prop = database.properties.find(p => p.id === filter.propertyId);
-                        const op = activeOp(filter.operator);
-                        const needsValue = op?.needsValue ?? true;
-                        return (
-                            <button
-                                key={filter.id}
-                                onClick={() => setIsOpen(true)}
-                                className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors whitespace-nowrap max-w-[200px] truncate"
-                            >
-                                <span className="font-semibold">{prop?.name || '?'}</span>
-                                <span className="opacity-60 lowercase">{op?.label}</span>
-                                {needsValue && filter.value && (
-                                    <span className="truncate max-w-[80px]">&quot;{String(filter.value)}&quot;</span>
-                                )}
-                            </button>
-                        );
-                    })}
-                    {activeFilters.length > 3 && (
-                        <button
-                            onClick={() => setIsOpen(true)}
-                            className="px-2 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/50 rounded-md hover:bg-blue-100 transition-colors"
-                        >
-                            +{activeFilters.length - 3} more
-                        </button>
-                    )}
-                    <button
-                        onClick={handleClearAll}
-                        className="p-0.5 text-neutral-400 hover:text-red-500 rounded transition-colors ml-0.5"
-                        title="Clear all filters"
-                    >
-                        <X className="w-3 h-3" />
-                    </button>
-                </div>
-            )}
 
             {/* ── Flyout Panel ── */}
             {isOpen && (

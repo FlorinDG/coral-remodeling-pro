@@ -13,7 +13,10 @@ const TENANT_FIELDS = [
     'invoicePrefix', 'invoiceConnector', 'invoiceDateFormat', 'invoiceNumberWidth', 'invoiceNextNumber',
     'quotationPrefix', 'quotationConnector', 'quotationDateFormat', 'quotationNumberWidth', 'quotationNextNumber',
     // Document template
-    'documentTemplate'
+    // Document template
+    'documentTemplate',
+    'documentMode',
+    'stationeryUrl'
 ];
 
 // Build a select object from field list + extras

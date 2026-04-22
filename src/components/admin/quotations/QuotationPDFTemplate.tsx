@@ -30,10 +30,12 @@ export const QuotationPDFTemplate = ({
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
 }: QuotationPDFProps) => {
 
-    const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic } = tenantProfile || {};
+    const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
+    const isStationery = documentMode === 'stationery' && !!stationeryUrl;
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
+    const accent = brandColor || '#ea580c';
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';
@@ -46,7 +48,6 @@ export const QuotationPDFTemplate = ({
     const navy   = (s as any).navyColor  || '#1a3a5c';
     const navyMid = (s as any).navyMid  || '#245076';
 
-    // ── Column proportions ──────────────────────────────────────────────────
     const colDesc  = { flex: 4, paddingRight: 8 };
     const colQty   = { flex: 0.8, textAlign: 'center' as const };
     const colUnit  = { flex: 0.8, textAlign: 'center' as const };
@@ -58,7 +59,6 @@ export const QuotationPDFTemplate = ({
         return html.replace(/<[^>]*>?/gm, '').trim();
     };
 
-    // ── Company info lines ──────────────────────────────────────────────────
     const companyInfoLines = [
         vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '',
         street || '',
@@ -97,30 +97,42 @@ export const QuotationPDFTemplate = ({
                 blockTotal = unitRetail * (block.quantity || 1);
             }
 
+            // Stationery mode uses minimal styling
+            const baseRowStyle = isStationery
+                ? { flexDirection: 'row' as const, borderBottom: '0.5px solid #e0e0e0', paddingVertical: 5, paddingHorizontal: 40, fontSize: 9 }
+                : s.tableRow;
+
             if (block.type === 'section') {
+                const sectionStyle = isStationery
+                    ? { flexDirection: 'row' as const, backgroundColor: `${accent}12`, borderLeft: `3px solid ${accent}`, paddingVertical: 6, paddingHorizontal: 40, marginTop: 6 }
+                    : s.sectionRow;
+                const textStyle = isStationery
+                    ? { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const }
+                    : s.sectionText;
                 rows.push(
-                    <View key={block.id} style={s.sectionRow}>
-                        <Text style={{ ...colDesc, ...s.sectionText }}>{cleanContent.toUpperCase()}</Text>
+                    <View key={block.id} style={sectionStyle}>
+                        <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
-                    <View key={block.id} style={s.subsectionRow}>
+                    <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
                     </View>
                 );
             } else if (block.type === 'text') {
                 rows.push(
-                    <View key={block.id} style={{ ...s.tableRow, borderBottom: undefined, paddingLeft: depth * 10 + 6 }}>
+                    <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
                         <Text style={{ ...colDesc, fontStyle: 'italic', color: '#777' }}>{cleanContent}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
                     </View>
                 );
             } else {
+                const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
                 rows.push(
-                    <View key={block.id} style={{ ...s.tableRow, paddingLeft: depth > 0 ? depth * 10 + (isT1 || isT4 ? 28 : 6) : (isT1 || isT4 ? 28 : 6) }}>
+                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
                         <Text style={colDesc}>{cleanContent}</Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
@@ -138,20 +150,90 @@ export const QuotationPDFTemplate = ({
 
     const taxAmount   = grandTotal * 0.21;
     const totalInclTax = grandTotal + taxAmount;
+    const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 
-    // ── T4: PRISM geometric SVG header ──────────────────────────────────────
+    // ── STATIONERY MODE ─────────────────────────────────────────────────────
+    if (isStationery) {
+        return (
+            <Document>
+                <Page size="A4" style={{ padding: 0, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
+                    {/* Background stationery image */}
+                    <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />
+
+                    {/* Content area — offset from top/bottom to avoid letterhead/footer zones */}
+                    <View style={{ paddingTop: 180, paddingBottom: 100, paddingHorizontal: 40 }}>
+                        {/* Document title + meta */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <View>
+                                <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{t('bill_to', lang)}:</Text>
+                                <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{clientInfo.name || 'Klant'}</Text>
+                                {clientInfo.address && <Text style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{clientInfo.address}</Text>}
+                                {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
+                            </View>
+                            <View style={{ alignItems: 'flex-end' }}>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: accent, textTransform: 'uppercase' }}>{t('quotation', lang)}</Text>
+                                <Text style={{ fontSize: 9, color: '#666', marginTop: 3 }}>#{quotationTitle || 'DRAFT'} · {dateStr}</Text>
+                                <Text style={{ fontSize: 8, color: '#888', marginTop: 3 }}>{t('project_re', lang)}: {betreft || '—'}</Text>
+                            </View>
+                        </View>
+
+                        {/* Table header */}
+                        <View style={{ flexDirection: 'row', backgroundColor: accent, paddingVertical: 7, paddingHorizontal: 40, fontWeight: 'bold', fontSize: 8.5, textTransform: 'uppercase', color: '#ffffff', letterSpacing: 0.3 }}>
+                            <Text style={colDesc}>{t('description', lang)}</Text>
+                            <Text style={colQty}>{t('qty', lang)}</Text>
+                            <Text style={colUnit}>{t('unit', lang)}</Text>
+                            <Text style={colPrice}>{t('unit_price', lang)}</Text>
+                            <Text style={colTotal}>{t('total_excl', lang)}</Text>
+                        </View>
+
+                        {/* Rows */}
+                        {renderBlocks(blocks)}
+
+                        {/* Summary */}
+                        <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 16 }}>
+                            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{grandTotal.toFixed(2)}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} (21%):</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{taxAmount.toFixed(2)}</Text>
+                                </View>
+                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
+                                    <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('grand_total_incl', lang)}:</Text>
+                                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€{totalInclTax.toFixed(2)}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Legal text */}
+                        <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 24, lineHeight: 1.4 }}>
+                            {t('quote_legal', lang)}
+                        </Text>
+                    </View>
+
+                    {showWatermark && (
+                        <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }}>
+                            Powered by CoralOS — coral-os.com
+                        </Text>
+                    )}
+                </Page>
+            </Document>
+        );
+    }
+
+    // ── DYNAMIC TEMPLATE MODE (T1/T2/T3/T4) ────────────────────────────────
+
+    // T4: PRISM geometric SVG header
     const renderT4Header = () => (
         <>
             <View style={{ position: 'relative', height: 120 }}>
                 <Svg width={595} height={120} style={{ position: 'absolute', top: 0, left: 0 }}>
-                    {/* Base navy block */}
                     <Rect x={0} y={0} width={595} height={120} fill={navy} />
-                    {/* Right diagonal overlay */}
                     <Polygon points="370,0 595,0 595,120 480,120" fill={navyMid} />
-                    {/* Bottom-left accent wedge */}
                     <Polygon points="0,88 210,88 290,120 0,120" fill={navyMid} />
                 </Svg>
-                {/* Company info on top of geometry */}
                 <View style={{ position: 'absolute', top: 22, left: 32 }}>
                     {logoUrl ? (
                         <Image src={logoUrl} style={{ width: 56, marginBottom: 6 }} />
@@ -165,7 +247,8 @@ export const QuotationPDFTemplate = ({
                     ))}
                 </View>
             </View>
-            {/* Invoice label + number below the shape */}
+            {/* Accent stripe */}
+            <View style={{ height: 3, backgroundColor: accent }} />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 32, paddingTop: 14, marginBottom: 4 }}>
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 24, fontWeight: 'bold', color: navy, textTransform: 'uppercase', letterSpacing: 2 }}>{t('quotation', lang)}</Text>
@@ -175,10 +258,9 @@ export const QuotationPDFTemplate = ({
         </>
     );
 
-    // ── T1: BLOCK black/white header ────────────────────────────────────────
+    // T1: BLOCK black/white header
     const renderT1Header = () => (
         <View style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 0 }}>
-            {/* Black left block */}
             <View style={{ flex: 0.55, backgroundColor: '#111111', padding: 28, flexDirection: 'column', justifyContent: 'flex-end', minHeight: 130 }}>
                 {logoUrl ? (
                     <Image src={logoUrl} style={{ width: 100, marginBottom: 8 }} />
@@ -191,7 +273,6 @@ export const QuotationPDFTemplate = ({
                     <Text key={i} style={{ fontSize: 8.5, color: '#aaaaaa', marginTop: 2 }}>{line}</Text>
                 ))}
             </View>
-            {/* Right invoice meta */}
             <View style={{ flex: 0.45, padding: 28, flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
                 <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111111', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                     {t('quotation', lang)}
@@ -202,10 +283,9 @@ export const QuotationPDFTemplate = ({
         </View>
     );
 
-    // ── T3: NAVY corporate header with bands ────────────────────────────────
+    // T3: NAVY
     const renderT3Header = () => (
         <>
-            {/* Company + huge INVOICE */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <View style={{ flexDirection: 'column', gap: 2 }}>
                     {logoUrl ? (
@@ -223,7 +303,6 @@ export const QuotationPDFTemplate = ({
                     {t('quotation', lang)}
                 </Text>
             </View>
-            {/* BILL TO + invoice meta — dark navy band */}
             <View style={{ flexDirection: 'row', backgroundColor: navy, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 1 }}>
                 <Text style={{ flex: 1, color: '#ffffff', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     {t('bill_to', lang)}
@@ -233,7 +312,6 @@ export const QuotationPDFTemplate = ({
                     <Text style={{ color: '#aac4dc', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>Date</Text>
                 </View>
             </View>
-            {/* Values band — medium navy */}
             <View style={{ flexDirection: 'row', backgroundColor: navyMid, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 20 }}>
                 <Text style={{ flex: 1, color: '#ddeaf6', fontSize: 9 }}>{clientInfo.name || '—'}</Text>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 36 }}>
@@ -244,7 +322,7 @@ export const QuotationPDFTemplate = ({
         </>
     );
 
-    // ── Standard header (T2 default) ────────────────────────────────────────
+    // Default header (T2)
     const renderDefaultHeader = () => (
         <View style={s.headerRow}>
             <View style={s.headerLeft}>
@@ -267,7 +345,7 @@ export const QuotationPDFTemplate = ({
         </View>
     );
 
-    // ── T3 special: navy grand total bar ────────────────────────────────────
+    // T3 navy grand total bar
     const renderGrandTotal = () => {
         if (isT3) {
             return (
@@ -289,20 +367,18 @@ export const QuotationPDFTemplate = ({
         );
     };
 
-    // ── T1 special footer with contact block ────────────────────────────────
+    // Footer
     const renderFooter = () => {
         if (isT1) {
             return (
                 <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }}>
-                    {/* Left: small black square accent + contact */}
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
                         <View style={{ width: 10, height: 10, backgroundColor: '#111111' }} />
                         <Text style={{ fontSize: 7.5, color: '#777777', lineHeight: 1.5 }}>
                             {[companyName, vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '', email].filter(Boolean).join('  ·  ')}
                         </Text>
                     </View>
-                    {/* Right: black "MERCI" block */}
-                    <View style={{ backgroundColor: '#111111', paddingHorizontal: 22, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minWidth: 100 }}>
+                    <View style={{ backgroundColor: accent, paddingHorizontal: 22, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minWidth: 100 }}>
                         <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 1 }}>
                             {lang === 'fr' ? 'MERCI' : lang === 'en' ? 'THANK YOU' : 'DANK U'}
                         </Text>
@@ -322,19 +398,13 @@ export const QuotationPDFTemplate = ({
         );
     };
 
-    const pad = isT1 || isT4 ? 28 : 40;
-
     return (
         <Document>
             <Page size="A4" style={s.page}>
-
-                {/* ── Header ── */}
                 {isT4 ? renderT4Header() : isT1 ? renderT1Header() : isT3 ? renderT3Header() : renderDefaultHeader()}
 
-                {/* ── Client & Project ── */}
-                {/* T3 skips this — client already shown in the band */}
                 {!isT3 && (
-                    <View style={s.clientSection || { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: pad }}>
+                    <View style={s.clientSection || { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: padH }}>
                         <View>
                             <Text style={s.clientLabel}>{t('bill_to', lang)}:</Text>
                             <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{clientInfo.name || 'Klant'}</Text>
@@ -349,7 +419,6 @@ export const QuotationPDFTemplate = ({
                     </View>
                 )}
 
-                {/* T3: project/re on a separate clean line below bands */}
                 {isT3 && (
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
                         <View>
@@ -363,7 +432,6 @@ export const QuotationPDFTemplate = ({
                     </View>
                 )}
 
-                {/* ── Table header ── */}
                 <View style={s.tableHeaderRow}>
                     <Text style={colDesc}>{t('description', lang)}</Text>
                     <Text style={colQty}>{t('qty', lang)}</Text>
@@ -372,10 +440,8 @@ export const QuotationPDFTemplate = ({
                     <Text style={colTotal}>{t('total_excl', lang)}</Text>
                 </View>
 
-                {/* ── Rows ── */}
                 {renderBlocks(blocks)}
 
-                {/* ── Summary ── */}
                 <View style={{ alignItems: 'flex-end', width: '100%' }}>
                     <View style={s.summaryBox}>
                         <View style={s.summaryRow}>
@@ -390,15 +456,12 @@ export const QuotationPDFTemplate = ({
                     </View>
                 </View>
 
-                {/* ── Legal text ── */}
-                <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 28, paddingHorizontal: pad, lineHeight: 1.4 }}>
+                <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 28, paddingHorizontal: padH, lineHeight: 1.4 }}>
                     {t('quote_legal', lang)}
                 </Text>
 
-                {/* ── Footer ── */}
                 {renderFooter()}
 
-                {/* ── Free watermark ── */}
                 {showWatermark && (
                     <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }}>
                         Powered by CoralOS — coral-os.com

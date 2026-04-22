@@ -54,6 +54,8 @@ model Tenant {
 
   // Document Template
   documentTemplate   String?  @default("t1")
+  documentMode       String?  @default("dynamic")  // "dynamic" | "stationery"
+  stationeryUrl      String?  // Base64 data URL of uploaded A4 stationery image (PNG/JPG)
 
   // Phase 2: SaaS Overarching Subscription Controls
   subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL

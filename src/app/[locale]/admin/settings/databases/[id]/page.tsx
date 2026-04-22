@@ -36,7 +36,7 @@ export default function DatabaseSchemaConfigurator() {
     const addProperty = useDatabaseStore(state => state.addProperty);
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
 
-    const [isMounted, setIsMounted] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(false);
     const [editingPropId, setEditingPropId] = useState<string | null>(null);
     const [newPropName, setNewPropName] = useState('');
     const [formulaEditingProp, setFormulaEditingProp] = useState<Property | null>(null);
@@ -47,10 +47,18 @@ export default function DatabaseSchemaConfigurator() {
     };
 
     useEffect(() => {
-        setIsMounted(true);
+        // Wait for Zustand persist to finish hydrating from IndexedDB
+        if (useDatabaseStore.persist.hasHydrated()) {
+            setIsHydrated(true);
+        } else {
+            const unsub = useDatabaseStore.persist.onFinishHydration(() => {
+                setIsHydrated(true);
+            });
+            return unsub;
+        }
     }, []);
 
-    if (!isMounted) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
+    if (!isHydrated) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
     if (!database) return <div className="p-8 text-neutral-500">Database not found.</div>;
 
     const handleCreateProperty = (e: React.FormEvent) => {

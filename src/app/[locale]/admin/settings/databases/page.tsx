@@ -9,13 +9,20 @@ import { useRouter } from 'next/navigation';
 
 export default function DatabaseListSettingsPage() {
     const databases = useDatabaseStore(state => state.databases);
-    const [isMounted, setIsMounted] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(false);
 
     useEffect(() => {
-        setIsMounted(true);
+        if (useDatabaseStore.persist.hasHydrated()) {
+            setIsHydrated(true);
+        } else {
+            const unsub = useDatabaseStore.persist.onFinishHydration(() => {
+                setIsHydrated(true);
+            });
+            return unsub;
+        }
     }, []);
 
-    if (!isMounted) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
+    if (!isHydrated) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
 
     return (
         <div className="max-w-5xl mx-auto space-y-4">

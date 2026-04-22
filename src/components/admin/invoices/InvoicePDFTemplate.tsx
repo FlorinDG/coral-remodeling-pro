@@ -175,7 +175,7 @@ export const InvoicePDFTemplate = ({
                 <Page size="A4" style={{ padding: 0, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
                     <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />
 
-                    <View style={{ paddingTop: 180, paddingBottom: 100, paddingHorizontal: 40 }}>
+                    <View style={{ paddingTop: 180, paddingBottom: 60, paddingHorizontal: 40 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                             <View>
                                 <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{t('bill_to', lang)}:</Text>

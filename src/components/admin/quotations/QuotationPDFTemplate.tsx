@@ -161,7 +161,7 @@ export const QuotationPDFTemplate = ({
                     <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />
 
                     {/* Content area — offset from top/bottom to avoid letterhead/footer zones */}
-                    <View style={{ paddingTop: 180, paddingBottom: 100, paddingHorizontal: 40 }}>
+                    <View style={{ paddingTop: 180, paddingBottom: 60, paddingHorizontal: 40 }}>
                         {/* Document title + meta */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                             <View>

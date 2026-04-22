@@ -22,20 +22,22 @@ export default function ServiceExpander({ cmsServices, locale }: ServiceExpander
         { id: 'whole-home', title: t('wholeHome.title'), subtitle: t('wholeHome.subtitle'), description: t('wholeHome.description'), image: "/images/bathroom-portfolio-2.png", icon: "✨" }
     ];
 
-    const mappedServices = cmsServices?.map(s => {
-        const service = s as unknown as Record<string, string | string[] | null>; // Cast locally to resolve indexing lint
-        const suffix = locale.charAt(0).toUpperCase() + locale.slice(1);
-        return {
-            id: s.slug,
-            title: (service[`title${suffix}`] as string) || s.titleEn,
-            subtitle: (service[`subtitle${suffix}`] as string) || s.subtitleEn,
-            description: (service[`description${suffix}`] as string) || s.descriptionEn,
-            image: s.image || "/images/kitchen-hero.png",
-            icon: s.icon || "✨"
-        };
-    }) || defaultServices;
+    const mappedServices = (cmsServices && cmsServices.length > 0)
+        ? cmsServices.map(s => {
+            const service = s as unknown as Record<string, string | string[] | null>;
+            const suffix = locale.charAt(0).toUpperCase() + locale.slice(1);
+            return {
+                id: s.slug,
+                title: (service[`title${suffix}`] as string) || s.titleEn,
+                subtitle: (service[`subtitle${suffix}`] as string) || s.subtitleEn,
+                description: (service[`description${suffix}`] as string) || s.descriptionEn,
+                image: s.image || "/images/kitchen-hero.png",
+                icon: s.icon || "✨"
+            };
+        })
+        : defaultServices;
 
-    const [activeId, setActiveId] = useState<string | null>(mappedServices[0].id);
+    const [activeId, setActiveId] = useState<string | null>(mappedServices[0]?.id ?? null);
 
     return (
         <div className="w-full flex flex-col gap-8">

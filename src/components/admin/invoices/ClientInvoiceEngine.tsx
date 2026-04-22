@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2 } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -476,6 +476,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 );
 
                 if (response.success) {
+                    // Auto-transition to "sent" status
+                    handleUpdateProperty('status', 'opt-sent');
                     toast.success('Factuur is succesvol verzonden!');
                 } else {
                     toast.error(`Fout bij verzenden: ${response.error}`);
@@ -580,6 +582,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
             const data = await res.json();
             if (data.success) {
+                // Auto-transition to "sent" status
+                handleUpdateProperty('status', 'opt-sent');
                 toast.success('Factuur succesvol verzonden via Peppol! ✅');
             } else {
                 toast.error(`Peppol fout: ${data.error}`);
@@ -785,6 +789,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             >
                                 <FileText className="w-3.5 h-3.5" />
                                 {isDownloading ? 'Generating...' : 'Export PDF'}
+                            </button>
+                        )}
+
+                        {/* Delete — only for drafts */}
+                        {isHydrated && isDraft && (
+                            <button
+                                onClick={() => {
+                                    if (window.confirm('Are you sure you want to permanently delete this draft invoice?')) {
+                                        const deletePage = useDatabaseStore.getState().deletePage;
+                                        deletePage(invoicesDbId, id);
+                                        router.back();
+                                    }
+                                }}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border text-red-500 border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" /> Delete
                             </button>
                         )}
 

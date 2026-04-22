@@ -37,7 +37,8 @@ interface NotionGridProps {
     viewId?: string;
     renderTabs?: React.ReactNode;
     lockedSchema?: boolean;
-    preventDelete?: boolean;
+    /** true = block all deletes; function = per-row check (return true to block) */
+    preventDelete?: boolean | ((rowData: any) => boolean);
     hideFooterNew?: boolean;
     hardFilter?: { propertyId: string; value: string };
 }
@@ -358,19 +359,26 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 <span>Duplicate</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            {!preventDelete && (
-                            <DropdownMenuItem
-                                onClick={() => {
-                                    if (window.confirm('Permanently delete this record?')) {
-                                        deletePage(databaseIdRef, rowData.id);
-                                    }
-                                }}
-                                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
-                            >
-                                <Trash className="w-4 h-4 mr-2" />
-                                <span>Delete</span>
-                            </DropdownMenuItem>
-                            )}
+                            {/* Delete — blocked if preventDelete says so */}
+                            {(() => {
+                                const blocked = typeof preventDelete === 'function'
+                                    ? preventDelete(rowData)
+                                    : !!preventDelete;
+                                if (blocked) return null;
+                                return (
+                                    <DropdownMenuItem
+                                        onClick={() => {
+                                            if (window.confirm('Permanently delete this record?')) {
+                                                deletePage(databaseIdRef, rowData.id);
+                                            }
+                                        }}
+                                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
+                                    >
+                                        <Trash className="w-4 h-4 mr-2" />
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                );
+                            })()}
                         </DropdownMenuContent>
                     </DropdownMenu>
                 )
@@ -531,15 +539,30 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
-                    {!preventDelete && (
+                    {/* Bulk delete — only show if not blanket-blocked.
+                        For callback-based preventDelete, filter out non-deletable rows before executing. */}
+                    {preventDelete !== true && (
                     <button
                         onClick={() => {
                             if (selectedRowIds.size > 0) {
-                                if (window.confirm(`Are you sure you want to permanently delete ${selectedRowIds.size} selected rows?`)) {
-                                    deletePages(database.id, Array.from(selectedRowIds));
+                                // If preventDelete is a per-row callback, filter to only deletable rows
+                                let idsToDelete = Array.from(selectedRowIds);
+                                if (typeof preventDelete === 'function') {
+                                    idsToDelete = idsToDelete.filter(rid => {
+                                        const row = rowData.find(r => r.id === rid);
+                                        return row && !preventDelete(row);
+                                    });
+                                    if (idsToDelete.length === 0) {
+                                        alert('None of the selected records can be deleted (only draft records are deletable).');
+                                        return;
+                                    }
+                                }
+                                if (window.confirm(`Are you sure you want to permanently delete ${idsToDelete.length} selected rows?`)) {
+                                    deletePages(database.id, idsToDelete);
                                     setSelectedRowIds(new Set());
                                 }
-                            } else {
+                            } else if (!preventDelete) {
+                                // Only allow "clear all" if no per-row guard at all
                                 if (window.confirm("Are you sure you want to permanently delete ALL records in this database?")) {
                                     clearDatabase(database.id);
                                 }

@@ -33,6 +33,7 @@ export const QuotationPDFTemplate = ({
     const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     const isStationery = documentMode === 'stationery' && !!stationeryUrl;
+    const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
     const accent = brandColor || '#ea580c';
@@ -158,8 +159,8 @@ export const QuotationPDFTemplate = ({
         return (
             <Document>
                 <Page size="A4" style={{ padding: 0, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
-                    {/* Background stationery image */}
-                    <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />
+                    {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
+                    {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />}
 
                     {/* Content area — offset from top/bottom to avoid letterhead/footer zones */}
                     <View style={{ paddingTop: 180, paddingBottom: 60, paddingHorizontal: 40 }}>

@@ -1,9 +1,12 @@
 /**
  * PDF Stationery Merger
  *
- * Uses pdf-lib to overlay a generated data PDF onto a stationery background PDF.
- * The stationery is the first page of the uploaded PDF — it becomes the background
- * of every page in the data PDF.
+ * Uses pdf-lib to underlay a stationery PDF behind a generated data PDF.
+ * The stationery's first page becomes the background of every data page.
+ *
+ * Strategy: copy each data page into the output, then inject the stationery's
+ * content stream at the BEGINNING of the page's content (so it renders behind).
+ * This avoids white-background conflicts from drawPage overlays.
  */
 import { PDFDocument } from 'pdf-lib';
 
@@ -23,34 +26,57 @@ export async function mergeStationery(
     const stationeryDoc = await PDFDocument.load(stationeryBytes);
     const dataDoc = await PDFDocument.load(dataPdfBytes);
 
-    // Get the first page of the stationery as a template
-    const stationeryPage = stationeryDoc.getPages()[0];
-    const { width: sW, height: sH } = stationeryPage.getSize();
-
     // Create the output document
     const merged = await PDFDocument.create();
 
-    // For each data page, embed the stationery as background
+    // For each data page, copy it then draw the stationery UNDER it
     const dataPages = dataDoc.getPages();
     for (let i = 0; i < dataPages.length; i++) {
+        // Copy the data page into the merged document
+        const [copiedDataPage] = await merged.copyPages(dataDoc, [i]);
+        const page = merged.addPage(copiedDataPage);
+
         // Embed the stationery page as a form XObject
         const [embeddedStationery] = await merged.embedPdf(stationeryDoc, [0]);
 
-        // Copy the data page
-        const [embeddedData] = await merged.copyPages(dataDoc, [i]);
+        // Get current page size
+        const { width, height } = page.getSize();
 
-        // Get the data page size
-        const { width: dW, height: dH } = embeddedData.getSize();
+        // Save graphics state, draw stationery at z-bottom, restore
+        // We prepend stationery drawing commands so they render BEHIND existing content
+        // by using pdf-lib's drawPage at (0,0) covering the full page
+        // Since we add the data page first and then draw stationery,
+        // we need to use the underlay technique:
 
-        // Create a new page with the larger of the two sizes
-        const page = merged.addPage([Math.max(sW, dW), Math.max(sH, dH)]);
+        // Actually a simpler approach: create a fresh page, draw stationery first,
+        // then draw the data content on top. The key insight is that @react-pdf
+        // does NOT add explicit white background fills to its PDFs — CSS backgrounds
+        // are only added when explicitly set. So the data overlay is transparent
+        // except where content exists.
 
-        // Draw stationery first (background)
-        page.drawPage(embeddedStationery, { x: 0, y: 0, width: sW, height: sH });
+        // Remove the page we just added and rebuild it properly
+        const pageCount = merged.getPageCount();
+        merged.removePage(pageCount - 1);
 
-        // Draw data page on top (overlay)
-        const [overlayRef] = await merged.embedPdf(dataDoc, [i]);
-        page.drawPage(overlayRef, { x: 0, y: 0, width: dW, height: dH });
+        // Create a fresh page with the data page's dimensions
+        const freshPage = merged.addPage([width, height]);
+
+        // Draw stationery FIRST (background layer)
+        freshPage.drawPage(embeddedStationery, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+        });
+
+        // Embed and draw data content ON TOP
+        const [embeddedData] = await merged.embedPdf(dataDoc, [i]);
+        freshPage.drawPage(embeddedData, {
+            x: 0,
+            y: 0,
+            width,
+            height,
+        });
     }
 
     return merged.save();

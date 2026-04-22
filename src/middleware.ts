@@ -248,5 +248,5 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|manifest.json|sw.js).*)'],
+    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|icon.svg|apple-touch-icon.png|manifest.json|sw.js).*)'],
 };

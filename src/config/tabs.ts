@@ -31,6 +31,7 @@ export const frontendTabs = [
     { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },
     { label: 'SERVICES', href: '/admin/services', id: 'services' },
     { label: 'PORTFOLIO', href: '/admin/projects', id: 'portfolio' },
+    { label: 'STOREFRONT CMS', href: '/admin/websites/storefront', id: 'storefront' },
 ];
 
 export const libraryTabs = [
@@ -39,9 +40,12 @@ export const libraryTabs = [
 ];
 
 export const projectsTabs = [
-    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'portals' },
     { label: 'PROJECTS DATABASE', href: '/admin/projects-management', id: 'database' },
     { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
+];
+
+export const portalsTabs = [
+    { label: 'CLIENT PORTALS', href: '/admin/portals', id: 'all-portals' },
 ];
 
 // Financial tab i18n key map (fallback to hardcoded if no translator provided)

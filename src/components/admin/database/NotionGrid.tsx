@@ -169,18 +169,18 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...titleColumn(
                             prop.id,
-                            // Primary OPEN / click: financial DBs navigate to engine; others open PageModal
+                            // Single OPEN action: financial DBs → engine, non-financial → full record page, free → page modal
                             (row) => {
                                 if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
                                     router.push(`/admin/quotations/${row.id}`);
                                 } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
                                     router.push(`/admin/financials/income/invoices/${row.id}`);
+                                } else if (!isFinancialDb && !isFree) {
+                                    router.push(`/admin/database/${databaseIdRef}/${row.id}`);
                                 } else {
                                     setActivePageId(row.id);
                                 }
                             },
-                            // Secondary ↗ icon: non-financial DBs get a full-page record link
-                            (!isFinancialDb && !isFree) ? (row) => router.push(`/admin/database/${databaseIdRef}/${row.id}`) : undefined,
                         ),
                         title: GhostHeader,
                         basis: columnWidth,

@@ -7,7 +7,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import {
-    ArrowLeft, FileText, BookOpen, HardDrive, BarChart2,
+    ArrowLeft, FileText, PenLine, BarChart2,
     ChevronRight, ExternalLink
 } from 'lucide-react';
 
@@ -16,17 +16,15 @@ import { Lock } from 'lucide-react';
 
 const BlockEditor       = dynamic(() => import('@/components/admin/database/components/BlockEditor'),       { ssr: false });
 const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
-const DriveFileExplorer = dynamic(() => import('@/components/admin/drive/DriveFileExplorer'),               { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('@/components/admin/database/components/PageFinancialAnalysis'), { ssr: false });
 
-type Tab = 'properties' | 'content' | 'files' | 'drive' | 'analysis';
+type Tab = 'properties' | 'journal' | 'files' | 'stats';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'properties', label: 'Properties',  icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'content',    label: 'Content',      icon: <BookOpen className="w-3.5 h-3.5" /> },
+    { id: 'journal',    label: 'Journal',      icon: <PenLine className="w-3.5 h-3.5" /> },
     { id: 'files',      label: 'Files',        icon: <FileText className="w-3.5 h-3.5" /> },
-    { id: 'drive',      label: 'Drive',        icon: <HardDrive className="w-3.5 h-3.5" /> },
-    { id: 'analysis',   label: 'Analysis',     icon: <BarChart2 className="w-3.5 h-3.5" /> },
+    { id: 'stats',      label: 'Stats',        icon: <BarChart2 className="w-3.5 h-3.5" /> },
 ];
 
 interface RecordDetailPageProps {
@@ -169,16 +167,16 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
 
                         {/* Right: record metadata cards (future) */}
                         <div className="flex-1 flex items-center justify-center text-neutral-300 dark:text-neutral-700 flex-col gap-3 p-8">
-                            <FileText className="w-8 h-8 opacity-40" />
+                            <PenLine className="w-8 h-8 opacity-40" />
                             <p className="text-xs text-center max-w-xs opacity-60">
-                                Switch to <strong>Content</strong> to add notes and rich content to this record.
+                                Switch to <strong>Journal</strong> to add notes and rich content to this record.
                             </p>
                         </div>
                     </div>
                 )}
 
-                {/* Content tab — BlockEditor */}
-                {activeTab === 'content' && (
+                {/* Journal tab — BlockEditor */}
+                {activeTab === 'journal' && (
                     <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto w-full">
                         <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
                     </div>
@@ -194,21 +192,8 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                     </div>
                 )}
 
-                {/* Drive tab */}
-                {activeTab === 'drive' && page.driveFolderId && (
-                    <div className="h-full overflow-hidden">
-                        <DriveFileExplorer rootFolderId={page.driveFolderId} />
-                    </div>
-                )}
-                {activeTab === 'drive' && !page.driveFolderId && (
-                    <div className="flex h-full items-center justify-center flex-col gap-3 text-neutral-400 dark:text-neutral-600">
-                        <HardDrive className="w-8 h-8 opacity-30" />
-                        <p className="text-xs">No Drive folder linked to this record yet.</p>
-                    </div>
-                )}
-
-                {/* Analysis tab */}
-                {activeTab === 'analysis' && (
+                {/* Stats tab */}
+                {activeTab === 'stats' && (
                     <div className="h-full overflow-y-auto p-4">
                         <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
                     </div>

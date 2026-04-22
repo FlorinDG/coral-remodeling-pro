@@ -173,6 +173,7 @@ export default async function middleware(req: NextRequest) {
             'quotations':          'INVOICING',
             'suppliers':           'INVOICING',
             'projects-management': 'PROJECTS',
+            'portals':             'PROJECTS',
             'hr':                  'HR',
             'calendar':            'CALENDAR',
             'websites':            'WEBSITES',

@@ -194,20 +194,23 @@ export default async function middleware(req: NextRequest) {
         }
 
         // ── Sync NEXT_LOCALE cookie from JWT language preference ──────────
+        // NOTE: We no longer short-circuit here. Instead we set `pendingLocale`
+        // and apply the cookie to whichever response the rest of the middleware
+        // produces (rewrite or intl). The old code returned NextResponse.next()
+        // immediately, which skipped the locale-prefix rewrite and caused 404s
+        // on the very first request after login.
         const jwtLang = token?.environmentLanguage;
+        let pendingLocaleCookie: string | null = null;
         if (isLoggedIn && jwtLang && SUPPORTED_LOCALES.includes(jwtLang)) {
             const cookieLang = req.cookies.get('NEXT_LOCALE')?.value;
             if (cookieLang !== jwtLang) {
-                const syncRes = NextResponse.next();
-                syncRes.cookies.set('NEXT_LOCALE', jwtLang, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
-                Object.entries(noCache()).forEach(([k, v]) => syncRes.headers.set(k, v));
-                return syncRes;
+                pendingLocaleCookie = jwtLang;
             }
         }
 
         // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
-        const locale = resolveLocale(req);
-        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', '_next', 'api'];
+        const locale = pendingLocaleCookie || resolveLocale(req);
+        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', '_next', 'api'];
         const rest = pathname.replace(/^\//, '');
         let rewriteTarget: string | null = null;
 
@@ -215,17 +218,22 @@ export default async function middleware(req: NextRequest) {
             rewriteTarget = `/${locale}/admin${rest ? `/${rest}` : ''}`;
         }
 
-        if (rewriteTarget) {
-            const rewriteUrl = new URL(rewriteTarget, req.nextUrl.origin);
-            const res = NextResponse.rewrite(rewriteUrl);
+        /** Apply pending locale cookie + no-cache headers to any response */
+        const applyHeaders = (res: NextResponse) => {
+            if (pendingLocaleCookie) {
+                res.cookies.set('NEXT_LOCALE', pendingLocaleCookie, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+            }
             Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
             return res;
+        };
+
+        if (rewriteTarget) {
+            const rewriteUrl = new URL(rewriteTarget, req.nextUrl.origin);
+            return applyHeaders(NextResponse.rewrite(rewriteUrl));
         }
 
         // Path already correctly prefixed — add no-cache and let intl handle it
-        const intlRes = intlMiddleware(req);
-        Object.entries(noCache()).forEach(([k, v]) => intlRes.headers.set(k, v));
-        return intlRes;
+        return applyHeaders(intlMiddleware(req));
     }
 
     // ══════════════════════════════════════════════════════════════════════

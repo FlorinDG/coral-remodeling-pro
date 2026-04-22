@@ -421,7 +421,15 @@ export default function DocumentTemplatesModule() {
 
                     {stationeryUrl ? (
                         <div className="w-full max-w-2xl mx-auto rounded-xl border-2 overflow-hidden relative" style={{ borderColor: `${primaryColor}80` }}>
-                            <img src={stationeryUrl} alt="Stationery preview" className="w-full aspect-[1/1.414] object-cover" />
+                            {stationeryUrl.startsWith('data:application/pdf') ? (
+                                <div className="w-full aspect-[1/1.414] bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center justify-center gap-3">
+                                    <FileImage className="w-16 h-16" style={{ color: primaryColor }} />
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">PDF Stationery</p>
+                                    <p className="text-xs text-neutral-500">Will be used as background on all exported documents</p>
+                                </div>
+                            ) : (
+                                <img src={stationeryUrl} alt="Stationery preview" className="w-full aspect-[1/1.414] object-cover" />
+                            )}
                             <div className="absolute top-3 right-3 flex gap-2">
                                 <button
                                     onClick={handleRemoveStationery}
@@ -446,13 +454,13 @@ export default function DocumentTemplatesModule() {
                             className="w-full max-w-2xl aspect-[1/1.414] mx-auto rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer transition-colors relative overflow-hidden group"
                             style={{ borderColor: `${primaryColor}80`, backgroundColor: `${primaryColor}08` }}
                         >
-                            <input type="file" accept="image/png,image/jpeg" className="hidden" onChange={handleStationeryUpload} />
+                            <input type="file" accept="application/pdf,image/png,image/jpeg" className="hidden" onChange={handleStationeryUpload} />
                             <div className="p-4 bg-white dark:bg-black rounded-full shadow-sm">
                                 <UploadCloud className="w-10 h-10" style={{ color: primaryColor }} />
                             </div>
                             <div className="text-center px-8">
-                                <p className="text-base font-bold text-neutral-900 dark:text-white mb-1">Upload your letterhead image</p>
-                                <p className="text-sm text-neutral-500">PNG or JPG, A4 dimensions (2480 × 3508 px recommended). Pre-printed logos, footers, and watermarks are preserved.</p>
+                                <p className="text-base font-bold text-neutral-900 dark:text-white mb-1">Upload your A4 stationery</p>
+                                <p className="text-sm text-neutral-500">PDF, PNG or JPG — your letterhead becomes the background of every exported document.</p>
                             </div>
                         </label>
                     )}

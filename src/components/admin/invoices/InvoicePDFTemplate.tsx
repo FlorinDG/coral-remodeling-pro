@@ -47,6 +47,7 @@ export const InvoicePDFTemplate = ({
 
     const navy = (s as any).navyColor || '#1a3a5c';
     const navyMid = (s as any).navyMid || '#245076';
+    const darkBrand = (s as any).darkColor || navy;
 
     const colDesc  = { flex: 4, paddingRight: 8 };
     const colQty   = { flex: 0.8, textAlign: 'center' as const };
@@ -270,7 +271,7 @@ export const InvoicePDFTemplate = ({
     // T1: BLOCK header
     const renderT1Header = () => (
         <View style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 0 }}>
-            <View style={{ flex: 0.55, backgroundColor: '#111111', padding: 28, flexDirection: 'column', justifyContent: 'flex-end', minHeight: 130 }}>
+            <View style={{ flex: 0.55, backgroundColor: darkBrand, padding: 28, flexDirection: 'column', justifyContent: 'flex-end', minHeight: 130 }}>
                 {logoUrl ? (
                     <Image src={logoUrl} style={{ width: 100, marginBottom: 8 }} />
                 ) : (
@@ -283,10 +284,10 @@ export const InvoicePDFTemplate = ({
                 ))}
             </View>
             <View style={{ flex: 0.45, padding: 28, flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#111111', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: darkBrand, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
                     {t('invoice', lang)}
                 </Text>
-                <Text style={{ fontSize: 13, color: '#333333', fontWeight: 'bold', marginBottom: 3 }}>#{invoiceTitle || 'DRAFT'}</Text>
+                <Text style={{ fontSize: 13, color: darkBrand, fontWeight: 'bold', marginBottom: 3 }}>#{invoiceTitle || 'DRAFT'}</Text>
                 <Text style={{ fontSize: 9, color: '#777777' }}>{dateStr}</Text>
             </View>
         </View>
@@ -308,7 +309,7 @@ export const InvoicePDFTemplate = ({
                         <Text key={i} style={{ fontSize: 8.5, color: '#555555' }}>{line}</Text>
                     ))}
                 </View>
-                <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#111111', textTransform: 'uppercase' }}>
+                <Text style={{ fontSize: 38, fontWeight: 'bold', color: darkBrand, textTransform: 'uppercase' }}>
                     {t('invoice', lang)}
                 </Text>
             </View>
@@ -383,7 +384,7 @@ export const InvoicePDFTemplate = ({
             return (
                 <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }}>
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
-                        <View style={{ width: 10, height: 10, backgroundColor: '#111111' }} />
+                        <View style={{ width: 10, height: 10, backgroundColor: darkBrand }} />
                         <Text style={{ fontSize: 7.5, color: '#777777', lineHeight: 1.5 }}>
                             {[companyName, vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '', email].filter(Boolean).join('  ·  ')}
                         </Text>

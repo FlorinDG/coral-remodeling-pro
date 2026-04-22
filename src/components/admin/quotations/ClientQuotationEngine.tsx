@@ -10,6 +10,7 @@ import { Page, Block, BlockType } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { pdf } from '@react-pdf/renderer';
+import { generatePdfBlob } from '@/lib/generate-pdf';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
@@ -309,7 +310,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             );
 
             const asPdf = pdf(doc);
-            const blob = await asPdf.toBlob();
+            const blob = await generatePdfBlob(doc, tenantProfile);
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -367,7 +368,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             );
 
             const asPdf = pdf(doc);
-            const blob = await asPdf.toBlob();
+            const blob = await generatePdfBlob(doc, tenantProfile);
 
             const file = new File([blob], `Offerte_${quotationTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
             const formData = new FormData();
@@ -595,7 +596,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 language={docLanguage}
                                             />
                                         );
-                                        const blob = await pdf(doc).toBlob();
+                                        const blob = await generatePdfBlob(doc, tenantProfile);
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
                                         a.href = url;

@@ -10,6 +10,7 @@ import { Page, Block, BlockType } from '@/components/admin/database/types';
 import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
 import { pdf } from '@react-pdf/renderer';
+import { generatePdfBlob } from '@/lib/generate-pdf';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
@@ -459,7 +460,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             const asPdf = pdf(doc);
-            const blob = await asPdf.toBlob();
+            const blob = await generatePdfBlob(doc, tenantProfile);
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -517,7 +518,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             const asPdf = pdf(doc);
-            const blob = await asPdf.toBlob();
+            const blob = await generatePdfBlob(doc, tenantProfile);
 
             const file = new File([blob], `Factuur_${invoiceTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
             const formData = new FormData();
@@ -764,7 +765,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 language={docLanguage}
                                             />
                                         );
-                                        const blob = await pdf(doc).toBlob();
+                                        const blob = await generatePdfBlob(doc, tenantProfile);
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
                                         a.href = url;

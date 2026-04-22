@@ -279,6 +279,8 @@ model User {
   environmentLanguage String? @default("en")
   verificationToken   String?
   verificationSentAt  DateTime?
+  passwordResetToken    String?
+  passwordResetExpires  DateTime?
   accounts      Account[]
   sessions      Session[]
   events        Event[]

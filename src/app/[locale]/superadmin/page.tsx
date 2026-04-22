@@ -24,7 +24,7 @@ export default async function SuperadminDashboardPage() {
             peppolReceivedThisMonth: true,
             createdAt: true,
             users: {
-                select: { email: true, name: true, role: true },
+                select: { id: true, email: true, name: true, role: true },
                 orderBy: { role: "asc" },
                 take: 5,
             },

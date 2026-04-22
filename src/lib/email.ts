@@ -131,3 +131,54 @@ export async function sendVerificationEmail(params: {
         throw error;
     }
 }
+
+export async function sendPasswordResetEmail(params: {
+    to: string;
+    name: string;
+    resetUrl: string;
+}) {
+    const resend = getResend();
+    if (!resend) {
+        console.warn('[PasswordReset] RESEND_API_KEY is not set. Printing reset URL to console instead.');
+        console.log(`[PasswordReset] URL for ${params.to}: ${params.resetUrl}`);
+        return;
+    }
+
+    try {
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@coral-group.be';
+        const result = await resend.emails.send({
+            from: `CoralOS <${fromEmail}>`,
+            to: params.to,
+            subject: 'Reset your CoralOS password',
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
+                    <div style="text-align: center; margin-bottom: 32px;">
+                        <h1 style="font-size: 24px; font-weight: 800; color: #111; margin: 0;">CoralOS</h1>
+                        <p style="color: #888; font-size: 12px; margin-top: 4px;">The workspace for modern contractors</p>
+                    </div>
+                    <h2 style="font-size: 18px; font-weight: 700; color: #111; margin-bottom: 8px;">Password Reset</h2>
+                    <p style="color: #555; font-size: 14px; line-height: 1.6; margin-bottom: 24px;">
+                        Hi ${params.name}, we received a request to reset the password for your account. Click the button below to set a new password.
+                    </p>
+                    <div style="text-align: center; margin: 32px 0;">
+                        <a href="${params.resetUrl}" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">
+                            Reset Password
+                        </a>
+                    </div>
+                    <p style="color: #999; font-size: 11px; text-align: center; margin-top: 32px;">
+                        This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email &mdash; your password will remain unchanged.
+                    </p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+                    <p style="color: #bbb; font-size: 10px; text-align: center;">
+                        &copy; ${new Date().getFullYear()} Coral Group &middot; coral-group.be
+                    </p>
+                </div>
+            `,
+        });
+        console.log(`[PasswordReset] Email sent to ${params.to} — Resend ID: ${(result as any)?.data?.id ?? 'unknown'}`);
+    } catch (error) {
+        console.error('[PasswordReset] Failed to send email:', error);
+        console.log(`[PasswordReset] Fallback URL for ${params.to}: ${params.resetUrl}`);
+        throw error;
+    }
+}

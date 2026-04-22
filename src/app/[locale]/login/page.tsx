@@ -57,6 +57,13 @@ export default function LoginPage() {
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSuccess, setResendSuccess] = useState('');
 
+    // Forgot password state
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotSuccess, setForgotSuccess] = useState(false);
+    const [forgotError, setForgotError] = useState('');
+
     const [isAppDomain, setIsAppDomain] = useState(false);
     const searchParams = useSearchParams();
     const planParam = searchParams.get('plan');
@@ -310,6 +317,67 @@ export default function LoginPage() {
                             {isCredentialsLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign In"}
                         </button>
                     </form>
+
+                    {/* Forgot Password */}
+                    {!showForgotPassword ? (
+                        <div className="text-center mt-3">
+                            <button
+                                type="button"
+                                onClick={() => { setShowForgotPassword(true); setForgotEmail(loginEmail); }}
+                                className="text-xs text-neutral-400 hover:text-blue-500 transition-colors"
+                            >
+                                Forgot password?
+                            </button>
+                        </div>
+                    ) : forgotSuccess ? (
+                        <div className="mt-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/40 rounded-xl px-4 py-3 text-center">
+                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-1">Check your inbox!</p>
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400">If an account exists with that email, we sent a reset link.</p>
+                            <button type="button" onClick={() => { setShowForgotPassword(false); setForgotSuccess(false); }} className="text-xs text-neutral-400 hover:text-blue-500 mt-2">
+                                ← Back to sign in
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="mt-3 space-y-2">
+                            <p className="text-xs text-neutral-500 font-medium">Enter your email to receive a reset link:</p>
+                            <div className="flex gap-2">
+                                <input
+                                    type="email"
+                                    value={forgotEmail}
+                                    onChange={(e) => setForgotEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    className="flex-1 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-blue-500 transition-colors text-neutral-900 dark:text-white text-sm placeholder:text-neutral-400"
+                                />
+                                <button
+                                    type="button"
+                                    disabled={forgotLoading || !forgotEmail}
+                                    onClick={async () => {
+                                        setForgotLoading(true);
+                                        setForgotError('');
+                                        try {
+                                            await fetch('/api/auth/forgot-password', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ email: forgotEmail }),
+                                            });
+                                            setForgotSuccess(true);
+                                        } catch {
+                                            setForgotError('Could not send. Try again.');
+                                        } finally {
+                                            setForgotLoading(false);
+                                        }
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold px-4 py-2 rounded-xl transition-all text-xs shrink-0"
+                                >
+                                    {forgotLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Send'}
+                                </button>
+                            </div>
+                            {forgotError && <p className="text-red-500 text-xs font-bold">{forgotError}</p>}
+                            <button type="button" onClick={() => setShowForgotPassword(false)} className="text-xs text-neutral-400 hover:text-blue-500">
+                                ← Back to sign in
+                            </button>
+                        </div>
+                    )}
 
                     <div className="flex items-center gap-3 my-4">
                         <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />

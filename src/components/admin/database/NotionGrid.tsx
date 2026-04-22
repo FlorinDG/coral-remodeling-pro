@@ -789,6 +789,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             height: 100%;
         }
 
+        /* Force DSG container to fill the available wrapper height
+           so there's no white gap between the last row and the footer */
+        .database-grid-custom .dsg-container {
+            min-height: 100% !important;
+        }
+
         .dark .database-grid-custom {
             --dsg-border-color: rgba(255,255,255,0.1);
             --dsg-header-background: rgba(255,255,255,0.05);

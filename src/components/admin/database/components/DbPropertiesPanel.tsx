@@ -98,27 +98,24 @@ function PropertyRow({
         const selected = opts.find(o => o.id === strVal || o.name === strVal);
         valueEl = (
             <div className="relative group w-full">
-                {selected ? (
-                    <div className="flex items-center gap-1">
+                {/* Always render a select, but overlay the badge on top for display */}
+                <select
+                    value={strVal}
+                    disabled={isReadOnly}
+                    onChange={e => onChange(property.id, e.target.value)}
+                    className={`${inputBase} cursor-pointer absolute inset-0 opacity-0 w-full h-full z-10`}
+                >
+                    <option value="">—</option>
+                    {opts.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                </select>
+                {/* Visual badge display */}
+                <div className="flex items-center gap-1 pointer-events-none">
+                    {selected ? (
                         <SelectBadge option={selected} />
-                        {!isReadOnly && (
-                            <button onClick={() => onChange(property.id, '')} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                                <X className="w-3 h-3 text-neutral-400" />
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    !isReadOnly && (
-                        <select
-                            value={strVal}
-                            onChange={e => onChange(property.id, e.target.value)}
-                            className={`${inputBase} cursor-pointer`}
-                        >
-                            <option value="">—</option>
-                            {opts.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                        </select>
-                    )
-                )}
+                    ) : (
+                        <span className="text-neutral-400 text-xs italic">—</span>
+                    )}
+                </div>
                 {isReadOnly && !selected && <span className="text-neutral-400 text-xs italic">—</span>}
             </div>
         );

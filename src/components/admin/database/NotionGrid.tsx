@@ -238,7 +238,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     baseColumn = selectColumn({
                         choices: prop.config?.options || [],
                         propId: prop.id,
-                        onCommit: (rowId, value) => database && updatePageProperty(database.id, rowId, prop.id, value),
+                        onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value),
                     }) as any;
                 } else if (prop.type === 'date') {
                     baseColumn = dateColumn as any;

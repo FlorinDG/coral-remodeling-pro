@@ -521,7 +521,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         <option value="">Status...</option>
                                         {statusOptions.length > 0
                                             ? statusOptions.map((opt: any) => (
-                                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                                <option key={opt.id} value={opt.id}>{opt.name}</option>
                                             ))
                                             : <>
                                                 <option value="opt-draft">Draft</option>

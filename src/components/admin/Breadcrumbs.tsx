@@ -23,6 +23,9 @@ const BREADCRUMB_I18N: Record<string, string> = {
     quotations: 'nav.financialTabs.quotations',
 };
 
+// Max visible characters per breadcrumb segment before truncation
+const MAX_SEGMENT_LEN = 12;
+
 export default function Breadcrumbs() {
     const t = useTranslations('Admin');
     const pathname = usePathname();
@@ -39,46 +42,72 @@ export default function Breadcrumbs() {
         if (key) {
             try { return t(key); } catch { /* fallback */ }
         }
-        // Don't mangle UUID-like segments (contains only hex chars and hyphens)
+        // Don't mangle UUID-like segments
         const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(path);
         if (isUUID) return path.toUpperCase().substring(0, 8) + '…';
         return path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
     };
+
+    // Truncate label with ellipsis if too long
+    const truncate = (label: string) => {
+        if (label.length <= MAX_SEGMENT_LEN) return label;
+        return label.substring(0, MAX_SEGMENT_LEN - 1) + '…';
+    };
+
+    // Build displayable segments (skip "admin")
+    const segments = filteredPaths
+        .filter(p => p !== "admin")
+        .map((path, _i, arr) => ({
+            path,
+            label: getLabel(path),
+            isLast: false, // updated below
+        }));
+
+    // For deep paths (>3 segments), collapse middle ones to "…"
+    let displaySegments = segments;
+    if (segments.length > 3) {
+        displaySegments = [
+            segments[0],
+            { path: '…', label: '…', isLast: false },
+            segments[segments.length - 1],
+        ];
+    }
+    if (displaySegments.length > 0) {
+        displaySegments[displaySegments.length - 1].isLast = true;
+    }
+
     return (
-        <nav className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+        <nav className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400 whitespace-nowrap">
             <Link
                 href="/admin/dashboard"
-                className="hover:text-[var(--brand-color,#d35400)] transition-colors flex items-center gap-1"
+                className="hover:text-[var(--brand-color,#d35400)] transition-colors flex items-center gap-1 flex-shrink-0"
             >
                 <Home className="w-3 h-3" />
-                <span>Admin</span>
             </Link>
 
-            {filteredPaths.map((path, index) => {
-                if (path === "admin") return null;
-
-                const href = `/${filteredPaths.slice(0, index + 1).join("/")}`;
-                const label = getLabel(path);
-                const isLast = index === filteredPaths.length - 1;
-
-                return (
-                    <div key={path} className="flex items-center gap-2">
-                        <ChevronRight className="w-3 h-3 text-neutral-300 dark:text-neutral-700" />
-                        {isLast && !pageTitle ? (
-                            <span className="text-neutral-900 dark:text-white">{label}</span>
-                        ) : (
-                            <span className="text-neutral-500 whitespace-nowrap">
-                                {label}
-                            </span>
-                        )}
-                    </div>
-                );
-            })}
+            {displaySegments.map((seg) => (
+                <div key={seg.path} className="flex items-center gap-1.5 min-w-0">
+                    <ChevronRight className="w-2.5 h-2.5 text-neutral-300 dark:text-neutral-700 flex-shrink-0" />
+                    {seg.isLast && !pageTitle ? (
+                        <span className="text-neutral-900 dark:text-white truncate" title={seg.label}>
+                            {truncate(seg.label)}
+                        </span>
+                    ) : seg.path === '…' ? (
+                        <span className="text-neutral-400">…</span>
+                    ) : (
+                        <span className="text-neutral-500 truncate" title={seg.label}>
+                            {truncate(seg.label)}
+                        </span>
+                    )}
+                </div>
+            ))}
 
             {pageTitle && (
-                <div className="flex items-center gap-2">
-                    <ChevronRight className="w-3 h-3 text-neutral-300 dark:text-neutral-700" />
-                    <span className="text-neutral-900 dark:text-white">{pageTitle}</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                    <ChevronRight className="w-2.5 h-2.5 text-neutral-300 dark:text-neutral-700 flex-shrink-0" />
+                    <span className="text-neutral-900 dark:text-white truncate" title={pageTitle}>
+                        {truncate(pageTitle)}
+                    </span>
                 </div>
             )}
         </nav>

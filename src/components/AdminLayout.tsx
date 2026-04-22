@@ -297,17 +297,19 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             {/* Main Content */}
             <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
                 <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40">
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-3 w-64 flex-shrink-0 min-w-0">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
                         >
                             {isSidebarOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
                         </button>
 
-                        <div className="h-4 w-px bg-neutral-200 dark:border-white/10 mx-1" />
+                        <div className="h-4 w-px bg-neutral-200 dark:border-white/10 flex-shrink-0" />
 
-                        <Breadcrumbs />
+                        <div className="min-w-0 overflow-hidden">
+                            <Breadcrumbs />
+                        </div>
                     </div>
 
                     {/* Center — Search */}
@@ -315,7 +317,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         <UniversalSearch />
                     </div>
 
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center justify-end gap-4 w-64 flex-shrink-0">
 
                         <ThemeToggle />
                         <LanguageSwitcher />

@@ -695,6 +695,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 onDuplicate={handleDuplicateBlock}
                                                 hasLibraryAccess={hasLibraryAccess}
                                                 vatCalcMode={vatCalcMode}
+                                                language={docLanguage}
                                             />
                                         ))}
                                         {provided.placeholder}

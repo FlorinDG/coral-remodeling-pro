@@ -141,6 +141,65 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
 
     // Portal — Footer
     'portal_powered_by': { nl: 'Powered by', fr: 'Propulsé par', en: 'Powered by' },
+
+    // ── Quotation Engine UI ──────────────────────────────────────────
+    'engine_loading': { nl: 'Engine laden...', fr: 'Chargement du moteur...', en: 'Loading Engine...' },
+    'engine_not_found': { nl: 'Offerte niet gevonden', fr: 'Devis introuvable', en: 'Quotation Not Found' },
+    'engine_go_back': { nl: 'Terug', fr: 'Retour', en: 'Go Back' },
+    'engine_draft_quotation': { nl: 'Offerte concept', fr: 'Brouillon de devis', en: 'Draft Quotation' },
+    'engine_select_client': { nl: 'Klant selecteren...', fr: 'Sélectionner un client...', en: 'Select client...' },
+    'engine_link_project': { nl: 'Project koppelen...', fr: 'Lier un projet...', en: 'Link project...' },
+    'engine_status': { nl: 'Status...', fr: 'Statut...', en: 'Status...' },
+    'engine_status_draft': { nl: 'Concept', fr: 'Brouillon', en: 'Draft' },
+    'engine_status_sent': { nl: 'Verzonden', fr: 'Envoyé', en: 'Sent' },
+    'engine_status_accepted': { nl: 'Aanvaard', fr: 'Accepté', en: 'Accepted' },
+    'engine_status_rejected': { nl: 'Geweigerd', fr: 'Refusé', en: 'Rejected' },
+    'engine_handover': { nl: 'Overdracht', fr: 'Transfert', en: 'Handover' },
+    'engine_sending': { nl: 'Verzenden...', fr: 'Envoi en cours...', en: 'Sending...' },
+    'engine_send': { nl: 'Versturen', fr: 'Envoyer', en: 'Send' },
+    'engine_saving': { nl: 'Opslaan...', fr: 'Sauvegarde...', en: 'Saving...' },
+    'engine_drive': { nl: 'Drive', fr: 'Drive', en: 'Drive' },
+    'engine_generating': { nl: 'Genereren...', fr: 'Génération...', en: 'Generating...' },
+    'engine_export_pdf': { nl: 'PDF Exporteren', fr: 'Exporter PDF', en: 'Export PDF' },
+    'engine_identity_missing': { nl: 'Identiteit ontbreekt:', fr: 'Identité manquante :', en: 'Identity Missing:' },
+    'engine_identity_warning': { nl: 'Uw PDF-exports lijken onvolledig. Vul uw bedrijfsnaam en BTW-nummer in bij de instellingen.', fr: 'Vos exports PDF apparaîtront incomplets. Veuillez renseigner le nom de votre entreprise et votre numéro de TVA dans les paramètres.', en: 'Your PDF exports will appear incomplete. Please link your Company Name and VAT Number in the settings.' },
+    'engine_update_settings': { nl: 'Instellingen bijwerken', fr: 'Mettre à jour', en: 'Update Settings' },
+    'engine_add_section': { nl: 'Sectie toevoegen', fr: 'Ajouter une section', en: 'Add Section' },
+    'engine_add_line': { nl: 'Regel toevoegen', fr: 'Ajouter une ligne', en: 'Add Line' },
+    'engine_ai_import': { nl: 'AI PDF Import', fr: 'Import PDF IA', en: 'AI PDF Import' },
+    'engine_record_properties': { nl: 'Pagina-eigenschappen', fr: 'Propriétés', en: 'Record Properties' },
+
+    // ── Quotation Footer Report ──────────────────────────────────────
+    'footer_overview': { nl: 'Offerteoverzicht', fr: 'Aperçu du devis', en: 'Quotation Overview' },
+    'footer_number': { nl: 'Nummer', fr: 'Numéro', en: 'Number' },
+    'footer_expiry': { nl: 'Vervaldatum', fr: "Date d'expiration", en: 'Expiry Date' },
+    'footer_lines': { nl: 'Regels', fr: 'Lignes', en: 'Lines' },
+    'footer_vat_calc': { nl: 'BTW Berekening', fr: 'Calcul TVA', en: 'VAT Calculation' },
+    'footer_per_line': { nl: 'Som per lijn', fr: 'Somme par ligne', en: 'Sum per line' },
+    'footer_on_total': { nl: '% op totaal', fr: '% sur total', en: '% on total' },
+    'footer_subtotal': { nl: 'Subtotaal excl. BTW', fr: 'Sous-total HTVA', en: 'Subtotal excl. VAT' },
+    'footer_vat_label': { nl: 'BTW', fr: 'TVA', en: 'VAT' },
+    'footer_vat_shifted': { nl: 'Verlegd', fr: 'Autoliquidation', en: 'Reverse charge' },
+    'footer_on_base': { nl: 'op', fr: 'sur', en: 'on' },
+    'footer_vat_regime': { nl: 'BTW Regime', fr: 'Régime TVA', en: 'VAT Regime' },
+    'footer_vat_21': { nl: '21% — Standaard', fr: '21% — Standard', en: '21% — Standard' },
+    'footer_vat_12': { nl: '12% — Sociaal woning', fr: '12% — Logement social', en: '12% — Social housing' },
+    'footer_vat_6': { nl: '6% — Renovatie (>10j)', fr: '6% — Rénovation (>10 ans)', en: '6% — Renovation (>10yr)' },
+    'footer_vat_0': { nl: '0% — Vrijgesteld', fr: '0% — Exonéré', en: '0% — Exempt' },
+    'footer_vat_medecontractant': { nl: 'Medecontractant (verlegde BTW)', fr: 'Autoliquidation (TVA inversée)', en: 'Reverse charge (shifted VAT)' },
+    'footer_grand_total': { nl: 'Totaal incl. BTW', fr: 'Total TVAC', en: 'Total incl. VAT' },
+    'footer_medecontractant_legal': {
+        nl: 'Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992. De afnemer is gehouden de verschuldigde belasting te voldoen.',
+        fr: "TVA due par le cocontractant — Report de perception. La TVA est due par le cocontractant conformément à l'article 20 de l'arrêté royal n° 1 du 29 décembre 1992. L'acquéreur est tenu d'acquitter la taxe due.",
+        en: 'VAT shifted — Reverse charge mechanism. VAT is owed by the co-contractor in accordance with Article 20 of Royal Decree No. 1 of 29 December 1992. The purchaser is required to pay the tax due.',
+    },
+
+    // ── Profitability Summary ────────────────────────────────────────
+    'profit_title': { nl: 'Winstgevendheid project', fr: 'Rentabilité du projet', en: 'Project Profitability Estimate' },
+    'profit_cost': { nl: 'Totale Kost', fr: 'Coût Total', en: 'Total Cost' },
+    'profit_sales': { nl: 'Totale Verkoop', fr: 'Ventes Totales', en: 'Total Sales' },
+    'profit_estimate': { nl: 'Geschatte Winst', fr: 'Bénéfice Estimé', en: 'Est. Profit' },
+    'profit_margin': { nl: 'Marge %', fr: 'Marge %', en: 'Margin %' },
 };
 
 export function t(key: string, lang?: string): string {

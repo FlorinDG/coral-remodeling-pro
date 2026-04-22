@@ -17,6 +17,7 @@ import PDFImportModal from './PDFImportModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import { canAccess } from '@/lib/feature-flags';
+import { t as ti18n } from '@/lib/document-i18n';
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -145,10 +146,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
     }, [quotation?.blocks, isHydrated]);
 
-    if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
-    if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Quotation Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
+    if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
+    if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
 
-    const quotationTitle = quotation.properties?.['title'] || 'Draft Quotation';
+    const quotationTitle = quotation.properties?.['title'] || ti18n('engine_draft_quotation', locale);
     const rawClient = quotation.properties?.['client'];
     const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
     const rawProject = quotation.properties?.['project'];
@@ -456,11 +457,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             type="text"
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
-                            placeholder="Draft Quotation"
+                            placeholder={ti18n('engine_draft_quotation', locale)}
                             className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px]"
                         />
                         <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
-                            Offerte {quotationTitle}
+                            {ti18n('quotation', locale)} {quotationTitle}
                         </p>
                     </div>
 
@@ -477,7 +478,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 onChange={(e) => handleUpdateProperty('client', e.target.value)}
                                 className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
                             >
-                                <option value="">Klant selecteren...</option>
+                                <option value="">{ti18n('engine_select_client', locale)}</option>
                                 {clients.map(client => (
                                     <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
                                         {client.firstName} {client.lastName}
@@ -495,7 +496,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     onChange={(e) => handleUpdateProperty('project', e.target.value)}
                                     className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
                                 >
-                                    <option value="">Project koppelen...</option>
+                                    <option value="">{ti18n('engine_link_project', locale)}</option>
                                     {projects.map(project => (
                                         <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
                                             {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
@@ -518,16 +519,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         onChange={(e) => handleUpdateProperty('status', e.target.value)}
                                         className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-32 truncate"
                                     >
-                                        <option value="">Status...</option>
+                                        <option value="">{ti18n('engine_status', locale)}</option>
                                         {statusOptions.length > 0
                                             ? statusOptions.map((opt: any) => (
                                                 <option key={opt.id} value={opt.id}>{opt.name}</option>
                                             ))
                                             : <>
-                                                <option value="opt-draft">Draft</option>
-                                                <option value="opt-sent">Sent</option>
-                                                <option value="opt-accepted">Accepted</option>
-                                                <option value="opt-rejected">Rejected</option>
+                                                <option value="opt-draft">{ti18n('engine_status_draft', locale)}</option>
+                                                <option value="opt-sent">{ti18n('engine_status_sent', locale)}</option>
+                                                <option value="opt-accepted">{ti18n('engine_status_accepted', locale)}</option>
+                                                <option value="opt-rejected">{ti18n('engine_status_rejected', locale)}</option>
                                             </>
                                         }
                                     </select>
@@ -567,7 +568,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     color: 'var(--brand-color, #d35400)',
                                 }}
                             >
-                                <Briefcase className="w-3.5 h-3.5" /> Handover
+                                <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
                             </button>
                             ) : null;
                         })()}
@@ -582,7 +583,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     color: clientId ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
-                                <Mail className="w-3.5 h-3.5" /> {isSending ? 'Sending...' : 'Send'}
+                                <Mail className="w-3.5 h-3.5" /> {isSending ? ti18n('engine_sending', locale) : ti18n('engine_send', locale)}
                             </button>
                         )}
                         {hasProjects && isHydrated && (
@@ -596,7 +597,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     color: clientId ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
-                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
+                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? ti18n('engine_saving', locale) : ti18n('engine_drive', locale)}
                             </button>
                         )}
                         {isHydrated && (
@@ -638,7 +639,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
                                 <FileText className="w-3.5 h-3.5" />
-                                {isDownloading ? 'Generating...' : 'Export PDF'}
+                                {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
                              </button>
                         )}
 
@@ -662,10 +663,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                        <strong>Identity Missing:</strong> Your PDF exports will appear incomplete. Please link your Company Name and VAT Number in the settings.
+                        <strong>{ti18n('engine_identity_missing', locale)}</strong> {ti18n('engine_identity_warning', locale)}
                     </p>
                     <Link href="/admin/settings/company-info" className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
-                        Update Settings
+                        {ti18n('engine_update_settings', locale)}
                     </Link>
                 </div>
             )}
@@ -710,7 +711,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
-                                <span className="text-sm leading-none">+</span> Add Section
+                                <span className="text-sm leading-none">+</span> {ti18n('engine_add_section', locale)}
                             </button>
                             <button
                                 onClick={() => handleAddBlock('line')}
@@ -721,7 +722,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     color: 'var(--brand-color, #d35400)',
                                 }}
                             >
-                                <span className="text-sm leading-none">+</span> Add Line
+                                <span className="text-sm leading-none">+</span> {ti18n('engine_add_line', locale)}
                             </button>
                             <div className="flex-1" />
                             <button
@@ -733,7 +734,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     color: 'var(--brand-color, #d35400)',
                                 }}
                             >
-                                <Bot className="w-3.5 h-3.5" /> AI PDF Import
+                                <Bot className="w-3.5 h-3.5" /> {ti18n('engine_ai_import', locale)}
                             </button>
                         </div>
 
@@ -746,6 +747,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             vatRegime={vatRegime}
                             onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
                             onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
+                            language={locale}
                         />
 
                     </div>
@@ -757,7 +759,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         <DbPropertiesPanel
                             databaseId={quotationsDbId}
                             pageId={id}
-                            title="Record Properties"
+                            title={ti18n('engine_record_properties', locale)}
                         />
                     </aside>
                 )}

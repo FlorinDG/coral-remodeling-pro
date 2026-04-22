@@ -77,10 +77,10 @@ export const financialTabs = financialTabsBase;
 
 /**
  * Financial tabs gated by plan type.
- * - fin-cred-verkoop (Sales Credit Notes) → PRO+ only
+ * Credit notes are available on all tiers (basic instrument).
  */
 const FINANCIAL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {
-    'fin-cred-verkoop': 'PRO',
+    // Credit notes are available on all tiers (basic instrument, counts against Peppol quota)
 };
 
 const FIN_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;

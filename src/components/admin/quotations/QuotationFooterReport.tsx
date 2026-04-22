@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
+import { t as ti18n } from '@/lib/document-i18n';
 
 interface QuotationFooterReportProps {
     blocks: Block[];
@@ -11,11 +12,10 @@ interface QuotationFooterReportProps {
     vatRegime: string;
     onVatCalcModeChange: (mode: 'lines' | 'total') => void;
     onVatRegimeChange: (regime: string) => void;
+    language?: string;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
-
-const MEDECONTRACTANT_LEGAL_TEXT = `Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992. De afnemer is gehouden de verschuldigde belasting te voldoen.`;
 
 export default function QuotationFooterReport({
     blocks,
@@ -25,6 +25,7 @@ export default function QuotationFooterReport({
     vatRegime: vatRegimeProp,
     onVatCalcModeChange,
     onVatRegimeChange,
+    language = 'nl',
 }: QuotationFooterReportProps) {
     const vatRegime = vatRegimeProp as VatRegime;
 
@@ -126,7 +127,7 @@ export default function QuotationFooterReport({
                     }}
                 >
                     <p className="italic text-neutral-700 dark:text-neutral-300">
-                        {MEDECONTRACTANT_LEGAL_TEXT}
+                        {ti18n('footer_medecontractant_legal', language)}
                     </p>
                 </div>
             )}
@@ -142,24 +143,24 @@ export default function QuotationFooterReport({
                         className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3"
                         style={{ color: 'var(--brand-color, #d35400)' }}
                     >
-                        Offerteoverzicht
+                        {ti18n('footer_overview', language)}
                     </h4>
 
                     <div className="space-y-1.5 text-[13px]">
                         {quotationTitle && (
                             <div className="flex items-center justify-between gap-4">
-                                <span className="text-neutral-400 dark:text-neutral-500">Nummer</span>
+                                <span className="text-neutral-400 dark:text-neutral-500">{ti18n('footer_number', language)}</span>
                                 <span className="font-bold text-neutral-800 dark:text-neutral-200 font-mono text-xs tracking-wide">{quotationTitle}</span>
                             </div>
                         )}
                         {expiryDate && (
                             <div className="flex items-center justify-between gap-4">
-                                <span className="text-neutral-400 dark:text-neutral-500">Vervaldatum</span>
+                                <span className="text-neutral-400 dark:text-neutral-500">{ti18n('footer_expiry', language)}</span>
                                 <span className="font-medium text-neutral-700 dark:text-neutral-300">{expiryDate}</span>
                             </div>
                         )}
                         <div className="flex items-center justify-between gap-4">
-                            <span className="text-neutral-400 dark:text-neutral-500">Regels</span>
+                            <span className="text-neutral-400 dark:text-neutral-500">{ti18n('footer_lines', language)}</span>
                             <span className="font-medium text-neutral-700 dark:text-neutral-300">{lineCount}</span>
                         </div>
                     </div>
@@ -168,7 +169,7 @@ export default function QuotationFooterReport({
                 {/* Column 2: BTW Calculation Mode */}
                 <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-r border-neutral-200/60 dark:border-white/5 min-w-[180px]">
                     <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3 text-neutral-400 dark:text-neutral-500">
-                        BTW Berekening
+                        {ti18n('footer_vat_calc', language)}
                     </h4>
 
                     <div className="flex flex-col gap-1.5">
@@ -191,7 +192,7 @@ export default function QuotationFooterReport({
                                 <span className={`font-semibold transition-colors ${isLinesMode ? '' : 'text-neutral-500 dark:text-neutral-400'}`}
                                     style={isLinesMode ? { color: 'var(--brand-color, #d35400)' } : {}}
                                 >
-                                    Som per lijn
+                                    {ti18n('footer_per_line', language)}
                                 </span>
                             </div>
                             <input type="radio" name="vatCalcModeQ" value="lines" checked={isLinesMode} onChange={() => onVatCalcModeChange('lines')} className="sr-only" />
@@ -216,7 +217,7 @@ export default function QuotationFooterReport({
                                 <span className={`font-semibold transition-colors ${!isLinesMode ? '' : 'text-neutral-500 dark:text-neutral-400'}`}
                                     style={!isLinesMode ? { color: 'var(--brand-color, #d35400)' } : {}}
                                 >
-                                    % op totaal
+                                    {ti18n('footer_on_total', language)}
                                 </span>
                             </div>
                             <input type="radio" name="vatCalcModeQ" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} className="sr-only" />
@@ -228,7 +229,7 @@ export default function QuotationFooterReport({
                 <div className="flex flex-col">
                     {/* Subtotal */}
                     <div className="flex items-center justify-between px-5 py-3 bg-neutral-50/80 dark:bg-white/[0.02]">
-                        <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">Subtotaal excl. BTW</span>
+                        <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">{ti18n('footer_subtotal', language)}</span>
                         <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-200 tabular-nums">{formatCurrency(subtotal)}</span>
                     </div>
 
@@ -238,12 +239,12 @@ export default function QuotationFooterReport({
                             {vatBreakdown.map(({ rate, base, vat }) => (
                                 <div key={rate} className="flex items-center justify-between px-5 py-2 border-t border-neutral-100 dark:border-white/5 gap-3">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">BTW</span>
+                                        <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_label', language)}</span>
                                         <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">
-                                            {rate === 0 ? (hasLineMedecontractant ? 'Verlegd' : '0%') : `${rate}%`}
+                                            {rate === 0 ? (hasLineMedecontractant ? ti18n('footer_vat_shifted', language) : '0%') : `${rate}%`}
                                         </span>
                                         <span className="text-[11px] text-neutral-400 tabular-nums">
-                                            (op {formatCurrency(base)})
+                                            ({ti18n('footer_on_base', language)} {formatCurrency(base)})
                                         </span>
                                     </div>
                                     <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(vat)}</span>
@@ -252,7 +253,7 @@ export default function QuotationFooterReport({
                         </>
                     ) : (
                         <div className="flex items-center justify-between px-5 py-2.5 border-t border-neutral-100 dark:border-white/5 gap-3">
-                            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">BTW Regime</span>
+                            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_regime', language)}</span>
                             <select
                                 value={vatRegime}
                                 onChange={(e) => onVatRegimeChange(e.target.value)}
@@ -262,11 +263,11 @@ export default function QuotationFooterReport({
                                     color: 'var(--brand-color, #d35400)',
                                 }}
                             >
-                                <option value="21">21% — Standaard</option>
-                                <option value="12">12% — Sociaal woning</option>
-                                <option value="6">6% — Renovatie (&gt;10j)</option>
-                                <option value="0">0% — Vrijgesteld</option>
-                                <option value="medecontractant">Medecontractant (verlegde BTW)</option>
+                                <option value="21">{ti18n('footer_vat_21', language)}</option>
+                                <option value="12">{ti18n('footer_vat_12', language)}</option>
+                                <option value="6">{ti18n('footer_vat_6', language)}</option>
+                                <option value="0">{ti18n('footer_vat_0', language)}</option>
+                                <option value="medecontractant">{ti18n('footer_vat_medecontractant', language)}</option>
                             </select>
                             <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
                         </div>
@@ -284,7 +285,7 @@ export default function QuotationFooterReport({
                             className="text-[13px] font-bold uppercase tracking-wide"
                             style={{ color: 'var(--brand-color, #d35400)' }}
                         >
-                            Totaal incl. BTW
+                            {ti18n('footer_grand_total', language)}
                         </span>
                         <span
                             className="text-xl font-extrabold tabular-nums"
@@ -298,24 +299,24 @@ export default function QuotationFooterReport({
 
             {/* Profitability Executive Summary — Admin-only metrics */}
             <div className="mt-8 flex flex-col gap-4">
-                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest">Project Profitability Estimate</h3>
+                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-widest">{ti18n('profit_title', language)}</h3>
                 <div className="w-full md:w-1/2 ml-auto overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#111] shadow-sm">
                     <table className="w-full text-left text-sm">
                         <tbody className="divide-y divide-neutral-100 dark:divide-white/5">
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white">
-                                <td className="px-4 py-3 font-medium text-neutral-600 dark:text-neutral-400">Total Cost</td>
+                                <td className="px-4 py-3 font-medium text-neutral-600 dark:text-neutral-400">{ti18n('profit_cost', language)}</td>
                                 <td className="px-4 py-3 text-right font-bold opacity-70">{formatCurrency(grandKost)}</td>
                             </tr>
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white bg-blue-50/30 dark:bg-blue-900/10">
-                                <td className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400">Total Verkoop</td>
+                                <td className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400">{ti18n('profit_sales', language)}</td>
                                 <td className="px-4 py-3 text-right font-bold text-blue-600 dark:text-blue-400 text-lg">{formatCurrency(grandVerkoop)}</td>
                             </tr>
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white bg-emerald-50/30 dark:bg-emerald-900/10">
-                                <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">Est. Profit</td>
+                                <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">{ti18n('profit_estimate', language)}</td>
                                 <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-500 text-lg">{formatCurrency(grandProfit)}</td>
                             </tr>
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white">
-                                <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">Margin %</td>
+                                <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">{ti18n('profit_margin', language)}</td>
                                 <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-500">{grandKost > 0 ? `${((grandProfit / grandKost) * 100).toFixed(2)}%` : '0.00%'}</td>
                             </tr>
                         </tbody>

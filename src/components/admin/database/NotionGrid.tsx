@@ -61,6 +61,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
 
+    // Column drag-and-drop state (Notion-style)
+    const [colDragIndex, setColDragIndex] = useState<number | null>(null);
+    const [colDropTarget, setColDropTarget] = useState<number | null>(null);
+    const colDropTargetRef = useRef<number | null>(null);
+    const colDragCleanup = useRef<(() => void) | null>(null);
+
     // Subscribe to store changes manually for this specific DB to avoid full-app re-renders
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const activeViewId = viewId || database?.views?.[0]?.id; // prioritize explicitly passed viewId from tab engine
@@ -643,27 +649,85 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     const state = viewStateMap.get(prop.id);
                                     const width = state?.width || 150;
                                     const currentWidth = resizingProperty === prop.id ? resizeOffset : width;
+                                    const isDragged = colDragIndex === i;
+                                    const isDropBefore = colDropTarget === i && colDragIndex !== null && colDragIndex !== i && colDragIndex !== i - 1;
+                                    const isDropAfter = colDropTarget === i + 1 && colDragIndex !== null && i === orderedVisibleProperties.length - 1;
 
                                     return (
                                         <div
                                             key={prop.id}
-                                            draggable={resizingProperty !== prop.id}
-                                            onDragStart={(e) => {
-                                                e.dataTransfer.setData('column-index', i.toString());
-                                            }}
-                                            onDragOver={(e) => {
-                                                e.preventDefault();
-                                            }}
-                                            onDrop={(e) => {
-                                                e.preventDefault();
-                                                const sourceIndex = parseInt(e.dataTransfer.getData('column-index'));
-                                                if (!isNaN(sourceIndex) && sourceIndex !== i && databaseIdRef && activeViewId) {
-                                                    updateViewPropertyOrder(databaseIdRef, activeViewId, sourceIndex, i);
-                                                }
+                                            data-col-index={i}
+                                            onPointerDown={(e) => {
+                                                // Only initiate column drag on primary button, skip if resizing
+                                                if (e.button !== 0 || resizingProperty === prop.id) return;
+                                                // Don't start drag from resize handle area (rightmost 8px)
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                if (e.clientX > rect.right - 8) return;
+
+                                                const startX = e.clientX;
+                                                let hasMoved = false;
+
+                                                const onMove = (me: PointerEvent) => {
+                                                    if (!hasMoved && Math.abs(me.clientX - startX) < 5) return;
+                                                    if (!hasMoved) {
+                                                        hasMoved = true;
+                                                        setColDragIndex(i);
+                                                        document.body.style.cursor = 'grabbing';
+                                                        document.body.style.userSelect = 'none';
+                                                    }
+                                                    // Find which column header the pointer is over
+                                                    const headerRow = headerScrollRef.current;
+                                                    if (!headerRow) return;
+                                                    const cols = headerRow.querySelectorAll<HTMLElement>('[data-col-index]');
+                                                    let target: number | null = null;
+                                                    cols.forEach((col) => {
+                                                        const r = col.getBoundingClientRect();
+                                                        const midX = r.left + r.width / 2;
+                                                        const idx = parseInt(col.dataset.colIndex || '0');
+                                                        if (me.clientX < midX && target === null) {
+                                                            target = idx;
+                                                        }
+                                                    });
+                                                    if (target === null) target = orderedVisibleProperties.length;
+                                                    colDropTargetRef.current = target;
+                                                    setColDropTarget(target);
+                                                };
+
+                                                const onUp = () => {
+                                                    document.body.style.cursor = '';
+                                                    document.body.style.userSelect = '';
+                                                    document.removeEventListener('pointermove', onMove);
+                                                    document.removeEventListener('pointerup', onUp);
+                                                    colDragCleanup.current = null;
+
+                                                    if (hasMoved) {
+                                                        const src = i;
+                                                        const dest = colDropTargetRef.current;
+                                                        setColDragIndex(null);
+                                                        setColDropTarget(null);
+                                                        colDropTargetRef.current = null;
+                                                        if (dest !== null && dest !== src && dest !== src + 1 && databaseIdRef && activeViewId) {
+                                                            const adjustedDest = dest > src ? dest - 1 : dest;
+                                                            updateViewPropertyOrder(databaseIdRef, activeViewId, src, adjustedDest);
+                                                        }
+                                                        // Suppress the synthetic click that fires after pointerup
+                                                        const suppressClick = (ce: MouseEvent) => { ce.stopPropagation(); ce.preventDefault(); };
+                                                        document.addEventListener('click', suppressClick, { capture: true, once: true });
+                                                    }
+                                                };
+
+                                                document.addEventListener('pointermove', onMove);
+                                                document.addEventListener('pointerup', onUp);
+                                                colDragCleanup.current = () => {
+                                                    document.removeEventListener('pointermove', onMove);
+                                                    document.removeEventListener('pointerup', onUp);
+                                                };
                                             }}
                                             style={{ width: `${currentWidth}px`, minWidth: `${currentWidth}px`, maxWidth: `${currentWidth}px` }}
-                                            className="border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 z-20 relative transition-transform"
+                                            className={`border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 flex-shrink-0 bg-[#f9fafb] dark:bg-neutral-900 z-20 relative col-header-cell ${isDragged ? 'col-dragging' : ''}`}
                                         >
+                                            {/* Blue insertion indicator — left edge */}
+                                            {isDropBefore && <div className="col-drop-indicator" />}
                                             <ColumnHeader
                                                 databaseId={databaseIdRef}
                                                 viewId={activeViewId!}
@@ -672,6 +736,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                 onLiveResize={(w) => { setResizingProperty(prop.id); setResizeOffset(w); }}
                                                 onLiveResizeEnd={() => { setResizingProperty(null); }}
                                             />
+                                            {/* Blue insertion indicator — right edge (last column only) */}
+                                            {isDropAfter && <div className="col-drop-indicator col-drop-indicator-right" />}
                                         </div>
                                     );
                                 })}
@@ -799,6 +865,34 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             --dsg-border-color: rgba(255,255,255,0.1);
             --dsg-header-background: rgba(255,255,255,0.05);
             --dsg-header-text-color: #9ca3af;
+        }
+
+        /* Column drag-and-drop animations */
+        .col-header-cell {
+            transition: opacity 150ms ease, background-color 150ms ease;
+        }
+        .col-header-cell.col-dragging {
+            opacity: 0.4;
+            background-color: rgba(59, 130, 246, 0.05) !important;
+        }
+        .col-drop-indicator {
+            position: absolute;
+            left: -1.5px;
+            top: 2px;
+            bottom: 2px;
+            width: 3px;
+            border-radius: 2px;
+            background: #3b82f6;
+            z-index: 100;
+            animation: col-indicator-pulse 600ms ease-in-out infinite alternate;
+        }
+        .col-drop-indicator-right {
+            left: auto;
+            right: -1.5px;
+        }
+        @keyframes col-indicator-pulse {
+            from { opacity: 0.7; }
+            to { opacity: 1; }
         }
         `}} />
         </div>

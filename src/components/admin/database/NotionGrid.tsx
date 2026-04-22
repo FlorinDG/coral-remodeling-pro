@@ -65,8 +65,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const activeViewId = viewId || database?.views?.[0]?.id; // prioritize explicitly passed viewId from tab engine
     const activeView = database?.views?.find(v => v.id === activeViewId);
 
-    const { activeModules } = useTenant();
+    const { activeModules, planType } = useTenant();
     const hasCRM = activeModules.includes('CRM');
+    const isFree = planType === 'FREE';
 
     const [isReady, setIsReady] = useState(false);
     const [hasHydrated, setHasHydrated] = useState(false);
@@ -172,7 +173,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 }
                             },
                             // Secondary ↗ icon: non-financial DBs get a full-page record link
-                            !isFinancialDb ? (row) => router.push(`/admin/database/${databaseIdRef}/${row.id}`) : undefined,
+                            (!isFinancialDb && !isFree) ? (row) => router.push(`/admin/database/${databaseIdRef}/${row.id}`) : undefined,
                         ),
                         title: GhostHeader,
                         basis: columnWidth,

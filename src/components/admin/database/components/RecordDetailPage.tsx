@@ -11,6 +11,9 @@ import {
     ChevronRight, ExternalLink
 } from 'lucide-react';
 
+import { Link } from '@/i18n/routing';
+import { Lock } from 'lucide-react';
+
 const BlockEditor       = dynamic(() => import('@/components/admin/database/components/BlockEditor'),       { ssr: false });
 const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
 const DriveFileExplorer = dynamic(() => import('@/components/admin/drive/DriveFileExplorer'),               { ssr: false });
@@ -34,7 +37,7 @@ interface RecordDetailPageProps {
 
 export default function RecordDetailPage({ databaseId, pageId, locale }: RecordDetailPageProps) {
     const router = useRouter();
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, planType } = useTenant();
     const [activeTab, setActiveTab] = useState<Tab>('properties');
 
     // Resolve tenant-scoped DB ID (handles bare 'db-x' and 'db-x-tenantSuffix')
@@ -47,6 +50,36 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         state.databases.find(db => db.id === resolvedDbId)?.pages.find(p => p.id === pageId)
     );
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+
+    // ── FREE tier gate — record detail view is PRO+ only ──
+    if (planType === 'FREE') {
+        return (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mb-6" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' }}>
+                    <Lock className="w-8 h-8" style={{ color: 'var(--brand-color, #d35400)' }} />
+                </div>
+                <h2 className="text-2xl font-black tracking-tight mb-3">Record Detail View</h2>
+                <p className="text-neutral-500 dark:text-neutral-400 max-w-md mb-8 leading-relaxed text-sm">
+                    The full record view with properties, content editor, file management, and analysis is available on PRO and higher plans.
+                </p>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => router.back()}
+                        className="px-5 py-2.5 rounded-lg border border-neutral-200 dark:border-white/10 text-sm font-semibold hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                        Go Back
+                    </button>
+                    <Link
+                        href="/admin/settings"
+                        className="px-5 py-2.5 rounded-lg text-white text-sm font-bold hover:opacity-90 transition-opacity"
+                        style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                    >
+                        Upgrade Plan
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     if (!database || !page) {
         return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
+import { del } from 'idb-keyval';
 import { Link, usePathname } from "@/i18n/routing";
 import { LogOut, LayoutDashboard, Building2, Receipt, ShieldCheck } from "lucide-react";
 import Logo from "@/components/Logo";
@@ -56,7 +57,10 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
 
                 <div className="p-3 mt-auto border-t border-neutral-200 dark:border-white/10">
                     <button
-                        onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                        onClick={async () => {
+                            try { await del('coral-database-storage-v4'); } catch {}
+                            signOut({ callbackUrl: "/admin/login" });
+                        }}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />

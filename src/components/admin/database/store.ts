@@ -547,6 +547,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 {
                                     id: page.databaseId,
                                     name: page.databaseId,
+                                    description: null,
                                     pages: [page],
                                     properties: [],
                                     views: [],
@@ -555,6 +556,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     isTemplate: false,
                                     tenantId: '',
                                     ownerId: 'system',
+                                    createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString(),
                                 }
                             ]
@@ -1075,14 +1077,9 @@ export const useDatabaseStore = create<DatabaseState>()(
                     return currentDb;
                 });
 
-                // Preserve entirely custom databases the user created that aren't in mockData.ts
-                const userAddedDbs = persistedState.databases.filter((savedDb: Database) =>
-                    !currentState.databases.some(c => c.id === savedDb.id)
-                );
-
                 return {
                     ...currentState,
-                    databases: [...mergedDbs, ...userAddedDbs]
+                    databases: mergedDbs
                 };
             }
         }

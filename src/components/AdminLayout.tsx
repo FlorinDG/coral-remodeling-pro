@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 import { useSession, signOut } from "next-auth/react";
+import { del } from 'idb-keyval';
 import { Link, usePathname } from "@/i18n/routing";
 import {
     LayoutDashboard,
@@ -285,7 +286,12 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         )}
                     </div>
                     <button
-                        onClick={() => signOut({ callbackUrl: "/" })}
+                        onClick={async () => {
+                            // Clear IDB database cache before logout to prevent ghost databases
+                            // from leaking into the next session (cross-user contamination)
+                            try { await del('coral-database-storage-v4'); } catch {}
+                            signOut({ callbackUrl: "/" });
+                        }}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
                     >
                         <LogOut className="w-4 h-4" />

@@ -8,7 +8,7 @@ export default function GlobalDatabaseSyncer({ databases }: { databases: Databas
     const hasHydrated = useRef(false);
 
     useEffect(() => {
-        if (!hasHydrated.current && databases && databases.length > 0) {
+        if (!hasHydrated.current && databases) {
             useDatabaseStore.getState().hydrateDatabases(databases);
 
             // SECURITY OVERRIDE: 

@@ -16,9 +16,10 @@ interface QuotationRowProps {
     onDelete: (id: string) => void;
     onDuplicate: (id: string) => void;
     hasLibraryAccess?: boolean;
+    vatCalcMode?: 'lines' | 'total';
 }
 
-export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true }: QuotationRowProps) {
+export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines' }: QuotationRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -361,6 +362,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
                                                     hasLibraryAccess={hasLibraryAccess}
+                                                    vatCalcMode={vatCalcMode}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}
@@ -403,6 +405,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onUpdate={(updates) => onUpdate(block.id, updates)}
                                                     childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
                                                     hasLibraryAccess={hasLibraryAccess}
+                                                    vatCalcMode={vatCalcMode}
                                                 />
 
                                             </>
@@ -512,6 +515,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                                     onDelete={handleChildDelete}
                                                                     onDuplicate={handleChildDuplicate}
                                                                     hasLibraryAccess={hasLibraryAccess}
+                                                                    vatCalcMode={vatCalcMode}
                                                                 />
                                                             ))}
                                                             {provided.placeholder}
@@ -594,6 +598,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     onDelete={handleChildDelete}
                                                     onDuplicate={handleChildDuplicate}
                                                     hasLibraryAccess={hasLibraryAccess}
+                                                    vatCalcMode={vatCalcMode}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}

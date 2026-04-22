@@ -694,6 +694,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 onDelete={handleDeleteBlock}
                                                 onDuplicate={handleDuplicateBlock}
                                                 hasLibraryAccess={hasLibraryAccess}
+                                                vatCalcMode={vatCalcMode}
                                             />
                                         ))}
                                         {provided.placeholder}

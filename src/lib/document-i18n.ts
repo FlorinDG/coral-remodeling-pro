@@ -28,6 +28,10 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'unit_price': { nl: 'Eenheidsprijs', fr: 'Prix unit.', en: 'Unit Price' },
     'total_excl': { nl: 'Totaal (excl.)', fr: 'Total (HTVA)', en: 'Total (Excl.)' },
 
+    // Quotation engine columns
+    'col_supplier_discount': { nl: 'Lever.%', fr: 'Fourn.%', en: 'Supp.%' },
+    'col_supplier_discount_tooltip': { nl: 'Leverancierskorting — de korting die u van uw leverancier ontvangt', fr: 'Remise fournisseur — la réduction que vous recevez de votre fournisseur', en: 'Supplier discount — the % your supplier gives you' },
+
     // Summary
     'subtotal_excl': { nl: 'Subtotaal excl. BTW', fr: 'Sous-total HTVA', en: 'Subtotal (Excl. VAT)' },
     'vat': { nl: 'BTW', fr: 'TVA', en: 'VAT' },

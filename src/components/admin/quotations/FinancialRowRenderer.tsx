@@ -9,6 +9,7 @@ interface FinancialRowRendererProps {
     onUpdate: (updates: Partial<Block>) => void;
     childrenTotal?: number;
     hasLibraryAccess?: boolean;
+    vatCalcMode?: 'lines' | 'total';
 }
 
 const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBlur, onFocus }: { value: string, onChange: (val: string) => void, onSearch?: (val: string) => void, placeholder?: string, className?: string, onBlur?: () => void, onFocus?: () => void }) => {
@@ -37,7 +38,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     );
 };
 
-export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true }: FinancialRowRendererProps) {
+export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, vatCalcMode = 'lines' }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -419,9 +420,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
                 </div>
 
-                {/* 4.5. Supplier Discount — Korting die Coral ontvangt van leverancier */}
-                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Korting via subcomponenten' : 'Leverancierskorting die Coral ontvangt'}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default" title="Leverancierskorting">Kort.</label>
+                {/* 4.5. Supplier Discount — Reduction tenant receives from supplier */}
+                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Discount driven by subcomponents' : 'Supplier discount — the reduction you receive from your supplier (not client-facing)'}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default" title="Supplier discount — the % your supplier gives you">Supp.%</label>
                     <div className="w-full relative">
                         <input
                             type="number"
@@ -467,6 +468,23 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
                     </div>
                 </div>
+
+                {/* 7. Per-line VAT rate selector (only visible in 'per line' mode) */}
+                {vatCalcMode === 'lines' && (
+                    <div className="flex flex-col gap-0.5 w-[58px] shrink-0 self-start mt-0.5 text-center">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center" title="VAT rate for this line">BTW</label>
+                        <select
+                            value={block.vatRate ?? 21}
+                            onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
+                            className="w-full bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
+                        >
+                            <option value={21}>21%</option>
+                            <option value={12}>12%</option>
+                            <option value={6}>6%</option>
+                            <option value={0}>0%</option>
+                        </select>
+                    </div>
+                )}
 
                 {/* 7. Save / Context Menu (Matched via Image context dots) - MOVED TO ACTION TOOLBAR */}
 

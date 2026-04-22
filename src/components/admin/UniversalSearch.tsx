@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, FileText, Users, Receipt, FolderKanban, Database, ArrowRight } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useRouter } from 'next/navigation';
@@ -252,8 +253,8 @@ export default function UniversalSearch() {
                 </kbd>
             </button>
 
-            {/* ── Search Modal ── */}
-            {isOpen && (
+            {/* ── Search Modal (portaled to body to escape stacking contexts) ── */}
+            {isOpen && typeof document !== 'undefined' && createPortal(
                 <div ref={panelRef} className="fixed inset-0" style={{ zIndex: 100000 }}>
                     <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
 
@@ -358,7 +359,8 @@ export default function UniversalSearch() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             <style dangerouslySetInnerHTML={{ __html: `

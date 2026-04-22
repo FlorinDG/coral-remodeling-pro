@@ -505,21 +505,35 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </div>
                         )}
 
-                        {/* Status Selector */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <FileText className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={quotationStatus}
-                                onChange={(e) => handleUpdateProperty('status', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-32 truncate"
-                            >
-                                <option value="">Status...</option>
-                                <option value="opt-draft">Draft</option>
-                                <option value="opt-sent">Sent</option>
-                                <option value="opt-accepted">Accepted</option>
-                                <option value="opt-rejected">Rejected</option>
-                            </select>
-                        </div>
+                        {/* Status Selector — reads options from DB schema for consistency with grid view */}
+                        {(() => {
+                            const db = getDatabase(quotationsDbId);
+                            const statusProp = db?.properties.find(p => p.id === 'status');
+                            const statusOptions = statusProp?.config?.options || [];
+                            return (
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                                    <FileText className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                                    <select
+                                        value={quotationStatus}
+                                        onChange={(e) => handleUpdateProperty('status', e.target.value)}
+                                        className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-32 truncate"
+                                    >
+                                        <option value="">Status...</option>
+                                        {statusOptions.length > 0
+                                            ? statusOptions.map((opt: any) => (
+                                                <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                            ))
+                                            : <>
+                                                <option value="opt-draft">Draft</option>
+                                                <option value="opt-sent">Sent</option>
+                                                <option value="opt-accepted">Accepted</option>
+                                                <option value="opt-rejected">Rejected</option>
+                                            </>
+                                        }
+                                    </select>
+                                </div>
+                            );
+                        })()}
 
                         {/* Date Input */}
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
@@ -531,11 +545,19 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none cursor-pointer pl-7 pr-3 py-2 focus:ring-0 w-36"
                             />
                         </div>
+
                     </div>
 
                     {/* Action Buttons — Monocolor brand-themed */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                        {hasProjects && isHydrated && (String(quotation?.properties?.['status']) === 'ACCEPTED' || String(quotation?.properties?.['status']) === 'opt-accepted' || String(quotation?.properties?.['prop-quote-status']) === 'opt-accepted' || String(quotation?.properties?.['prop-quote-status']) === 'ACCEPTED') && (
+                        {/* Determine the "accepted" option dynamically from DB schema (3rd option) */}
+                        {(() => {
+                            const db = getDatabase(quotationsDbId);
+                            const statusProp = db?.properties.find(p => p.id === 'status');
+                            const acceptedOpt = statusProp?.config?.options?.[2]?.id;
+                            const currentStatus = String(quotation?.properties?.['status'] || '');
+                            const isAccepted = currentStatus === 'ACCEPTED' || currentStatus === 'opt-accepted' || (acceptedOpt && currentStatus === acceptedOpt);
+                            return hasProjects && isHydrated && isAccepted ? (
                             <button
                                 onClick={handleHandover}
                                 className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
@@ -547,7 +569,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             >
                                 <Briefcase className="w-3.5 h-3.5" /> Handover
                             </button>
-                        )}
+                            ) : null;
+                        })()}
                         {hasCRM && isHydrated && (
                             <button
                                 onClick={handleSendEmail}

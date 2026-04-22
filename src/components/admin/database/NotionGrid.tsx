@@ -392,6 +392,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             return activeFilters.every(filter => {
                 const cellValue = page.properties[filter.propertyId];
 
+                // Skip text-match filters with empty value — treat as "not configured yet"
+                const isTextOp = ['equals', 'does_not_equal', 'contains', 'does_not_contain'].includes(filter.operator);
+                if (isTextOp && (filter.value === '' || filter.value === undefined || filter.value === null)) {
+                    return true;
+                }
+
                 switch (filter.operator) {
                     case 'equals': return String(cellValue) === String(filter.value);
                     case 'does_not_equal': return String(cellValue) !== String(filter.value);

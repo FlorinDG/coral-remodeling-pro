@@ -42,6 +42,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
     const [isParsing, setIsParsing] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
 
     // Parsed File State
     const [headers, setHeaders] = useState<string[]>([]);
@@ -399,14 +400,16 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         });
 
         // Array Chunking Database Commit Engine
-        // Break injection payload into 250-row chunks to protect Server Action bandwidth and Prisma Conn Pool Limits
-        const CHUNK_SIZE = 250;
+        // Break injection payload into 500-row chunks (batch server action handles Prisma efficiently)
+        const CHUNK_SIZE = 500;
         let processed = 0;
+        setImportProgress({ current: 0, total: pagesToCreate.length });
 
         const processNextChunk = () => {
             const chunk = pagesToCreate.slice(processed, processed + CHUNK_SIZE);
             if (chunk.length === 0) {
                 setIsProcessing(false);
+                setImportProgress(null);
                 alert(`Engine successfully bulk imported ${pagesToCreate.length} rows into ${targetDb.name}!`);
                 handleClose();
                 return;
@@ -415,9 +418,10 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             // Sync chunk to native state and trigger batch API calls behind the scenes
             useDatabaseStore.getState().addPages(databaseId, chunk);
             processed += CHUNK_SIZE;
+            setImportProgress({ current: Math.min(processed, pagesToCreate.length), total: pagesToCreate.length });
 
-            // Allow JS event loop and React Network buffer to breathe for 250ms before next injection
-            setTimeout(processNextChunk, 250);
+            // Allow JS event loop and React Network buffer to breathe for 200ms before next injection
+            setTimeout(processNextChunk, 200);
         };
 
         processNextChunk();
@@ -553,7 +557,13 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                     className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50"
                                 >
                                     {isProcessing ? (
-                                        <><Loader2 className="w-4 h-4 animate-spin" /> Batch Processing {previewData.length} lines...</>
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            {importProgress
+                                                ? `Processing ${importProgress.current.toLocaleString()} / ${importProgress.total.toLocaleString()} rows...`
+                                                : `Preparing ${previewData.length} lines...`
+                                            }
+                                        </>
                                     ) : (
                                         <><Database className="w-4 h-4" /> Import {previewData.length.toLocaleString()} Rows Directly</>
                                     )}

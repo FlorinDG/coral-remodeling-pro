@@ -3,7 +3,7 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
-import { saveGlobalDatabase, saveGlobalPage, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
+import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI
 const syncDb = (db: Database | undefined) => {
@@ -29,6 +29,33 @@ const syncPage = (page: Page | undefined, parentDb?: Database) => {
                 setTimeout(() => saveGlobalPage(page)
                     .then(() => store._syncDone())
                     .catch(() => store._syncError()), 3000);
+            } else {
+                store._syncDone();
+            }
+        })
+        .catch(() => store._syncError());
+
+    if (parentDb) {
+        saveGlobalDatabase(parentDb).then(doSave).catch(doSave);
+    } else {
+        doSave();
+    }
+};
+
+/**
+ * Batch sync multiple pages to Postgres using the batch server action.
+ * Used by addPages() during CSV import to avoid 2000+ individual server action calls.
+ */
+const syncPagesBatch = (pages: Page[], parentDb?: Database) => {
+    if (!pages.length) return;
+    const store = useDatabaseStore.getState();
+    store._syncStart();
+
+    const doSave = () => saveGlobalPagesBatch(pages)
+        .then(result => {
+            if (result?.success === false) {
+                console.warn('[syncPagesBatch] Server rejected batch save:', result.error);
+                store._syncError();
             } else {
                 store._syncDone();
             }
@@ -627,10 +654,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                         })
                     };
                 });
-                createdPages.forEach((p: Page) => {
-                    const parentDb = get().databases.find(d => d.id === databaseId);
-                    syncPage(p, parentDb);
-                });
+                const parentDb = get().databases.find(d => d.id === databaseId);
+                syncPagesBatch(createdPages, parentDb);
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {

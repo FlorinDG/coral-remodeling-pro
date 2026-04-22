@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { FilterOperator } from '../types';
-import { Filter, X, Plus, Trash2 } from 'lucide-react';
+import { Filter, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface FilterToolbarProps {
@@ -21,17 +21,25 @@ const operators: { value: FilterOperator; label: string }[] = [
 ];
 
 export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps) {
-    const getDatabase = useDatabaseStore(state => state.getDatabase);
     const addFilter = useDatabaseStore(state => state.addFilter);
     const updateFilter = useDatabaseStore(state => state.updateFilter);
     const removeFilter = useDatabaseStore(state => state.removeFilter);
     const clearFilters = useDatabaseStore(state => state.clearFilters);
     const [isOpen, setIsOpen] = useState(false);
-    const popoverRef = React.useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
     const t = useTranslations('Admin');
 
+    // Subscribe to store — MUST be before any hooks or early returns
+    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+
+    const activeFilters = database
+        ? (viewId
+            ? database.views.find(v => v.id === viewId)?.filters || []
+            : database.activeFilters || [])
+        : [];
+
     // Close when clicking outside the popover
-    React.useEffect(() => {
+    useEffect(() => {
         const listener = (event: MouseEvent | TouchEvent) => {
             if (!popoverRef.current || popoverRef.current.contains(event.target as Node)) {
                 return;
@@ -46,22 +54,28 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
         };
     }, []);
 
-    // Subscribe to store
-    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
-    if (!database) return null;
+    // Track filter count to detect when a filter was just added and we need to auto-open
+    const pendingOpen = useRef(false);
 
-    const activeFilters = viewId
-        ? database.views.find(v => v.id === viewId)?.filters || []
-        : database.activeFilters || [];
+    useEffect(() => {
+        if (pendingOpen.current && activeFilters.length > 0) {
+            pendingOpen.current = false;
+            const t = setTimeout(() => setIsOpen(true), 0);
+            return () => clearTimeout(t);
+        }
+    }, [activeFilters.length]);
+
+    if (!database) return null;
 
     const handleAddFilter = () => {
         if (database.properties.length === 0) return;
+        // Default to 'contains' so an empty value is treated as "not configured" (pass-through)
+        pendingOpen.current = true;
         addFilter(databaseId, viewId, {
             propertyId: database.properties[0].id,
-            operator: 'equals',
+            operator: 'contains',
             value: ''
         });
-        setIsOpen(true);
     };
 
     return (
@@ -127,6 +141,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                                     placeholder="Type a value..."
                                     value={filter.value as string || ''}
                                     onChange={e => updateFilter(databaseId, viewId, filter.id, { value: e.target.value })}
+                                    autoFocus={activeFilters.length === 1 && index === 0}
                                 />
                             )}
 

@@ -183,6 +183,74 @@ export async function saveGlobalPage(page: Page) {
     }
 }
 
+/**
+ * Batch upserts multiple pages in a single server action call.
+ * Uses prisma.$transaction to guarantee atomicity per batch.
+ * Designed for the CSV import engine — avoids 2000+ individual server action calls.
+ */
+export async function saveGlobalPagesBatch(pages: Page[]) {
+    const session = await auth();
+    const tenantId = (session?.user as any)?.tenantId;
+    if (!tenantId) return { success: false, error: 'Unauthorized' };
+    if (!pages.length) return { success: true, count: 0 };
+
+    try {
+        // Verify tenant ownership of the target database(s)
+        const dbIds = [...new Set(pages.map(p => p.databaseId))];
+        for (const dbId of dbIds) {
+            const parentDb = await prisma.globalDatabase.findUnique({
+                where: { id: dbId },
+                select: { tenantId: true }
+            });
+            if (parentDb && parentDb.tenantId !== tenantId) {
+                return { success: false, error: `Unauthorized DB access: ${dbId}` };
+            }
+        }
+
+        // Use $transaction for atomicity — batch upserts in groups of 100
+        // to stay under Postgres query parameter limits (65535 max params)
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < pages.length; i += BATCH_SIZE) {
+            const chunk = pages.slice(i, i + BATCH_SIZE);
+            await prisma.$transaction(
+                chunk.map(page =>
+                    prisma.globalPage.upsert({
+                        where: { id: page.id },
+                        update: {
+                            coverImage: page.coverImage,
+                            icon: page.icon,
+                            properties: page.properties as any,
+                            order: page.order,
+                            blocks: page.blocks as any,
+                            lastEditedBy: page.lastEditedBy || 'admin',
+                            driveFolderId: page.driveFolderId,
+                            updatedAt: new Date(),
+                        },
+                        create: {
+                            id: page.id,
+                            databaseId: page.databaseId,
+                            coverImage: page.coverImage,
+                            icon: page.icon,
+                            properties: page.properties as any,
+                            order: page.order,
+                            blocks: page.blocks as any,
+                            createdBy: page.createdBy || 'admin',
+                            lastEditedBy: page.lastEditedBy || 'admin',
+                            driveFolderId: page.driveFolderId,
+                        }
+                    })
+                )
+            );
+        }
+
+        revalidatePath('/admin', 'layout');
+        return { success: true, count: pages.length };
+    } catch (e: any) {
+        console.error(`[saveGlobalPagesBatch] Failed to save ${pages.length} pages:`, e?.message ?? e);
+        return { success: false, error: e?.message ?? String(e) };
+    }
+}
+
 export async function deleteGlobalPage(pageId: string) {
     const session = await auth();
     const tenantId = (session?.user as any)?.tenantId;

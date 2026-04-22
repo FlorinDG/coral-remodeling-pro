@@ -40,7 +40,7 @@ import {
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
-import QuickSearch from "@/components/admin/QuickSearch";
+import UniversalSearch from "@/components/admin/UniversalSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
@@ -311,6 +311,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     </div>
 
                     <div className="flex items-center gap-4">
+
+                        <UniversalSearch />
 
                         <ThemeToggle />
                         <LanguageSwitcher />

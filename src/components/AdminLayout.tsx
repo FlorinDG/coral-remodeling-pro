@@ -297,7 +297,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             {/* Main Content */}
             <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
                 <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
@@ -310,9 +310,12 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         <Breadcrumbs />
                     </div>
 
-                    <div className="flex items-center gap-4">
-
+                    {/* Center — Search */}
+                    <div className="flex-1 flex items-center justify-center px-4">
                         <UniversalSearch />
+                    </div>
+
+                    <div className="flex items-center gap-4 flex-shrink-0">
 
                         <ThemeToggle />
                         <LanguageSwitcher />

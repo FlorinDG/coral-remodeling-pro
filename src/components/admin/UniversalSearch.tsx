@@ -242,11 +242,11 @@ export default function UniversalSearch() {
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 hover:text-neutral-600 dark:hover:text-neutral-300 transition-all cursor-pointer"
+                className="w-full max-w-md flex items-center gap-2.5 px-4 py-1.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100/80 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 hover:text-neutral-600 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20 transition-all cursor-pointer"
             >
-                <Search className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">Search...</span>
-                <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded shadow-sm text-neutral-500 dark:text-neutral-400">
+                <Search className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="flex-1 text-left hidden sm:inline">Search records, pages, navigation...</span>
+                <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 rounded shadow-sm text-neutral-500 dark:text-neutral-400 ml-auto">
                     ⌘K
                 </kbd>
             </button>

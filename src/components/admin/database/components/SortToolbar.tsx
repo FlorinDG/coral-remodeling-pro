@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDatabaseStore } from '../store';
-import { SortRule, SortDirection } from '../types';
-import { ArrowUpDown, X, Plus } from 'lucide-react';
+import { SortDirection } from '../types';
+import { ArrowUpDown, X, Plus, Trash2, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface SortToolbarProps {
@@ -11,27 +11,36 @@ interface SortToolbarProps {
     viewId?: string;
 }
 
-const directions: { value: SortDirection; label: string }[] = [
-    { value: 'ascending', label: 'Ascending' },
-    { value: 'descending', label: 'Descending' }
+const DIRECTIONS: { value: SortDirection; label: string; icon: React.ReactNode }[] = [
+    { value: 'ascending', label: 'Ascending', icon: <ArrowUp className="w-3 h-3" /> },
+    { value: 'descending', label: 'Descending', icon: <ArrowDown className="w-3 h-3" /> }
 ];
 
 export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
-    const getDatabase = useDatabaseStore(state => state.getDatabase);
     const addSort = useDatabaseStore(state => state.addSort);
     const updateSort = useDatabaseStore(state => state.updateSort);
     const removeSort = useDatabaseStore(state => state.removeSort);
     const clearSorts = useDatabaseStore(state => state.clearSorts);
     const [isOpen, setIsOpen] = useState(false);
-    const popoverRef = React.useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
     const t = useTranslations('Admin');
 
-    // Close when clicking outside the popover
-    React.useEffect(() => {
+    // Subscribe to store
+    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+
+    const activeSorts = database
+        ? (viewId
+            ? database.views.find(v => v.id === viewId)?.sorts || []
+            : database.activeSorts || [])
+        : [];
+
+    // Close when clicking outside
+    useEffect(() => {
+        if (!isOpen) return;
         const listener = (event: MouseEvent | TouchEvent) => {
-            if (!popoverRef.current || popoverRef.current.contains(event.target as Node)) {
-                return;
-            }
+            if (popoverRef.current?.contains(event.target as Node)) return;
+            if (triggerRef.current?.contains(event.target as Node)) return;
             setIsOpen(false);
         };
         document.addEventListener("mousedown", listener);
@@ -40,23 +49,24 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
             document.removeEventListener("mousedown", listener);
             document.removeEventListener("touchstart", listener);
         };
-    }, []);
+    }, [isOpen]);
 
-    // Subscribe to store
-    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    // Close on Escape
+    useEffect(() => {
+        if (!isOpen) return;
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setIsOpen(false);
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [isOpen]);
+
     if (!database) return null;
-
-    const activeSorts = viewId
-        ? database.views.find(v => v.id === viewId)?.sorts || []
-        : database.activeSorts || [];
 
     const handleAddSort = () => {
         if (database.properties.length === 0) return;
-
-        // Prevent adding a sort for a property that is already being sorted
         const unassignedProps = database.properties.filter(p => !activeSorts.some(s => s.propertyId === p.id));
         if (unassignedProps.length === 0) return;
-
         addSort(databaseId, viewId, {
             propertyId: unassignedProps[0].id,
             direction: 'ascending'
@@ -64,99 +74,179 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
         setIsOpen(true);
     };
 
+    const handleClearAll = () => {
+        clearSorts(databaseId, viewId);
+        setIsOpen(false);
+    };
+
     return (
-        <div ref={popoverRef} className="relative flex items-center">
+        <div className="relative">
+            {/* ── Trigger Button ── */}
+            <button
+                ref={triggerRef}
+                onClick={() => {
+                    if (activeSorts.length === 0) handleAddSort();
+                    else setIsOpen(!isOpen);
+                }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-md transition-all ${
+                    activeSorts.length > 0
+                        ? 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/30'
+                        : isOpen
+                            ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-white/10'
+                            : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5'
+                }`}
+            >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {t('db.toolbar.sort')}
+                {activeSorts.length > 0 && (
+                    <span className="bg-purple-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-semibold">
+                        {activeSorts.length}
+                    </span>
+                )}
+            </button>
 
-            {/* Top Bar Actions */}
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={() => {
-                        if (activeSorts.length === 0) handleAddSort();
-                        else setIsOpen(!isOpen);
-                    }}
-                    className={`flex items-center gap-1.5 px-2 py-1 text-sm font-medium transition ${activeSorts.length > 0 || isOpen
-                        ? 'text-blue-600'
-                        : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
-                        }`}
-                >
-                    <ArrowUpDown className="w-3.5 h-3.5" />
-                    {t('db.toolbar.sort')}
-                    {activeSorts.length > 0 && (
-                        <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center">
-                            {activeSorts.length}
-                        </span>
-                    )}
-                </button>
-            </div>
-
-            {/* Expanded Sort Panel */}
-            {isOpen && activeSorts.length > 0 && (
-                <div className="absolute top-[100%] right-0 mt-2 z-50 min-w-[340px] flex flex-col gap-2 p-3 bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 shadow-lg">
-                    {activeSorts.map((sort, index) => (
-                        <div key={sort.id} className="flex items-center gap-2 text-sm">
-                            <span className="text-neutral-500 min-w-[60px]">
-                                {index === 0 ? t('db.toolbar.sortBy') : t('db.toolbar.thenBy')}
-                            </span>
-
-                            {/* Property Selector */}
-                            <select
-                                className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[120px] flex-1"
-                                value={sort.propertyId}
-                                onChange={e => updateSort(databaseId, viewId, sort.id, { propertyId: e.target.value })}
-                            >
-                                {database.properties.map(p => (
-                                    <option
-                                        key={p.id}
-                                        value={p.id}
-                                        disabled={activeSorts.some(s => s.propertyId === p.id && s.id !== sort.id)}
-                                    >
-                                        {p.name}
-                                    </option>
-                                ))}
-                            </select>
-
-                            {/* Direction Selector */}
-                            <select
-                                className="bg-white dark:bg-black border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 outline-none min-w-[110px]"
-                                value={sort.direction}
-                                onChange={e => updateSort(databaseId, viewId, sort.id, { direction: e.target.value as SortDirection })}
-                            >
-                                {directions.map(dir => (
-                                    <option key={dir.value} value={dir.value}>{dir.label}</option>
-                                ))}
-                            </select>
-
-                            {/* Remove Row */}
+            {/* ── Active Sort Chips ── */}
+            {activeSorts.length > 0 && !isOpen && (
+                <div className="absolute top-full left-0 mt-1 flex items-center gap-1 z-50">
+                    {activeSorts.slice(0, 3).map((sort) => {
+                        const prop = database.properties.find(p => p.id === sort.propertyId);
+                        return (
                             <button
-                                onClick={() => removeSort(databaseId, viewId, sort.id)}
-                                className="p-1 text-neutral-400 hover:text-red-500 rounded ml-auto"
+                                key={sort.id}
+                                onClick={() => setIsOpen(true)}
+                                className="flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/50 rounded-md hover:bg-purple-100 dark:hover:bg-purple-900/40 transition-colors whitespace-nowrap"
                             >
-                                <X className="w-4 h-4" />
+                                {sort.direction === 'ascending' ? <ArrowUp className="w-2.5 h-2.5" /> : <ArrowDown className="w-2.5 h-2.5" />}
+                                <span className="font-semibold">{prop?.name || '?'}</span>
+                            </button>
+                        );
+                    })}
+                    <button
+                        onClick={handleClearAll}
+                        className="p-0.5 text-neutral-400 hover:text-red-500 rounded transition-colors ml-0.5"
+                        title="Clear all sorts"
+                    >
+                        <X className="w-3 h-3" />
+                    </button>
+                </div>
+            )}
+
+            {/* ── Flyout Panel ── */}
+            {isOpen && (
+                <div
+                    ref={popoverRef}
+                    className="absolute top-full right-0 mt-2 z-[100] w-[420px] bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-white/10 shadow-xl overflow-hidden"
+                    style={{ animation: 'sortFlyoutIn 150ms ease-out' }}
+                >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 dark:border-white/5">
+                        <span className="text-xs font-bold uppercase tracking-widest text-neutral-400">
+                            {activeSorts.length > 0 ? `${activeSorts.length} active sort${activeSorts.length > 1 ? 's' : ''}` : 'Sort'}
+                        </span>
+                        <div className="flex items-center gap-2">
+                            {activeSorts.length > 0 && (
+                                <button
+                                    onClick={handleClearAll}
+                                    className="text-[11px] font-medium text-red-500 hover:text-red-600 transition-colors"
+                                >
+                                    Clear all
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10 rounded transition-colors"
+                            >
+                                <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
-                    ))}
+                    </div>
 
-                    <div className="flex items-center gap-4 mt-2">
+                    {/* Sort Rules */}
+                    <div className="p-3 space-y-2 max-h-[300px] overflow-y-auto">
+                        {activeSorts.length === 0 ? (
+                            <div className="text-center py-6 text-sm text-neutral-400">
+                                <p>No active sorts</p>
+                                <p className="text-xs mt-1">Add a sort to order your records</p>
+                            </div>
+                        ) : (
+                            activeSorts.map((sort, index) => (
+                                <div
+                                    key={sort.id}
+                                    className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 group"
+                                >
+                                    {/* Conjunction */}
+                                    <span className="text-[11px] font-semibold text-neutral-400 w-[50px] text-right flex-shrink-0 uppercase tracking-wider">
+                                        {index === 0 ? t('db.toolbar.sortBy') : t('db.toolbar.thenBy')}
+                                    </span>
+
+                                    {/* Property selector */}
+                                    <div className="relative flex-1">
+                                        <select
+                                            className="appearance-none w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-purple-400 dark:focus:border-purple-500 transition-colors cursor-pointer"
+                                            value={sort.propertyId}
+                                            onChange={e => updateSort(databaseId, viewId, sort.id, { propertyId: e.target.value })}
+                                        >
+                                            {database.properties.map(p => (
+                                                <option
+                                                    key={p.id}
+                                                    value={p.id}
+                                                    disabled={activeSorts.some(s => s.propertyId === p.id && s.id !== sort.id)}
+                                                >
+                                                    {p.name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+                                    </div>
+
+                                    {/* Direction selector */}
+                                    <div className="relative flex-shrink-0">
+                                        <select
+                                            className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-purple-400 dark:focus:border-purple-500 transition-colors min-w-[110px] cursor-pointer"
+                                            value={sort.direction}
+                                            onChange={e => updateSort(databaseId, viewId, sort.id, { direction: e.target.value as SortDirection })}
+                                        >
+                                            {DIRECTIONS.map(dir => (
+                                                <option key={dir.value} value={dir.value}>{dir.label}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+                                    </div>
+
+                                    {/* Delete */}
+                                    <button
+                                        onClick={() => removeSort(databaseId, viewId, sort.id)}
+                                        className="p-1 text-neutral-300 dark:text-neutral-600 opacity-0 group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 rounded transition-all flex-shrink-0"
+                                        title="Remove this sort"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-4 py-2.5 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
                         <button
                             onClick={handleAddSort}
                             disabled={activeSorts.length >= database.properties.length}
-                            className="flex items-center gap-1 text-sm text-neutral-500 hover:text-neutral-800 dark:hover:text-white disabled:opacity-50"
+                            className="flex items-center gap-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <Plus className="w-3.5 h-3.5" />
-                            Add sort
-                        </button>
-                        <button
-                            onClick={() => {
-                                clearSorts(databaseId, viewId);
-                                setIsOpen(false);
-                            }}
-                            className="text-sm text-red-500 hover:text-red-600 ml-auto mr-6"
-                        >
-                            Clear all
+                            Add sort rule
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* Micro-animation */}
+            <style dangerouslySetInnerHTML={{ __html: `
+                @keyframes sortFlyoutIn {
+                    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+                    to { opacity: 1; transform: translateY(0) scale(1); }
+                }
+            `}} />
         </div>
     );
 }

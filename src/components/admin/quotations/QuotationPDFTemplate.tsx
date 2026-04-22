@@ -30,7 +30,8 @@ export const QuotationPDFTemplate = ({
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
 }: QuotationPDFProps) => {
 
-    const { companyName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
+    const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
+    const companyName = commercialName || rawCompanyName;
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     const isStationery = documentMode === 'stationery' && !!stationeryUrl;
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');

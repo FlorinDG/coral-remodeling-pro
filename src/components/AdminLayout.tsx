@@ -296,8 +296,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
             {/* Main Content */}
             <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
-                <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40">
-                    <div className="flex items-center gap-3 w-64 flex-shrink-0 min-w-0">
+                <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center px-4 sm:px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40 gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
@@ -307,17 +307,17 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                         <div className="h-4 w-px bg-neutral-200 dark:border-white/10 flex-shrink-0" />
 
-                        <div className="min-w-0 overflow-hidden">
+                        <div className="min-w-0 overflow-hidden hidden lg:block">
                             <Breadcrumbs />
                         </div>
                     </div>
 
                     {/* Center — Search */}
-                    <div className="flex-1 flex items-center justify-center px-4">
+                    <div className="flex-1 flex items-center justify-center min-w-0 px-2">
                         <UniversalSearch />
                     </div>
 
-                    <div className="flex items-center justify-end gap-4 w-64 flex-shrink-0">
+                    <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
 
                         <ThemeToggle />
                         <LanguageSwitcher />
@@ -325,14 +325,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         {(planType === 'FREE') && (
                             <Link
                                 href="/admin/settings"
-                                className="text-xs text-white px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity ml-2 shadow-sm"
+                                className="text-[10px] sm:text-xs text-white px-2.5 sm:px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
                                 style={{ backgroundColor: brandColor }}
                             >
                                 {t('layout.upgradePlan')}
                             </Link>
                         )}
 
-                        <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-4 ml-2" style={{ color: brandColor }}>
+                        <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-3 whitespace-nowrap hidden md:block" style={{ color: brandColor }}>
                             Coral Group
                         </a>
                     </div>

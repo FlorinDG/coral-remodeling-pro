@@ -244,7 +244,7 @@ export default function UniversalSearch() {
             {/* ── Trigger Button (always rendered to hold header layout) ── */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="w-full max-w-md flex items-center gap-2.5 px-4 py-1.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100/80 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 hover:text-neutral-600 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20 transition-all cursor-pointer"
+                className="w-full max-w-xs flex items-center gap-2.5 px-4 py-1.5 text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100/80 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 hover:text-neutral-600 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-white/20 transition-all cursor-pointer"
             >
                 <Search className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="flex-1 text-left hidden sm:inline">Search records, pages, navigation...</span>

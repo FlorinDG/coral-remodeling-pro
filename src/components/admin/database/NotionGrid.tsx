@@ -798,6 +798,52 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                                             if (newVal !== undefined && isDifferent) {
                                                 updatePageProperty(database.id, oldRow.id, prop.id, newVal);
+
+                                                // ── VAT Company Lookup ──────────────────────
+                                                // Auto-lookup when a VAT property changes on contacts/clients/suppliers DBs
+                                                const vatPropertyNames = ['vat', 'tva', 'btw', 'vat_number', 'vatnumber', 'n_tva', 'nrtva', 'btw_nummer', 'btwnr'];
+                                                const isVatProp = vatPropertyNames.some(v =>
+                                                    prop.id.toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, '')) ||
+                                                    (prop.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, ''))
+                                                );
+                                                const valStr = typeof newVal === 'string' ? newVal.replace(/[\s.]/g, '') : '';
+                                                if (isVatProp && valStr.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(valStr)) {
+                                                    // Trigger async company lookup
+                                                    fetch(`/api/company/lookup?vat=${encodeURIComponent(valStr)}`)
+                                                        .then(r => r.ok ? r.json() : null)
+                                                        .then(data => {
+                                                            if (!data?.isValid) return;
+                                                            // Find property IDs by common name patterns
+                                                            const findPropId = (patterns: string[]) =>
+                                                                database.properties.find(p =>
+                                                                    patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
+                                                                )?.id;
+                                                            const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
+                                                            const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
+                                                            const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
+                                                            const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
+
+                                                            const name = data.name && data.name !== '---' ? data.name : null;
+                                                            const addressParts = data.address && data.address !== '---' ? data.address.split('\n') : [];
+                                                            const streetLine = addressParts[0] || null;
+                                                            // Parse "1320 Beauchevain" format from second line
+                                                            const cityLineParts = (addressParts[1] || '').match(/^(\d{4,5})\s+(.+)/);
+                                                            const postalCode = cityLineParts?.[1] || null;
+                                                            const city = cityLineParts?.[2] || null;
+
+                                                            if (companyPropId && name) updatePageProperty(database.id, oldRow.id, companyPropId, name);
+                                                            if (addressPropId && streetLine) updatePageProperty(database.id, oldRow.id, addressPropId, streetLine);
+                                                            if (cityPropId && city) updatePageProperty(database.id, oldRow.id, cityPropId, city);
+                                                            if (postalPropId && postalCode) updatePageProperty(database.id, oldRow.id, postalPropId, postalCode);
+
+                                                            if (name) {
+                                                                import('sonner').then(({ toast }) => {
+                                                                    toast.success(`Company found: ${name}`, { duration: 3000 });
+                                                                });
+                                                            }
+                                                        })
+                                                        .catch(() => {}); // Silently fail — VAT lookup is best-effort
+                                                }
                                             }
                                         });
                                     });

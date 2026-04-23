@@ -2,13 +2,115 @@
 import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from "@/config/tabs";
-import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette } from "lucide-react";
+import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette, CheckCircle2, Wifi } from "lucide-react";
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
+
+// ── Peppol Connection Banner ──────────────────────────────────────────────────
+function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
+    onFetchRegistry: () => void;
+    fetchingRegistry: boolean;
+    t: (key: string) => string;
+}) {
+    const [status, setStatus] = useState<{
+        connected: boolean;
+        peppolRegistered: boolean;
+        peppolId?: string;
+        companyName?: string;
+        loading: boolean;
+    }>({ connected: false, peppolRegistered: false, loading: true });
+
+    useEffect(() => {
+        fetch('/api/peppol/onboard')
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (data) {
+                    setStatus({
+                        connected: data.connected,
+                        peppolRegistered: data.peppolRegistered,
+                        peppolId: data.peppolId,
+                        companyName: data.companyName,
+                        loading: false,
+                    });
+                } else {
+                    setStatus(s => ({ ...s, loading: false }));
+                }
+            })
+            .catch(() => setStatus(s => ({ ...s, loading: false })));
+    }, []);
+
+    if (status.loading) {
+        return (
+            <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl p-6 flex items-center gap-4">
+                <RefreshCw className="w-5 h-5 animate-spin text-neutral-400" />
+                <span className="text-sm text-neutral-500">Checking Peppol connection...</span>
+            </div>
+        );
+    }
+
+    // ✅ Connected state
+    if (status.connected && status.peppolRegistered) {
+        return (
+            <div className="bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
+                <div className="bg-emerald-100 dark:bg-emerald-500/20 p-3 rounded-xl mt-0.5 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300">Peppol Connected</h3>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                            <Wifi className="w-3 h-3" /> Active
+                        </span>
+                    </div>
+                    <div className="text-sm text-emerald-700 dark:text-emerald-400/80 space-y-1">
+                        {status.companyName && (
+                            <p><span className="font-semibold">Company:</span> {status.companyName}</p>
+                        )}
+                        {status.peppolId && (
+                            <p><span className="font-semibold">Peppol Address:</span> <code className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 font-mono text-xs font-bold">{status.peppolId}</code></p>
+                        )}
+                    </div>
+                    <p className="text-xs text-emerald-600/60 dark:text-emerald-500/40 mt-3">
+                        Your company is registered on the Peppol network. B2B e-invoices can be sent and received automatically.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // ⚠️ Not connected state (original orange banner)
+    return (
+        <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
+            <div className="bg-amber-100 dark:bg-amber-500/20 p-3 rounded-xl mt-1 text-amber-600 dark:text-amber-400">
+                <AlertCircle className="w-6 h-6" />
+            </div>
+            <div className="flex-1">
+                <h3 className="text-lg font-bold text-amber-900 dark:text-amber-300">{t('nav.settings.peppolTitle')}</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1 mb-4 leading-relaxed">
+                    {t('nav.settings.peppolDesc')}
+                </p>
+                <div className="flex gap-3">
+                    <Button
+                        onClick={onFetchRegistry}
+                        disabled={fetchingRegistry}
+                        className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm border-0 font-bold disabled:opacity-50"
+                    >
+                        {fetchingRegistry ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        {fetchingRegistry ? t('nav.settings.searching') : t('nav.settings.searchRegistry')}
+                    </Button>
+                    <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+                        {t('nav.settings.enterManually')}
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 
 export default function CompanyInfoSettings() {
     const t = useTranslations('Admin');
@@ -190,30 +292,11 @@ export default function CompanyInfoSettings() {
                 </div>
 
                 {/* Integration Callout: Peppol */}
-                <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-6 flex items-start gap-4 shadow-sm">
-                    <div className="bg-amber-100 dark:bg-amber-500/20 p-3 rounded-xl mt-1 text-amber-600 dark:text-amber-400">
-                        <AlertCircle className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-amber-900 dark:text-amber-300">{t('nav.settings.peppolTitle')}</h3>
-                        <p className="text-sm text-amber-700 dark:text-amber-600/80 mt-1 mb-4 leading-relaxed">
-                            {t('nav.settings.peppolDesc')}
-                        </p>
-                        <div className="flex gap-3">
-                            <Button
-                                onClick={handleFetchRegistry}
-                                disabled={fetchingRegistry}
-                                className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm border-0 font-bold disabled:opacity-50"
-                            >
-                                {fetchingRegistry ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                {fetchingRegistry ? t('nav.settings.searching') : t('nav.settings.searchRegistry')}
-                            </Button>
-                            <Button variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-100">
-                                {t('nav.settings.enterManually')}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                <PeppolBanner
+                    onFetchRegistry={handleFetchRegistry}
+                    fetchingRegistry={fetchingRegistry}
+                    t={t}
+                />
 
                 {/* Company Details Form */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

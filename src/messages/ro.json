@@ -335,7 +335,16 @@
         "createInvoice": "Creează Factură",
         "dashboard": "Panou de Control",
         "administrative": "Administrativ",
-        "scanUploadTicket": "Scanează Ticket"
+        "scanUploadTicket": "Scanează Ticket",
+        "syncPeppolInbox": "Sincronizare Inbox Peppol",
+        "scanUpload": "Scanează / Încarcă",
+        "manualInvoice": "Factură Manuală",
+        "creating": "Se creează…",
+        "peppolNotConfigured": "Peppol nu este configurat. Mergeți la Setări → Financiar.",
+        "peppolConnectedBadge": "Peppol Conectat",
+        "peppolSyncSuccess": "{count} factură/facturi noi importate",
+        "peppolInboxUpToDate": "Inbox actualizat",
+        "peppolSyncError": "Sincronizare eșuată"
       },
       "settings": {
         "companyInfo": "INFO COMPANIE",

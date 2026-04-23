@@ -336,7 +336,16 @@
         "createInvoice": "Create Invoice",
         "dashboard": "Dashboard",
         "administrative": "Administrative",
-        "scanUploadTicket": "Scan / Upload Ticket"
+        "scanUploadTicket": "Scan / Upload Ticket",
+        "syncPeppolInbox": "Sync Peppol Inbox",
+        "scanUpload": "Scan / Upload",
+        "manualInvoice": "Manual Invoice",
+        "creating": "Creating…",
+        "peppolNotConfigured": "Peppol not configured. Go to Settings → Financials.",
+        "peppolConnectedBadge": "Peppol Connected",
+        "peppolSyncSuccess": "Imported {count} new invoice(s)",
+        "peppolInboxUpToDate": "Inbox up to date",
+        "peppolSyncError": "Sync failed"
       },
       "settings": {
         "companyInfo": "COMPANY INFO",

@@ -336,7 +336,16 @@
         "createInvoice": "Factuur Aanmaken",
         "dashboard": "Dashboard",
         "administrative": "Administratief",
-        "scanUploadTicket": "Ticket Scannen"
+        "scanUploadTicket": "Ticket Scannen",
+        "syncPeppolInbox": "Peppol Inbox Synchroniseren",
+        "scanUpload": "Scannen / Uploaden",
+        "manualInvoice": "Handmatige Factuur",
+        "creating": "Aanmaken…",
+        "peppolNotConfigured": "Peppol niet geconfigureerd. Ga naar Instellingen → Financieel.",
+        "peppolConnectedBadge": "Peppol Verbonden",
+        "peppolSyncSuccess": "{count} nieuwe factu(u)r(en) geïmporteerd",
+        "peppolInboxUpToDate": "Inbox up-to-date",
+        "peppolSyncError": "Synchronisatie mislukt"
       },
       "settings": {
         "companyInfo": "BEDRIJFSINFO",

@@ -335,7 +335,16 @@
         "createInvoice": "Créer une Facture",
         "dashboard": "Tableau de Bord",
         "administrative": "Administratif",
-        "scanUploadTicket": "Scanner / Télécharger Ticket"
+        "scanUploadTicket": "Scanner / Télécharger Ticket",
+        "syncPeppolInbox": "Synchroniser Boîte Peppol",
+        "scanUpload": "Scanner / Télécharger",
+        "manualInvoice": "Facture Manuelle",
+        "creating": "Création…",
+        "peppolNotConfigured": "Peppol non configuré. Allez dans Paramètres → Finances.",
+        "peppolConnectedBadge": "Peppol Connecté",
+        "peppolSyncSuccess": "{count} nouvelle(s) facture(s) importée(s)",
+        "peppolInboxUpToDate": "Boîte de réception à jour",
+        "peppolSyncError": "Échec de la synchronisation"
       },
       "settings": {
         "companyInfo": "INFOS SOCIÉTÉ",

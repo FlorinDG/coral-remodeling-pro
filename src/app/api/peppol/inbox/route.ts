@@ -11,7 +11,6 @@ import {
 import {
     maybeResetMonthlyCounters,
     checkPeppolReceivedQuota,
-    incrementPeppolReceived,
 } from '@/lib/plan-limits';
 
 /**
@@ -46,13 +45,11 @@ export async function GET() {
         const quotaInfo = await checkPeppolReceivedQuota(tenantId);
 
         // Parse each document into our internal format
-        // Also increment received counter for new documents (always stored — bookkeeping is never broken)
+        // NOTE: We do NOT increment the received counter here — that happens
+        // after deduplication on the client side via POST /api/peppol/inbox/count
         const parsedDocs = await Promise.all(
             (inbox.documents || []).map(async (doc) => {
                 try {
-                    // Increment received counter for each document fetched from the network
-                    await incrementPeppolReceived(tenantId);
-
                     // If inline UBL is available, parse it
                     if (doc.ubl_xml) {
                         const parsed = parseUBLToInvoice(doc.ubl_xml, doc.id);

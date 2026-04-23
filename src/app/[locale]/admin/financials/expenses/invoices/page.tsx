@@ -128,6 +128,15 @@ export default function ExpensesInvoicesPage() {
                 }
             }
 
+            // Increment the received counter by the number of ACTUALLY NEW docs imported
+            if (imported > 0) {
+                fetch('/api/peppol/inbox/count', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count: imported }),
+                }).catch(() => {}); // fire-and-forget — don't block UI
+            }
+
             setSyncResult({ count: imported });
         } catch (err: any) {
             setSyncResult({ count: 0, error: err.message || t('nav.pages.peppolSyncError') });

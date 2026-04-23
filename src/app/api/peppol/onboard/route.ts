@@ -28,7 +28,32 @@ export async function POST() {
 
         // Check if already onboarded
         if (tenant.eInvoiceTenantId) {
-            // Already connected — check Peppol status
+            // ── API Key Recovery ──────────────────────────────────────
+            // If the tenant was onboarded but the API key wasn't stored
+            // (e.g. e-invoice.be didn't return a key, or network failure),
+            // attempt to re-provision it now.
+            if (!tenant.eInvoiceApiKey) {
+                console.warn(`[Peppol] Tenant ${tenantId} has eInvoiceTenantId but no API key — attempting recovery`);
+                try {
+                    const { createApiKey } = await import('@/lib/e-invoice');
+                    const apiKeyResult = await createApiKey(
+                        tenant.eInvoiceTenantId,
+                        `coralos-recovery-${Date.now()}`,
+                        `CoralOS recovery key for ${tenant.companyName || tenantId}`,
+                    );
+                    if (apiKeyResult?.id) {
+                        await prisma.tenant.update({
+                            where: { id: tenantId },
+                            data: { eInvoiceApiKey: apiKeyResult.id },
+                        });
+                        console.log(`[Peppol] ✓ API key recovered: ${apiKeyResult.id}`);
+                    }
+                } catch (keyErr) {
+                    console.error('[Peppol] API key recovery failed:', keyErr);
+                }
+            }
+            // ──────────────────────────────────────────────────────────
+
             const peppolStatus = await getPeppolStatus(tenant.eInvoiceTenantId).catch(() => ({ registered: false } as { registered: boolean }));
             return NextResponse.json({
                 success: true,
@@ -43,7 +68,7 @@ export async function POST() {
         // Validate: need at minimum a company name
         if (!tenant.companyName) {
             return NextResponse.json({
-                error: 'Bedrijfsnaam ontbreekt. Configureer eerst je bedrijfsprofiel.',
+                error: 'MISSING_COMPANY_NAME',
             }, { status: 400 });
         }
 
@@ -101,14 +126,14 @@ export async function POST() {
             peppolRegistered: result.peppolRegistered,
             peppolId,
             message: result.peppolRegistered
-                ? 'Peppol verbinding actief! Je kunt nu e-facturen verzenden.'
-                : 'E-invoice account aangemaakt. Peppol registratie volgt na BTW verificatie.',
+                ? 'PEPPOL_ACTIVE'
+                : 'PEPPOL_PENDING_VAT_VERIFICATION',
         });
 
     } catch (error: any) {
         console.error('[Peppol Onboard] Error:', error);
         return NextResponse.json({
-            error: error.message || 'Onboarding mislukt',
+            error: error.message || 'ONBOARD_FAILED',
             success: false,
         }, { status: 500 });
     }

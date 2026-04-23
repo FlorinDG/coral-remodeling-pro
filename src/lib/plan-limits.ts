@@ -82,7 +82,7 @@ export async function assertPeppolSentLimit(tenantId: string): Promise<void> {
 
     if ((tenant.peppolSentThisMonth ?? 0) >= limit) {
         throw Object.assign(
-            new Error(`Peppol verzendlimiet bereikt (${limit}/maand voor ${plan}-plan). Upgrade naar Pro voor meer volume.`),
+            new Error(`PEPPOL_SEND_LIMIT`),
             { code: 'PEPPOL_SEND_LIMIT', limit, plan, current: tenant.peppolSentThisMonth }
         );
     }

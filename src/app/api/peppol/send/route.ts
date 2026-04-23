@@ -78,15 +78,16 @@ function mapUnitToCode(unit?: string): string {
     if (!unit) return 'C62'; // Default: pieces/units
     const lower = unit.toLowerCase().trim();
     const map: Record<string, string> = {
-        'stuks': 'C62', 'stuk': 'C62', 'pcs': 'C62', 'st': 'C62',
+        'stuks': 'C62', 'stuk': 'C62', 'pcs': 'C62', 'st': 'C62', 'pc': 'C62',
         'uur': 'HUR', 'uren': 'HUR', 'u': 'HUR', 'h': 'HUR', 'hour': 'HUR', 'hours': 'HUR',
         'dag': 'DAY', 'dagen': 'DAY', 'day': 'DAY', 'days': 'DAY',
-        'm': 'MTR', 'meter': 'MTR', 'meters': 'MTR', 'lm': 'MTR',
+        'm': 'MTR', 'meter': 'MTR', 'meters': 'MTR', 'lm': 'MTR', 'ml': 'MTR',
         'm2': 'MTK', 'm²': 'MTK',
         'm3': 'MTQ', 'm³': 'MTQ',
         'kg': 'KGM', 'kilo': 'KGM',
         'l': 'LTR', 'liter': 'LTR',
-        'forfait': 'C62', 'vp': 'C62', 'lot': 'C62',
+        'forfait': 'C62', 'forf.': 'C62', 'forf': 'C62', 'vp': 'C62', 'lot': 'C62', 'set': 'C62',
+        'stk': 'C62',
     };
     return map[lower] || 'C62';
 }
@@ -108,7 +109,7 @@ export async function POST(req: Request) {
         });
 
         if (!tenant) {
-            return NextResponse.json({ error: 'Bedrijfsprofiel niet gevonden. Configureer eerst je bedrijfsinstellingen.', success: false }, { status: 404 });
+            return NextResponse.json({ error: 'TENANT_NOT_FOUND', code: 'TENANT_NOT_FOUND', success: false }, { status: 404 });
         }
 
         // ── Plan quota check ────────────────────────────────────────
@@ -125,18 +126,18 @@ export async function POST(req: Request) {
         // ────────────────────────────────────────────────────────────
 
         if (!tenant.vatNumber) {
-            return NextResponse.json({ error: 'BTW-nummer ontbreekt in je bedrijfsprofiel. Ga naar Instellingen → Bedrijfsinfo.', success: false }, { status: 400 });
+            return NextResponse.json({ error: 'MISSING_VAT_NUMBER', code: 'MISSING_VAT_NUMBER', success: false }, { status: 400 });
         }
 
         // 2. Validate client data
         if (!client?.firstName) {
-            return NextResponse.json({ error: 'Klant ontbreekt. Selecteer een klant voor deze factuur.', success: false }, { status: 400 });
+            return NextResponse.json({ error: 'MISSING_CLIENT', code: 'MISSING_CLIENT', success: false }, { status: 400 });
         }
 
         // 3. Transform blocks into e-invoice.be line items
         const items = flattenBlocksToLineItems(blocks || []);
         if (items.length === 0) {
-            return NextResponse.json({ error: 'Geen factuurregels gevonden. Voeg minstens één regel toe.', success: false }, { status: 400 });
+            return NextResponse.json({ error: 'NO_LINE_ITEMS', code: 'NO_LINE_ITEMS', success: false }, { status: 400 });
         }
 
         console.log(`[e-invoice.be] Preparing Peppol dispatch for Invoice "${invoiceTitle}" → ${client.firstName} ${client.lastName || ''}`);
@@ -159,7 +160,7 @@ export async function POST(req: Request) {
             currency: 'EUR',
 
             // Vendor (Sender) — from Tenant profile
-            vendor_name: tenant.companyName || 'Onbekend bedrijf',
+            vendor_name: tenant.companyName || 'Unknown Company',
             vendor_tax_id: vendorVat,
             vendor_address: [tenant.street, tenant.postalCode, tenant.city, 'Belgium'].filter(Boolean).join(', '),
             vendor_email: tenant.email || (session?.user as any)?.email || '',
@@ -172,7 +173,7 @@ export async function POST(req: Request) {
             items,
 
             // Payment terms
-            payment_term: 'Betaling binnen 30 dagen',
+            payment_term: 'Net 30 days',
         };
 
         // Add customer VAT if available (required for Peppol B2B routing)
@@ -289,7 +290,7 @@ export async function POST(req: Request) {
             await incrementPeppolSent(tenantId);
             return NextResponse.json({
                 success: true,
-                message: 'Factuur succesvol verzonden via Peppol!',
+                message: 'PEPPOL_SENT_OK',
             });
         }
 
@@ -317,9 +318,11 @@ export async function POST(req: Request) {
                 ? issues.map((e: any) => `${e.severity || 'ERROR'}: ${e.message || e.field || JSON.stringify(e)}`).join('; ')
                 : validateData.message || validateData.detail || 'Validatiefout';
             return NextResponse.json({
-                error: `Peppol validatiefout: ${errorMsg}`,
+                error: 'PEPPOL_VALIDATION_FAILED',
+                code: 'PEPPOL_VALIDATION_FAILED',
                 success: false,
                 details: validateData,
+                issues: errorMsg,
             }, { status: 400 });
         }
         console.log('[e-invoice.be] ✓ Validation passed');
@@ -336,7 +339,8 @@ export async function POST(req: Request) {
         if (!createRes.ok || !createData.id) {
             console.error('[e-invoice.be] Document creation failed:', createData);
             return NextResponse.json({
-                error: `Peppol document aanmaken mislukt: ${createData.message || 'Onbekende fout'}`,
+                error: 'PEPPOL_CREATE_FAILED',
+                code: 'PEPPOL_CREATE_FAILED',
                 success: false,
                 details: createData,
             }, { status: 400 });
@@ -375,7 +379,8 @@ export async function POST(req: Request) {
         if (!sendRes.ok) {
             console.error('[e-invoice.be] Send failed:', sendData);
             return NextResponse.json({
-                error: `Peppol verzenden mislukt: ${sendData.detail || sendData.message || 'Netwerk fout'}`,
+                error: 'PEPPOL_SEND_FAILED',
+                code: 'PEPPOL_SEND_FAILED',
                 success: false,
                 details: sendData,
             }, { status: 400 });
@@ -389,13 +394,14 @@ export async function POST(req: Request) {
             success: true,
             documentId: createData.id,
             state: sendData.state,
-            message: 'Factuur succesvol verzonden via Peppol!',
+            message: 'PEPPOL_SENT_OK',
         });
 
     } catch (error: any) {
         console.error('[e-invoice.be] Fatal error:', error);
         return NextResponse.json({
-            error: 'Interne serverfout bij Peppol verzending',
+            error: 'PEPPOL_INTERNAL_ERROR',
+            code: 'PEPPOL_INTERNAL_ERROR',
             details: error.message,
             success: false,
         }, { status: 500 });

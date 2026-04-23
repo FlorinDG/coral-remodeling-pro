@@ -370,9 +370,9 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                     {isLoading ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm z-10">
                             <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-                            <p className="text-sm font-medium text-muted-foreground animate-pulse">Syncing with Google Workspace...</p>
+                            <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading files...</p>
                         </div>
-                    ) : error ? (
+                    ) : error && !error.includes('not configured') && !error.includes('missing') ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500 bg-red-50/50 p-6 z-10 text-center">
                             <p className="font-bold">Drive Sync Failed</p>
                             <p className="text-sm max-w-md">{error}</p>

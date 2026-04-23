@@ -4,23 +4,22 @@ import { getOAuth2Client } from './auth/route';
 
 // Helper to initialize the Drive API client using OAuth 2.0 User Consent
 const getDriveClient = () => {
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    // Gracefully return null when Google Drive credentials are not configured
+    if (!clientId || !clientSecret || !refreshToken) {
+        return null;
+    }
+
     try {
-        const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-
-        if (!refreshToken) {
-            throw new Error('GOOGLE_REFRESH_TOKEN is missing. Please Connect Drive from Admin Settings.');
-        }
-
         const oauth2Client = getOAuth2Client();
-
-        // Set the saved long-lived refresh token
-        // The googleapis library will automatically handle fetching a new short-lived access_token
         oauth2Client.setCredentials({ refresh_token: refreshToken });
-
         return google.drive({ version: 'v3', auth: oauth2Client });
     } catch (error: any) {
         console.error('Failed to initialize Google Drive client via OAuth:', error);
-        throw new Error('Drive API Authentication Failed: ' + error.message);
+        return null;
     }
 };
 
@@ -39,6 +38,9 @@ export async function GET(request: Request) {
         }
 
         const drive = getDriveClient();
+        if (!drive) {
+            return NextResponse.json({ nodes: [], driveNotConfigured: true });
+        }
 
         let query = `'${folderId}' in parents and trashed=false`;
         if (tag) {
@@ -94,6 +96,9 @@ export async function POST(request: Request) {
         }
 
         const drive = getDriveClient();
+        if (!drive) {
+            return NextResponse.json({ error: 'Google Drive is not configured.' }, { status: 503 });
+        }
 
         // --- Create Folder ---
         if (action === 'create_folder') {
@@ -197,6 +202,9 @@ export async function DELETE(request: Request) {
         }
 
         const drive = getDriveClient();
+        if (!drive) {
+            return NextResponse.json({ error: 'Google Drive is not configured.' }, { status: 503 });
+        }
 
         // Use the `update` method to move it to trash, rather than permanently delete
         await drive.files.update({

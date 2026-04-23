@@ -8,6 +8,7 @@ import {
     Lock, Search, ChevronDown, ChevronRight, X,
 } from 'lucide-react';
 import { COLOR_STYLES } from '../columns/SelectColumn';
+import SelectDropdown from './SelectDropdown';
 
 // ─── Type icon map ────────────────────────────────────────────────────────
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -36,9 +37,10 @@ const READ_ONLY_TYPES = new Set(['formula', 'rollup', 'created_time', 'created_b
 
 // ─── Single select badge ──────────────────────────────────────────────────
 function SelectBadge({ option }: { option: SelectOption }) {
-    const style = COLOR_STYLES[option.color as keyof typeof COLOR_STYLES] || COLOR_STYLES['gray'];
+    const c = COLOR_STYLES[option.color as keyof typeof COLOR_STYLES] || COLOR_STYLES['gray'];
     return (
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold ${c.badge}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${c.dot} flex-shrink-0`} />
             {option.name}
         </span>
     );
@@ -97,27 +99,13 @@ function PropertyRow({
         const strVal = String(value || '');
         const selected = opts.find(o => o.id === strVal || o.name === strVal);
         valueEl = (
-            <div className="relative group w-full">
-                {/* Always render a select, but overlay the badge on top for display */}
-                <select
-                    value={strVal}
-                    disabled={isReadOnly}
-                    onChange={e => onChange(property.id, e.target.value)}
-                    className={`${inputBase} cursor-pointer absolute inset-0 opacity-0 w-full h-full z-10`}
-                >
-                    <option value="">—</option>
-                    {opts.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                </select>
-                {/* Visual badge display */}
-                <div className="flex items-center gap-1 pointer-events-none">
-                    {selected ? (
-                        <SelectBadge option={selected} />
-                    ) : (
-                        <span className="text-neutral-400 text-xs italic">—</span>
-                    )}
-                </div>
-                {isReadOnly && !selected && <span className="text-neutral-400 text-xs italic">—</span>}
-            </div>
+            <SelectDropdown
+                value={strVal || null}
+                options={opts}
+                onChange={(v) => onChange(property.id, v ?? '')}
+                placeholder="—"
+                disabled={isReadOnly}
+            />
         );
     } else if (property.type === 'multi_select' && property.config?.options) {
         const opts = property.config.options;

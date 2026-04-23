@@ -166,9 +166,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                         </div>
 
                         {/* Right: record metadata cards (future) */}
-                        <div className="flex-1 flex items-center justify-center text-neutral-300 dark:text-neutral-700 flex-col gap-3 p-8">
-                            <PenLine className="w-8 h-8 opacity-40" />
-                            <p className="text-xs text-center max-w-xs opacity-60">
+                        <div className="flex-1 flex items-center justify-center text-neutral-400 dark:text-neutral-500 flex-col gap-3 p-8">
+                            <PenLine className="w-8 h-8 opacity-60" />
+                            <p className="text-xs text-center max-w-xs text-neutral-500 dark:text-neutral-400">
                                 Switch to <strong>Journal</strong> to add notes and rich content to this record.
                             </p>
                         </div>

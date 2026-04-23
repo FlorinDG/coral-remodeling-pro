@@ -36,7 +36,7 @@ export default function PageFinancialAnalysis({ databaseId, pageId }: { database
                 Financial Analysis
             </h2>
             <div className="h-[250px] w-full bg-neutral-50 dark:bg-black/20 rounded-2xl border border-neutral-200 dark:border-white/10 p-4">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                     <BarChart
                         data={data}
                         margin={{ top: 20, right: 30, left: 20, bottom: 5 }}

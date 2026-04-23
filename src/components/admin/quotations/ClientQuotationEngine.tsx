@@ -16,6 +16,7 @@ import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
+import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { canAccess } from '@/lib/feature-flags';
 import { t as ti18n } from '@/lib/document-i18n';
 
@@ -524,32 +525,26 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </div>
                         )}
 
-                        {/* Status Selector — reads options from DB schema for consistency with grid view */}
+                        {/* Status Selector — uses shared styled dropdown for consistency with grid view */}
                         {(() => {
                             const db = getDatabase(quotationsDbId);
                             const statusProp = db?.properties.find(p => p.id === 'status');
-                            const statusOptions = statusProp?.config?.options || [];
+                            const statusOptions = statusProp?.config?.options || [
+                                { id: 'opt-draft', name: ti18n('engine_status_draft', locale), color: 'gray' },
+                                { id: 'opt-sent', name: ti18n('engine_status_sent', locale), color: 'blue' },
+                                { id: 'opt-accepted', name: ti18n('engine_status_accepted', locale), color: 'green' },
+                                { id: 'opt-rejected', name: ti18n('engine_status_rejected', locale), color: 'red' },
+                            ];
                             return (
-                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                                    <FileText className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                                    <select
-                                        value={quotationStatus}
-                                        onChange={(e) => handleUpdateProperty('status', e.target.value)}
-                                        className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-32 truncate"
-                                    >
-                                        <option value="">{ti18n('engine_status', locale)}</option>
-                                        {statusOptions.length > 0
-                                            ? statusOptions.map((opt: any) => (
-                                                <option key={opt.id} value={opt.id} className="text-black dark:text-neutral-900">{opt.name}</option>
-                                            ))
-                                            : <>
-                                                <option value="opt-draft" className="text-black dark:text-neutral-900">{ti18n('engine_status_draft', locale)}</option>
-                                                <option value="opt-sent" className="text-black dark:text-neutral-900">{ti18n('engine_status_sent', locale)}</option>
-                                                <option value="opt-accepted" className="text-black dark:text-neutral-900">{ti18n('engine_status_accepted', locale)}</option>
-                                                <option value="opt-rejected" className="text-black dark:text-neutral-900">{ti18n('engine_status_rejected', locale)}</option>
-                                            </>
-                                        }
-                                    </select>
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                    <SelectDropdown
+                                        value={quotationStatus || null}
+                                        options={statusOptions}
+                                        onChange={(v) => handleUpdateProperty('status', v ?? '')}
+                                        placeholder={ti18n('engine_status', locale)}
+                                        compact
+                                    />
                                 </div>
                             );
                         })()}

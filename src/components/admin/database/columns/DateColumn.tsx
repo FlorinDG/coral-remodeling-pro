@@ -23,9 +23,40 @@ function isToday(year: number, month: number, day: number) {
     return now.getFullYear() === year && now.getMonth() === month && now.getDate() === day;
 }
 
+/** Normalise any date value stored in the DB to a plain YYYY-MM-DD string. */
+function normaliseDateValue(raw: string): string {
+    if (!raw) return '';
+    // Already a clean YYYY-MM-DD? Return as-is.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    // Full ISO-8601 with 'T' (e.g. 2026-02-20T23:00:00.000Z) → strip time.
+    if (raw.includes('T')) {
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+    }
+    // European DD/MM/YYYY or DD-MM-YYYY
+    const euMatch = raw.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
+    if (euMatch) return `${euMatch[3]}-${euMatch[2].padStart(2, '0')}-${euMatch[1].padStart(2, '0')}`;
+    // US MM/DD/YYYY
+    const usMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (usMatch) {
+        const m = parseInt(usMatch[1]), d = parseInt(usMatch[2]);
+        if (m > 12) return `${usMatch[3]}-${usMatch[2].padStart(2, '0')}-${usMatch[1].padStart(2, '0')}`; // actually DD/MM
+        return `${usMatch[3]}-${usMatch[1].padStart(2, '0')}-${usMatch[2].padStart(2, '0')}`;
+    }
+    // Fallback: try native Date parse
+    const fallback = new Date(raw);
+    if (!isNaN(fallback.getTime())) {
+        return `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, '0')}-${String(fallback.getDate()).padStart(2, '0')}`;
+    }
+    return raw;
+}
+
 function formatDisplayDate(dateStr: string) {
     if (!dateStr) return '';
-    const d = new Date(dateStr + 'T00:00:00');
+    const normalised = normaliseDateValue(dateStr);
+    const d = new Date(normalised + 'T00:00:00');
     if (isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -38,7 +69,8 @@ interface CalendarPickerProps {
 }
 
 const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPickerProps) => {
-    const parsed = value ? new Date(value + 'T00:00:00') : new Date();
+    const normVal = value ? normaliseDateValue(value) : '';
+    const parsed = normVal ? new Date(normVal + 'T00:00:00') : new Date();
     const [viewYear, setViewYear] = useState(parsed.getFullYear());
     const [viewMonth, setViewMonth] = useState(parsed.getMonth());
     const panelRef = useRef<HTMLDivElement>(null);
@@ -204,7 +236,7 @@ const DateComponent = ({ rowData, setRowData, focus, active, stopEditing }: Cell
     const cellRef = useRef<HTMLDivElement>(null);
     const [showPicker, setShowPicker] = useState(false);
     const [rect, setRect] = useState<DOMRect | null>(null);
-    const value = rowData || '';
+    const value = rowData ? normaliseDateValue(rowData) : '';
 
     useLayoutEffect(() => {
         if ((focus || active) && cellRef.current) {
@@ -272,8 +304,7 @@ export const dateColumn: Column<string | null, any> = {
     deleteValue: () => null,
     copyValue: ({ rowData }) => rowData || '',
     pasteValue: ({ value }) => {
-        const parsed = new Date(value);
-        return isNaN(parsed.getTime()) ? null : parsed.toISOString().split('T')[0];
+        return normaliseDateValue(value) || null;
     },
     isCellEmpty: ({ rowData }) => !rowData,
 };

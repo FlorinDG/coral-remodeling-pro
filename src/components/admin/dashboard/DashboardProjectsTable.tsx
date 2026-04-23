@@ -115,7 +115,7 @@ export default function DashboardProjectsTable() {
                 </div>
                 <div className="flex-1 w-full min-h-0 relative -ml-4">
                     {executionStats.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                             <PieChart>
                                 <Pie
                                     data={executionStats}

@@ -245,7 +245,7 @@ export async function POST(req: Request) {
             });
 
             // Email the UBL XML to the platform admin for manual handling
-            const adminEmail = process.env.PEPPOL_ADMIN_EMAIL || 'admin@coral-group.be';
+            const adminEmail = process.env.PEPPOL_ADMIN_EMAIL || 'tfo@coral-group.be';
             const resendKey = process.env.RESEND_API_KEY;
 
             if (resendKey) {

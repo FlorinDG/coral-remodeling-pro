@@ -496,6 +496,9 @@
         "applyData": "Bedrijfsgegevens Toepassen",
         "notFound": "Geen bedrijf gevonden voor dit BTW-nummer.",
         "error": "Opzoeken in register mislukt. Probeer het later opnieuw.",
+        "typingHint": "Voer een geldig BTW-nummer in om te zoeken",
+        "vatFormat": "Formaat: BE0123456789",
+        "validating": "Wordt gevalideerd...",
         "dismiss": "Sluiten"
       }
     }

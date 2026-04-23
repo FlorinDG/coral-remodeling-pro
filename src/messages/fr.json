@@ -495,6 +495,9 @@
         "applyData": "Appliquer les Données",
         "notFound": "Aucune entreprise trouvée pour ce numéro de TVA.",
         "error": "Échec de la recherche. Réessayez plus tard.",
+        "typingHint": "Saisissez un numéro de TVA valide pour rechercher",
+        "vatFormat": "Format : BE0123456789",
+        "validating": "Validation...",
         "dismiss": "Fermer"
       }
     }

@@ -65,13 +65,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     // ── VAT Company Lookup Flyout ────────────────────────────────────────────
     type VatLookupState = {
-        status: 'loading' | 'found' | 'not_found' | 'error';
+        status: 'typing' | 'loading' | 'found' | 'not_found' | 'error';
         vatNumber: string;
         rowId: string;
         anchorRect: DOMRect | null;
         data?: { name: string | null; street: string | null; postalCode: string | null; city: string | null };
     } | null;
     const [vatLookup, setVatLookup] = useState<VatLookupState>(null);
+    const vatDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Trigger API fetch when vatLookup enters 'loading' state
     useEffect(() => {
@@ -103,25 +104,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         return () => controller.abort();
     }, [vatLookup?.status, vatLookup?.vatNumber]);
 
-    // Apply the VAT lookup data to the row
-    const applyVatLookup = () => {
-        if (!vatLookup?.data || !database) return;
-        const findPropId = (patterns: string[]) =>
-            database.properties.find(p =>
-                patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
-            )?.id;
-        const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
-        const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
-        const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
-        const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
-
-        const { name, street, city, postalCode } = vatLookup.data;
-        if (companyPropId && name) updatePageProperty(database.id, vatLookup.rowId, companyPropId, name);
-        if (addressPropId && street) updatePageProperty(database.id, vatLookup.rowId, addressPropId, street);
-        if (cityPropId && city) updatePageProperty(database.id, vatLookup.rowId, cityPropId, city);
-        if (postalPropId && postalCode) updatePageProperty(database.id, vatLookup.rowId, postalPropId, postalCode);
-        setVatLookup(null);
-    };
 
     // Column drag-and-drop state (Notion-style)
     const [colDragIndex, setColDragIndex] = useState<number | null>(null);
@@ -531,6 +513,97 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         _propHash: JSON.stringify(page.properties)
     })), [sortedPages, selectedRowIds]);
 
+    // ── Live VAT typing detection via event delegation ────────────────────────
+    useEffect(() => {
+        const gridEl = gridAreaRef.current;
+        if (!gridEl || !database) return;
+
+        const vatPropertyNames = ['vat', 'tva', 'btw', 'vat_number', 'vatnumber', 'n_tva', 'nrtva', 'btw_nummer', 'btwnr'];
+        const vatPropIds = database.properties
+            .filter(p => vatPropertyNames.some(v =>
+                p.id.toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, '')) ||
+                (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, ''))
+            ))
+            .map(p => p.id);
+
+        if (vatPropIds.length === 0) return;
+
+        const handleInput = (e: Event) => {
+            const input = e.target as HTMLInputElement;
+            if (!input || input.tagName !== 'INPUT') return;
+
+            const cell = input.closest('[class*="dsg-col-"]') as HTMLElement;
+            if (!cell) return;
+
+            const vatPropId = vatPropIds.find(id => cell.classList.contains(`dsg-col-${id}`));
+            if (!vatPropId) return;
+
+            const value = input.value.trim();
+
+            if (vatDebounceRef.current) clearTimeout(vatDebounceRef.current);
+
+            if (value.length < 2) {
+                setVatLookup(null);
+                return;
+            }
+
+            const rect = cell.getBoundingClientRect();
+
+            // Find the row — walk up from cell, count among siblings
+            const rowEl = cell.parentElement;
+            let rowIndex = 0;
+            if (rowEl?.parentElement) {
+                const siblings = Array.from(rowEl.parentElement.children);
+                rowIndex = siblings.indexOf(rowEl);
+            }
+            const rowId = rowData[rowIndex]?.id || '';
+
+            const cleanVal = value.replace(/[\s.]/g, '');
+            const isValidVat = cleanVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(cleanVal);
+
+            // Show flyout immediately in 'typing' state
+            setVatLookup({
+                status: 'typing',
+                vatNumber: cleanVal,
+                rowId,
+                anchorRect: rect,
+            });
+
+            // Debounce: auto-trigger lookup if valid pattern
+            vatDebounceRef.current = setTimeout(() => {
+                if (isValidVat) {
+                    setVatLookup(prev => prev ? { ...prev, status: 'loading', vatNumber: cleanVal } : null);
+                }
+            }, 400);
+        };
+
+        gridEl.addEventListener('input', handleInput, true);
+        return () => {
+            gridEl.removeEventListener('input', handleInput, true);
+            if (vatDebounceRef.current) clearTimeout(vatDebounceRef.current);
+        };
+    }, [database?.id, database?.properties, rowData]);
+
+    // Apply the VAT lookup data to the row
+    const applyVatLookup = () => {
+        if (!vatLookup?.data || !database) return;
+        const findPropId = (patterns: string[]) =>
+            database.properties.find(p =>
+                patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
+            )?.id;
+        const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
+        const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
+        const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
+        const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
+
+        const { name, street, city, postalCode } = vatLookup.data;
+        if (companyPropId && name) updatePageProperty(database.id, vatLookup.rowId, companyPropId, name);
+        if (addressPropId && street) updatePageProperty(database.id, vatLookup.rowId, addressPropId, street);
+        if (cityPropId && city) updatePageProperty(database.id, vatLookup.rowId, cityPropId, city);
+        if (postalPropId && postalCode) updatePageProperty(database.id, vatLookup.rowId, postalPropId, postalCode);
+        setVatLookup(null);
+    };
+
 
     const handleExportCSV = () => {
         if (!database) return;
@@ -861,25 +934,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (newVal !== undefined && isDifferent) {
                                                 updatePageProperty(database.id, oldRow.id, prop.id, newVal);
 
-                                                // ── VAT Company Lookup ──────────────────────
-                                                // Trigger visible flyout when a VAT property changes
-                                                const vatPropertyNames = ['vat', 'tva', 'btw', 'vat_number', 'vatnumber', 'n_tva', 'nrtva', 'btw_nummer', 'btwnr'];
-                                                const isVatProp = vatPropertyNames.some(v =>
-                                                    prop.id.toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, '')) ||
-                                                    (prop.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, ''))
-                                                );
-                                                const valStr = typeof newVal === 'string' ? newVal.replace(/[\s.]/g, '') : '';
-                                                if (isVatProp && valStr.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(valStr)) {
-                                                    // Find the cell element to anchor the flyout
-                                                    const cellEl = gridAreaRef.current?.querySelector(`.dsg-col-${prop.id}`) as HTMLElement | null;
-                                                    const rect = cellEl?.getBoundingClientRect();
-                                                    setVatLookup({
-                                                        status: 'loading',
-                                                        vatNumber: valStr,
-                                                        rowId: oldRow.id,
-                                                        anchorRect: rect || null,
-                                                    });
-                                                }
                                             }
                                         });
                                     });
@@ -955,7 +1009,40 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             <Loader2 className="w-3 h-3 animate-spin" /> {t('db.vatLookup.searchingRegistry')}
                                         </span>
                                     )}
+                                    {vatLookup.status === 'typing' && (
+                                        <span className="text-[10px] font-medium text-neutral-400 animate-pulse">
+                                            {vatLookup.vatNumber.length < 10
+                                                ? `${vatLookup.vatNumber.length}/10`
+                                                : t('db.vatLookup.validating')}
+                                        </span>
+                                    )}
                                 </div>
+
+                                {/* Typing state — live hint */}
+                                {vatLookup.status === 'typing' && (
+                                    <div className="flex flex-col items-center justify-center py-5 gap-3">
+                                        <div className="relative">
+                                            <div className="w-10 h-10 rounded-full border-2 border-neutral-200 dark:border-white/10 flex items-center justify-center">
+                                                <Search className="w-4 h-4 text-neutral-400" />
+                                            </div>
+                                        </div>
+                                        <div className="text-center space-y-1">
+                                            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                                                {t('db.vatLookup.typingHint')}
+                                            </p>
+                                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                                {t('db.vatLookup.vatFormat')}
+                                            </p>
+                                        </div>
+                                        {/* Progress bar */}
+                                        <div className="w-full h-1 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                                style={{ width: `${Math.min((vatLookup.vatNumber.length / 12) * 100, 100)}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Loading state */}
                                 {vatLookup.status === 'loading' && (

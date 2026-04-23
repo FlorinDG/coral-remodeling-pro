@@ -54,6 +54,14 @@ export const FEATURE_FLAGS = {
     /** Project budget tracking and margin analytics */
     PROJECTS_BUDGET:                { minTier: 'ENTERPRISE'  as Tier },
 
+    // ── Calendar ─────────────────────────────────────────────────────
+    /** PRO: local + 1 shared Google account. ENT: multiple providers (Google/Apple/Microsoft) */
+    CALENDAR_CUSTOM_ACCOUNTS:       { minTier: 'ENTERPRISE'  as Tier },
+
+    // ── Tasks ────────────────────────────────────────────────────────
+    /** Advanced task features (automations, dependencies). Basic tasks available on PRO. */
+    TASKS_ADVANCED:                 { minTier: 'ENTERPRISE'  as Tier },
+
     // ── HR ───────────────────────────────────────────────────────────
     /** HR contracts and advanced workforce management */
     HR_CONTRACTS:                   { minTier: 'ENTERPRISE'  as Tier },

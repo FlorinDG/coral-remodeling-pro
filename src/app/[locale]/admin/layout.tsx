@@ -19,6 +19,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
     let lockedDbIds: Record<string, string> = {};
     let tenantId: string | null = null;
     let isOwner = false;
+    let subscriptionStatus: string = 'ACTIVE';
+    let trialEndsAt: string | null = null;
 
     // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
     // Middleware already guards /admin, so if auth() itself throws we still
@@ -36,10 +38,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
         try {
             const tenant = await prisma.tenant.findUnique({
                 where:  { id: tenantId },
-                select: { activeModules: true, planType: true, lockedDbIds: true },
+                select: { activeModules: true, planType: true, lockedDbIds: true, subscriptionStatus: true, trialEndsAt: true },
             });
             if (tenant?.activeModules) activeModules = tenant.activeModules;
             if (tenant?.planType)      planType       = tenant.planType;
+            if (tenant?.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
+            if (tenant?.trialEndsAt) trialEndsAt = tenant.trialEndsAt.toISOString();
 
             const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
             if (persistedIds && Object.keys(persistedIds).length > 0) {
@@ -71,7 +75,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner}>
+            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt}>
                 {children}
             </AdminLayout>
         </AuthProvider>

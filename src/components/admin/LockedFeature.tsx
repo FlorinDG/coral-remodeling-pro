@@ -85,7 +85,7 @@ export default function LockedFeature({
                     </p>
                 </div>
                 <Link
-                    href="/pricing"
+                    href="/admin/settings/billing"
                     className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg ${colors.badge} hover:opacity-80 transition-opacity shrink-0`}
                 >
                     Upgrade <ArrowUpRight className="w-3 h-3" />
@@ -128,7 +128,7 @@ export default function LockedFeature({
 
                 {/* CTA */}
                 <Link
-                    href="/pricing"
+                    href="/admin/settings/billing"
                     className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity active:scale-[0.98]`}
                     style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >

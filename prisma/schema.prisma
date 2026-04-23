@@ -80,6 +80,28 @@ model Tenant {
   peppolReceivedThisMonth  Int      @default(0)
   peppolCounterResetAt     DateTime @default(now())
 
+  // ── Phase 2: Stripe Billing Integration ─────────────────────────────
+  stripeCustomerId         String?  @unique
+  stripeSubscriptionId     String?
+  stripePriceId            String?
+
+  // Trial management
+  trialEndsAt              DateTime?
+  trialNotifiedAt          DateTime?  // when the 7-day reminder was sent
+
+  // Cancellation
+  cancellationRequestedAt  DateTime?
+  cancellationEffectiveAt  DateTime?
+  cancellationNoticeMonths Int?       // 1 for PRO, 2 for ENTERPRISE
+
+  // Per-seat billing (source of truth, synced to Stripe quantities)
+  extraUserCount           Int      @default(0)
+  workforceUserCount       Int      @default(0)
+
+  // Billing cycle preference
+  billingCycle             String   @default("MONTHLY") // MONTHLY, QUARTERLY
+  billingStartedAt         DateTime?                    // for fidelity bonus calc (10% after Y1)
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

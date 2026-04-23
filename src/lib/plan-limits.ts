@@ -22,6 +22,13 @@ export const PLAN_LIMITS = {
     ENTERPRISE: { peppolSent: null, peppolReceived: null }, // unlimited
 } as const;
 
+/**
+ * Peppol overage pricing — charged per document beyond the plan quota.
+ * Pricing = approximate e-invoice.be cost × 10.
+ * Made explicit to the tenant in the billing UI.
+ */
+export const PEPPOL_OVERAGE_PRICE_PER_DOC = 0.99; // €0.99
+
 export type PlanType = keyof typeof PLAN_LIMITS;
 
 // ── Internal helper ─────────────────────────────────────────────────────────

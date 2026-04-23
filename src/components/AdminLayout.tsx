@@ -72,7 +72,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     sales:      'sidebar.sales',
 };
 
-export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean }) {
+export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -332,13 +332,30 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                         {(planType === 'FREE') && (
                             <Link
-                                href="/admin/settings"
+                                href="/admin/settings/billing"
                                 className="text-[10px] sm:text-xs text-white px-2.5 sm:px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
                                 style={{ backgroundColor: brandColor }}
                             >
                                 {t('layout.upgradePlan')}
                             </Link>
                         )}
+
+                        {/* Trial countdown badge */}
+                        {subscriptionStatus === 'TRIAL' && trialEndsAt && (() => {
+                            const daysLeft = Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                            return (
+                                <Link
+                                    href="/admin/settings/billing"
+                                    className={`text-[10px] sm:text-xs px-2.5 sm:px-3 py-1 rounded-full font-bold uppercase tracking-widest whitespace-nowrap border transition-colors ${
+                                        daysLeft <= 7
+                                            ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                            : 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                    }`}
+                                >
+                                    Trial: {daysLeft}d
+                                </Link>
+                            );
+                        })()}
 
                         <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer" className="text-xs font-bold uppercase tracking-widest hover:opacity-80 transition-colors border-l border-neutral-200 dark:border-white/10 pl-3 whitespace-nowrap hidden md:block" style={{ color: brandColor }}>
                             Coral Group
@@ -377,6 +394,25 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         </div>
                     </div>
                 )}
+
+                {/* Payment Failed Banner */}
+                {subscriptionStatus === 'PAST_DUE' && (
+                    <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                            <p className="text-xs font-medium text-red-800 dark:text-red-300">
+                                Your payment failed. Please update your billing information to avoid service interruption.
+                            </p>
+                        </div>
+                        <Link
+                            href="/admin/settings/billing"
+                            className="text-xs font-bold text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 underline underline-offset-2 flex-shrink-0"
+                        >
+                            Update Billing →
+                        </Link>
+                    </div>
+                )}
+
 
                 <div className="flex-1 p-4 overflow-y-auto min-h-0 flex flex-col relative w-full">
                     <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>

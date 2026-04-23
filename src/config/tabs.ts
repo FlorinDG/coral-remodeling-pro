@@ -104,6 +104,7 @@ export function getFilteredFinancialTabs(planType: string): typeof financialTabs
 // Settings tabs i18n key map
 const SETTINGS_TAB_KEYS: Record<string, string> = {
     'company-info': 'companyInfo',
+    'billing': 'billing',
     'ui': 'uiLayout',
     'opt-calendar': 'calendar',
     'opt-financials': 'financials',
@@ -117,6 +118,7 @@ const SETTINGS_TAB_KEYS: Record<string, string> = {
 
 const settingsTabsBase = [
     { label: 'COMPANY INFO', href: '/admin/settings/company-info', id: 'company-info' },
+    { label: 'PLAN & BILLING', href: '/admin/settings/billing', id: 'billing' },
     { label: 'UI LAYOUT', href: '/admin/settings/ui', id: 'ui' },
     { label: 'CALENDAR', href: '/admin/settings/calendar', id: 'opt-calendar' },
     { label: 'FINANCIALS', href: '/admin/settings/financials', id: 'opt-financials' },

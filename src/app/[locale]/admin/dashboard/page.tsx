@@ -90,10 +90,22 @@ async function getMonthlyFinancials(databaseId: string, tenantId: string, sixMon
 export default async function AdminDashboard({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
     const session = await auth();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const tenantId = (session?.user as any)?.tenantId;
 
     if (!tenantId) {
-        return <div className="p-12 text-center text-red-500 font-bold">Unauthorized. Tenant context missing.</div>;
+        return (
+            <div className="flex flex-col items-center justify-center gap-4 p-12 text-center">
+                <p className="text-neutral-500 text-sm">Your session does not include workspace context.</p>
+                <Link
+                    href="/login"
+                    className="text-sm font-bold px-4 py-2 rounded-xl text-white"
+                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                >
+                    Sign in again
+                </Link>
+            </div>
+        );
     }
 
     const tenant = await prisma.tenant.findUnique({

@@ -141,7 +141,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             const rawBruto = getPropVal(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
             const rawVerkoop = getPropVal(['verkoop', 'selling']);
             const rawMarge = getPropVal(['marge', 'margin', 'marge stanndard', 'marge standard']);
-            const rawDiscount = getPropVal(['korting', 'discount', 'disc']);
+            const rawDiscount = getPropVal(['korting', 'discount', 'disc', 'remise', 'lever']);
             const rawUnit = getPropVal(['eenheid', 'unit', 'maat', 'eeh']);
             const rawType = getPropVal(['type', 'calculatietype', 'calculationtype']);
 

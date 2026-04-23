@@ -170,7 +170,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             totalIncVat:    ['incl btw', 'inc btw', 'incl. btw', 'inc vat', 'totaal incl', 'ttc'],
             // Articles
             bruto:          ['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop', 'excl'],
-            discount:       ['korting', 'remise', 'discount', 'disc'],
+            discount:       ['korting', 'remise', 'discount', 'disc', 'lever'],
             unit:           ['eenheid', 'unit', 'maat', 'eeh'],
             brand:          ['merk', 'brand', 'fabricant', 'manufacturer'],
             packaging:      ['packaging', 'verpakking', 'colis'],

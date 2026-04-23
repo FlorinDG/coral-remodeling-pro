@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
                 default: 'CoralOS — Platform voor Belgische aannemers',
                 template: '%s | CoralOS',
             },
-            description: 'Facturatie, Peppol e-invoicing, CRM en projectbeheer voor aannemers. Gratis starten, Peppol-klaar voor 2026.',
+            description: 'Facturatie, Peppol e-invoicing, CRM en projectbeheer voor aannemers. Gratis starten, Peppol-compliant sinds 2026.',
             robots: { index: true, follow: true },
             icons: { icon: '/icon.svg' },
             openGraph: {

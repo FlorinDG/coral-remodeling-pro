@@ -169,7 +169,7 @@ export default function HelpPage() {
                         />
                         <FAQItem
                             question="Wat is Peppol e-facturatie?"
-                            answer="Peppol is het Europese netwerk voor gestructureerde elektronische facturatie. Vanaf 2026 is e-facturatie verplicht voor B2B-transacties in België. CoralOS genereert automatisch UBL-conforme facturen en verstuurt ze via het Peppol-netwerk."
+                            answer="Peppol is het Europese netwerk voor gestructureerde elektronische facturatie. Sinds 1 januari 2026 is e-facturatie verplicht voor alle B2B-transacties in België. CoralOS genereert automatisch UBL-conforme facturen en verstuurt ze via het Peppol-netwerk."
                         />
                         <FAQItem
                             question="Hoeveel facturen kan ik per maand versturen?"

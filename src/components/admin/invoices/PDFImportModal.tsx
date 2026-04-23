@@ -100,7 +100,7 @@ export default function PDFImportModal({ isOpen, onClose, onImportComplete }: PD
         const map = {
             title: findPropId(['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving']) || 'title',
             bruto: findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']) || '',
-            discount: findPropId(['korting', 'remise', 'discount', 'disc']) || '',
+            discount: findPropId(['korting', 'remise', 'discount', 'disc', 'lever']) || '',
             unit: findPropId(['eenheid', 'unit', 'maat', 'eeh']) || '',
             brand: findPropId(['merk', 'brand']) || '',
             packaging: findPropId(['packaging', 'verpakking']) || '',

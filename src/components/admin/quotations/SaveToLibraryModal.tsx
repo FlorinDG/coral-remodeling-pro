@@ -33,7 +33,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
             bruto: findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']) || '',
             verkoop: findPropId(['verkoop', 'selling']) || '',
             marge: findPropId(['marge', 'margin']) || '',
-            discount: findPropId(['korting', 'remise', 'discount', 'disc']) || '',
+            discount: findPropId(['korting', 'remise', 'discount', 'disc', 'lever']) || '',
             unit: findPropId(['eenheid', 'unit', 'maat', 'eeh']) || '',
             type: findPropId(['type', 'calculatietype', 'calculationtype']) || ''
         };

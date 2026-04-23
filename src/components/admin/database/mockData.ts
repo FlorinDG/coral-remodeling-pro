@@ -563,8 +563,8 @@ export const mockDatabases: Database[] = [
             { id: 'prop-art-supplier', name: 'Leverancier', type: 'relation', config: { relationDatabaseId: 'db-suppliers' } },
 
             { id: 'prop-art-bruto', name: 'Brutoprijs', type: 'number', config: { format: 'euro' } },
-            { id: 'prop-art-remise', name: 'Remise', type: 'number', config: { format: 'percent' } },
-            { id: 'prop-art-netto', name: 'Netto kostprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Brutoprijs") * (1 - (prop("Remise") / 100)))' } },
+            { id: 'prop-art-remise', name: 'Lever.%', type: 'number', config: { format: 'percent' } },
+            { id: 'prop-art-netto', name: 'Netto kostprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Brutoprijs") * (1 - (prop("Lever.%") / 100)))' } },
 
             { id: 'prop-art-margin', name: 'Marge', type: 'number', config: { format: 'percent' } },
             { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") * (prop("Marge") / 100))' } },

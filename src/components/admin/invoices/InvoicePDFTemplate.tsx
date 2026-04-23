@@ -33,7 +33,15 @@ export const InvoicePDFTemplate = ({
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
     const companyName = commercialName || rawCompanyName;
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
-    const isStationery = documentMode === 'stationery' && !!stationeryUrl;
+    // Validate stationery URL — must be a well-formed data URL with actual base64 content
+    const isValidStationeryUrl = (() => {
+        if (!stationeryUrl || typeof stationeryUrl !== 'string') return false;
+        if (!stationeryUrl.startsWith('data:')) return false;
+        const commaIdx = stationeryUrl.indexOf(',');
+        if (commaIdx < 0 || stationeryUrl.length - commaIdx < 100) return false;
+        return true;
+    })();
+    const isStationery = documentMode === 'stationery' && isValidStationeryUrl;
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;

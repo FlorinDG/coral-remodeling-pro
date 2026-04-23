@@ -12,7 +12,7 @@ import {
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
+import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
 import { selectColumn } from './columns/SelectColumn';
@@ -60,6 +60,66 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
+
+    // ── VAT Company Lookup Flyout ────────────────────────────────────────────
+    type VatLookupState = {
+        status: 'loading' | 'found' | 'not_found' | 'error';
+        vatNumber: string;
+        rowId: string;
+        anchorRect: DOMRect | null;
+        data?: { name: string | null; street: string | null; postalCode: string | null; city: string | null };
+    } | null;
+    const [vatLookup, setVatLookup] = useState<VatLookupState>(null);
+
+    // Trigger API fetch when vatLookup enters 'loading' state
+    useEffect(() => {
+        if (!vatLookup || vatLookup.status !== 'loading') return;
+        const controller = new AbortController();
+        fetch(`/api/company/lookup?vat=${encodeURIComponent(vatLookup.vatNumber)}`, { signal: controller.signal })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data?.isValid) {
+                    setVatLookup(prev => prev ? { ...prev, status: 'not_found' } : null);
+                    return;
+                }
+                const name = data.name && data.name !== '---' ? data.name : null;
+                const addressParts = data.address && data.address !== '---' ? data.address.split('\n') : [];
+                const streetLine = addressParts[0] || null;
+                const cityLineParts = (addressParts[1] || '').match(/^(\d{4,5})\s+(.+)/);
+                setVatLookup(prev => prev ? {
+                    ...prev,
+                    status: 'found',
+                    data: {
+                        name,
+                        street: streetLine,
+                        postalCode: cityLineParts?.[1] || null,
+                        city: cityLineParts?.[2] || null,
+                    }
+                } : null);
+            })
+            .catch(() => setVatLookup(prev => prev ? { ...prev, status: 'error' } : null));
+        return () => controller.abort();
+    }, [vatLookup?.status, vatLookup?.vatNumber]);
+
+    // Apply the VAT lookup data to the row
+    const applyVatLookup = () => {
+        if (!vatLookup?.data || !database) return;
+        const findPropId = (patterns: string[]) =>
+            database.properties.find(p =>
+                patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
+            )?.id;
+        const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
+        const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
+        const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
+        const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
+
+        const { name, street, city, postalCode } = vatLookup.data;
+        if (companyPropId && name) updatePageProperty(database.id, vatLookup.rowId, companyPropId, name);
+        if (addressPropId && street) updatePageProperty(database.id, vatLookup.rowId, addressPropId, street);
+        if (cityPropId && city) updatePageProperty(database.id, vatLookup.rowId, cityPropId, city);
+        if (postalPropId && postalCode) updatePageProperty(database.id, vatLookup.rowId, postalPropId, postalCode);
+        setVatLookup(null);
+    };
 
     // Column drag-and-drop state (Notion-style)
     const [colDragIndex, setColDragIndex] = useState<number | null>(null);
@@ -800,7 +860,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                 updatePageProperty(database.id, oldRow.id, prop.id, newVal);
 
                                                 // ── VAT Company Lookup ──────────────────────
-                                                // Auto-lookup when a VAT property changes on contacts/clients/suppliers DBs
+                                                // Trigger visible flyout when a VAT property changes
                                                 const vatPropertyNames = ['vat', 'tva', 'btw', 'vat_number', 'vatnumber', 'n_tva', 'nrtva', 'btw_nummer', 'btwnr'];
                                                 const isVatProp = vatPropertyNames.some(v =>
                                                     prop.id.toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, '')) ||
@@ -808,41 +868,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                 );
                                                 const valStr = typeof newVal === 'string' ? newVal.replace(/[\s.]/g, '') : '';
                                                 if (isVatProp && valStr.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(valStr)) {
-                                                    // Trigger async company lookup
-                                                    fetch(`/api/company/lookup?vat=${encodeURIComponent(valStr)}`)
-                                                        .then(r => r.ok ? r.json() : null)
-                                                        .then(data => {
-                                                            if (!data?.isValid) return;
-                                                            // Find property IDs by common name patterns
-                                                            const findPropId = (patterns: string[]) =>
-                                                                database.properties.find(p =>
-                                                                    patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
-                                                                )?.id;
-                                                            const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
-                                                            const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
-                                                            const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
-                                                            const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
-
-                                                            const name = data.name && data.name !== '---' ? data.name : null;
-                                                            const addressParts = data.address && data.address !== '---' ? data.address.split('\n') : [];
-                                                            const streetLine = addressParts[0] || null;
-                                                            // Parse "1320 Beauchevain" format from second line
-                                                            const cityLineParts = (addressParts[1] || '').match(/^(\d{4,5})\s+(.+)/);
-                                                            const postalCode = cityLineParts?.[1] || null;
-                                                            const city = cityLineParts?.[2] || null;
-
-                                                            if (companyPropId && name) updatePageProperty(database.id, oldRow.id, companyPropId, name);
-                                                            if (addressPropId && streetLine) updatePageProperty(database.id, oldRow.id, addressPropId, streetLine);
-                                                            if (cityPropId && city) updatePageProperty(database.id, oldRow.id, cityPropId, city);
-                                                            if (postalPropId && postalCode) updatePageProperty(database.id, oldRow.id, postalPropId, postalCode);
-
-                                                            if (name) {
-                                                                import('sonner').then(({ toast }) => {
-                                                                    toast.success(`Company found: ${name}`, { duration: 3000 });
-                                                                });
-                                                            }
-                                                        })
-                                                        .catch(() => {}); // Silently fail — VAT lookup is best-effort
+                                                    // Find the cell element to anchor the flyout
+                                                    const cellEl = gridAreaRef.current?.querySelector(`.dsg-col-${prop.id}`) as HTMLElement | null;
+                                                    const rect = cellEl?.getBoundingClientRect();
+                                                    setVatLookup({
+                                                        status: 'loading',
+                                                        vatNumber: valStr,
+                                                        rowId: oldRow.id,
+                                                        anchorRect: rect || null,
+                                                    });
                                                 }
                                             }
                                         });
@@ -877,6 +911,125 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     onClose={() => setIsImportModalOpen(false)}
                     databaseId={database.id}
                 />
+
+                {/* ── VAT Lookup Flyout ──────────────────────────────── */}
+                {vatLookup && (
+                    <div
+                        className="fixed z-[9999] animate-in fade-in slide-in-from-bottom-2 duration-200"
+                        style={{
+                            top: vatLookup.anchorRect
+                                ? Math.min(vatLookup.anchorRect.bottom + 8, window.innerHeight - 280)
+                                : '50%',
+                            left: vatLookup.anchorRect
+                                ? Math.max(vatLookup.anchorRect.left, 16)
+                                : '50%',
+                            ...(vatLookup.anchorRect ? {} : { transform: 'translate(-50%, -50%)' }),
+                        }}
+                    >
+                        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/15 rounded-2xl shadow-2xl shadow-black/20 w-[380px] overflow-hidden">
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
+                                <div className="flex items-center gap-2">
+                                    <Search className="w-4 h-4 text-blue-500" />
+                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">Company Lookup</span>
+                                </div>
+                                <button
+                                    onClick={() => setVatLookup(null)}
+                                    className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                >
+                                    <X className="w-3.5 h-3.5 text-neutral-400" />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="p-4">
+                                {/* VAT badge */}
+                                <div className="flex items-center gap-2 mb-3">
+                                    <code className="text-xs font-mono font-bold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
+                                        {vatLookup.vatNumber}
+                                    </code>
+                                    {vatLookup.status === 'loading' && (
+                                        <span className="text-[10px] font-medium text-neutral-400 flex items-center gap-1">
+                                            <Loader2 className="w-3 h-3 animate-spin" /> Searching EU registry...
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Loading state */}
+                                {vatLookup.status === 'loading' && (
+                                    <div className="flex flex-col items-center justify-center py-6 gap-3">
+                                        <div className="relative">
+                                            <div className="w-10 h-10 rounded-full border-2 border-blue-200 dark:border-blue-500/30 border-t-blue-500 animate-spin" />
+                                            <Search className="w-4 h-4 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                        </div>
+                                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Searching public register...</p>
+                                    </div>
+                                )}
+
+                                {/* Found state */}
+                                {vatLookup.status === 'found' && vatLookup.data && (
+                                    <div className="space-y-3">
+                                        {vatLookup.data.name && (
+                                            <div className="flex items-start gap-2.5">
+                                                <Building2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Company</p>
+                                                    <p className="text-sm font-semibold text-neutral-900 dark:text-white">{vatLookup.data.name}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {(vatLookup.data.street || vatLookup.data.city) && (
+                                            <div className="flex items-start gap-2.5">
+                                                <MapPin className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Address</p>
+                                                    <p className="text-sm text-neutral-700 dark:text-neutral-300">
+                                                        {[vatLookup.data.street, [vatLookup.data.postalCode, vatLookup.data.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={applyVatLookup}
+                                            className="w-full mt-2 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                                        >
+                                            <CheckCircle2 className="w-4 h-4" />
+                                            Apply Company Data
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Not found */}
+                                {vatLookup.status === 'not_found' && (
+                                    <div className="text-center py-4">
+                                        <p className="text-sm text-neutral-500">No company found for this VAT number.</p>
+                                        <button
+                                            onClick={() => setVatLookup(null)}
+                                            className="mt-3 text-xs font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Error */}
+                                {vatLookup.status === 'error' && (
+                                    <div className="text-center py-4">
+                                        <p className="text-sm text-red-500">Registry lookup failed. Try again later.</p>
+                                        <button
+                                            onClick={() => setVatLookup(null)}
+                                            className="mt-3 text-xs font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
+                                        >
+                                            Dismiss
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Notion-style Footer: + New button and property summaries */}

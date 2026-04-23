@@ -150,6 +150,7 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'engine_select_client': { nl: 'Klant selecteren...', fr: 'Sélectionner un client...', en: 'Select client...' },
     'engine_link_project': { nl: 'Project koppelen...', fr: 'Lier un projet...', en: 'Link project...' },
     'engine_status': { nl: 'Status...', fr: 'Statut...', en: 'Status...' },
+    'engine_open_record': { nl: 'Open fiche', fr: 'Ouvrir la fiche', en: 'Open record' },
     'engine_status_draft': { nl: 'Concept', fr: 'Brouillon', en: 'Draft' },
     'engine_status_sent': { nl: 'Verzonden', fr: 'Envoyé', en: 'Sent' },
     'engine_status_accepted': { nl: 'Aanvaard', fr: 'Accepté', en: 'Accepted' },

@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -650,6 +650,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     </option>
                                 ))}
                             </select>
+                            {clientId && (
+                                <Link
+                                    href={`/admin/database/${clientsDbId}/${clientId}`}
+                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                    title="Open fiche"
+                                >
+                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                                </Link>
+                            )}
                         </div>
 
                         {/* Project Selector — only for tenants with project management */}
@@ -669,6 +678,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     </option>
                                 ))}
                             </select>
+                            {projectId && (
+                                <Link
+                                    href={`/admin/database/db-1/${projectId}`}
+                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                    title="Open fiche"
+                                >
+                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                                </Link>
+                            )}
                         </div>
                         )}
 

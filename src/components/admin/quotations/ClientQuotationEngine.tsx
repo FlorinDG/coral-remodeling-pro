@@ -522,13 +522,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         <option value="">{ti18n('engine_status', locale)}</option>
                                         {statusOptions.length > 0
                                             ? statusOptions.map((opt: any) => (
-                                                <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                <option key={opt.id} value={opt.id} className="text-black dark:text-neutral-900">{opt.name}</option>
                                             ))
                                             : <>
-                                                <option value="opt-draft">{ti18n('engine_status_draft', locale)}</option>
-                                                <option value="opt-sent">{ti18n('engine_status_sent', locale)}</option>
-                                                <option value="opt-accepted">{ti18n('engine_status_accepted', locale)}</option>
-                                                <option value="opt-rejected">{ti18n('engine_status_rejected', locale)}</option>
+                                                <option value="opt-draft" className="text-black dark:text-neutral-900">{ti18n('engine_status_draft', locale)}</option>
+                                                <option value="opt-sent" className="text-black dark:text-neutral-900">{ti18n('engine_status_sent', locale)}</option>
+                                                <option value="opt-accepted" className="text-black dark:text-neutral-900">{ti18n('engine_status_accepted', locale)}</option>
+                                                <option value="opt-rejected" className="text-black dark:text-neutral-900">{ti18n('engine_status_rejected', locale)}</option>
                                             </>
                                         }
                                     </select>

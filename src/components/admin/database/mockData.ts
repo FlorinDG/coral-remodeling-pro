@@ -449,7 +449,7 @@ export const mockDatabases: Database[] = [
         icon: '📄',
         properties: [
             { id: 'title', name: 'Quote Title', type: 'text' },
-            { id: 'prop-quote-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-draft', name: 'Draft', color: 'gray' }, { id: 'opt-sent', name: 'Sent', color: 'blue' }, { id: 'opt-accepted', name: 'Accepted', color: 'green' }] } },
+            { id: 'status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-draft', name: 'Concept', color: 'gray' }, { id: 'opt-sent', name: 'Verzonden', color: 'blue' }, { id: 'opt-accepted', name: 'Aanvaard', color: 'green' }, { id: 'opt-rejected', name: 'Geweigerd', color: 'red' }] } },
             { id: 'prop-quote-amount', name: 'Total Amount', type: 'number', config: { format: 'euro' } }
         ],
         pages: [],

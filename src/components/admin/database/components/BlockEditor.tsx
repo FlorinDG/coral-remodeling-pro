@@ -135,7 +135,20 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
 
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            addBlock(block.id);
+            // Lists and todos: if content is empty, revert to paragraph (exit list)
+            // Otherwise, create next item of the same type
+            const continuableTypes: Block['type'][] = ['bulleted_list_item', 'todo'];
+            if (continuableTypes.includes(block.type)) {
+                if (block.content === '') {
+                    // Empty list item → revert to paragraph (exit the list)
+                    const newBlocks = blocks.map(b => b.id === block.id ? { ...b, type: 'paragraph' as const } : b);
+                    updatePageBlocks(databaseId, pageId, newBlocks);
+                } else {
+                    addBlock(block.id, block.type);
+                }
+            } else {
+                addBlock(block.id);
+            }
         } else if (e.key === 'Backspace' && block.content === '') {
             e.preventDefault();
             deleteBlock(block.id);

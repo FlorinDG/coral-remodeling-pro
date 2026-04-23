@@ -380,6 +380,12 @@
         "searchRegistry": "Search Peppol Registry",
         "searching": "Searching...",
         "enterManually": "Enter Manually",
+        "peppolConnected": "Peppol Connected",
+        "peppolActive": "Active",
+        "peppolCompany": "Company",
+        "peppolAddress": "Peppol Address",
+        "peppolConnectedDesc": "Your company is registered on the Peppol network. B2B e-invoices can be sent and received automatically.",
+        "peppolChecking": "Checking Peppol connection...",
         "branding": "Branding & Document Templates",
         "brandingDesc": "Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.",
         "invoiceNumbering": "Invoice Numbering",
@@ -480,6 +486,17 @@
         "clientName": "Client",
         "description": "Description",
         "name": "Name"
+      },
+      "vatLookup": {
+        "title": "Company Lookup",
+        "searchingRegistry": "Searching EU registry...",
+        "searchingPublic": "Searching public register...",
+        "company": "Company",
+        "address": "Address",
+        "applyData": "Apply Company Data",
+        "notFound": "No company found for this VAT number.",
+        "error": "Registry lookup failed. Try again later.",
+        "dismiss": "Dismiss"
       }
     }
   },

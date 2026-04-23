@@ -380,6 +380,12 @@
         "searchRegistry": "Peppol Register Doorzoeken",
         "searching": "Zoeken...",
         "enterManually": "Handmatig Invoeren",
+        "peppolConnected": "Peppol Verbonden",
+        "peppolActive": "Actief",
+        "peppolCompany": "Bedrijf",
+        "peppolAddress": "Peppol Adres",
+        "peppolConnectedDesc": "Uw bedrijf is geregistreerd op het Peppol-netwerk. B2B e-facturen kunnen automatisch worden verzonden en ontvangen.",
+        "peppolChecking": "Peppol-verbinding controleren...",
         "branding": "Huisstijl & Documentsjablonen",
         "brandingDesc": "Configureer uw merkkleur, upload een logo, kies een PDF-layout of upload aangepast briefpapier.",
         "invoiceNumbering": "Factuurnummering",
@@ -480,6 +486,17 @@
         "clientName": "Klant",
         "description": "Omschrijving",
         "name": "Naam"
+      },
+      "vatLookup": {
+        "title": "Bedrijf Opzoeken",
+        "searchingRegistry": "EU-register doorzoeken...",
+        "searchingPublic": "Openbaar register doorzoeken...",
+        "company": "Bedrijf",
+        "address": "Adres",
+        "applyData": "Bedrijfsgegevens Toepassen",
+        "notFound": "Geen bedrijf gevonden voor dit BTW-nummer.",
+        "error": "Opzoeken in register mislukt. Probeer het later opnieuw.",
+        "dismiss": "Sluiten"
       }
     }
   },

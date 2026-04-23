@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useEffect, useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
 import {
     DataSheetGrid,
@@ -45,6 +46,7 @@ interface NotionGridProps {
 
 export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter }: NotionGridProps) {
     const router = useRouter();
+    const t = useTranslations('Admin');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
@@ -931,7 +933,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
                                 <div className="flex items-center gap-2">
                                     <Search className="w-4 h-4 text-blue-500" />
-                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">Company Lookup</span>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">{t('db.vatLookup.title')}</span>
                                 </div>
                                 <button
                                     onClick={() => setVatLookup(null)}
@@ -950,7 +952,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     </code>
                                     {vatLookup.status === 'loading' && (
                                         <span className="text-[10px] font-medium text-neutral-400 flex items-center gap-1">
-                                            <Loader2 className="w-3 h-3 animate-spin" /> Searching EU registry...
+                                            <Loader2 className="w-3 h-3 animate-spin" /> {t('db.vatLookup.searchingRegistry')}
                                         </span>
                                     )}
                                 </div>
@@ -962,7 +964,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             <div className="w-10 h-10 rounded-full border-2 border-blue-200 dark:border-blue-500/30 border-t-blue-500 animate-spin" />
                                             <Search className="w-4 h-4 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                                         </div>
-                                        <p className="text-sm text-neutral-500 dark:text-neutral-400">Searching public register...</p>
+                                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('db.vatLookup.searchingPublic')}</p>
                                     </div>
                                 )}
 
@@ -973,7 +975,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             <div className="flex items-start gap-2.5">
                                                 <Building2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Company</p>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{t('db.vatLookup.company')}</p>
                                                     <p className="text-sm font-semibold text-neutral-900 dark:text-white">{vatLookup.data.name}</p>
                                                 </div>
                                             </div>
@@ -982,7 +984,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             <div className="flex items-start gap-2.5">
                                                 <MapPin className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                                                 <div>
-                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Address</p>
+                                                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{t('db.vatLookup.address')}</p>
                                                     <p className="text-sm text-neutral-700 dark:text-neutral-300">
                                                         {[vatLookup.data.street, [vatLookup.data.postalCode, vatLookup.data.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')}
                                                     </p>
@@ -996,7 +998,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                                         >
                                             <CheckCircle2 className="w-4 h-4" />
-                                            Apply Company Data
+                                            {t('db.vatLookup.applyData')}
                                         </button>
                                     </div>
                                 )}
@@ -1004,12 +1006,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 {/* Not found */}
                                 {vatLookup.status === 'not_found' && (
                                     <div className="text-center py-4">
-                                        <p className="text-sm text-neutral-500">No company found for this VAT number.</p>
+                                        <p className="text-sm text-neutral-500">{t('db.vatLookup.notFound')}</p>
                                         <button
                                             onClick={() => setVatLookup(null)}
                                             className="mt-3 text-xs font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
                                         >
-                                            Dismiss
+                                            {t('db.vatLookup.dismiss')}
                                         </button>
                                     </div>
                                 )}
@@ -1017,12 +1019,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 {/* Error */}
                                 {vatLookup.status === 'error' && (
                                     <div className="text-center py-4">
-                                        <p className="text-sm text-red-500">Registry lookup failed. Try again later.</p>
+                                        <p className="text-sm text-red-500">{t('db.vatLookup.error')}</p>
                                         <button
                                             onClick={() => setVatLookup(null)}
                                             className="mt-3 text-xs font-semibold text-neutral-400 hover:text-neutral-600 transition-colors"
                                         >
-                                            Dismiss
+                                            {t('db.vatLookup.dismiss')}
                                         </button>
                                     </div>
                                 )}

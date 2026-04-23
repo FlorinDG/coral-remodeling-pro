@@ -379,6 +379,12 @@
         "searchRegistry": "Caută în Registrul Peppol",
         "searching": "Se caută...",
         "enterManually": "Introdu Manual",
+        "peppolConnected": "Peppol Conectat",
+        "peppolActive": "Activ",
+        "peppolCompany": "Companie",
+        "peppolAddress": "Adresă Peppol",
+        "peppolConnectedDesc": "Compania dvs. este înregistrată în rețeaua Peppol. E-facturile B2B pot fi trimise și primite automat.",
+        "peppolChecking": "Se verifică conexiunea Peppol...",
         "branding": "Branding & Șabloane Documente",
         "brandingDesc": "Configurați culoarea brandului, încărcați un logo, alegeți un aspect PDF sau încărcați antet personalizat.",
         "invoiceNumbering": "Numerotare Facturi",
@@ -479,6 +485,17 @@
         "clientName": "Client",
         "description": "Descriere",
         "name": "Nume"
+      },
+      "vatLookup": {
+        "title": "Căutare Companie",
+        "searchingRegistry": "Căutare în registrul UE...",
+        "searchingPublic": "Căutare în registrul public...",
+        "company": "Companie",
+        "address": "Adresă",
+        "applyData": "Aplică Datele Companiei",
+        "notFound": "Nicio companie găsită pentru acest număr de TVA.",
+        "error": "Căutarea în registru a eșuat. Reîncercați mai târziu.",
+        "dismiss": "Închide"
       }
     }
   },

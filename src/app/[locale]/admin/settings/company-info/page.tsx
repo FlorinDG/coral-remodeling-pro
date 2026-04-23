@@ -47,7 +47,7 @@ function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
         return (
             <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl p-6 flex items-center gap-4">
                 <RefreshCw className="w-5 h-5 animate-spin text-neutral-400" />
-                <span className="text-sm text-neutral-500">Checking Peppol connection...</span>
+                <span className="text-sm text-neutral-500">{t('nav.settings.peppolChecking')}</span>
             </div>
         );
     }
@@ -61,21 +61,21 @@ function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
                 </div>
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300">Peppol Connected</h3>
+                        <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-300">{t('nav.settings.peppolConnected')}</h3>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                            <Wifi className="w-3 h-3" /> Active
+                            <Wifi className="w-3 h-3" /> {t('nav.settings.peppolActive')}
                         </span>
                     </div>
                     <div className="text-sm text-emerald-700 dark:text-emerald-400/80 space-y-1">
                         {status.companyName && (
-                            <p><span className="font-semibold">Company:</span> {status.companyName}</p>
+                            <p><span className="font-semibold">{t('nav.settings.peppolCompany')}:</span> {status.companyName}</p>
                         )}
                         {status.peppolId && (
-                            <p><span className="font-semibold">Peppol Address:</span> <code className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 font-mono text-xs font-bold">{status.peppolId}</code></p>
+                            <p><span className="font-semibold">{t('nav.settings.peppolAddress')}:</span> <code className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-500/20 font-mono text-xs font-bold">{status.peppolId}</code></p>
                         )}
                     </div>
                     <p className="text-xs text-emerald-600/60 dark:text-emerald-500/40 mt-3">
-                        Your company is registered on the Peppol network. B2B e-invoices can be sent and received automatically.
+                        {t('nav.settings.peppolConnectedDesc')}
                     </p>
                 </div>
             </div>

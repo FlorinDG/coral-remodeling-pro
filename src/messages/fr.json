@@ -379,6 +379,12 @@
         "searchRegistry": "Rechercher Registre Peppol",
         "searching": "Recherche...",
         "enterManually": "Saisir Manuellement",
+        "peppolConnected": "Peppol Connecté",
+        "peppolActive": "Actif",
+        "peppolCompany": "Entreprise",
+        "peppolAddress": "Adresse Peppol",
+        "peppolConnectedDesc": "Votre entreprise est enregistrée sur le réseau Peppol. Les e-factures B2B peuvent être envoyées et reçues automatiquement.",
+        "peppolChecking": "Vérification de la connexion Peppol...",
         "branding": "Marque & Modèles de Documents",
         "brandingDesc": "Configurez votre couleur de marque, téléchargez un logo, choisissez une mise en page PDF ou un papier à en-tête personnalisé.",
         "invoiceNumbering": "Numérotation des Factures",
@@ -479,6 +485,17 @@
         "clientName": "Client",
         "description": "Description",
         "name": "Nom"
+      },
+      "vatLookup": {
+        "title": "Recherche d'Entreprise",
+        "searchingRegistry": "Recherche dans le registre EU...",
+        "searchingPublic": "Recherche dans le registre public...",
+        "company": "Entreprise",
+        "address": "Adresse",
+        "applyData": "Appliquer les Données",
+        "notFound": "Aucune entreprise trouvée pour ce numéro de TVA.",
+        "error": "Échec de la recherche. Réessayez plus tard.",
+        "dismiss": "Fermer"
       }
     }
   },

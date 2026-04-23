@@ -59,7 +59,7 @@ export interface VariantAxis {
 
 export type VariantsConfig = VariantAxis[];
 
-export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line';
+export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line' | 'property_mention';
 
 export interface Block {
     id: string;
@@ -93,6 +93,18 @@ export interface Block {
 
     // --- Phase 11: Product Variants ---
     selectedVariants?: Record<string, string>; // Maps axisId -> optionId
+
+    // --- @prop / @this_page Mention Config ---
+    mentionConfig?: {
+        type: 'prop' | 'this_page';          // Which trigger created this mention
+        databaseId: string;                    // Target database ID
+        propertyId: string;                    // Target property ID
+        filter?: {                             // Optional filter chain
+            propertyId: string;                // Property to filter by
+            value?: string;                    // Static value (optional, resolved at render)
+        };
+        aggregator?: 'first' | 'last' | 'count' | 'sum' | 'avg' | 'list'; // Default: 'first'
+    };
 }
 
 // A generic primitive type for property values

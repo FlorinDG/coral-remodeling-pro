@@ -6,8 +6,11 @@ import { Block } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import {
     GripVertical, Plus, PenLine,
-    Heading1, Heading2, Heading3, List, CheckSquare, Type
+    Heading1, Heading2, Heading3, List, CheckSquare, Type,
+    Database as DatabaseIcon
 } from 'lucide-react';
+import PropMentionFlyout, { MentionResult } from './PropMentionFlyout';
+import PropertyMentionBlock from './PropertyMentionBlock';
 
 // ── Slash command menu items ──────────────────────────────────────────────────
 const SLASH_COMMANDS: { type: Block['type']; label: string; description: string; icon: React.ReactNode }[] = [
@@ -17,6 +20,7 @@ const SLASH_COMMANDS: { type: Block['type']; label: string; description: string;
     { type: 'heading_3',          label: 'Heading 3',      description: 'Small heading',      icon: <Heading3 className="w-4 h-4" /> },
     { type: 'bulleted_list_item', label: 'Bulleted List',  description: 'Unordered list item', icon: <List className="w-4 h-4" /> },
     { type: 'todo',               label: 'To-do',          description: 'Checkbox item',      icon: <CheckSquare className="w-4 h-4" /> },
+    { type: 'property_mention',   label: 'Property',       description: 'Reference a database property', icon: <DatabaseIcon className="w-4 h-4" /> },
 ];
 
 interface BlockEditorProps {
@@ -35,6 +39,14 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     const [slashMenu, setSlashMenu] = useState<{ blockId: string; filter: string; top: number; left: number } | null>(null);
     const [slashIndex, setSlashIndex] = useState(0);
     const [showOnboarding, setShowOnboarding] = useState(true);
+
+    // ── @prop / @this_page mention flyout state ─────────────────────────────
+    const [mentionFlyout, setMentionFlyout] = useState<{
+        blockId: string;
+        triggerType: 'prop' | 'this_page';
+        top: number;
+        left: number;
+    } | null>(null);
 
     // Filtered slash commands based on typed filter
     const filteredCommands = slashMenu
@@ -67,10 +79,25 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     };
 
     const changeBlockType = (blockId: string, type: Block['type']) => {
+        // If the user selected 'property_mention' from slash command, open the flyout instead
+        if (type === 'property_mention') {
+            // Clear the slash text, revert block to paragraph
+            const newBlocks = blocks.map(b => b.id === blockId ? { ...b, content: '' } : b);
+            updatePageBlocks(databaseId, pageId, newBlocks);
+            setSlashMenu(null);
+            // Open the mention flyout at the block's position
+            setTimeout(() => {
+                const el = document.getElementById(`block-${blockId}`);
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    setMentionFlyout({ blockId, triggerType: 'prop', top: rect.bottom + 4, left: rect.left });
+                }
+            }, 50);
+            return;
+        }
         const newBlocks = blocks.map(b => b.id === blockId ? { ...b, type, content: '' } : b);
         updatePageBlocks(databaseId, pageId, newBlocks);
         setSlashMenu(null);
-        // Refocus the block
         setTimeout(() => {
             const el = document.getElementById(`block-${blockId}`);
             if (el) el.focus();
@@ -204,6 +231,21 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
             return;
         }
 
+        // ── @prop / @this_page trigger detection ──
+        if (val.endsWith('@prop')) {
+            const rect = e.target.getBoundingClientRect();
+            setMentionFlyout({ blockId: block.id, triggerType: 'prop', top: rect.bottom + 4, left: rect.left });
+            // Remove the trigger text
+            updateBlock(block.id, val.slice(0, -5));
+            return;
+        }
+        if (val.endsWith('@this_page')) {
+            const rect = e.target.getBoundingClientRect();
+            setMentionFlyout({ blockId: block.id, triggerType: 'this_page', top: rect.bottom + 4, left: rect.left });
+            updateBlock(block.id, val.slice(0, -10));
+            return;
+        }
+
         updateBlock(block.id, val);
     };
 
@@ -251,7 +293,82 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
         );
     }
 
+    const handleMentionSelect = (result: MentionResult) => {
+        if (!mentionFlyout) return;
+        const { blockId } = mentionFlyout;
+
+        // Insert a new property_mention block after (or replace) the current block
+        const mentionBlock: Block = {
+            id: uuidv4(),
+            type: 'property_mention',
+            content: `${result.type === 'this_page' ? '@this_page' : '@prop'}(${result.databaseName}.${result.propertyName}).${result.aggregator}`,
+            mentionConfig: {
+                type: result.type,
+                databaseId: result.databaseId,
+                propertyId: result.propertyId,
+                aggregator: result.aggregator,
+            },
+        };
+
+        // If the current block is empty, replace it; otherwise insert after
+        const currentBlock = blocks.find(b => b.id === blockId);
+        if (currentBlock && currentBlock.content === '') {
+            const newBlocks = blocks.map(b => b.id === blockId ? mentionBlock : b);
+            updatePageBlocks(databaseId, pageId, newBlocks);
+        } else {
+            const index = blocks.findIndex(b => b.id === blockId);
+            const newBlocks = [...blocks];
+            newBlocks.splice(index + 1, 0, mentionBlock);
+            updatePageBlocks(databaseId, pageId, newBlocks);
+        }
+
+        setMentionFlyout(null);
+
+        // Add a new paragraph block after the mention for continued typing
+        setTimeout(() => {
+            const nextBlockId = uuidv4();
+            const afterBlocks = useDatabaseStore.getState().databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId)?.blocks || [];
+            const mentionIdx = afterBlocks.findIndex(b => b.id === mentionBlock.id);
+            const updatedBlocks = [...afterBlocks];
+            updatedBlocks.splice(mentionIdx + 1, 0, { id: nextBlockId, type: 'paragraph', content: '' });
+            updatePageBlocks(databaseId, pageId, updatedBlocks);
+            setTimeout(() => {
+                const el = document.getElementById(`block-${nextBlockId}`);
+                if (el) el.focus();
+            }, 50);
+        }, 50);
+    };
+
     const renderBlockInput = (block: Block) => {
+        // Property mention blocks render as resolved mention chips
+        if (block.type === 'property_mention') {
+            return (
+                <div key={block.id} className="group relative flex items-start gap-2 -ml-8">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pt-1.5 w-8">
+                        <button
+                            onClick={() => addBlock(block.id)}
+                            className="text-neutral-300 hover:text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded p-0.5"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                            onClick={() => deleteBlock(block.id)}
+                            className="text-neutral-300 hover:text-red-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded p-0.5"
+                        >
+                            <GripVertical className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                    <div className="flex-1">
+                        <PropertyMentionBlock
+                            block={block}
+                            currentPageId={pageId}
+                            currentDatabaseId={databaseId}
+                        />
+                    </div>
+                </div>
+            );
+        }
+
         let className = "w-full outline-none bg-transparent resize-none leading-relaxed transition-colors placeholder:text-neutral-300 dark:placeholder:text-neutral-700 ";
 
         if (block.type === 'heading_1') className += "text-3xl font-bold mt-6 mb-2";
@@ -282,7 +399,7 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
                         id={`block-${block.id}`}
                         className={className}
                         value={block.content}
-                        placeholder={block.type === 'heading_1' ? "Heading 1" : "Type '/' for commands"}
+                        placeholder={block.type === 'heading_1' ? "Heading 1" : "Type '/' for commands, '@prop' for mentions"}
                         onChange={(e) => handleChange(e, block)}
                         onKeyDown={(e) => handleKeyDown(e, block)}
                         rows={1}
@@ -331,6 +448,17 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
                         </button>
                     ))}
                 </div>
+            )}
+
+            {/* ── @prop / @this_page mention flyout ─────────────────────────── */}
+            {mentionFlyout && (
+                <PropMentionFlyout
+                    triggerType={mentionFlyout.triggerType}
+                    currentDatabaseId={databaseId}
+                    position={{ top: mentionFlyout.top, left: mentionFlyout.left }}
+                    onSelect={handleMentionSelect}
+                    onClose={() => setMentionFlyout(null)}
+                />
             )}
         </div>
     );

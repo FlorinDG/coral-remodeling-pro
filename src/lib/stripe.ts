@@ -9,6 +9,7 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
+import Stripe from 'stripe';
 import prisma from './prisma';
 
 // ── Plan → Module canonical mapping ──────────────────────────────────
@@ -66,13 +67,11 @@ export const PLAN_SCAN_QUOTAS: Record<string, number> = {
     CUSTOM:     -1,
 };
 
-// ── Stripe SDK (lazy init) ───────────────────────────────────────────
+// ── Stripe SDK (singleton) ──────────────────────────────────────────
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _stripe: any = null;
+let _stripe: Stripe | null = null;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getStripeInstance(): any {
+export function getStripeInstance(): Stripe {
     if (_stripe) return _stripe;
 
     const key = process.env.STRIPE_SECRET_KEY;
@@ -80,33 +79,27 @@ export function getStripeInstance(): any {
         throw new Error('STRIPE_SECRET_KEY is not configured. Set it in your environment.');
     }
 
-    // Stripe SDK is loaded dynamically to avoid bundling on the client side
-    // and to prevent build errors when the 'stripe' package is not yet installed.
-    // Install it with: npm install stripe
-    try {
-        const Stripe = eval("require")('stripe');
-        _stripe = new Stripe(key, { apiVersion: '2024-12-18.acacia' });
-        return _stripe;
-    } catch {
-        throw new Error(
-            'Stripe SDK not installed. Run: npm install stripe'
-        );
-    }
+    _stripe = new Stripe(key, { apiVersion: '2026-04-22.dahlia' });
+    return _stripe;
 }
 
-// ── Stripe Price IDs (test + prod) ───────────────────────────────────
-// Populated once Stripe products are created.
-
 export const STRIPE_PRICE_IDS: Record<string, { test: string; prod: string }> = {
-    PRO_MONTHLY:        { test: '', prod: '' },
-    PRO_QUARTERLY:      { test: '', prod: '' },
-    ENT_MONTHLY:        { test: '', prod: '' },
-    ENT_QUARTERLY:      { test: '', prod: '' },
-    EXTRA_USER_PRO:     { test: '', prod: '' },
-    EXTRA_USER_ENT:     { test: '', prod: '' },
-    WORKFORCE_PRO:      { test: '', prod: '' },
-    WORKFORCE_ENT:      { test: '', prod: '' },
+    PRO_MONTHLY:        { test: 'price_1TPc2UKwNqxpkJt0ftjywtnj', prod: '' },
+    ENT_MONTHLY:        { test: 'price_1TPc32KwNqxpkJt0gRuyqI1Z', prod: '' },
+    EXTRA_USER_PRO:     { test: 'price_1TPcEbKwNqxpkJt0Wyy5MV0w', prod: '' },
+    EXTRA_USER_ENT:     { test: 'price_1TPcFEKwNqxpkJt02pA0kxo0', prod: '' },
+    WORKFORCE_PRO:      { test: 'price_1TPcFxKwNqxpkJt0831VPMvf', prod: '' },
+    WORKFORCE_ENT:      { test: 'price_1TPcGSKwNqxpkJt0znFmkGy4', prod: '' },
 };
+
+/** Get the correct price ID for the current environment. */
+export function getPriceId(key: keyof typeof STRIPE_PRICE_IDS): string {
+    const entry = STRIPE_PRICE_IDS[key];
+    const isTest = process.env.STRIPE_SECRET_KEY?.startsWith('sk_test_');
+    const id = isTest ? entry.test : entry.prod;
+    if (!id) throw new Error(`Missing ${isTest ? 'test' : 'prod'} price ID for ${key}`);
+    return id;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────
 

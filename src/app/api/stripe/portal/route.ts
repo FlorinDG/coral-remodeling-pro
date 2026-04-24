@@ -3,12 +3,12 @@
  *
  * Creates a Stripe Customer Portal session for managing billing.
  * Returns { url } for client-side redirect.
- *
- * Requires STRIPE_SECRET_KEY to be configured.
  */
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { getStripeInstance } from '@/lib/stripe';
 
 export async function POST() {
     try {
@@ -25,13 +25,27 @@ export async function POST() {
             );
         }
 
-        // TODO: Create Stripe Customer Portal session when keys are available
-        // const stripe = getStripeInstance();
-        // const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { stripeCustomerId: true } });
-        // const portalSession = await stripe.billingPortal.sessions.create({ customer: tenant.stripeCustomerId, return_url: ... });
-        // return NextResponse.json({ url: portalSession.url });
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { stripeCustomerId: true },
+        });
 
-        return NextResponse.json({ error: 'Stripe portal not yet implemented' }, { status: 501 });
+        if (!tenant?.stripeCustomerId) {
+            return NextResponse.json(
+                { error: 'No billing account found. Please upgrade first.' },
+                { status: 404 }
+            );
+        }
+
+        const stripe = getStripeInstance();
+        const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
+
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: tenant.stripeCustomerId,
+            return_url: `${origin}/admin/settings/billing`,
+        });
+
+        return NextResponse.json({ url: portalSession.url });
     } catch (error: unknown) {
         console.error('[Stripe Portal]', error);
         return NextResponse.json({ error: String(error) }, { status: 500 });

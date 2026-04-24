@@ -117,7 +117,7 @@ export default function ExpensesInvoicesPage() {
                     invoiceLines: JSON.stringify(parsed.lines || []),
                     supplierName: parsed.supplierName || doc.sender_name || '',
                     supplierVat: parsed.supplierVat || doc.sender_peppol_id || '',
-                    supplier: [],
+                    supplier: doc.matchedSupplierId ? [doc.matchedSupplierId] : [],
                 });
 
                 if (result.success) {

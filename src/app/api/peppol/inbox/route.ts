@@ -33,7 +33,7 @@ export async function GET() {
 
         if (!tenant?.eInvoiceApiKey) {
             return NextResponse.json({
-                error: 'Peppol niet geconfigureerd. Ga naar Instellingen → Financials.',
+                error: 'PEPPOL_NOT_CONFIGURED',
                 documents: [],
             }, { status: 400 });
         }
@@ -44,6 +44,16 @@ export async function GET() {
         await maybeResetMonthlyCounters(tenantId);
         const quotaInfo = await checkPeppolReceivedQuota(tenantId);
 
+        // Pre-load supplier contacts for auto-matching by VAT
+        const suppliers = await prisma.supplier.findMany({
+            where: { tenantId },
+            select: { id: true, vatNumber: true },
+        });
+        const vatToSupplier = new Map<string, string>();
+        suppliers.forEach((s) => {
+            if (s.vatNumber) vatToSupplier.set(s.vatNumber.replace(/\s/g, '').toUpperCase(), s.id);
+        });
+
         // Parse each document into our internal format
         // NOTE: We do NOT increment the received counter here — that happens
         // after deduplication on the client side via POST /api/peppol/inbox/count
@@ -53,7 +63,11 @@ export async function GET() {
                     // If inline UBL is available, parse it
                     if (doc.ubl_xml) {
                         const parsed = parseUBLToInvoice(doc.ubl_xml, doc.id);
-                        return { ...doc, parsed };
+                        return {
+                            ...doc,
+                            parsed,
+                            matchedSupplierId: matchSupplier(parsed.supplierVat, vatToSupplier),
+                        };
                     }
                     // Otherwise return raw doc info
                     return {
@@ -75,6 +89,7 @@ export async function GET() {
                             peppolDocId: doc.id,
                             rawXml: '',
                         },
+                        matchedSupplierId: matchSupplier(doc.sender_peppol_id, vatToSupplier),
                     };
                 } catch (parseErr) {
                     console.error(`[Peppol Inbox] Failed to parse doc ${doc.id}:`, parseErr);
@@ -92,10 +107,18 @@ export async function GET() {
     } catch (error: any) {
         console.error('[Peppol Inbox] GET error:', error);
         return NextResponse.json(
-            { error: error.message || 'Failed to fetch inbox' },
+            { error: error.message || 'INBOX_FETCH_FAILED' },
             { status: 500 }
         );
     }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function matchSupplier(vatOrPeppolId: string | undefined, vatMap: Map<string, string>): string | null {
+    if (!vatOrPeppolId) return null;
+    const normalized = vatOrPeppolId.replace(/\s/g, '').toUpperCase();
+    return vatMap.get(normalized) || null;
 }
 
 /**
@@ -118,7 +141,7 @@ export async function POST(req: Request) {
 
         if (!tenant?.eInvoiceApiKey) {
             return NextResponse.json(
-                { error: 'Peppol niet geconfigureerd.' },
+                { error: 'PEPPOL_NOT_CONFIGURED' },
                 { status: 400 }
             );
         }

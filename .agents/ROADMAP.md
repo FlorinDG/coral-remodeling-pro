@@ -14,7 +14,7 @@
 | **2** | User invite system (invite, roles, seat enforcement) | Unlocks per-seat revenue (€20/€79). | ⚫ |
 | **3** | Credit notes + expense hardening | Tenant financial completeness. | 🟡 |
 | **4** | Peppol receive polish | Tenant compliance. | 🟡 |
-| **5** | Time tracker (min: clock in/out, admin view) | Workforce seat justification. | 🟠 |
+| **5** | Time tracker (min: clock in/out, admin view) | Workforce seat justification. | 🟡 |
 | **6** | Calendar + Tasks polish | Retention features. | 🟡 |
 | **7** | CRM, Project Management | Conversion differentiators. | 🟠 |
 | **8** | Client Portals, File Manager, Email | 2-month buffer. Wow updates. | 🟡/🟠 |
@@ -71,9 +71,9 @@ mindmap
     Calendar 🟡
     Tasks 🟡
     HR
-      Time Tracker 🟠
-      Employees 🟠
-      Schedules 🟠
+      Time Tracker 🟡
+      Employees 🟡
+      Schedules 🟡
     Websites
       Storefront CMS 🟡
     Public
@@ -159,7 +159,7 @@ mindmap
 ### 👷 HR
 | Status | Works | Missing |
 |---|---|---|
-| 🟠 | Employee list, time tracker shell (auth, schedule, timeoff pages) | Clock in/out ⚫, payroll ⚫, contracts ⚫ |
+| 🟡 | Employee list, time tracker (clock, schedule, timeoff, teams — Prisma-backed) | Progressive camelCase migration in components, payroll ⚫, contracts ⚫ |
 
 ### 🌐 Websites
 | Status | Works | Missing |

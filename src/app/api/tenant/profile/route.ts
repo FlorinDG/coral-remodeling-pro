@@ -13,10 +13,14 @@ const TENANT_FIELDS = [
     'invoicePrefix', 'invoiceConnector', 'invoiceDateFormat', 'invoiceNumberWidth', 'invoiceNextNumber',
     'quotationPrefix', 'quotationConnector', 'quotationDateFormat', 'quotationNumberWidth', 'quotationNextNumber',
     // Document template
-    // Document template
     'documentTemplate',
     'documentMode',
-    'stationeryUrl'
+    'stationeryUrl',
+    // Module settings
+    'defaultVatRate', 'vatCalcMode', 'defaultPaymentTermDays',
+    'defaultEventDuration', 'defaultCalendarView',
+    'workHoursPerDay',
+    'bordereauPrefix', 'poPrefix',
 ];
 
 // Build a select object from field list + extras
@@ -101,3 +105,6 @@ export async function PUT(request: Request) {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
+
+// PATCH is an alias for PUT — module settings pages use PATCH
+export { PUT as PATCH };

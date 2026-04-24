@@ -102,6 +102,23 @@ model Tenant {
   billingCycle             String   @default("MONTHLY") // MONTHLY, QUARTERLY
   billingStartedAt         DateTime?                    // for fidelity bonus calc (10% after Y1)
 
+  // ── Module Settings ──────────────────────────────────────────────────
+  // Financials
+  defaultVatRate         Int?     @default(21)         // 21, 12, 6, 0
+  vatCalcMode            String?  @default("lines")    // "lines" | "total"
+  defaultPaymentTermDays Int?     @default(30)         // payment due days
+
+  // Calendar
+  defaultEventDuration   Int?     @default(60)         // minutes
+  defaultCalendarView    String?  @default("month")    // "month" | "week" | "day"
+
+  // HR
+  workHoursPerDay        Float?   @default(8.0)
+
+  // Projects
+  bordereauPrefix        String?  @default("BOR")
+  poPrefix               String?  @default("PO")
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -303,6 +320,18 @@ model User {
   verificationSentAt  DateTime?
   passwordResetToken    String?
   passwordResetExpires  DateTime?
+
+  // ── Per-module access control (RBAC) ─────────────────────────────────
+  // Shape: { "INVOICING": "OWN", "CRM": "ALL", "PROJECTS": "NONE", ... }
+  // Absent key defaults to "OWN". Values: ALL | OWN | ASSIGNED_AND_OWN | NONE
+  moduleAccess    Json     @default("{}")
+
+  // ── Invitation tracking ──────────────────────────────────────────────
+  invitedBy       String?       // userId of the inviter
+  invitedAt       DateTime?
+  inviteAccepted  Boolean  @default(false)
+  inviteToken     String?  @unique  // one-time accept token
+
   accounts      Account[]
   sessions      Session[]
   events        Event[]
@@ -704,6 +733,7 @@ model GlobalPage {
 
   createdBy     String
   lastEditedBy  String
+  assignedTo    String[]    // user IDs — for ASSIGNED_AND_OWN access filtering
   driveFolderId String?
 
   createdAt DateTime @default(now())

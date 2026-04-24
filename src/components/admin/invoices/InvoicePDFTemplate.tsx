@@ -5,6 +5,27 @@ import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templat
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 
+/**
+ * Resolve the document type label. Credit notes (CN- prefix) get
+ * a different title, amount label, and legal text.
+ */
+function resolveDocType(invoiceTitle: string, lang: string) {
+    const isCreditNote = String(invoiceTitle).startsWith('CN-');
+    return {
+        isCreditNote,
+        docTitle: isCreditNote ? t('credit_note', lang) : t('invoice', lang),
+        amountLabel: isCreditNote
+            ? (lang === 'nl' ? 'Te vergoeden bedrag' : lang === 'fr' ? 'Montant \u00e0 rembourser' : 'Amount to Refund')
+            : t('amount_due', lang),
+        legalText: isCreditNote
+            ? (lang === 'nl'
+                ? 'Deze creditnota vervangt het oorspronkelijk gefactureerd bedrag en wordt verrekend met de volgende factuur of terugbetaald.'
+                : lang === 'fr'
+                    ? 'Cette note de cr\u00e9dit remplace le montant initialement factur\u00e9 et sera d\u00e9duite de la prochaine facture ou rembours\u00e9e.'
+                    : 'This credit note replaces the originally invoiced amount and will be deducted from the next invoice or refunded.')
+            : t('invoice_legal', lang),
+    };
+}
 interface ClientInfo {
     name: string;
     address?: string;
@@ -46,6 +67,7 @@ export const InvoicePDFTemplate = ({
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
     const accent = brandColor || '#ea580c';
+    const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang);
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';
@@ -196,10 +218,10 @@ export const InvoicePDFTemplate = ({
                                 {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
                             </View>
                             <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: accent, textTransform: 'uppercase' }}>{t('invoice', lang)}</Text>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: accent, textTransform: 'uppercase' }}>{docTitle}</Text>
                                 <Text style={{ fontSize: 9, color: '#666', marginTop: 3 }}>#{invoiceTitle || 'DRAFT'} · {dateStr}</Text>
                                 <Text style={{ fontSize: 8, color: '#888', marginTop: 3 }}>{t('project_re', lang)}: {betreft || '—'}</Text>
-                                <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>
+                                {!isCreditNote && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>}
                             </View>
                         </View>
 
@@ -224,14 +246,14 @@ export const InvoicePDFTemplate = ({
                                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{taxAmount.toFixed(2)}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('amount_due', lang)}:</Text>
+                                    <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
                                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€{totalInclTax.toFixed(2)}</Text>
                                 </View>
                             </View>
                         </View>
 
                         <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 24, lineHeight: 1.4 }}>
-                            {t('invoice_legal', lang)}
+                            {legalText}
                         </Text>
                     </View>
 
@@ -272,7 +294,7 @@ export const InvoicePDFTemplate = ({
             <View style={{ height: 3, backgroundColor: accent }} />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 32, paddingTop: 14, marginBottom: 4 }}>
                 <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 24, fontWeight: 'bold', color: navy, textTransform: 'uppercase', letterSpacing: 2 }}>{t('invoice', lang)}</Text>
+                    <Text style={{ fontSize: 24, fontWeight: 'bold', color: navy, textTransform: 'uppercase', letterSpacing: 2 }}>{docTitle}</Text>
                     <Text style={{ fontSize: 9, color: '#888', marginTop: 3 }}>#{invoiceTitle || 'DRAFT'} · {dateStr}</Text>
                 </View>
             </View>
@@ -296,7 +318,7 @@ export const InvoicePDFTemplate = ({
             </View>
             <View style={{ flex: 0.45, padding: 28, flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
                 <Text style={{ fontSize: 20, fontWeight: 'bold', color: darkBrand, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                    {t('invoice', lang)}
+                    {docTitle}
                 </Text>
                 <Text style={{ fontSize: 13, color: darkBrand, fontWeight: 'bold', marginBottom: 3 }}>#{invoiceTitle || 'DRAFT'}</Text>
                 <Text style={{ fontSize: 9, color: '#777777' }}>{dateStr}</Text>
@@ -321,7 +343,7 @@ export const InvoicePDFTemplate = ({
                     ))}
                 </View>
                 <Text style={{ fontSize: 38, fontWeight: 'bold', color: darkBrand, textTransform: 'uppercase' }}>
-                    {t('invoice', lang)}
+                    {docTitle}
                 </Text>
             </View>
             <View style={{ flexDirection: 'row', backgroundColor: navy, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 1 }}>
@@ -360,7 +382,7 @@ export const InvoicePDFTemplate = ({
             </View>
             {(s as any).divider && <View style={(s as any).divider} />}
             <View style={s.headerRight}>
-                <Text style={{ ...s.title, fontSize: 18 }}>{t('invoice', lang)}</Text>
+                <Text style={{ ...s.title, fontSize: 18 }}>{docTitle}</Text>
                 <Text style={s.subtitle}>#{invoiceTitle || 'DRAFT'}</Text>
                 <Text style={s.subtitle}>{t('date', lang)}: {dateStr}</Text>
             </View>
@@ -373,7 +395,7 @@ export const InvoicePDFTemplate = ({
             return (
                 <View style={{ marginTop: 4, backgroundColor: navy, padding: 10, flexDirection: 'row', width: 265, justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase' }}>
-                        {t('amount_due', lang)}
+                        {amountLabel}
                     </Text>
                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#ffffff' }}>
                         €{totalInclTax.toFixed(2)}
@@ -383,7 +405,7 @@ export const InvoicePDFTemplate = ({
         }
         return (
             <View style={{ ...s.summaryRow, marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                <Text style={{ ...s.summaryLabel, color: '#000', fontWeight: 'bold' }}>{t('amount_due', lang)}:</Text>
+                <Text style={{ ...s.summaryLabel, color: '#000', fontWeight: 'bold' }}>{amountLabel}:</Text>
                 <Text style={s.grandTotalValue}>€{totalInclTax.toFixed(2)}</Text>
             </View>
         );
@@ -439,7 +461,7 @@ export const InvoicePDFTemplate = ({
                         <View style={{ alignItems: 'flex-end' as const }}>
                             <Text style={s.clientLabel}>{t('project_re', lang)}:</Text>
                             <Text style={s.betreftLabel}>{betreft || '-'}</Text>
-                            <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>
+                            {!isCreditNote && <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>}
                         </View>
                     </View>
                 )}
@@ -454,7 +476,7 @@ export const InvoicePDFTemplate = ({
                         <View style={{ alignItems: 'flex-end' }}>
                             {clientInfo.address && <Text style={{ fontSize: 9, color: '#555' }}>{clientInfo.address}</Text>}
                             {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888' }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
-                            <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>
+                            {!isCreditNote && <Text style={{ fontSize: 9, color: '#888', marginTop: 4 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>}
                         </View>
                     </View>
                 )}
@@ -488,7 +510,7 @@ export const InvoicePDFTemplate = ({
 
                 {/* Legal text */}
                 <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 30, paddingHorizontal: padH, lineHeight: 1.4 }}>
-                    {t('invoice_legal', lang)}
+                    {legalText}
                 </Text>
 
                 {/* Footer */}

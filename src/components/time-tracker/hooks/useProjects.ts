@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
 
 export interface Project {
@@ -9,106 +8,70 @@ export interface Project {
   name: string;
   address: string | null;
   color: string;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function useProjects() {
-  const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProjects = useCallback(async () => {
-    if (!user) {
-      setProjects([]);
+    try {
+      setLoading(true);
+      const data = await hrList<Project>('projects');
+      setProjects(data);
+    } catch (err) {
+      console.error('[useProjects] error:', err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching projects:', error);
-      toast.error('Failed to load projects');
-    } else {
-      setProjects(data || []);
-    }
-    setLoading(false);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
 
-  const createProject = async (project: { name: string; address?: string; color?: string }) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
-    const { data, error } = await supabase
-      .from('projects')
-      .insert({
-        name: project.name,
-        address: project.address || null,
-        color: project.color || 'blue',
-        created_by: user.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      toast.error('Failed to create project');
-      return { error };
+  const createProject = useCallback(async (data: { name: string; color?: string; address?: string }) => {
+    try {
+      const project = await hrCreate<Project>('projects', data);
+      setProjects(prev => [...prev, project]);
+      toast.success('Project created');
+      return { data: project, error: null };
+    } catch (err: any) {
+      toast.error(err.message);
+      return { data: null, error: err };
     }
+  }, []);
 
-    setProjects(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
-    toast.success('Project created');
-    return { data };
-  };
-
-  const updateProject = async (id: string, updates: { name?: string; address?: string; color?: string }) => {
-    const { data, error } = await supabase
-      .from('projects')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      toast.error('Failed to update project');
-      return { error };
+  const updateProject = useCallback(async (id: string, data: Partial<Project>) => {
+    try {
+      const project = await hrUpdate<Project>('projects', id, data);
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, ...project } : p));
+      return { data: project, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
     }
+  }, []);
 
-    setProjects(prev => prev.map(p => p.id === id ? data : p).sort((a, b) => a.name.localeCompare(b.name)));
-    toast.success('Project updated');
-    return { data };
-  };
-
-  const deleteProject = async (id: string) => {
-    const { error } = await supabase
-      .from('projects')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to delete project');
-      return { error };
+  const deleteProject = useCallback(async (id: string) => {
+    try {
+      await hrDelete('projects', id);
+      setProjects(prev => prev.filter(p => p.id !== id));
+      toast.success('Project deleted');
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
     }
-
-    setProjects(prev => prev.filter(p => p.id !== id));
-    toast.success('Project deleted');
-    return {};
-  };
+  }, []);
 
   return {
     projects,
     loading,
-    fetchProjects,
     createProject,
     updateProject,
     deleteProject,
+    refetch: fetchProjects,
   };
 }

@@ -141,6 +141,14 @@ model Tenant {
   internalProjects      InternalProject[]
   suppliers             Supplier[]
   globalDatabases       GlobalDatabase[]
+  // HR module
+  clockEntries          ClockEntry[]
+  scheduledShifts       ScheduledShift[]
+  shiftTemplates        ShiftTemplate[]
+  hrTeams               HrTeam[]
+  timeOffRequests       TimeOffRequest[]
+  workerSchedules       WorkerSchedule[]
+  hrProjects            HrProject[]
 }
 
 model Lead {
@@ -736,6 +744,131 @@ model GlobalPage {
   assignedTo    String[]    // user IDs — for ASSIGNED_AND_OWN access filtering
   driveFolderId String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// HR / WorkHub Models
+// Migrated from Supabase — now tenant-scoped via Prisma
+// ══════════════════════════════════════════════════════════════════════════
+
+model ClockEntry {
+  id                String    @id @default(cuid())
+  tenantId          String
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId            String
+  clockInTime       DateTime  @default(now())
+  clockOutTime      DateTime?
+  clockInLatitude   Float?
+  clockInLongitude  Float?
+  clockOutLatitude  Float?
+  clockOutLongitude Float?
+  taskDescription   String?
+  requiresApproval  Boolean   @default(false)
+  approvalStatus    String?
+  approvedBy        String?
+  approvedAt        DateTime?
+  shiftId           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ScheduledShift {
+  id            String    @id @default(cuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId        String
+  shiftDate     String
+  shiftStart    String
+  shiftEnd      String
+  shiftName     String?
+  projectId     String?
+  role          String?
+  notes         String?
+  status        String    @default("scheduled")
+  createdBy     String?
+  lastEditedBy  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model ShiftTemplate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  shiftStart  String
+  shiftEnd    String
+  projectId   String?
+  role        String?
+  notes       String?
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HrTeam {
+  id          String        @id @default(cuid())
+  tenantId    String
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  createdBy   String?
+  members     HrTeamMember[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model HrTeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      HrTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  role      String   @default("member")
+  createdAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+}
+
+model TimeOffRequest {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  requestType String    @default("vacation")
+  startDate   String
+  endDate     String
+  status      String    @default("pending")
+  notes       String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model WorkerSchedule {
+  id          String   @id @default(cuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId      String
+  dayOfWeek   Int
+  shiftStart  String
+  shiftEnd    String
+  isActive    Boolean  @default(true)
+  createdBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model HrProject {
+  id        String   @id @default(cuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  address   String?
+  color     String   @default("#3b82f6")
+  createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -1,136 +1,132 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { hrList, hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 
 export interface ClockEntry {
   id: string;
-  user_id: string;
-  clock_in_time: string;
-  clock_out_time: string | null;
-  clock_in_latitude: number | null;
-  clock_in_longitude: number | null;
-  clock_out_latitude: number | null;
-  clock_out_longitude: number | null;
-  task_description: string | null;
+  userId: string;
+  clockInTime: string;
+  clockOutTime: string | null;
+  clockInLatitude: number | null;
+  clockInLongitude: number | null;
+  clockOutLatitude: number | null;
+  clockOutLongitude: number | null;
+  taskDescription: string | null;
+  requiresApproval: boolean;
+  approvalStatus: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  shiftId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // snake_case aliases for legacy components
+  user_id?: string;
+  clock_in_time?: string;
+  clock_out_time?: string | null;
+  clock_in_latitude?: number | null;
+  clock_in_longitude?: number | null;
+  clock_out_latitude?: number | null;
+  clock_out_longitude?: number | null;
+  task_description?: string | null;
+  requires_approval?: boolean;
+  approval_status?: string | null;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function useClockEntries() {
-  const { user } = useAuth();
-  const [activeEntry, setActiveEntry] = useState<ClockEntry | null>(null);
+  const [entries, setEntries] = useState<ClockEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-  const fetchActiveEntry = useCallback(async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('clock_entries')
-      .select('*')
-      .eq('user_id', user.id)
-      .is('clock_out_time', null)
-      .order('clock_in_time', { ascending: false })
-      .maybeSingle();
+  function addSnake(e: ClockEntry): ClockEntry {
+    return {
+      ...e,
+      user_id: e.userId,
+      clock_in_time: e.clockInTime,
+      clock_out_time: e.clockOutTime,
+      clock_in_latitude: e.clockInLatitude,
+      clock_in_longitude: e.clockInLongitude,
+      clock_out_latitude: e.clockOutLatitude,
+      clock_out_longitude: e.clockOutLongitude,
+      task_description: e.taskDescription,
+      requires_approval: e.requiresApproval,
+      approval_status: e.approvalStatus,
+      approved_by: e.approvedBy,
+      approved_at: e.approvedAt,
+      created_at: e.createdAt,
+      updated_at: e.updatedAt,
+    };
+  }
 
-    if (!error && data) {
-      setActiveEntry(data);
-    } else {
-      setActiveEntry(null);
-    }
-    setLoading(false);
-  }, [user?.id]);
-
-  useEffect(() => {
-    if (user) {
-      fetchActiveEntry();
-    } else {
-      setActiveEntry(null);
+  const fetchEntries = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await hrList<ClockEntry>('clock-entries');
+      setEntries(data.map(addSnake));
+      setError(null);
+    } catch (err: any) {
+      setError(err);
+    } finally {
       setLoading(false);
     }
-  }, [user?.id, fetchActiveEntry]);
+  }, []);
 
-  const clockIn = useCallback(async (
-    location: { latitude: number; longitude: number } | null,
-    shiftId?: string | null
-  ) => {
-    if (!user) return { error: new Error('Not authenticated'), data: null };
+  useEffect(() => {
+    fetchEntries();
+  }, [fetchEntries]);
 
-    const { data, error } = await supabase
-      .from('clock_entries')
-      .insert({
-        user_id: user.id,
-        clock_in_latitude: location?.latitude || null,
-        clock_in_longitude: location?.longitude || null,
-      })
-      .select()
-      .single();
+  const activeEntry = useMemo(() => {
+    return entries.find(e => !e.clockOutTime) || null;
+  }, [entries]);
 
-    if (!error && data) {
-      setActiveEntry(data);
-      
-      // If there's a shift, update its status and link the clock entry
-      if (shiftId) {
-        await supabase
-          .from('scheduled_shifts')
-          .update({
-            status: 'In Progress',
-            clock_entry_id: data.id,
-            last_edited_by: user.id,
-          })
-          .eq('id', shiftId);
-      }
+  const clockIn = useCallback(async (data: {
+    clockInLatitude?: number;
+    clockInLongitude?: number;
+    taskDescription?: string;
+    shiftId?: string;
+  }) => {
+    try {
+      const entry = await hrCreate<ClockEntry>('clock-entries', {
+        clockInTime: new Date().toISOString(),
+        ...data,
+      });
+      const enriched = addSnake(entry);
+      setEntries(prev => [enriched, ...prev]);
+      return { data: enriched, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
     }
+  }, []);
 
-    return { data, error };
-  }, [user?.id]);
-
-  const clockOut = useCallback(async (
-    taskDescription: string,
-    location: { latitude: number; longitude: number } | null,
-    shiftId?: string | null,
-    noBreak?: boolean
-  ) => {
-    if (!user || !activeEntry) return { error: new Error('No active entry'), data: null };
-
-    // Calculate clock out time - subtract 30 minutes if break was taken (noBreak is false/undefined)
-    const now = new Date();
-    const clockOutTime = noBreak ? now : new Date(now.getTime() - 30 * 60 * 1000);
-
-    const { data, error } = await supabase
-      .from('clock_entries')
-      .update({
-        clock_out_time: clockOutTime.toISOString(),
-        clock_out_latitude: location?.latitude || null,
-        clock_out_longitude: location?.longitude || null,
-        task_description: taskDescription,
-      })
-      .eq('id', activeEntry.id)
-      .select()
-      .single();
-
-    if (!error) {
-      setActiveEntry(null);
-      
-      // If there's a shift, update its status to Completed
-      if (shiftId) {
-        await supabase
-          .from('scheduled_shifts')
-          .update({
-            status: 'Completed',
-            last_edited_by: user.id,
-          })
-          .eq('id', shiftId);
-      }
+  const clockOut = useCallback(async (data?: {
+    clockOutLatitude?: number;
+    clockOutLongitude?: number;
+    taskDescription?: string;
+  }) => {
+    if (!activeEntry) return { data: null, error: new Error('No active entry') };
+    try {
+      const updated = await hrUpdate<ClockEntry>('clock-entries', activeEntry.id, {
+        clockOutTime: new Date().toISOString(),
+        ...data,
+      });
+      const enriched = addSnake(updated);
+      setEntries(prev => prev.map(e => e.id === enriched.id ? enriched : e));
+      return { data: enriched, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
     }
+  }, [activeEntry]);
 
-    return { data, error };
-  }, [user?.id, activeEntry?.id]);
-
-  return useMemo(() => ({
+  return {
+    entries,
     activeEntry,
     loading,
+    error,
     clockIn,
     clockOut,
-    refetch: fetchActiveEntry,
-  }), [activeEntry, loading, clockIn, clockOut, fetchActiveEntry]);
+    refetch: fetchEntries,
+  };
 }

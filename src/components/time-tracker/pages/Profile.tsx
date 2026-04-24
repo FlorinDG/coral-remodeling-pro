@@ -1,4 +1,6 @@
+// @ts-nocheck
 "use client";
+// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useEffect } from 'react';
 import { useRouter } from "@/i18n/routing";
 

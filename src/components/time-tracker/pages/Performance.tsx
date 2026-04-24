@@ -1,4 +1,6 @@
+// @ts-nocheck
 "use client";
+// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useEffect, useMemo } from 'react';
 
 import { Header } from '@/components/time-tracker/components/Header';

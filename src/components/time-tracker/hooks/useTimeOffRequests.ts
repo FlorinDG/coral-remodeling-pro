@@ -1,91 +1,64 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { hrList, hrCreate } from '@/components/time-tracker/lib/hr-api';
 
 export interface TimeOffRequest {
   id: string;
-  user_id: string;
-  request_type: string;
-  start_date: string;
-  end_date: string;
-  notes: string | null;
+  userId: string;
+  requestType: string;
+  startDate: string;
+  endDate: string;
   status: string;
-  notion_page_id: string | null;
-  created_at: string;
-  updated_at: string;
+  notes: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function useTimeOffRequests() {
-  const { user } = useAuth();
   const [requests, setRequests] = useState<TimeOffRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchRequests = async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('time_off_requests')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      setRequests(data as TimeOffRequest[]);
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchRequests();
-  }, [user]);
-
-  const createRequest = async (
-    requestType: string,
-    startDate: string,
-    endDate: string,
-    notes?: string
-  ) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
-    const { data, error } = await supabase
-      .from('time_off_requests')
-      .insert({
-        user_id: user.id,
-        request_type: requestType,
-        start_date: startDate,
-        end_date: endDate,
-        notes: notes || null,
+    hrList<TimeOffRequest>('time-off')
+      .then(data => {
+        setRequests(data);
+        setLoading(false);
       })
-      .select()
-      .single();
+      .catch(() => setLoading(false));
+  }, []);
 
-    if (!error && data) {
-      setRequests(prev => [data as TimeOffRequest, ...prev]);
+  const createRequest = async (data: {
+    requestType: string;
+    startDate: string;
+    endDate: string;
+    notes?: string;
+  }) => {
+    try {
+      const req = await hrCreate<TimeOffRequest>('time-off', data);
+      setRequests(prev => [req, ...prev]);
+      return { data: req, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
     }
-
-    return { data, error };
   };
 
-  const deleteRequest = async (id: string) => {
-    const { error } = await supabase
-      .from('time_off_requests')
-      .delete()
-      .eq('id', id);
-
-    if (!error) {
-      setRequests(prev => prev.filter(r => r.id !== id));
+  const cancelRequest = async (id: string) => {
+    try {
+      const { hrUpdate: update } = await import('@/components/time-tracker/lib/hr-api');
+      await update('time-off', id, { status: 'cancelled' });
+      setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'cancelled' } : r));
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
     }
-
-    return { error };
   };
 
   return {
     requests,
     loading,
     createRequest,
-    deleteRequest,
-    refetch: fetchRequests,
+    cancelRequest,
   };
 }

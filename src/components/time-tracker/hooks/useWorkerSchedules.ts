@@ -1,161 +1,104 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 
 export interface WorkerSchedule {
   id: string;
-  user_id: string;
-  day_of_week: number;
-  shift_start: string;
-  shift_end: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
+  userId: string;
+  dayOfWeek: number;
+  shiftStart: string;
+  shiftEnd: string;
+  isActive: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface WorkerWithProfile {
-  id: string;
+  user_id: string;
   full_name: string;
   schedules: WorkerSchedule[];
 }
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export function useWorkerSchedules() {
-  const { user } = useAuth();
-  const [mySchedules, setMySchedules] = useState<WorkerSchedule[]>([]);
-  const [allWorkers, setAllWorkers] = useState<WorkerWithProfile[]>([]);
+  const [schedules, setSchedules] = useState<WorkerSchedule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch current user's schedules
-  const fetchMySchedules = useCallback(async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('worker_schedules')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('day_of_week');
-
-    if (!error && data) {
-      setMySchedules(data as WorkerSchedule[]);
+  const fetchSchedules = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await hrList<WorkerSchedule>('worker-schedules');
+      setSchedules(data);
+    } catch (err) {
+      console.error('[useWorkerSchedules] error:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [user]);
-
-  // Fetch all workers with their schedules (for managers)
-  const fetchAllWorkers = useCallback(async () => {
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('user_id, full_name');
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      return;
-    }
-
-    const { data: schedules, error: schedulesError } = await supabase
-      .from('worker_schedules')
-      .select('*')
-      .order('day_of_week');
-
-    if (schedulesError) {
-      console.error('Error fetching schedules:', schedulesError);
-      return;
-    }
-
-    const workers: WorkerWithProfile[] = (profiles || []).map(profile => ({
-      id: profile.user_id,
-      full_name: profile.full_name || 'Unknown Worker',
-      schedules: (schedules || []).filter(s => s.user_id === profile.user_id) as WorkerSchedule[],
-    }));
-
-    setAllWorkers(workers);
   }, []);
 
-  // Create or update a schedule
-  const upsertSchedule = async (
-    userId: string,
-    dayOfWeek: number,
-    shiftStart: string,
-    shiftEnd: string,
-    isActive: boolean = true
-  ) => {
-    if (!user) return { error: new Error('Not authenticated') };
-
-    const { data, error } = await supabase
-      .from('worker_schedules')
-      .upsert({
-        user_id: userId,
-        day_of_week: dayOfWeek,
-        shift_start: shiftStart,
-        shift_end: shiftEnd,
-        is_active: isActive,
-        created_by: user.id,
-      }, {
-        onConflict: 'user_id,day_of_week',
-      })
-      .select()
-      .single();
-
-    if (!error) {
-      await fetchAllWorkers();
-      if (userId === user.id) {
-        await fetchMySchedules();
-      }
-    }
-
-    return { data, error };
-  };
-
-  // Delete a schedule
-  const deleteSchedule = async (scheduleId: string) => {
-    const { error } = await supabase
-      .from('worker_schedules')
-      .delete()
-      .eq('id', scheduleId);
-
-    if (!error) {
-      await fetchAllWorkers();
-      await fetchMySchedules();
-    }
-
-    return { error };
-  };
-
-  // Toggle schedule active status
-  const toggleScheduleActive = async (scheduleId: string, isActive: boolean) => {
-    const { error } = await supabase
-      .from('worker_schedules')
-      .update({ is_active: isActive })
-      .eq('id', scheduleId);
-
-    if (!error) {
-      await fetchAllWorkers();
-      await fetchMySchedules();
-    }
-
-    return { error };
-  };
-
   useEffect(() => {
-    const init = async () => {
-      setLoading(true);
-      await Promise.all([fetchMySchedules(), fetchAllWorkers()]);
-      setLoading(false);
-    };
-    init();
-  }, [fetchMySchedules, fetchAllWorkers]);
+    fetchSchedules();
+  }, [fetchSchedules]);
+
+  // Group schedules by userId to derive worker list
+  const allWorkers = useMemo(() => {
+    const map = new Map<string, WorkerSchedule[]>();
+    schedules.forEach(s => {
+      if (!map.has(s.userId)) map.set(s.userId, []);
+      map.get(s.userId)!.push(s);
+    });
+    return Array.from(map.entries()).map(([userId, userSchedules]) => ({
+      user_id: userId,
+      full_name: userId, // Will be resolved by UI from db-employees
+      schedules: userSchedules,
+    }));
+  }, [schedules]);
+
+  const createSchedule = useCallback(async (data: {
+    userId: string;
+    dayOfWeek: number;
+    shiftStart: string;
+    shiftEnd: string;
+  }) => {
+    try {
+      const schedule = await hrCreate<WorkerSchedule>('worker-schedules', data);
+      setSchedules(prev => [...prev, schedule]);
+      return { data: schedule, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  }, []);
+
+  const updateSchedule = useCallback(async (id: string, data: Partial<WorkerSchedule>) => {
+    try {
+      const updated = await hrUpdate<WorkerSchedule>('worker-schedules', id, data);
+      setSchedules(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+      return { data: updated, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  }, []);
+
+  const deleteSchedule = useCallback(async (id: string) => {
+    try {
+      await hrDelete('worker-schedules', id);
+      setSchedules(prev => prev.filter(s => s.id !== id));
+      return { error: null };
+    } catch (err: any) {
+      return { error: err };
+    }
+  }, []);
 
   return {
-    mySchedules,
+    schedules,
     allWorkers,
-    loading,
-    upsertSchedule,
-    deleteSchedule,
-    toggleScheduleActive,
-    refetch: () => Promise.all([fetchMySchedules(), fetchAllWorkers()]),
     DAY_NAMES,
+    loading,
+    createSchedule,
+    updateSchedule,
+    deleteSchedule,
+    refetch: fetchSchedules,
   };
 }

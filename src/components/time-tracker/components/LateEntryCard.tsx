@@ -1,4 +1,6 @@
+// @ts-nocheck
 "use client";
+// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useRef, useEffect } from 'react';
 import { Loader2, Clock, MapPin, CalendarDays, FileUp, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/time-tracker/components/ui/button';

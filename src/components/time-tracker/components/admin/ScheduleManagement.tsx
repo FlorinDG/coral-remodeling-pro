@@ -6,7 +6,6 @@ import { ScheduleMatrixView } from '@/components/time-tracker/components/schedul
 import { CreateShiftForm } from '@/components/time-tracker/components/schedule/CreateShiftForm';
 import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { toast } from 'sonner';
 import {
@@ -143,7 +142,10 @@ export function ScheduleManagement() {
     const startStr = weekStart.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
 
-    return shifts.filter(s => s.shift_date >= startStr && s.shift_date <= endStr);
+    return shifts.filter(s => {
+      const d = s.shiftDate || s.shift_date || '';
+      return d >= startStr && d <= endStr;
+    });
   }, [shifts, weekStart, weekCount]);
 
   if (loading) {

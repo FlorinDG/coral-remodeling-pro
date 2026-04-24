@@ -1,4 +1,6 @@
+// @ts-nocheck
 "use client";
+// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';

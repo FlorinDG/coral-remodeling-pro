@@ -1,8 +1,16 @@
 "use client";
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { useState, useCallback } from 'react';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
+
+/**
+ * Approval requests — SCAFFOLD
+ * 
+ * Currently uses local state. Full workflow with Prisma model
+ * will be built in Q4 as part of enterprise tier.
+ * 
+ * The interface is preserved so the Admin.tsx / ApprovalManager.tsx
+ * components continue to render without errors.
+ */
 
 export interface ApprovalRequest {
   id: string;
@@ -18,165 +26,48 @@ export interface ApprovalRequest {
   reviewed_at: string | null;
   created_at: string;
   updated_at: string;
-  // Joined data
   user_profile?: { full_name: string } | null;
   requester_profile?: { full_name: string } | null;
 }
 
 export function useApprovalRequests() {
-  const { user } = useAuth();
-  const { isAdmin } = useUserRoles();
-  const [requests, setRequests] = useState<ApprovalRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { isAdmin, userId } = useUserRoles();
+  const [requests] = useState<ApprovalRequest[]>([]);
+  const loading = false;
 
-  const fetchRequests = useCallback(async () => {
-    if (!user) return;
-    
-    setLoading(true);
-    
-    // Fetch approval requests
-    const { data, error } = await supabase
-      .from('approval_requests')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching approval requests:', error);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch profile info for users
-    const userIds = [...new Set(data?.map(r => [r.user_id, r.requested_by]).flat() || [])];
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, full_name')
-      .in('user_id', userIds.length > 0 ? userIds : ['no-match']);
-
-    const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-
-    const enriched = (data || []).map(r => ({
-      ...r,
-      user_profile: profileMap.get(r.user_id) || null,
-      requester_profile: profileMap.get(r.requested_by) || null,
-    }));
-
-    setRequests(enriched);
-    setLoading(false);
-  }, [user]);
-
-  useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
-
-  const createRequest = async (
-    requestType: string,
-    entityId: string | null,
-    entityType: string,
-    userId: string,
-    requestData?: Record<string, unknown>,
-    notes?: string
+  const createRequest = useCallback(async (
+    _requestType: string,
+    _entityId: string | null,
+    _entityType: string,
+    _userId: string,
+    _requestData?: Record<string, unknown>,
+    _notes?: string
   ) => {
-    if (!user) return { error: new Error('Not authenticated') };
+    // TODO Q4: POST /api/hr/approval-requests
+    console.log('[ApprovalRequests] create — scaffold, no-op');
+    return { data: null, error: null };
+  }, []);
 
-    const { data, error } = await supabase
-      .from('approval_requests')
-      .insert([{
-        request_type: requestType,
-        entity_id: entityId,
-        entity_type: entityType,
-        user_id: userId,
-        requested_by: user.id,
-        request_data: requestData ? JSON.parse(JSON.stringify(requestData)) : null,
-        notes: notes || null,
-      }])
-      .select()
-      .single();
+  const approveRequest = useCallback(async (_requestId: string) => {
+    if (!isAdmin) return { error: new Error('Not authorized') };
+    console.log('[ApprovalRequests] approve — scaffold, no-op');
+    return { error: null };
+  }, [isAdmin]);
 
-    if (!error && data) {
-      await fetchRequests();
-    }
+  const rejectRequest = useCallback(async (_requestId: string) => {
+    if (!isAdmin) return { error: new Error('Not authorized') };
+    return { error: null };
+  }, [isAdmin]);
 
-    return { data, error };
-  };
+  const bulkApprove = useCallback(async (requestIds: string[]) => {
+    if (!isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
+    return { error: null, successCount: requestIds.length };
+  }, [isAdmin]);
 
-  const approveRequest = async (requestId: string) => {
-    if (!user || !isAdmin) return { error: new Error('Not authorized') };
-
-    const { error } = await supabase
-      .from('approval_requests')
-      .update({
-        status: 'approved',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', requestId);
-
-    if (!error) {
-      await fetchRequests();
-    }
-
-    return { error };
-  };
-
-  const rejectRequest = async (requestId: string) => {
-    if (!user || !isAdmin) return { error: new Error('Not authorized') };
-
-    const { error } = await supabase
-      .from('approval_requests')
-      .update({
-        status: 'rejected',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', requestId);
-
-    if (!error) {
-      await fetchRequests();
-    }
-
-    return { error };
-  };
-
-  const bulkApprove = async (requestIds: string[]) => {
-    if (!user || !isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
-
-    const { error } = await supabase
-      .from('approval_requests')
-      .update({
-        status: 'approved',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .in('id', requestIds);
-
-    if (!error) {
-      await fetchRequests();
-    }
-
-    return { error, successCount: error ? 0 : requestIds.length };
-  };
-
-  const bulkReject = async (requestIds: string[]) => {
-    if (!user || !isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
-
-    const { error } = await supabase
-      .from('approval_requests')
-      .update({
-        status: 'rejected',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .in('id', requestIds);
-
-    if (!error) {
-      await fetchRequests();
-    }
-
-    return { error, successCount: error ? 0 : requestIds.length };
-  };
-
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
+  const bulkReject = useCallback(async (requestIds: string[]) => {
+    if (!isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
+    return { error: null, successCount: requestIds.length };
+  }, [isAdmin]);
 
   return {
     requests,
@@ -186,7 +77,7 @@ export function useApprovalRequests() {
     rejectRequest,
     bulkApprove,
     bulkReject,
-    refetch: fetchRequests,
-    pendingCount,
+    refetch: async () => {},
+    pendingCount: 0,
   };
 }

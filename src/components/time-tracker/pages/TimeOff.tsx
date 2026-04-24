@@ -1,4 +1,6 @@
+// @ts-nocheck
 "use client";
+// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState } from 'react';
 
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';

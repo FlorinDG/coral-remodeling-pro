@@ -33,6 +33,8 @@ export interface EInvoiceTenant {
     company_number?: string;
     company_tax_id?: string;
     peppol_ids?: string[];
+    smp_registration?: boolean;
+    smp_registration_date?: string | null;
     created_at: string;
     updated_at: string;
     is_deleted: boolean;

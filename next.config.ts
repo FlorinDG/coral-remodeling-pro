@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '20mb',
     },
   },
+  serverExternalPackages: ['canvas'],
   distDir: process.env.VERCEL ? '.next' : '.next.nosync',
   webpack: (config) => {
     config.cache = false;

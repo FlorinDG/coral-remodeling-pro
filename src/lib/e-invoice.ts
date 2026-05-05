@@ -155,7 +155,7 @@ export async function getPeppolStatus(tenantId: string): Promise<PeppolStatus> {
     try {
         const tenant = await getTenant(tenantId);
         return {
-            registered: tenant.smp_registration,
+            registered: tenant.smp_registration ?? false,
             peppol_id: tenant.peppol_ids?.[0],
             status: tenant.smp_registration ? 'ACTIVE' : 'INACTIVE',
             registered_at: tenant.smp_registration_date || undefined

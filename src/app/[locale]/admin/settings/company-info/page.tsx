@@ -126,6 +126,8 @@ export default function CompanyInfoSettings() {
         city: '',
         iban: '',
         peppolId: '',
+        peppolRegistered: false,
+        peppolOptOut: false,
         commercialName: '',
         bic: '',
         deliveryStreet: '',
@@ -165,6 +167,8 @@ export default function CompanyInfoSettings() {
                     city: data.city || '',
                     iban: data.iban || '',
                     peppolId: data.peppolId || '',
+                    peppolRegistered: data.peppolRegistered || false,
+                    peppolOptOut: data.peppolOptOut || false,
                     commercialName: data.commercialName || '',
                     bic: data.bic || '',
                     deliveryStreet: data.deliveryStreet || '',
@@ -193,19 +197,30 @@ export default function CompanyInfoSettings() {
         });
     }, []);
 
+    const [showPeppolModal, setShowPeppolModal] = useState(false);
+
     const handleSave = async () => {
+        // If they have a VAT number, haven't registered for Peppol, and haven't opted out yet
+        if (profile.vatNumber?.trim() && !profile.peppolRegistered && !profile.peppolOptOut) {
+            setShowPeppolModal(true);
+            return;
+        }
+        await proceedWithSave(profile);
+    };
+
+    const proceedWithSave = async (dataToSave: typeof profile) => {
         setSaving(true);
         try {
             const res = await fetch('/api/tenant/profile', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(profile)
+                body: JSON.stringify(dataToSave)
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
 
                 // Patch the JWT immediately so middleware locale correction uses the new language
-                const newLang = profile.documentLanguage;
+                const newLang = dataToSave.documentLanguage;
                 const supportedLocales = ['en', 'fr', 'nl', 'ro', 'ru'];
                 if (newLang && supportedLocales.includes(newLang)) {
                     await updateSession({ environmentLanguage: newLang });
@@ -228,7 +243,38 @@ export default function CompanyInfoSettings() {
             toast.error('Failed to save profile. Please try again.');
         } finally {
             setSaving(false);
+            setShowPeppolModal(false);
         }
+    };
+
+    const handlePeppolOptIn = async () => {
+        const updatedProfile = { ...profile, peppolOptOut: false };
+        setProfile(updatedProfile);
+        
+        // Save the profile first
+        await proceedWithSave(updatedProfile);
+
+        // Then trigger Peppol onboarding
+        toast.loading('Activating Peppol Network...', { id: 'peppol-activate' });
+        try {
+            const res = await fetch('/api/peppol/onboard', { method: 'POST' });
+            if (res.ok) {
+                toast.success('Peppol activated successfully!', { id: 'peppol-activate' });
+                // Force a reload to show the connected banner
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                throw new Error(data.error || 'Failed to activate Peppol');
+            }
+        } catch (e: any) {
+            toast.error(e.message || 'Failed to activate Peppol', { id: 'peppol-activate' });
+        }
+    };
+
+    const handlePeppolOptOut = async () => {
+        const updatedProfile = { ...profile, peppolOptOut: true };
+        setProfile(updatedProfile);
+        await proceedWithSave(updatedProfile);
     };
 
     const [fetchingRegistry, setFetchingRegistry] = useState(false);
@@ -700,6 +746,46 @@ export default function CompanyInfoSettings() {
                 </div>
 
             </div>
+
+            {/* Peppol Opt-In Modal */}
+            {showPeppolModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-6">
+                            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+                                <Globe className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+                                Activate Peppol E-Invoicing?
+                            </h2>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed mb-6">
+                                Sending and receiving invoices via the European Peppol network becomes <strong>mandatory for all B2B transactions in Belgium starting in 2026</strong>.
+                                <br /><br />
+                                Since you provided a valid VAT number, we can securely register your business on the Peppol network right now for free.
+                            </p>
+                            
+                            <div className="flex flex-col gap-3">
+                                <Button
+                                    onClick={handlePeppolOptIn}
+                                    disabled={saving}
+                                    className="w-full font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    {saving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                    Yes, activate Peppol automatically
+                                </Button>
+                                <Button
+                                    onClick={handlePeppolOptOut}
+                                    disabled={saving}
+                                    variant="outline"
+                                    className="w-full text-neutral-500"
+                                >
+                                    No, I'll do this later (Opt-out)
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

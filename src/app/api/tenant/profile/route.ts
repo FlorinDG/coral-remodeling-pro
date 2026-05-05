@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 
 // All tenant profile fields that can be read and written
 const TENANT_FIELDS = [
-    'companyName', 'vatNumber', 'iban', 'logoUrl', 'peppolId', 'email',
+    'companyName', 'vatNumber', 'iban', 'logoUrl', 'peppolId', 'peppolRegistered', 'peppolOptOut', 'email',
     'street', 'postalCode', 'city', 'commercialName', 'bic',
     'deliveryStreet', 'deliveryPostalCode', 'deliveryCity',
     'headquartersStreet', 'headquartersPostalCode', 'headquartersCity',

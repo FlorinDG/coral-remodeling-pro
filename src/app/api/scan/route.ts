@@ -104,7 +104,8 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount
 async function renderPdfPageToImage(buffer: Buffer): Promise<Buffer | null> {
     try {
         // pdfjs canvas rendering requires the 'canvas' npm package on Node
-        const { createCanvas } = await import('canvas' as any);
+        // Use webpackIgnore to prevent Vercel build errors since we handle it gracefully if missing
+        const { createCanvas } = await import(/* webpackIgnore: true */ 'canvas' as any);
         const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs' as any);
         pdfjsLib.GlobalWorkerOptions = pdfjsLib.GlobalWorkerOptions ?? {};
         pdfjsLib.GlobalWorkerOptions.workerSrc = '';

@@ -173,7 +173,21 @@ export async function GET() {
         // If connected, also query live status from e-invoice.be
         let liveStatus: any = null;
         if (connected && tenant.eInvoiceTenantId) {
+            const { getPeppolStatus, lookupPeppolParticipant } = await import('@/lib/e-invoice');
             liveStatus = await getPeppolStatus(tenant.eInvoiceTenantId).catch(() => null);
+
+            // If not registered on our SMP, check the Peppol network itself using the tenant API key
+            if (liveStatus && !liveStatus.registered && tenant.peppolId && tenant.eInvoiceApiKey) {
+                try {
+                    const lookup = await lookupPeppolParticipant(tenant.peppolId, tenant.eInvoiceApiKey);
+                    if (lookup && lookup.is_valid) {
+                        liveStatus.registered = true;
+                        liveStatus.status = 'ACTIVE (External SMP)';
+                    }
+                } catch (e) {
+                    console.warn('[Peppol Status] Network lookup failed:', e);
+                }
+            }
         }
 
         return NextResponse.json({

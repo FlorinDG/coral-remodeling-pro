@@ -150,14 +150,17 @@ export async function getLatestApiKey(tenantId: string): Promise<EInvoiceApiKey 
 // ── Peppol Registration ──
 
 export async function getPeppolStatus(tenantId: string): Promise<PeppolStatus> {
-    const res = await fetch(`${BASE_URL}/api/admin/tenants/${tenantId}/peppol/status`, {
-        headers: adminHeaders(),
-    });
-    if (!res.ok) {
-        // If not registered yet, return a default
+    try {
+        const tenant = await getTenant(tenantId);
+        return {
+            registered: tenant.smp_registration,
+            peppol_id: tenant.peppol_ids?.[0],
+            status: tenant.smp_registration ? 'ACTIVE' : 'INACTIVE',
+            registered_at: tenant.smp_registration_date || undefined
+        };
+    } catch (err) {
         return { registered: false };
     }
-    return res.json();
 }
 
 export async function registerPeppol(tenantId: string, peppolId: string, companyName?: string): Promise<any> {

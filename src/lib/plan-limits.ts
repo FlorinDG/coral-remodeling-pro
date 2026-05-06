@@ -96,8 +96,8 @@ export async function assertPeppolSentLimit(tenantId: string): Promise<void> {
 }
 
 /** Increments the monthly sent counter by 1 after a successful dispatch. */
-export async function incrementPeppolSent(tenantId: string): Promise<void> {
-    await prisma.tenant.update({
+export function incrementPeppolSent(tenantId: string) {
+    return prisma.tenant.update({
         where: { id: tenantId },
         data: { peppolSentThisMonth: { increment: 1 } },
     });

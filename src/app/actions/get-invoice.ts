@@ -35,6 +35,11 @@ export async function getInvoiceById(invoiceId: string) {
             vatTotal: invoice.vatTotal,
             total: invoice.total,
             notes: invoice.notes,
+            isLocked: invoice.isLocked,
+            snapshotData: invoice.snapshotData,
+            peppolDocumentId: invoice.peppolDocumentId,
+            peppolState: invoice.peppolState,
+            parentInvoiceId: invoice.parentInvoiceId,
         },
     };
 }

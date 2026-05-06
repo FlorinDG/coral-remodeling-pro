@@ -12,6 +12,7 @@ interface UBLLineItem {
     unitPrice: number;
     lineTotal: number;
     taxRate: number; // e.g. 21, 6, 0
+    isReverseCharge?: boolean; // If true, sets TaxCategory AE (Btw verlegd)
 }
 
 interface UBLInvoiceData {
@@ -19,6 +20,8 @@ interface UBLInvoiceData {
     issueDate: string;       // YYYY-MM-DD
     dueDate: string;         // YYYY-MM-DD
     currency: string;        // EUR
+    type?: '380' | '381';    // 380 = Invoice, 381 = Credit Note
+    parentInvoiceNumber?: string; // Mandatory for Credit Notes (381)
 
     // Supplier (Vendor)
     supplierName: string;
@@ -109,10 +112,12 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
 
     for (const item of data.items) {
         totalLineExtensionAmount += item.lineTotal;
-        const existing = taxMap.get(item.taxRate) || { taxableAmount: 0, taxAmount: 0 };
+        const rateKey = item.isReverseCharge ? -1 : item.taxRate; // Use -1 as unique key for RC
+        const existing = taxMap.get(rateKey) || { taxableAmount: 0, taxAmount: 0 };
         existing.taxableAmount += item.lineTotal;
-        existing.taxAmount += item.lineTotal * (item.taxRate / 100);
-        taxMap.set(item.taxRate, existing);
+        // Tax is 0 for Reverse Charge
+        existing.taxAmount += item.isReverseCharge ? 0 : (item.lineTotal * (item.taxRate / 100));
+        taxMap.set(rateKey, existing);
     }
 
     const totalTaxAmount = Array.from(taxMap.values()).reduce((sum, t) => sum + t.taxAmount, 0);
@@ -137,11 +142,28 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
     add(`  <cbc:ID>${escapeXml(data.invoiceId)}</cbc:ID>`);
     add(`  <cbc:IssueDate>${data.issueDate}</cbc:IssueDate>`);
     add(`  <cbc:DueDate>${data.dueDate}</cbc:DueDate>`);
-    add('  <cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode>'); // 380 = Commercial Invoice
+    add(`  <cbc:InvoiceTypeCode>${data.type || '380'}</cbc:InvoiceTypeCode>`); // 380 = Invoice, 381 = Credit Note
+    
     if (data.note) {
         add(`  <cbc:Note>${escapeXml(data.note)}</cbc:Note>`);
     }
+    
+    // Legal requirement for Reverse Charge (BE)
+    const hasReverseCharge = data.items.some(i => i.isReverseCharge);
+    if (hasReverseCharge) {
+        add('  <cbc:Note>Btw verlegd (Reverse Charge)</cbc:Note>');
+    }
+
     add(`  <cbc:DocumentCurrencyCode>${data.currency}</cbc:DocumentCurrencyCode>`);
+
+    // Billing Reference (Mandatory for Credit Notes)
+    if (data.type === '381' && data.parentInvoiceNumber) {
+        add('  <cac:BillingReference>');
+        add('    <cac:InvoiceDocumentReference>');
+        add(`      <cbc:ID>${escapeXml(data.parentInvoiceNumber)}</cbc:ID>`);
+        add('    </cac:InvoiceDocumentReference>');
+        add('  </cac:BillingReference>');
+    }
     add('');
 
     // ── Supplier (AccountingSupplierParty) ──
@@ -270,13 +292,21 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
     // ── Tax Total ──
     add('  <cac:TaxTotal>');
     add(`    <cbc:TaxAmount currencyID="${data.currency}">${formatAmount(totalTaxAmount)}</cbc:TaxAmount>`);
-    for (const [rate, breakdown] of taxMap.entries()) {
+    for (const [rateKey, breakdown] of taxMap.entries()) {
+        const isRC = rateKey === -1;
+        const displayRate = isRC ? 0 : rateKey;
+        
         add('    <cac:TaxSubtotal>');
         add(`      <cbc:TaxableAmount currencyID="${data.currency}">${formatAmount(breakdown.taxableAmount)}</cbc:TaxableAmount>`);
         add(`      <cbc:TaxAmount currencyID="${data.currency}">${formatAmount(breakdown.taxAmount)}</cbc:TaxAmount>`);
         add('      <cac:TaxCategory>');
-        add(`        <cbc:ID>${rate === 0 ? 'Z' : 'S'}</cbc:ID>`); // S=Standard, Z=Zero
-        add(`        <cbc:Percent>${formatAmount(rate)}</cbc:Percent>`);
+        // S = Standard, Z = Zero, AE = Reverse Charge
+        add(`        <cbc:ID>${isRC ? 'AE' : (displayRate === 0 ? 'Z' : 'S')}</cbc:ID>`); 
+        add(`        <cbc:Percent>${formatAmount(displayRate)}</cbc:Percent>`);
+        if (isRC) {
+            add('        <cbc:TaxExemptionReasonCode>VATEX-EU-AE</cbc:TaxExemptionReasonCode>');
+            add('        <cbc:TaxExemptionReason>Reverse charge</cbc:TaxExemptionReason>');
+        }
         add('        <cac:TaxScheme>');
         add('          <cbc:ID>VAT</cbc:ID>');
         add('        </cac:TaxScheme>');
@@ -305,8 +335,9 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
         add('    <cac:Item>');
         add(`      <cbc:Name>${escapeXml(item.description)}</cbc:Name>`);
         add('      <cac:ClassifiedTaxCategory>');
-        add(`        <cbc:ID>${item.taxRate === 0 ? 'Z' : 'S'}</cbc:ID>`);
-        add(`        <cbc:Percent>${formatAmount(item.taxRate)}</cbc:Percent>`);
+        // AE for Reverse Charge
+        add(`        <cbc:ID>${item.isReverseCharge ? 'AE' : (item.taxRate === 0 ? 'Z' : 'S')}</cbc:ID>`);
+        add(`        <cbc:Percent>${formatAmount(item.isReverseCharge ? 0 : item.taxRate)}</cbc:Percent>`);
         add('        <cac:TaxScheme>');
         add('          <cbc:ID>VAT</cbc:ID>');
         add('        </cac:TaxScheme>');

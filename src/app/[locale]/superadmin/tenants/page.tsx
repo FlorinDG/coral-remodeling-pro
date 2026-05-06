@@ -20,6 +20,10 @@ export default async function SuperadminTenantsPage() {
             activeModules: true,
             peppolSentThisMonth: true,
             peppolReceivedThisMonth: true,
+            ocrEngine: true,
+            scanQuota: true,
+            mindeeApiKey: true,
+            veryfiApiKey: true,
             createdAt: true,
             users: {
                 select: { id: true, email: true, name: true, role: true },

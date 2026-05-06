@@ -67,7 +67,6 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'calendar',   iconName: 'Calendar',         label: 'CALENDAR',   href: '/admin/calendar' },
     { id: 'tasks',      iconName: 'BriefcaseBusiness',label: 'TASKS',      href: '/admin/tasks' },
     { id: 'files',      iconName: 'Library',          label: 'FILES',      href: '/admin/files' },
-    { id: 'frontend',   iconName: 'Globe',            label: 'WEBSITE',    href: '/admin/content' },
     { id: 'settings',   iconName: 'Settings',         label: 'SETTINGS',   href: '/admin/settings/company-info' },
 ];
 
@@ -86,9 +85,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 15, // bump: added PORTALS standalone sidebar item
+            version: 16, // bump: removed duplicate WEBSITE item (already in top platform links)
             migrate: (persistedState: any, version: number) => {
-                if (version < 15) {
+                if (version < 16) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

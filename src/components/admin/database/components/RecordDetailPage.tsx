@@ -17,6 +17,7 @@ import { Lock } from 'lucide-react';
 const BlockEditor       = dynamic(() => import('@/components/admin/database/components/BlockEditor'),       { ssr: false });
 const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('@/components/admin/database/components/PageFinancialAnalysis'), { ssr: false });
+const LinkedRecords     = dynamic(() => import('@/components/admin/database/components/LinkedRecords'),     { ssr: false });
 
 type Tab = 'properties' | 'journal' | 'files' | 'stats';
 
@@ -150,54 +151,47 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 ))}
             </div>
 
-            {/* ── Content area ──────────────────────────────────────────── */}
-            <div className="flex-1 overflow-hidden">
+            {/* ── Content area (Two-column) ─────────────────────────────────── */}
+            <div className="flex-1 flex overflow-hidden">
+                
+                {/* Left: Sidebar (Persistent) */}
+                <div className="w-80 flex-shrink-0 border-r border-neutral-200 dark:border-white/10 h-full overflow-hidden">
+                    <DbPropertiesPanel
+                        databaseId={resolvedDbId}
+                        pageId={pageId}
+                        title="All Properties"
+                    />
+                </div>
 
-                {/* Properties tab — two column: properties panel + (empty space / future notes) */}
-                {activeTab === 'properties' && (
-                    <div className="flex h-full">
-                        {/* Properties panel — full height, scrollable */}
-                        <div className="w-80 flex-shrink-0 border-r border-neutral-200 dark:border-white/10 h-full overflow-hidden">
-                            <DbPropertiesPanel
-                                databaseId={resolvedDbId}
-                                pageId={pageId}
-                                title="All Properties"
+                {/* Right: Tab Content */}
+                <div className="flex-1 overflow-hidden relative flex flex-col">
+                    {activeTab === 'properties' && (
+                        <div className="flex-1 overflow-y-auto p-8">
+                            <LinkedRecords databaseId={databaseId} pageId={pageId} />
+                        </div>
+                    )}
+
+                    {activeTab === 'journal' && (
+                        <div className="flex-1 overflow-y-auto p-6 max-w-4xl mx-auto w-full">
+                            <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
+                        </div>
+                    )}
+
+                    {activeTab === 'files' && (
+                        <div className="flex-1 overflow-hidden">
+                            <FileManager
+                                contextType="global"
+                                contextId={pageId}
                             />
                         </div>
+                    )}
 
-                        {/* Right: record metadata cards (future) */}
-                        <div className="flex-1 flex items-center justify-center text-neutral-400 dark:text-neutral-500 flex-col gap-3 p-8">
-                            <PenLine className="w-8 h-8 opacity-60" />
-                            <p className="text-xs text-center max-w-xs text-neutral-500 dark:text-neutral-400">
-                                Switch to <strong>Journal</strong> to add notes and rich content to this record.
-                            </p>
+                    {activeTab === 'stats' && (
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
                         </div>
-                    </div>
-                )}
-
-                {/* Journal tab — BlockEditor */}
-                {activeTab === 'journal' && (
-                    <div className="h-full overflow-y-auto p-6 max-w-4xl mx-auto w-full">
-                        <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
-                    </div>
-                )}
-
-                {/* Files tab */}
-                {activeTab === 'files' && (
-                    <div className="h-full overflow-hidden">
-                        <FileManager
-                            contextType="global"
-                            contextId={pageId}
-                        />
-                    </div>
-                )}
-
-                {/* Stats tab */}
-                {activeTab === 'stats' && (
-                    <div className="h-full overflow-y-auto p-4">
-                        <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -7,6 +7,16 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { frontendTabs } from "@/config/tabs";
 import PageTitle from "@/components/admin/PageTitle";
 
+// Import translation defaults to pre-populate empty CMS fields
+import en from "@/messages/en.json";
+import nl from "@/messages/nl.json";
+import fr from "@/messages/fr.json";
+import ro from "@/messages/ro.json";
+
+function getNestedValue(obj: any, path: string): string | null {
+    return path.split('.').reduce((acc, part) => acc && acc[part], obj) || null;
+}
+
 export default async function ContentEditor() {
     const contents = await prisma.siteContent.findMany();
     const banner = await prisma.promotionalBanner.findFirst();
@@ -29,6 +39,19 @@ export default async function ContentEditor() {
         "Website Footer": ["Footer.description", "Footer.address", "Footer.vat", "Footer.quickLinks", "Footer.contact", "Footer.office", "Footer.legal", "Footer.fastInterventions"],
         "SEO Metadata": ["Metadata.title", "Metadata.description"]
     };
+
+    // Pre-populate with JSON defaults if DB keys are missing
+    const allKeys = Object.values(groups).flat();
+    for (const key of allKeys) {
+        if (!contentMap[key]) {
+            contentMap[key] = {
+                en: getNestedValue(en, key) || '',
+                nl: getNestedValue(nl, key),
+                fr: getNestedValue(fr, key),
+                ro: getNestedValue(ro, key),
+            };
+        }
+    }
 
     return (
         <div className="flex flex-col w-full h-full">

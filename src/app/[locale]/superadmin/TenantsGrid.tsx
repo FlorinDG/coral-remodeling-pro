@@ -11,12 +11,15 @@ import {
     toggleTenantModule,
     resetPeppolCounters,
     deleteTenant,
+    setTenantOcrEngine,
+    setTenantScanQuota,
+    updateTenantOcrKeys,
 } from "@/app/actions/superadmin";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
 const PLAN_TYPES        = ["FREE", "PRO", "ENTERPRISE", "FOUNDER", "CUSTOM"] as const;
-const SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIAL", "INACTIVE", "CANCELLED"] as const;
+const SUBSCRIPTION_STATUSES = ["ACTIVE", "TRIAL", "PAST_DUE", "INACTIVE", "CANCELLED"] as const;
 
 const MODULES: { key: string; label: string }[] = [
     { key: "INVOICING",  label: "INV"   },
@@ -45,6 +48,7 @@ const PLAN_BADGE: Record<string, string> = {
 const STATUS_BADGE: Record<string, string> = {
     ACTIVE:    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
     TRIAL:     "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+    PAST_DUE:  "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
     INACTIVE:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400",
     CANCELLED: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
 };
@@ -61,6 +65,10 @@ type Tenant = {
     activeModules: string[];
     peppolSentThisMonth: number;
     peppolReceivedThisMonth: number;
+    ocrEngine: string;
+    scanQuota: number;
+    mindeeApiKey: string | null;
+    veryfiApiKey: string | null;
     createdAt: Date;
     _count: { users: number; clientPortals: number; internalProjects: number };
     users: { email: string | null; name: string | null; role: string; id: string }[];
@@ -484,6 +492,61 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                         >
                                                             <RefreshCw className="w-3 h-3" /> Reset counters
                                                         </button>
+                                                    </div>
+
+                                                    {/* OCR Settings */}
+                                                    <div className="sm:col-span-3 pt-4 border-t border-neutral-100 dark:border-white/5">
+                                                        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-1.5">
+                                                            <Zap className="w-3 h-3" /> OCR Configuration
+                                                        </p>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
+                                                            <div>
+                                                                <label className="text-[10px] text-neutral-400 block mb-1">Engine</label>
+                                                                <select
+                                                                    value={t.ocrEngine}
+                                                                    onChange={e => startTransition(() => setTenantOcrEngine(t.id, e.target.value))}
+                                                                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none"
+                                                                >
+                                                                    <option value="GPT4O">GPT-4o (Default)</option>
+                                                                    <option value="MINDEE">Mindee</option>
+                                                                    <option value="VERYFI">Veryfi</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] text-neutral-400 block mb-1">Monthly Quota</label>
+                                                                <input
+                                                                    type="number"
+                                                                    defaultValue={t.scanQuota}
+                                                                    onBlur={e => startTransition(() => setTenantScanQuota(t.id, parseInt(e.target.value)))}
+                                                                    className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none"
+                                                                />
+                                                                <p className="text-[9px] text-neutral-400 mt-1">-1 = unlimited</p>
+                                                            </div>
+                                                            <div className="sm:col-span-2">
+                                                                <div className="grid grid-cols-2 gap-4">
+                                                                    <div>
+                                                                        <label className="text-[10px] text-neutral-400 block mb-1">Mindee API Key</label>
+                                                                        <input
+                                                                            type="password"
+                                                                            defaultValue={t.mindeeApiKey || ''}
+                                                                            onBlur={e => startTransition(() => updateTenantOcrKeys(t.id, { mindeeApiKey: e.target.value || null }))}
+                                                                            className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none"
+                                                                            placeholder="sk_..."
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] text-neutral-400 block mb-1">Veryfi API Key</label>
+                                                                        <input
+                                                                            type="password"
+                                                                            defaultValue={t.veryfiApiKey || ''}
+                                                                            onBlur={e => startTransition(() => updateTenantOcrKeys(t.id, { veryfiApiKey: e.target.value || null }))}
+                                                                            className="w-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-xs outline-none"
+                                                                            placeholder="apikey ..."
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
                                                 </div>

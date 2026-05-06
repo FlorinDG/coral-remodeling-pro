@@ -67,6 +67,16 @@ export const PLAN_SCAN_QUOTAS: Record<string, number> = {
     CUSTOM:     -1,
 };
 
+// ── Peppol Limits per plan ───────────────────────────────────────────
+
+export const PLAN_PEPPOL_LIMITS: Record<string, number> = {
+    FREE:       50,   // documents/month included
+    PRO:        250,
+    ENTERPRISE: 1000,
+    FOUNDER:    -1,
+    CUSTOM:     -1,
+};
+
 // ── Stripe SDK (singleton) ──────────────────────────────────────────
 
 let _stripe: Stripe | null = null;
@@ -172,4 +182,24 @@ export function getQuarterlyDiscount(billingStartedAt: Date | null): number {
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
     return billingStartedAt <= oneYearAgo ? QUARTERLY_FIDELITY_DISCOUNT : QUARTERLY_DISCOUNT;
+}
+
+/**
+ * Calculate unsettled Peppol overage fees for a tenant.
+ */
+export async function calculatePeppolOverage(tenantId: string): Promise<number> {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { planType: true, peppolSentThisMonth: true, peppolReceivedThisMonth: true },
+    });
+
+    if (!tenant) return 0;
+
+    const limit = PLAN_PEPPOL_LIMITS[tenant.planType] || PLAN_PEPPOL_LIMITS.FREE;
+    if (limit === -1) return 0; // Unlimited
+
+    const totalDocs = tenant.peppolSentThisMonth + tenant.peppolReceivedThisMonth;
+    const overageDocs = Math.max(0, totalDocs - limit);
+    
+    return Number((overageDocs * PEPPOL_OVERAGE_PRICE).toFixed(2));
 }

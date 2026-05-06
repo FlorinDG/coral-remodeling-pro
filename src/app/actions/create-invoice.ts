@@ -2,7 +2,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-export async function createPrismaInvoice(id: string, invoiceNumber: string) {
+export async function createPrismaInvoice(id: string, invoiceNumber: string, parentInvoiceId?: string) {
     try {
         const session = await auth();
         const tenantId = (session?.user as any)?.tenantId;
@@ -12,8 +12,9 @@ export async function createPrismaInvoice(id: string, invoiceNumber: string) {
             data: {
                 id,
                 invoiceNumber,
-                type: 'SALES',
+                type: invoiceNumber.startsWith('CN-') ? 'CREDIT_NOTE' : 'SALES',
                 status: 'DRAFT',
+                parentInvoiceId: parentInvoiceId || undefined,
                 issueDate: new Date(),
                 dueDate: new Date(new Date().setDate(new Date().getDate() + 30)),
                 subtotal: 0,

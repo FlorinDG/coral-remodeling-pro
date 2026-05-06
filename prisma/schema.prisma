@@ -65,6 +65,8 @@ model Tenant {
   // OCR Engine — superadmin-configurable per tenant
   // Supported values: GPT4O (default), MINDEE, VERYFI
   ocrEngine          String   @default("GPT4O")
+  mindeeApiKey       String?  // Mindee API key for this tenant
+  veryfiApiKey       String?  // Veryfi API key for this tenant
 
   // Scan quota — monthly limit, reset automatically
   scanCount          Int      @default(0)
@@ -88,6 +90,7 @@ model Tenant {
 
   // Trial management
   trialEndsAt              DateTime?
+  trialGraceEndsAt         DateTime?  // 14-day grace period after trialEndsAt
   trialNotifiedAt          DateTime?  // when the 7-day reminder was sent
 
   // Cancellation
@@ -570,6 +573,17 @@ model Invoice {
   subtotal Float @default(0)
   vatTotal Float @default(0)
   total    Float @default(0)
+
+  // Fiscal Compliance & Peppol
+  isLocked         Boolean @default(false)
+  snapshotData     Json?   // Stores buyer/seller details at time of issuance
+  peppolDocumentId String?
+  peppolState      String? // e.g. "SENT", "RECEIVED", "ACCEPTED", "REJECTED"
+  
+  // For Credit Notes
+  parentInvoiceId  String?
+  parentInvoice    Invoice? @relation("CreditNotes", fields: [parentInvoiceId], references: [id])
+  creditNotes      Invoice[] @relation("CreditNotes")
 
   notes String?
   items InvoiceItem[]

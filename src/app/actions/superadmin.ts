@@ -1,9 +1,11 @@
 "use server";
 
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
+
+import { calculatePeppolOverage } from "@/lib/stripe";
 
 async function verifySuperadmin() {
     const session = await auth();
@@ -35,7 +37,7 @@ export async function toggleTenantModule(tenantId: string, moduleName: string, i
     if (isActive && !newModules.includes(moduleName)) {
         newModules.push(moduleName);
     } else if (!isActive) {
-        newModules = newModules.filter((m) => m !== moduleName);
+        newModules = newModules.filter((m: string) => m !== moduleName);
     }
 
     await prisma.tenant.update({
@@ -60,6 +62,13 @@ export async function resetPeppolCounters(tenantId: string) {
 
 export async function deleteTenant(tenantId: string) {
     await verifySuperadmin();
+
+    // Safety Check: Prevent deletion if there are unsettled Peppol overage fees
+    const overage = await calculatePeppolOverage(tenantId);
+    if (overage > 0) {
+        throw new Error(`Cannot delete tenant: Unsettled Peppol overage fees of €${overage.toFixed(2)} detected. These must be paid via Stripe before account closure.`);
+    }
+
     // Cascading deletes are defined in schema — this removes all child records too.
     await prisma.tenant.delete({ where: { id: tenantId } });
     revalidatePath("/superadmin");
@@ -101,4 +110,12 @@ export async function resetScanCount(tenantId: string) {
         data: { scanCount: 0, scanCountResetAt: new Date() },
     });
     revalidatePath("/superadmin");
+}
+export async function updateTenantOcrKeys(tenantId: string, data: { mindeeApiKey?: string | null, veryfiApiKey?: string | null }) {
+    await verifySuperadmin();
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data,
+    });
+    revalidatePath("/[locale]/superadmin", "layout");
 }

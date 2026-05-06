@@ -172,14 +172,64 @@ async function extractViaGpt4o(
 
 // ─── Engine Stubs (future providers) ─────────────────────────────────────────
 
-async function extractViaMindee(_buffer: Buffer, _isInvoice: boolean): Promise<string> {
-    // TODO: Implement when MINDEE_API_KEY is configured for this tenant
-    throw Object.assign(new Error('Mindee OCR is not yet configured for this account. Contact support.'), { code: 'NOT_CONFIGURED' });
+async function extractViaMindee(buffer: Buffer, isInvoice: boolean, apiKey?: string): Promise<string> {
+    const key = apiKey || process.env.MINDEE_API_KEY;
+    if (!key) {
+        throw Object.assign(new Error('Mindee OCR is not configured for this account. Provide an API key in tenant settings.'), { code: 'NOT_CONFIGURED' });
+    }
+
+    const endpoint = isInvoice ? 'invoices/v4' : 'expense_receipts/v5';
+    const url = `https://api.mindee.net/v1/products/mindee/${endpoint}/predict`;
+
+    const formData = new FormData();
+    formData.append('document', new Blob([new Uint8Array(buffer)]));
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Authorization': `Token ${key}` },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(`Mindee API Error: ${response.statusText} ${JSON.stringify(err)}`);
+    }
+
+    const data = await response.json();
+    return JSON.stringify(data.document.inference.prediction);
 }
 
-async function extractViaVeryfi(_buffer: Buffer, _isInvoice: boolean): Promise<string> {
-    // TODO: Implement when VERYFI credentials are configured for this tenant
-    throw Object.assign(new Error('Veryfi OCR is not yet configured for this account. Contact support.'), { code: 'NOT_CONFIGURED' });
+async function extractViaVeryfi(buffer: Buffer, isInvoice: boolean, apiKey?: string): Promise<string> {
+    const key = apiKey || process.env.VERYFI_API_KEY;
+    const clientId = process.env.VERYFI_CLIENT_ID; // Veryfi often needs Client ID too
+    
+    if (!key) {
+        throw Object.assign(new Error('Veryfi OCR is not configured for this account. Provide an API key in tenant settings.'), { code: 'NOT_CONFIGURED' });
+    }
+
+    // Veryfi typically uses a different auth pattern (headers: Client-Id, Authorization:apikey <key>)
+    const url = `https://api.veryfi.com/api/v8/partner/documents`;
+    
+    const formData = new FormData();
+    formData.append('file', new Blob([new Uint8Array(buffer)]));
+    formData.append('auto_delete', 'true');
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: { 
+            'Authorization': `apikey ${key}`,
+            ...(clientId ? { 'Client-Id': clientId } : {}),
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(`Veryfi API Error: ${response.statusText} ${JSON.stringify(err)}`);
+    }
+
+    const data = await response.json();
+    return JSON.stringify(data);
 }
 
 // ─── Quota Helpers ────────────────────────────────────────────────────────────
@@ -229,7 +279,7 @@ export async function POST(req: Request) {
         // ── Load tenant config (engine + quota) ───────────────────────────────
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { ocrEngine: true, scanCount: true, scanQuota: true, scanCountResetAt: true }
+            select: { ocrEngine: true, scanCount: true, scanQuota: true, scanCountResetAt: true, mindeeApiKey: true, veryfiApiKey: true }
         });
 
         const ocrEngine = (tenant?.ocrEngine ?? 'GPT4O') as OcrEngine;
@@ -292,9 +342,9 @@ export async function POST(req: Request) {
                 if (ocrEngine === 'GPT4O') {
                     rawJson = await extractViaGpt4o(openai!, { type: 'text', text }, isInvoice);
                 } else if (ocrEngine === 'MINDEE') {
-                    rawJson = await extractViaMindee(buffer, isInvoice);
+                    rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
                 } else {
-                    rawJson = await extractViaVeryfi(buffer, isInvoice);
+                    rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
                 }
             } else {
                 // Scanned PDF — no text layer. Try rendering page 1 to image.
@@ -303,9 +353,9 @@ export async function POST(req: Request) {
                     if (ocrEngine === 'GPT4O') {
                         rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer: pageImage, mimeType: 'image/jpeg' }, isInvoice);
                     } else if (ocrEngine === 'MINDEE') {
-                        rawJson = await extractViaMindee(pageImage, isInvoice);
+                        rawJson = await extractViaMindee(pageImage, isInvoice, tenant?.mindeeApiKey || undefined);
                     } else {
-                        rawJson = await extractViaVeryfi(pageImage, isInvoice);
+                        rawJson = await extractViaVeryfi(pageImage, isInvoice, tenant?.veryfiApiKey || undefined);
                     }
                 } else {
                     return NextResponse.json({
@@ -320,9 +370,9 @@ export async function POST(req: Request) {
             if (ocrEngine === 'GPT4O') {
                 rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer, mimeType: file.type || 'image/jpeg' }, isInvoice);
             } else if (ocrEngine === 'MINDEE') {
-                rawJson = await extractViaMindee(buffer, isInvoice);
+                rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
             } else {
-                rawJson = await extractViaVeryfi(buffer, isInvoice);
+                rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
             }
         }
 

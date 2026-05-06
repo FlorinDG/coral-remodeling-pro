@@ -14,6 +14,7 @@ import { generatePdfBlob } from '@/lib/generate-pdf';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
+import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
@@ -88,6 +89,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             betreft: '',
                             date: inv.issueDate,
                             dueDate: inv.dueDate,
+                            isLocked: inv.isLocked,
+                            snapshotData: inv.snapshotData as any,
+                            peppolDocumentId: inv.peppolDocumentId,
+                            peppolState: inv.peppolState,
                         },
                         blocks: [],
                     });
@@ -212,6 +217,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const vatRegime = (invoice.properties?.['vatRegime'] as string) || '21';
     const invoiceStatus = (invoice.properties?.['status'] as string) || 'opt-draft';
     const isDraft = invoiceStatus === 'opt-draft';
+    const isLocked = Boolean(invoice.properties?.['isLocked'] || false);
+    const snapshotData = (invoice.properties?.['snapshotData'] as any) || null;
     const isCreditNote = String(invoiceTitle).startsWith('CN-');
 
     const blocks = invoice.blocks || [];
@@ -225,9 +232,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             client: clientId,
             status: 'opt-draft',
             betreft: `Creditnota voor ${invoiceNum}`,
+            parentInvoiceId: id, // Explicitly link to original
         });
         if (result.success) {
             useDatabaseStore.getState().addConfirmedPage(result.page);
+            // Create corresponding Prisma Invoice record
+            await createPrismaInvoice(result.page.id, cnNumber, id);
             router.push(`/admin/financials/income/invoices/${result.page.id}`);
         }
     };
@@ -417,6 +427,17 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     // Helper: build resolved client info for PDF templates
     const buildClientInfo = () => {
+        // If locked, MUST use snapshot data (Legal requirement)
+        if (isLocked && snapshotData?.customer) {
+            return {
+                name: snapshotData.customer.name,
+                address: snapshotData.customer.address,
+                vatNumber: snapshotData.customer.vat,
+                email: snapshotData.customer.email,
+            };
+        }
+
+        // Otherwise pull live from CRM
         const clientRecord = clients.find(c => c.id === clientId);
         return {
             name: `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant',
@@ -618,15 +639,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
                             placeholder={isCreditNote ? 'Credit Note' : 'Draft Invoice'}
-                            disabled={!isDraft}
+                            disabled={isLocked || !isDraft}
                             className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px] disabled:opacity-70"
                         />
-                        <div className="flex items-center gap-2">
-                            <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
-                                {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
-                            </p>
-                            {!isDraft && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 12%, transparent)', color: 'var(--brand-color, #d35400)' }}>{invoiceStatus.replace('opt-', '')}</span>}
-                        </div>
+                            <div className="flex items-center gap-2">
+                                <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
+                                    {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
+                                </p>
+                                {!isDraft && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 12%, transparent)', color: 'var(--brand-color, #d35400)' }}>{invoiceStatus.replace('opt-', '')}</span>}
+                                {isLocked && (
+                                    <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                                        <Check className="w-2.5 h-2.5" /> Fiscale Lock
+                                    </span>
+                                )}
+                            </div>
                     </div>
 
                     {/* Separator */}
@@ -696,7 +722,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             <select
                                 value={linkedQuotation}
                                 onChange={(e) => handleOfferteSelect(e.target.value)}
-                                disabled={!isDraft}
+                                disabled={isLocked || !isDraft}
                                 className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate disabled:opacity-60 disabled:cursor-default"
                             >
                                 <option value="">Offerte koppelen...</option>
@@ -756,12 +782,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         {isHydrated && (
                             <button
                                 onClick={handleSendPeppol}
-                                disabled={isSendingPeppol || !clientId}
+                                disabled={isSendingPeppol || !clientId || isLocked}
                                 className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
                                 style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                    backgroundColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: (clientId && !isLocked) ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
                                 <Send className="w-3.5 h-3.5" /> {isSendingPeppol ? 'Sending...' : 'Peppol'}
@@ -878,7 +904,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
                                             vatCalcMode={vatCalcMode}
-                                            readOnly={!isDraft}
+                                            readOnly={isLocked || !isDraft}
                                         />
                                     ))}
                                     {provided.placeholder}
@@ -887,7 +913,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         </Droppable>
                     </DragDropContext>
 
-                    {isDraft && <div className="flex items-center gap-2 mt-2">
+                    {(isDraft && !isLocked) && <div className="flex items-center gap-2 mt-2">
                         <button
                             onClick={() => handleAddBlock('section')}
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
@@ -935,6 +961,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         creditedAmount={creditedTotal}
                         creditNoteCount={creditNotes.length}
                         creditNotes={creditNoteInfos}
+                        isLocked={isLocked}
                     />
 
                 </div>

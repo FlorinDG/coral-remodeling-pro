@@ -10,6 +10,11 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { WORKSPACE_OWNER_ROLES, PLAN_USER_LIMITS } from '@/lib/roles';
 import crypto from 'crypto';
+import { Resend } from 'resend';
+import React from 'react';
+import InvitationEmail from '@/emails/InvitationEmail';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
 // ── GET — list workspace users ────────────────────────────────────────────
 export async function GET() {
@@ -80,10 +85,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
 
-        // Check seat limits
+        // Check seat limits and fetch branding
         const tenant = await prisma.tenant.findUnique({
             where: { id: inviter.tenantId },
-            select: { planType: true },
+            select: { planType: true, companyName: true, commercialName: true, logoUrl: true, brandColor: true },
         });
         const maxUsers = PLAN_USER_LIMITS[tenant?.planType ?? 'FREE'] ?? 1;
         const currentCount = await prisma.user.count({ where: { tenantId: inviter.tenantId } });
@@ -124,9 +129,26 @@ export async function POST(req: Request) {
             },
         });
 
-        // TODO: Send invite email with tenant branding
-        // For now, return the token so the admin can share the link
+        // Send invite email with tenant branding
         const inviteUrl = `${process.env.NEXTAUTH_URL || 'https://app.coral-group.be'}/accept-invite?token=${inviteToken}`;
+        
+        const inviterName = (session?.user as any)?.name || 'A team member';
+        const brandCompany = tenant?.commercialName || tenant?.companyName || 'CoralOS';
+
+        if (email) {
+            await resend.emails.send({
+                from: `${brandCompany} <noreply@coral-group.be>`,
+                to: [email],
+                subject: `Invitation to join ${brandCompany} on CoralOS`,
+                react: React.createElement(InvitationEmail, {
+                    inviterName,
+                    companyName: brandCompany,
+                    logoUrl: tenant?.logoUrl || undefined,
+                    brandColor: tenant?.brandColor || '#d35400',
+                    acceptUrl: inviteUrl,
+                }),
+            }).catch(err => console.error(`[Invite Email] Failed to send to ${email}:`, err));
+        }
 
         console.log(`[Tenant Users] Invited ${email} as ${role} to tenant ${inviter.tenantId}`);
 

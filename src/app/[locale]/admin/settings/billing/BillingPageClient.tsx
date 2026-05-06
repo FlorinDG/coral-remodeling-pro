@@ -161,6 +161,23 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
         }
     };
 
+    const handleCancel = async () => {
+        if (!confirm("Are you sure you want to cancel your subscription? You will keep access to your PRO features until the end of your current billing period.")) return;
+        
+        try {
+            const res = await fetch("/api/stripe/cancel", { method: "POST" });
+            const result = await res.json();
+            if (result.success) {
+                alert("Subscription scheduled for cancellation.");
+                globalThis.location.reload();
+            } else {
+                alert(result.error || "Failed to cancel subscription.");
+            }
+        } catch (e) {
+            console.error("[Billing] Cancel failed:", e);
+        }
+    };
+
     return (
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
             {/* ── Header ──────────────────────────────────────────────── */}
@@ -457,10 +474,10 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                         {" "}Your data will be preserved — modules become locked but nothing is deleted.
                     </p>
                     <button
-                        onClick={handleManageBilling}
+                        onClick={handleCancel}
                         className="text-sm font-bold text-red-600 hover:text-red-700 transition-colors"
                     >
-                        Cancel via Billing Portal →
+                        Cancel Subscription →
                     </button>
                 </div>
             )}

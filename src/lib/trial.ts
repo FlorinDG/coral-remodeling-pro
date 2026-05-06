@@ -12,6 +12,11 @@
 
 import prisma from './prisma';
 import { syncPlanToTenant, PLAN_PRICING } from './stripe';
+import { Resend } from 'resend';
+import React from 'react';
+import TrialNotificationEmail from '@/emails/TrialNotificationEmail';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
 // ── Trial Duration ──────────────────────────────────────────────────
 
@@ -105,6 +110,7 @@ export async function checkAndExpireTrials(): Promise<{ expired: number; reminde
             id: true,
             planType: true,
             trialEndsAt: true,
+            trialGraceEndsAt: true,
             trialNotifiedAt: true,
             stripeSubscriptionId: true,
             companyName: true,
@@ -115,24 +121,51 @@ export async function checkAndExpireTrials(): Promise<{ expired: number; reminde
     for (const tenant of trialTenants) {
         const trialEnd = new Date(tenant.trialEndsAt!);
 
-        // ── Expired: downgrade to FREE ──
+        // ── Expired: enter grace period or block ──
         if (now >= trialEnd) {
-            // Only auto-downgrade if they haven't added a payment method (no Stripe subscription)
+            // Only handle if they haven't added a payment method
             if (!tenant.stripeSubscriptionId) {
-                await syncPlanToTenant(tenant.id, 'FREE', { subscriptionStatus: 'ACTIVE' });
-                await prisma.tenant.update({
-                    where: { id: tenant.id },
-                    data: { trialEndsAt: null },
-                });
-                expired++;
+                const graceEnd = tenant.trialGraceEndsAt ? new Date(tenant.trialGraceEndsAt) : null;
 
-                // TODO: Send trial-expired email
-                console.log(`[Trial] Expired: ${tenant.companyName} (${tenant.id}) — downgraded to FREE`);
+                if (!graceEnd) {
+                    // Start grace period
+                    const newGraceEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+                    await prisma.tenant.update({
+                        where: { id: tenant.id },
+                        data: {
+                            subscriptionStatus: 'PAST_DUE',
+                            trialGraceEndsAt: newGraceEnd,
+                        },
+                    });
+                    
+                    // Send trial-expired (grace start) email
+                    if (tenant.email) {
+                        await resend.emails.send({
+                            from: 'CoralOS <billing@coral-group.be>',
+                            to: [tenant.email],
+                            subject: `Trial Expired: ${tenant.companyName} — Grace Period Started`,
+                            react: React.createElement(TrialNotificationEmail, {
+                                type: 'EXPIRED',
+                                companyName: tenant.companyName,
+                                upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings/billing`,
+                            }),
+                        }).catch(err => console.error(`[Trial Email] Failed to send expired mail to ${tenant.id}:`, err));
+                    }
+                    console.log(`[Trial] Grace started: ${tenant.companyName} (${tenant.id}) — 14 days to pay`);
+                    expired++;
+                } else if (now >= graceEnd) {
+                    // Grace period over -> BLOCK access
+                    await prisma.tenant.update({
+                        where: { id: tenant.id },
+                        data: { subscriptionStatus: 'INACTIVE' },
+                    });
+                    console.log(`[Trial] Blocked: ${tenant.companyName} (${tenant.id}) — grace period over`);
+                }
             } else {
                 // They have a Stripe subscription — convert trial to active
                 await prisma.tenant.update({
                     where: { id: tenant.id },
-                    data: { subscriptionStatus: 'ACTIVE', trialEndsAt: null },
+                    data: { subscriptionStatus: 'ACTIVE', trialEndsAt: null, trialGraceEndsAt: null },
                 });
                 console.log(`[Trial] Converted: ${tenant.companyName} (${tenant.id}) — trial → active (has subscription)`);
             }
@@ -148,7 +181,20 @@ export async function checkAndExpireTrials(): Promise<{ expired: number; reminde
             });
             reminded++;
 
-            // TODO: Send trial-ending-soon email
+            // Send trial-ending-soon email
+            if (tenant.email) {
+                await resend.emails.send({
+                    from: 'CoralOS <billing@coral-group.be>',
+                    to: [tenant.email],
+                    subject: `Trial Ending Soon: ${tenant.companyName}`,
+                    react: React.createElement(TrialNotificationEmail, {
+                        type: 'ENDING',
+                        companyName: tenant.companyName,
+                        upgradeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/settings/billing`,
+                        daysRemaining: daysLeft,
+                    }),
+                }).catch(err => console.error(`[Trial Email] Failed to send reminder mail to ${tenant.id}:`, err));
+            }
             console.log(`[Trial] Reminder: ${tenant.companyName} (${tenant.id}) — ${daysLeft} days left`);
         }
     }

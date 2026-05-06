@@ -24,6 +24,7 @@ interface InvoiceFooterReportProps {
     creditedAmount?: number;
     creditNoteCount?: number;
     creditNotes?: CreditNoteInfo[];
+    isLocked?: boolean;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -44,6 +45,7 @@ export default function InvoiceFooterReport({
     creditedAmount = 0,
     creditNoteCount = 0,
     creditNotes = [],
+    isLocked = false,
 }: InvoiceFooterReportProps) {
     const router = useRouter();
     const vatRegime = vatRegimeProp as VatRegime;
@@ -157,7 +159,8 @@ export default function InvoiceFooterReport({
                                 type="date"
                                 value={invoiceDate || ''}
                                 onChange={(e) => onInvoiceDateChange?.(e.target.value)}
-                                className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer"
+                                disabled={isLocked}
+                                className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer disabled:opacity-70 disabled:cursor-default"
                             />
                         </div>
                         <div className={`flex items-center justify-between gap-4 ${!invoiceDate ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -167,13 +170,13 @@ export default function InvoiceFooterReport({
                                     type="date"
                                     value={dueDate || ''}
                                     onChange={(e) => onDueDateChange?.(e.target.value)}
-                                    disabled={!invoiceDate}
-                                    className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer disabled:cursor-not-allowed"
+                                    disabled={isLocked || !invoiceDate}
+                                    className="font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none text-[13px] text-right cursor-pointer disabled:opacity-70 disabled:cursor-default"
                                 />
                             </div>
                         </div>
                         {/* Due date presets */}
-                        {onDueDateChange && invoiceDate && (
+                        {onDueDateChange && invoiceDate && !isLocked && (
                             <div className="flex items-center gap-1 pt-0.5">
                                 <span className="text-[10px] text-neutral-400 mr-auto">Termijn:</span>
                                 <button
@@ -234,7 +237,7 @@ export default function InvoiceFooterReport({
                                     Som per lijn
                                 </span>
                             </div>
-                            <input type="radio" name="vatCalcMode" value="lines" checked={isLinesMode} onChange={() => onVatCalcModeChange('lines')} className="sr-only" />
+                            <input type="radio" name="vatCalcMode" value="lines" checked={isLinesMode} onChange={() => onVatCalcModeChange('lines')} disabled={isLocked} className="sr-only" />
                         </label>
 
                         <label
@@ -259,7 +262,7 @@ export default function InvoiceFooterReport({
                                     % op totaal
                                 </span>
                             </div>
-                            <input type="radio" name="vatCalcMode" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} className="sr-only" />
+                            <input type="radio" name="vatCalcMode" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} disabled={isLocked} className="sr-only" />
                         </label>
                     </div>
                 </div>
@@ -296,7 +299,8 @@ export default function InvoiceFooterReport({
                             <select
                                 value={vatRegime}
                                 onChange={(e) => onVatRegimeChange(e.target.value)}
-                                className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto"
+                                disabled={isLocked}
+                                className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto disabled:opacity-70 disabled:cursor-default"
                                 style={{
                                     borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)',
                                     color: 'var(--brand-color, #d35400)',

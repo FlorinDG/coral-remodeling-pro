@@ -101,7 +101,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId } = body;
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
@@ -140,6 +140,13 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'NO_LINE_ITEMS', code: 'NO_LINE_ITEMS', success: false }, { status: 400 });
         }
 
+        // 3b. Fetch original invoice for Credit Note reference if applicable
+        let parentInvoiceNumber = undefined;
+        if (isCreditNote && parentInvoiceId) {
+            const parent = await prisma.invoice.findUnique({ where: { id: parentInvoiceId } });
+            if (parent) parentInvoiceNumber = parent.invoiceNumber;
+        }
+
         console.log(`[e-invoice.be] Preparing Peppol dispatch for Invoice "${invoiceTitle}" → ${client.firstName} ${client.lastName || ''}`);
 
         // 4. Build the e-invoice.be payload
@@ -153,11 +160,12 @@ export async function POST(req: Request) {
         const customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
 
         const invoicePayload: Record<string, any> = {
-            document_type: 'INVOICE',
+            document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',
             invoice_id: String(invoiceTitle || invoiceId || `INV-${Date.now()}`),
             invoice_date: invoiceDate || today,
             due_date: due,
             currency: 'EUR',
+            related_invoice_id: parentInvoiceNumber,
 
             // Vendor (Sender) — from Tenant profile
             vendor_name: tenant.companyName || 'Unknown Company',
@@ -242,6 +250,8 @@ export async function POST(req: Request) {
                 paymentTermNote: 'Betaling binnen 30 dagen',
                 note: betreft || undefined,
                 items: ublItems,
+                type: isCreditNote ? '381' : '380',
+                parentInvoiceNumber,
             });
 
             // Email the UBL XML to the platform admin for manual handling
@@ -388,7 +398,34 @@ export async function POST(req: Request) {
 
         console.log(`[e-invoice.be] ✓ Invoice sent successfully! State: ${sendData.state}`);
 
-        await incrementPeppolSent(tenantId);
+        // Step 7: Finalize in Prisma (Lock + Snapshot + Peppol ID)
+        await prisma.$transaction([
+            prisma.invoice.update({
+                where: { id: invoiceId },
+                data: {
+                    isLocked: true,
+                    status: 'SENT',
+                    peppolDocumentId: createData.id,
+                    peppolState: sendData.state,
+                    snapshotData: {
+                        vendor: {
+                            name: tenant.companyName,
+                            vat: tenant.vatNumber,
+                            address: [tenant.street, tenant.postalCode, tenant.city].filter(Boolean).join(', '),
+                            iban: tenant.iban,
+                            bic: tenant.bic
+                        },
+                        customer: {
+                            name: [client.firstName, client.lastName].filter(Boolean).join(' '),
+                            vat: client.vatNumber,
+                            address: client.address,
+                            email: client.email
+                        }
+                    }
+                }
+            }),
+            incrementPeppolSent(tenantId)
+        ]);
 
         return NextResponse.json({
             success: true,

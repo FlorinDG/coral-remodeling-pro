@@ -10,7 +10,8 @@ declare global {
 
 const prisma = globalThis.prisma ?? prismaClientSingleton()
 
-export default prisma
+export { prisma };
+export default prisma;
 
 export async function dbRetry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
   try {

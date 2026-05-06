@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
 import {
@@ -65,6 +65,48 @@ function RelationValue({ ids }: { ids: string[] }) {
                 </span>
             ))}
         </div>
+    );
+}
+
+// ─── Debounced input to fix 'one character' focus bug ────────────────────
+function DebouncedInput({ 
+    value, 
+    onChange, 
+    isReadOnly, 
+    inputBase, 
+    type = 'text',
+    step,
+    placeholder = '—'
+}: { 
+    value: any; 
+    onChange: (val: string) => void; 
+    isReadOnly: boolean; 
+    inputBase: string; 
+    type?: string;
+    step?: string;
+    placeholder?: string;
+}) {
+    const [localValue, setLocalValue] = useState(String(value ?? ''));
+
+    useEffect(() => {
+        setLocalValue(String(value ?? ''));
+    }, [value]);
+
+    return (
+        <input
+            type={type}
+            value={localValue}
+            readOnly={isReadOnly}
+            step={step}
+            onChange={e => setLocalValue(e.target.value)}
+            onBlur={() => {
+                if (localValue !== String(value ?? '')) {
+                    onChange(localValue);
+                }
+            }}
+            className={inputBase}
+            placeholder={placeholder}
+        />
     );
 }
 
@@ -162,29 +204,18 @@ function PropertyRow({
     } else if (property.type === 'number' || property.type === 'currency' || property.type === 'percent') {
         const numVal = value !== null && value !== undefined && String(value) !== '' ? Number(value) : '';
         valueEl = (
-            <input
+            <DebouncedInput 
                 type="number"
-                value={numVal === '' ? '' : numVal}
-                readOnly={isReadOnly}
+                value={value} 
+                onChange={val => onChange(property.id, val === '' ? null : Number(val))} 
+                isReadOnly={isReadOnly} 
+                inputBase={inputBase} 
                 step="any"
-                onChange={e => onChange(property.id, e.target.value === '' ? null : Number(e.target.value))}
-                className={inputBase}
-                placeholder="—"
             />
         );
     } else {
         // text, title, url, email, phone, etc.
-        const strVal = String(value ?? '');
-        valueEl = (
-            <input
-                type="text"
-                value={strVal}
-                readOnly={isReadOnly}
-                onChange={e => onChange(property.id, e.target.value)}
-                className={inputBase}
-                placeholder="—"
-            />
-        );
+        return <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} />;
     }
 
     return (
@@ -203,13 +234,52 @@ function PropertyRow({
     );
 }
 
-// ─── Main Panel ───────────────────────────────────────────────────────────
+// ─── Section helper ───────────────────────────────────────────────────────
+function Section({ 
+    id, 
+    label, 
+    props, 
+    collapsed, 
+    onToggle, 
+    pageProperties, 
+    onChange 
+}: { 
+    id: string; 
+    label: string; 
+    props: Property[]; 
+    collapsed: Set<string>; 
+    onToggle: (id: string) => void; 
+    pageProperties: Record<string, any>; 
+    onChange: (propId: string, newVal: PropertyValue) => void; 
+}) {
+    if (!props.length) return null;
+    const open = !collapsed.has(id);
+    return (
+        <div className="mb-1">
+            <button
+                onClick={() => onToggle(id)}
+                className="w-full flex items-center gap-1 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+            >
+                {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                {label}
+                <span className="ml-auto font-normal normal-case tracking-normal">{props.length}</span>
+            </button>
+            {open && props.map(prop => (
+                <PropertyRow
+                    key={prop.id}
+                    property={prop}
+                    value={pageProperties[prop.id] ?? null}
+                    onChange={onChange}
+                />
+            ))}
+        </div>
+    );
+}
+
 interface DbPropertiesPanelProps {
     databaseId: string;
     pageId: string;
-    /** Property IDs to exclude (e.g. ones already shown in the engine header) */
     skipIds?: string[];
-    /** Groups of properties to collapse by default */
     title?: string;
 }
 
@@ -246,31 +316,6 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
         });
     };
 
-    const Section = ({ id, label, props }: { id: string; label: string; props: Property[] }) => {
-        if (!props.length) return null;
-        const open = !collapsed.has(id);
-        return (
-            <div className="mb-1">
-                <button
-                    onClick={() => toggle(id)}
-                    className="w-full flex items-center gap-1 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
-                >
-                    {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                    {label}
-                    <span className="ml-auto font-normal normal-case tracking-normal">{props.length}</span>
-                </button>
-                {open && props.map(prop => (
-                    <PropertyRow
-                        key={prop.id}
-                        property={prop}
-                        value={page.properties[prop.id] ?? null}
-                        onChange={handleChange}
-                    />
-                ))}
-            </div>
-        );
-    };
-
     return (
         <div className="flex flex-col h-full overflow-hidden bg-neutral-50/70 dark:bg-black/40">
             {/* Panel header */}
@@ -281,8 +326,24 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
 
             {/* Property list */}
             <div className="flex-1 overflow-y-auto px-4 py-0">
-                <Section id="editable" label="Fields" props={editable} />
-                <Section id="computed" label="Computed" props={computed} />
+                <Section 
+                    id="editable" 
+                    label="Fields" 
+                    props={editable} 
+                    collapsed={collapsed} 
+                    onToggle={toggle} 
+                    pageProperties={page.properties} 
+                    onChange={handleChange} 
+                />
+                <Section 
+                    id="computed" 
+                    label="Computed" 
+                    props={computed} 
+                    collapsed={collapsed} 
+                    onToggle={toggle} 
+                    pageProperties={page.properties} 
+                    onChange={handleChange} 
+                />
             </div>
         </div>
     );

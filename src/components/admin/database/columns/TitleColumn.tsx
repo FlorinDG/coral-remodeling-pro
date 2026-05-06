@@ -63,6 +63,7 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
                                 }
                             });
                         }
+                        stopEditing();
                     }
                 }}
                 placeholder="Untitled"
@@ -81,11 +82,11 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
                 {value || <span className="text-neutral-400 font-normal">Untitled</span>}
             </span>
 
-            {/* Active: OPEN button */}
-            {active && onOpen && (
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10">
+            {/* Active or Hover: OPEN button */}
+            {onOpen && (
+                <div className={`absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 transition-opacity duration-150 title-open-button ${active ? 'opacity-100' : 'opacity-0'}`}>
                     <button
-                        onPointerDown={(e) => {
+                        onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             onOpen();

@@ -68,7 +68,15 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
     };
 
     return (
-        <div ref={containerRef} className="w-full h-full flex items-center px-2">
+        <div 
+            ref={containerRef} 
+            className="w-full h-full flex items-center px-2 outline-none"
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    stopEditing({ nextRow: true });
+                }
+            }}
+        >
             {/* Badge chip display */}
             {selectedOption && styles ? (
                 <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold ${styles.badge}`}>

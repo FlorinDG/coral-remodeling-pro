@@ -1179,6 +1179,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             from { opacity: 0.7; }
             to { opacity: 1; }
         }
+        .dsg-row:hover .title-open-button {
+            opacity: 1 !important;
+        }
         `}} />
         </div>
     );

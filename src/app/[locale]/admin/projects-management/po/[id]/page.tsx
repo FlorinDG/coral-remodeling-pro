@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, Printer, ShoppingCart, Package } from 'lucide-react';
+import { useTenant } from '@/context/TenantContext';
 
 export default function PurchaseOrderPage() {
     const params = useParams();
@@ -17,11 +18,15 @@ export default function PurchaseOrderPage() {
         setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
     }, []);
 
+    const { resolveDbId } = useTenant();
+    const projectDbId = resolveDbId('db-1');
+    const tasksDbId = resolveDbId('db-tasks');
+
     const project = useDatabaseStore(state => {
-        return state.databases.find(d => d.id === 'db-1')?.pages.find(p => p.id === id) || null;
+        return state.databases.find(d => d.id === projectDbId)?.pages.find(p => p.id === id) || null;
     });
 
-    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === 'db-tasks')?.pages || []);
+    const allTasks = useDatabaseStore(state => state.databases.find(d => d.id === tasksDbId)?.pages || []);
 
     const tasks = React.useMemo(() => {
         return allTasks.filter(p => {

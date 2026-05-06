@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Plus, X, FolderKanban, Loader2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPageServerFirst } from '@/app/actions/pages';
+import { useTenant } from '@/context/TenantContext';
 
 const createDriveFolder = async (name: string, parentId?: string) => {
     const formData = new FormData();
@@ -18,6 +19,8 @@ const createDriveFolder = async (name: string, parentId?: string) => {
 };
 
 export default function NewProjectButton() {
+    const { resolveDbId } = useTenant();
+    const projectDbId = resolveDbId('db-1');
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [statusText, setStatusText] = useState("");
@@ -54,7 +57,7 @@ export default function NewProjectButton() {
             }
 
             // Server-first: await Postgres write before closing modal
-            const result = await createPageServerFirst('db-1', propertiesToInject);
+            const result = await createPageServerFirst(projectDbId, propertiesToInject);
             if (result.success) {
                 useDatabaseStore.getState().addConfirmedPage(result.page);
             } else {

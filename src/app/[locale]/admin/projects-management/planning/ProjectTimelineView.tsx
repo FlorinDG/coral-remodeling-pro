@@ -4,9 +4,12 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Calendar as CalendarIcon, Clock, ChevronRight, Activity } from 'lucide-react';
 import { differenceInDays, addDays, startOfMonth, endOfMonth, eachMonthOfInterval, format } from 'date-fns';
+import { useTenant } from '@/context/TenantContext';
 
 export default function ProjectTimelineView() {
-    const database = useDatabaseStore(state => state.getDatabase('db-1'));
+    const { resolveDbId } = useTenant();
+    const resolvedId = resolveDbId('db-1');
+    const database = useDatabaseStore(state => state.getDatabase(resolvedId));
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -19,8 +22,8 @@ export default function ProjectTimelineView() {
             const props = page.properties;
 
             // Resolving select property configurations to readable text
-            let statusText = String(props['prop-status'] || 'Draft');
-            const statusPropSchema = database.properties.find(p => p.id === 'prop-status');
+            let statusText = String(props['prop-execution-status'] || 'Draft');
+            const statusPropSchema = database.properties.find(p => p.id === 'prop-execution-status');
             if (statusPropSchema?.type === 'select' && statusPropSchema.config?.options) {
                 const opt = statusPropSchema.config.options.find(o => o.id === statusText);
                 if (opt) statusText = opt.name;

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useTenant } from '@/context/TenantContext';
 
 const COLOR_MAP: Record<string, string> = {
     gray: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-400',
@@ -29,7 +30,8 @@ const HEX_MAP: Record<string, string> = {
 
 export default function DashboardProjectsTable() {
     const router = useRouter();
-    const db = useDatabaseStore(state => state.getDatabase('db-1'));
+    const { resolveDbId } = useTenant();
+    const db = useDatabaseStore(state => state.getDatabase(resolveDbId('db-1')));
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {

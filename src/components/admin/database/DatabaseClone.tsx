@@ -52,7 +52,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
   const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets';
-  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB;
+  const isProjectDB = databaseId === 'db-1' || databaseId === 'db-tasks';
+  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || isProjectDB;
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -231,6 +232,43 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ]}},
       { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
       { id: 'notes',      name: 'Notities', type: 'text' },
+    ],
+    'db-1': [
+      { id: 'title',             name: 'Project Naam',      type: 'text' },
+      { id: 'prop-client',       name: 'Klant',             type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-execution-status', name: 'Execution Status', type: 'select', config: { options: [
+        { id: 'opt-to-do',   name: 'To Do',       color: 'gray'   },
+        { id: 'opt-in-prog', name: 'In Progress', color: 'blue'   },
+        { id: 'opt-done',    name: 'Done',        color: 'green'  },
+        { id: 'opt-hold',    name: 'On Hold',     color: 'orange' },
+      ]}},
+      { id: 'prop-financial-status', name: 'Financial Status', type: 'select', config: { options: [
+        { id: 'opt-quote',   name: 'Quotation',  color: 'gray'   },
+        { id: 'opt-budget',  name: 'Budgeted',   color: 'yellow' },
+        { id: 'opt-invo',    name: 'Invoiced',   color: 'blue'   },
+        { id: 'opt-paid',    name: 'Paid',       color: 'green'  },
+      ]}},
+      { id: 'prop-start-date',    name: 'Planned Start',     type: 'date' },
+      { id: 'prop-end-date',      name: 'Planned End',       type: 'date' },
+      { id: 'prop-actual-start',   name: 'Actual Start',      type: 'date' },
+      { id: 'prop-actual-end',     name: 'Actual End',        type: 'date' },
+      { id: 'prop-budget',        name: 'Internal Budget',   type: 'currency' },
+      { id: 'prop-location',      name: 'Location',          type: 'text' },
+    ],
+    'db-tasks': [
+      { id: 'title',             name: 'Taak / Materiaal',  type: 'text' },
+      { id: 'prop-task-project',  name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-task-status',   name: 'Status',            type: 'select', config: { options: [
+        { id: 't-todo', name: 'To Do',   color: 'gray'   },
+        { id: 't-prog', name: 'Busy',    color: 'blue'   },
+        { id: 't-done', name: 'Done',    color: 'green'  },
+      ]}},
+      { id: 'prop-task-type',     name: 'Type',              type: 'select', config: { options: [
+        { id: 'ty-task', name: 'Taak',      color: 'blue'   },
+        { id: 'ty-mat',  name: 'Materiaal', color: 'orange' },
+      ]}},
+      { id: 'prop-task-qty',      name: 'Quantity',          type: 'text' },
+      { id: 'prop-task-price',    name: 'Unit Price',        type: 'currency' },
     ],
   };
 

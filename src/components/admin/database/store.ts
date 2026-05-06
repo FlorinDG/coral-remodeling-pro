@@ -706,11 +706,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 }
 
                                 // Automations mapping for Project Tracker Execution Status
-                                if (databaseId === 'db-1' && propertyId === 'prop-status') {
+                                if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-execution-status') {
                                     const today = new Date().toISOString().split('T')[0];
-                                    if (value === 'opt-2' && !newProps['prop-actual-start']) {
+                                    if (value === 'opt-in-prog' && !newProps['prop-actual-start']) {
                                         newProps['prop-actual-start'] = today; // In Progress sets Start Date
-                                    } else if (value === 'opt-3' && !newProps['prop-actual-end']) {
+                                    } else if (value === 'opt-done' && !newProps['prop-actual-end']) {
                                         newProps['prop-actual-end'] = today; // Done sets End Date
                                     }
                                 }

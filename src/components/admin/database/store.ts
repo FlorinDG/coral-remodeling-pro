@@ -11,6 +11,14 @@ const syncDb = (db: Database | undefined) => {
 };
 
 /**
+ * Helper to check if a database ID matches a "base" ID (e.g. 'db-invoices').
+ * Handles both bare IDs and scoped IDs (e.g. 'db-invoices-abc12345').
+ */
+const isBaseDb = (id: string, base: string) => {
+    return id === base || id.startsWith(base + '-');
+};
+
+/**
  * Save a page to Postgres. If the parent DB is provided and may not yet exist
  * in Postgres (first-session race for locked DBs like db-expenses), we upsert
  * the DB first to satisfy the foreign-key constraint, then save the page.
@@ -345,8 +353,8 @@ export const useDatabaseStore = create<DatabaseState>()(
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
                 // Schema-locked databases: properties are hardcoded, block any additions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-tickets'];
-                if (LOCKED_DBS.includes(databaseId)) {
+                const LOCKED_PREFIXES = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-tickets'];
+                if (LOCKED_PREFIXES.some(prefix => isBaseDb(databaseId, prefix))) {
                     console.warn(`[Schema Lock] Cannot add property "${name}" to locked database ${databaseId}`);
                     return '';
                 }
@@ -382,8 +390,8 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             deleteProperty: (databaseId, propertyId) => {
                 // Schema-locked databases: properties are hardcoded, block any deletions
-                const LOCKED_DBS = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-tickets'];
-                if (LOCKED_DBS.includes(databaseId)) {
+                const LOCKED_PREFIXES = ['db-clients', 'db-suppliers', 'db-invoices', 'db-expenses', 'db-tickets'];
+                if (LOCKED_PREFIXES.some(prefix => isBaseDb(databaseId, prefix))) {
                     console.warn(`[Schema Lock] Cannot delete property "${propertyId}" from locked database ${databaseId}`);
                     return;
                 }
@@ -430,7 +438,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     const fullProperties: Record<string, any> = { ...initialProperties };
 
                     // Custom Auto-Numbering for Quotations (CEO-YYYY-XXX.00)
-                    if (databaseId === 'db-quotations' && !fullProperties['title']) {
+                    if (isBaseDb(databaseId, 'db-quotations') && !fullProperties['title']) {
                         const year = new Date().getFullYear();
                         let maxNum = 0;
                         db.pages.forEach((p: Page) => {
@@ -590,7 +598,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             // Evaluate max sequence number if handling quotations
                             let currentMax = 0;
                             const year = new Date().getFullYear();
-                            if (databaseId === 'db-quotations') {
+                            if (isBaseDb(databaseId, 'db-quotations')) {
                                 db.pages.forEach((p: Page) => {
                                     const title = p.properties['title'] as string;
                                     if (title && title.startsWith(`CEO-${year}-`)) {
@@ -623,7 +631,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                             const newPages: Page[] = pagesProperties.map((initialProperties, index) => {
                                 const pProps = { ...initialProperties };
-                                if (databaseId === 'db-quotations' && !pProps['title']) {
+                                if (isBaseDb(databaseId, 'db-quotations') && !pProps['title']) {
                                     currentMax++;
                                     pProps['title'] = `CEO-${year}-${String(currentMax).padStart(3, '0')}.00`;
                                 }
@@ -682,7 +690,7 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                 // Automated Google Drive Folder generation when a title is first defined
                                 if (propertyId === 'title' && typeof value === 'string' && value.trim() !== '' && !page.driveFolderId) {
-                                    if (['db-clients', 'db-1', 'db-portals'].includes(databaseId)) {
+                                if (isBaseDb(databaseId, 'db-clients') || ['db-1', 'db-portals'].includes(databaseId)) {
                                         fetch('/api/drive/init', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -708,7 +716,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 }
 
                                 // Automations for Invoice: status → 'sent' sets invoiceDate to today
-                                if (databaseId === 'db-invoices' && propertyId === 'status') {
+                                if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'status') {
                                     if (value === 'opt-sent' && !newProps['invoiceDate']) {
                                         newProps['invoiceDate'] = new Date().toISOString().split('T')[0];
                                     }

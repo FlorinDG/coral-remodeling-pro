@@ -912,9 +912,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (prop.type === 'rollup' || prop.type === 'formula') return;
                                             // Skip computed financial properties — they're set by the engine, not manual edits
                                             if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
-                                            // Skip select/multi_select — committed directly via onCommit in SelectColumn,
-                                            // bypassing this path to avoid a DSG stopEditing timing race
-                                            if (prop.type === 'select' || prop.type === 'multi_select') return;
 
                                             let newVal;
                                             if (prop.id === 'title' || (prop.type as string) === 'relation') {

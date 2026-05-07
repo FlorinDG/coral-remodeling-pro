@@ -5,11 +5,15 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from '@/config/tabs';
 import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useSession } from 'next-auth/react';
 import {
     Users, UserPlus, Shield, Eye, Edit3, Trash2,
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
     ChevronDown,
 } from 'lucide-react';
+
+// Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
+const OWNER_ROLES = ['APP_MANAGER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER'];
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type AccessLevel = 'ALL' | 'OWN' | 'ASSIGNED_AND_OWN' | 'NONE';
@@ -53,6 +57,9 @@ const ROLE_OPTIONS = [
 export default function TeamSettingsPage() {
     usePageTitle('Team');
     const { activeModules, planType, isPro } = useTenant();
+    const { data: session } = useSession();
+    const currentRole = (session?.user as { role?: string } | undefined)?.role ?? '';
+    const isWorkspaceOwner = OWNER_ROLES.includes(currentRole);
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
 
     const [users, setUsers] = useState<WorkspaceUser[]>([]);
@@ -179,7 +186,7 @@ export default function TeamSettingsPage() {
                         <span className="text-xs font-bold text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg">
                             {users.length} / {maxUsers === Infinity ? '∞' : maxUsers} seats
                         </span>
-                        {isPro && (
+                        {isPro && isWorkspaceOwner && (
                             <button
                                 onClick={() => setShowInvite(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-color,#d35400)] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
@@ -237,8 +244,8 @@ export default function TeamSettingsPage() {
                                             <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300">{getRoleLabel(u.role)}</span>
                                         </div>
 
-                                        {/* Actions */}
-                                        {!isOwner && (
+                                        {/* Actions — only workspace owners can edit/remove */}
+                                        {!isOwner && isWorkspaceOwner && (
                                             <div className="flex items-center gap-1 shrink-0">
                                                 <button
                                                     onClick={() => setEditingUser(isEditing ? null : u.id)}

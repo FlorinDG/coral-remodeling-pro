@@ -16,9 +16,10 @@ import {
     useSortable 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/components/time-tracker/lib/utils';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/time-tracker/components/ui/dropdown-menu';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface KanbanViewProps {
@@ -280,6 +281,35 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
             <div className="flex flex-col h-full bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
                 <div className="px-3 pt-2.5 pb-0 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-neutral-50 dark:bg-neutral-900 flex items-end justify-between relative z-[60] flex-wrap gap-2">
                     <div className="flex items-end pr-2 shrink-0">{renderTabs || <h2 className="text-lg font-semibold text-neutral-900 dark:text-white pb-2">{database.name}</h2>}</div>
+                    
+                    <div className="flex items-center gap-2 pb-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg transition-colors shadow-sm">
+                                    <Settings2 className="w-3.5 h-3.5" />
+                                    View Settings
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel className="flex items-center gap-2">
+                                    <LayoutList className="w-4 h-4" /> Group by
+                                </DropdownMenuLabel>
+                                <DropdownMenuRadioGroup 
+                                    value={groupByPropertyId} 
+                                    onValueChange={(val) => updateView(databaseId, viewId, { config: { ...view?.config, groupByPropertyId: val } })}
+                                >
+                                    {database.properties
+                                        .filter(p => p.type === 'select' || p.type === 'multi_select')
+                                        .map(p => (
+                                            <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
+                                                {p.name}
+                                            </DropdownMenuRadioItem>
+                                        ))
+                                    }
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                 </div>
                 <div className="flex-1 flex items-center justify-center p-8 text-neutral-500">
                     <div className="text-center">
@@ -297,7 +327,8 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
     };
 
     const handleQuickAdd = (colId: string) => {
-        createPage(databaseId, { title: '', [groupProperty!.id]: colId === 'no-status' ? null : colId });
+        if (!groupProperty) return;
+        createPage(databaseId, { title: '', [groupProperty.id]: colId === 'no-status' ? null : colId });
     };
 
     const handleDragStart = (event: DragStartEvent) => {
@@ -315,8 +346,8 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
         if (activeType === 'column') {
             const oldIndex = options.findIndex(o => o.id === active.id);
             const newIndex = options.findIndex(o => o.id === over.id);
-            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-                updatePropertyOptionOrder(databaseId, groupProperty!.id, oldIndex, newIndex);
+            if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex && groupProperty) {
+                updatePropertyOptionOrder(databaseId, groupProperty.id, oldIndex, newIndex);
             }
             return;
         }
@@ -331,8 +362,8 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
             if (col.pages.some(p => p.id === over.id)) { targetColId = col.id; break; }
         }
 
-        if (targetColId) {
-            updatePageProperty(databaseId, pageId, groupProperty!.id, targetColId === 'no-status' ? null : targetColId);
+        if (targetColId && groupProperty) {
+            updatePageProperty(databaseId, pageId, groupProperty.id, targetColId === 'no-status' ? null : targetColId);
         }
     };
 
@@ -346,6 +377,55 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
                             {database.name}
                         </h2>
                     )}
+                </div>
+
+                <div className="flex items-center gap-2 pb-2">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg transition-colors shadow-sm">
+                                <Settings2 className="w-3.5 h-3.5" />
+                                View Settings
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuLabel className="flex items-center gap-2">
+                                <LayoutList className="w-4 h-4" /> Group by
+                            </DropdownMenuLabel>
+                            <DropdownMenuRadioGroup 
+                                value={groupByPropertyId} 
+                                onValueChange={(val) => updateView(databaseId, viewId, { config: { ...view?.config, groupByPropertyId: val } })}
+                            >
+                                {database.properties
+                                    .filter(p => p.type === 'select' || p.type === 'multi_select')
+                                    .map(p => (
+                                        <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
+                                            {p.name}
+                                        </DropdownMenuRadioItem>
+                                    ))
+                                }
+                            </DropdownMenuRadioGroup>
+
+                            <DropdownMenuSeparator />
+                            
+                            <DropdownMenuLabel className="flex items-center gap-2">
+                                <ImageIcon className="w-4 h-4" /> Card Cover
+                            </DropdownMenuLabel>
+                            <DropdownMenuRadioGroup 
+                                value={coverPropId || 'none'} 
+                                onValueChange={(val) => updateView(databaseId, viewId, { config: { ...view?.config, kanbanCardCoverPropertyId: val === 'none' ? undefined : val } })}
+                            >
+                                <DropdownMenuRadioItem value="none" className="text-xs italic text-neutral-400">None</DropdownMenuRadioItem>
+                                {database.properties
+                                    .filter(p => p.type === 'url' || p.type === 'text')
+                                    .map(p => (
+                                        <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
+                                            {p.name}
+                                        </DropdownMenuRadioItem>
+                                    ))
+                                }
+                            </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 

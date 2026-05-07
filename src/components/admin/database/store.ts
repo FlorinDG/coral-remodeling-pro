@@ -129,6 +129,7 @@ interface DatabaseState {
     updateProperty: (databaseId: string, propertyId: string, updates: Partial<Property>) => void;
     deleteProperty: (databaseId: string, propertyId: string) => void;
     updatePropertyOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
+    updatePropertyOptionOrder: (databaseId: string, propertyId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
     createPage: (databaseId: string, initialProperties?: Record<string, any>, customId?: string) => Page;
@@ -267,88 +268,90 @@ export const useDatabaseStore = create<DatabaseState>()(
                 syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            updateViewPropertyState: (databaseId, viewId, propertyId, updates) => set((state) => ({
-                databases: state.databases.map(db => {
-                    if (db.id === databaseId && db.views) {
-                        return {
-                            ...db,
-                            views: db.views.map((view: DatabaseView) => {
-                                if (view.id === viewId) {
-                                    const currentState = view.propertiesState || [];
-                                    const existingProp = currentState.find(p => p.propertyId === propertyId);
+            updateViewPropertyState: (databaseId, viewId, propertyId, updates) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id === databaseId && db.views) {
+                            return {
+                                ...db,
+                                views: db.views.map((view: DatabaseView) => {
+                                    if (view.id === viewId) {
+                                        const currentState = view.propertiesState || [];
+                                        const existingProp = currentState.find(p => p.propertyId === propertyId);
 
-                                    let newPropertiesState;
-                                    if (existingProp) {
-                                        newPropertiesState = currentState.map(p =>
-                                            p.propertyId === propertyId ? { ...p, ...updates } : p
-                                        );
-                                    } else {
-                                        newPropertiesState = [...currentState, { propertyId, ...updates }];
+                                        let newPropertiesState;
+                                        if (existingProp) {
+                                            newPropertiesState = currentState.map(p =>
+                                                p.propertyId === propertyId ? { ...p, ...updates } : p
+                                            );
+                                        } else {
+                                            newPropertiesState = [...currentState, { propertyId, ...updates }];
+                                        }
+
+                                        return { ...view, propertiesState: newPropertiesState };
                                     }
+                                    return view;
+                                })
+                            };
+                        }
+                        return db;
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
 
-                                    return { ...view, propertiesState: newPropertiesState };
-                                }
-                                return view;
-                            })
-                        };
-                    }
-                    return db;
-                })
-            })),
+            updateViewPropertyOrder: (databaseId, viewId, sourceIndex, destinationIndex) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id === databaseId && db.views) {
+                            return {
+                                ...db,
+                                views: db.views.map((view: DatabaseView) => {
+                                    if (view.id === viewId) {
+                                        let currentOrder = view.propertiesState || [];
 
-            updateViewPropertyOrder: (databaseId, viewId, sourceIndex, destinationIndex) => set((state) => ({
-                databases: state.databases.map(db => {
-                    if (db.id === databaseId && db.views) {
-                        return {
-                            ...db,
-                            views: db.views.map((view: DatabaseView) => {
-                                if (view.id === viewId) {
-                                    // Ensure we have a baseline array of properties mapping to the DB schema
-                                    let currentOrder = view.propertiesState || [];
+                                        if (currentOrder.length === 0) {
+                                            currentOrder = db.properties.map((p: Property, index: number) => ({
+                                                propertyId: p.id,
+                                                order: index,
+                                                hidden: false
+                                            }));
+                                        }
 
-                                    // If this is the first time dragging, initialize the order array from the raw properties
-                                    if (currentOrder.length === 0) {
-                                        currentOrder = db.properties.map((p: Property, index: number) => ({
-                                            propertyId: p.id,
+                                        const result = Array.from(currentOrder);
+                                        const [removed] = result.splice(sourceIndex, 1);
+                                        result.splice(destinationIndex, 0, removed);
+
+                                        const newPropertiesState = result.map((item, index) => ({
+                                            ...item,
+                                            propertyId: item?.propertyId || '',
                                             order: index
                                         }));
+
+                                        return { ...view, propertiesState: newPropertiesState };
                                     }
+                                    return view;
+                                })
+                            };
+                        }
+                        return db;
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
 
-                                    // Create a new array, splice out the dragged item, and insert it at the destination
-                                    const newOrder = Array.from(currentOrder);
-                                    const [reorderedItem] = newOrder.splice(sourceIndex, 1);
-
-                                    if (reorderedItem) {
-                                        newOrder.splice(destinationIndex, 0, reorderedItem);
-                                    }
-
-                                    // Update the explicit 'order' integer on every item for predictable sorting
-                                    const finalizedState = newOrder.map((item, index) => ({
-                                        ...item,
-                                        propertyId: item?.propertyId || '',
-                                        order: index
-                                    }));
-
-                                    return { ...view, propertiesState: finalizedState };
-                                }
-                                return view;
-                            })
-                        };
-                    }
-                    return db;
-                })
-            })),
-
-            deleteView: (databaseId, viewId) => set((state) => ({
-                databases: state.databases.map(db => {
-                    if (db.id === databaseId && db.views) {
-                        // Prevent deleting the very last view to maintain UI sanity
-                        if (db.views.length <= 1) return db;
-                        return { ...db, views: db.views.filter((view: DatabaseView) => view.id !== viewId) };
-                    }
-                    return db;
-                })
-            })),
+            deleteView: (databaseId, viewId) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id === databaseId && db.views) {
+                            if (db.views.length <= 1) return db;
+                            return { ...db, views: db.views.filter((view: DatabaseView) => view.id !== viewId) };
+                        }
+                        return db;
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
 
             // Property Operations
             addProperty: (databaseId, name, type, config) => {
@@ -420,6 +423,28 @@ export const useDatabaseStore = create<DatabaseState>()(
                         return {
                             ...db,
                             properties: newProps,
+                            updatedAt: new Date().toISOString()
+                        };
+                    })
+                }));
+                syncDb(get().databases.find(d => d.id === databaseId));
+            },
+
+            updatePropertyOptionOrder: (databaseId, propertyId, sourceIndex, destinationIndex) => {
+                set((state) => ({
+                    databases: state.databases.map(db => {
+                        if (db.id !== databaseId) return db;
+                        return {
+                            ...db,
+                            properties: db.properties.map(p => {
+                                if (p.id !== propertyId || !p.config?.options) return p;
+                                const newOptions = Array.from(p.config.options);
+                                const [reorderedOpt] = newOptions.splice(sourceIndex, 1);
+                                if (reorderedOpt) {
+                                    newOptions.splice(destinationIndex, 0, reorderedOpt);
+                                }
+                                return { ...p, config: { ...p.config, options: newOptions } };
+                            }),
                             updatedAt: new Date().toISOString()
                         };
                     })

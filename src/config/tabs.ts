@@ -129,7 +129,8 @@ const settingsTabsBase = [
     { label: 'PROJECTS', href: '/admin/settings/projects', id: 'opt-projects' },
     { label: 'RELATIONS', href: '/admin/settings/relations', id: 'opt-relations' },
     { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
-    { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' }
+    { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' },
+    { label: 'PEPPOL', href: '/admin/settings/peppol', id: 'opt-peppol' }
 ];
 
 export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
@@ -155,6 +156,7 @@ const SETTINGS_MODULE_MAP: Record<string, string> = {
     'opt-relations':  'CRM',
     'opt-tasks':      'TASKS',
     'opt-website':    'WEBSITES',
+    'opt-peppol':     'INVOICING',
 };
 
 /**

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon, Clock } from 'lucide-react';
+import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon, Clock, Edit2, Check, X } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import PageModal from '@/components/admin/database/components/PageModal';
@@ -61,6 +61,36 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     router.replace(`${pathname}?${newParams.toString()}`);
   }
 
+  // Renaming state
+  const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
+  const [renamingValue, setRenamingValue] = useState("");
+  const [showViewTypeSelector, setShowViewTypeSelector] = useState(false);
+
+  const updateView = useDatabaseStore(state => state.updateView);
+  const addView = useDatabaseStore(state => state.addView);
+
+  const handleRenameStart = (viewId: string, currentName: string) => {
+    setRenamingViewId(viewId);
+    setRenamingValue(currentName);
+  };
+
+  const handleRenameSave = () => {
+    if (renamingViewId && renamingValue.trim()) {
+      updateView(resolvedId, renamingViewId, { name: renamingValue.trim() });
+    }
+    setRenamingViewId(null);
+  };
+
+  const handleAddView = (type: 'table' | 'board' | 'calendar' | 'timeline') => {
+    const names = { table: 'Table', board: 'Board', calendar: 'Calendar', timeline: 'Timeline' };
+    addView(resolvedId, {
+      name: names[type],
+      type,
+      config: type === 'board' ? { groupByPropertyId: 'status' } : {}
+    });
+    setShowViewTypeSelector(false);
+  };
+
   // Initialize synchronously to avoid a second re-render after mounting
   const [activeViewId, setActiveViewId] = useState<string | null>(() => {
     const supportedViews = database?.views || [];
@@ -93,6 +123,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     }
     return unsub;
   }, []);
+
+  // Close view selector on click outside
+  useEffect(() => {
+    if (!showViewTypeSelector) return;
+    const handleClick = () => setShowViewTypeSelector(false);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, [showViewTypeSelector]);
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
   const DEFAULT_PROPERTIES_MAP: Record<string, any[]> = {
@@ -393,28 +431,71 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         <div className="flex items-end gap-1 overflow-x-auto no-scrollbar h-full pt-1">
           {supportedViews.map((view) => {
             const isActive = view.id === activeViewId;
+            const isRenaming = renamingViewId === view.id;
+
             return (
-              <button
-                key={view.id}
-                onClick={() => setActiveViewId(view.id)}
-                className={`flex items-center gap-2 px-3 py-2.5 pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap -mb-[1px] ${isActive
-                  ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
-                  }`}
-              >
-                {getViewIcon(view.type)}
-                {view.name}
-              </button>
+              <div key={view.id} className="relative flex items-center group">
+                {isRenaming ? (
+                  <div className="flex items-center bg-white dark:bg-neutral-800 rounded-t-lg px-2 py-1 mb-[-1px] border-b-2 border-blue-500 shadow-sm z-10">
+                    <input
+                      autoFocus
+                      className="text-sm font-semibold bg-transparent outline-none w-24 text-neutral-900 dark:text-white"
+                      value={renamingValue}
+                      onChange={(e) => setRenamingValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRenameSave();
+                        if (e.key === 'Escape') setRenamingViewId(null);
+                      }}
+                      onBlur={handleRenameSave}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setActiveViewId(view.id)}
+                    onDoubleClick={() => handleRenameStart(view.id, view.name)}
+                    className={`flex items-center gap-2 px-3 py-2.5 pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap -mb-[1px] ${isActive
+                      ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
+                      : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                      }`}
+                  >
+                    {getViewIcon(view.type)}
+                    {view.name}
+                  </button>
+                )}
+              </div>
             );
           })}
 
           {(hasDatabases) && (
-            <button
-              className="p-1.5 ml-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors mb-1.5"
-              title="Add View"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowViewTypeSelector(!showViewTypeSelector)}
+                className={`p-1.5 ml-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors mb-1.5 rounded-md ${showViewTypeSelector ? 'bg-neutral-100 dark:bg-white/10' : ''}`}
+                title="Add View"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+
+              {showViewTypeSelector && (
+                <div className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl z-[100] p-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                  <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
+                    Add View Type
+                  </div>
+                  <button onClick={() => handleAddView('table')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <Table2 className="w-4 h-4" /> Table
+                  </button>
+                  <button onClick={() => handleAddView('board')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <LayoutGrid className="w-4 h-4" /> Board
+                  </button>
+                  <button onClick={() => handleAddView('calendar')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <CalendarIcon className="w-4 h-4" /> Calendar
+                  </button>
+                  <button onClick={() => handleAddView('timeline')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                    <GanttChartSquare className="w-4 h-4" /> Timeline
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

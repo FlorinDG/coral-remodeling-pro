@@ -104,8 +104,11 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                     {/* Empty / clear option */}
                     <button
                         className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
-                        onMouseDown={e => e.preventDefault()}
-                        onClick={() => handleSelect(null)}
+                        onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleSelect(null);
+                        }}
                     >
                         <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                             {!value && <Check className="w-3 h-3 text-neutral-400" />}
@@ -124,8 +127,11 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                             <button
                                 key={choice.id}
                                 className={`w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors ${isSelected ? 'bg-neutral-50 dark:bg-neutral-800/50' : ''}`}
-                                onMouseDown={e => e.preventDefault()}
-                                onClick={() => handleSelect(choice.id)}
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleSelect(choice.id);
+                                }}
                             >
                                 <span className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                                     {isSelected && <Check className="w-3 h-3 text-neutral-400 dark:text-neutral-500" />}

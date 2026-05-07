@@ -51,6 +51,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [tenantProfile, setTenantProfile] = useState<any>(null);
     const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
+    const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -608,6 +609,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 // Auto-transition to "sent" status
                 handleUpdateProperty('status', 'opt-sent');
                 toast.success('Factuur succesvol verzonden via Peppol! ✅');
+            } else if (data.code === 'PEPPOL_SEND_LIMIT') {
+                setPeppolLimitDialog(true);
             } else {
                 toast.error(`Peppol fout: ${data.error}`);
             }
@@ -1007,6 +1010,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 }
                 confirmLabel="Importeren"
                 cancelLabel="Alleen koppelen"
+            />
+
+            <InlineDialog
+                isOpen={peppolLimitDialog}
+                onClose={() => setPeppolLimitDialog(false)}
+                onConfirm={() => router.push(`/${locale}/admin/settings/billing`)}
+                title="Peppol Limiet Bereikt"
+                message="Je hebt je maandelijkse limiet voor het verzenden van Peppol facturen bereikt. Om meer facturen te verzenden via e-invoice.be, kan je upgraden naar een hoger plan of een volume pack aankopen in de instellingen."
+                confirmLabel="Upgrade Plan"
+                cancelLabel="Sluiten"
             />
         </div>
     );

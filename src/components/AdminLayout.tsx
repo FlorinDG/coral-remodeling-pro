@@ -142,11 +142,11 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         'sales':     ['CRM'],
     };
 
-    const filteredItems = menuItems.filter(item => {
-        const requiredModules = MODULE_MAP[item.id];
-        if (!requiredModules) return true;
-        return requiredModules.some(m => activeModules.includes(m));
-    });
+    const isModuleLocked = (moduleId: string) => {
+        const requiredModules = MODULE_MAP[moduleId];
+        if (!requiredModules) return false;
+        return !requiredModules.some(m => activeModules.includes(m));
+    };
 
     let activeTopPath = null;
     for (const item of menuItems) {
@@ -157,7 +157,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         }
     }
 
-    const isBlocked = activeTopPath && !filteredItems.find(f => f.id === activeTopPath.id);
+    const isBlocked = activeTopPath && isModuleLocked(activeTopPath.id);
 
     // Rhombus SVG fallback for when no logo is uploaded
     const RhombusLogo = ({ size = 28, color }: { size?: number, color: string }) => (
@@ -229,8 +229,9 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                     {/* ── Tenant-tier sidebar items ── */}
                     <div className="space-y-1">
-                    {filteredItems.map((item) => {
+                    {menuItems.map((item) => {
                         const IconComponent = getIconComponent(item.iconName || "");
+                        const locked = isModuleLocked(item.id);
 
                         let resolvedHref = item.href as string;
                         const customOrder = tabOrders[item.id];
@@ -265,7 +266,10 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                             ) : (
                                                 IconComponent && <IconComponent className="w-4 h-4 text-neutral-400 dark:text-neutral-400 transition-colors" style={{}} />
                                             )}
-                                            {isSidebarOpen && <span className="text-sm font-semibold">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
+                                            {isSidebarOpen && <span className="text-sm font-semibold flex-1 truncate">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
+                                            {isSidebarOpen && locked && (
+                                                <Lock className="w-3.5 h-3.5 text-neutral-400/50 flex-shrink-0" />
+                                            )}
                                         </Link>
                                     );
                                 })()}

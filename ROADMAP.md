@@ -210,6 +210,7 @@ All modules live under `coral-remodeling-pro/src/app/[locale]/admin/`:
 - [ ] Reporting / BI dashboards
 - [ ] API access + webhooks for integrations
 - [ ] White-label (custom domains)
+- [ ] **Tooli.be integration** (AI construction chatbot by Buildwise/Embuild — no public API yet; explore partnership or deep-link for tenants with membership)
 
 ---
 

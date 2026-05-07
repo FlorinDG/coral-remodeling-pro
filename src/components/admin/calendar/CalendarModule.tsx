@@ -15,6 +15,7 @@ import { useCalendarStore } from './store';
 import { useDatabaseStore } from '../database/store';
 import { enGB } from 'date-fns/locale';
 import { createPageServerFirst } from '@/app/actions/pages';
+import { useTenant } from '@/context/TenantContext';
 interface EventData {
     id: string;
     title: string;
@@ -28,6 +29,9 @@ interface EventData {
 }
 
 export default function CalendarModule() {
+    const { resolveDbId } = useTenant();
+    const tasksDbId = resolveDbId('db-tasks');
+
     const calendarRef = useRef<FullCalendar>(null);
     const router = useRouter();
     const [date, setDate] = useState<Date>(new Date());
@@ -154,7 +158,7 @@ export default function CalendarModule() {
                 // If the user requested an associated task and this is a NEW event
                 if (newEvent.createTask && !newEvent.id) {
                     // Server-first task creation (static import, no dynamic import needed)
-                    createPageServerFirst('db-tasks', {
+                    createPageServerFirst(tasksDbId, {
                         'title': `[Event Task] ${newEvent.title}`,
                         'prop-task-due': newEvent.start.split('T')[0],
                         'prop-task-priority': 'opt-med',
@@ -718,7 +722,7 @@ export default function CalendarModule() {
                                 className="px-5 py-2 text-sm font-medium bg-[var(--brand-color,var(--brand-color, #d35400))] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors shadow-sm"
                                 onClick={async () => {
                                     if (taskData.title.trim()) {
-                                        const result = await createPageServerFirst('db-tasks', {
+                                        const result = await createPageServerFirst(tasksDbId, {
                                             'title': taskData.title,
                                             'prop-task-due': taskData.dueDate,
                                             'prop-task-priority': taskData.priority,

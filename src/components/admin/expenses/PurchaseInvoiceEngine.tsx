@@ -5,6 +5,7 @@ import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDown
 import { useDatabaseStore } from '@/components/admin/database/store';
 import type { Page } from '@/components/admin/database/types';
 import { downloadPurchaseInvoicePDF } from '@/components/admin/expenses/PurchaseInvoicePDF';
+import { useTenant } from '@/context/TenantContext';
 
 interface PurchaseInvoiceEngineProps {
     pageId: string;
@@ -60,12 +61,16 @@ const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
 };
 
 export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoiceEngineProps) {
+    const { resolveDbId } = useTenant();
+    const expensesDbId = resolveDbId('db-expenses');
+    const suppliersDbId = resolveDbId('db-suppliers');
+
     const page = useDatabaseStore(s => {
-        const db = s.getDatabase('db-expenses');
+        const db = s.getDatabase(expensesDbId);
         return db?.pages.find((p: Page) => p.id === pageId);
     });
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
-    const suppliersDb = useDatabaseStore(s => s.getDatabase('db-suppliers'));
+    const suppliersDb = useDatabaseStore(s => s.getDatabase(suppliersDbId));
 
     const [peppolDetail, setPeppolDetail] = useState<ParsedInvoice | null>(null);
     const [loadingPeppol, setLoadingPeppol] = useState(false);
@@ -127,7 +132,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 body: JSON.stringify({ docId: page.properties.peppolDocId, action }),
             });
             if (res.ok) {
-                updatePageProperty('db-expenses', pageId, 'status', action === 'accept' ? 'opt-unpaid' : 'opt-disputed');
+                updatePageProperty(expensesDbId, pageId, 'status', action === 'accept' ? 'opt-unpaid' : 'opt-disputed');
             }
         } catch (err) {
             console.error('Peppol action failed:', err);
@@ -140,13 +145,13 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
         Object.entries(editData).forEach(([key, value]) => {
             const numericFields = ['totalExVat', 'totalVat', 'totalIncVat'];
             const finalVal = numericFields.includes(key) && value ? parseFloat(value) : value;
-            updatePageProperty('db-expenses', pageId, key, finalVal);
+            updatePageProperty(expensesDbId, pageId, key, finalVal);
         });
         setIsEditing(false);
     };
 
     const handleMarkPaid = () => {
-        updatePageProperty('db-expenses', pageId, 'status', 'opt-paid');
+        updatePageProperty(expensesDbId, pageId, 'status', 'opt-paid');
     };
 
     const resolvedSupplier = (() => {

@@ -36,8 +36,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     // Resolve tenant-scoped DB IDs — handles both bare ('db-invoices') and scoped ('db-invoices-xxx')
-    const invoicesDbId = resolveDbId('db-invoices');
-    const clientsDbId  = resolveDbId('db-clients');
+    const invoicesDbId   = resolveDbId('db-invoices');
+    const clientsDbId    = resolveDbId('db-clients');
+    const projectDbId    = resolveDbId('db-1');
+    const quotationsDbId = resolveDbId('db-quotations');
 
     const [isHydrated, setIsHydrated] = useState(false);
     const [hydrationAttempted, setHydrationAttempted] = useState(false);
@@ -101,7 +103,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }).catch(console.error);
     }, [isHydrated, invoice, hydrationAttempted, id]);
 
-    const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
+    const projects = useDatabaseStore(state => state.databases.find(d => d.id === projectDbId)?.pages || FALLBACK_PAGES);
 
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
 
@@ -126,7 +128,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     }, [clientsDb]);
 
     // Read quotations database for linking
-    const quotationsDb = useDatabaseStore(state => state.databases.find(d => d.id === 'db-quotations'));
+    const quotationsDb = useDatabaseStore(state => state.databases.find(d => d.id === quotationsDbId));
     const quotations = useMemo(() => {
         if (!quotationsDb) return [];
         return quotationsDb.pages.map(page => ({
@@ -706,7 +708,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             </select>
                             {projectId && (
                                 <Link
-                                    href={`/admin/database/db-1/${projectId}`}
+                                    href={`/admin/database/${projectDbId}/${projectId}`}
                                     className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                     title="Open fiche"
                                 >

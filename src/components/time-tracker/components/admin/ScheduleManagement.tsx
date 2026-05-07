@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/time-tracker/components/ui/select';
+import { useTenant } from '@/context/TenantContext';
 
 interface WorkerOption {
   id: string;
@@ -34,6 +35,7 @@ function getMonday(date: Date): Date {
 }
 
 export function ScheduleManagement() {
+  const { resolveDbId } = useTenant();
   const { shifts, projects, loading, createShift, createProject, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
@@ -47,7 +49,7 @@ export function ScheduleManagement() {
   const [prefilledUserId, setPrefilledUserId] = useState<string | undefined>();
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
 
-  const hrDb = useDatabaseStore(state => state.databases.find(db => db.id === 'db-hr'));
+  const hrDb = useDatabaseStore(state => state.databases.find(db => db.id === resolveDbId('db-hr')));
 
   useEffect(() => {
     const fetchWorkers = async () => {

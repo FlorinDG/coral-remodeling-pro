@@ -54,6 +54,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Resolve tenant-scoped DB IDs once — stable across re-renders via useTenant context
     const quotationsDbId = resolveDbId('db-quotations');
     const clientsDbId    = resolveDbId('db-clients');
+    const projectDbId    = resolveDbId('db-1');
 
     const [isHydrated, setIsHydrated] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -78,7 +79,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return db?.pages.find(p => p.id === id) || null;
     });
 
-    const projects = useDatabaseStore(state => state.databases.find(d => d.id === 'db-1')?.pages || FALLBACK_PAGES);
+    const projects = useDatabaseStore(state => state.databases.find(d => d.id === projectDbId)?.pages || FALLBACK_PAGES);
 
     // Read the resolved clients database from Zustand
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
@@ -400,13 +401,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const handleHandover = () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om het project te starten.');
 
+        const projectDbId = resolveDbId('db-1');
+        const tasksDbId = resolveDbId('db-tasks');
+
         // 1. Create a Project in db-1
-        const newProject = createPage('db-1', {
+        const newProject = createPage(projectDbId, {
             title: `[EXEC] ${betreft || quotationTitle}`,
             'prop-execution-status': 'opt-to-do',
             'prop-financial-status': 'opt-quote',
             'prop-client-relation': [clientId],
-            'prop-budget': grandTotal
+            'prop-budget': grandTotal,
+            'prop-start-date': quotationDate || '',
+            'prop-due-date': quotationDate || '',
         });
 
         if (!newProject) {
@@ -418,7 +424,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const extractTasks = (nodes: Block[]) => {
             nodes.forEach(block => {
                 if (block.type === 'line' || block.type === 'post') {
-                    createPage('db-tasks', {
+                    createPage(tasksDbId, {
                         title: block.content || 'Uitvoerende Taak',
                         'prop-task-status': 'opt-todo',
                         'prop-task-project': [newProject.id]
@@ -438,7 +444,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         toast.success('Project aangemaakt en taken toegewezen!');
 
         // 4. Navigate to the new Bordereau route
-        router.push(`/nl/admin/projects-management/bordereau/${newProject.id}`);
+        router.push(`/${locale}/admin/projects-management/bordereau/${newProject.id}`);
     };
 
     return (
@@ -515,7 +521,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 </select>
                                 {projectId && (
                                     <Link
-                                        href={`/admin/database/db-1/${projectId}`}
+                                        href={`/admin/database/${projectDbId}/${projectId}`}
                                         className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                         title={ti18n('engine_open_record', locale)}
                                     >

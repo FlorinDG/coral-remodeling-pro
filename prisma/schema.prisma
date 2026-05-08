@@ -737,6 +737,8 @@ model GlobalDatabase {
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model GlobalPage {
@@ -761,6 +763,9 @@ model GlobalPage {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([databaseId])
+  @@index([createdAt])
 }
 
 // ══════════════════════════════════════════════════════════════════════════

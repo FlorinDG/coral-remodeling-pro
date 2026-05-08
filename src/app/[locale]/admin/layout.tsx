@@ -33,13 +33,19 @@ export default async function Layout({ children }: { children: React.ReactNode }
         console.error('[layout] auth() failed:', e);
     }
 
-    // ── 2. Tenant data — safe fallback: restricted defaults ─────────────────
+    // ── 2 & 3. Fetch Tenant data and Global databases in parallel ────────────────
+    let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
+    
     if (tenantId) {
         try {
-            const tenant = await prisma.tenant.findUnique({
-                where:  { id: tenantId },
-                select: { activeModules: true, planType: true, lockedDbIds: true, subscriptionStatus: true, trialEndsAt: true },
-            });
+            const [tenant, fetchedDbs] = await Promise.all([
+                prisma.tenant.findUnique({
+                    where:  { id: tenantId },
+                    select: { activeModules: true, planType: true, lockedDbIds: true, subscriptionStatus: true, trialEndsAt: true },
+                }),
+                getGlobalDatabases()
+            ]);
+
             if (tenant?.activeModules) activeModules = tenant.activeModules;
             if (tenant?.planType)      planType       = tenant.planType;
             if (tenant?.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
@@ -50,26 +56,14 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 lockedDbIds = persistedIds;
             } else {
                 // First login — provision locked DBs
-                try {
-                    lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
-                } catch (e) {
-                    console.error('[layout] provisionLockedDatabases failed:', e);
-                    // Fall through — legacy FOUNDER tenant uses bare IDs
-                }
+                lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
             }
-        } catch (e) {
-            console.error('[layout] prisma.tenant.findUnique failed:', e);
-            // Render with safe defaults — tenant sees restricted but working UI
-        }
-    }
 
-    // ── 3. Global databases — safe fallback: empty list ─────────────────────
-    // GlobalDatabaseSyncer handles an empty array gracefully.
-    let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
-    try {
-        databases = await getGlobalDatabases();
-    } catch (e) {
-        console.error('[layout] getGlobalDatabases failed:', e);
+            databases = fetchedDbs;
+        } catch (e) {
+            console.error('[layout] Parallel fetch failed:', e);
+            // safe defaults already set
+        }
     }
 
     return (

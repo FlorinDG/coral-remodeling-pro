@@ -114,13 +114,13 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   // Wait for Zustand store hydration from IndexedDB before auto-creating
   useEffect(() => {
+    if (useDatabaseStore.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
     const unsub = useDatabaseStore.persist.onFinishHydration(() => {
       setHydrated(true);
     });
-    // If already hydrated (store was loaded before this component mounted)
-    if (useDatabaseStore.persist.hasHydrated()) {
-      setHydrated(true);
-    }
     return unsub;
   }, []);
 
@@ -490,7 +490,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
               {showViewTypeSelector && (
                 <div 
                   ref={viewSelectorRef}
-                  className="absolute left-0 top-full mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl z-[100] p-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100"
+                  className="absolute left-0 top-full mt-1 w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl z-[999] p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
                 >
                   <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
                     Add View Type
@@ -518,7 +518,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
-      <div className="flex-1 min-w-0 min-h-0 w-full h-full overflow-hidden relative">
+      <div className="flex-1 min-w-0 min-h-0 w-full h-full relative">
         {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: any) => { const s = String(row?.properties?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

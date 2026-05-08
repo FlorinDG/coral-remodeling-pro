@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { SelectOption, Page, Property } from '../types';
 import {
-    DndContext, closestCorners, DragOverlay, DragStartEvent, DragEndEvent,
+    DndContext, closestCenter, DragOverlay, DragStartEvent, DragEndEvent,
     useSensor, useSensors, PointerSensor, KeyboardSensor,
     UniqueIdentifier,
-    DragOverEvent
+    DragOverEvent,
+    useDroppable,
+    CollisionDetection,
+    pointerWithin,
+    rectIntersection,
 } from '@dnd-kit/core';
 import { 
     SortableContext, 
@@ -20,6 +24,31 @@ import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, 
 import { format } from 'date-fns';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/time-tracker/components/ui/dropdown-menu';
+
+// Custom collision detection: tries pointerWithin first (most precise),
+// falls back to rectIntersection (works for empty columns)
+const customCollisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    return rectIntersection(args);
+};
+
+// ── Droppable Column Body ──────────────────────────────────────────────────────
+// A dedicated droppable zone for each column so empty columns can receive drops.
+function DroppableColumnBody({ columnId, children }: { columnId: string; children: React.ReactNode }) {
+    const { setNodeRef, isOver } = useDroppable({ id: `droppable-${columnId}` });
+    return (
+        <div 
+            ref={setNodeRef} 
+            className={cn(
+                "flex-1 overflow-y-auto no-scrollbar pb-10 space-y-2.5 min-h-[100px] rounded-lg transition-colors duration-150",
+                isOver ? 'bg-blue-50/50 dark:bg-blue-900/10 ring-2 ring-blue-300/30 ring-inset' : 'bg-transparent'
+            )}
+        >
+            {children}
+        </div>
+    );
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface KanbanViewProps {
@@ -198,7 +227,7 @@ function SortableColumn({
             </div>
             
             <SortableContext items={col.pages.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                <div className="flex-1 overflow-y-auto no-scrollbar pb-10 space-y-2.5 min-h-[100px] rounded-lg bg-transparent">
+                <DroppableColumnBody columnId={col.id}>
                     {col.pages.map(page => (
                         <SortableCard 
                             key={page.id} 
@@ -214,7 +243,7 @@ function SortableColumn({
                             Drop here
                         </div>
                     )}
-                </div>
+                </DroppableColumnBody>
             </SortableContext>
         </div>
     );
@@ -230,6 +259,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
 
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
     const [activeType, setActiveType] = useState<'card' | 'column' | null>(null);
+    const overColumnRef = useRef<string | null>(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -335,13 +365,39 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
         const { active } = event;
         setActiveId(active.id);
         setActiveType(active.data.current?.type || 'card');
+        overColumnRef.current = null;
+    };
+
+    const handleDragOver = (event: DragOverEvent) => {
+        const { over } = event;
+        if (!over) { overColumnRef.current = null; return; }
+
+        const overId = String(over.id);
+
+        // Check if hovering over a droppable column body (id: 'droppable-<colId>')
+        if (overId.startsWith('droppable-')) {
+            overColumnRef.current = overId.replace('droppable-', '');
+            return;
+        }
+
+        // Check if hovering directly over a column header (sortable column)
+        const directCol = columns.find(c => c.id === overId);
+        if (directCol) { overColumnRef.current = directCol.id; return; }
+
+        // Check if hovering over a card — find which column it belongs to
+        for (const col of columns) {
+            if (col.pages.some(p => p.id === overId)) {
+                overColumnRef.current = col.id;
+                return;
+            }
+        }
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
         setActiveId(null);
         setActiveType(null);
-        if (!over) return;
+        if (!over) { overColumnRef.current = null; return; }
 
         if (activeType === 'column') {
             const oldIndex = options.findIndex(o => o.id === active.id);
@@ -349,22 +405,43 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
             if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex && groupProperty) {
                 updatePropertyOptionOrder(databaseId, groupProperty.id, oldIndex, newIndex);
             }
+            overColumnRef.current = null;
             return;
         }
 
-        // Card dragging
+        // Card dragging — resolve target column
         const pageId = String(active.id);
         let targetColId: string | null = null;
-        
-        // Find column by ID or by finding column containing the over element
-        for (const col of columns) {
-            if (col.id === over.id) { targetColId = col.id; break; }
-            if (col.pages.some(p => p.id === over.id)) { targetColId = col.id; break; }
+        const overId = String(over.id);
+
+        // 1. Check if dropped on a droppable column body
+        if (overId.startsWith('droppable-')) {
+            targetColId = overId.replace('droppable-', '');
+        }
+        // 2. Check if dropped on a column header
+        if (!targetColId) {
+            const directCol = columns.find(c => c.id === overId);
+            if (directCol) targetColId = directCol.id;
+        }
+        // 3. Check if dropped on a card — find its parent column
+        if (!targetColId) {
+            for (const col of columns) {
+                if (col.pages.some(p => p.id === overId)) { targetColId = col.id; break; }
+            }
+        }
+        // 4. Fallback: use the last column we hovered over
+        if (!targetColId && overColumnRef.current) {
+            targetColId = overColumnRef.current;
         }
 
         if (targetColId && groupProperty) {
-            updatePageProperty(databaseId, pageId, groupProperty.id, targetColId === 'no-status' ? null : targetColId);
+            // Don't update if dropped back in the same column
+            const sourceCol = columns.find(c => c.pages.some(p => p.id === pageId));
+            if (sourceCol?.id !== targetColId) {
+                updatePageProperty(databaseId, pageId, groupProperty.id, targetColId === 'no-status' ? null : targetColId);
+            }
         }
+        overColumnRef.current = null;
     };
 
     return (
@@ -429,7 +506,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
                 </div>
             </div>
 
-            <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={customCollisionDetection} onDragStart={handleDragStart} onDragOver={handleDragOver} onDragEnd={handleDragEnd}>
                 <div className="flex-1 flex w-full h-full overflow-x-auto overflow-y-hidden bg-neutral-50/50 dark:bg-neutral-900/20 p-6 no-scrollbar gap-4 relative min-h-0">
                     <SortableContext items={columns.map(c => c.id)} strategy={horizontalListSortingStrategy}>
                         {columns.map(col => (

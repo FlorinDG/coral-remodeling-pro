@@ -25,6 +25,13 @@ export async function POST() {
             return NextResponse.json({ error: 'No active subscription found.' }, { status: 404 });
         }
 
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.json(
+                { error: 'Stripe is not yet configured. Contact support.' },
+                { status: 503 }
+            );
+        }
+
         const stripe = getStripeInstance();
         
         // Notify Stripe to cancel at period end

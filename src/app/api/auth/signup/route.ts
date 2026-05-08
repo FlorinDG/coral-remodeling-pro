@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { validatePassword, hashPassword } from '@/lib/password';
 import { randomBytes } from 'crypto';
 import { sendVerificationEmail } from '@/lib/email';
+import { startTrial } from '@/lib/trial';
 
 export async function POST(req: Request) {
     try {
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
             const newTenant = await tx.tenant.create({
                 data: {
                     companyName: name ? `${name}'s Workspace` : 'New Workspace',
-                    // FREE tier: INVOICING only. FOUNDER is promoted manually via superadmin.
+                    // New signups start as FREE — trial is activated after the transaction.
                     planType: 'FREE',
                     subscriptionStatus: 'ACTIVE',
                     activeModules: ['INVOICING'],
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
                     name: name.trim(),
                     email: email.toLowerCase().trim(),
                     password: hashedPassword,
-                    role: 'TENANT_ADMIN',
+                    role: 'TENANT_PRO_OWNER',
                     tenantId: newTenant.id,
                     environmentLanguage: userLanguage,
                     verificationToken,
@@ -83,6 +84,15 @@ export async function POST(req: Request) {
 
             return { newTenant, user };
         });
+
+        // Auto-start PRO trial — new tenants get 1 month of full PRO access
+        try {
+            await startTrial(newTenant.id, 'PRO');
+            console.log(`[Signup] PRO trial started for tenant ${newTenant.id}`);
+        } catch (trialErr) {
+            // Non-fatal: tenant still lands on FREE if trial provisioning fails
+            console.error(`[Signup] Trial start failed for ${newTenant.id}:`, trialErr);
+        }
 
         // Send verification email
         const baseUrl = process.env.NEXTAUTH_URL || 'https://app.coral-group.be';

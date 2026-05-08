@@ -79,6 +79,7 @@ export async function POST(req: Request) {
                     environmentLanguage: userLanguage,
                     verificationToken,
                     verificationSentAt: new Date(),
+                    inviteAccepted: true, // Self-registered — not an invitee
                 },
             });
 

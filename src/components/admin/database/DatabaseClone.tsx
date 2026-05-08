@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon, Clock, Edit2, Check, X } from 'lucide-react';
@@ -65,6 +66,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
   const [renamingValue, setRenamingValue] = useState("");
   const [showViewTypeSelector, setShowViewTypeSelector] = useState(false);
+  const [selectorPosition, setSelectorPosition] = useState({ top: 0, left: 0 });
 
   const updateView = useDatabaseStore(state => state.updateView);
   const addView = useDatabaseStore(state => state.addView);
@@ -131,12 +133,13 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   useEffect(() => {
     if (!showViewTypeSelector) return;
     const handleClick = (e: MouseEvent) => {
+      // In a Portal, we need to check if the click was inside the portal content
       if (viewSelectorRef.current?.contains(e.target as Node)) return;
       if (addViewButtonRef.current?.contains(e.target as Node)) return;
       setShowViewTypeSelector(false);
     };
-    document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, [showViewTypeSelector]);
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
@@ -478,8 +481,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
               <button
                 ref={addViewButtonRef}
                 onClick={(e) => {
+                  e.preventDefault();
                   e.stopPropagation();
-                  setShowViewTypeSelector(!showViewTypeSelector);
+                  console.log('Plus button clicked');
+                  if (addViewButtonRef.current) {
+                    const rect = addViewButtonRef.current.getBoundingClientRect();
+                    setSelectorPosition({ top: rect.bottom + 5, left: rect.left });
+                  }
+                  setShowViewTypeSelector(prev => !prev);
                 }}
                 className={`p-1.5 ml-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors mb-1.5 rounded-md ${showViewTypeSelector ? 'bg-neutral-100 dark:bg-white/10' : ''}`}
                 title="Add View"
@@ -487,27 +496,34 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
                 <Plus className="w-4 h-4" />
               </button>
 
-              {showViewTypeSelector && (
+              {showViewTypeSelector && typeof document !== 'undefined' && createPortal(
                 <div 
                   ref={viewSelectorRef}
-                  className="absolute left-0 top-full mt-1 w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl z-[999] p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
+                  style={{ 
+                    position: 'fixed', 
+                    top: selectorPosition.top, 
+                    left: selectorPosition.left,
+                    zIndex: 9999
+                  }}
+                  className="w-44 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
                 >
                   <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
                     Add View Type
                   </div>
-                  <button onClick={() => handleAddView('table')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                  <button onClick={() => handleAddView('table')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
                     <Table2 className="w-4 h-4" /> Table
                   </button>
-                  <button onClick={() => handleAddView('board')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                  <button onClick={() => handleAddView('board')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
                     <LayoutGrid className="w-4 h-4" /> Board
                   </button>
-                  <button onClick={() => handleAddView('calendar')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                  <button onClick={() => handleAddView('calendar')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
                     <CalendarIcon className="w-4 h-4" /> Calendar
                   </button>
-                  <button onClick={() => handleAddView('timeline')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors">
+                  <button onClick={() => handleAddView('timeline')} className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
                     <GanttChartSquare className="w-4 h-4" /> Timeline
                   </button>
-                </div>
+                </div>,
+                document.body
               )}
             </div>
           )}

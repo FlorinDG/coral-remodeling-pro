@@ -30,7 +30,7 @@ export const PLAN_PRICING = {
         includedUsers:     1,
         extraUserMonthly:  20,
         workforceMonthly:  4.99,
-        trialMonths:       1,
+        trialMonths:       3,
         cancellationNoticeMonths: 1,
     },
     ENTERPRISE: {

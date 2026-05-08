@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────────────
  * Trial management engine for CoralOS.
  *
- * - PRO trial: 1 month
+ * - PRO trial: 3 months
  * - ENTERPRISE trial: 2 months
  * - 7-day reminder before expiry
  * - Auto-downgrade to FREE on expiry
@@ -21,7 +21,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 // ── Trial Duration ──────────────────────────────────────────────────
 
 const TRIAL_MONTHS: Record<string, number> = {
-    PRO:        PLAN_PRICING.PRO.trialMonths,         // 1 month
+    PRO:        PLAN_PRICING.PRO.trialMonths,         // 3 months
     ENTERPRISE: PLAN_PRICING.ENTERPRISE.trialMonths,  // 2 months
 };
 
@@ -29,7 +29,7 @@ const TRIAL_MONTHS: Record<string, number> = {
 
 /**
  * Activate a trial for the given plan.
- * Sets trialEndsAt based on plan type (1 month PRO, 2 months ENTERPRISE).
+ * Sets trialEndsAt based on plan type (3 months PRO, 2 months ENTERPRISE).
  */
 export async function startTrial(tenantId: string, planType: 'PRO' | 'ENTERPRISE'): Promise<Date> {
     const months = TRIAL_MONTHS[planType] || 1;

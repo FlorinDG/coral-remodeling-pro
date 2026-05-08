@@ -73,7 +73,7 @@ const PLANS = [
         extraUserPrice: 19,
         workforcePrice: 4.99,
         highlight: true,
-        trial: "1 month free trial",
+        trial: "3 months free trial",
         features: [
             { text: "Everything in Free", included: true },
             { text: "Peppol e-invoicing (20 sent/mo)", included: true },

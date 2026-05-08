@@ -86,7 +86,7 @@ export async function POST(req: Request) {
             return { newTenant, user };
         });
 
-        // Auto-start PRO trial — new tenants get 1 month of full PRO access
+        // Auto-start PRO trial — new tenants get 3 months of full PRO access
         try {
             await startTrial(newTenant.id, 'PRO');
             console.log(`[Signup] PRO trial started for tenant ${newTenant.id}`);

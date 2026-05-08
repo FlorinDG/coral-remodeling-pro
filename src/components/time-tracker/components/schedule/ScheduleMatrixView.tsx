@@ -30,8 +30,12 @@ function calculateShiftHours(shiftStart: string, shiftEnd: string): number {
   return (endMinutes - startMinutes) / 60;
 }
 
-function getNotionColor(colorName: string) {
-  return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
+function getNotionColor(colorInput: string): string {
+  // NOTION_COLORS is a flat array of hex strings like '#3b82f6'
+  // Projects store the hex color directly, so return as-is if it's a hex, or find a match
+  if (colorInput.startsWith('#')) return colorInput;
+  // Fallback: return a default color
+  return NOTION_COLORS[6] || '#14b8a6';
 }
 
 function formatTime(time: string) {
@@ -360,7 +364,7 @@ export function ScheduleMatrixView({
                                     !projectColor && "border-2 border-dashed border-muted-foreground/40 bg-muted/50"
                                   )}
                                   style={projectColor ? {
-                                    backgroundColor: projectColor.value,
+                                    backgroundColor: projectColor,
                                     color: '#fff'
                                   } : undefined}
                                 >

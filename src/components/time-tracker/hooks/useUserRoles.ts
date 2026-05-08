@@ -10,7 +10,10 @@ export type AppRole = 'owner' | 'admin' | 'manager' | 'user';
 
 const ROLE_MAP: Record<string, AppRole> = {
   'SUPERADMIN': 'owner',
+  'APP_MANAGER': 'owner',
   'TENANT_OWNER': 'owner',
+  'TENANT_PRO_OWNER': 'owner',
+  'TENANT_ENTERPRISE_OWNER': 'owner',
   'TENANT_ADMIN': 'admin',
   'TENANT_ENTERPRISE_ADMIN': 'admin',
   'TENANT_ENTERPRISE_MANAGER': 'manager',

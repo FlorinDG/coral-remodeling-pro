@@ -94,12 +94,12 @@ export function getStripeInstance(): Stripe {
 }
 
 export const STRIPE_PRICE_IDS: Record<string, { test: string; prod: string }> = {
-    PRO_MONTHLY:        { test: 'price_1TPc2UKwNqxpkJt0ftjywtnj', prod: '' },
-    ENT_MONTHLY:        { test: 'price_1TPc32KwNqxpkJt0gRuyqI1Z', prod: '' },
-    EXTRA_USER_PRO:     { test: 'price_1TPcEbKwNqxpkJt0Wyy5MV0w', prod: '' },
-    EXTRA_USER_ENT:     { test: 'price_1TPcFEKwNqxpkJt02pA0kxo0', prod: '' },
-    WORKFORCE_PRO:      { test: 'price_1TPcFxKwNqxpkJt0831VPMvf', prod: '' },
-    WORKFORCE_ENT:      { test: 'price_1TPcGSKwNqxpkJt0znFmkGy4', prod: '' },
+    PRO_MONTHLY:        { test: 'price_1TPc2UKwNqxpkJt0ftjywtnj', prod: 'price_1TULlq3Yz8g0NWgpZcPU3ERY' },
+    ENT_MONTHLY:        { test: 'price_1TPc32KwNqxpkJt0gRuyqI1Z', prod: 'price_1TULtU3Yz8g0NWgpaYKzfiig' },
+    EXTRA_USER_PRO:     { test: 'price_1TPcEbKwNqxpkJt0Wyy5MV0w', prod: 'price_1TULoj3Yz8g0NWgpU6agNLuf' },
+    EXTRA_USER_ENT:     { test: 'price_1TPcFEKwNqxpkJt02pA0kxo0', prod: 'price_1TULuD3Yz8g0NWgpQhW7zHYw' },
+    WORKFORCE_PRO:      { test: 'price_1TPcFxKwNqxpkJt0831VPMvf', prod: 'price_1TULrI3Yz8g0NWgpXlTp96cK' },
+    WORKFORCE_ENT:      { test: 'price_1TPcGSKwNqxpkJt0znFmkGy4', prod: 'price_1TULuk3Yz8g0NWgp7FUc6Oyz' },
 };
 
 /** Get the correct price ID for the current environment. */

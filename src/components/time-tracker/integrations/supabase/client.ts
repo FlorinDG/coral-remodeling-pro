@@ -9,7 +9,13 @@ const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 // Import the supabase client like this:
 // import { supabase } from "@/components/time-tracker/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+// PD Rule 5: Fail silently — use a placeholder URL when env vars are missing
+// to prevent createClient from throwing at module-load time.
+// All actual CRUD is routed through /api/hr/* (hr-api.ts), NOT Supabase directly.
+const safeUrl = SUPABASE_URL || 'https://placeholder.supabase.co';
+const safeKey = SUPABASE_PUBLISHABLE_KEY || 'placeholder-key';
+
+export const supabase = createClient<Database>(safeUrl, safeKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

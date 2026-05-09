@@ -93,10 +93,10 @@ const PLANS = [
     {
         id: "ENTERPRISE",
         name: "Enterprise",
-        price: 79,
+        price: 99,
         period: "/mo",
         includedUsers: 2,
-        extraUserPrice: 49,
+        extraUserPrice: 79,
         workforcePrice: 1.99,
         highlight: false,
         trial: "2 months free trial",
@@ -133,7 +133,6 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
     };
 
     const handleUpgrade = async (planId: string) => {
-        // Will wire to Stripe Checkout when keys are available
         try {
             const res = await fetch("/api/stripe/checkout", {
                 method: "POST",
@@ -143,9 +142,12 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
             const result = await res.json();
             if (result.url) {
                 globalThis.location.assign(result.url);
+            } else {
+                alert(result.error || "Could not start checkout. Please try again or contact support.");
             }
         } catch (e) {
             console.error("[Billing] Checkout failed:", e);
+            alert("Could not connect to billing. Please check your connection and try again.");
         }
     };
 

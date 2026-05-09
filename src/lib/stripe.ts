@@ -28,7 +28,7 @@ export const PLAN_PRICING = {
     PRO: {
         baseMonthly:       29,
         includedUsers:     1,
-        extraUserMonthly:  20,
+        extraUserMonthly:  19,
         workforceMonthly:  4.99,
         trialMonths:       3,
         cancellationNoticeMonths: 1,
@@ -95,7 +95,7 @@ export function getStripeInstance(): Stripe {
 
 export const STRIPE_PRICE_IDS: Record<string, { test: string; prod: string }> = {
     PRO_MONTHLY:        { test: 'price_1TPc2UKwNqxpkJt0ftjywtnj', prod: 'price_1TULlq3Yz8g0NWgpZcPU3ERY' },
-    ENT_MONTHLY:        { test: 'price_1TPc32KwNqxpkJt0gRuyqI1Z', prod: 'price_1TULtU3Yz8g0NWgpaYKzfiig' },
+    ENT_MONTHLY:        { test: 'price_1TPc32KwNqxpkJt0gRuyqI1Z', prod: 'price_1TVGmW3Yz8g0NWgpCKzgMOnv' },
     EXTRA_USER_PRO:     { test: 'price_1TPcEbKwNqxpkJt0Wyy5MV0w', prod: 'price_1TULoj3Yz8g0NWgpU6agNLuf' },
     EXTRA_USER_ENT:     { test: 'price_1TPcFEKwNqxpkJt02pA0kxo0', prod: 'price_1TULuD3Yz8g0NWgpQhW7zHYw' },
     WORKFORCE_PRO:      { test: 'price_1TPcFxKwNqxpkJt0831VPMvf', prod: 'price_1TULrI3Yz8g0NWgpXlTp96cK' },

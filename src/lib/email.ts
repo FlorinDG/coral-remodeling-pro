@@ -58,7 +58,7 @@ export async function sendBookingNotification(booking: {
     }
 
     try {
-        const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'noreply@coral-group.be';
         await resend.emails.send({
             from: `Coral Remodeling <${fromEmail}>`,
             to: RECIPIENT_EMAIL,

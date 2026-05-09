@@ -7,9 +7,9 @@ import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useSession } from 'next-auth/react';
 import {
-    Users, UserPlus, Shield, Eye, Edit3, Trash2,
+    Users, UserPlus, Shield, Eye, EyeOff, Edit3, Trash2,
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
-    ChevronDown,
+    ChevronDown, KeyRound,
 } from 'lucide-react';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
@@ -68,6 +68,13 @@ export default function TeamSettingsPage() {
     const [showInvite, setShowInvite] = useState(false);
     const [editingUser, setEditingUser] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
+
+    // Password reset state
+    const [resetUserId, setResetUserId] = useState<string | null>(null);
+    const [resetPassword, setResetPassword] = useState('');
+    const [resetShowPw, setResetShowPw] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState('');
@@ -247,6 +254,72 @@ export default function TeamSettingsPage() {
                                         {/* Actions — only workspace owners can edit/remove */}
                                         {!isOwner && isWorkspaceOwner && (
                                             <div className="flex items-center gap-1 shrink-0">
+                                                {/* Password reset */}
+                                                {resetSuccess === u.id ? (
+                                                    <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-0.5 px-2 py-1">
+                                                        <Check className="w-3 h-3" /> Reset!
+                                                    </span>
+                                                ) : resetUserId === u.id ? (
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="relative">
+                                                            <input
+                                                                type={resetShowPw ? 'text' : 'password'}
+                                                                value={resetPassword}
+                                                                onChange={(e) => setResetPassword(e.target.value)}
+                                                                placeholder="New password"
+                                                                className="w-28 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-500"
+                                                            />
+                                                            <button type="button" onClick={() => setResetShowPw(!resetShowPw)} className="absolute right-1 top-1 text-neutral-400">
+                                                                {resetShowPw ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                                            </button>
+                                                        </div>
+                                                        <button
+                                                            disabled={resetLoading || resetPassword.length < 6}
+                                                            onClick={async () => {
+                                                                setResetLoading(true);
+                                                                try {
+                                                                    const res = await fetch('/api/auth/admin-reset-password', {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json' },
+                                                                        body: JSON.stringify({ userId: u.id, newPassword: resetPassword }),
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        setResetSuccess(u.id);
+                                                                        setResetUserId(null);
+                                                                        setResetPassword('');
+                                                                        setTimeout(() => setResetSuccess(null), 3000);
+                                                                    } else {
+                                                                        const data = await res.json();
+                                                                        alert(data.error || 'Failed to reset password');
+                                                                    }
+                                                                } catch {
+                                                                    alert('Network error');
+                                                                } finally {
+                                                                    setResetLoading(false);
+                                                                }
+                                                            }}
+                                                            className="p-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                                            title="Confirm reset"
+                                                        >
+                                                            {resetLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => { setResetUserId(null); setResetPassword(''); }}
+                                                            className="p-1 rounded text-neutral-400 hover:text-red-500 transition-colors text-[10px]"
+                                                            title="Cancel"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetShowPw(false); }}
+                                                        className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-neutral-400 hover:text-blue-600 transition-colors"
+                                                        title="Reset password"
+                                                    >
+                                                        <KeyRound className="w-4 h-4" />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => setEditingUser(isEditing ? null : u.id)}
                                                     className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors"

@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 import { calculatePeppolOverage } from "@/lib/stripe";
@@ -118,4 +119,45 @@ export async function updateTenantOcrKeys(tenantId: string, data: { mindeeApiKey
         data,
     });
     revalidatePath("/[locale]/superadmin", "layout");
+}
+
+// ── Tenant Impersonation (Customer Support) ────────────────────────────────
+
+const IMPERSONATION_COOKIE = 'x-impersonate-tenant';
+
+/** 
+ * SuperAdmin: Enter a tenant's workspace for customer support.
+ * Sets a cookie that the TenantContext reads to override the session's tenantId.
+ */
+export async function impersonateTenant(tenantId: string) {
+    await verifySuperadmin();
+    
+    // Verify tenant exists
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { id: true, companyName: true },
+    });
+    if (!tenant) throw new Error("Tenant not found.");
+
+    const cookieStore = await cookies();
+    cookieStore.set(IMPERSONATION_COOKIE, tenantId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 60 * 60 * 4, // 4 hours max
+    });
+
+    return { ok: true, companyName: tenant.companyName };
+}
+
+/**
+ * SuperAdmin: Exit impersonation and return to the SuperAdmin panel.
+ */
+export async function stopImpersonation() {
+    await verifySuperadmin();
+    const cookieStore = await cookies();
+    cookieStore.delete(IMPERSONATION_COOKIE);
+    revalidatePath("/");
+    return { ok: true };
 }

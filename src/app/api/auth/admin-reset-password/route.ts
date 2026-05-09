@@ -2,14 +2,18 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { hashPassword, validatePassword } from '@/lib/password';
-import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
+import { PLATFORM_ADMIN_ROLES, WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const role = (session?.user as any)?.role;
+        const caller = session?.user as any;
+        const role = caller?.role;
 
-        if (!PLATFORM_ADMIN_ROLES.includes(role)) {
+        const isPlatformAdmin = PLATFORM_ADMIN_ROLES.includes(role);
+        const isWorkspaceOwner = WORKSPACE_OWNER_ROLES.includes(role);
+
+        if (!isPlatformAdmin && !isWorkspaceOwner) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -25,10 +29,18 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: validation.errors[0] }, { status: 400 });
         }
 
-        // Verify user exists
+        // Verify target user exists
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
+
+        // Workspace owners can only reset passwords for users in their own tenant
+        if (!isPlatformAdmin && isWorkspaceOwner) {
+            const callerTenantId = caller?.tenantId;
+            if (!callerTenantId || user.tenantId !== callerTenantId) {
+                return NextResponse.json({ error: 'You can only reset passwords for your own team members' }, { status: 403 });
+            }
         }
 
         // Hash and save

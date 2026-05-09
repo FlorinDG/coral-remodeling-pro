@@ -72,7 +72,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     sales:      'sidebar.sales',
 };
 
-export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null }) {
+export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt, isImpersonating = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null, isImpersonating?: boolean }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -396,6 +396,32 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                 <X className="w-3.5 h-3.5" />
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* SuperAdmin Impersonation Banner */}
+                {isImpersonating && (
+                    <div className="flex-shrink-0 bg-violet-600 dark:bg-violet-700 px-6 py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <ShieldAlert className="w-4 h-4 text-violet-200 flex-shrink-0" />
+                            <p className="text-xs font-bold text-white">
+                                IMPERSONATION MODE — You are viewing this workspace as SuperAdmin for customer support.
+                            </p>
+                        </div>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    const { stopImpersonation } = await import('@/app/actions/superadmin');
+                                    await stopImpersonation();
+                                    window.location.href = '/en/superadmin';
+                                } catch {
+                                    window.location.href = '/en/superadmin';
+                                }
+                            }}
+                            className="text-xs font-bold text-white bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                        >
+                            Exit Impersonation
+                        </button>
                     </div>
                 )}
 

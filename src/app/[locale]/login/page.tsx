@@ -621,12 +621,22 @@ export default function LoginPage() {
             {/* Footer */}
             <div className="mt-6 flex flex-col items-center gap-2 z-10 relative">
                 <p className="text-center text-neutral-500 text-[10px] uppercase tracking-widest font-medium">
-                    Door verder te gaan, ga je akkoord met onze{' '}
-                    <Link href="/terms" className="text-blue-500 hover:text-blue-600 transition-colors">voorwaarden</Link>
+                    By continuing, you agree to our{' '}
+                    <Link href="/terms" className="text-blue-500 hover:text-blue-600 transition-colors">Terms</Link>
+                    {', '}
+                    <Link href="/privacy" className="text-blue-500 hover:text-blue-600 transition-colors">Privacy Policy</Link>
+                    {' & '}
+                    <Link href="/eula" className="text-blue-500 hover:text-blue-600 transition-colors">EULA</Link>
                 </p>
-                <Link href="/help" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
-                    Help &amp; Documentatie
-                </Link>
+                <div className="flex items-center gap-3">
+                    <Link href="/faq" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
+                        FAQ
+                    </Link>
+                    <span className="text-neutral-300 dark:text-neutral-600 text-[10px]">·</span>
+                    <Link href="/help" className="text-[10px] text-neutral-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-medium">
+                        Help & Docs
+                    </Link>
+                </div>
             </div>
 
             {/* Background blurs */}

@@ -14,6 +14,7 @@ import {
     setTenantOcrEngine,
     setTenantScanQuota,
     updateTenantOcrKeys,
+    impersonateTenant,
 } from "@/app/actions/superadmin";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -297,6 +298,22 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                     </button>
                                                     {openMenu === t.id && (
                                                         <div className="absolute right-0 top-full mt-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl z-50 py-1 w-44">
+                                                            <button
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        await impersonateTenant(t.id);
+                                                                        setOpenMenu(null);
+                                                                        window.location.href = '/en/admin/dashboard';
+                                                                    } catch (e: any) {
+                                                                        alert(e.message || 'Failed to enter workspace');
+                                                                    }
+                                                                }}
+                                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors font-bold"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                                Enter Workspace
+                                                            </button>
+                                                            <div className="h-px bg-neutral-100 dark:bg-white/5 my-1" />
                                                             <button
                                                                 onClick={() => { handleReset(t.id); setOpenMenu(null); }}
                                                                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"

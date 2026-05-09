@@ -5,6 +5,8 @@ import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSync
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
+import { cookies } from "next/headers";
+import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 // Coral Enterprises tenant — the platform owner workspace.
 // Set OWNER_TENANT_ID in .env to override the production ID.
@@ -22,13 +24,24 @@ export default async function Layout({ children }: { children: React.ReactNode }
     let subscriptionStatus: string = 'ACTIVE';
     let trialEndsAt: string | null = null;
 
+    let isImpersonating = false;
+
     // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
-    // Middleware already guards /admin, so if auth() itself throws we still
-    // render — the user sees a restricted but working UI, not a 500.
     try {
         const session = await auth();
+        const userRole = (session?.user as { role?: string })?.role;
         tenantId = (session?.user as { tenantId?: string | null })?.tenantId ?? null;
         isOwner  = tenantId === OWNER_TENANT_ID;
+
+        // SuperAdmin impersonation: override tenantId with cookie value
+        if (userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any)) {
+            const cookieStore = await cookies();
+            const impersonatedTenant = cookieStore.get('x-impersonate-tenant')?.value;
+            if (impersonatedTenant) {
+                tenantId = impersonatedTenant;
+                isImpersonating = true;
+            }
+        }
     } catch (e) {
         console.error('[layout] auth() failed:', e);
     }
@@ -69,7 +82,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt}>
+            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating}>
                 {children}
             </AdminLayout>
         </AuthProvider>

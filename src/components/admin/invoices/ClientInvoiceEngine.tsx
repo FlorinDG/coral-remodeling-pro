@@ -740,124 +740,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         </div>
                     </div>
 
-                    {/* Action Buttons — Monocolor brand-themed */}
+                    {/* Properties panel toggle */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Create Credit Nota button — available for all invoices (not credit notes) */}
-                        {isHydrated && !isCreditNote && (
-                            <button
-                                onClick={handleCreateCreditNote}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <ReceiptText className="w-3.5 h-3.5" /> Credit Nota
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={handleSendEmail}
-                                disabled={isSending || !clientId}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <Mail className="w-3.5 h-3.5" /> {isSending ? 'Sending...' : 'Send'}
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={handleSaveToDrive}
-                                disabled={isSavingToDrive || !clientId}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={handleSendPeppol}
-                                disabled={isSendingPeppol || !clientId || isLocked}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: (clientId && !isLocked) ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <Send className="w-3.5 h-3.5" /> {isSendingPeppol ? 'Sending...' : 'Peppol'}
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={async () => {
-                                    if (isDownloading) return;
-                                    setIsDownloading(true);
-                                    try {
-                                        const doc = (
-                                            <InvoicePDFTemplate
-                                                blocks={blocks}
-                                                invoiceTitle={String(invoiceTitle)}
-                                                betreft={String(betreft)}
-                                                clientInfo={buildClientInfo()}
-                                                projectId={String(projectId)}
-                                                grandTotal={grandTotal}
-                                                databaseStoreState={useDatabaseStore.getState()}
-                                                tenantProfile={tenantProfile}
-                                                templateId={tenantProfile?.documentTemplate || 't1'}
-                                                language={docLanguage}
-                                            />
-                                        );
-                                        const blob = await generatePdfBlob(doc, tenantProfile);
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `Factuur_${invoiceTitle || 'Draft'}.pdf`;
-                                        a.click();
-                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
-                                    } catch (e) {
-                                        console.error('[PDF] export failed:', e);
-                                        toast.error('PDF genereren mislukt.');
-                                    } finally {
-                                        setIsDownloading(false);
-                                    }
-                                }}
-                                disabled={isDownloading}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
-                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-                            >
-                                <FileText className="w-3.5 h-3.5" />
-                                {isDownloading ? 'Generating...' : 'Export PDF'}
-                            </button>
-                        )}
-
-                        {/* Delete — only for drafts */}
-                        {isHydrated && isDraft && (
-                            <button
-                                onClick={() => {
-                                    if (window.confirm('Are you sure you want to permanently delete this draft invoice?')) {
-                                        const deletePage = useDatabaseStore.getState().deletePage;
-                                        deletePage(invoicesDbId, id);
-                                        router.back();
-                                    }
-                                }}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border text-red-500 border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" /> Delete
-                            </button>
-                        )}
-
-                        {/* Properties panel toggle */}
                         <button
                             onClick={() => setShowProperties(v => !v)}
                             title={showProperties ? 'Hide properties' : 'Show record properties'}
@@ -983,6 +867,127 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     </aside>
                 )}
             </div>
+
+            {/* ── Bottom Action Bar ─────────────────────────────────────── */}
+            {isHydrated && (
+                <div className="shrink-0 border-t border-neutral-200 dark:border-white/10 bg-white dark:bg-black px-4 py-3">
+                    <div className="flex items-center gap-3 max-w-[1400px] mx-auto">
+                        {/* Left group: document actions */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {!isCreditNote && (
+                                <button
+                                    onClick={handleCreateCreditNote}
+                                    className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border hover:opacity-90 active:scale-[0.97]"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                        color: 'var(--brand-color, #d35400)',
+                                    }}
+                                >
+                                    <ReceiptText className="w-4 h-4" /> Credit Nota
+                                </button>
+                            )}
+                            <button
+                                onClick={handleSendEmail}
+                                disabled={isSending || !clientId}
+                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
+                                style={{
+                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <Mail className="w-4 h-4" /> {isSending ? 'Sending...' : 'Send'}
+                            </button>
+                            <button
+                                onClick={handleSaveToDrive}
+                                disabled={isSavingToDrive || !clientId}
+                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
+                                style={{
+                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <CloudUpload className="w-4 h-4" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
+                            </button>
+                            <button
+                                onClick={handleSendPeppol}
+                                disabled={isSendingPeppol || !clientId || isLocked}
+                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
+                                style={{
+                                    backgroundColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: (clientId && !isLocked) ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <Send className="w-4 h-4" /> {isSendingPeppol ? 'Sending...' : 'Peppol'}
+                            </button>
+                        </div>
+
+                        <div className="flex-1" />
+
+                        {/* Right group: export + delete */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={async () => {
+                                    if (isDownloading) return;
+                                    setIsDownloading(true);
+                                    try {
+                                        const doc = (
+                                            <InvoicePDFTemplate
+                                                blocks={blocks}
+                                                invoiceTitle={String(invoiceTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenantProfile}
+                                                templateId={tenantProfile?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                            />
+                                        );
+                                        const blob = await generatePdfBlob(doc, tenantProfile);
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Factuur_${invoiceTitle || 'Draft'}.pdf`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                    } catch (e) {
+                                        console.error('[PDF] export failed:', e);
+                                        toast.error('PDF genereren mislukt.');
+                                    } finally {
+                                        setIsDownloading(false);
+                                    }
+                                }}
+                                disabled={isDownloading}
+                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm"
+                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                            >
+                                <FileText className="w-4 h-4" />
+                                {isDownloading ? 'Generating...' : 'Export PDF'}
+                            </button>
+
+                            {isDraft && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm('Are you sure you want to permanently delete this draft invoice?')) {
+                                            const deletePage = useDatabaseStore.getState().deletePage;
+                                            deletePage(invoicesDbId, id);
+                                            router.back();
+                                        }
+                                    }}
+                                    className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border text-red-500 border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.97]"
+                                >
+                                    <Trash2 className="w-4 h-4" /> Delete
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
 
             <PDFImportModal

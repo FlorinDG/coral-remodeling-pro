@@ -99,6 +99,15 @@ const idbStorage: StateStorage = {
     },
 };
 
+// ── Undo system ─────────────────────────────────────────────────────────────
+type UndoEntry =
+    | { type: 'updatePageProperty'; databaseId: string; pageId: string; propertyId: string; oldValue: any }
+    | { type: 'deletePage'; databaseId: string; page: Page }
+    | { type: 'deletePages'; databaseId: string; pages: Page[] }
+    | { type: 'clearDatabase'; databaseId: string; pages: Page[] };
+
+const UNDO_STACK_LIMIT = 50;
+
 interface DatabaseState {
     databases: Database[];
     hydrateDatabases: (databases: Database[]) => void;
@@ -109,6 +118,11 @@ interface DatabaseState {
     _syncStart: () => void;
     _syncDone: () => void;
     _syncError: () => void;
+
+    // Undo
+    undoStack: UndoEntry[];
+    undo: () => UndoEntry | null;
+    _pushUndo: (entry: UndoEntry) => void;
 
     // Database Operations
     createDatabase: (name: string, description?: string, specificId?: string, properties?: Property[]) => Database;
@@ -162,6 +176,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             databases: [],
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
+            undoStack: [] as UndoEntry[],
 
             _syncStart: () => set(s => ({ pendingSyncs: s.pendingSyncs + 1, syncStatus: 'saving' as const })),
             _syncDone: () => set(s => {
@@ -172,6 +187,76 @@ export const useDatabaseStore = create<DatabaseState>()(
                 pendingSyncs: Math.max(0, s.pendingSyncs - 1),
                 syncStatus: 'error' as const
             })),
+
+            _pushUndo: (entry) => set(s => ({
+                undoStack: [...s.undoStack.slice(-(UNDO_STACK_LIMIT - 1)), entry]
+            })),
+
+            undo: () => {
+                const stack = get().undoStack;
+                if (stack.length === 0) return null;
+                const entry = stack[stack.length - 1];
+                set(s => ({ undoStack: s.undoStack.slice(0, -1) }));
+
+                switch (entry.type) {
+                    case 'updatePageProperty': {
+                        // Restore old property value
+                        set(s => ({
+                            databases: s.databases.map(db => {
+                                if (db.id !== entry.databaseId) return db;
+                                return {
+                                    ...db,
+                                    pages: db.pages.map((p: Page) => {
+                                        if (p.id !== entry.pageId) return p;
+                                        return { ...p, properties: { ...p.properties, [entry.propertyId]: entry.oldValue }, updatedAt: new Date().toISOString() };
+                                    }),
+                                    updatedAt: new Date().toISOString()
+                                };
+                            })
+                        }));
+                        const db = get().databases.find(d => d.id === entry.databaseId);
+                        if (db) syncPage(db.pages.find((p: Page) => p.id === entry.pageId));
+                        break;
+                    }
+                    case 'deletePage': {
+                        // Re-insert the deleted page
+                        set(s => ({
+                            databases: s.databases.map(db => {
+                                if (db.id !== entry.databaseId) return db;
+                                return { ...db, pages: [...db.pages, entry.page], updatedAt: new Date().toISOString() };
+                            })
+                        }));
+                        const parentDb = get().databases.find(d => d.id === entry.databaseId);
+                        syncPage(entry.page, parentDb);
+                        break;
+                    }
+                    case 'deletePages': {
+                        // Re-insert all deleted pages
+                        set(s => ({
+                            databases: s.databases.map(db => {
+                                if (db.id !== entry.databaseId) return db;
+                                return { ...db, pages: [...db.pages, ...entry.pages], updatedAt: new Date().toISOString() };
+                            })
+                        }));
+                        const parentDb2 = get().databases.find(d => d.id === entry.databaseId);
+                        syncPagesBatch(entry.pages, parentDb2);
+                        break;
+                    }
+                    case 'clearDatabase': {
+                        // Re-insert all cleared pages
+                        set(s => ({
+                            databases: s.databases.map(db => {
+                                if (db.id !== entry.databaseId) return db;
+                                return { ...db, pages: [...db.pages, ...entry.pages], updatedAt: new Date().toISOString() };
+                            })
+                        }));
+                        const parentDb3 = get().databases.find(d => d.id === entry.databaseId);
+                        syncPagesBatch(entry.pages, parentDb3);
+                        break;
+                    }
+                }
+                return entry;
+            },
 
             hydrateDatabases: (serverDatabases) => {
                 // Preserve local view preferences (column widths, visibility, order)
@@ -264,9 +349,13 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             clearDatabase: (databaseId) => {
-                // Capture page IDs before clearing locally
+                // Capture all pages for undo before clearing
                 const db = get().databases.find(d => d.id === databaseId);
-                const pageIds = db?.pages.map((p: Page) => p.id) || [];
+                const allPages = db?.pages.map(p => ({ ...p })) || [];
+                if (allPages.length > 0) {
+                    get()._pushUndo({ type: 'clearDatabase', databaseId, pages: allPages });
+                }
+                const pageIds = allPages.map((p: Page) => p.id);
 
                 set((state) => ({
                     databases: state.databases.map(d =>
@@ -749,6 +838,12 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {
+                // Capture old value for undo before mutating
+                const oldPage = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+                if (oldPage) {
+                    get()._pushUndo({ type: 'updatePageProperty', databaseId, pageId, propertyId, oldValue: oldPage.properties[propertyId] });
+                }
+
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -854,6 +949,12 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             deletePage: (databaseId, pageId) => {
+                // Capture full page for undo before deleting
+                const deletedPage = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+                if (deletedPage) {
+                    get()._pushUndo({ type: 'deletePage', databaseId, page: { ...deletedPage } });
+                }
+
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -868,6 +969,13 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             deletePages: (databaseId, pageIds) => {
+                // Capture all pages for undo before deleting
+                const db = get().databases.find(d => d.id === databaseId);
+                const deletedPages = db?.pages.filter((p: Page) => pageIds.includes(p.id)).map(p => ({ ...p })) || [];
+                if (deletedPages.length > 0) {
+                    get()._pushUndo({ type: 'deletePages', databaseId, pages: deletedPages });
+                }
+
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1081,6 +1189,11 @@ export const useDatabaseStore = create<DatabaseState>()(
             name: 'coral-database-storage-v4', // Nuclear Option to abandon all legacy schemas
             version: 4,
             storage: createJSONStorage(() => idbStorage),
+            partialize: (state) => {
+                // Exclude transient undo stack from persistence
+                const { undoStack, ...rest } = state;
+                return rest as any;
+            },
             migrate: (persistedState: any, version: number) => {
                 if (version < 3) {
                     // Force an absolute wipe of db-1 to force deep hydration of the new 

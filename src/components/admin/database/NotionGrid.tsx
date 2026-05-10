@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useEffect, useState, useRef } from 'react';
+import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
 import {
@@ -32,6 +32,7 @@ import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
 import DatabaseFooter from './components/DatabaseFooter';
 import { Property } from './types';
+import { toast } from 'sonner';
 
 interface NotionGridProps {
     databaseId: string;
@@ -57,6 +58,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
     const addProperty = useDatabaseStore(state => state.addProperty);
     const clearDatabase = useDatabaseStore(state => state.clearDatabase);
+    const undo = useDatabaseStore(state => state.undo);
+    const undoStackLength = useDatabaseStore(state => state.undoStack.length);
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -143,6 +146,33 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             clearTimeout(timer);
         };
     }, []);
+
+    // ── Global Ctrl+Z / ⌘+Z undo handler ────────────────────────────────
+    const handleUndo = useCallback((e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+            // Don't hijack undo when user is typing in an input/textarea
+            const tag = (e.target as HTMLElement)?.tagName;
+            const isEditable = (e.target as HTMLElement)?.isContentEditable;
+            if (tag === 'INPUT' || tag === 'TEXTAREA' || isEditable) return;
+
+            e.preventDefault();
+            const entry = undo();
+            if (entry) {
+                const labels: Record<string, string> = {
+                    updatePageProperty: 'Celwijziging ongedaan gemaakt',
+                    deletePage: 'Rij hersteld',
+                    deletePages: 'Rijen hersteld',
+                    clearDatabase: 'Database hersteld',
+                };
+                toast.success(labels[entry.type] || 'Ongedaan gemaakt', { duration: 2500 });
+            }
+        }
+    }, [undo]);
+
+    useEffect(() => {
+        document.addEventListener('keydown', handleUndo);
+        return () => document.removeEventListener('keydown', handleUndo);
+    }, [handleUndo]);
 
     // Measure the grid area and pass pixel height to DataSheetGrid so it fills
     // the container instead of sizing to content (~400 px default).

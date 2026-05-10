@@ -85,6 +85,12 @@ body {
   -webkit-user-select: text !important;
 }
 
+/* Content font — legible IBM Plex Sans for data-heavy areas */
+input, textarea, select, table, td, th,
+.font-content {
+  font-family: var(--font-content), 'IBM Plex Sans', system-ui, sans-serif;
+}
+
 .glass-morphism {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);

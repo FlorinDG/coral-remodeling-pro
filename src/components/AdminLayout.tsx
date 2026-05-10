@@ -47,6 +47,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
 import { useTabStore } from "@/store/useTabStore";
 import { hrTabs, relationsTabs, frontendTabs, financialTabs, settingsTabs } from "@/config/tabs";
+import { SCHEMA_VERSION } from "@/lib/schema-version";
 
 const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...financialTabs, ...settingsTabs];
 
@@ -82,6 +83,18 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
     const [resendingVerification, setResendingVerification] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
+    const [schemaStale, setSchemaStale] = useState(false);
+
+    // ── Schema version check — enforce client update on breaking deploys ──
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem('coral-schema-version');
+            if (stored && parseInt(stored, 10) !== SCHEMA_VERSION) {
+                setSchemaStale(true);
+            }
+            localStorage.setItem('coral-schema-version', String(SCHEMA_VERSION));
+        } catch {}
+    }, []);
 
     const isEmailVerified = (session?.user as unknown as { emailVerified?: boolean })?.emailVerified;
     const userEmail = session?.user?.email;
@@ -295,7 +308,10 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         onClick={async () => {
                             // Clear IDB database cache before logout to prevent ghost databases
                             // from leaking into the next session (cross-user contamination)
-                            try { await del('coral-database-storage-v4'); } catch {}
+                            try {
+                                await del('coral-database-storage-v4');
+                                localStorage.removeItem('coral-schema-version');
+                            } catch {}
                             signOut({ callbackUrl: "/" });
                         }}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-500 hover:bg-red-500/10 transition-colors"
@@ -440,6 +456,23 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         >
                             Update Billing →
                         </Link>
+                    </div>
+                )}
+
+                {/* Schema update banner — non-dismissable */}
+                {schemaStale && (
+                    <div className="flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/30 px-6 py-2.5 flex items-center justify-center gap-3">
+                        <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 animate-spin" />
+                        <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                            Een update is beschikbaar. Herlaad om door te gaan.
+                        </p>
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="text-xs font-bold text-white px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
+                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                        >
+                            Herladen
+                        </button>
                     </div>
                 )}
 

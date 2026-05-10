@@ -201,6 +201,9 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'profit_sales': { nl: 'Totale Verkoop', fr: 'Ventes Totales', en: 'Total Sales' },
     'profit_estimate': { nl: 'Geschatte Winst', fr: 'Bénéfice Estimé', en: 'Est. Profit' },
     'profit_margin': { nl: 'Marge %', fr: 'Marge %', en: 'Margin %' },
+
+    // ── Addendum ─────────────────────────────────────────────────────
+    'engine_create_addendum': { nl: 'Addendum aanmaken', fr: 'Créer un avenant', en: 'Create Addendum' },
 };
 
 export function t(key: string, lang?: string): string {

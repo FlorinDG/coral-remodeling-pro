@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -21,6 +21,8 @@ import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
+import CreateClientModal from './CreateClientModal';
+import CreateProjectModal from './CreateProjectModal';
 
 import { Bot, Mail, CloudUpload, Send, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -34,6 +36,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const createPage = useDatabaseStore(state => state.createPage);
 
     // Resolve tenant-scoped DB IDs — handles both bare ('db-invoices') and scoped ('db-invoices-xxx')
     const invoicesDbId   = resolveDbId('db-invoices');
@@ -52,6 +55,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
     const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
+    const [showNewClientModal, setShowNewClientModal] = useState(false);
+    const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -723,9 +728,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </Link>
                             )}
                         </div>
+                        {/* New Client Button */}
+                        {isDraft && (
+                            <button
+                                onClick={() => setShowNewClientModal(true)}
+                                className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
+                                title="Nieuwe klant aanmaken"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </button>
+                        )}
 
                         {/* Project Selector — only for tenants with project management */}
                         {hasProjects && (
+                        <>
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
                             <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
                             <select
@@ -751,6 +767,17 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </Link>
                             )}
                         </div>
+                        {/* New Project Button */}
+                        {isDraft && (
+                            <button
+                                onClick={() => setShowNewProjectModal(true)}
+                                className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
+                                title="Nieuw project aanmaken"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </button>
+                        )}
+                        </>
                         )}
 
                         {/* Offerte Selector */}
@@ -1057,6 +1084,23 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 message="Je hebt je maandelijkse limiet voor het verzenden van Peppol facturen bereikt. Om meer facturen te verzenden via e-invoice.be, kan je upgraden naar een hoger plan of een volume pack aankopen in de instellingen."
                 confirmLabel="Upgrade Plan"
                 cancelLabel="Sluiten"
+            />
+
+            <CreateClientModal
+                isOpen={showNewClientModal}
+                onClose={() => setShowNewClientModal(false)}
+                onCreated={(pageId) => handleUpdateProperty('client', pageId)}
+                createPage={createPage}
+                clientsDbId={clientsDbId}
+            />
+
+            <CreateProjectModal
+                isOpen={showNewProjectModal}
+                onClose={() => setShowNewProjectModal(false)}
+                onCreated={(pageId) => handleUpdateProperty('project', pageId)}
+                createPage={createPage}
+                projectDbId={projectDbId}
+                preselectedClientId={clientId}
             />
         </div>
     );

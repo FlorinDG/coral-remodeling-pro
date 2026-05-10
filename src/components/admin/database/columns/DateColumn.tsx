@@ -79,15 +79,20 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
     const selectedMonth = value ? parsed.getMonth() : null;
     const selectedDay = value ? parsed.getDate() : null;
 
-    // Close on click outside
+    // Close on click outside — delayed registration to avoid catching the opening click
     useEffect(() => {
         function handleClick(e: MouseEvent) {
             if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
                 onClose();
             }
         }
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        const timer = setTimeout(() => {
+            document.addEventListener('mousedown', handleClick);
+        }, 50);
+        return () => {
+            clearTimeout(timer);
+            document.removeEventListener('mousedown', handleClick);
+        };
     }, [onClose]);
 
     const daysInMonth = getDaysInMonth(viewYear, viewMonth);

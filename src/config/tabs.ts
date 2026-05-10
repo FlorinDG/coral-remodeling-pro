@@ -7,8 +7,6 @@ export const hrTabs = [
 ];
 
 export const relationsTabs = [
-    { label: 'CONTACTS', href: '/admin/contacts', id: 'contacts' },
-    { label: 'LEVERANCIERS (SUPPLIERS)', href: '/admin/suppliers', id: 'suppliers' },
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
 ];
 

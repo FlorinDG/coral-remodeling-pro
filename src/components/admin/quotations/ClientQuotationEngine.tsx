@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2 } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -409,10 +409,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             title: `[EXEC] ${betreft || quotationTitle}`,
             'prop-execution-status': 'opt-to-do',
             'prop-financial-status': 'opt-quote',
-            'prop-client-relation': [clientId],
+            'prop-client': [clientId],
             'prop-budget': grandTotal,
             'prop-start-date': quotationDate || '',
-            'prop-due-date': quotationDate || '',
+            'prop-end-date': quotationDate || '',
         });
 
         if (!newProject) {
@@ -443,15 +443,36 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
         toast.success('Project aangemaakt en taken toegewezen!');
 
-        // 4. Navigate to the new Bordereau route
-        router.push(`/${locale}/admin/projects-management/bordereau/${newProject.id}`);
+        // 4. Navigate to the newly created project
+        router.push(`/${locale}/admin/projects-management?projectId=${newProject.id}`);
+    };
+
+    // Create an addendum — independent quotation linked to the parent
+    const handleCreateAddendum = () => {
+        const addendumTitle = `ADD-${quotationTitle}`;
+        const newPage = createPage(quotationsDbId, {
+            title: addendumTitle,
+            client: clientId || '',
+            project: projectId || '',
+            betreft: `Addendum: ${betreft || quotationTitle}`,
+            status: 'opt-draft',
+            parentQuoteId: id,
+            vatCalcMode: vatCalcMode,
+            vatRegime: vatRegime,
+        });
+        if (newPage) {
+            toast.success('Addendum aangemaakt!');
+            router.push(`/${locale}/admin/quotations/${newPage.id}`);
+        } else {
+            toast.error('Addendum aanmaken mislukt.');
+        }
     };
 
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
-                <div className="flex items-center gap-4 px-4 py-3">
+                <div className="flex flex-wrap items-center gap-3 px-4 py-3">
                     {/* Back + Title */}
                     <button
                         onClick={() => router.back()}
@@ -591,6 +612,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </button>
                             ) : null;
                         })()}
+                        {/* Addendum button — always visible when hydrated */}
+                        {isHydrated && (
+                            <button
+                                onClick={handleCreateAddendum}
+                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                    color: 'var(--brand-color, #d35400)',
+                                }}
+                            >
+                                <FilePlus2 className="w-3.5 h-3.5" /> {ti18n('engine_create_addendum', locale)}
+                            </button>
+                        )}
                         {isHydrated && (
                             <button
                                 onClick={handleSendEmail}

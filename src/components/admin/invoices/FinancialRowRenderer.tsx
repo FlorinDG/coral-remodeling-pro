@@ -43,6 +43,42 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const [searchQuery, setSearchQuery] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
 
+    // ── European number formatting helpers ──────────────────────────
+    // Parse European input: dots are thousands separators, comma is decimal
+    const parseEU = (raw: string): number => {
+        if (!raw || raw.trim() === '') return 0;
+        // Remove dots (thousands), replace comma with dot (decimal)
+        const cleaned = raw.replace(/\./g, '').replace(',', '.');
+        const n = parseFloat(cleaned);
+        return isNaN(n) ? 0 : n;
+    };
+
+    // Format number for display in European style
+    const formatEU = (n: number | undefined | null, decimals = 2): string => {
+        if (n === undefined || n === null || n === 0) return '';
+        return n.toLocaleString('nl-BE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    };
+
+    // Local text state for Qty and Price inputs (allows free typing with commas)
+    const [qtyText, setQtyText] = useState(() => block.quantity ? formatEU(block.quantity, 2).replace(/,00$/, '') : '');
+    const [priceText, setPriceText] = useState(() => block.unitPrice ? formatEU(block.unitPrice) : '');
+
+    // Sync local text when block changes externally (e.g. article selection)
+    React.useEffect(() => {
+        const formatted = block.quantity ? formatEU(block.quantity, 2).replace(/,00$/, '') : '';
+        setQtyText(prev => {
+            const parsed = parseEU(prev);
+            return parsed === (block.quantity || 0) ? prev : formatted;
+        });
+    }, [block.quantity]);
+    React.useEffect(() => {
+        const formatted = block.unitPrice ? formatEU(block.unitPrice) : '';
+        setPriceText(prev => {
+            const parsed = parseEU(prev);
+            return parsed === (block.unitPrice || 0) ? prev : formatted;
+        });
+    }, [block.unitPrice]);
+
     // Compute active variant pricing deltas specifically for visual UI components
     const variantDeltas = useMemo(() => {
         let deltas = 0;
@@ -357,12 +393,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 <div className="flex flex-col gap-0.5 w-[65px] shrink-0 self-start mt-0.5 relative group/input text-center">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Qty</label>
                     <input
-                        type="number"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="1"
-                        value={block.quantity ?? ''}
-                        onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
-                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        value={qtyText}
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            // Allow digits, dots (thousands), comma (decimal), minus
+                            if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                setQtyText(v);
+                                const parsed = parseEU(v);
+                                onUpdate({ quantity: parsed });
+                            }
+                        }}
+                        onBlur={() => {
+                            const parsed = parseEU(qtyText);
+                            if (parsed !== 0) {
+                                setQtyText(formatEU(parsed, 2).replace(/,00$/, ''));
+                            } else {
+                                setQtyText('');
+                            }
+                        }}
+                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5"
                     />
                 </div>
 
@@ -392,16 +444,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Prijs</label>
                     <div className="w-full relative">
                         <input
-                            type="number"
-                            step="0.01"
-                            placeholder="0.00"
-                            value={block.unitPrice ?? ''}
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0,00"
+                            value={priceText}
                             onChange={(e) => {
-                                const newUnitPrice = parseFloat(e.target.value) || 0;
-                                onUpdate({ unitPrice: newUnitPrice, verkoopPrice: newUnitPrice });
+                                const v = e.target.value;
+                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                    setPriceText(v);
+                                    const newUnitPrice = parseEU(v);
+                                    onUpdate({ unitPrice: newUnitPrice, verkoopPrice: newUnitPrice });
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsed = parseEU(priceText);
+                                if (parsed !== 0) {
+                                    setPriceText(formatEU(parsed));
+                                } else {
+                                    setPriceText('');
+                                }
                             }}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>

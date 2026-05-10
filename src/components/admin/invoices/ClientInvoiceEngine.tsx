@@ -651,7 +651,39 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
                                     {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
                                 </p>
-                                {!isDraft && <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 12%, transparent)', color: 'var(--brand-color, #d35400)' }}>{invoiceStatus.replace('opt-', '')}</span>}
+                                {/* Interactive status selector */}
+                                {isHydrated && (() => {
+                                    const STATUS_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+                                        'opt-draft':          { label: 'Concept',   bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
+                                        'opt-sent':           { label: 'Verzonden', bg: 'bg-blue-50 dark:bg-blue-900/30',     text: 'text-blue-700 dark:text-blue-300',       dot: 'bg-blue-500' },
+                                        'opt-paid':           { label: 'Betaald',   bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
+                                        'opt-overdue':        { label: 'Vervallen', bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
+                                        'opt-uncollectible':  { label: 'Oninbaar',  bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
+                                    };
+                                    const current = STATUS_MAP[invoiceStatus] || STATUS_MAP['opt-draft'];
+                                    return (
+                                        <div className="relative group/status">
+                                            <button
+                                                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text} transition-all hover:ring-2 hover:ring-neutral-300 dark:hover:ring-white/20`}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                                                {current.label}
+                                            </button>
+                                            <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-50 opacity-0 pointer-events-none group-hover/status:opacity-100 group-hover/status:pointer-events-auto transition-all duration-150">
+                                                {Object.entries(STATUS_MAP).map(([id, s]) => (
+                                                    <button
+                                                        key={id}
+                                                        onClick={() => handleUpdateProperty('status', id)}
+                                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${id === invoiceStatus ? 'bg-neutral-100 dark:bg-white/10' : 'hover:bg-neutral-50 dark:hover:bg-white/5'} ${s.text}`}
+                                                    >
+                                                        <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                                                        {s.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                                 {isLocked && (
                                     <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
                                         <Check className="w-2.5 h-2.5" /> Fiscale Lock

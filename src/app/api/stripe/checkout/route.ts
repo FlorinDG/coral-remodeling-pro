@@ -8,7 +8,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { getStripeInstance, getOrCreateStripeCustomer, getPriceId, PLAN_PRICING } from '@/lib/stripe';
-import { startTrial } from '@/lib/trial';
 
 export async function POST(req: Request) {
     try {
@@ -65,8 +64,6 @@ export async function POST(req: Request) {
             metadata: { tenantId, planType },
         });
 
-        // Start trial tracking in our DB
-        await startTrial(tenantId, planType);
 
         return NextResponse.json({ url: checkoutSession.url });
     } catch (error: unknown) {

@@ -62,13 +62,27 @@ export async function POST(req: Request) {
 
                 if (subscriptionId) {
                     const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                    const isTrial = sub.status === 'trialing';
+
                     await syncPlanToTenant(tenantId, planType, {
                         stripeCustomerId: typeof session.customer === 'string' ? session.customer : session.customer?.id,
                         stripeSubscriptionId: sub.id,
                         stripePriceId: sub.items.data[0]?.price?.id,
-                        subscriptionStatus: sub.status === 'trialing' ? 'TRIAL' : 'ACTIVE',
+                        subscriptionStatus: isTrial ? 'TRIAL' : 'ACTIVE',
                         billingCycle: session.metadata?.billingCycle || 'MONTHLY',
                     });
+
+                    // Set trial end date from Stripe's trial_end timestamp
+                    if (isTrial && sub.trial_end) {
+                        const { default: prisma } = await import('@/lib/prisma');
+                        await prisma.tenant.update({
+                            where: { id: tenantId },
+                            data: {
+                                trialEndsAt: new Date(sub.trial_end * 1000),
+                                trialNotifiedAt: null,
+                            },
+                        });
+                    }
                 }
 
                 console.log(`[Stripe Webhook] Provisioned ${planType} for tenant ${tenantId}`);

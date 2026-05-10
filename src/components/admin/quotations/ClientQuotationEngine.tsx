@@ -589,115 +589,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                     </div>
 
-                    {/* Action Buttons — Monocolor brand-themed */}
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        {/* Determine the "accepted" option dynamically from DB schema (3rd option) */}
-                        {(() => {
-                            const db = getDatabase(quotationsDbId);
-                            const statusProp = db?.properties.find(p => p.id === 'status');
-                            const acceptedOpt = statusProp?.config?.options?.[2]?.id;
-                            const currentStatus = String(quotation?.properties?.['status'] || '');
-                            const isAccepted = currentStatus === 'ACCEPTED' || currentStatus === 'opt-accepted' || (acceptedOpt && currentStatus === acceptedOpt);
-                            return hasProjects && isHydrated && isAccepted ? (
-                            <button
-                                onClick={handleHandover}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
-                            </button>
-                            ) : null;
-                        })()}
-                        {/* Addendum button — always visible when hydrated */}
-                        {isHydrated && (
-                            <button
-                                onClick={handleCreateAddendum}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <FilePlus2 className="w-3.5 h-3.5" /> {ti18n('engine_create_addendum', locale)}
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={handleSendEmail}
-                                disabled={isSending || !clientId}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <Mail className="w-3.5 h-3.5" /> {isSending ? ti18n('engine_sending', locale) : ti18n('engine_send', locale)}
-                            </button>
-                        )}
-                        {hasProjects && isHydrated && (
-                            <button
-                                onClick={handleSaveToDrive}
-                                disabled={isSavingToDrive || !clientId}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? ti18n('engine_saving', locale) : ti18n('engine_drive', locale)}
-                            </button>
-                        )}
-                        {isHydrated && (
-                            <button
-                                onClick={async () => {
-                                    if (isDownloading) return;
-                                    setIsDownloading(true);
-                                    try {
-                                        const doc = (
-                                            <QuotationPDFTemplate
-                                                blocks={blocks}
-                                                quotationTitle={String(quotationTitle)}
-                                                betreft={String(betreft)}
-                                                clientInfo={buildClientInfo()}
-                                                projectId={String(projectId)}
-                                                grandTotal={grandTotal}
-                                                databaseStoreState={useDatabaseStore.getState()}
-                                                tenantProfile={tenantProfile}
-                                                templateId={tenantProfile?.documentTemplate || 't1'}
-                                                language={docLanguage}
-                                            />
-                                        );
-                                        const blob = await generatePdfBlob(doc, tenantProfile);
-                                        const url = URL.createObjectURL(blob);
-                                        const a = document.createElement('a');
-                                        a.href = url;
-                                        a.download = `Offerte_${quotationTitle || 'Draft'}.pdf`;
-                                        a.click();
-                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
-                                    } catch (e) {
-                                        console.error('[PDF] export failed:', e);
-                                        toast.error('PDF genereren mislukt.');
-                                    } finally {
-                                        setIsDownloading(false);
-                                    }
-                                }}
-                                disabled={isDownloading}
-                                className="text-xs font-semibold px-3 py-2 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
-                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-                            >
-                                <FileText className="w-3.5 h-3.5" />
-                                {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
-                             </button>
-                        )}
-
-                        {/* Properties panel toggle */}
+                    {/* Properties panel toggle — only control remaining in topbar */}
+                    <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                         <button
                             onClick={() => setShowProperties(v => !v)}
                             title={showProperties ? 'Hide properties' : 'Show record properties'}
@@ -778,18 +671,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             >
                                 <span className="text-sm leading-none">+</span> {ti18n('engine_add_line', locale)}
                             </button>
-                            <div className="flex-1" />
-                            <button
-                                onClick={() => setIsImportModalOpen(true)}
-                                className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <Bot className="w-3.5 h-3.5" /> {ti18n('engine_ai_import', locale)}
-                            </button>
                         </div>
 
                         {/* Phase 10: Financial Summary & Profitability */}
@@ -818,6 +699,135 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     </aside>
                 )}
             </div>
+
+            {/* ── Sticky Bottom Action Bar ── */}
+            {isHydrated && (
+                <div className="sticky bottom-0 z-30 border-t border-neutral-200 dark:border-white/10 bg-white/80 dark:bg-black/80 backdrop-blur-xl px-4 py-2.5 shrink-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Handover — only when accepted */}
+                        {(() => {
+                            const db = getDatabase(quotationsDbId);
+                            const statusProp = db?.properties.find(p => p.id === 'status');
+                            const acceptedOpt = statusProp?.config?.options?.[2]?.id;
+                            const currentStatus = String(quotation?.properties?.['status'] || '');
+                            const isAccepted = currentStatus === 'ACCEPTED' || currentStatus === 'opt-accepted' || (acceptedOpt && currentStatus === acceptedOpt);
+                            return hasProjects && isAccepted ? (
+                                <button
+                                    onClick={handleHandover}
+                                    className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                        color: 'var(--brand-color, #d35400)',
+                                    }}
+                                >
+                                    <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
+                                </button>
+                            ) : null;
+                        })()}
+
+                        {/* Addendum */}
+                        <button
+                            onClick={handleCreateAddendum}
+                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
+                            style={{
+                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
+                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
+                                color: 'var(--brand-color, #d35400)',
+                            }}
+                        >
+                            <FilePlus2 className="w-3.5 h-3.5" /> {ti18n('engine_create_addendum', locale)}
+                        </button>
+
+                        {/* Send */}
+                        <button
+                            onClick={handleSendEmail}
+                            disabled={isSending || !clientId}
+                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
+                            style={{
+                                backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                            }}
+                        >
+                            <Mail className="w-3.5 h-3.5" /> {isSending ? ti18n('engine_sending', locale) : ti18n('engine_send', locale)}
+                        </button>
+
+                        {/* Drive */}
+                        {hasProjects && (
+                            <button
+                                onClick={handleSaveToDrive}
+                                disabled={isSavingToDrive || !clientId}
+                                className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? ti18n('engine_saving', locale) : ti18n('engine_drive', locale)}
+                            </button>
+                        )}
+
+                        {/* AI PDF Import */}
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
+                            style={{
+                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
+                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
+                                color: 'var(--brand-color, #d35400)',
+                            }}
+                        >
+                            <Bot className="w-3.5 h-3.5" /> {ti18n('engine_ai_import', locale)}
+                        </button>
+
+                        <div className="flex-1" />
+
+                        {/* Export PDF — primary action */}
+                        <button
+                            onClick={async () => {
+                                if (isDownloading) return;
+                                setIsDownloading(true);
+                                try {
+                                    const doc = (
+                                        <QuotationPDFTemplate
+                                            blocks={blocks}
+                                            quotationTitle={String(quotationTitle)}
+                                            betreft={String(betreft)}
+                                            clientInfo={buildClientInfo()}
+                                            projectId={String(projectId)}
+                                            grandTotal={grandTotal}
+                                            databaseStoreState={useDatabaseStore.getState()}
+                                            tenantProfile={tenantProfile}
+                                            templateId={tenantProfile?.documentTemplate || 't1'}
+                                            language={docLanguage}
+                                        />
+                                    );
+                                    const blob = await generatePdfBlob(doc, tenantProfile);
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `Offerte_${quotationTitle || 'Draft'}.pdf`;
+                                    a.click();
+                                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                } catch (e) {
+                                    console.error('[PDF] export failed:', e);
+                                    toast.error('PDF genereren mislukt.');
+                                } finally {
+                                    setIsDownloading(false);
+                                }
+                            }}
+                            disabled={isDownloading}
+                            className="text-xs font-semibold px-5 py-2.5 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
+                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <PDFImportModal
                 isOpen={isImportModalOpen}

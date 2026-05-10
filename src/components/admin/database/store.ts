@@ -1269,6 +1269,32 @@ export const useDatabaseStore = create<DatabaseState>()(
                     return currentDb;
                 });
 
+                // Post-merge migration: auto-upgrade text-typed date properties
+                // and normalise ISO timestamps to clean YYYY-MM-DD strings
+                const DATE_NAME_PATTERNS = ['datum', 'date', 'vervaldatum', 'factuurdatum', 'startdatum', 'einddatum', 'leveringsdatum'];
+                mergedDbs.forEach(db => {
+                    db.properties.forEach((prop: any) => {
+                        if (prop.type === 'text' && DATE_NAME_PATTERNS.includes(prop.name?.toLowerCase())) {
+                            prop.type = 'date';
+                        }
+                    });
+                    // Normalise ISO timestamps in date-typed property values
+                    const datePropertyIds = db.properties.filter((p: any) => p.type === 'date' || p.type === 'created_time' || p.type === 'last_edited_time').map((p: any) => p.id);
+                    if (datePropertyIds.length > 0 && db.pages) {
+                        db.pages.forEach((page: any) => {
+                            datePropertyIds.forEach((pid: string) => {
+                                const val = page.properties?.[pid];
+                                if (typeof val === 'string' && val.includes('T')) {
+                                    const d = new Date(val);
+                                    if (!isNaN(d.getTime())) {
+                                        page.properties[pid] = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+
                 return {
                     ...currentState,
                     databases: mergedDbs

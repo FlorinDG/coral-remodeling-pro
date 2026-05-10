@@ -322,7 +322,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         propId: prop.id,
                         onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value),
                     }) as any;
-                } else if (prop.type === 'date') {
+                } else if (prop.type === 'date' || prop.type === 'created_time' || prop.type === 'last_edited_time') {
                     baseColumn = dateColumn as any;
                 } else if (prop.type === 'currency' || prop.type === 'number') {
                     const symbol = prop.config?.format === 'dollar' ? '$' : '€';

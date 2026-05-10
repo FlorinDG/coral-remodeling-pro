@@ -174,7 +174,53 @@ export const useDatabaseStore = create<DatabaseState>()(
             })),
 
             hydrateDatabases: (serverDatabases) => {
-                set({ databases: serverDatabases });
+                // Preserve local view preferences (column widths, visibility, order)
+                // from the IDB-persisted store. Server is authoritative for schema &
+                // pages, but view-level presentation state lives client-side.
+                const localDbs = get().databases;
+                const localViewStateMap = new Map<string, Map<string, ViewPropertyState[]>>();
+                localDbs.forEach(db => {
+                    if (!db.views?.length) return;
+                    const viewMap = new Map<string, ViewPropertyState[]>();
+                    db.views.forEach(v => {
+                        if (v.propertiesState?.length) {
+                            viewMap.set(v.id, v.propertiesState);
+                        }
+                    });
+                    if (viewMap.size > 0) localViewStateMap.set(db.id, viewMap);
+                });
+
+                const merged = serverDatabases.map(serverDb => {
+                    const localViewMap = localViewStateMap.get(serverDb.id);
+                    if (!localViewMap || !serverDb.views?.length) return serverDb;
+
+                    return {
+                        ...serverDb,
+                        views: serverDb.views.map(view => {
+                            const localState = localViewMap.get(view.id);
+                            if (!localState?.length) return view;
+
+                            // Merge: local widths win, server provides the structural baseline
+                            const serverState = view.propertiesState || [];
+                            const serverMap = new Map(serverState.map(ps => [ps.propertyId, ps]));
+
+                            // Start from local state (preserves widths/order set by user)
+                            const mergedState = localState.map(ls => {
+                                const ss = serverMap.get(ls.propertyId);
+                                // Keep local width/order/hidden, but fall back to server if local is missing
+                                return { ...ss, ...ls };
+                            });
+
+                            // Add any server-only properties not in local (new columns)
+                            localState.forEach(ls => serverMap.delete(ls.propertyId));
+                            serverMap.forEach(ss => mergedState.push(ss));
+
+                            return { ...view, propertiesState: mergedState };
+                        }),
+                    };
+                });
+
+                set({ databases: merged });
             },
 
             createDatabase: (name, description, specificId, properties) => {

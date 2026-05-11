@@ -5,8 +5,9 @@ import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
 import {
     Type, Hash, Calendar, CheckSquare, Link2, List, Tag,
-    Lock, Search, ChevronDown, ChevronRight, X,
+    Lock, Search, ChevronDown, ChevronRight, X, GripVertical
 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import SelectDropdown from './SelectDropdown';
 
@@ -219,16 +220,24 @@ function PropertyRow({
     }
 
     return (
-        <div className="flex flex-col gap-1 py-2.5 border-b border-neutral-100 dark:border-white/5 last:border-0">
-            {/* Label */}
-            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-                <span className="flex-shrink-0">{icon}</span>
-                <span className="text-[10px] font-semibold uppercase tracking-wider truncate">{property.name}</span>
-                {isReadOnly && <Lock className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-50" />}
+        <div className="group flex items-center gap-2 py-1 hover:bg-neutral-100 dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 border-b border-neutral-100/50 dark:border-white/5 last:border-0">
+            {/* Grip (only if not read-only and provided) */}
+            {!isReadOnly && (
+                <div className="w-4 flex-shrink-0 text-neutral-300 dark:text-neutral-700 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
+                    <GripVertical className="w-3.5 h-3.5" />
+                </div>
+            )}
+            
+            {/* Label Column */}
+            <div className="w-24 lg:w-32 flex-shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 py-1">
+                <span className="flex-shrink-0 opacity-60 scale-75">{icon}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider truncate">{property.name}</span>
             </div>
-            {/* Value */}
-            <div className="min-h-[22px] flex items-center">
+
+            {/* Value Column */}
+            <div className="flex-1 min-w-0 min-h-[28px] flex items-center pr-2">
                 {valueEl}
+                {isReadOnly && <Lock className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-30" />}
             </div>
         </div>
     );
@@ -264,14 +273,34 @@ function Section({
                 {label}
                 <span className="ml-auto font-normal normal-case tracking-normal">{props.length}</span>
             </button>
-            {open && props.map(prop => (
-                <PropertyRow
-                    key={prop.id}
-                    property={prop}
-                    value={pageProperties[prop.id] ?? null}
-                    onChange={onChange}
-                />
-            ))}
+            {open && (
+                <Droppable droppableId={id}>
+                    {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef}>
+                            {props.map((prop, index) => (
+                                <Draggable key={prop.id} draggableId={prop.id} index={index} isDragDisabled={id === 'computed'}>
+                                    {(provided, snapshot) => (
+                                        <div
+                                            ref={provided.innerRef}
+                                            {...provided.draggableProps}
+                                            {...provided.dragHandleProps}
+                                            className={snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded z-50' : ''}
+                                            style={provided.draggableProps.style}
+                                        >
+                                            <PropertyRow
+                                                property={prop}
+                                                value={pageProperties[prop.id] ?? null}
+                                                onChange={onChange}
+                                            />
+                                        </div>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
+                        </div>
+                    )}
+                </Droppable>
+            )}
         </div>
     );
 }
@@ -316,6 +345,17 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
         });
     };
 
+    const handleDragEnd = (result: DropResult) => {
+        if (!result.destination || result.source.index === result.destination.index) return;
+        if (result.source.droppableId !== 'editable') return;
+        
+        // Find index of title if it exists to offset correctly
+        const titleIndex = database.properties.findIndex(p => p.id === 'title');
+        const offset = titleIndex !== -1 ? titleIndex + 1 : 0;
+        
+        useDatabaseStore.getState().updatePropertyOrder(databaseId, result.source.index + offset, result.destination.index + offset);
+    };
+
     return (
         <div className="flex flex-col h-full overflow-hidden bg-neutral-50/70 dark:bg-black/40">
             {/* Panel header */}
@@ -326,24 +366,26 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
 
             {/* Property list */}
             <div className="flex-1 overflow-y-auto px-4 py-0">
-                <Section 
-                    id="editable" 
-                    label="Fields" 
-                    props={editable} 
-                    collapsed={collapsed} 
-                    onToggle={toggle} 
-                    pageProperties={page.properties} 
-                    onChange={handleChange} 
-                />
-                <Section 
-                    id="computed" 
-                    label="Computed" 
-                    props={computed} 
-                    collapsed={collapsed} 
-                    onToggle={toggle} 
-                    pageProperties={page.properties} 
-                    onChange={handleChange} 
-                />
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <Section 
+                        id="editable" 
+                        label="Fields" 
+                        props={editable} 
+                        collapsed={collapsed} 
+                        onToggle={toggle} 
+                        pageProperties={page.properties} 
+                        onChange={handleChange} 
+                    />
+                    <Section 
+                        id="computed" 
+                        label="Computed" 
+                        props={computed} 
+                        collapsed={collapsed} 
+                        onToggle={toggle} 
+                        pageProperties={page.properties} 
+                        onChange={handleChange} 
+                    />
+                </DragDropContext>
             </div>
         </div>
     );

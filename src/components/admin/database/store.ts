@@ -130,6 +130,7 @@ interface DatabaseState {
     deleteDatabase: (id: string) => void;
     getDatabase: (id: string) => Database | undefined;
     clearDatabase: (databaseId: string) => void;
+    updateDatabaseOrder: (sourceIndex: number, destinationIndex: number) => void;
 
     // View Operations
     addView: (databaseId: string, view: Omit<DatabaseView, 'id'>) => void;
@@ -334,11 +335,21 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             updateDatabase: (id, updates) => {
                 set((state) => ({
-                    databases: state.databases.map(db =>
-                        db.id === id ? { ...db, ...updates, updatedAt: new Date().toISOString() } : db
-                    )
+                    databases: state.databases.map(db => db.id === id ? { ...db, ...updates, updatedAt: new Date().toISOString() } : db)
                 }));
-                syncDb(get().databases.find(d => d.id === id));
+                const updated = get().databases.find(d => d.id === id);
+                if (updated) syncDb(updated);
+            },
+
+            updateDatabaseOrder: (sourceIndex, destinationIndex) => {
+                set((state) => {
+                    const result = Array.from(state.databases);
+                    const [removed] = result.splice(sourceIndex, 1);
+                    result.splice(destinationIndex, 0, removed);
+                    return { databases: result };
+                });
+                // Sync the entire set if order matters on server, or just rely on local persist for now
+                // Since this is a global reorder, we might need a specific API if server tracks order
             },
 
             deleteDatabase: (id) => {

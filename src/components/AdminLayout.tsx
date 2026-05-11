@@ -22,6 +22,7 @@ import {
 import { useState, useEffect } from "react";
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import UniversalSearch from "@/components/admin/UniversalSearch";
+import GlobalLoadingModal from "@/components/admin/GlobalLoadingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
@@ -483,6 +484,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     </TenantProvider>
                 </div>
             </main>
+            <GlobalLoadingModal />
             <Toaster position="top-right" richColors closeButton />
         </div>
     );

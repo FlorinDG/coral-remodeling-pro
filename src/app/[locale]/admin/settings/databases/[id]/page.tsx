@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Property, PropertyType } from '@/components/admin/database/types';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Database as DatabaseIcon, Plus, Trash, Type, Hash, Link as LinkIcon, Calculator, CheckSquare, Calendar, Euro, Percent, Edit3, Settings2, GripVertical, X } from 'lucide-react';
+import { ChevronLeft, Database as DatabaseIcon, Plus, Trash, Type, Hash, Link as LinkIcon, Calculator, CheckSquare, Calendar, Euro, Percent, Edit3, Settings2, GripVertical, X, Mail, Phone, Clock, User, Globe } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
 
@@ -17,9 +17,16 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: React.ComponentTy
     { id: 'date', label: 'Date', icon: Calendar },
     { id: 'select', label: 'Select', icon: Edit3 },
     { id: 'multi_select', label: 'Multi-Select', icon: Edit3 },
+    { id: 'url', label: 'URL', icon: Globe },
+    { id: 'email', label: 'Email', icon: Mail },
+    { id: 'phone', label: 'Phone', icon: Phone },
     { id: 'relation', label: 'Relation Link', icon: LinkIcon },
     { id: 'rollup', label: 'Rollup Lookup', icon: LinkIcon },
     { id: 'formula', label: 'Calculation Formula', icon: Calculator },
+    { id: 'created_time', label: 'Created Time', icon: Clock },
+    { id: 'last_edited_time', label: 'Last Edited Time', icon: Clock },
+    { id: 'created_by', label: 'Created By', icon: User },
+    { id: 'last_edited_by', label: 'Last Edited By', icon: User },
     { id: 'variants', label: 'Product Variants', icon: Settings2 },
 ];
 

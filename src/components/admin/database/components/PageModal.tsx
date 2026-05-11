@@ -12,7 +12,8 @@ import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import { Property, VariantsConfig } from '../types';
-import { Search, Loader2, Check } from 'lucide-react';
+import { Search, Loader2, Check, GripVertical, Globe, Mail, Phone, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
@@ -446,8 +447,18 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
-    const deleteProperty = useDatabaseStore(state => state.deleteProperty);
+    const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const page = database?.pages.find(p => p.id === pageId);
+
+    const handleDragEnd = (result: DropResult) => {
+        if (!result.destination || result.source.index === result.destination.index) return;
+        // Since we are reordering in the modal, we need the correct indices in the properties array
+        // The modal skips the 'title' property in its loop, so we must be careful with indices.
+        // However, updatePropertyOrder in store uses indices directly on the properties array.
+        // If 'title' is always index 0, and we are dragging items at index 1...N-1
+        // we can just map the index.
+        updatePropertyOrder(databaseId, result.source.index + 1, result.destination.index + 1);
+    };
 
     // We get the specific action initialized previously
     const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
@@ -603,186 +614,190 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         placeholder="Untitled"
                     />
 
-                    {/* Properties Grid */}
-                    {/* Properties Grid */}
-                    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[1px] bg-neutral-200 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden mb-8">
-                        {database.properties.filter(p => p.id !== 'title').map(prop => (
-                            <div key={prop.id} className="flex flex-col justify-center gap-1 px-3 py-2 bg-neutral-50 dark:bg-[#151515] hover:bg-white dark:hover:bg-[#1e1e1e] transition-colors group relative">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">{prop.name}</span>
+                    {/* Properties Table */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm mb-8">
+                        <DragDropContext onDragEnd={handleDragEnd}>
+                            <Droppable droppableId="modal-properties-list">
+                                {(provided) => (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead className="bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10">
+                                                <tr>
+                                                    <th className="w-10 px-4 py-2"></th>
+                                                    <th className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-[160px]">Property</th>
+                                                    <th className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Value</th>
+                                                    <th className="w-10 px-4 py-2 text-right"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody
+                                                {...provided.droppableProps}
+                                                ref={provided.innerRef}
+                                                className="divide-y divide-neutral-100 dark:divide-white/5"
+                                            >
+                                                {database.properties.filter(p => p.id !== 'title').map((prop, index) => (
+                                                    <Draggable key={prop.id} draggableId={prop.id} index={index}>
+                                                        {(provided, snapshot) => (
+                                                            <tr
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                className={`group transition-colors ${snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded-xl z-50' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`}
+                                                                style={{
+                                                                    ...provided.draggableProps.style,
+                                                                    display: snapshot.isDragging ? 'table' : 'table-row'
+                                                                }}
+                                                            >
+                                                                <td className="px-4 py-2 align-top pt-3">
+                                                                    <div
+                                                                        {...provided.dragHandleProps}
+                                                                        className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing"
+                                                                    >
+                                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-2 align-top pt-3">
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate">
+                                                                            {prop.name}
+                                                                        </span>
+                                                                        <span className="text-[9px] text-neutral-400 opacity-50 font-mono truncate">{prop.type}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-2 align-top">
+                                                                    <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
+                                                                        {(prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer') ? (
+                                                                            <SmartVATLookup
+                                                                                value={(page.properties[prop.id] as string) || ''}
+                                                                                onChange={(val) => updatePageProperty(databaseId, pageId, prop.id, val)}
+                                                                                onImport={handleVATImport}
+                                                                            />
+                                                                        ) : prop.type === 'text' ? (
+                                                                            <textarea
+                                                                                className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                                                value={(page.properties[prop.id] as string) || ''}
+                                                                                onChange={(e) => {
+                                                                                    e.target.style.height = 'auto';
+                                                                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                                                                    updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                                                                }}
+                                                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                                                rows={1}
+                                                                                placeholder="Empty"
+                                                                            />
+                                                                        ) : prop.type === 'number' ? (
+                                                                            <input
+                                                                                type="number"
+                                                                                className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                                                                value={(page.properties[prop.id] as number) || ''}
+                                                                                onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, parseFloat(e.target.value))}
+                                                                                placeholder="0"
+                                                                            />
+                                                                        ) : prop.type === 'date' ? (
+                                                                            <input
+                                                                                type="date"
+                                                                                className="w-full h-full bg-transparent outline-none cursor-pointer text-neutral-700 dark:text-neutral-300 font-medium"
+                                                                                value={(page.properties[prop.id] as string) || ''}
+                                                                                onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                                                            />
+                                                                        ) : prop.type === 'checkbox' ? (
+                                                                            <label className="flex items-center gap-2 w-full h-full cursor-pointer group/label">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={(page.properties[prop.id] as boolean) || false}
+                                                                                    onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.checked)}
+                                                                                    className="w-4 h-4 cursor-pointer accent-blue-600 rounded"
+                                                                                />
+                                                                                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 select-none group-hover/label:text-neutral-900 dark:group-hover/label:text-neutral-200 transition-colors">
+                                                                                    {page.properties[prop.id] ? "Done" : "Pending"}
+                                                                                </span>
+                                                                            </label>
+                                                                        ) : prop.type === 'select' ? (
+                                                                            <PropertySelectPicker
+                                                                                value={(page.properties[prop.id] as string) || ''}
+                                                                                options={prop.config?.options || []}
+                                                                                onChange={(v) => updatePageProperty(databaseId, pageId, prop.id, v)}
+                                                                            />
+                                                                        ) : prop.type === 'multi_select' ? (
+                                                                            <textarea
+                                                                                className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                                                value={Array.isArray(page.properties[prop.id]) ? (page.properties[prop.id] as string[]).join(', ') : ''}
+                                                                                onChange={(e) => {
+                                                                                    e.target.style.height = 'auto';
+                                                                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                                                                    const val = e.target.value;
+                                                                                    const arr = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                                                                    updatePageProperty(databaseId, pageId, prop.id, arr);
+                                                                                }}
+                                                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                                                rows={1}
+                                                                                placeholder="Comma separated..."
+                                                                            />
+                                                                        ) : prop.type === 'relation' ? (
+                                                                            <PageRelationEditor databaseId={databaseId} pageId={pageId} property={prop} />
+                                                                        ) : prop.type === 'rollup' ? (
+                                                                            <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
+                                                                        ) : prop.type === 'variants' ? (
+                                                                            <VariantsPropertyEditor
+                                                                                databaseId={databaseId}
+                                                                                pageId={pageId}
+                                                                                propertyId={prop.id}
+                                                                                initialConfig={(page.properties[prop.id] as VariantsConfig) || []}
+                                                                            />
+                                                                        ) : (
+                                                                            <textarea
+                                                                                className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                                                value={page.properties[prop.id] !== undefined ? String(page.properties[prop.id]) : ''}
+                                                                                onChange={(e) => {
+                                                                                    e.target.style.height = 'auto';
+                                                                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                                                                    updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                                                                }}
+                                                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                                                rows={1}
+                                                                                placeholder={`Empty (${prop.type})`}
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-2 align-top pt-3 text-right">
+                                                                    <DropdownMenu>
+                                                                        <DropdownMenuTrigger asChild>
+                                                                            <button className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <MoreHorizontal className="w-3.5 h-3.5" />
+                                                                            </button>
+                                                                        </DropdownMenuTrigger>
+                                                                        <DropdownMenuContent align="end" className="w-48 z-[110]">
+                                                                            <DropdownMenuItem onClick={() => {
+                                                                                const newName = prompt('Enter new property name:', prop.name);
+                                                                                if (newName) {
+                                                                                    useDatabaseStore.getState().updateProperty(databaseId, prop.id, { name: newName });
+                                                                                }
+                                                                            }} className="cursor-pointer">
+                                                                                <Edit3 className="w-4 h-4 mr-2" />
+                                                                                Rename Property
+                                                                            </DropdownMenuItem>
+                                                                            <DropdownMenuSeparator />
+                                                                            <DropdownMenuItem onClick={() => {
+                                                                                if (confirm(`Are you sure you want to delete property "${prop.name}"?`)) {
+                                                                                    useDatabaseStore.getState().deleteProperty(databaseId, prop.id);
+                                                                                }
+                                                                            }} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20">
+                                                                                <Trash2 className="w-4 h-4 mr-2" />
+                                                                                Delete Property
+                                                                            </DropdownMenuItem>
+                                                                        </DropdownMenuContent>
+                                                                    </DropdownMenu>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </Draggable>
+                                                ))}
+                                                {provided.placeholder}
+                                            </tbody>
+                                        </table>
                                     </div>
-
-                                    {(prop.type === 'select' || prop.type === 'multi_select') && (
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <button className="p-0.5 -mr-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <MoreHorizontal className="w-3 h-3" />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 z-[110]">
-                                                <DropdownMenuItem onClick={() => {
-                                                    const newName = prompt('Enter new property name:', prop.name);
-                                                    if (newName) {
-                                                        useDatabaseStore.getState().updateProperty(databaseId, prop.id, { name: newName });
-                                                    }
-                                                }} className="cursor-pointer">
-                                                    <Edit3 className="w-4 h-4 mr-2" />
-                                                    Rename Property
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => {
-                                                    const optName = prompt('Add new option:');
-                                                    if (optName) {
-                                                        const newOpt = { id: Math.random().toString(36).substring(7), name: optName, color: 'blue' };
-                                                        const newOptions = [...(prop.config?.options || []), newOpt];
-                                                        useDatabaseStore.getState().updateProperty(databaseId, prop.id, { config: { ...prop.config, options: newOptions } });
-                                                    }
-                                                }} className="cursor-pointer">
-                                                    <Plus className="w-4 h-4 mr-2" />
-                                                    Add Option
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem onClick={() => {
-                                                    if (confirm(`Are you sure you want to delete property "${prop.name}"?`)) {
-                                                        useDatabaseStore.getState().deleteProperty(databaseId, prop.id);
-                                                    }
-                                                }} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20">
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    Delete Property
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    )}
-                                </div>
-                                <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
-                                    {(prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer') ? (
-                                        <SmartVATLookup
-                                            value={(page.properties[prop.id] as string) || ''}
-                                            onChange={(val) => updatePageProperty(databaseId, pageId, prop.id, val)}
-                                            onImport={handleVATImport}
-                                        />
-                                    ) : prop.type === 'text' ? (
-                                        <textarea
-                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
-                                            value={(page.properties[prop.id] as string) || ''}
-                                            onChange={(e) => {
-                                                e.target.style.height = 'auto';
-                                                e.target.style.height = e.target.scrollHeight + 'px';
-                                                updatePageProperty(databaseId, pageId, prop.id, e.target.value);
-                                            }}
-                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
-                                            rows={1}
-                                            placeholder="Empty"
-                                        />
-                                    ) : prop.type === 'number' ? (
-                                        <input
-                                            type="number"
-                                            className="w-full h-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
-                                            value={(page.properties[prop.id] as number) || ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, parseFloat(e.target.value))}
-                                            placeholder="0"
-                                        />
-                                    ) : prop.type === 'date' ? (
-                                        <input
-                                            type="date"
-                                            className="w-full h-full bg-transparent outline-none cursor-pointer text-neutral-700 dark:text-neutral-300 font-medium"
-                                            value={(page.properties[prop.id] as string) || ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
-                                        />
-                                    ) : prop.type === 'checkbox' ? (
-                                        <label className="flex items-center gap-2 w-full h-full cursor-pointer group/label">
-                                            <input
-                                                type="checkbox"
-                                                checked={(page.properties[prop.id] as boolean) || false}
-                                                onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.checked)}
-                                                className="w-4 h-4 cursor-pointer accent-blue-600 rounded"
-                                            />
-                                            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400 select-none group-hover/label:text-neutral-900 dark:group-hover/label:text-neutral-200 transition-colors">
-                                                {page.properties[prop.id] ? "Done" : "Pending"}
-                                            </span>
-                                        </label>
-                                    ) : prop.type === 'select' ? (
-                                        <PropertySelectPicker
-                                            value={(page.properties[prop.id] as string) || ''}
-                                            options={prop.config?.options || []}
-                                            onChange={(v) => updatePageProperty(databaseId, pageId, prop.id, v)}
-                                        />
-                                    ) : prop.type === 'multi_select' ? (
-                                        <textarea
-                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
-                                            value={Array.isArray(page.properties[prop.id]) ? (page.properties[prop.id] as string[]).join(', ') : ''}
-                                            onChange={(e) => {
-                                                e.target.style.height = 'auto';
-                                                e.target.style.height = e.target.scrollHeight + 'px';
-                                                const val = e.target.value;
-                                                const arr = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
-                                                updatePageProperty(databaseId, pageId, prop.id, arr);
-                                            }}
-                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
-                                            rows={1}
-                                            placeholder="Comma separated..."
-                                        />
-                                    ) : prop.type === 'relation' ? (
-                                        <PageRelationEditor databaseId={databaseId} pageId={pageId} property={prop} />
-                                    ) : prop.type === 'rollup' ? (
-                                        <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
-                                    ) : prop.type === 'variants' ? (
-                                        <VariantsPropertyEditor
-                                            databaseId={databaseId}
-                                            pageId={pageId}
-                                            propertyId={prop.id}
-                                            initialConfig={(page.properties[prop.id] as VariantsConfig) || []}
-                                        />
-                                    ) : ['email', 'phone', 'url', 'places'].includes(prop.type) ? (
-                                        <div className="flex items-center w-full gap-2 group relative">
-                                            <textarea
-                                                className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
-                                                value={page.properties[prop.id] !== undefined ? String(page.properties[prop.id]) : ''}
-                                                onChange={(e) => {
-                                                    e.target.style.height = 'auto';
-                                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                                    updatePageProperty(databaseId, pageId, prop.id, e.target.value);
-                                                }}
-                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
-                                                rows={1}
-                                                placeholder={`Empty (${prop.type})`}
-                                            />
-                                            {page.properties[prop.id] && String(page.properties[prop.id]).trim() !== '' && (
-                                                <a
-                                                    href={
-                                                        prop.type === 'email' ? `mailto:${page.properties[prop.id]}` :
-                                                            prop.type === 'phone' ? `tel:${String(page.properties[prop.id]).replace(/[^\d+]/g, '')}` :
-                                                                prop.type === 'places' ? `https://maps.google.com/?q=${encodeURIComponent(String(page.properties[prop.id]))}` :
-                                                                    prop.type === 'url' ? (String(page.properties[prop.id]).startsWith('http') ? String(page.properties[prop.id]) : `https://${page.properties[prop.id]}`) :
-                                                                        '#'
-                                                    }
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="opacity-100 md:opacity-0 group-hover:opacity-100 p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded transition flex-shrink-0 text-blue-500 hover:text-blue-600 dark:text-blue-400"
-                                                    title={`Open ${prop.type}`}
-                                                >
-                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                </a>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <textarea
-                                            className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
-                                            value={page.properties[prop.id] !== undefined ? String(page.properties[prop.id]) : ''}
-                                            onChange={(e) => {
-                                                e.target.style.height = 'auto';
-                                                e.target.style.height = e.target.scrollHeight + 'px';
-                                                updatePageProperty(databaseId, pageId, prop.id, e.target.value);
-                                            }}
-                                            ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
-                                            rows={1}
-                                            placeholder={`Empty (${prop.type})`}
-                                        />
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                                )}
+                            </Droppable>
+                        </DragDropContext>
                     </div>
 
                     {/* Financial Analysis Inline Component */}

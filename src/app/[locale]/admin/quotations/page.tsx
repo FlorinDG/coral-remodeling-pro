@@ -21,7 +21,7 @@ export default function QuotationsPage() {
         <div className="flex flex-col w-full h-full">
             {/* Tabs + New Quotation button */}
             <div className="relative">
-                <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" />
+                <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" planType={planType} />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20">
                     <CreateQuotationButton />
                 </div>

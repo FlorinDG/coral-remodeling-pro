@@ -7,9 +7,29 @@ export const hrTabs = [
 ];
 
 export const relationsTabs = [
+    { label: 'CONTACTEN', href: '/admin/contacts', id: 'rel-contacts' },
+    { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'rel-suppliers' },
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' },
     { label: 'OFFERTES', href: '/admin/quotations', id: 'rel-offertes' }
 ];
+
+const RELATIONS_TAB_KEYS: Record<string, string> = {
+    'rel-contacts': 'contacts',
+    'rel-suppliers': 'suppliers',
+    'pipeline': 'sales',
+    'rel-offertes': 'sales', // Or quotations
+};
+
+export function getRelationsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
+    if (!t || !tHas) return relationsTabs;
+    return relationsTabs.map(tab => {
+        // Special mapping for Sales Pipeline / Offertes if needed, but sidebar keys are good
+        let key = `nav.sidebar.${RELATIONS_TAB_KEYS[tab.id]}`;
+        if (tab.id === 'rel-offertes') key = 'nav.financialTabs.quotations';
+        
+        return { ...tab, label: tHas(key) ? t(key) : tab.label };
+    });
+}
 
 /**
  * Relations tabs filtered by plan — Sales Pipeline hidden for FREE.
@@ -18,10 +38,11 @@ const REL_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;
 const REL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {
     'pipeline': 'PRO',
 };
-export function getFilteredRelationsTabs(planType: string): typeof relationsTabs {
-    if (planType === 'FOUNDER' || planType === 'CUSTOM') return relationsTabs;
+export function getFilteredRelationsTabs(planType: string, t?: (key: string) => string, tHas?: (key: string) => boolean): typeof relationsTabs {
+    const allTabs = getRelationsTabs(t, tHas);
+    if (planType === 'FOUNDER' || planType === 'CUSTOM') return allTabs;
     const curIdx = REL_TIER_ORDER.indexOf(planType as typeof REL_TIER_ORDER[number]);
-    return relationsTabs.filter(tab => {
+    return allTabs.filter(tab => {
         const minTier = REL_PLAN_GATE[tab.id];
         if (!minTier) return true;
         return curIdx >= REL_TIER_ORDER.indexOf(minTier);

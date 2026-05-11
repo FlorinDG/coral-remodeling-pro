@@ -43,7 +43,7 @@ export default function CRMPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" />
+            <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" planType={planType} />
 
             {!isPro ? (
                 <LockedFeature

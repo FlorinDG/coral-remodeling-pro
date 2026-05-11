@@ -7,7 +7,7 @@ import { useMemo } from "react";
 import { useTabStore } from "@/store/useTabStore";
 import { useTenant } from "@/context/TenantContext";
 import { useTranslations } from 'next-intl';
-import { getFinancialTabs, getSettingsTabs } from "@/config/tabs";
+import { getFinancialTabs, getSettingsTabs, getFilteredRelationsTabs } from "@/config/tabs";
 
 export interface TabConfig {
     label: string;
@@ -18,9 +18,10 @@ export interface TabConfig {
 interface ModuleTabsProps {
     tabs: TabConfig[];
     groupId?: string;
+    planType?: string;
 }
 
-export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
+export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps) {
     const pathname = usePathname();
     const { tabOrders } = useTabStore();
     const { activeModules } = useTenant();
@@ -32,8 +33,9 @@ export default function ModuleTabs({ tabs, groupId }: ModuleTabsProps) {
         const tHasFn = (key: string) => t.has(key);
         if (groupId === 'financials') return getFinancialTabs(tFn, tHasFn);
         if (groupId === 'settings') return getSettingsTabs(tFn, tHasFn);
+        if (groupId === 'relations') return getFilteredRelationsTabs(planType || 'FREE', tFn, tHasFn);
         return tabs;
-    }, [tabs, groupId, t]);
+    }, [tabs, groupId, t, planType]);
 
     const allowedTabs = useMemo(() => {
         const SETTINGS_MODULE_MAP: Record<string, string[]> = {

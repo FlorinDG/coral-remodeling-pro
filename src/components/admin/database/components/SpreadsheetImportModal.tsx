@@ -79,43 +79,54 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     complete: (results) => {
                         const parsedData = results.data as Record<string, unknown>[];
                         if (parsedData.length === 0) throw new Error("CSV file is empty");
-
-                        // Strip trailing or fully empty parsing artifacts
                         const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
-
                         const extractedHeaders = results.meta.fields || Object.keys(cleanedData[0] || {});
                         setupMapping(extractedHeaders, cleanedData);
                     },
-                    error: (err) => {
-                        throw new Error("CSV Parsing Error: " + err.message);
-                    }
+                    error: (err) => { throw new Error("CSV Parsing Error: " + err.message); }
                 });
             }
             else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
                 // Parse Excel Natively
                 const buffer = await uploadedFile.arrayBuffer();
                 const workbook = xlsx.read(buffer, { type: 'array', cellDates: true });
-
                 if (workbook.SheetNames.length === 0) throw new Error("Excel file is empty");
-
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const parsedData = xlsx.utils.sheet_to_json(worksheet, { defval: "" }) as Record<string, unknown>[];
-
                 if (parsedData.length === 0) throw new Error("Excel sheet is empty");
-
-                // Strip trailing or fully empty parsing artifacts
                 const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+                const extractedHeaders = Object.keys(cleanedData[0] || {});
+                setupMapping(extractedHeaders, cleanedData);
+            }
+            else if (fileName.endsWith('.pdf')) {
+                // Parse PDF via Server API
+                const formData = new FormData();
+                formData.append('file', uploadedFile);
+                
+                const response = await fetch('/api/integrations/parse-pdf', {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                const json = await response.json();
+                if (!json.success) throw new Error(json.error || "Failed to parse PDF");
+                
+                const parsedData = json.data as Record<string, unknown>[];
+                if (!parsedData || parsedData.length === 0) throw new Error("No tabular data found in PDF");
+                
+                const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
+                if (cleanedData.length === 0) throw new Error("PDF extraction returned empty rows");
 
                 const extractedHeaders = Object.keys(cleanedData[0] || {});
                 setupMapping(extractedHeaders, cleanedData);
             }
             else {
-                throw new Error("Unsupported file format. Please upload .csv or .xlsx");
+                throw new Error("Unsupported file format. Please upload .csv, .xlsx, or .pdf");
             }
 
         } catch (e: unknown) {
-            setError(e instanceof Error ? e.message : 'Failed to parse spreadsheet file');
+            setError(e instanceof Error ? e.message : 'Failed to parse file');
             setFile(null);
             setIsParsing(false);
         }
@@ -147,11 +158,11 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         // Per-property keyword sets (Dutch + English) matched against column headers
         const idKeywords: Record<string, string[]> = {
             title:          ['naam', 'titel', 'title', 'name', 'artikel', 'code',
-                             'factuur #', 'factuur#', 'invoice #', 'invoice#', 'offerte'],
+                             'factuur #', 'factuur#', 'invoice #', 'invoice#', 'offerte', 'description', 'omschrijving'],
             email:          ['email', 'e-mail', 'mail', 'courriel'],
             phone:          ['telefoon', 'phone', 'tel', 'gsm', 'mobiel', 'fax'],
             company:        ['bedrijf', 'bedrijfsnaam', 'company', 'firma', 'handelsnaam'],
-            vat:            ['btw-nr', 'btwnr', 'btw nr', 'vat number', 'kbo', 'btw'],
+            vat:            ['btw-nr', 'btwnr', 'btw nr', 'vat number', 'kbo', 'btw', 'vatrate'],
             iban:           ['iban'],
             bic:            ['bic', 'swift'],
             address:        ['adres', 'address', 'straat', 'street', 'rue'],
@@ -162,13 +173,14 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             website:        ['website', 'url', 'www', 'site'],
             notes:          ['notitie', 'opmerking', 'note', 'remark', 'comment'],
             // Financial
-            betreft:        ['betreft', 'beschrijving', 'description', 'omschrijving', 'subject'],
+            betreft:        ['betreft', 'subject'],
             invoiceDate:    ['factuurdatum', 'invoice date', 'datum factuur', 'date facture'],
             dueDate:        ['vervaldatum', 'due date', 'vervaldag', 'betaaldatum'],
             totalExVat:     ['excl btw', 'ex btw', 'excl. btw', 'ex vat', 'netto', 'htva'],
             totalVat:       ['btw bedrag', 'vat amount', 'tva'],
             totalIncVat:    ['incl btw', 'inc btw', 'incl. btw', 'inc vat', 'totaal incl', 'ttc'],
             // Articles
+            sku:            ['sku', 'artikelnr', 'item number', 'article id', 'reference', 'ref'],
             bruto:          ['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop', 'excl'],
             discount:       ['korting', 'remise', 'discount', 'disc', 'lever'],
             unit:           ['eenheid', 'unit', 'maat', 'eeh'],
@@ -230,7 +242,6 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
 
         for (const [header, targetPropId] of Object.entries(localMapping)) {
             if (targetPropId === 'create_new') {
-                // Determine plausible property type heuristically (quick inference)
                 const sampleValues = previewData.slice(0, 10).map(row => row[header]).filter(Boolean);
                 let targetType: 'text' | 'number' = 'text';
 
@@ -239,7 +250,6 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 }
 
                 const newPropId = useDatabaseStore.getState().addProperty(databaseId, header, targetType);
-                // addProperty returns '' for locked schemas — treat as skip
                 if (newPropId) {
                     localMapping[header] = newPropId;
                 } else {
@@ -248,11 +258,9 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             }
         }
 
-        // Re-pull the database instantly to capture the newly injected schema fields for row digestion
         const refreshedDb = useDatabaseStore.getState().getDatabase(databaseId);
         if (!refreshedDb) return;
 
-        // Inverse mapping to know which property ID gets mapped from which header
         const invertedMap: Record<string, string> = {};
         Object.entries(localMapping).forEach(([header, targetPropId]) => {
             if (targetPropId !== 'ignore') {
@@ -260,31 +268,24 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
             }
         });
 
-        // Cache: relatedDbId::lowerCaseName → resolved pageId
-        // Prevents duplicate stub creation when many rows share the same relation value
         const relationCache: Record<string, string> = {};
 
-        const pagesToCreate = previewData.map(row => {
+        const rawPagesToProcess = previewData.map(row => {
             const props: Record<string, unknown> = {};
 
-            // Pluck mapped values from the row
             refreshedDb.properties.forEach((dbProp) => {
                 const sourceHeader = invertedMap[dbProp.id];
                 if (sourceHeader && row[sourceHeader] !== undefined) {
                     let val = row[sourceHeader];
 
-                    // Specific Type Castings
                     if (dbProp.type === 'number' || dbProp.type === 'currency') {
-                        // strip currency strings gracefully
                         const numStr = String(val).replace(/[^0-9.,-]/g, '').replace(',', '.');
                         val = parseFloat(numStr) || 0;
                     }
                     else if (dbProp.type === 'date') {
-                        // Excel cellDates:true → JS Date object
                         if (val instanceof Date) {
                             val = val.toISOString().split('T')[0];
                         }
-                        // Excel serial number OR string-encoded serial (CSV gives strings like "45737")
                         else {
                             const numVal = typeof val === 'number' ? val : (typeof val === 'string' && /^\d{4,5}$/.test(val.trim()) ? Number(val.trim()) : NaN);
                             if (!isNaN(numVal) && numVal > 30000 && numVal < 80000) {
@@ -321,22 +322,16 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                             else if (lg.includes('verwarming')) val = 'opt-verwarming';
                             else val = 'opt-general';
                         } else {
-                            // Generic: match imported text against option display names
                             const options = dbProp.config?.options || [];
                             const exactMatch = options.find(o => o.id === rawVal);
                             if (exactMatch) {
                                 val = rawVal;
                             } else {
-                                const nameMatch = options.find(o =>
-                                    o.name.toLowerCase().trim() === rawVal.toLowerCase()
-                                );
+                                const nameMatch = options.find(o => o.name.toLowerCase().trim() === rawVal.toLowerCase());
                                 if (nameMatch) {
                                     val = nameMatch.id;
                                 } else {
-                                    const fuzzyMatch = options.find(o =>
-                                        o.name.toLowerCase().includes(rawVal.toLowerCase()) ||
-                                        rawVal.toLowerCase().includes(o.name.toLowerCase())
-                                    );
+                                    const fuzzyMatch = options.find(o => o.name.toLowerCase().includes(rawVal.toLowerCase()) || rawVal.toLowerCase().includes(o.name.toLowerCase()));
                                     val = fuzzyMatch ? fuzzyMatch.id : rawVal;
                                 }
                             }
@@ -381,15 +376,60 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 }
             });
 
-            // Enforce default fallback protections
             const titlePropId = refreshedDb.properties.find((p) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
             if (!props[titlePropId]) props[titlePropId] = 'Imported Row';
 
-            // ART-XX-XXXX Generation Loop Component (Articles specific)
-            if (databaseId === 'db-articles') {
-                const groupPropId = targetDb.properties.find(p => p.name === 'Artikelgroep' || p.id === 'prop-art-group')?.id;
-                let groupCode = '00';
+            return props;
+        });
 
+        // Split raw pages into Create vs Update (Upsert Deduplication Logic)
+        const pagesToCreate: any[] = [];
+        const pagesToUpdate: { id: string, properties: any }[] = [];
+        
+        if (databaseId === 'db-articles') {
+            const titlePropId = refreshedDb.properties.find((p) => p.name === 'Title' || p.name === 'Naam' || p.id === 'title')?.id || 'title';
+            const supplierPropId = refreshedDb.properties.find((p) => p.name.toLowerCase().includes('supplier') || p.name.toLowerCase().includes('leverancier') || p.name.toLowerCase().includes('lever'))?.id;
+            
+            rawPagesToProcess.forEach(newRowProps => {
+                const newTitle = String(newRowProps[titlePropId] || '').toLowerCase().trim();
+                const newSupplierId = supplierPropId && Array.isArray(newRowProps[supplierPropId]) ? newRowProps[supplierPropId][0] : null;
+
+                const match = refreshedDb.pages.find(p => String(p.properties[titlePropId] || '').toLowerCase().trim() === newTitle);
+
+                if (match) {
+                    const existingSupplierId = supplierPropId && Array.isArray(match.properties[supplierPropId]) ? match.properties[supplierPropId][0] : null;
+                    
+                    if (existingSupplierId === newSupplierId) {
+                        // Same article, same supplier -> UPDATE (Upsert)
+                        // Verify if it's an exact doublon
+                        const isExactDuplicate = refreshedDb.properties.every(p => {
+                            const newV = newRowProps[p.id];
+                            const oldV = match.properties[p.id];
+                            return JSON.stringify(newV) === JSON.stringify(oldV) || (!newV && !oldV);
+                        });
+                        
+                        if (!isExactDuplicate) {
+                            pagesToUpdate.push({ id: match.id, properties: newRowProps });
+                        } // Else skip exact duplicate (ignore)
+                    } else {
+                        // Same article, different supplier -> CREATE NEW
+                        pagesToCreate.push(newRowProps);
+                    }
+                } else {
+                    pagesToCreate.push(newRowProps);
+                }
+            });
+        } else {
+            pagesToCreate.push(...rawPagesToProcess);
+        }
+
+        // Apply Sequence ID Generation to new items
+        if (databaseId === 'db-articles') {
+            const groupPropId = refreshedDb.properties.find(p => p.name === 'Artikelgroep' || p.id === 'prop-art-group')?.id;
+            const autoIdProp = refreshedDb.properties.find((p) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
+            
+            pagesToCreate.forEach(props => {
+                let groupCode = '00';
                 if (groupPropId && props[groupPropId]) {
                     const groupVal = props[groupPropId];
                     if (groupVal === 'opt-ruwbouw') groupCode = '01';
@@ -403,38 +443,38 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 if (!counters[groupCode]) counters[groupCode] = 0;
                 counters[groupCode]++;
 
-                // Assign explicitly
-                const autoIdProp = refreshedDb.properties.find((p) => p.id === 'prop-art-id' || p.name === 'ID')?.id;
                 if (autoIdProp) {
                     props[autoIdProp] = `ART-${groupCode}-${String(counters[groupCode]).padStart(4, '0')}`;
                 }
-            }
+            });
+        }
 
-            return props;
-        });
+        const totalToProcess = pagesToCreate.length + pagesToUpdate.length;
+        setImportProgress({ current: 0, total: totalToProcess });
 
-        // Array Chunking Database Commit Engine
-        // Break injection payload into 500-row chunks (batch server action handles Prisma efficiently)
+        if (pagesToUpdate.length > 0) {
+            useDatabaseStore.getState().updatePages(databaseId, pagesToUpdate);
+        }
+
         const CHUNK_SIZE = 500;
-        let processed = 0;
-        setImportProgress({ current: 0, total: pagesToCreate.length });
+        let processed = pagesToUpdate.length;
 
         const processNextChunk = () => {
-            const chunk = pagesToCreate.slice(processed, processed + CHUNK_SIZE);
+            const startIdx = processed - pagesToUpdate.length;
+            const chunk = pagesToCreate.slice(startIdx, startIdx + CHUNK_SIZE);
+            
             if (chunk.length === 0) {
                 setIsProcessing(false);
                 setImportProgress(null);
-                alert(`Engine successfully bulk imported ${pagesToCreate.length} rows into ${targetDb.name}!`);
+                alert(`Engine successfully processed ${totalToProcess} rows (${pagesToUpdate.length} updated, ${pagesToCreate.length} created) into ${targetDb.name}!`);
                 handleClose();
                 return;
             }
 
-            // Sync chunk to native state and trigger batch API calls behind the scenes
             useDatabaseStore.getState().addPages(databaseId, chunk);
-            processed += CHUNK_SIZE;
-            setImportProgress({ current: Math.min(processed, pagesToCreate.length), total: pagesToCreate.length });
+            processed += chunk.length;
+            setImportProgress({ current: Math.min(processed, totalToProcess), total: totalToProcess });
 
-            // Allow JS event loop and React Network buffer to breathe for 200ms before next injection
             setTimeout(processNextChunk, 200);
         };
 

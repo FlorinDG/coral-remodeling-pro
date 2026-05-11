@@ -151,6 +151,7 @@ interface DatabaseState {
     /** Add a page that was already confirmed by the server (e.g. from /api/scan or createPageServerFirst) */
     addConfirmedPage: (page: Page) => void;
     addPages: (databaseId: string, pagesProperties: Record<string, any>[]) => void;
+    updatePages: (databaseId: string, updates: { id: string, properties: any }[]) => void;
     updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
@@ -846,6 +847,40 @@ export const useDatabaseStore = create<DatabaseState>()(
                 });
                 const parentDb = get().databases.find(d => d.id === databaseId);
                 syncPagesBatch(createdPages, parentDb);
+            },
+
+            updatePages: (databaseId, updates) => {
+                let updatedPages: Page[] = [];
+                set((state) => {
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== databaseId) return db;
+
+                            const updateMap = new Map(updates.map(u => [u.id, u.properties]));
+
+                            const newPages = db.pages.map((p: Page) => {
+                                if (!updateMap.has(p.id)) return p;
+                                const updatedPage = {
+                                    ...p,
+                                    properties: { ...p.properties, ...updateMap.get(p.id) },
+                                    updatedAt: new Date().toISOString()
+                                };
+                                updatedPages.push(updatedPage);
+                                return updatedPage;
+                            });
+
+                            return {
+                                ...db,
+                                pages: newPages,
+                                updatedAt: new Date().toISOString()
+                            };
+                        })
+                    };
+                });
+                const parentDb = get().databases.find(d => d.id === databaseId);
+                if (updatedPages.length > 0) {
+                    syncPagesBatch(updatedPages, parentDb);
+                }
             },
 
             updatePageProperty: (databaseId, pageId, propertyId, value) => {

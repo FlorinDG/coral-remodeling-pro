@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Database as DatabaseIcon, Clock, Edit2, Check, X } from 'lucide-react';
+import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Clock } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import PageModal from '@/components/admin/database/components/PageModal';
@@ -52,7 +51,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const hasDatabases = activeModules.includes('DATABASES');
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
-  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets';
+  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets' || databaseId === 'db-quotations';
   const isProjectDB = databaseId === 'db-1' || databaseId === 'db-tasks';
   const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || isProjectDB;
 
@@ -143,7 +142,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   }, [showViewTypeSelector]);
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
-  const DEFAULT_PROPERTIES_MAP: Record<string, any[]> = {
+  const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => ({
     'db-clients': [
       { id: 'title',    name: 'Naam',           type: 'text' },
       { id: 'email',    name: 'E-mail',          type: 'email' },
@@ -319,7 +318,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-task-qty',      name: 'Quantity',          type: 'text' },
       { id: 'prop-task-price',    name: 'Unit Price',        type: 'currency' },
     ],
-  };
+  }), [resolveDbId]);
 
   // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
   useEffect(() => {
@@ -329,7 +328,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (!isLockedSchemaDB) return;
 
     const schemasMatch = expectedProps.length === database.properties.length &&
-      expectedProps.every((expected: any) => {
+      expectedProps.every((expected: Property) => {
         const current = database.properties.find(p => p.id === expected.id);
         if (!current) return false;
         if (current.type !== expected.type) return false;
@@ -355,7 +354,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         });
       });
     }
-  }, [hydrated, database, databaseId, resolvedId]);
+  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, DEFAULT_PROPERTIES_MAP]);
 
 
   useEffect(() => {
@@ -378,8 +377,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
-    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps as any); // use resolvedId
-  }, [database, databaseId, resolvedId, autoInitializing, hydrated]);
+    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps); // use resolvedId
+  }, [database, databaseId, resolvedId, autoInitializing, hydrated, DEFAULT_PROPERTIES_MAP]);
 
   if (!database) {
     return (
@@ -536,7 +535,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full relative">
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: any) => { const s = String(row?.properties?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

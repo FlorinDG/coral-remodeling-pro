@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { getFilteredFinancialTabs } from "@/config/tabs";
+import { getFilteredRelationsTabs } from "@/config/tabs";
 import CreateQuotationButton from "@/components/admin/quotations/CreateQuotationButton";
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useTenant } from '@/context/TenantContext';
@@ -21,7 +21,7 @@ export default function QuotationsPage() {
         <div className="flex flex-col w-full h-full">
             {/* Tabs + New Quotation button */}
             <div className="relative">
-                <ModuleTabs tabs={getFilteredFinancialTabs(planType)} groupId="financials" />
+                <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" />
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20">
                     <CreateQuotationButton />
                 </div>

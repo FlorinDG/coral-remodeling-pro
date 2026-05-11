@@ -11,7 +11,7 @@ const DB_ID_MODULE_MAP: Array<[string, string]> = [
     ['db-invoices',   'INVOICING'],
     ['db-expenses',   'INVOICING'],
     ['db-tickets',    'INVOICING'],
-    ['db-quotations', 'INVOICING'],
+    ['db-quotations', 'CRM'],
     ['db-clients',    'CRM'],
     ['db-suppliers',  'INVOICING'],
 ];
@@ -30,11 +30,11 @@ function requiredModuleForDb(databaseId: string): string | null {
  */
 export async function createPageServerFirst(
     databaseId: string,
-    properties: Record<string, any>,
+    properties: Record<string, unknown>,
     customId?: string
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = (session?.user as { tenantId?: string })?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
 
     // Module-level authorization — enforced server-side regardless of UI state.
@@ -45,7 +45,7 @@ export async function createPageServerFirst(
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
-        const role = (session?.user as any)?.role as string;
+        const role = (session?.user as { role?: string })?.role as string;
         const isSuperadmin = ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role);
         if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
             return {
@@ -108,7 +108,7 @@ export async function createPageServerFirst(
         const page: Page = {
             id: saved.id,
             databaseId: saved.databaseId,
-            properties: saved.properties as Record<string, any>,
+            properties: saved.properties as Record<string, unknown>,
             order: saved.order ?? 0,
             blocks: [],
             createdAt: saved.createdAt.toISOString(),
@@ -118,9 +118,10 @@ export async function createPageServerFirst(
         };
 
         return { success: true, page };
-    } catch (e: any) {
-        console.error('[createPageServerFirst] Error:', e?.message ?? e);
-        return { success: false, error: e?.message || 'Database write failed' };
+    } catch (e: unknown) {
+        const error = e as Error;
+        console.error('[createPageServerFirst] Error:', error?.message ?? error);
+        return { success: false, error: error?.message || 'Database write failed' };
     }
 }
 
@@ -130,10 +131,10 @@ export async function createPageServerFirst(
  */
 export async function updatePageServerFirst(
     pageId: string,
-    properties: Record<string, any>
+    properties: Record<string, unknown>
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = (session?.user as { tenantId?: string })?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -158,7 +159,7 @@ export async function updatePageServerFirst(
         const page: Page = {
             id: saved.id,
             databaseId: saved.databaseId,
-            properties: saved.properties as Record<string, any>,
+            properties: saved.properties as Record<string, unknown>,
             order: saved.order ?? 0,
             blocks: [],
             createdAt: saved.createdAt.toISOString(),
@@ -168,8 +169,9 @@ export async function updatePageServerFirst(
         };
 
         return { success: true, page };
-    } catch (e: any) {
-        console.error('[updatePageServerFirst] Error:', e?.message ?? e);
-        return { success: false, error: e?.message || 'Update failed' };
+    } catch (e: unknown) {
+        const error = e as Error;
+        console.error('[updatePageServerFirst] Error:', error?.message ?? error);
+        return { success: false, error: error?.message || 'Update failed' };
     }
 }

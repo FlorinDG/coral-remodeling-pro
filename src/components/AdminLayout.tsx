@@ -7,39 +7,19 @@ import { useSession, signOut } from "next-auth/react";
 import { del } from 'idb-keyval';
 import { Link, usePathname } from "@/i18n/routing";
 import {
-    LayoutDashboard,
-    FileText,
-    Briefcase,
-    Image as ImageIcon,
     LogOut,
     User,
     Menu,
     X,
-    Globe,
     RefreshCw,
-    Table,
-    Database,
-    Calendar,
-    Users,
-    UsersRound,
-    BriefcaseBusiness,
-    FileSignature,
-    Landmark,
-    Truck,
-    CircleDollarSign,
-    Settings,
-    Library,
-    Mail,
     ShieldAlert,
     Loader2,
-    TrendingUp,
     ShieldCheck,
     SlidersHorizontal,
     ExternalLink,
     Building2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import Logo from "@/components/Logo";
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import UniversalSearch from "@/components/admin/UniversalSearch";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -163,8 +143,13 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
     let activeTopPath = null;
     for (const item of menuItems) {
-        if (item.href && (pathname === item.href || pathname.startsWith(item.href + "/"))) {
-            if (!activeTopPath || item.href.length > activeTopPath.href!.length) {
+        // Highlighting logic: check if pathname starts with item.href
+        // Special case: /admin/quotations belongs to the Sales (CRM) module
+        const isSalesItem = item.id === 'sales';
+        const matchesSales = isSalesItem && (pathname === '/admin/quotations' || pathname.startsWith('/admin/quotations/'));
+
+        if (matchesSales || (item.href && (pathname === item.href || pathname.startsWith(item.href + "/")))) {
+            if (!activeTopPath || (item.href?.length || 0) > (activeTopPath.href?.length || 0)) {
                 activeTopPath = item;
             }
         }

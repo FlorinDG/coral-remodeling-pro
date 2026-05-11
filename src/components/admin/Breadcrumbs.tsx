@@ -14,6 +14,7 @@ const BREADCRUMB_I18N: Record<string, string> = {
     contacts: 'nav.sidebar.contacts',
     suppliers: 'nav.sidebar.suppliers',
     hr: 'nav.sidebar.hr',
+    crm: 'nav.sidebar.sales',
     library: 'nav.sidebar.library',
     projects: 'nav.sidebar.projects',
     'company-info': 'nav.settings.companyInfo',
@@ -57,7 +58,7 @@ export default function Breadcrumbs() {
     // Build displayable segments (skip "admin")
     const segments = filteredPaths
         .filter(p => p !== "admin")
-        .map((path, _i, arr) => ({
+        .map((path) => ({
             path,
             label: getLabel(path),
             isLast: false, // updated below

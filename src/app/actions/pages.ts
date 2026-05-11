@@ -3,7 +3,8 @@
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 import { v4 as uuidv4 } from 'uuid';
-import { Page } from '@/components/admin/database/types';
+import { Prisma } from '@prisma/client';
+import { Page, PropertyValue } from '@/components/admin/database/types';
 
 // Infer required module from locked DB ID prefix.
 // Works for both bare IDs ('db-invoices') and scoped IDs ('db-invoices-abc12345').
@@ -30,7 +31,7 @@ function requiredModuleForDb(databaseId: string): string | null {
  */
 export async function createPageServerFirst(
     databaseId: string,
-    properties: Record<string, unknown>,
+    properties: Record<string, PropertyValue>,
     customId?: string
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
@@ -97,7 +98,7 @@ export async function createPageServerFirst(
             data: {
                 id: pageId,
                 databaseId,
-                properties,
+                properties: properties as Prisma.InputJsonValue,
                 order,
                 blocks: [],
                 createdBy: 'user',
@@ -108,7 +109,7 @@ export async function createPageServerFirst(
         const page: Page = {
             id: saved.id,
             databaseId: saved.databaseId,
-            properties: saved.properties as Record<string, unknown>,
+            properties: saved.properties as Record<string, PropertyValue>,
             order: saved.order ?? 0,
             blocks: [],
             createdAt: saved.createdAt.toISOString(),
@@ -131,7 +132,7 @@ export async function createPageServerFirst(
  */
 export async function updatePageServerFirst(
     pageId: string,
-    properties: Record<string, unknown>
+    properties: Record<string, PropertyValue>
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
     const tenantId = (session?.user as { tenantId?: string })?.tenantId;
@@ -150,7 +151,7 @@ export async function updatePageServerFirst(
         const saved = await prisma.globalPage.update({
             where: { id: pageId },
             data: {
-                properties,
+                properties: properties as Prisma.InputJsonValue,
                 lastEditedBy: 'user',
                 updatedAt: new Date(),
             }
@@ -159,7 +160,7 @@ export async function updatePageServerFirst(
         const page: Page = {
             id: saved.id,
             databaseId: saved.databaseId,
-            properties: saved.properties as Record<string, unknown>,
+            properties: saved.properties as Record<string, PropertyValue>,
             order: saved.order ?? 0,
             blocks: [],
             createdAt: saved.createdAt.toISOString(),

@@ -338,7 +338,13 @@ export default function DatabaseConfigurator() {
             {formulaEditingProp && (
                 <FormulaEditorModal
                     databaseId={databaseId}
-                    property={formulaEditingProp}
+                    propertyId={formulaEditingProp.id}
+                    currentExpression={formulaEditingProp.config?.formulaExpression || ''}
+                    onSave={(expression) => {
+                        updateProperty(databaseId, formulaEditingProp.id, {
+                            config: { ...formulaEditingProp.config, formulaExpression: expression }
+                        });
+                    }}
                     onClose={() => setFormulaEditingProp(null)}
                 />
             )}

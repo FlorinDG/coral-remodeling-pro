@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import pdf from 'pdf-parse';
 
 export const maxDuration = 60; // Allow longer execution for LLM
 
@@ -14,6 +13,11 @@ export async function POST(req: Request) {
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
+
+        // Dynamically import pdf-parse to bypass Next.js build-time static evaluation
+        // which attempts to read './test/data' files and causes ENOENT errors in Vercel.
+        const pdfParseModule = await import('pdf-parse/lib/pdf-parse.js');
+        const pdf = pdfParseModule.default || pdfParseModule;
 
         // Parse PDF text
         const pdfData = await pdf(buffer);

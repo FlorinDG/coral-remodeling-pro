@@ -31,7 +31,7 @@ export default function ExcelClone({ initialData }: ExcelCloneProps) {
                 { r: 0, c: 0, v: { v: "Module", m: "Module", bg: "#f3f4f6", bl: 1 } },
                 { r: 0, c: 1, v: { v: "Status", m: "Status", bg: "#f3f4f6", bl: 1 } },
                 { r: 0, c: 2, v: { v: "Notes", m: "Notes", bg: "#f3f4f6", bl: 1 } },
-                { r: 1, c: 0, v: { v: "Time Tracker", m: "Time Tracker" } },
+                { r: 1, c: 0, v: { v: "Work Hub", m: "Work Hub" } },
                 { r: 1, c: 1, v: { v: "Active", m: "Active" } },
                 { r: 2, c: 0, v: { v: "Spreadsheet", m: "Spreadsheet" } },
                 { r: 2, c: 1, v: { v: "In Progress", m: "In Progress" } },

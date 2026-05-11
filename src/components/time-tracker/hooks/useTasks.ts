@@ -75,7 +75,7 @@ export function useShiftTasks(_shiftId?: string | null) {
 }
 
 export function useCompletedTasks() {
-  const [tasks] = useState<(ShiftTask & { task?: Task })[]>([]);
+  const [completedTasks] = useState<(ShiftTask & { task?: Task })[]>([]);
   const loading = false;
-  return { tasks, loading, refetch: async () => {} };
+  return { completedTasks, loading, refetch: async () => {} };
 }

@@ -1,6 +1,5 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import {
   Briefcase,
   BookOpen,
@@ -8,7 +7,7 @@ import {
   Clock,
   TrendingUp,
   ExternalLink,
-  Shield,
+  User,
   MapPin,
   Users,
   CheckSquare,
@@ -48,7 +47,7 @@ const quickLinks: QuickLink[] = [
     title: 'Time Off',
     description: 'Request vacation and leave',
     icon: <Calendar className="w-6 h-6" />,
-    url: '/time-off',
+    url: '/admin/hr/time-tracker/time-off',
     gradient: 'bg-primary',
     isInternal: true,
   },
@@ -57,19 +56,18 @@ const quickLinks: QuickLink[] = [
     title: 'Performance',
     description: 'Track your stats and request time off',
     icon: <TrendingUp className="w-6 h-6" />,
-    url: '/performance',
+    url: '/admin/hr/time-tracker/performance',
     gradient: 'bg-primary',
     isInternal: true,
   },
   {
-    id: 'admin',
-    title: 'Admin Dashboard',
-    description: 'Manage users, roles, and schedules',
-    icon: <Shield className="w-6 h-6" />,
-    url: '/admin',
-    gradient: 'bg-destructive',
+    id: 'profile',
+    title: 'My Profile',
+    description: 'Settings, preferences, and support',
+    icon: <User className="w-6 h-6" />,
+    url: '/admin/hr/time-tracker/profile',
+    gradient: 'bg-secondary',
     isInternal: true,
-    adminOnly: true,
   },
 ];
 

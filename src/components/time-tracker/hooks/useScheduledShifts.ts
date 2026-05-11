@@ -84,15 +84,21 @@ export function useScheduledShifts() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [shiftsData, projectsData] = await Promise.all([
+      const [shiftsData, projectsData, employeesData] = await Promise.all([
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
+        hrList<{ id: string; firstName: string; lastName: string }>('employees').catch(() => []),
       ]);
 
       const projectMap = new Map(projectsData.map(p => [p.id, p]));
+      const employeeMap = new Map(employeesData.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
+
       const enriched = shiftsData.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
+        profiles: s.userId && employeeMap.has(s.userId)
+          ? { full_name: employeeMap.get(s.userId)! }
+          : s.profiles || null,
       }));
 
       setRawShifts(enriched);

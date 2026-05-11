@@ -362,7 +362,7 @@ export default async function HRPage() {
                             <QuickAction
                                 href="/admin/hr/time-tracker"
                                 icon={<Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
-                                label="Time Tracker"
+                                label="Work Hub"
                                 color="blue"
                             />
                         </div>

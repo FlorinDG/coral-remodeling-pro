@@ -6,7 +6,10 @@ import { Loader2 } from 'lucide-react';
 import { Header } from '@/components/time-tracker/components/Header';
 import { ClockButton } from '@/components/time-tracker/components/ClockButton';
 import { QuickLinks } from '@/components/time-tracker/components/QuickLinks';
+import { DailySummary } from '@/components/time-tracker/components/DailySummary';
 import { NotificationSettings } from '@/components/time-tracker/components/NotificationSettings';
+import { Announcements } from '@/components/time-tracker/components/Announcements';
+import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 
 export default function Index() {
@@ -50,11 +53,26 @@ export default function Index() {
           </div>
         </section>
 
+        {/* Today's Overview */}
+        <div className="mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
+          <DailySummary />
+        </div>
+
         {/* Quick Links Section */}
         <QuickLinks />
 
+        {/* Announcements Section */}
+        <div className="mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
+          <Announcements />
+        </div>
+
+        {/* Documents Section */}
+        <div className="mt-12 animate-fade-in" style={{ animationDelay: '500ms' }}>
+          <Documents />
+        </div>
+
         {/* Notifications Section */}
-        <section className="mt-16 space-y-6">
+        <section className="mt-12 space-y-6">
           <h2 className="text-2xl font-bold text-foreground">Notifications</h2>
           <NotificationSettings />
         </section>

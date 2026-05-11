@@ -1,16 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
 import { evaluateFormula } from '../formulaEngine';
 import { Calculator } from 'lucide-react';
+import { useTenant } from '@/context/TenantContext';
+import FormulaEditorModal from '../components/FormulaEditorModal';
 
 interface FormulaComponentProps extends CellProps<any, any> {
     formulaExpression: string;
     databaseId: string;
+    propertyId: string;
 }
 
-const FormulaComponent = ({ rowData, formulaExpression, databaseId }: FormulaComponentProps) => {
+const FormulaComponent = ({ rowData, formulaExpression, databaseId, propertyId }: FormulaComponentProps) => {
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    const { isEnterprise } = useTenant();
+    const [showEditor, setShowEditor] = useState(false);
 
     const computedValue = useMemo(() => {
         if (!rowData || !formulaExpression || !database) return null;
@@ -22,25 +27,58 @@ const FormulaComponent = ({ rowData, formulaExpression, databaseId }: FormulaCom
     }, [rowData, formulaExpression, database]);
 
     if (computedValue === null || computedValue === undefined || computedValue === '') {
-        return <div className="w-full h-full p-2 flex items-center text-neutral-400 text-sm italic">Empty</div>;
+        return (
+            <>
+                <div
+                    className={`w-full h-full p-2 flex items-center text-neutral-400 text-sm italic ${isEnterprise ? 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors' : ''}`}
+                    onClick={() => isEnterprise && setShowEditor(true)}
+                >
+                    <Calculator className="w-3 h-3 mr-2 flex-shrink-0" />
+                    {isEnterprise ? 'Click to edit formula' : 'Empty'}
+                </div>
+                {showEditor && (
+                    <FormulaEditorModal
+                        databaseId={databaseId}
+                        propertyId={propertyId}
+                        currentExpression={formulaExpression}
+                        onSave={() => {}}
+                        onClose={() => setShowEditor(false)}
+                    />
+                )}
+            </>
+        );
     }
 
     const isError = computedValue === '#ERROR!';
 
     return (
-        <div className="w-full h-full p-2 flex items-center gap-2 overflow-hidden">
-            <Calculator className={`w-3 h-3 flex-shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
-            <span className={`truncate text-sm ${isError ? 'text-red-500 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}>
-                {String(computedValue)}
-            </span>
-        </div>
+        <>
+            <div
+                className={`w-full h-full p-2 flex items-center gap-2 overflow-hidden ${isEnterprise ? 'cursor-pointer hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors' : ''}`}
+                onClick={() => isEnterprise && setShowEditor(true)}
+            >
+                <Calculator className={`w-3 h-3 flex-shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
+                <span className={`truncate text-sm ${isError ? 'text-red-500 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                    {String(computedValue)}
+                </span>
+            </div>
+            {showEditor && (
+                <FormulaEditorModal
+                    databaseId={databaseId}
+                    propertyId={propertyId}
+                    currentExpression={formulaExpression}
+                    onSave={() => {}}
+                    onClose={() => setShowEditor(false)}
+                />
+            )}
+        </>
     );
 };
 
-export const formulaColumn = (formulaExpression: string, databaseId: string): Column<any, any> => ({
-    component: (props) => <FormulaComponent {...props} formulaExpression={formulaExpression} databaseId={databaseId} />,
+export const formulaColumn = (formulaExpression: string, databaseId: string, propertyId?: string): Column<any, any> => ({
+    component: (props) => <FormulaComponent {...props} formulaExpression={formulaExpression} databaseId={databaseId} propertyId={propertyId || ''} />,
     keepFocus: false, // Read only
-    disabled: true, // Formulas cannot be edited manually
+    disabled: true, // Formulas cannot be edited manually in the cell
     deleteValue: ({ rowData }) => rowData, // No-op
     copyValue: ({ rowData }) => {
         return 'Calculated Value';

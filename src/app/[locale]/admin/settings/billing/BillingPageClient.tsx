@@ -7,6 +7,9 @@ import {
     Users, FileText, TrendingUp, AlertTriangle, CreditCard,
     Sparkles, Building2, MessageSquare
 } from "lucide-react";
+import ModuleTabs from "@/components/admin/ModuleTabs";
+import { getFilteredSettingsTabs } from "@/config/tabs";
+import { useTenant } from "@/context/TenantContext";
 
 interface BillingData {
     planType: string;
@@ -180,7 +183,13 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
         }
     };
 
+    const { activeModules } = useTenant();
+    const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+
     return (
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={filteredSettingsTabs} groupId="settings" />
+            <div className="w-full flex-1 overflow-y-auto p-6 pb-16">
         <div className="max-w-6xl mx-auto space-y-8 pb-12">
             {/* ── Header ──────────────────────────────────────────────── */}
             <div>
@@ -483,6 +492,8 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                     </button>
                 </div>
             )}
+        </div>
+        </div>
         </div>
     );
 }

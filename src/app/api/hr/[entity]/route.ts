@@ -24,6 +24,7 @@ const ENTITY_MAP: Record<string, string> = {
     'time-off':         'timeOffRequest',
     'worker-schedules': 'workerSchedule',
     'projects':         'hrProject',
+    'employees':        'employee',
 };
 
 // Fields that should NOT be overwritten by client
@@ -32,8 +33,8 @@ const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt'];
 async function getTenantAndUser() {
     const session = await auth();
     const user = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
-    if (!user?.tenantId || !user?.id) return null;
-    return { userId: user.id, tenantId: user.tenantId, role: user.role || '' };
+    if (!user?.tenantId) return null;
+    return { userId: user.id || '', tenantId: user.tenantId, role: user.role || '' };
 }
 
 function getModel(entity: string) {

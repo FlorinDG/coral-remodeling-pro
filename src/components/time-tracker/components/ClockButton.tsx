@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, memo } from 'react';
 import { Play, Square, MapPin, Loader2, Calendar, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/time-tracker/components/ui/button';
 import { useTimer } from '@/components/time-tracker/hooks/useTimer';
-import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
+import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { ClockOutForm } from './ClockOutForm';
@@ -91,8 +91,26 @@ function ClockButtonComponent() {
 
     await refetchShifts();
     setIsProcessing(false);
-    
-    if (location) {
+
+    // Geofence validation (soft fence — warn but allow)
+    if (location && todayShift?.project?.latitude && todayShift?.project?.longitude) {
+      const fence = validateGeofence(
+        { latitude: location.latitude, longitude: location.longitude, accuracy: 0 },
+        todayShift.project.latitude,
+        todayShift.project.longitude,
+        200 // 200m radius
+      );
+      if (!fence.withinFence) {
+        toast.warning(`You are ${fence.distanceMeters}m from the project site`, {
+          description: `Expected within ${fence.radiusMeters}m of ${todayShift.project.name || 'site'}. Clock-in recorded anyway.`,
+          duration: 8000,
+        });
+      } else {
+        toast.success('On-site confirmed', {
+          description: `${fence.distanceMeters}m from ${todayShift.project.name || 'site'}`,
+        });
+      }
+    } else if (location) {
       toast.success('Location captured', {
         description: `Lat: ${location.latitude.toFixed(4)}, Lng: ${location.longitude.toFixed(4)}`,
       });

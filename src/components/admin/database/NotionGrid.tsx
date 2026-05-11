@@ -13,7 +13,7 @@ import {
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2 } from 'lucide-react';
+import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
 import { selectColumn } from './columns/SelectColumn';
@@ -31,8 +31,40 @@ import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
 import DatabaseFooter from './components/DatabaseFooter';
+import AddColumnFlyout from './components/AddColumnFlyout';
 import { Property } from './types';
 import { toast } from 'sonner';
+
+// ── Add Column Button (rendered at the end of the header row) ───────────────
+function AddColumnButton({ databaseId }: { databaseId: string }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const addProperty = useDatabaseStore(state => state.addProperty);
+
+    return (
+        <div
+            className="flex-shrink-0 flex items-center justify-center border-r border-[rgba(0,0,0,0.1)] dark:border-white/10 bg-[#f9fafb] dark:bg-neutral-900 z-20"
+            style={{ width: '40px', minWidth: '40px' }}
+        >
+            <button
+                ref={btnRef}
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                title="Add column"
+            >
+                <Plus className="w-4 h-4" />
+            </button>
+            <AddColumnFlyout
+                anchorRef={btnRef}
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                onAdd={(type) => {
+                    addProperty(databaseId, 'Untitled', type);
+                }}
+            />
+        </div>
+    );
+}
 
 interface NotionGridProps {
     databaseId: string;
@@ -119,7 +151,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const activeViewId = viewId || database?.views?.[0]?.id; // prioritize explicitly passed viewId from tab engine
     const activeView = database?.views?.find(v => v.id === activeViewId);
 
-    const { activeModules, planType } = useTenant();
+    const { activeModules, planType, isPro, isEnterprise } = useTenant();
     const hasCRM = activeModules.includes('CRM');
     const isFree = planType === 'FREE';
 
@@ -297,7 +329,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 // Formulas evaluate mathematical logic against row data dynamically
                 if (prop.type === 'formula' && prop.config?.formulaExpression) {
                     return {
-                        ...formulaColumn(prop.config.formulaExpression, databaseIdRef) as any,
+                        ...formulaColumn(prop.config.formulaExpression, databaseIdRef, prop.id) as any,
                         title: GhostHeader,
                         basis: columnWidth,
                         grow: 0,
@@ -906,6 +938,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                         </div>
                                     );
                                 })}
+
+                                {/* Add Column button (Pro/Enterprise) */}
+                                {(isPro || isEnterprise) && (
+                                    <AddColumnButton databaseId={databaseIdRef} />
+                                )}
                             </div>
                         </div>
 

@@ -6,6 +6,9 @@ import { Database } from '@/components/admin/database/types';
 import { Database as DatabaseIcon, Tag, Boxes, ArrowRight, Settings2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import ModuleTabs from '@/components/admin/ModuleTabs';
+import { getFilteredSettingsTabs } from '@/config/tabs';
+import { useTenant } from '@/context/TenantContext';
 
 export default function DatabaseListSettingsPage() {
     const databases = useDatabaseStore(state => state.databases);
@@ -22,9 +25,15 @@ export default function DatabaseListSettingsPage() {
         }
     }, []);
 
+    const { activeModules } = useTenant();
+    const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+
     if (!isHydrated) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
 
     return (
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={filteredSettingsTabs} groupId="settings" />
+            <div className="w-full flex-1 overflow-y-auto p-6 pb-16">
         <div className="max-w-5xl mx-auto space-y-4">
             <div className="flex flex-col gap-2">
                 <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white flex items-center gap-2">
@@ -96,6 +105,8 @@ export default function DatabaseListSettingsPage() {
                 <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-1">Advanced Schema Management</h3>
                 <p className="text-xs text-neutral-500 max-w-sm">Select a database above to structurally modify its columns, map relation targets, and inject calculated formulas.</p>
             </div>
+        </div>
+        </div>
         </div>
     );
 }

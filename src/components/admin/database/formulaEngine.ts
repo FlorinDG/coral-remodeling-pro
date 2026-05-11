@@ -22,8 +22,28 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
     if (!expression || expression.trim() === '') return null;
 
     try {
-        // 1. Resolve prop("Property Name") → literal JS values
+        // 0. Bare property name resolution (Notion 2.0 simplified syntax)
+        // Convert standalone property names to prop("Name") before the main resolver.
+        // Process longest names first to avoid partial matches (e.g. "Total Incl" before "Total").
         let parsed = expression;
+        const sortedNames = [...context.schema.map(p => p.name)].sort((a, b) => b.length - a.length);
+        for (const name of sortedNames) {
+            // Skip single-char names (too ambiguous) and function-like names already in sandbox
+            if (name.length <= 1) continue;
+            // Match the name when it's NOT inside an existing prop("...") call and NOT inside quotes
+            // Use word boundary-like detection: preceded by start/non-word and followed by end/non-word
+            const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const bareRegex = new RegExp(`(?<![a-zA-Z0-9_"'])${escaped}(?![a-zA-Z0-9_"'])`, 'g');
+            // Only replace if not already wrapped in prop()
+            parsed = parsed.replace(bareRegex, (match, offset) => {
+                // Check if this match is inside a prop("...") call
+                const before = parsed.slice(Math.max(0, offset - 6), offset);
+                if (/prop\s*\(\s*["']$/.test(before)) return match;
+                return `prop("${name}")`;
+            });
+        }
+
+        // 1. Resolve prop("Property Name") → literal JS values
 
         const propRegex = /prop\(['"]([^'"]+)['"]\)/g;
         parsed = parsed.replace(propRegex, (_match, propName) => {

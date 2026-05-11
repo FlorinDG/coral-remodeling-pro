@@ -6,7 +6,6 @@ import { ScheduleMatrixView } from '@/components/time-tracker/components/schedul
 import { CreateShiftForm } from '@/components/time-tracker/components/schedule/CreateShiftForm';
 import { EditShiftDialog } from '@/components/time-tracker/components/schedule/EditShiftDialog';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { useDatabaseStore } from '@/components/admin/database/store';
 import { toast } from 'sonner';
 import {
   Select,
@@ -15,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/time-tracker/components/ui/select';
-import { useTenant } from '@/context/TenantContext';
+import { hrList } from '@/components/time-tracker/lib/hr-api';
 
 interface WorkerOption {
   id: string;
@@ -35,7 +34,6 @@ function getMonday(date: Date): Date {
 }
 
 export function ScheduleManagement() {
-  const { resolveDbId } = useTenant();
   const { shifts, projects, loading, createShift, createProject, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
   const [workers, setWorkers] = useState<WorkerOption[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
@@ -49,26 +47,35 @@ export function ScheduleManagement() {
   const [prefilledUserId, setPrefilledUserId] = useState<string | undefined>();
   const [prefilledDate, setPrefilledDate] = useState<string | undefined>();
 
-  const hrDb = useDatabaseStore(state => state.databases.find(db => db.id === resolveDbId('db-hr')));
-
+  // Fetch employees from the Employee table (tenant-scoped via API)
   useEffect(() => {
     const fetchWorkers = async () => {
-      if (hrDb) {
-        const activeWorkers = hrDb.pages
-          .filter(page => page.properties['prop-hr-status'] === 'opt-active')
-          .map(page => ({
-            id: page.id,
-            full_name: String(page.properties['title'] || 'Unknown'),
-            hourly_rate: 0
-          }));
+      try {
+        const employees = await hrList<{
+          id: string;
+          firstName: string;
+          lastName: string;
+          status: string;
+          hourlyCost: number | null;
+        }>('employees');
 
-        activeWorkers.sort((a, b) => a.full_name.localeCompare(b.full_name));
+        const activeWorkers = employees
+          .filter(e => e.status === 'ACTIVE')
+          .map(e => ({
+            id: e.id,
+            full_name: `${e.firstName} ${e.lastName}`,
+            hourly_rate: e.hourlyCost,
+          }))
+          .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
         setWorkers(activeWorkers);
+      } catch (err) {
+        console.error('[ScheduleManagement] Failed to fetch employees:', err);
       }
     };
 
     fetchWorkers();
-  }, [hrDb]);
+  }, []);
 
   const handleDelete = async (shiftId: string) => {
     try {

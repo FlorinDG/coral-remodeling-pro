@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { getLinkedRecordsForClient } from '@/app/actions/crm';
 import { Briefcase, FileText, Receipt, ExternalLink, Loader2, Plus } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { useDatabaseStore } from '@/components/admin/database/store';
+import { Database, Page, Property } from '@/components/admin/database/types';
 
 interface LinkedRecordsProps {
     databaseId: string;
@@ -19,9 +21,9 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     } | null>(null);
 
     const isClientDb = databaseId.includes('db-clients');
-    const allDatabases = useDatabaseStore(state => state.databases);
-    const database = allDatabases.find(d => d.id === databaseId);
-    const page = database?.pages.find(p => p.id === pageId);
+    const allDatabases = useDatabaseStore((state: any) => state.databases as Database[]);
+    const database = allDatabases.find((d: Database) => d.id === databaseId);
+    const page = database?.pages.find((p: Page) => p.id === pageId);
 
     useEffect(() => {
         if (!isClientDb) {
@@ -40,19 +42,19 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     if (!isClientDb) {
         if (!database || !page) return null;
 
-        const relationProps = database.properties.filter(p => p.type === 'relation');
-        const activeRelations = relationProps.map(prop => {
+        const relationProps = database.properties.filter((p: Property) => p.type === 'relation');
+        const activeRelations = relationProps.map((prop: Property) => {
             const ids = (page.properties[prop.id] as string[]) || [];
             if (ids.length === 0) return null;
 
             const targetDbId = prop.config?.relationDatabaseId;
-            const targetDb = allDatabases.find(d => d.id === targetDbId);
+            const targetDb = allDatabases.find((d: Database) => d.id === targetDbId);
             
             const linkedPages = ids.map(id => {
-                const p = targetDb?.pages.find(pg => pg.id === id);
+                const p = targetDb?.pages.find((pg: Page) => pg.id === id);
                 if (!p) {
                     for (const d of allDatabases) {
-                        const found = d.pages.find(pg => pg.id === id);
+                        const found = d.pages.find((pg: Page) => pg.id === id);
                         if (found) return { db: d, page: found };
                     }
                     return null;

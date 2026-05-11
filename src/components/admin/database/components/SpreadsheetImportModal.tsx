@@ -514,7 +514,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                         >
                             <input
                                 type="file"
-                                accept=".csv,.xlsx,.xls"
+                                accept=".csv,.xlsx,.xls,.pdf"
                                 className="hidden"
                                 ref={fileInputRef}
                                 onChange={handleFileUpload}
@@ -522,9 +522,9 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                             <div className="w-16 h-16 bg-orange-100 dark:bg-orange-950/30 text-orange-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                 <FileSpreadsheet className="w-8 h-8" />
                             </div>
-                            <h3 className="font-bold text-lg mb-1 relative">Upload CSV or Excel List</h3>
+                            <h3 className="font-bold text-lg mb-1 relative">Upload CSV, Excel, or PDF</h3>
                             <p className="text-sm text-neutral-500 max-w-sm relative">
-                                Upload a massive supplier pricelist natively. Handled client-side securely.
+                                Upload a massive supplier pricelist natively, or drop a PDF quote/invoice for AI extraction.
                             </p>
                         </div>
                     )}

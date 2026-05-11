@@ -19,6 +19,9 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     } | null>(null);
 
     const isClientDb = databaseId.includes('db-clients');
+    const allDatabases = useDatabaseStore(state => state.databases);
+    const database = allDatabases.find(d => d.id === databaseId);
+    const page = database?.pages.find(p => p.id === pageId);
 
     useEffect(() => {
         if (!isClientDb) {
@@ -35,10 +38,73 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     }, [pageId, isClientDb]);
 
     if (!isClientDb) {
+        if (!database || !page) return null;
+
+        const relationProps = database.properties.filter(p => p.type === 'relation');
+        const activeRelations = relationProps.map(prop => {
+            const ids = (page.properties[prop.id] as string[]) || [];
+            if (ids.length === 0) return null;
+
+            const targetDbId = prop.config?.relationDatabaseId;
+            const targetDb = allDatabases.find(d => d.id === targetDbId);
+            
+            const linkedPages = ids.map(id => {
+                const p = targetDb?.pages.find(pg => pg.id === id);
+                if (!p) {
+                    for (const d of allDatabases) {
+                        const found = d.pages.find(pg => pg.id === id);
+                        if (found) return { db: d, page: found };
+                    }
+                    return null;
+                }
+                return { db: targetDb, page: p };
+            }).filter(Boolean);
+
+            if (linkedPages.length === 0) return null;
+            return { prop, linkedPages };
+        }).filter(Boolean) as { prop: any, linkedPages: any[] }[];
+
+        if (activeRelations.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+                    <ExternalLink className="w-8 h-8 opacity-20 mb-3" />
+                    <p className="text-xs">No connected records found for this item.</p>
+                </div>
+            );
+        }
+
         return (
-            <div className="flex flex-col items-center justify-center h-full text-neutral-400">
-                <FileText className="w-8 h-8 opacity-20 mb-3" />
-                <p className="text-xs">Select a client record to view linked items.</p>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex flex-col gap-4">
+                    {activeRelations.map(rel => (
+                        <div key={rel.prop.id} className="flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-3">
+                                {rel.prop.name}
+                            </h3>
+                            <div className="flex flex-col gap-2">
+                                {rel.linkedPages.map((lp, idx) => (
+                                    <Link
+                                        key={idx}
+                                        href={`/admin/database/${lp.db.id}/${lp.page.id}`}
+                                        className="flex items-center justify-between p-3 bg-neutral-50/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-xl hover:border-orange-500/50 hover:shadow-sm transition-all group"
+                                    >
+                                        <div className="flex flex-col min-w-0 pr-2">
+                                            <span className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-orange-500 transition-colors truncate">
+                                                {String(lp.page.properties['title'] || lp.page.properties['name'] || 'Untitled')}
+                                            </span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">
+                                                {lp.db.name}
+                                            </span>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 shrink-0 group-hover:bg-orange-50 dark:group-hover:bg-orange-500/10 transition-colors">
+                                            <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:text-orange-500 transition-colors" />
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         );
     }

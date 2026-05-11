@@ -87,8 +87,10 @@ Run the same `curl` or test after every push. Do not assume the deploy worked.
 > If this could fail at runtime (network, auth, DB), does it fail gracefully?
 No unhandled exceptions in tenant-facing code. Ever.
 
-### Rule 6 — No Build Blockers in Ship
-> Before pushing: `npx eslint [changed files]`. Zero errors. Not warnings — errors.
+### Rule 6 — No Build Blockers in Ship (Lint & Push)
+> Always lint your work: `npm run lint`. Zero errors. Not warnings — errors.
+> We work on production directly (`main` branch), and use the sandbox branch only if necessary.
+> Rule of thumb: Lint your latest. If zero errors, push to `main` (unless specifically recommended to sandbox first).
 A broken build deployed to Vercel serves the last good build silently.
 That is the most dangerous failure mode: you think you fixed it, but you didn't.
 

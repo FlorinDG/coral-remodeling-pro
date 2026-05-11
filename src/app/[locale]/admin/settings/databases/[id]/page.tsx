@@ -1,152 +1,136 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Property, PropertyType } from '@/components/admin/database/types';
-import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Database as DatabaseIcon, Plus, Trash, Type, Hash, Link as LinkIcon, Calculator, CheckSquare, Calendar, Euro, Percent, Edit3, Settings2, GripVertical, X, Mail, Phone, Clock, User, Globe } from 'lucide-react';
+import { PropertyType } from '@/components/admin/database/types';
+import { 
+    Calculator, Trash2, GripVertical, Settings2, Database,
+    Type, Hash, Calendar, CheckSquare, Link2, List, Tag, X,
+    Plus, ChevronLeft, Save, Sparkles
+} from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
 
-const PROPERTY_TYPES: { id: PropertyType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'text', label: 'Text', icon: Type },
     { id: 'number', label: 'Number', icon: Hash },
-    { id: 'currency', label: 'Currency (€/$)', icon: Euro },
-    { id: 'percent', label: 'Percentage', icon: Percent },
-    { id: 'checkbox', label: 'Checkbox', icon: CheckSquare },
+    { id: 'select', label: 'Select', icon: List },
+    { id: 'multi_select', label: 'Multi-select', icon: Tag },
     { id: 'date', label: 'Date', icon: Calendar },
-    { id: 'select', label: 'Select', icon: Edit3 },
-    { id: 'multi_select', label: 'Multi-Select', icon: Edit3 },
-    { id: 'url', label: 'URL', icon: Globe },
-    { id: 'email', label: 'Email', icon: Mail },
-    { id: 'phone', label: 'Phone', icon: Phone },
-    { id: 'relation', label: 'Relation Link', icon: LinkIcon },
-    { id: 'rollup', label: 'Rollup Lookup', icon: LinkIcon },
-    { id: 'formula', label: 'Calculation Formula', icon: Calculator },
-    { id: 'created_time', label: 'Created Time', icon: Clock },
-    { id: 'last_edited_time', label: 'Last Edited Time', icon: Clock },
-    { id: 'created_by', label: 'Created By', icon: User },
-    { id: 'last_edited_by', label: 'Last Edited By', icon: User },
-    { id: 'variants', label: 'Product Variants', icon: Settings2 },
+    { id: 'checkbox', label: 'Checkbox', icon: CheckSquare },
+    { id: 'url', label: 'URL', icon: Link2 },
+    { id: 'email', label: 'Email', icon: Type },
+    { id: 'phone', label: 'Phone', icon: Type },
+    { id: 'relation', label: 'Relation Link', icon: Link2 },
+    { id: 'formula', label: 'Formula', icon: Calculator },
+    { id: 'rollup', label: 'Rollup', icon: Sparkles },
+    { id: 'created_time', label: 'Created Time', icon: Calendar },
+    { id: 'created_by', label: 'Created By', icon: Type },
+    { id: 'last_edited_time', label: 'Last Edited Time', icon: Calendar },
+    { id: 'last_edited_by', label: 'Last Edited By', icon: Type },
 ];
 
-export default function DatabaseSchemaConfigurator() {
+export default function DatabaseConfigurator() {
     const params = useParams();
     const router = useRouter();
     const databaseId = params.id as string;
-
-    const database = useDatabaseStore(state => state.getDatabase(databaseId));
+    
+    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const allDatabases = useDatabaseStore(state => state.databases);
-
     const updateProperty = useDatabaseStore(state => state.updateProperty);
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
     const addProperty = useDatabaseStore(state => state.addProperty);
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
-
-    const [isHydrated, setIsHydrated] = useState(false);
+    
     const [newPropName, setNewPropName] = useState('');
-    const [formulaEditingProp, setFormulaEditingProp] = useState<Property | null>(null);
+    const [formulaEditingProp, setFormulaEditingProp] = useState<any>(null);
+
+    if (!database) {
+        return (
+            <div className="p-8 text-center">
+                <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Database not found</h1>
+                <Link href="/admin/settings/databases" className="text-blue-500 hover:underline mt-4 inline-block">Back to databases</Link>
+            </div>
+        );
+    }
 
     const handleDragEnd = (result: DropResult) => {
-        if (!result.destination || result.source.index === result.destination.index) return;
-        updatePropertyOrder(databaseId, result.source.index, result.destination.index);
+        if (!result.destination) return;
+        if (result.source.index === result.destination.index) return;
+        
+        // Offset by 1 because the 'title' property is always index 0 and not draggable
+        updatePropertyOrder(databaseId, result.source.index + 1, result.destination.index + 1);
     };
 
-    useEffect(() => {
-        // Wait for Zustand persist to finish hydrating from IndexedDB
-        if (useDatabaseStore.persist.hasHydrated()) {
-            // Using a microtask or timeout to avoid synchronous setState in effect
-            setTimeout(() => setIsHydrated(true), 0);
-        } else {
-            const unsub = useDatabaseStore.persist.onFinishHydration(() => {
-                setIsHydrated(true);
-            });
-            return unsub;
-        }
-    }, []);
-
-    if (!isHydrated) return <div className="p-8"><div className="w-full h-32 bg-neutral-100 dark:bg-white/5 animate-pulse rounded-xl" /></div>;
-    if (!database) return <div className="p-8 text-neutral-500">Database not found.</div>;
-
-    const handleCreateProperty = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAddProperty = () => {
         if (!newPropName.trim()) return;
-        addProperty(databaseId, newPropName.trim(), 'text');
+        addProperty(databaseId, newPropName, 'text');
         setNewPropName('');
     };
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6 pb-24">
-            <button
-                onClick={() => router.push('/admin/settings/databases')}
-                className="flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition group"
-            >
-                <ChevronLeft className="w-4 h-4 mr-1 transition-transform group-hover:-translate-x-1" />
-                Back to Databases
-            </button>
-
-            <div className="flex flex-col gap-2 p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-blue-50/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xl">
-                        {database.icon || <DatabaseIcon className="w-6 h-6" />}
-                    </div>
+        <div className="flex flex-col h-full bg-neutral-50/50 dark:bg-[#0A0A0A]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-200 dark:border-white/5 bg-white dark:bg-[#0F0F0F]">
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/settings/databases" className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-full transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-neutral-500" />
+                    </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{database.name}</h1>
-                        <p className="text-sm text-neutral-500">Schema Management Dashboard</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Database className="w-5 h-5 text-neutral-400" />
+                            <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">{database.name} Schema</h1>
+                        </div>
+                        <p className="text-sm text-neutral-500">Configure columns, strict types, and logic for this database.</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-neutral-100 dark:bg-white/5 p-1 rounded-xl border border-neutral-200 dark:border-white/5">
+                        <input
+                            placeholder="New Column Name..."
+                            value={newPropName}
+                            onChange={(e) => setNewPropName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddProperty()}
+                            className="bg-transparent px-4 py-2 text-sm outline-none w-[200px] text-neutral-900 dark:text-white"
+                        />
+                        <button
+                            onClick={handleAddProperty}
+                            className="bg-neutral-900 dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+                        >
+                            <Plus className="w-4 h-4" /> Add Column
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/50 dark:bg-black/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-base font-semibold text-neutral-900 dark:text-white">Properties Database Schema</h2>
-                        <p className="text-xs text-neutral-500 mt-0.5">Define the strict types and column variables for every row.</p>
-                    </div>
-
-                    <form onSubmit={handleCreateProperty} className="flex items-center gap-2">
-                        <input
-                            type="text"
-                            placeholder="New Column Name..."
-                            value={newPropName}
-                            onChange={e => setNewPropName(e.target.value)}
-                            className="bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[200px]"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!newPropName.trim()}
-                            className="px-3 py-1.5 bg-neutral-900 dark:bg-white text-white dark:text-black rounded-lg text-sm font-medium hover:bg-neutral-800 dark:hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition flex items-center gap-1.5"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Column
-                        </button>
-                    </form>
-                </div>                <DragDropContext onDragEnd={handleDragEnd}>
-                    <Droppable droppableId="schema-properties-list">
+            {/* Configurator Table */}
+            <div className="flex-1 overflow-auto p-8">
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="properties">
                         {(provided) => (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead className="bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10">
-                                        <tr>
-                                            <th className="w-10 px-4 py-3"></th>
-                                            <th className="w-8 py-3"></th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-neutral-500">Property Name</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-neutral-500 w-[200px]">Column Type</th>
-                                            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-neutral-500">Configuration</th>
-                                            <th className="w-10 px-4 py-3 text-right"></th>
+                            <div className="bg-white dark:bg-[#0F0F0F] border border-neutral-200 dark:border-white/5 rounded-2xl overflow-hidden shadow-sm">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
+                                            <th className="w-10"></th>
+                                            <th className="w-8"></th>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Property Name</th>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-neutral-400 uppercase tracking-widest w-[180px]">Column Type</th>
+                                            <th className="px-4 py-3 text-left text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Configuration</th>
+                                            <th className="w-10"></th>
                                         </tr>
                                     </thead>
-                                    <tbody
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        className="divide-y divide-neutral-100 dark:divide-white/5"
-                                    >
+                                    <tbody {...provided.droppableProps} ref={provided.innerRef}>
                                         {database.properties.map((prop, index) => {
                                             const isTitle = prop.id === 'title';
-                                            const Icon = PROPERTY_TYPES.find(t => t.id === prop.type)?.icon || Type;
+                                            const propType = PROPERTY_TYPES.find(t => t.id === prop.type) || PROPERTY_TYPES[0];
+                                            const Icon = propType.icon;
 
                                             return (
-                                                <Draggable key={prop.id} draggableId={prop.id} index={index} isDragDisabled={isTitle}>
+                                                <Draggable key={prop.id} draggableId={prop.id} index={index - 1} isDragDisabled={isTitle}>
                                                     {(provided, snapshot) => (
                                                         <tr
                                                             ref={provided.innerRef}
@@ -157,36 +141,38 @@ export default function DatabaseSchemaConfigurator() {
                                                                 display: snapshot.isDragging ? 'table' : 'table-row'
                                                             }}
                                                         >
-                                                            <td className="px-4 py-3 align-top">
+                                                            <td className="w-10 px-2 py-1.5 align-middle text-center">
                                                                 <div
                                                                     {...provided.dragHandleProps}
-                                                                    className={`p-1 rounded text-neutral-400 ${isTitle ? 'opacity-0 cursor-default' : 'hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing'}`}
+                                                                    className={`flex items-center justify-center p-1 rounded text-neutral-300 dark:text-neutral-700 ${isTitle ? 'opacity-0 cursor-default' : 'hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors'}`}
                                                                 >
                                                                     <GripVertical className="w-4 h-4" />
                                                                 </div>
                                                             </td>
-                                                            <td className="py-3 align-top">
-                                                                <Icon className="w-4 h-4 text-neutral-400 mt-1.5" />
+                                                            <td className="w-8 py-1.5 align-middle text-center">
+                                                                <Icon className="w-4 h-4 text-neutral-400" />
                                                             </td>
-                                                            <td className="px-4 py-3 align-top">
-                                                                <div className="flex flex-col gap-1 min-w-[200px]">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <input
-                                                                            value={prop.name}
-                                                                            onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
-                                                                            className="bg-transparent text-sm font-semibold text-neutral-900 dark:text-neutral-100 border-b border-transparent hover:border-neutral-300 focus:border-blue-500 outline-none px-1 py-0.5 transition w-full"
-                                                                        />
-                                                                        {isTitle && <span className="text-[10px] px-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
+                                                            <td className="px-2 py-1.5 align-middle">
+                                                                <div className="flex items-center gap-3 group/name">
+                                                                    <div className="flex-1">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <input
+                                                                                value={prop.name}
+                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
+                                                                                className="bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent hover:border-neutral-300 focus:border-blue-500 outline-none px-1 transition w-full"
+                                                                            />
+                                                                            {isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
+                                                                        </div>
+                                                                        <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
                                                                     </div>
-                                                                    <span className="text-[10px] text-neutral-500 font-mono opacity-60">ID: {prop.id}</span>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 py-3 align-top">
+                                                            <td className="px-2 py-1.5 align-middle w-[180px]">
                                                                 <select
                                                                     value={prop.type}
                                                                     disabled={isTitle}
                                                                     onChange={(e) => updateProperty(databaseId, prop.id, { type: e.target.value as PropertyType })}
-                                                                    className="w-full bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                    className="w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs font-medium outline-none focus:bg-white dark:focus:bg-black transition-all"
                                                                 >
                                                                     {PROPERTY_TYPES.map(t => (
                                                                         <option key={t.id} value={t.id}>{t.label}</option>
@@ -194,19 +180,19 @@ export default function DatabaseSchemaConfigurator() {
                                                                     {isTitle && <option value="text">Primary Text</option>}
                                                                 </select>
                                                             </td>
-                                                            <td className="px-4 py-3 align-top">
-                                                                <div className="flex flex-col gap-2 min-w-[200px]">
+                                                            <td className="px-2 py-1.5 align-middle">
+                                                                <div className="flex items-center gap-2">
                                                                     {/* Type Contextual Configurations */}
                                                                     {(prop.type === 'select' || prop.type === 'multi_select') && (
-                                                                        <div className="flex flex-wrap gap-1.5 p-1 bg-neutral-50 dark:bg-black/20 border border-neutral-200 dark:border-white/10 rounded-lg min-h-[34px] items-center">
+                                                                        <div className="flex flex-wrap gap-1 items-center bg-neutral-100/50 dark:bg-white/5 p-1 rounded-md border border-transparent min-h-[30px] w-full">
                                                                             {prop.config?.options?.map(opt => (
-                                                                                <div key={opt.id} className="flex items-center gap-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/20 px-1.5 py-0.5 rounded text-xs">
+                                                                                <div key={opt.id} className="flex items-center gap-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 px-1.5 py-0.5 rounded text-[10px]">
                                                                                     <span>{opt.name}</span>
                                                                                     <button
                                                                                         onClick={() => updateProperty(databaseId, prop.id, { config: { ...prop.config, options: prop.config?.options?.filter(o => o.id !== opt.id) || [] } })}
-                                                                                        className="text-neutral-400 hover:text-red-500 rounded p-0.5"
+                                                                                        className="text-neutral-400 hover:text-red-500 transition-colors"
                                                                                     >
-                                                                                        <X className="w-3 h-3" />
+                                                                                        <X className="w-2.5 h-2.5" />
                                                                                     </button>
                                                                                 </div>
                                                                             ))}
@@ -215,9 +201,9 @@ export default function DatabaseSchemaConfigurator() {
                                                                                     const name = prompt('New option name:');
                                                                                     if (name) updateProperty(databaseId, prop.id, { config: { ...prop.config, options: [...(prop.config?.options || []), { id: `opt-${Date.now()}`, name, color: 'gray' }] } });
                                                                                 }}
-                                                                                className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider hover:bg-blue-50 dark:hover:bg-blue-500/10 transition"
+                                                                                className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 px-1.5 font-bold uppercase tracking-tight"
                                                                             >
-                                                                                + Add Option
+                                                                                + Add
                                                                             </button>
                                                                         </div>
                                                                     )}
@@ -225,8 +211,8 @@ export default function DatabaseSchemaConfigurator() {
                                                                     {prop.type === 'currency' && (
                                                                         <select
                                                                             value={prop.config?.format || 'euro'}
-                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, format: e.target.value as 'euro' | 'dollar' } })}
-                                                                            className="w-full max-w-[150px] bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                            onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, format: e.target.value as 'euro' | 'dollar' } })}
+                                                                            className="bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                         >
                                                                             <option value="euro">Euro (€)</option>
                                                                             <option value="dollar">Dollar ($)</option>
@@ -234,11 +220,11 @@ export default function DatabaseSchemaConfigurator() {
                                                                     )}
 
                                                                     {prop.type === 'relation' && (
-                                                                        <div className="flex gap-2">
+                                                                        <div className="flex gap-1 items-center w-full max-w-[400px]">
                                                                             <select
                                                                                 value={prop.config?.relationDatabaseId || ''}
                                                                                 onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDatabaseId: e.target.value, relationDisplayPropertyId: '' } })}
-                                                                                className="w-1/2 bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                             >
                                                                                 <option value="">-- Database --</option>
                                                                                 {allDatabases.filter(d => d.id !== databaseId).map(d => (
@@ -249,7 +235,7 @@ export default function DatabaseSchemaConfigurator() {
                                                                                 <select
                                                                                     value={prop.config.relationDisplayPropertyId || ''}
                                                                                     onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDisplayPropertyId: e.target.value } })}
-                                                                                    className="w-1/2 bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                                 >
                                                                                     <option value="">-- Default (Title) --</option>
                                                                                     {allDatabases.find(d => d.id === prop.config!.relationDatabaseId)?.properties.map(p => (
@@ -261,40 +247,39 @@ export default function DatabaseSchemaConfigurator() {
                                                                     )}
 
                                                                     {prop.type === 'formula' && (
-                                                                        <div className="flex gap-2">
+                                                                        <div className="flex gap-1 items-center w-full">
                                                                             <input
                                                                                 type="text"
                                                                                 value={prop.config?.formulaExpression || ''}
                                                                                 readOnly
-                                                                                className="flex-1 font-mono bg-neutral-50 dark:bg-white/5 border border-neutral-300 dark:border-white/20 rounded-lg px-3 py-1.5 text-sm outline-none text-neutral-500 truncate"
+                                                                                className="flex-1 font-mono bg-neutral-100/50 dark:bg-white/5 border border-transparent rounded-md px-2 py-1 text-xs outline-none text-neutral-500 truncate"
                                                                             />
                                                                             <button
                                                                                 onClick={() => setFormulaEditingProp(prop)}
-                                                                                className="p-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-500/20 transition border border-blue-200 dark:border-blue-500/20"
+                                                                                className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
                                                                             >
-                                                                                <Calculator className="w-4 h-4" />
+                                                                                <Calculator className="w-3.5 h-3.5" />
                                                                             </button>
                                                                         </div>
                                                                     )}
 
                                                                     {prop.type === 'rollup' && (
-                                                                        <div className="flex gap-2 w-full flex-wrap xl:flex-nowrap">
+                                                                        <div className="flex gap-1 items-center w-full flex-wrap xl:flex-nowrap">
                                                                             <select
                                                                                 value={prop.config?.rollupPropertyId || ''}
-                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupPropertyId: e.target.value, rollupTargetPropertyId: '' } })}
-                                                                                className="flex-1 min-w-[100px] bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupPropertyId: e.target.value, rollupTargetPropertyId: '', rollupAggregation: 'show_original' } })}
+                                                                                className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                             >
                                                                                 <option value="">-- Relation --</option>
                                                                                 {database.properties.filter(p => p.type === 'relation').map(p => (
                                                                                     <option key={p.id} value={p.id}>{p.name}</option>
                                                                                 ))}
                                                                             </select>
-
                                                                             {prop.config?.rollupPropertyId && (
                                                                                 <select
                                                                                     value={prop.config.rollupTargetPropertyId || ''}
                                                                                     onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupTargetPropertyId: e.target.value } })}
-                                                                                    className="flex-1 min-w-[100px] bg-white dark:bg-black border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                                 >
                                                                                     <option value="">-- Property --</option>
                                                                                     {(() => {
@@ -312,8 +297,8 @@ export default function DatabaseSchemaConfigurator() {
                                                                             {prop.config?.rollupTargetPropertyId && (
                                                                                 <select
                                                                                     value={prop.config.rollupAggregation || 'show_original'}
-                                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupAggregation: e.target.value as 'show_original' | 'extract_numbers' | 'sum' | 'average' | 'count' } })}
-                                                                                    className="flex-1 min-w-[100px] bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 text-neutral-700 dark:text-neutral-300 font-medium"
+                                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupAggregation: e.target.value as any } })}
+                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
                                                                                 >
                                                                                     <option value="show_original">Original</option>
                                                                                     <option value="extract_numbers">Numbers</option>
@@ -326,18 +311,13 @@ export default function DatabaseSchemaConfigurator() {
                                                                     )}
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 py-3 align-top text-right">
+                                                            <td className="w-10 px-2 py-1.5 align-middle text-right">
                                                                 {!isTitle && (
                                                                     <button
-                                                                        onClick={() => {
-                                                                            if (window.confirm(`Are you sure you want to completely destroy the "${prop.name}" column across all rows?`)) {
-                                                                                deleteProperty(databaseId, prop.id);
-                                                                            }
-                                                                        }}
-                                                                        className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition ml-auto"
-                                                                        title="Delete Column"
+                                                                        onClick={() => { if (window.confirm(`Delete property "${prop.name}"?`)) deleteProperty(databaseId, prop.id); }}
+                                                                        className="p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"
                                                                     >
-                                                                        <Trash className="w-4 h-4" />
+                                                                        <Trash2 className="w-3.5 h-3.5" />
                                                                     </button>
                                                                 )}
                                                             </td>
@@ -358,12 +338,8 @@ export default function DatabaseSchemaConfigurator() {
             {formulaEditingProp && (
                 <FormulaEditorModal
                     databaseId={databaseId}
-                    propertyId={formulaEditingProp.id}
-                    currentExpression={formulaEditingProp.config?.formulaExpression || ''}
+                    property={formulaEditingProp}
                     onClose={() => setFormulaEditingProp(null)}
-                    onSave={(expression) => {
-                        updateProperty(databaseId, formulaEditingProp.id, { config: { ...formulaEditingProp.config, formulaExpression: expression } });
-                    }}
                 />
             )}
         </div>

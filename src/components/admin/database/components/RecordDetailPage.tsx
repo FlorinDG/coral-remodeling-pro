@@ -126,10 +126,10 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
             </div>
 
             {/* ── Content area (Two-column) ─────────────────────────────────── */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
                 
                 {/* Left: Sidebar (Persistent) */}
-                <div className="w-80 flex-shrink-0 border-r border-neutral-200 dark:border-white/10 h-full overflow-hidden bg-white dark:bg-neutral-950">
+                <div className="w-full lg:w-[400px] flex-shrink-0 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-white/10 h-[40vh] lg:h-full overflow-hidden bg-white dark:bg-neutral-950">
                     <DbPropertiesPanel
                         databaseId={resolvedDbId}
                         pageId={pageId}
@@ -138,11 +138,11 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 </div>
 
                 {/* Right: Dashboard Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-neutral-50 dark:bg-[#0a0a0a]">
+                <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-neutral-50 dark:bg-[#0a0a0a]">
                     <div className="flex flex-col gap-6 h-full min-h-min max-w-[1600px] mx-auto">
                         
                         {/* Top row: 3 columns */}
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-shrink-0" style={{ height: '600px' }}>
+                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-shrink-0 xl:min-h-[600px]">
                             {/* Journal */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm">
                                 <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">

@@ -116,10 +116,12 @@ function PropertyRow({
     property,
     value,
     onChange,
+    dragHandleProps,
 }: {
     property: Property;
     value: PropertyValue;
     onChange: (propId: string, newVal: PropertyValue) => void;
+    dragHandleProps?: any;
 }) {
     const isReadOnly = READ_ONLY_TYPES.has(property.type);
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;
@@ -223,7 +225,7 @@ function PropertyRow({
         <div className="group flex items-center gap-2 py-1 hover:bg-neutral-100 dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 border-b border-neutral-100/50 dark:border-white/5 last:border-0">
             {/* Grip (only if not read-only and provided) */}
             {!isReadOnly && (
-                <div className="w-4 flex-shrink-0 text-neutral-300 dark:text-neutral-700 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
+                <div {...dragHandleProps} className="w-4 flex-shrink-0 text-neutral-300 dark:text-neutral-700 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
                     <GripVertical className="w-3.5 h-3.5" />
                 </div>
             )}
@@ -283,7 +285,6 @@ function Section({
                                         <div
                                             ref={provided.innerRef}
                                             {...provided.draggableProps}
-                                            {...provided.dragHandleProps}
                                             className={snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded z-50' : ''}
                                             style={provided.draggableProps.style}
                                         >
@@ -291,6 +292,7 @@ function Section({
                                                 property={prop}
                                                 value={pageProperties[prop.id] ?? null}
                                                 onChange={onChange}
+                                                dragHandleProps={provided.dragHandleProps}
                                             />
                                         </div>
                                     )}

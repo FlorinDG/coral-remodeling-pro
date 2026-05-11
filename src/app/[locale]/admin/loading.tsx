@@ -18,11 +18,11 @@ export default function AdminLoading() {
                 </div>
 
                 <div className="text-center relative z-10">
-                    <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-tighter animate-pulse">
-                        Neural Lexing Logic
+                    <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest animate-pulse">
+                        CoralOS
                     </h3>
                     <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-[0.2em] mt-2">
-                        Loading Neural Clusters...
+                        Loading...
                     </p>
                 </div>
 

@@ -7,7 +7,8 @@ export const hrTabs = [
 ];
 
 export const relationsTabs = [
-    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' }
+    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' },
+    { label: 'OFFERTES', href: '/admin/quotations', id: 'rel-offertes' }
 ];
 
 /**
@@ -55,12 +56,10 @@ const FINANCIAL_TAB_KEYS: Record<string, string> = {
     'fin-cred-aankoop': 'purchaseCreditNotes',
     'fin-cred-verkoop': 'salesCreditNotes',
     'fin-facturen': 'salesInvoices',
-    'fin-offertes': 'quotations',
 };
 
 const financialTabsBase = [
     { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
-    { label: 'OFFERTES', href: '/admin/quotations', id: 'fin-offertes' },
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
     { label: 'ONKOSTENFICHES', href: '/admin/financials/expenses/tickets', id: 'fin-tickets' },
     { label: 'CREDITNOTA - AANKOOP', href: '/admin/financials/expenses/credit-notes', id: 'fin-cred-aankoop' },

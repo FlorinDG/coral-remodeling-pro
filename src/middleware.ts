@@ -170,7 +170,7 @@ export default async function middleware(req: NextRequest) {
 
         const MODULE_GATE: Record<string, string> = {
             'financials':          'INVOICING',
-            'quotations':          'INVOICING',
+            'quotations':          'CRM',
             'suppliers':           'INVOICING',
             'projects-management': 'PROJECTS',
             'portals':             'PROJECTS',

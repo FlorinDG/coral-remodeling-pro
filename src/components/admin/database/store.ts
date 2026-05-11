@@ -267,7 +267,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 localDbs.forEach(db => {
                     if (!db.views?.length) return;
                     const viewMap = new Map<string, ViewPropertyState[]>();
-                    db.views.forEach(v => {
+                    db.views.forEach((v: DatabaseView) => {
                         if (v.propertiesState?.length) {
                             viewMap.set(v.id, v.propertiesState);
                         }
@@ -351,7 +351,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             clearDatabase: (databaseId) => {
                 // Capture all pages for undo before clearing
                 const db = get().databases.find(d => d.id === databaseId);
-                const allPages = db?.pages.map(p => ({ ...p })) || [];
+                const allPages: Page[] = db ? db.pages.map((p: Page) => ({ ...p })) : [];
                 if (allPages.length > 0) {
                     get()._pushUndo({ type: 'clearDatabase', databaseId, pages: allPages });
                 }
@@ -971,7 +971,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             deletePages: (databaseId, pageIds) => {
                 // Capture all pages for undo before deleting
                 const db = get().databases.find(d => d.id === databaseId);
-                const deletedPages = db?.pages.filter((p: Page) => pageIds.includes(p.id)).map(p => ({ ...p })) || [];
+                const deletedPages: Page[] = db ? db.pages.filter((p: Page) => pageIds.includes(p.id)).map((p: Page) => ({ ...p })) : [];
                 if (deletedPages.length > 0) {
                     get()._pushUndo({ type: 'deletePages', databaseId, pages: deletedPages });
                 }

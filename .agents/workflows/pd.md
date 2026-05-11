@@ -141,8 +141,8 @@ The full set of modules enforced across middleware → AdminLayout → moduleGua
 
 | Module key | Superadmin label | Routes gated |
 |---|---|---|
-| `INVOICING` | INV | financials, quotations, suppliers, library |
-| `CRM` | CRM | contacts, email, tasks, sales |
+| `INVOICING` | INV | financials, suppliers, library |
+| `CRM` | CRM | contacts, email, tasks, sales, quotations |
 | `DATABASES` | DB | databases |
 | `PROJECTS` | PRJ | projects-management, files |
 | `CALENDAR` | CAL | calendar |

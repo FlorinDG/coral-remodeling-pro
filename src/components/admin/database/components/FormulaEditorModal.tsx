@@ -140,7 +140,7 @@ export default function FormulaEditorModal({
     // Detect return type
     const resultType = useMemo(() => {
         if (!preview || preview.error) return 'unknown';
-        const v = preview.value;
+        const v: unknown = preview.value;
         if (v instanceof Date) return 'date';
         if (typeof v === 'number') return 'number';
         if (typeof v === 'boolean') return 'boolean';

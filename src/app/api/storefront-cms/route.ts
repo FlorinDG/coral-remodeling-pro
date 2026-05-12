@@ -11,7 +11,7 @@ const PREFIX = 'storefront.';
 export async function GET() {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({}, { status: 401 });
 
         const rows = await prisma.siteContent.findMany({
@@ -38,7 +38,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body: Record<string, Record<string, string>> = await req.json();

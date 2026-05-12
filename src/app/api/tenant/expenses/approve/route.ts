@@ -19,7 +19,7 @@ const MANAGER_ROLES = [...WORKSPACE_OWNER_ROLES, 'TENANT_ENTERPRISE_MANAGER'] as
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
+        const user = session?.user;
         if (!user?.tenantId || !user?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

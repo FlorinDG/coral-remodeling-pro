@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export async function updateInvoiceContact(invoiceId: string, contactId: string) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
         await prisma.invoice.update({
@@ -25,7 +25,7 @@ export async function updateInvoiceContact(invoiceId: string, contactId: string)
 export async function updateInvoiceTotals(invoiceId: string, subtotal: number, vatTotal: number, total: number) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
         await prisma.invoice.update({

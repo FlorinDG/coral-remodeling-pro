@@ -70,7 +70,7 @@ function formatDate(dateStr: string) {
 // ── Main Page ─────────────────────────────────────────────────────
 export default async function LeavePage() {
     const session = await auth();
-    const user = session?.user as unknown as { tenantId?: string; role?: string };
+    const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
     let data;

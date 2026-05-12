@@ -31,7 +31,7 @@ export default function LoginPage() {
                 // Fetch session to get user's stored environment language
                 const sessionRes = await fetch('/api/auth/session');
                 const session = await sessionRes.json();
-                const userLocale = (session?.user as any)?.environmentLanguage || 'nl';
+                const userLocale = session?.user?.environmentLanguage || 'nl';
 
                 // Redirect using the user's persisted locale, not the login page's URL locale
                 window.location.href = `/${userLocale}/admin/dashboard`;

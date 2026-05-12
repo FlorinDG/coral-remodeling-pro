@@ -34,7 +34,7 @@ function buildSelect() {
 export async function GET() {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +57,7 @@ export async function GET() {
 export async function PUT(request: Request) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -80,7 +80,7 @@ export async function PUT(request: Request) {
         });
 
         // Also sync the user's environmentLanguage when documentLanguage changes
-        const userId = (session?.user as any)?.id;
+        const userId = session?.user?.id;
         if (data.documentLanguage && userId) {
             await prisma.user.update({
                 where: { id: userId },

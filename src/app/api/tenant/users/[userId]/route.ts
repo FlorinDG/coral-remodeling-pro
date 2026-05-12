@@ -17,7 +17,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     try {
         const { userId } = await params;
         const session = await auth();
-        const admin = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
+        const admin = session?.user;
         if (!admin?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         if (!WORKSPACE_OWNER_ROLES.includes(admin.role as typeof WORKSPACE_OWNER_ROLES[number])) {
@@ -69,7 +69,7 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
     try {
         const { userId } = await params;
         const session = await auth();
-        const admin = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
+        const admin = session?.user;
         if (!admin?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         if (!WORKSPACE_OWNER_ROLES.includes(admin.role as typeof WORKSPACE_OWNER_ROLES[number])) {

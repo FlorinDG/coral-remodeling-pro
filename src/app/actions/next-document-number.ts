@@ -58,7 +58,7 @@ function assembleNumber(
 export async function getNextDocumentNumber(docType: DocType): Promise<{ success: boolean; number?: string; error?: string }> {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return { success: false, error: 'Unauthorized' };
 
         const prefixField = `${docType}Prefix`;
@@ -109,7 +109,7 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
 export async function previewDocumentNumber(docType: DocType): Promise<string> {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return '---';
 
         const tenant = await (prisma.tenant as any).findUnique({

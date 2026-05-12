@@ -15,7 +15,7 @@ import { onboardTenant, getPeppolStatus } from '@/lib/e-invoice';
 export async function POST() {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.tenantId) {
+        if (!session?.user?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         const tenantId = (session!.user as any).tenantId;
@@ -147,7 +147,7 @@ export async function POST() {
 export async function GET() {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.tenantId) {
+        if (!session?.user?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         const tenantId = (session!.user as any).tenantId;

@@ -91,7 +91,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     const { locale } = await params;
     const session = await auth();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
 
     if (!tenantId) {
         return (

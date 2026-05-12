@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 export async function GET() {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const bookings = await prisma.booking.findMany({

@@ -9,7 +9,7 @@ import { auth } from "@/auth";
  */
 export async function getInvoiceById(invoiceId: string) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: "Unauthorized" };
 
     const invoice = await prisma.invoice.findFirst({

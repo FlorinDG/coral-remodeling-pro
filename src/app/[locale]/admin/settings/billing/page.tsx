@@ -8,7 +8,7 @@ import BillingPageClient from "./BillingPageClient";
 
 export default async function BillingPage() {
     const session = await auth();
-    const tenantId = (session?.user as { tenantId?: string })?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) redirect("/");
 
     const tenant = await prisma.tenant.findUnique({

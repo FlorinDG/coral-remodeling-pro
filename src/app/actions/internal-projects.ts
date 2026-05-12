@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 
 export async function createInternalProject(data: { name: string; budget?: number; startDate?: string; targetEndDate?: string }) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
     // Generate the next project code securely inside the Tenant

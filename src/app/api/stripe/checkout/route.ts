@@ -12,7 +12,7 @@ import { getStripeInstance, getOrCreateStripeCustomer, getPriceId, PLAN_PRICING 
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as { tenantId?: string })?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

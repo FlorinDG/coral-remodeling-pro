@@ -4,11 +4,11 @@ import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!(session?.user as any)?.tenantId) {
+    if (!session?.user?.tenantId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const tenantId = (session?.user as any).tenantId;
+    const tenantId = session?.user?.tenantId;
     const body = await req.json();
 
     if (!body.agree) {

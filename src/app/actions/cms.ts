@@ -17,7 +17,7 @@ interface SiteContentData {
 
 export async function updateSiteContent(formData: SiteContentData) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
     const keys = Object.keys(formData);
@@ -81,7 +81,7 @@ interface ProjectData {
 
 export async function createProject(data: ProjectData) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
     await prisma.cMS_Project.create({
@@ -157,7 +157,7 @@ export async function deleteProject(id: string) {
 
 export async function updateBanner(data: { textEn: string; textNl?: string | null; isActive: boolean }) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
     const banner = await prisma.promotionalBanner.findFirst({ where: { tenantId } });
@@ -181,7 +181,7 @@ export async function updateBanner(data: { textEn: string; textNl?: string | nul
 
 export async function createService(data: any) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
     const service = await prisma.cMS_Service.create({

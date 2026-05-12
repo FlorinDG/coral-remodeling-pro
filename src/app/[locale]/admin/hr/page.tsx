@@ -209,7 +209,7 @@ function ActivityItem({ event }: { event: RecentEvent }) {
 // ── Main Page ─────────────────────────────────────────────────────
 export default async function HRPage() {
     const session = await auth();
-    const user = session?.user as unknown as { tenantId?: string };
+    const user = session?.user;
     if (!user?.tenantId) redirect("/login");
 
     let data;

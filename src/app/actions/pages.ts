@@ -35,7 +35,7 @@ export async function createPageServerFirst(
     customId?: string
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
-    const tenantId = (session?.user as { tenantId?: string })?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
 
     // Module-level authorization — enforced server-side regardless of UI state.
@@ -46,8 +46,8 @@ export async function createPageServerFirst(
             where: { id: tenantId },
             select: { activeModules: true, planType: true },
         });
-        const role = (session?.user as { role?: string })?.role as string;
-        const isSuperadmin = ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role);
+        const role = session?.user?.role;
+        const isSuperadmin = role ? ['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role) : false;
         if (!isSuperadmin && !tenant?.activeModules.includes(requiredModule)) {
             return {
                 success: false,
@@ -135,7 +135,7 @@ export async function updatePageServerFirst(
     properties: Record<string, PropertyValue>
 ): Promise<{ success: true; page: Page } | { success: false; error: string }> {
     const session = await auth();
-    const tenantId = (session?.user as { tenantId?: string })?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Not authenticated' };
 
     try {

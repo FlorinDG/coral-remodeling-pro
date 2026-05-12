@@ -5,7 +5,7 @@ import { auth } from "@/auth";
 export async function getContactsList() {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
 
         if (!tenantId) {
             return { success: false, data: [], error: "Unauthorized" };

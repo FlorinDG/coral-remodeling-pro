@@ -26,7 +26,7 @@ const ROLE_MAP: Record<string, AppRole> = {
 
 export function useUserRoles() {
   const { data: session } = useSession();
-  const user = session?.user as unknown as { id?: string; role?: string } | undefined;
+  const user = session?.user | undefined;
 
   const role = useMemo<AppRole>(() => {
     if (!user?.role) return 'user';

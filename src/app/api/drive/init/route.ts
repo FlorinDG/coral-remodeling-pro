@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
 
         if (!tenantId) {
             return NextResponse.json({ error: 'Unauthorized: SaaS workspace context missing.' }, { status: 401 });

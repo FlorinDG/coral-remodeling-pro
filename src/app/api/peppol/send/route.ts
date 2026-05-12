@@ -95,7 +95,7 @@ function mapUnitToCode(unit?: string): string {
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        if (!(session?.user as any)?.tenantId) {
+        if (!session?.user?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized', success: false }, { status: 401 });
         }
         const tenantId = (session!.user as any).tenantId;
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
             vendor_name: tenant.companyName || 'Unknown Company',
             vendor_tax_id: vendorVat,
             vendor_address: [tenant.street, tenant.postalCode, tenant.city, 'Belgium'].filter(Boolean).join(', '),
-            vendor_email: tenant.email || (session?.user as any)?.email || '',
+            vendor_email: tenant.email || session?.user?.email || '',
 
             // Customer (Receiver) — from selected client
             customer_name: [client.firstName, client.lastName].filter(Boolean).join(' '),

@@ -15,7 +15,7 @@ export async function PUT(
 ) {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { tenantId?: string; role?: string };
+        const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         if (!WORKSPACE_OWNER_ROLES.includes(user.role as typeof WORKSPACE_OWNER_ROLES[number])
@@ -69,7 +69,7 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { tenantId?: string; role?: string };
+        const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         if (!WORKSPACE_OWNER_ROLES.includes(user.role as typeof WORKSPACE_OWNER_ROLES[number])

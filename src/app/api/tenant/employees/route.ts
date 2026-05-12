@@ -12,7 +12,7 @@ import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 export async function GET() {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { tenantId?: string };
+        const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const employees = await prisma.employee.findMany({
@@ -31,7 +31,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { tenantId?: string; role?: string };
+        const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         // Only workspace owners/managers or platform admins can create employees

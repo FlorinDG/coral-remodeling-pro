@@ -560,7 +560,7 @@ export default function CompanyInfoSettings() {
                                 Interface Language
                             </label>
                             <select
-                                value={session?.user ? (session.user as Record<string, string>).environmentLanguage ?? currentLocale : currentLocale}
+                                value={session?.user?.environmentLanguage ?? currentLocale}
                                 onChange={async (e) => {
                                     const lang = e.target.value;
                                     const supported = ['en', 'fr', 'nl', 'ro', 'ru'];

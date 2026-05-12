@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 export async function POST(request: Request) {
     try {
         const session = await auth();
-        const tenantId = (session?.user as any)?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
         const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password } = body;

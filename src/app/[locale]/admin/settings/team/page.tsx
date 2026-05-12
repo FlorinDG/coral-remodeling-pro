@@ -58,7 +58,7 @@ export default function TeamSettingsPage() {
     usePageTitle('Team');
     const { activeModules, planType, isPro } = useTenant();
     const { data: session } = useSession();
-    const currentRole = (session?.user as { role?: string } | undefined)?.role ?? '';
+    const currentRole = session?.user?.role ?? '';
     const isWorkspaceOwner = OWNER_ROLES.includes(currentRole);
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
 

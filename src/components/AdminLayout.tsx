@@ -78,7 +78,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         } catch {}
     }, []);
 
-    const isEmailVerified = (session?.user as unknown as { emailVerified?: boolean })?.emailVerified;
+    const isEmailVerified = session?.user?.emailVerified;
     const userEmail = session?.user?.email;
 
     const handleResendVerification = async () => {

@@ -20,7 +20,7 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 export async function GET() {
     try {
         const session = await auth();
-        const user = session?.user as unknown as { tenantId?: string; role?: string };
+        const user = session?.user;
         if (!user?.tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const users = await prisma.user.findMany({
@@ -57,7 +57,7 @@ export async function GET() {
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const inviter = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
+        const inviter = session?.user;
         if (!inviter?.tenantId || !inviter?.id) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
@@ -132,7 +132,7 @@ export async function POST(req: Request) {
         // Send invite email with tenant branding
         const inviteUrl = `${process.env.NEXTAUTH_URL || 'https://app.coral-group.be'}/accept-invite?token=${inviteToken}`;
         
-        const inviterName = (session?.user as any)?.name || 'A team member';
+        const inviterName = session?.user?.name || 'A team member';
         const brandCompany = tenant?.commercialName || tenant?.companyName || 'CoralOS';
 
         if (email) {

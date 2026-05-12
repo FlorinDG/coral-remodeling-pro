@@ -34,7 +34,7 @@ const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt'];
 
 async function getTenantAndUser() {
     const session = await auth();
-    const user = session?.user as unknown as { id?: string; tenantId?: string; role?: string };
+    const user = session?.user;
     if (!user?.tenantId) return null;
     return { userId: user.id || '', tenantId: user.tenantId, role: user.role || '' };
 }

@@ -270,7 +270,7 @@ async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: bool
 
 export async function POST(req: Request) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

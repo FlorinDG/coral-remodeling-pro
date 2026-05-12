@@ -13,7 +13,7 @@ import { getStripeInstance } from '@/lib/stripe';
 export async function POST() {
     try {
         const session = await auth();
-        const tenantId = (session?.user as { tenantId?: string })?.tenantId;
+        const tenantId = session?.user?.tenantId;
         if (!tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }

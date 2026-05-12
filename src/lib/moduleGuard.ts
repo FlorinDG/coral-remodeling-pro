@@ -34,7 +34,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
  */
 export async function verifyModuleAccess(requiredModule: string): Promise<string> {
     const session = await auth();
-    const tenantId = (session?.user as unknown as { tenantId?: string })?.tenantId;
+    const tenantId = (session?.user)?.tenantId;
 
     if (!tenantId) {
         throw new Error('Unauthorized — no active session');
@@ -50,7 +50,7 @@ export async function verifyModuleAccess(requiredModule: string): Promise<string
     }
 
     // SUPERADMIN / PLATFORM_ADMIN bypass — they can do everything
-    const role = (session?.user as unknown as { role?: string })?.role ?? '';
+    const role = session?.user?.role ?? '';
     if (['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role)) {
         return tenantId;
     }
@@ -71,7 +71,7 @@ export async function verifyModuleAccess(requiredModule: string): Promise<string
  */
 export async function verifyAuth(): Promise<string> {
     const session = await auth();
-    const tenantId = (session?.user as unknown as { tenantId?: string })?.tenantId;
+    const tenantId = (session?.user)?.tenantId;
     if (!tenantId) throw new Error('Unauthorized — no active session');
     return tenantId;
 }

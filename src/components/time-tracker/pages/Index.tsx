@@ -12,7 +12,12 @@ import { Announcements } from '@/components/time-tracker/components/Announcement
 import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 
-export default function Index() {
+interface IndexProps {
+  /** When true, hides standalone Header/Footer — used when rendered inside AdminLayout */
+  embedded?: boolean;
+}
+
+export default function Index({ embedded = false }: IndexProps) {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
 
@@ -36,10 +41,10 @@ export default function Index() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className={embedded ? '' : 'min-h-screen bg-background'}>
+      {!embedded && <Header />}
 
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      <main className={embedded ? 'py-4' : 'container mx-auto px-4 py-8 md:py-12'}>
         {/* Hero Section with Clock Button */}
         <section className="text-center mb-16 md:mb-20">
           <div className="max-w-2xl mx-auto mb-10">
@@ -78,12 +83,14 @@ export default function Index() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border mt-16">
-        <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
-          <p>WorkHub — Time & Task Management</p>
-        </div>
-      </footer>
+      {/* Footer — standalone mode only */}
+      {!embedded && (
+        <footer className="border-t border-border mt-16">
+          <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
+            <p>WorkHub — Time & Task Management</p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 }

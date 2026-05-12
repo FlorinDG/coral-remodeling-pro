@@ -19,7 +19,7 @@ const safeId = (id: string | undefined | null) => {
  */
 export async function getGlobalDatabases(): Promise<Database[]> {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return [];
 
     try {
@@ -71,7 +71,7 @@ export async function getGlobalDatabases(): Promise<Database[]> {
  */
 export async function saveGlobalDatabase(db: Database) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
 
     try {
@@ -126,7 +126,7 @@ export async function saveGlobalDatabase(db: Database) {
  */
 export async function saveGlobalPage(page: Page) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
 
     try {
@@ -190,7 +190,7 @@ export async function saveGlobalPage(page: Page) {
  */
 export async function saveGlobalPagesBatch(pages: Page[]) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
     if (!pages.length) return { success: true, count: 0 };
 
@@ -253,7 +253,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
 
 export async function deleteGlobalPage(pageId: string) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
 
     try {
@@ -275,7 +275,7 @@ export async function deleteGlobalPage(pageId: string) {
 
 export async function deleteGlobalDatabase(dbId: string) {
     const session = await auth();
-    const tenantId = (session?.user as any)?.tenantId;
+    const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
 
     try {

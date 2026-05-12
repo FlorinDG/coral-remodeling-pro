@@ -29,12 +29,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
     // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
     try {
         const session = await auth();
-        const userRole = (session?.user as { role?: string })?.role;
-        tenantId = (session?.user as { tenantId?: string | null })?.tenantId ?? null;
+        const userRole = session?.user?.role;
+        tenantId = session?.user?.tenantId ?? null;
         isOwner  = tenantId === OWNER_TENANT_ID;
 
         // SuperAdmin impersonation: override tenantId with cookie value
-        if (userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any)) {
+        if (userRole && PLATFORM_ADMIN_ROLES.includes(userRole)) {
             const cookieStore = await cookies();
             const impersonatedTenant = cookieStore.get('x-impersonate-tenant')?.value;
             if (impersonatedTenant) {

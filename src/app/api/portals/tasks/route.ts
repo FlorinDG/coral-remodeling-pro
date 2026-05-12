@@ -28,8 +28,18 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const body = await request.json();
         const { id, title, status, dueDate, fileUrl } = body;
+
+        // Verify task belongs to caller's tenant via its parent portal
+        const existing = await prisma.task.findUnique({ where: { id }, include: { portal: { select: { tenantId: true } } } });
+        if (!existing || existing.portal.tenantId !== tenantId) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
 
         const task = await prisma.task.update({
             where: { id },

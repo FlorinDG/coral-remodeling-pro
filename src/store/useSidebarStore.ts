@@ -61,6 +61,7 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'contacts',   iconName: 'Users',            label: 'CONTACTS',   href: '/admin/contacts' },
     { id: 'suppliers',  iconName: 'Truck',            label: 'SUPPLIERS',  href: '/admin/suppliers' },
     { id: 'sales',      iconName: 'TrendingUp',       label: 'SALES',      href: '/admin/crm' },
+    { id: 'quotations', iconName: 'FileSignature',    label: 'QUOTATIONS', href: '/admin/quotations' },
     { id: 'projects',   iconName: 'Briefcase',        label: 'PROJECTS',   href: '/admin/projects-management' },
     { id: 'portals',    iconName: 'UsersRound',       label: 'PORTALS',    href: '/admin/portals' },
     { id: 'hr',         iconName: 'CircleDollarSign', label: 'HR',         href: '/admin/hr/time-tracker' },
@@ -85,9 +86,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 16, // bump: removed duplicate WEBSITE item (already in top platform links)
+            version: 17, // bump: added QUOTATIONS sidebar item
             migrate: (persistedState: any, version: number) => {
-                if (version < 16) {
+                if (version < 17) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

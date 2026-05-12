@@ -52,6 +52,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     files:      'sidebar.files',
     tasks:      'sidebar.tasks',
     sales:      'sidebar.sales',
+    quotations: 'sidebar.quotations',
 };
 
 export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt, isImpersonating = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null, isImpersonating?: boolean }) {
@@ -134,6 +135,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         'library':   ['INVOICING'],
         'frontend':  ['WEBSITES'],
         'sales':     ['CRM'],
+        'quotations':['INVOICING'],
     };
 
     const isModuleLocked = (moduleId: string) => {

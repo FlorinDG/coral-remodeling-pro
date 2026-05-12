@@ -15,9 +15,8 @@ import prisma from '@/lib/prisma';
 
 export const MODULE_ROUTE_MAP: Record<string, string> = {
     'financials': 'INVOICING',
-    'quotations': 'CRM',
+    'quotations': 'INVOICING',
     'suppliers':  'INVOICING',
-    'contacts':   'CRM',
     'projects-management': 'PROJECTS',
     'hr':         'HR',
     'databases':  'DATABASES',

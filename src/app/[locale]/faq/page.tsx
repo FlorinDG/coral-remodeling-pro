@@ -99,7 +99,11 @@ const FAQ_SECTIONS = [
             },
             {
                 q: "Can I export my data?",
-                a: "Yes. You can export invoices, contacts, and project data at any time. Upon account cancellation, data is available for export for 30 days.",
+                a: "PRO and Enterprise plan users can export contacts, invoices, expenses, and other database records to CSV directly from the platform. Free plan users can request a CSV or Excel export by contacting support@coral-group.be — we'll prepare the file for you, usually within one business day.",
+            },
+            {
+                q: "Can I import data from CSV or Excel?",
+                a: "PRO and Enterprise plans include a built-in spreadsheet import tool. If you're on the Free plan, email your CSV or Excel file to support@coral-group.be and our team will import it into your workspace for you.",
             },
         ],
     },

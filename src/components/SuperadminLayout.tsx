@@ -82,7 +82,7 @@ export default function SuperadminLayout({ children }: { children: React.ReactNo
                     </div>
                 </header>
 
-                <div className="flex-1 p-6 overflow-y-auto">
+                <div className="flex-1 p-6 pb-4 overflow-hidden flex flex-col">
                     {children}
                 </div>
             </main>

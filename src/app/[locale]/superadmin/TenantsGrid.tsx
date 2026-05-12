@@ -122,10 +122,10 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
     const capLeft  = 20 - founders;
 
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 flex-1 min-h-0">
 
             {/* ── Stats bar ────────────────────────────────────────────── */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {([
                     { label: "Total",   value: total,   icon: Building2,  cls: "text-blue-500"   },
                     { label: "Active",  value: active,  icon: Activity,   cls: "text-emerald-500" },
@@ -144,11 +144,11 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
             </div>
 
             {/* ── Table ──────────────────────────────────────────────────── */}
-            <div className="w-full overflow-x-auto rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/[0.02]">
-                <table className="w-full min-w-[900px] text-sm border-collapse">
+            <div className="w-full overflow-auto rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/[0.02] flex-1 min-h-0">
+                <table className="w-full min-w-[900px] text-sm border-collapse relative">
 
                     {/* Header */}
-                    <thead>
+                    <thead className="sticky top-0 z-20">
                         <tr className="border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
                             {["#", "Company", "Plan", "Status", "Users", "Peppol", "Modules", "Joined", ""].map((h, i) => (
                                 <th

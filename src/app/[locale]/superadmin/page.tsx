@@ -44,8 +44,8 @@ export default async function SuperadminDashboardPage() {
     });
 
     return (
-        <div className="space-y-6">
-            <header>
+        <div className="flex flex-col h-full space-y-6">
+            <header className="shrink-0">
                 <h1 className="text-3xl font-extrabold tracking-tight">Global Tenants</h1>
                 <p className="text-neutral-600 dark:text-neutral-400 mt-1">Manage active workspaces, scale subscriptions, and toggle feature modules.</p>
             </header>

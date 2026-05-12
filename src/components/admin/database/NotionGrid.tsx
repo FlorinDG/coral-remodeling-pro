@@ -13,7 +13,7 @@ import {
 import 'react-datasheet-grid/dist/style.css';
 import Papa from 'papaparse';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus } from 'lucide-react';
+import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, CalendarRange, Lock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
@@ -102,6 +102,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
+
+    // ── Accountant date range filter ───────────────────────────────────
+    const [acctDatePreset, setAcctDatePreset] = useState<string>('this-year');
+    const [acctDateFrom, setAcctDateFrom] = useState<string>('');
+    const [acctDateTo, setAcctDateTo] = useState<string>('');
+    const [showAcctDateFilter, setShowAcctDateFilter] = useState(false);
 
     // ── VAT Company Lookup Flyout ────────────────────────────────────────────
     type VatLookupState = {
@@ -573,15 +579,84 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         });
     }, [filteredPages, activeView?.sorts, database?.activeSorts]);
 
+    // ── Accountant date range filtering (applied after sort) ──────────────
+    const acctDateFilteredPages = useMemo(() => {
+        if (!isAccountant) return sortedPages;
+
+        // Resolve preset to from/to dates
+        const now = new Date();
+        let from = acctDateFrom;
+        let to = acctDateTo;
+
+        if (acctDatePreset !== 'custom') {
+            const y = now.getFullYear();
+            const m = now.getMonth();
+            switch (acctDatePreset) {
+                case 'last-month': {
+                    const d = new Date(y, m - 1, 1);
+                    from = d.toISOString().split('T')[0];
+                    to = new Date(y, m, 0).toISOString().split('T')[0];
+                    break;
+                }
+                case 'last-trimester': {
+                    const qStart = Math.floor(m / 3) * 3;
+                    from = new Date(y, qStart - 3, 1).toISOString().split('T')[0];
+                    to = new Date(y, qStart, 0).toISOString().split('T')[0];
+                    break;
+                }
+                case 'last-semester': {
+                    if (m < 6) {
+                        from = `${y - 1}-07-01`;
+                        to = `${y - 1}-12-31`;
+                    } else {
+                        from = `${y}-01-01`;
+                        to = `${y}-06-30`;
+                    }
+                    break;
+                }
+                case 'this-year':
+                    from = `${y}-01-01`;
+                    to = now.toISOString().split('T')[0];
+                    break;
+                case 'last-year':
+                    from = `${y - 1}-01-01`;
+                    to = `${y - 1}-12-31`;
+                    break;
+                case 'last-calendar-year':
+                    from = `${y - 1}-01-01`;
+                    to = `${y - 1}-12-31`;
+                    break;
+                default:
+                    return sortedPages;
+            }
+        }
+
+        if (!from && !to) return sortedPages;
+
+        // Find the date property to filter on
+        const dateField = database?.properties.find(p =>
+            p.id === 'invoiceDate' || p.id === 'date'
+        )?.id || 'invoiceDate';
+
+        return sortedPages.filter(page => {
+            const dateVal = page.properties[dateField];
+            if (!dateVal) return false;
+            const d = String(dateVal).split('T')[0];
+            if (from && d < from) return false;
+            if (to && d > to) return false;
+            return true;
+        });
+    }, [sortedPages, isAccountant, acctDatePreset, acctDateFrom, acctDateTo, database?.properties]);
+
     // Convert sorted filtered pages to row data by flattening properties to the top level for data-sheet-grid access
     // Memoizing this to prevent infinite re-renders or synchronous onChange triggers from DataSheetGrid
-    const rowData = useMemo(() => sortedPages.map(page => ({
+    const rowData = useMemo(() => acctDateFilteredPages.map(page => ({
         ...page,
         ...page.properties,
         _isSelected: selectedRowIds.has(page.id),
         // Force DSG cell re-render when property values change by including a lightweight hash
         _propHash: JSON.stringify(page.properties)
-    })), [sortedPages, selectedRowIds]);
+    })), [acctDateFilteredPages, selectedRowIds]);
 
     // ── Live VAT typing detection via event delegation ────────────────────────
     useEffect(() => {
@@ -678,12 +753,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const handleExportCSV = () => {
         if (!database) return;
 
-        // Prepare rows (using sortedPages so it respects current filters)
-        const csvData = sortedPages.map(page => {
+        // Prepare rows (using acctDateFilteredPages so it respects current filters)
+        const csvData = acctDateFilteredPages.map(page => {
             const row: Record<string, string> = {};
             database.properties.forEach(p => {
+                // Skip the export flag from CSV output
+                if (p.id === 'accountantExportedAt') return;
                 const val = page.properties[p.id];
-                // basic stringification for CSV
                 if (val === undefined || val === null) {
                     row[p.name] = '';
                 } else if (Array.isArray(val)) {
@@ -697,14 +773,27 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
         const csvContent = Papa.unparse(csvData);
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Add UTF-8 BOM for Excel compatibility
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.setAttribute('href', url);
-        link.setAttribute('download', `${database.name}_export.csv`);
+        const dateStr = new Date().toISOString().split('T')[0];
+        link.setAttribute('download', `${database.name}_${dateStr}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+
+        // ── Accountant export: stamp all exported records ─────────────
+        if (isAccountant) {
+            const now = new Date().toISOString();
+            acctDateFilteredPages.forEach(page => {
+                if (!page.properties.accountantExportedAt) {
+                    updatePageProperty(database.id, page.id, 'accountantExportedAt', now);
+                }
+            });
+            toast.success(`${acctDateFilteredPages.length} records exported & flagged`);
+        }
     };
 
     // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
@@ -740,15 +829,68 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
-                    {/* Accountant always gets export */}
+                    {/* Accountant: date range filter + export */}
                     {isAccountant && (
-                    <button
-                        onClick={handleExportCSV}
-                        className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition"
-                    >
-                        <Download className="w-3.5 h-3.5" />
-                        <span className="hidden md:inline">Export CSV</span>
-                    </button>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {/* Period preset */}
+                        <div className="relative">
+                            <select
+                                value={acctDatePreset}
+                                onChange={e => {
+                                    setAcctDatePreset(e.target.value);
+                                    if (e.target.value !== 'custom') {
+                                        setAcctDateFrom('');
+                                        setAcctDateTo('');
+                                    }
+                                }}
+                                className="appearance-none text-xs font-bold px-3 py-1.5 pr-7 rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
+                            >
+                                <option value="this-year">This Year</option>
+                                <option value="last-month">Last Month</option>
+                                <option value="last-trimester">Last Trimester</option>
+                                <option value="last-semester">Last Semester</option>
+                                <option value="last-calendar-year">Last Calendar Year</option>
+                                <option value="last-year">Last Year</option>
+                                <option value="custom">Custom Range</option>
+                            </select>
+                            <CalendarRange className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-400 pointer-events-none" />
+                        </div>
+
+                        {/* Custom date inputs */}
+                        {acctDatePreset === 'custom' && (
+                            <>
+                                <input
+                                    type="date"
+                                    value={acctDateFrom}
+                                    onChange={e => setAcctDateFrom(e.target.value)}
+                                    className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                    placeholder="From"
+                                />
+                                <span className="text-xs text-neutral-400">&rarr;</span>
+                                <input
+                                    type="date"
+                                    value={acctDateTo}
+                                    onChange={e => setAcctDateTo(e.target.value)}
+                                    className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                    placeholder="To"
+                                />
+                            </>
+                        )}
+
+                        {/* Result count */}
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-md">
+                            {acctDateFilteredPages.length} records
+                        </span>
+
+                        {/* Export button */}
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Export CSV
+                        </button>
+                    </div>
                     )}
 
                     {!lockedSchema && !isAccountant && (
@@ -799,6 +941,20 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     )}
                 </div>
             </div>
+
+            {/* \u2500\u2500 Export lock banner (non-accountant users) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+            {!isAccountant && (() => {
+                const exportedCount = acctDateFilteredPages.filter(p => p.properties.accountantExportedAt).length;
+                if (exportedCount === 0) return null;
+                return (
+                    <div className="px-4 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 flex items-center gap-2">
+                        <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                        <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                            <strong>{exportedCount} record{exportedCount > 1 ? 's' : ''}</strong> sent to accountant &mdash; editing locked.
+                        </p>
+                    </div>
+                );
+            })()}
 
             <div
                 className="flex-1 w-full p-0 relative overflow-hidden min-h-0 bg-white dark:bg-black"
@@ -998,6 +1154,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (prop.type === 'rollup' || prop.type === 'formula') return;
                                             // Skip computed financial properties — they're set by the engine, not manual edits
                                             if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
+                                            // Block edits on records exported to accountant
+                                            if (oldRow.properties.accountantExportedAt && prop.id !== 'accountantExportedAt') {
+                                                return; // silently skip — UI will show lock
+                                            }
 
                                             let newVal;
                                             if (prop.id === 'title' || (prop.type as string) === 'relation') {

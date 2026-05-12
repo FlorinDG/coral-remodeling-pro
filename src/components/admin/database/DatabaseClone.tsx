@@ -231,6 +231,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'totalExVat',  name: 'Totaal excl. BTW',  type: 'currency' },
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
       { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
+      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
     ],
     'db-expenses': [
       { id: 'title',       name: 'Factuur #',         type: 'text' },
@@ -254,6 +255,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
       { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
       { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
+      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
     ],
     'db-tickets': [
       { id: 'title',         name: 'Handelaar / Beschrijving', type: 'text' },
@@ -282,6 +284,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ]}},
       { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
       { id: 'notes',      name: 'Notities', type: 'text' },
+      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
     ],
     'db-1': [
       { id: 'title',             name: 'Project Naam',      type: 'text' },

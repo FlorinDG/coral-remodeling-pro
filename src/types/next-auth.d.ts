@@ -6,8 +6,8 @@ declare module "next-auth" {
         user: {
             id: string;
             role?: Role;
-            tenantId?: string;
-            environmentLanguage?: string;
+            tenantId?: string | null;
+            environmentLanguage?: string | null;
             emailVerified?: boolean;
             activeModules?: string[];
             planType?: string;
@@ -16,8 +16,8 @@ declare module "next-auth" {
 
     interface User {
         role?: Role | string;
-        tenantId?: string;
-        environmentLanguage?: string;
+        tenantId?: string | null;
+        environmentLanguage?: string | null;
         emailVerified?: Date | null;
     }
 }
@@ -25,8 +25,8 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
     interface JWT {
         role?: Role | string;
-        tenantId?: string;
-        environmentLanguage?: string;
+        tenantId?: string | null;
+        environmentLanguage?: string | null;
         emailVerified?: boolean;
         activeModules?: string[];
         planType?: string;

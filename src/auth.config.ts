@@ -12,21 +12,21 @@ export const authConfig = {
         authorized: () => true,
         async jwt({ token, user }) {
             if (user) {
-                token.role = (user as { role?: string }).role;
+                token.role = user.role;
                 token.id = user.id;
-                token.tenantId = (user as { tenantId?: string | null }).tenantId;
-                token.emailVerified = !!(user as unknown as { emailVerified?: Date | null }).emailVerified;
-                token.environmentLanguage = (user as { environmentLanguage?: string | null }).environmentLanguage;
+                token.tenantId = user.tenantId;
+                token.emailVerified = !!user.emailVerified;
+                token.environmentLanguage = user.environmentLanguage;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                (session.user as { role?: string }).role = token.role as string;
+                session.user.role = token.role as Role;
                 session.user.id = token.id as string;
-                (session.user as { tenantId?: string | null }).tenantId = token.tenantId as string | null;
-                (session.user as unknown as { emailVerified?: boolean }).emailVerified = token.emailVerified as boolean;
-                (session.user as unknown as { environmentLanguage?: string | null }).environmentLanguage = token.environmentLanguage as string | null;
+                session.user.tenantId = token.tenantId;
+                session.user.emailVerified = token.emailVerified;
+                session.user.environmentLanguage = token.environmentLanguage;
             }
             return session;
         }

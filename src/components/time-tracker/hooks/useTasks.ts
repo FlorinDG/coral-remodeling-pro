@@ -1,3 +1,4 @@
+import { useState, useCallback, useEffect } from 'react';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 
 export interface Task {
@@ -54,8 +55,8 @@ export function useTasks(projectId?: string | null) {
         description: null,
         status: (p.properties as any)?.status || 'todo',
         priority: (p.properties as any)?.priority || 'normal',
-        createdAt: p.createdAt,
-        updatedAt: p.createdAt,
+        createdAt: (p as any).createdAt,
+        updatedAt: (p as any).createdAt,
         project_id: projectId || '',
       }));
       setTasks(filtered);
@@ -102,7 +103,7 @@ export function useShiftTasks(shiftId?: string | null) {
         task: taskMap.has(st.taskId) ? {
           id: st.taskId,
           title: taskMap.get(st.taskId)!.name,
-        } : undefined
+        } as any : undefined
       }));
       setShiftTasks(enriched);
     } catch (err) {

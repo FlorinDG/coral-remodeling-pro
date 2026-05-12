@@ -44,11 +44,15 @@ interface InvoicePDFProps {
     tenantProfile?: any;
     templateId?: TemplateId;
     language?: string;
+    invoiceDate?: string;
+    deliveryDate?: string;
+    dueDate?: string;
 }
 
 export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
+    invoiceDate, deliveryDate, dueDate,
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
@@ -73,9 +77,11 @@ export const InvoicePDFTemplate = ({
     const isT3 = templateId === 't3';
     const isT4 = templateId === 't4';
 
-    const dateStr = new Date().toLocaleDateString(
-        lang === 'fr' ? 'fr-BE' : lang === 'en' ? 'en-GB' : 'nl-BE'
-    );
+    const localeFmt = lang === 'fr' ? 'fr-BE' : lang === 'en' ? 'en-GB' : 'nl-BE';
+    const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString(localeFmt) : null;
+    const dateStr = formatDate(invoiceDate) || new Date().toLocaleDateString(localeFmt);
+    const deliveryDateStr = formatDate(deliveryDate);
+    const dueDateStr = formatDate(dueDate);
 
     const navy = (s as any).navyColor || '#1a3a5c';
     const navyMid = (s as any).navyMid || '#245076';
@@ -252,8 +258,10 @@ export const InvoicePDFTemplate = ({
                             <View style={{ alignItems: 'flex-end' }}>
                                 <Text style={{ fontSize: 16, fontWeight: 'bold', color: accent, textTransform: 'uppercase' }}>{docTitle}</Text>
                                 <Text style={{ fontSize: 9, color: '#666', marginTop: 3 }}>#{invoiceTitle || 'DRAFT'} · {dateStr}</Text>
+                                {deliveryDateStr && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('delivery_date', lang)}: {deliveryDateStr}</Text>}
                                 <Text style={{ fontSize: 8, color: '#888', marginTop: 3 }}>{t('project_re', lang)}: {betreft || '—'}</Text>
                                 {!isCreditNote && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>}
+                                {dueDateStr && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('due_date', lang)}: {dueDateStr}</Text>}
                             </View>
                         </View>
 
@@ -338,6 +346,7 @@ export const InvoicePDFTemplate = ({
                 <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 24, fontWeight: 'bold', color: navy, textTransform: 'uppercase', letterSpacing: 2 }}>{docTitle}</Text>
                     <Text style={{ fontSize: 9, color: '#888', marginTop: 3 }}>#{invoiceTitle || 'DRAFT'} · {dateStr}</Text>
+                    {deliveryDateStr && <Text style={{ fontSize: 8, color: '#999', marginTop: 2 }}>{t('delivery_date', lang)}: {deliveryDateStr}</Text>}
                 </View>
             </View>
         </>
@@ -364,6 +373,7 @@ export const InvoicePDFTemplate = ({
                 </Text>
                 <Text style={{ fontSize: 13, color: darkBrand, fontWeight: 'bold', marginBottom: 3 }}>#{invoiceTitle || 'DRAFT'}</Text>
                 <Text style={{ fontSize: 9, color: '#777777' }}>{dateStr}</Text>
+                {deliveryDateStr && <Text style={{ fontSize: 8, color: '#999', marginTop: 2 }}>{t('delivery_date', lang)}: {deliveryDateStr}</Text>}
             </View>
         </View>
     );
@@ -427,6 +437,8 @@ export const InvoicePDFTemplate = ({
                 <Text style={{ ...s.title, fontSize: 18 }}>{docTitle}</Text>
                 <Text style={s.subtitle}>#{invoiceTitle || 'DRAFT'}</Text>
                 <Text style={s.subtitle}>{t('date', lang)}: {dateStr}</Text>
+                {deliveryDateStr && <Text style={s.subtitle}>{t('delivery_date', lang)}: {deliveryDateStr}</Text>}
+                {dueDateStr && <Text style={s.subtitle}>{t('due_date', lang)}: {dueDateStr}</Text>}
             </View>
         </View>
     );

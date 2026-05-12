@@ -16,6 +16,7 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'project_re': { nl: 'Project / Betreft', fr: 'Projet / Concerne', en: 'Project / Re' },
     'date': { nl: 'Datum', fr: 'Date', en: 'Date' },
     'due_date': { nl: 'Vervaldatum', fr: 'Échéance', en: 'Due Date' },
+    'delivery_date': { nl: 'Leveringsdatum', fr: 'Date de livraison', en: 'Delivery Date' },
     'payment_terms': { nl: 'Betalingstermijn', fr: 'Conditions de paiement', en: 'Payment Terms' },
     'payment_terms_30': { nl: 'Betaling binnen 30 dagen', fr: 'Paiement sous 30 jours', en: 'Payment due within 30 days' },
     'offer_number': { nl: 'Offerte', fr: 'Devis', en: 'Offer' },

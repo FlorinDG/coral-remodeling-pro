@@ -485,6 +485,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
                     language={docLanguage}
+                    invoiceDate={invoice?.properties?.['invoiceDate'] as string}
+                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    dueDate={invoice?.properties?.['dueDate'] as string}
                 />
             );
 
@@ -545,6 +548,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
                     language={docLanguage}
+                    invoiceDate={invoice?.properties?.['invoiceDate'] as string}
+                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    dueDate={invoice?.properties?.['dueDate'] as string}
                 />
             );
 
@@ -1005,6 +1011,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 tenantProfile={tenantProfile}
                                                 templateId={tenantProfile?.documentTemplate || 't1'}
                                                 language={docLanguage}
+                                                invoiceDate={invoice?.properties?.['invoiceDate'] as string}
+                                                deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                                                dueDate={invoice?.properties?.['dueDate'] as string}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenantProfile);

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
-import { Upload, FileSpreadsheet, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, TableProperties } from 'lucide-react';
+import { Upload, FileSpreadsheet, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, TableProperties, FileText, Building2, CalendarDays, Hash, Coins } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import Papa from 'papaparse';
 import * as xlsx from 'xlsx';
@@ -51,6 +51,11 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
     // Mapping State: { [csvHeaderName]: targetDatabasePropertyId }
     const [mapping, setMapping] = useState<Record<string, string>>({});
 
+    // PDF Document Metadata (vendor, customer, date, totals — extracted by AI)
+    const [pdfMeta, setPdfMeta] = useState<Record<string, any> | null>(null);
+    const [pdfDocType, setPdfDocType] = useState<string | null>(null);
+    const [pdfWarning, setPdfWarning] = useState<string | null>(null);
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Native Zustand Reference
@@ -100,9 +105,15 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 setupMapping(extractedHeaders, cleanedData);
             }
             else if (fileName.endsWith('.pdf')) {
-                // Parse PDF via Server API
+                // Parse PDF via Server API — send schema hints for better extraction
                 const formData = new FormData();
                 formData.append('file', uploadedFile);
+
+                // Pass target DB column names so GPT aligns its output keys
+                if (targetDb) {
+                    const schemaHint = targetDb.properties.map(p => p.name).join(', ');
+                    formData.append('schemaHint', schemaHint);
+                }
                 
                 const response = await fetch('/api/integrations/parse-pdf', {
                     method: 'POST',
@@ -112,8 +123,19 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                 const json = await response.json();
                 if (!json.success) throw new Error(json.error || "Failed to parse PDF");
                 
+                // Store document metadata for the summary card
+                setPdfMeta(json.metadata || null);
+                setPdfDocType(json.documentType || null);
+                setPdfWarning(json.warning || null);
+
                 const parsedData = json.data as Record<string, unknown>[];
-                if (!parsedData || parsedData.length === 0) throw new Error("No tabular data found in PDF");
+                if (!parsedData || parsedData.length === 0) {
+                    // Even if no items, show the metadata card and the warning
+                    if (json.warning) {
+                        throw new Error(json.warning);
+                    }
+                    throw new Error("No line items found in PDF");
+                }
                 
                 const cleanedData = parsedData.filter(row => Object.values(row).some(v => v !== null && v !== undefined && String(v).trim() !== ''));
                 if (cleanedData.length === 0) throw new Error("PDF extraction returned empty rows");
@@ -487,6 +509,9 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
         setPreviewData([]);
         setMapping({});
         setError(null);
+        setPdfMeta(null);
+        setPdfDocType(null);
+        setPdfWarning(null);
         onClose();
     };
 
@@ -546,6 +571,73 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     {/* Mapping Interface */}
                     {headers.length > 0 && targetDb && (
                         <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+
+                            {/* PDF Document Metadata Card */}
+                            {pdfMeta && Object.keys(pdfMeta).length > 0 && (
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 text-sm">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        <span className="font-bold text-blue-900 dark:text-blue-200">
+                                            {pdfDocType === 'INVOICE' ? 'Invoice' : pdfDocType === 'QUOTATION' ? 'Quotation' : pdfDocType === 'CATALOG' ? 'Catalog' : 'Document'} Detected
+                                        </span>
+                                        {pdfDocType && (
+                                            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
+                                                {pdfDocType}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                                        {pdfMeta.vendorName && (
+                                            <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
+                                                <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span className="font-semibold">{pdfMeta.vendorName}</span>
+                                            </div>
+                                        )}
+                                        {pdfMeta.customerName && (
+                                            <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300">
+                                                <Building2 className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span>→ {pdfMeta.customerName}</span>
+                                            </div>
+                                        )}
+                                        {pdfMeta.documentRef && (
+                                            <div className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                                                <Hash className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span>{pdfMeta.documentRef}</span>
+                                            </div>
+                                        )}
+                                        {pdfMeta.documentDate && (
+                                            <div className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                                                <CalendarDays className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span>{pdfMeta.documentDate}</span>
+                                            </div>
+                                        )}
+                                        {(pdfMeta.grandTotalExcl || pdfMeta.grandTotalIncl) && (
+                                            <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 col-span-2 mt-1 pt-1.5 border-t border-blue-200/60 dark:border-blue-800/40">
+                                                <Coins className="w-3 h-3 text-neutral-400 shrink-0" />
+                                                <span className="font-semibold">
+                                                    {pdfMeta.grandTotalExcl != null && `€${Number(pdfMeta.grandTotalExcl).toFixed(2)} excl.`}
+                                                    {pdfMeta.grandTotalExcl != null && pdfMeta.grandTotalIncl != null && ' · '}
+                                                    {pdfMeta.grandTotalIncl != null && `€${Number(pdfMeta.grandTotalIncl).toFixed(2)} incl.`}
+                                                    {pdfMeta.vatRate != null && ` (${pdfMeta.vatRate}% BTW)`}
+                                                </span>
+                                            </div>
+                                        )}
+                                        {pdfMeta.vendorVat && (
+                                            <div className="text-[10px] text-neutral-400 col-span-2">
+                                                BTW: {pdfMeta.vendorVat}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {pdfWarning && (
+                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg p-3 flex gap-2 text-amber-700 dark:text-amber-400 text-xs">
+                                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>{pdfWarning}</span>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-between">
                                 <h3 className="font-bold text-lg flex items-center gap-2">
                                     <Bot className="w-5 h-5 text-neutral-500" />

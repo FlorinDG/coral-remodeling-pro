@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
 import { Property } from './types';
+import { isSystemDatabase } from '@/lib/systemDatabases';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
@@ -53,9 +54,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const hasDatabases = activeModules.includes('DATABASES');
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
-  const isFinancialDB = databaseId === 'db-invoices' || databaseId === 'db-expenses' || databaseId === 'db-tickets' || databaseId === 'db-quotations';
-  const isProjectDB = databaseId === 'db-1' || databaseId === 'db-tasks';
-  const isLockedSchemaDB = isImmutableContactDB || isFinancialDB || isProjectDB;
+  const isLockedSchemaDB = isSystemDatabase(databaseId);
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());

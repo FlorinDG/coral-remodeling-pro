@@ -35,6 +35,7 @@ import DatabaseFooter from './components/DatabaseFooter';
 import AddColumnFlyout from './components/AddColumnFlyout';
 import { Property } from './types';
 import { toast } from 'sonner';
+import { isSystemDatabase } from '@/lib/systemDatabases';
 
 // ── Add Column Button (rendered at the end of the header row) ───────────────
 function AddColumnButton({ databaseId }: { databaseId: string }) {
@@ -943,8 +944,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     );
                                 })}
 
-                                {/* Add Column button (Pro/Enterprise) */}
-                                {(isPro || isEnterprise) && (
+                                {/* Add Column button (Pro/Enterprise, user-created DBs only) */}
+                                {(isPro || isEnterprise) && !isSystemDatabase(databaseIdRef) && (
                                     <AddColumnButton databaseId={databaseIdRef} />
                                 )}
                             </div>

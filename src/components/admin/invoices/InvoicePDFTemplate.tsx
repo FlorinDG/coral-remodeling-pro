@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templateStyles';
@@ -181,24 +181,56 @@ export const InvoicePDFTemplate = ({
         return rows;
     };
 
-    // Calculate VAT from per-line rates
-    let taxAmount = 0;
-    const accumulateVAT = (nodes: Block[]) => {
-        nodes.forEach(b => {
-            if (b.isOptional) return;
-            if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
-                accumulateVAT(b.children || []);
-            } else if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                const price = b.unitPrice || b.verkoopPrice || 0;
-                const lineTotal = price * (b.quantity || 1);
-                const rate = b.vatRate ?? 21;
-                taxAmount += lineTotal * (rate / 100);
-            }
-        });
-    };
-    accumulateVAT(blocks);
-    const totalInclTax = grandTotal + taxAmount;
-    const effectiveVatPercent = grandTotal > 0 ? ((taxAmount / grandTotal) * 100) : 21;
+    // Calculate VAT breakdown
+    const vatBreakdown = useMemo(() => {
+        const vatMap = new Map<number, { base: number; vat: number; isMedecontractant: boolean }>();
+        
+        const accumulate = (nodes: Block[]) => {
+            nodes.forEach(b => {
+                if (b.isOptional) return;
+                if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
+                    accumulate(b.children || []);
+                } else if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
+                    const price = (b.unitPrice || b.verkoopPrice || 0) + (b.articleId ? 0 : 0); // variants handled in render loop but here we need totals
+                    // Actually, let's simplify and use the same logic as the render loop for consistency
+                    let variantDeltas = 0;
+                    if (b.selectedVariants && b.articleId) {
+                        const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
+                        const page = db?.pages.find((p: any) => p.id === b.articleId);
+                        const vProp = db?.properties.find((p: any) => p.type === 'variants');
+                        if (page && vProp) {
+                            const vConfig = page.properties[vProp.id];
+                            if (vConfig && Array.isArray(vConfig)) {
+                                Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
+                                    const axis = vConfig.find((a: any) => a.id === axisId);
+                                    const opt = axis?.options.find((o: any) => o.id === optId);
+                                    if (opt) variantDeltas += opt.priceDelta;
+                                });
+                            }
+                        }
+                    }
+                    const lineTotal = ((b.unitPrice || b.verkoopPrice || 0) + variantDeltas) * (b.quantity || 1);
+                    const rate = b.vatMedecontractant ? 0 : (b.vatRate ?? 21);
+                    
+                    const existing = vatMap.get(rate) || { base: 0, vat: 0, isMedecontractant: !!b.vatMedecontractant };
+                    existing.base += lineTotal;
+                    existing.vat += lineTotal * (rate / 100);
+                    if (b.vatMedecontractant) existing.isMedecontractant = true;
+                    vatMap.set(rate, existing);
+                }
+            });
+        };
+        accumulate(blocks);
+        return Array.from(vatMap.entries())
+            .sort((a, b) => b[0] - a[0])
+            .map(([rate, data]) => ({ rate, ...data }));
+    }, [blocks, databaseStoreState]);
+
+    const totalVAT = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
+    const totalInclTax = grandTotal + totalVAT;
+    const hasMedecontractant = vatBreakdown.some(v => v.isMedecontractant);
+
+    const MEDECONTRACTANT_TEXT = 'Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992.';
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 
     // ── STATIONERY MODE ─────────────────────────────────────────────────────
@@ -241,16 +273,26 @@ export const InvoicePDFTemplate = ({
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
                                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{grandTotal.toFixed(2)}</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} ({effectiveVatPercent.toFixed(0)}%):</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{taxAmount.toFixed(2)}</Text>
-                                </View>
+                                {vatBreakdown.map((v, i) => (
+                                    <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                            {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
+                                        </Text>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{v.vat.toFixed(2)}</Text>
+                                    </View>
+                                ))}
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
                                     <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
                                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€{totalInclTax.toFixed(2)}</Text>
                                 </View>
                             </View>
                         </View>
+
+                        {hasMedecontractant && (
+                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
+                                {MEDECONTRACTANT_TEXT}
+                            </Text>
+                        )}
 
                         <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 24, lineHeight: 1.4 }}>
                             {legalText}
@@ -500,13 +542,23 @@ export const InvoicePDFTemplate = ({
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
                             <Text style={s.summaryValue}>€{grandTotal.toFixed(2)}</Text>
                         </View>
-                        <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>{t('vat', lang)} ({effectiveVatPercent.toFixed(0)}%):</Text>
-                            <Text style={s.summaryValue}>€{taxAmount.toFixed(2)}</Text>
-                        </View>
+                        {vatBreakdown.map((v, i) => (
+                            <View key={i} style={s.summaryRow}>
+                                <Text style={s.summaryLabel}>
+                                    {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
+                                </Text>
+                                <Text style={s.summaryValue}>€{v.vat.toFixed(2)}</Text>
+                            </View>
+                        ))}
                         {renderGrandTotal()}
                     </View>
                 </View>
+
+                {hasMedecontractant && (
+                    <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: padH }}>
+                        {MEDECONTRACTANT_TEXT}
+                    </Text>
+                )}
 
                 {/* Legal text */}
                 <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 30, paddingHorizontal: padH, lineHeight: 1.4 }}>

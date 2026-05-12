@@ -9,7 +9,10 @@ export async function updateInvoiceContact(invoiceId: string, contactId: string)
         if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
         await prisma.invoice.update({
-            where: { id: invoiceId },
+            where: { 
+                id: invoiceId,
+                tenantId: tenantId // Strictly enforce tenant isolation
+            },
             data: { contactId: contactId || null }
         });
         return { success: true };
@@ -26,7 +29,10 @@ export async function updateInvoiceTotals(invoiceId: string, subtotal: number, v
         if (!tenantId) throw new Error("Unauthorized: Workspace context missing.");
 
         await prisma.invoice.update({
-            where: { id: invoiceId },
+            where: { 
+                id: invoiceId,
+                tenantId: tenantId // Strictly enforce tenant isolation
+            },
             data: { subtotal, vatTotal, total }
         });
         return { success: true };

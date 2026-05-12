@@ -326,7 +326,7 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String    @default("TENANT_ADMIN") // SUPERADMIN, TENANT_ADMIN, EMPLOYEE
+  role          String    @default("TENANT_ADMIN") // SUPERADMIN, TENANT_ADMIN, EMPLOYEE, ACCOUNTANT
   environmentLanguage String? @default("en")
   verificationToken   String?
   verificationSentAt  DateTime?

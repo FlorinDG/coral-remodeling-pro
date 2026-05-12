@@ -138,7 +138,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         'quotations':['INVOICING'],
     };
 
+    // ── Accountant role: restrict sidebar to financial items only ──────
+    const userRole = session?.user?.role ?? '';
+    const isAccountant = userRole === 'ACCOUNTANT';
+    const ACCOUNTANT_SIDEBAR_IDS = ['dashboard', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'];
+
     const isModuleLocked = (moduleId: string) => {
+        // Accountants only see financial items
+        if (isAccountant && !ACCOUNTANT_SIDEBAR_IDS.includes(moduleId)) return true;
         const requiredModules = MODULE_MAP[moduleId];
         if (!requiredModules) return false;
         return !requiredModules.some(m => activeModules.includes(m));
@@ -186,9 +193,16 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 </div>
 
                 <nav className="flex-1 px-3 py-2 overflow-y-auto">
+                    {/* ── Accountant read-only banner ── */}
+                    {isAccountant && isSidebarOpen && (
+                        <div className="mx-1 mb-3 px-3 py-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">Read-only</p>
+                            <p className="text-[10px] text-blue-500 dark:text-blue-400/70 mt-0.5">Accountant Access</p>
+                        </div>
+                    )}
 
                     {/* ── Platform owner quick-links (Coral Enterprises only) ── */}
-                    {isOwner && (
+                    {isOwner && !isAccountant && (
                         <>
                             {isSidebarOpen && (
                                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400 px-3 pt-3 pb-1.5">

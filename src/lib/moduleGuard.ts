@@ -75,3 +75,23 @@ export async function verifyAuth(): Promise<string> {
     if (!tenantId) throw new Error('Unauthorized — no active session');
     return tenantId;
 }
+
+/**
+ * Verify write access — blocks ACCOUNTANT role from all mutations.
+ * Use at the top of any server action that modifies data.
+ */
+export async function verifyWriteAccess(requiredModule?: string): Promise<string> {
+    const session = await auth();
+    const tenantId = (session?.user)?.tenantId;
+    const role = session?.user?.role ?? '';
+
+    if (!tenantId) throw new Error('Unauthorized — no active session');
+    if (role === 'ACCOUNTANT') {
+        throw new Error('ACCESS_DENIED — Accountant access is read-only');
+    }
+
+    if (requiredModule) {
+        return verifyModuleAccess(requiredModule);
+    }
+    return tenantId;
+}

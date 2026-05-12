@@ -85,21 +85,27 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
 
-        // Check seat limits and fetch branding
+        // Check seat limits (accountants are exempt — they're external collaborators)
         const tenant = await prisma.tenant.findUnique({
             where: { id: inviter.tenantId },
             select: { planType: true, companyName: true, commercialName: true, logoUrl: true, brandColor: true },
         });
         const maxUsers = PLAN_USER_LIMITS[tenant?.planType ?? 'FREE'] ?? 1;
-        const currentCount = await prisma.user.count({ where: { tenantId: inviter.tenantId } });
+        const isAccountantInvite = role === 'ACCOUNTANT';
 
-        if (currentCount >= maxUsers) {
-            return NextResponse.json({
-                error: 'SEAT_LIMIT_REACHED',
-                message: `Your ${tenant?.planType} plan allows ${maxUsers} users. Upgrade to add more.`,
-                maxUsers,
-                currentCount,
-            }, { status: 403 });
+        if (!isAccountantInvite) {
+            const currentCount = await prisma.user.count({
+                where: { tenantId: inviter.tenantId, role: { not: 'ACCOUNTANT' } },
+            });
+
+            if (currentCount >= maxUsers) {
+                return NextResponse.json({
+                    error: 'SEAT_LIMIT_REACHED',
+                    message: `Your ${tenant?.planType} plan allows ${maxUsers} users. Upgrade to add more.`,
+                    maxUsers,
+                    currentCount,
+                }, { status: 403 });
+            }
         }
 
         // Generate invite token

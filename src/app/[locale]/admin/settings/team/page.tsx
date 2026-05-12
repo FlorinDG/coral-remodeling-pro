@@ -9,7 +9,7 @@ import { useSession } from 'next-auth/react';
 import {
     Users, UserPlus, Shield, Eye, EyeOff, Edit3, Trash2,
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
-    ChevronDown, KeyRound,
+    ChevronDown, KeyRound, Calculator,
 } from 'lucide-react';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
@@ -47,10 +47,11 @@ const ACCESS_LABELS: Record<AccessLevel, { label: string; desc: string; icon: ty
 };
 
 const ROLE_OPTIONS = [
-    { value: 'TENANT_PRO_EMPLOYEE',          label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access' },
-    { value: 'TENANT_ENTERPRISE_MANAGER',    label: 'Manager',   icon: Crown,      desc: 'Management-level access, can manage team' },
-    { value: 'TENANT_ENTERPRISE_EMPLOYEE',   label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access' },
-    { value: 'TENANT_ENTERPRISE_WORKFORCE',  label: 'Workforce', icon: HardHat,    desc: 'Field/labour — tasks todo, time tracker only' },
+    { value: 'ACCOUNTANT',                   label: 'Accountant', icon: Calculator, desc: 'Read-only financial access for your bookkeeper', tier: 'ALL' },
+    { value: 'TENANT_PRO_EMPLOYEE',          label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'PRO' },
+    { value: 'TENANT_ENTERPRISE_MANAGER',    label: 'Manager',   icon: Crown,      desc: 'Management-level access, can manage team', tier: 'ENTERPRISE' },
+    { value: 'TENANT_ENTERPRISE_EMPLOYEE',   label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'ENTERPRISE' },
+    { value: 'TENANT_ENTERPRISE_WORKFORCE',  label: 'Workforce', icon: HardHat,    desc: 'Field/labour — tasks todo, time tracker only', tier: 'ENTERPRISE' },
 ];
 
 // ── Main Component ─────────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ export default function TeamSettingsPage() {
 
     // Filter role options based on plan
     const availableRoles = ROLE_OPTIONS.filter(r => {
+        if (r.tier === 'ALL') return true; // ACCOUNTANT always available
         if (planType === 'PRO' || planType === 'FOUNDER') return r.value === 'TENANT_PRO_EMPLOYEE';
         return r.value.startsWith('TENANT_ENTERPRISE_');
     });
@@ -161,6 +163,7 @@ export default function TeamSettingsPage() {
     };
 
     const getRoleIcon = (role: string) => {
+        if (role === 'ACCOUNTANT') return Calculator;
         if (role.includes('OWNER') || role === 'APP_MANAGER' || role === 'TENANT_ADMIN') return Crown;
         if (role.includes('MANAGER')) return Crown;
         if (role.includes('WORKFORCE')) return HardHat;
@@ -168,6 +171,7 @@ export default function TeamSettingsPage() {
     };
 
     const getRoleLabel = (role: string) => {
+        if (role === 'ACCOUNTANT') return 'Accountant';
         if (role.includes('OWNER') || role === 'APP_MANAGER' || role === 'TENANT_ADMIN') return 'Owner';
         if (role.includes('MANAGER')) return 'Manager';
         if (role.includes('WORKFORCE')) return 'Workforce';
@@ -193,7 +197,7 @@ export default function TeamSettingsPage() {
                         <span className="text-xs font-bold text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg">
                             {users.length} / {maxUsers === Infinity ? '∞' : maxUsers} seats
                         </span>
-                        {isPro && isWorkspaceOwner && (
+                        {isWorkspaceOwner && (
                             <button
                                 onClick={() => setShowInvite(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-[var(--brand-color,#d35400)] text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity"
@@ -413,7 +417,7 @@ export default function TeamSettingsPage() {
                                 </div>
 
                                 {/* Per-module access */}
-                                {inviteRole !== 'TENANT_ENTERPRISE_WORKFORCE' && (
+                                {inviteRole !== 'TENANT_ENTERPRISE_WORKFORCE' && inviteRole !== 'ACCOUNTANT' && (
                                     <div>
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">Module Access (default: Own)</label>
                                         <AccessEditor

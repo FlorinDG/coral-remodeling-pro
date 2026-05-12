@@ -38,6 +38,11 @@ export function getModuleAccess(
         return 'ALL';
     }
 
+    // Accountants get ALL for viewing — write access is blocked at API/UI layer
+    if (role === ROLES.ACCOUNTANT) {
+        return 'ALL';
+    }
+
     // Workforce: restricted defaults unless explicitly overridden
     if (role === ROLES.TENANT_ENTERPRISE_WORKFORCE) {
         const override = (user.moduleAccess as Record<string, string> | null)?.[module];

@@ -38,6 +38,10 @@ export const ROLES = {
     TENANT_ENTERPRISE_EMPLOYEE:  'TENANT_ENTERPRISE_EMPLOYEE',
     /** Enterprise workforce. Field/labour access. Most restricted. */
     TENANT_ENTERPRISE_WORKFORCE: 'TENANT_ENTERPRISE_WORKFORCE',
+
+    // ── External collaborator roles ──────────────────────────────────
+    /** Read-only access to financial data. Does NOT count against seat limits. */
+    ACCOUNTANT:                  'ACCOUNTANT',
 } as const;
 
 export type Role = typeof ROLES[keyof typeof ROLES];
@@ -61,6 +65,7 @@ export const ERP_ROLES: Role[] = [
     ROLES.TENANT_ENTERPRISE_MANAGER,
     ROLES.TENANT_ENTERPRISE_EMPLOYEE,
     ROLES.TENANT_ENTERPRISE_WORKFORCE,
+    ROLES.ACCOUNTANT,          // read-only financial access
 ];
 
 /** Roles that can manage their workspace's users. */

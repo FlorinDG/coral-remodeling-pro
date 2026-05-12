@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
+import { useSession } from 'next-auth/react';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
@@ -82,6 +83,8 @@ interface NotionGridProps {
 export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter }: NotionGridProps) {
     const router = useRouter();
     const t = useTranslations('Admin');
+    const { data: session } = useSession();
+    const isAccountant = session?.user?.role === 'ACCOUNTANT';
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
@@ -727,7 +730,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     <FilterToolbar databaseId={database.id} viewId={activeViewId} />
                     <SortToolbar databaseId={database.id} viewId={activeViewId} />
 
-                    {!lockedSchema && (
+                    {!lockedSchema && !isAccountant && (
                     <button
                         onClick={handleExportCSV}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -737,7 +740,18 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
-                    {!lockedSchema && (
+                    {/* Accountant always gets export */}
+                    {isAccountant && (
+                    <button
+                        onClick={handleExportCSV}
+                        className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        <span className="hidden md:inline">Export CSV</span>
+                    </button>
+                    )}
+
+                    {!lockedSchema && !isAccountant && (
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -749,7 +763,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                     {/* Bulk delete — only show if not blanket-blocked.
                         For callback-based preventDelete, filter out non-deletable rows before executing. */}
-                    {preventDelete !== true && (
+                    {preventDelete !== true && !isAccountant && (
                     <button
                         onClick={() => {
                             if (selectedRowIds.size > 0) {
@@ -945,7 +959,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 })}
 
                                 {/* Add Column button (Pro/Enterprise, user-created DBs only) */}
-                                {(isPro || isEnterprise) && !isSystemDatabase(databaseIdRef) && (
+                                {(isPro || isEnterprise) && !isSystemDatabase(databaseIdRef) && !isAccountant && (
                                     <AddColumnButton databaseId={databaseIdRef} />
                                 )}
                             </div>
@@ -1009,8 +1023,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 }}
                                 columns={columns}
                                 autoAddRow={false}
-                                lockRows={false}
+                                lockRows={isAccountant}
                                 addRowsComponent={false}
+                                disableContextMenu={isAccountant}
                                 headerRowHeight={0}
                                 height={gridHeight}
                                 className="database-grid-custom tracking-wider"

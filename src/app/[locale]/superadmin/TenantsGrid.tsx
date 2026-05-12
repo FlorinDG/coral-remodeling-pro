@@ -78,11 +78,11 @@ type Tenant = {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function peppolColor(val: number, cap: number | null, soft = false): string {
-    if (!cap) return "text-neutral-400";
+    if (!cap) return "text-neutral-600 dark:text-neutral-400";
     const pct = val / cap;
     if (pct >= 1) return soft ? "text-amber-600 font-bold" : "text-red-600 font-bold";
-    if (pct >= 0.8) return soft ? "text-amber-500" : "text-orange-500";
-    return "text-neutral-500 dark:text-neutral-400";
+    if (pct >= 0.8) return soft ? "text-amber-600" : "text-orange-600";
+    return "text-neutral-700 dark:text-neutral-300";
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                         <Icon className={`w-4 h-4 shrink-0 ${cls}`} />
                         <div>
                             <p className="text-base font-bold leading-none">{value}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 mt-0.5">{label}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400 mt-0.5">{label}</p>
                         </div>
                     </div>
                 ))}
@@ -153,7 +153,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                             {["#", "Company", "Plan", "Status", "Users", "Peppol", "Modules", "Joined", ""].map((h, i) => (
                                 <th
                                     key={i}
-                                    className={`px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-neutral-400 text-left whitespace-nowrap
+                                    className={`px-3 py-2.5 text-[10px] font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-400 text-left whitespace-nowrap
                                         ${i === 0 ? "w-8 text-center" : ""}
                                         ${h === "" ? "w-8" : ""}
                                     `}
@@ -183,7 +183,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                         `}
                                     >
                                         {/* # */}
-                                        <td className="px-3 py-2.5 text-center text-[11px] text-neutral-400 tabular-nums">
+                                        <td className="px-3 py-2.5 text-center text-[11px] text-neutral-600 dark:text-neutral-400 tabular-nums">
                                             {idx + 1}
                                         </td>
 
@@ -199,7 +199,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                 <div className="min-w-0">
                                                     <p className="font-semibold text-[13px] truncate leading-tight">{t.companyName}</p>
                                                     {adminUser?.email && (
-                                                        <p className="text-[11px] text-neutral-400 truncate flex items-center gap-1 mt-0.5">
+                                                        <p className="text-[11px] text-neutral-600 dark:text-neutral-400 truncate flex items-center gap-1 mt-0.5">
                                                             <Mail className="w-2.5 h-2.5 shrink-0" />
                                                             {adminUser.email}
                                                         </p>
@@ -234,7 +234,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                         <td className="px-3 py-2.5 tabular-nums text-[12px]">
                                             <span className="font-semibold">{t._count.users}</span>
                                             {userLimit !== null && (
-                                                <span className={`text-neutral-400 ${t._count.users >= userLimit ? "text-red-500 font-bold" : ""}`}>
+                                                <span className={`text-neutral-500 dark:text-neutral-400 ${t._count.users >= userLimit ? "text-red-500 font-bold" : ""}`}>
                                                     /{userLimit}
                                                 </span>
                                             )}
@@ -264,7 +264,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                             className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-all ${
                                                                 on
                                                                 ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                                                                : "bg-neutral-100 text-neutral-400 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10"
+                                                                : "bg-neutral-200 text-neutral-600 dark:bg-white/10 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-white/20"
                                                             }`}
                                                         >
                                                             {label}
@@ -275,7 +275,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                         </td>
 
                                         {/* Joined */}
-                                        <td className="px-3 py-2.5 text-[11px] text-neutral-400 whitespace-nowrap tabular-nums">
+                                        <td className="px-3 py-2.5 text-[11px] text-neutral-600 dark:text-neutral-400 whitespace-nowrap tabular-nums">
                                             {new Date(t.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" })}
                                         </td>
 

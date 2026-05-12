@@ -47,7 +47,7 @@ export default async function SuperadminDashboardPage() {
         <div className="space-y-6">
             <header>
                 <h1 className="text-3xl font-extrabold tracking-tight">Global Tenants</h1>
-                <p className="text-neutral-500 mt-1">Manage active workspaces, scale subscriptions, and toggle feature modules.</p>
+                <p className="text-neutral-600 dark:text-neutral-400 mt-1">Manage active workspaces, scale subscriptions, and toggle feature modules.</p>
             </header>
 
             <TenantsGrid initialTenants={tenants} />

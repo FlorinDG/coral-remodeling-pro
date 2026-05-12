@@ -20,8 +20,20 @@ export async function POST() {
             where: { id: tenantId },
             select: { stripeSubscriptionId: true },
         });
+        if (!tenant) return NextResponse.json({ error: 'Tenant not found.' }, { status: 404 });
 
-        if (!tenant?.stripeSubscriptionId) {
+        // Safety Check: Prevent cancellation if there are unsettled Peppol overage fees
+        const { calculatePeppolOverage } = await import('@/lib/stripe');
+        const overage = await calculatePeppolOverage(tenantId);
+        if (overage > 0) {
+            return NextResponse.json({ 
+                error: `Cannot cancel subscription: Unsettled Peppol overage fees of €${overage.toFixed(2)} detected. These will be billed at the end of the period, but we require a manual review or payment confirmation for large overages.`,
+                code: 'OVERAGE_PENDING',
+                amount: overage
+            }, { status: 403 });
+        }
+
+        if (!tenant.stripeSubscriptionId) {
             return NextResponse.json({ error: 'No active subscription found.' }, { status: 404 });
         }
 

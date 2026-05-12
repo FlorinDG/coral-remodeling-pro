@@ -1,81 +1,154 @@
-"use client";
-import { useState, useEffect, useCallback } from 'react';
-
-/**
- * Tasks — SCAFFOLD
- * Uses local state. Will be connected to the existing
- * CoralOS Tasks module (db-tasks) in a future iteration.
- */
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 
 export interface Task {
   id: string;
-  project_id: string;
+  projectId: string; // From GlobalPage
   title: string;
   description: string | null;
   status: string;
   priority: string | null;
-  created_by: string | null;
-  completed_by: string | null;
-  completed_at: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  // Legacy aliases
+  project_id?: string;
 }
 
 export interface ShiftTask {
   id: string;
-  shift_id: string;
-  task_id: string;
+  shiftId: string;
+  taskId: string;
   status: string;
-  completed_by: string | null;
-  completed_at: string | null;
-  created_at: string;
+  completedBy: string | null;
+  completedAt: string | null;
+  createdAt: string;
   task?: Task;
+  // Legacy aliases
+  shift_id?: string;
+  task_id?: string;
 }
 
-export function useTasks(_projectId?: string | null) {
-  const [tasks] = useState<Task[]>([]);
-  const loading = false;
+export function useTasks(projectId?: string | null) {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const createTask = useCallback(async (_data: Partial<Task>) => {
-    return { data: null, error: null };
+  const fetchTasks = useCallback(async () => {
+    if (!projectId) {
+      setTasks([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await hrList<{ id: string; name: string, properties: any }>('erp-tasks');
+      // Filter by project relation if possible, or just return all for this project
+      // For now, assuming db-tasks pages might have a relation to db-projects
+      // But if we don't have the relation ID, we just show all tasks for the tenant
+      // Or we can filter client-side if the property exists
+      const filtered = data.filter(p => {
+        const props = p.properties || {};
+        const rel = props['prop-project-relation'] || props['project'] || props['projectId'];
+        return !projectId || rel === projectId;
+      }).map(p => ({
+        id: p.id,
+        projectId: projectId || '',
+        title: p.name,
+        description: null,
+        status: (p.properties as any)?.status || 'todo',
+        priority: (p.properties as any)?.priority || 'normal',
+        createdAt: p.createdAt,
+        updatedAt: p.createdAt,
+        project_id: projectId || '',
+      }));
+      setTasks(filtered);
+    } catch (err) {
+      console.error('Failed to fetch ERP tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  const createTask = useCallback(async (data: Partial<Task>) => {
+    // This would ideally create a GlobalPage in db-tasks
+    // For now, we skip or implement if needed
+    return { data: null, error: 'Creation via scheduler not yet supported' };
   }, []);
 
-  const updateTask = useCallback(async (_id: string, _data: Partial<Task>) => {
-    return { data: null, error: null };
-  }, []);
-
-  const deleteTask = useCallback(async (_id: string) => {
-    return { error: null };
-  }, []);
-
-  return { tasks, loading, createTask, updateTask, deleteTask, refetch: async () => {} };
+  return { tasks, loading, createTask, refetch: fetchTasks };
 }
 
-export function useShiftTasks(_shiftId?: string | null) {
-  const [shiftTasks] = useState<ShiftTask[]>([]);
-  const loading = false;
+export function useShiftTasks(shiftId?: string | null) {
+  const [shiftTasks, setShiftTasks] = useState<ShiftTask[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const assignTask = useCallback(async (_shiftId: string, _taskId: string) => {
-    return { data: null, error: null };
+  const fetchShiftTasks = useCallback(async () => {
+    if (!shiftId) {
+      setShiftTasks([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await hrList<ShiftTask>('shift-tasks', { shiftId });
+      // Fetch task details for each shift-task
+      const tasksData = await hrList<{ id: string; name: string }>('erp-tasks');
+      const taskMap = new Map(tasksData.map(t => [t.id, t]));
+
+      const enriched = data.map(st => ({
+        ...st,
+        shift_id: st.shiftId,
+        task_id: st.taskId,
+        task: taskMap.has(st.taskId) ? {
+          id: st.taskId,
+          title: taskMap.get(st.taskId)!.name,
+        } : undefined
+      }));
+      setShiftTasks(enriched);
+    } catch (err) {
+      console.error('Failed to fetch shift tasks:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [shiftId]);
+
+  useEffect(() => {
+    fetchShiftTasks();
+  }, [fetchShiftTasks]);
+
+  const assignTask = useCallback(async (taskId: string) => {
+    if (!shiftId) return;
+    try {
+      const res = await hrCreate('shift-tasks', { shiftId, taskId, status: 'pending' });
+      setShiftTasks(prev => [...prev, res]);
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  }, [shiftId]);
+
+  const removeTask = useCallback(async (id: string) => {
+    try {
+      await hrDelete('shift-tasks', id);
+      setShiftTasks(prev => prev.filter(st => st.id !== id));
+    } catch (err) {
+      throw err;
+    }
   }, []);
 
-  const unassignTask = useCallback(async (_id: string) => {
-    return { error: null };
+  const completeShiftTask = useCallback(async (id: string) => {
+    try {
+      await hrUpdate('shift-tasks', id, { status: 'completed', completedAt: new Date().toISOString() });
+      setShiftTasks(prev => prev.map(st => st.id === id ? { ...st, status: 'completed' } : st));
+    } catch (err) {
+      throw err;
+    }
   }, []);
 
-  const completeTask = useCallback(async (_id: string) => {
-    return { error: null };
-  }, []);
-
-  const uncompleteTask = useCallback(async (_id: string) => {
-    return { error: null };
-  }, []);
-
-  return { shiftTasks, loading, assignTask, unassignTask, completeTask, uncompleteTask, refetch: async () => {} };
+  return { shiftTasks, loading, assignTask, removeTask, completeShiftTask, refetch: fetchShiftTasks };
 }
 
 export function useCompletedTasks() {
   const [completedTasks] = useState<(ShiftTask & { task?: Task })[]>([]);
-  const loading = false;
-  return { completedTasks, loading, refetch: async () => {} };
+  return { completedTasks, loading: false, refetch: async () => {} };
 }

@@ -27,6 +27,7 @@ import { rollupColumn } from './columns/RollupColumn';
 import { formulaColumn } from './columns/FormulaColumn';
 import { currencyColumn } from './columns/CurrencyColumn';
 import { variantsColumn } from './columns/VariantsColumn';
+import { metaDateColumn } from './columns/MetaDateColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
@@ -354,8 +355,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         propId: prop.id,
                         onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value),
                     }) as any;
-                } else if (prop.type === 'date' || prop.type === 'created_time' || prop.type === 'last_edited_time') {
+                } else if (prop.type === 'date') {
                     baseColumn = dateColumn as any;
+                } else if (prop.type === 'created_time' || prop.type === 'last_edited_time') {
+                    baseColumn = metaDateColumn as any;
                 } else if (prop.type === 'currency' || prop.type === 'number') {
                     const symbol = prop.config?.format === 'dollar' ? '$' : '€';
                     const isComputed = ['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id);
@@ -543,7 +546,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
         return [...filteredPages].sort((a, b) => {
             if (!activeSorts || activeSorts.length === 0) {
-                return (a.order ?? 0) - (b.order ?? 0);
+                // Default: Newest on top
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
             }
 
             for (const sort of activeSorts) {

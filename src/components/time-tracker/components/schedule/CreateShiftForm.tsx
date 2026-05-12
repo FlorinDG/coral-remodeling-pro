@@ -267,9 +267,15 @@ export function CreateShiftForm({
     }
   };
 
-  const assignTasksToShift = async (_shiftId: string) => {
-    // shift_tasks table not yet in Prisma — skip silently
-    // TODO: Wire when shift_tasks model is added to schema
+  const assignTasksToShift = async (shiftId: string) => {
+    if (selectedTasks.length === 0) return;
+    try {
+      for (const st of selectedTasks) {
+        await hrCreate('shift-tasks', { shiftId, taskId: st.task.id, status: 'pending' });
+      }
+    } catch (err) {
+      console.error('Failed to assign tasks:', err);
+    }
   };
 
   const applyTemplate = (templateId: string) => {
@@ -313,9 +319,32 @@ export function CreateShiftForm({
     setPendingAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadAttachmentsForShift = async (_shiftId: string) => {
-    // schedule_attachments table not yet in Prisma — skip silently
-    // TODO: Wire when schedule_attachments model is added to schema
+  const uploadAttachmentsForShift = async (shiftId: string) => {
+    if (pendingAttachments.length === 0) return;
+    try {
+      for (const attachment of pendingAttachments) {
+        if (attachment.type === 'file' && attachment.file) {
+          // Mock upload
+          await hrCreate('shift-attachments', {
+            shiftId,
+            name: attachment.name,
+            url: `/uploads/${attachment.name}`,
+            type: attachment.file.type,
+            size: attachment.file.size,
+          });
+        } else if (attachment.type === 'project' && attachment.projectAttachment) {
+          await hrCreate('shift-attachments', {
+            shiftId,
+            name: attachment.projectAttachment.file_name,
+            url: attachment.projectAttachment.file_path,
+            type: attachment.projectAttachment.file_type,
+            size: attachment.projectAttachment.file_size,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Failed to upload attachments:', err);
+    }
   };
 
   const toggleDay = (day: number) => {
@@ -680,7 +709,7 @@ export function CreateShiftForm({
                                 <div className="flex items-center gap-2">
                                   <div
                                     className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: color.value }}
+                                    style={{ backgroundColor: project.isErp ? 'var(--brand-color, #d35400)' : color.value }}
                                   />
                                   {project.name}
                                 </div>

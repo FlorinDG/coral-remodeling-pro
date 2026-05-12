@@ -733,6 +733,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                             />
                                                                         ) : prop.type === 'relation' ? (
                                                                             <PageRelationEditor databaseId={databaseId} pageId={pageId} property={prop} />
+                                                                        ) : (prop.type === 'created_time' || prop.type === 'last_edited_time') ? (
+                                                                            <div className="flex items-center gap-2 text-neutral-500 dark:text-neutral-500 font-medium">
+                                                                                <Clock className="w-3.5 h-3.5" />
+                                                                                <span>{page.properties[prop.id] ? new Date(page.properties[prop.id] as string).toLocaleString('fr-BE') : '—'}</span>
+                                                                            </div>
                                                                         ) : prop.type === 'rollup' ? (
                                                                             <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
                                                                         ) : prop.type === 'variants' ? (

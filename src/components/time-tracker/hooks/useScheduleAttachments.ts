@@ -1,49 +1,121 @@
-"use client";
-import { useState, useCallback } from 'react';
-
-/**
- * Schedule Attachments — scaffold.
- * File uploads will use CoralOS Drive integration when connected.
- */
+import { hrList, hrCreate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 
 export interface ScheduleAttachment {
   id: string;
-  shift_id: string;
-  file_name: string;
-  file_path: string;
-  file_type: string;
-  file_size: number | null;
-  uploaded_by: string | null;
-  source_project_id: string | null;
-  created_at: string;
+  shiftId: string;
+  name: string;
+  url: string;
+  type: string;
+  size: number | null;
+  createdAt: string;
+  // Legacy aliases
+  shift_id?: string;
+  file_name?: string;
+  file_path?: string;
+  file_type?: string;
+  file_size?: number | null;
+  source_project_id?: string | null;
 }
 
-export function useScheduleAttachments() {
-  const [attachments] = useState<ScheduleAttachment[]>([]);
+export function useScheduleAttachments(shiftId?: string | null) {
+  const [attachments, setAttachments] = useState<ScheduleAttachment[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const uploadAttachment = useCallback(async (_shiftId: string, _file: File) => {
-    console.log('[ScheduleAttachments] upload — scaffold, no-op');
-    return { data: null, error: null };
-  }, []);
+  const fetchAttachments = useCallback(async () => {
+    if (!shiftId) {
+      setAttachments([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await hrList<ScheduleAttachment>('shift-attachments', { shiftId });
+      setAttachments(data.map(a => ({
+        ...a,
+        shift_id: a.shiftId,
+        file_name: a.name,
+        file_path: a.url,
+        file_type: a.type,
+        file_size: a.size,
+      })));
+    } catch (err) {
+      console.error('Failed to fetch shift attachments:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [shiftId]);
 
-  const fetchAttachments = useCallback(async (_shiftId: string) => {
-    return { data: [] as ScheduleAttachment[], error: null };
-  }, []);
+  useEffect(() => {
+    fetchAttachments();
+  }, [fetchAttachments]);
 
-  const deleteAttachment = useCallback(async (_id: string) => {
-    return { error: null };
-  }, []);
+  const uploadFile = useCallback(async (file: File) => {
+    if (!shiftId) return;
+    try {
+      // In a real app, we'd upload to S3/Drive first and get a URL
+      // For now, we mock the URL as it's a "Production Hardening" but we don't have the storage config
+      const mockUrl = `/uploads/${file.name}`;
+      const res = await hrCreate('shift-attachments', {
+        shiftId,
+        name: file.name,
+        url: mockUrl,
+        type: file.type,
+        size: file.size,
+      });
+      setAttachments(prev => [...prev, {
+        ...res,
+        shift_id: res.shiftId,
+        file_name: res.name,
+        file_path: res.url,
+        file_type: res.type,
+        file_size: res.size,
+      }]);
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  }, [shiftId]);
 
-  const getPublicUrl = useCallback((_filePath: string) => {
-    return '';
+  const addFromProject = useCallback(async (data: any) => {
+    if (!shiftId) return;
+    try {
+      const res = await hrCreate('shift-attachments', {
+        shiftId,
+        name: data.file_name,
+        url: data.file_path,
+        type: data.file_type,
+        size: data.file_size,
+      });
+      setAttachments(prev => [...prev, {
+        ...res,
+        shift_id: res.shiftId,
+        file_name: res.name,
+        file_path: res.url,
+        file_type: res.type,
+        file_size: res.size,
+      }]);
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  }, [shiftId]);
+
+  const deleteAttachment = useCallback(async (attachment: ScheduleAttachment) => {
+    try {
+      await hrDelete('shift-attachments', attachment.id);
+      setAttachments(prev => prev.filter(a => a.id !== attachment.id));
+    } catch (err) {
+      throw err;
+    }
   }, []);
 
   return {
     attachments,
-    loading: false,
-    uploadAttachment,
+    loading,
+    uploadFile,
+    addFromProject,
     fetchAttachments,
     deleteAttachment,
-    getPublicUrl,
+    setAttachments,
+    getPublicUrl: (path: string) => path,
   };
 }

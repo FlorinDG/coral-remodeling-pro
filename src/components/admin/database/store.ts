@@ -316,11 +316,17 @@ export const useDatabaseStore = create<DatabaseState>()(
                     name,
                     description: description || null,
                     properties: properties || [
-                        { id: 'title', name: 'Name', type: 'text' } // Every DB needs a Title
+                        { id: 'title', name: 'Name', type: 'text' }, // Every DB needs a Title
+                        { id: 'created', name: 'Created', type: 'created_time' }
                     ],
                     pages: [],
                     views: [
-                        { id: uuidv4(), name: 'Default View', type: 'table' } // Initialize with tabular view
+                        { 
+                            id: uuidv4(), 
+                            name: 'Default View', 
+                            type: 'table',
+                            sorts: [{ id: uuidv4(), propertyId: 'created', direction: 'descending' }]
+                        } // Initialize with tabular view
                     ],
                     activeFilters: [],
                     activeSorts: [],
@@ -661,6 +667,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 fullProperties[prop.id] = false;
                             } else if (prop.type === 'number') {
                                 fullProperties[prop.id] = null;
+                            } else if (prop.type === 'created_time' || prop.type === 'last_edited_time') {
+                                fullProperties[prop.id] = new Date().toISOString();
                             } else {
                                 fullProperties[prop.id] = '';
                             }
@@ -933,6 +941,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                                         newProps['invoiceDate'] = new Date().toISOString().split('T')[0];
                                     }
                                 }
+
+                                // Automated Meta-Property Updates: Refresh all last_edited_time properties on any change
+                                db.properties.forEach((p: Property) => {
+                                    if (p.type === 'last_edited_time') {
+                                        newProps[p.id] = new Date().toISOString();
+                                    }
+                                });
 
                                 return {
                                     ...page,

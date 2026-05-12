@@ -84,13 +84,27 @@ export function useScheduledShifts() {
   const fetchAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [shiftsData, projectsData, employeesData] = await Promise.all([
+      const [shiftsData, projectsData, erpProjectsData, employeesData] = await Promise.all([
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
+        hrList<{ id: string; name: string }>('erp-projects').catch(() => []),
         hrList<{ id: string; firstName: string; lastName: string }>('employees').catch(() => []),
       ]);
 
-      const projectMap = new Map(projectsData.map(p => [p.id, p]));
+      // Normalize ERP projects to match Project interface
+      const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
+        id: p.id,
+        name: `[ERP] ${p.name}`,
+        address: null,
+        color: 'indigo', // Default color for ERP projects
+        createdBy: 'system',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isErp: true, // Tag for UI
+      }));
+
+      const allProjects = [...projectsData, ...normalizedErpProjects];
+      const projectMap = new Map(allProjects.map(p => [p.id, p]));
       const employeeMap = new Map(employeesData.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
 
       const enriched = shiftsData.map(s => addSnakeCase({
@@ -102,7 +116,7 @@ export function useScheduledShifts() {
       }));
 
       setRawShifts(enriched);
-      setProjects(projectsData);
+      setProjects(allProjects);
       setError(null);
     } catch (err: any) {
       setError(err);

@@ -49,7 +49,7 @@ import {
 } from '@/components/time-tracker/components/ui/tabs';
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
 
 interface ProjectAttachment {
@@ -181,11 +181,7 @@ export function EditShiftDialog({
         return;
       }
       
-      const { data } = await supabase
-        .from('project_attachments')
-        .select('id, project_id, file_name, file_path, file_type, file_size')
-        .eq('project_id', pid);
-      
+      const data = await hrList<ProjectAttachment>('erp-attachments', { projectId: pid }).catch(() => []);
       setProjectAttachments(data || []);
     };
     
@@ -392,7 +388,7 @@ export function EditShiftDialog({
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: color.value }}
+                              style={{ backgroundColor: project.isErp ? 'var(--brand-color, #d35400)' : color.value }}
                             />
                             {project.name}
                           </div>

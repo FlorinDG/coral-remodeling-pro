@@ -5,37 +5,29 @@ import { Loader2, Sparkles } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 /**
- * GlobalLoadingModal - A compact, non-intrusive loading modal that provides
- * visual feedback during background processes (like DB synchronization).
- * Occupies 25% of screen height and width as requested.
+ * GlobalLoadingModal - A minimal, non-intrusive sync indicator in the corner.
+ * Replaces the intrusive full-screen modal that triggered on every DB update.
  */
 export default function GlobalLoadingModal() {
     const syncStatus = useDatabaseStore(s => s.syncStatus);
-    // Only show for 'saving' state. 'idle' and 'error' handled by SyncStatusBadge.
     const isLoading = syncStatus === 'saving';
 
     return (
         <AnimatePresence>
             {isLoading && (
-                <div className="fixed inset-0 z-[100000] flex items-center justify-center bg-black/5 dark:bg-black/20 pointer-events-none">
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-                        transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                        className="w-[25vw] h-[25vh] min-w-[280px] min-h-[220px] bg-white dark:bg-neutral-900 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-neutral-200 dark:border-white/10 flex flex-col items-center justify-center p-8 relative overflow-hidden pointer-events-auto"
-                    >
-                        <Loader2 className="w-12 h-12 text-orange-600 dark:text-orange-500 animate-spin mb-6" />
-
-                        <motion.h3 
-                            animate={{ opacity: [0.5, 1, 0.5] }}
-                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
-                            className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-widest"
-                        >
-                            CoralOS
-                        </motion.h3>
-                    </motion.div>
-                </div>
+                <motion.div 
+                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                    className="fixed bottom-6 right-6 z-[100000] pointer-events-none"
+                >
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 shadow-2xl rounded-2xl px-4 py-2.5 flex items-center gap-3 backdrop-blur-xl">
+                        <Loader2 className="w-4 h-4 text-orange-600 dark:text-orange-500 animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white">
+                            Syncing...
+                        </span>
+                    </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );

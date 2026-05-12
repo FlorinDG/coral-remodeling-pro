@@ -25,6 +25,8 @@ const ENTITY_MAP: Record<string, string> = {
     'worker-schedules': 'workerSchedule',
     'projects':         'hrProject',
     'employees':        'employee',
+    'shift-tasks':      'shiftTask',
+    'shift-attachments': 'shiftAttachment',
 };
 
 // Fields that should NOT be overwritten by client
@@ -77,6 +79,27 @@ export async function GET(
     if (entity === 'team-members') {
         const teamId = url.searchParams.get('teamId');
         if (teamId) where.teamId = teamId;
+    }
+
+    // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
+    if (entity === 'erp-projects' || entity === 'erp-tasks') {
+        try {
+            const dbId = entity === 'erp-projects' ? 'db-projects' : 'db-tasks';
+            const records = await prisma.globalPage.findMany({
+                where: { databaseId: dbId, database: { tenantId: ctx.tenantId } },
+                orderBy: { createdAt: 'desc' },
+            });
+            // Map GlobalPage to a simpler structure for the scheduler
+            return NextResponse.json(records.map(p => ({
+                id: p.id,
+                name: (p.properties as any)?.title || 'Untitled',
+                properties: p.properties,
+                createdAt: p.createdAt,
+            })));
+        } catch (error: any) {
+            console.error(`[HR API] GET ${entity} error:`, error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
     }
 
     try {

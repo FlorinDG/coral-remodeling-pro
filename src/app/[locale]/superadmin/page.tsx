@@ -6,8 +6,8 @@ import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
 export default async function SuperadminDashboardPage() {
     const session = await auth();
-    const role = (session?.user as { role?: string })?.role;
-    if (!PLATFORM_ADMIN_ROLES.includes(role)) {
+    const role = session?.user?.role;
+    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) {
         redirect("/nl/admin");
     }
 

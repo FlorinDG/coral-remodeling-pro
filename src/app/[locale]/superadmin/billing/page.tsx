@@ -30,8 +30,8 @@ const STATUS_ICON: Record<string, React.ReactNode> = {
 
 export default async function SuperadminBillingPage() {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    if (!PLATFORM_ADMIN_ROLES.includes(role)) redirect("/nl/admin");
+    const role = session?.user?.role;
+    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) redirect("/nl/admin");
 
     const tenants = await prisma.tenant.findMany({
         select: {

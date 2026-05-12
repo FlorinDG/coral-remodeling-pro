@@ -7,11 +7,10 @@ import { PLATFORM_ADMIN_ROLES, WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 export async function POST(req: Request) {
     try {
         const session = await auth();
-        const caller = session?.user as any;
-        const role = caller?.role;
-
-        const isPlatformAdmin = PLATFORM_ADMIN_ROLES.includes(role);
-        const isWorkspaceOwner = WORKSPACE_OWNER_ROLES.includes(role);
+        const role = session?.user?.role;
+ 
+        const isPlatformAdmin = role ? PLATFORM_ADMIN_ROLES.includes(role) : false;
+        const isWorkspaceOwner = role ? WORKSPACE_OWNER_ROLES.includes(role) : false;
 
         if (!isPlatformAdmin && !isWorkspaceOwner) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
@@ -37,7 +36,7 @@ export async function POST(req: Request) {
 
         // Workspace owners can only reset passwords for users in their own tenant
         if (!isPlatformAdmin && isWorkspaceOwner) {
-            const callerTenantId = caller?.tenantId;
+            const callerTenantId = session?.user?.tenantId;
             if (!callerTenantId || user.tenantId !== callerTenantId) {
                 return NextResponse.json({ error: 'You can only reset passwords for your own team members' }, { status: 403 });
             }

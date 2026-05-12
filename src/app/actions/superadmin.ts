@@ -10,8 +10,8 @@ import { calculatePeppolOverage } from "@/lib/stripe";
 
 async function verifySuperadmin() {
     const session = await auth();
-    const role = (session?.user as any)?.role;
-    if (!PLATFORM_ADMIN_ROLES.includes(role)) {
+    const role = session?.user?.role;
+    if (!role || !PLATFORM_ADMIN_ROLES.includes(role)) {
         throw new Error("Unauthorized: Platform admin role required.");
     }
 }

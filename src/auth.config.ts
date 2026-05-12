@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
-
+import { Role } from "@/lib/roles";
+ 
 export const authConfig = {
     pages: {
         signIn: "/login",

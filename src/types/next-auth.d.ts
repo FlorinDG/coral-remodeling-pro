@@ -11,7 +11,7 @@ declare module "next-auth" {
             emailVerified?: boolean;
             activeModules?: string[];
             planType?: string;
-        } & DefaultSession["user"]
+        } & Omit<DefaultSession["user"], "emailVerified">
     }
 
     interface User {

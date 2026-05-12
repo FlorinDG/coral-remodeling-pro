@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Property, PropertyType } from '../types';
 import { useDatabaseStore } from '../store';
 import { Settings2, Trash2, Edit3, Type, Hash, List, CheckSquare, Calendar, Link, Euro, Percent } from 'lucide-react';
-import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
+import { isSystemDatabase } from '@/lib/systemDatabases';
 
 const typeIcons: Record<string, React.ElementType> = {
     text: Type,
@@ -44,11 +44,10 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
-    const { activeModules } = useTenant();
     const t = useTranslations('Admin');
-    const hasDatabases = activeModules.includes('DATABASES');
-    const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
-    const canEditSchema = !isImmutableContactDB || hasDatabases;
+    // System database schemas are immutable for all users (core platform functionality).
+    // Only user-created databases allow schema edits through the UI.
+    const canEditSchema = !isSystemDatabase(databaseId);
 
     const [isOpen, setIsOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);

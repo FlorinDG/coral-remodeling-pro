@@ -12,8 +12,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
-import { useTenant } from '@/context/TenantContext';
-import { BASE_TO_KEY } from '@/lib/lockedDbUtils';
+import { isSystemDatabase } from '@/lib/systemDatabases';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'text', label: 'Text', icon: Type },
@@ -34,15 +33,10 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'last_edited_by', label: 'Last Edited By', icon: Type },
 ];
 
-// System databases that are schema-locked for FREE tier tenants
-const SYSTEM_DB_PREFIXES = Object.keys(BASE_TO_KEY); // db-invoices, db-clients, etc.
-const isSystemDb = (id: string) => SYSTEM_DB_PREFIXES.some(prefix => id === prefix || id.startsWith(prefix + '-'));
-
 export default function DatabaseConfigurator() {
     const params = useParams();
     const router = useRouter();
     const databaseId = params.id as string;
-    const { isPro } = useTenant();
     
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const allDatabases = useDatabaseStore(state => state.databases);
@@ -54,9 +48,8 @@ export default function DatabaseConfigurator() {
     const [newPropName, setNewPropName] = useState('');
     const [formulaEditingProp, setFormulaEditingProp] = useState<any>(null);
 
-    // FREE tier: system databases are schema-locked (no add/delete/type-change)
-    // PRO/ENTERPRISE/FOUNDER: full control over all databases
-    const isSchemaLocked = !isPro && isSystemDb(databaseId);
+    // System database schemas are immutable for all users (core platform functionality).
+    const isSchemaLocked = isSystemDatabase(databaseId);
 
     if (!database) {
         return (
@@ -99,7 +92,7 @@ export default function DatabaseConfigurator() {
                     {isSchemaLocked && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-lg">
                             <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">Schema Locked — Upgrade to PRO to modify columns</span>
+                            <span className="text-xs font-bold text-amber-700 dark:text-amber-300">System Schema — Columns are managed by the platform</span>
                         </div>
                     )}
                 </div>

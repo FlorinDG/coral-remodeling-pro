@@ -230,9 +230,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                     {/* ── Tenant-tier sidebar items ── */}
                     <div className="space-y-1">
-                    {menuItems.map((item) => {
+                    {menuItems.filter(item => !isModuleLocked(item.id)).map((item) => {
                         const IconComponent = getIconComponent(item.iconName || "");
-                        const locked = isModuleLocked(item.id);
 
                         let resolvedHref = item.href as string;
                         const customOrder = tabOrders[item.id];
@@ -268,9 +267,6 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                                                 IconComponent && <IconComponent className="w-4 h-4 text-neutral-400 dark:text-neutral-400 transition-colors" style={{}} />
                                             )}
                                             {isSidebarOpen && <span className="text-sm font-semibold flex-1 truncate">{t.has(`nav.${SIDEBAR_I18N_MAP[item.id]}`) ? t(`nav.${SIDEBAR_I18N_MAP[item.id]}`) : item.label}</span>}
-                                            {isSidebarOpen && locked && (
-                                                <Lock className="w-3.5 h-3.5 text-neutral-400/50 flex-shrink-0" />
-                                            )}
                                         </Link>
                                     );
                                 })()}

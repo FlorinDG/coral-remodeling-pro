@@ -432,8 +432,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     <>
       {headerExtra}
 
-      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Hidden for locked schema DBs on free tier */}
-      {(!isLockedSchemaDB || hasDatabases) && (
+      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Hidden for locked schema DBs (canonical schema is enforced in DatabaseClone) */}
+      {!isLockedSchemaDB && (
         <Link href={`/admin/settings/databases/${resolvedId}`} className="flex items-center gap-1.5 text-neutral-500 hover:text-[var(--brand-color,#d35400)] px-3 py-1 mx-2 mb-[5px] bg-neutral-100 dark:bg-white/5 hover:bg-[var(--brand-color,#d35400)]/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
           <Settings className="w-3.5 h-3.5" /> Edit Schema Fields
         </Link>

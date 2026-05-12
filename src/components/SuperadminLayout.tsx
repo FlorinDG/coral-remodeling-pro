@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { del } from 'idb-keyval';
 import { Link, usePathname } from "@/i18n/routing";
 import { LogOut, LayoutDashboard, Building2, Receipt, ShieldCheck } from "lucide-react";
@@ -8,7 +8,6 @@ import Logo from "@/components/Logo";
 import GlobalLoadingModal from "@/components/admin/GlobalLoadingModal";
 
 export default function SuperadminLayout({ children }: { children: React.ReactNode }) {
-    const { data: session } = useSession();
     const pathname = usePathname();
 
     const navItems = [

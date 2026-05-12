@@ -304,8 +304,9 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                                         await impersonateTenant(t.id);
                                                                         setOpenMenu(null);
                                                                         window.location.href = '/en/admin/dashboard';
-                                                                    } catch (e: any) {
-                                                                        alert(e.message || 'Failed to enter workspace');
+                                                                    } catch (e) {
+                                                                        const error = e as Error;
+                                                                        alert(error.message || 'Failed to enter workspace');
                                                                     }
                                                                 }}
                                                                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors font-bold"

@@ -44,8 +44,16 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const body = await request.json();
         const { id, budget, paidAmount, status, password } = body;
+
+        // Verify portal belongs to caller's tenant
+        const existing = await prisma.clientPortal.findFirst({ where: { id, tenantId } });
+        if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const updatedData: any = { budget, paidAmount, status };
 
@@ -67,7 +75,12 @@ export async function PATCH(request: Request) {
 
 export async function GET() {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const portals = await prisma.clientPortal.findMany({
+            where: { tenantId },
             include: { updates: true },
             orderBy: { createdAt: "desc" },
         });

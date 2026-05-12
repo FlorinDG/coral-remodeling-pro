@@ -164,6 +164,22 @@ export async function PATCH(
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
 
+    // Verify tenant ownership before mutation
+    try {
+        if (entity === 'team-members') {
+            // team-members don't have tenantId — verify via parent team
+            const member = await (prisma as any).hrTeamMember.findUnique({ where: { id }, include: { team: { select: { tenantId: true } } } });
+            if (!member || member.team?.tenantId !== ctx.tenantId) {
+                return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+        } else {
+            const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
+            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+    } catch (error: any) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const body = await req.json();
     const data = sanitize(body);
 
@@ -191,6 +207,21 @@ export async function DELETE(
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    // Verify tenant ownership before deletion
+    try {
+        if (entity === 'team-members') {
+            const member = await (prisma as any).hrTeamMember.findUnique({ where: { id }, include: { team: { select: { tenantId: true } } } });
+            if (!member || member.team?.tenantId !== ctx.tenantId) {
+                return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+        } else {
+            const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
+            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+    } catch (error: any) {
+        return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
 
     try {
         await model.delete({ where: { id } });

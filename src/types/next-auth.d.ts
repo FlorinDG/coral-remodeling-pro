@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { DefaultSession } from "next-auth";
 import { Role } from "@/lib/roles";
 
@@ -8,7 +9,7 @@ declare module "next-auth" {
             role?: Role;
             tenantId?: string | null;
             environmentLanguage?: string | null;
-            emailVerified?: boolean;
+            emailVerified?: any;
             activeModules?: string[];
             planType?: string;
         } & Omit<DefaultSession["user"], "emailVerified">
@@ -27,7 +28,7 @@ declare module "next-auth/jwt" {
         role?: Role | string;
         tenantId?: string | null;
         environmentLanguage?: string | null;
-        emailVerified?: boolean;
+        emailVerified?: any;
         activeModules?: string[];
         planType?: string;
     }

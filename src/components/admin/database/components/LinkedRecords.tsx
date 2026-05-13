@@ -163,7 +163,7 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
                 </div>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col gap-4">
                 {sections.map(section => (
                     <div key={section.title} className="flex flex-col bg-neutral-50/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-2xl p-4">
                         <div className="flex items-center gap-2 mb-4">

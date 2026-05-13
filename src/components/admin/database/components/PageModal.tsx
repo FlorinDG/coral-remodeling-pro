@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
-import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, ExternalLink, ChevronDown } from 'lucide-react';
+import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, ExternalLink, ChevronDown, Mail, Phone, MapPin } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
@@ -747,6 +747,91 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 propertyId={prop.id}
                                                                                 initialConfig={(page.properties[prop.id] as VariantsConfig) || []}
                                                                             />
+                                                                        ) : prop.type === 'email' ? (
+                                                                            <div className="flex items-center gap-2 w-full">
+                                                                                <input
+                                                                                    type="email"
+                                                                                    className="flex-1 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                                                                    value={(page.properties[prop.id] as string) || ''}
+                                                                                    onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                                                                    placeholder="email@example.com"
+                                                                                />
+                                                                                {page.properties[prop.id] && (
+                                                                                    <a
+                                                                                        href={`mailto:${page.properties[prop.id]}`}
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        title={`Send email to ${page.properties[prop.id]}`}
+                                                                                    >
+                                                                                        <Mail className="w-4 h-4" />
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : prop.type === 'phone' ? (
+                                                                            <div className="flex items-center gap-2 w-full">
+                                                                                <input
+                                                                                    type="tel"
+                                                                                    className="flex-1 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                                                                    value={(page.properties[prop.id] as string) || ''}
+                                                                                    onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                                                                    placeholder="+32 ..."
+                                                                                />
+                                                                                {page.properties[prop.id] && (
+                                                                                    <a
+                                                                                        href={`tel:${String(page.properties[prop.id]).replace(/\s/g, '')}`}
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-green-100 dark:hover:bg-green-900/30 text-neutral-400 hover:text-green-600 dark:hover:text-green-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        title={`Call ${page.properties[prop.id]}`}
+                                                                                    >
+                                                                                        <Phone className="w-4 h-4" />
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : prop.type === 'places' ? (
+                                                                            <div className="flex items-center gap-2 w-full">
+                                                                                <textarea
+                                                                                    className="flex-1 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                                                    value={(page.properties[prop.id] as string) || ''}
+                                                                                    onChange={(e) => {
+                                                                                        e.target.style.height = 'auto';
+                                                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                                                        updatePageProperty(databaseId, pageId, prop.id, e.target.value);
+                                                                                    }}
+                                                                                    ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                                                    rows={1}
+                                                                                    placeholder="Address..."
+                                                                                />
+                                                                                {page.properties[prop.id] && (
+                                                                                    <a
+                                                                                        href={`https://maps.google.com/?q=${encodeURIComponent(String(page.properties[prop.id]))}`}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        title={`Open ${page.properties[prop.id]} in Maps`}
+                                                                                    >
+                                                                                        <MapPin className="w-4 h-4" />
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
+                                                                        ) : prop.type === 'url' ? (
+                                                                            <div className="flex items-center gap-2 w-full">
+                                                                                <input
+                                                                                    type="url"
+                                                                                    className="flex-1 bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium"
+                                                                                    value={(page.properties[prop.id] as string) || ''}
+                                                                                    onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.value)}
+                                                                                    placeholder="https://..."
+                                                                                />
+                                                                                {page.properties[prop.id] && (
+                                                                                    <a
+                                                                                        href={String(page.properties[prop.id]).startsWith('http') ? String(page.properties[prop.id]) : `https://${page.properties[prop.id]}`}
+                                                                                        target="_blank"
+                                                                                        rel="noopener noreferrer"
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        title={`Open ${page.properties[prop.id]}`}
+                                                                                    >
+                                                                                        <ExternalLink className="w-4 h-4" />
+                                                                                    </a>
+                                                                                )}
+                                                                            </div>
                                                                         ) : (
                                                                             <textarea
                                                                                 className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"

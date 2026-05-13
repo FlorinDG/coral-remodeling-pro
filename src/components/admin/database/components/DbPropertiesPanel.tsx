@@ -5,7 +5,8 @@ import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
 import {
     Type, Hash, Calendar, CheckSquare, Link2, List, Tag,
-    Lock, Search, ChevronDown, ChevronRight, X, GripVertical
+    Lock, Search, ChevronDown, ChevronRight, X, GripVertical,
+    Mail, Phone, MapPin, ExternalLink
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { COLOR_STYLES } from '../columns/SelectColumn';
@@ -18,9 +19,10 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
     number:         <Hash className="w-3.5 h-3.5" />,
     currency:       <Hash className="w-3.5 h-3.5" />,
     percent:        <Hash className="w-3.5 h-3.5" />,
-    url:            <Link2 className="w-3.5 h-3.5" />,
-    email:          <Link2 className="w-3.5 h-3.5" />,
-    phone:          <Link2 className="w-3.5 h-3.5" />,
+    url:            <ExternalLink className="w-3.5 h-3.5" />,
+    email:          <Mail className="w-3.5 h-3.5" />,
+    phone:          <Phone className="w-3.5 h-3.5" />,
+    places:         <MapPin className="w-3.5 h-3.5" />,
     date:           <Calendar className="w-3.5 h-3.5" />,
     checkbox:       <CheckSquare className="w-3.5 h-3.5" />,
     select:         <List className="w-3.5 h-3.5" />,
@@ -216,8 +218,77 @@ function PropertyRow({
                 step="any"
             />
         );
+    } else if (property.type === 'email') {
+        const strVal = String(value || '');
+        valueEl = (
+            <div className="flex items-center gap-1 w-full">
+                <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} placeholder="email@example.com" />
+                {strVal && (
+                    <a
+                        href={`mailto:${strVal}`}
+                        className="flex-shrink-0 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title={`Send email to ${strVal}`}
+                    >
+                        <Mail className="w-3.5 h-3.5" />
+                    </a>
+                )}
+            </div>
+        );
+    } else if (property.type === 'phone') {
+        const strVal = String(value || '');
+        valueEl = (
+            <div className="flex items-center gap-1 w-full">
+                <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} placeholder="+32 ..." />
+                {strVal && (
+                    <a
+                        href={`tel:${strVal.replace(/\s/g, '')}`}
+                        className="flex-shrink-0 p-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 text-neutral-400 hover:text-green-600 dark:hover:text-green-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title={`Call ${strVal}`}
+                    >
+                        <Phone className="w-3.5 h-3.5" />
+                    </a>
+                )}
+            </div>
+        );
+    } else if (property.type === 'places') {
+        const strVal = String(value || '');
+        valueEl = (
+            <div className="flex items-center gap-1 w-full">
+                <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} placeholder="Address..." />
+                {strVal && (
+                    <a
+                        href={`https://maps.google.com/?q=${encodeURIComponent(strVal)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-neutral-400 hover:text-red-600 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title={`Open ${strVal} in Maps`}
+                    >
+                        <MapPin className="w-3.5 h-3.5" />
+                    </a>
+                )}
+            </div>
+        );
+    } else if (property.type === 'url') {
+        const strVal = String(value || '');
+        const href = strVal && !strVal.startsWith('http') ? `https://${strVal}` : strVal;
+        valueEl = (
+            <div className="flex items-center gap-1 w-full">
+                <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} placeholder="https://..." />
+                {strVal && (
+                    <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title={`Open ${strVal}`}
+                    >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                )}
+            </div>
+        );
     } else {
-        // text, title, url, email, phone, etc.
+        // text, title, etc.
         return <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} />;
     }
 

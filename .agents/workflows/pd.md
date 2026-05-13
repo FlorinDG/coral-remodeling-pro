@@ -161,32 +161,112 @@ Missing from any one = invisible gap in enforcement.
 
 ---
 
-## On Tier-Based Feature Separation Within Modules
+## Tier Feature Tree (LOCKED — do not change without explicit user approval)
 
-The toggle is **binary** (module: on / off). It answers: *can this tenant enter the module?*
+> **Last validated: 2026-05-13**
+> This is the canonical reference. If code disagrees with this table, the code is wrong.
+> FOUNDER and CUSTOM always bypass all gates (full access to everything).
 
-Plan type (`FREE`, `FOUNDER`, `PRO`, etc.) answers: *what feature depth do they get inside?*
+### Plan Tiers
 
-These are **orthogonal** — a 2D access matrix:
-
-```
-                FREE          FOUNDER/PRO
-INVOICING ON:   Basic inv     Full + Peppol quota
-CRM ON:         Contacts      + Email + Sales + Advanced
-DATABASES ON:   Basic         + Advanced formulas
-WEBSITES ON:    Single site   + Multi-site
-```
-
-**Current enforcement**:
-- Module access (row): middleware + AdminLayout sidebar + moduleGuard
-- Feature depth (column): `planType` checks inside individual pages/components
-
-**Known gap**: `planType` checks are not consistently implemented across all module pages.
-When a module is toggled ON for a FREE tenant, they may get FOUNDER-level features
-because the component doesn't check `planType`. This is technical debt to address
-module-by-module as each is hardened for production use.
+| | FREE | PRO (€29/mo) | ENTERPRISE (€99/mo) |
+|---|---|---|---|
+| **Billing** | Free forever | 3-month trial, then paid | 2-month trial, then paid |
+| **Included seats** | 1 | 1 (+€19/extra) | 2 (+€79/extra) |
+| **Workforce seats** | — | €4.99/seat | €1.99/seat |
+| **Quarterly discount** | — | 5% (10% after 1yr) | 5% (10% after 1yr) |
 
 ---
 
-*Written: 2026-04-21. Author: Florin + Antigravity.*
+### Module Access (`PLAN_MODULES` in stripe.ts)
+
+| Module | FREE | PRO | ENTERPRISE |
+|---|---|---|---|
+| INVOICING | ✅ | ✅ | ✅ |
+| CRM | ❌ | ✅ | ✅ |
+| PROJECTS | ❌ | ✅ | ✅ |
+| CALENDAR | ❌ | ✅ | ✅ |
+| DATABASES | ❌ | ✅ | ✅ |
+| TASKS | ❌ | ✅ | ✅ |
+| HR | ❌ | ❌ | ✅ |
+| WEBSITES | ❌ | ❌ | ✅ |
+| EMAIL | ❌ | ❌ | ✅ |
+
+**Enforcement**: middleware.ts → AdminLayout sidebar → moduleGuard.ts (server)
+
+---
+
+### Feature Flags (`FEATURE_FLAGS` in feature-flags.ts)
+
+| Flag | FREE | PRO | ENT | Enforced in |
+|---|---|---|---|---|
+| `QUOTATION_LIBRARY_SEARCH` | ❌ | ✅ | ✅ | ClientQuotationEngine |
+| `QUOTATION_SAVE_TO_LIBRARY` | ❌ | ✅ | ✅ | ClientQuotationEngine |
+| `QUOTATION_PDF_IMPORT_LIBRARY` | ❌ | ✅ | ✅ | PDFImportModal |
+| `QUOTATION_PDF_IMPORT_DEDUP` | ❌ | ✅ | ✅ | PDFImportModal |
+| `PEPPOL_SEND` | ✅ | ✅ | ✅ | plan-limits.ts (volume-capped) |
+| `PEPPOL_RECEIVE` | ✅ | ✅ | ✅ | plan-limits.ts (volume-capped) |
+| `WHITELABEL` | ❌ | ❌ | ✅ | InvoicePDFTemplate, QuotationPDFTemplate |
+| `WORKSPACE_USER_MANAGEMENT` | ❌ | ✅ | ✅ | Team settings |
+| `CRM_PIPELINE` | ❌ | ✅ | ✅ | CRM page |
+| `PROJECTS_GANTT` | ❌ | ✅ | ✅ | Projects page |
+| `PROJECTS_BUDGET` | ❌ | ❌ | ✅ | Projects page |
+| `CALENDAR_CUSTOM_ACCOUNTS` | ❌ | ❌ | ✅ | Calendar settings |
+| `TASKS_ADVANCED` | ❌ | ❌ | ✅ | Tasks page |
+| `HR_CONTRACTS` | ❌ | ❌ | ✅ | HR module |
+
+---
+
+### Volume Limits (`plan-limits.ts` + `stripe.ts`)
+
+| Limit | FREE | PRO | ENTERPRISE |
+|---|---|---|---|
+| Peppol send/month | 5 | 20 | unlimited |
+| Peppol receive/month | 10 | 30 | unlimited |
+| Peppol docs/month (overage) | 50 | 250 | 1000 |
+| Peppol overage price | €0.99/doc | €0.99/doc | €0.99/doc |
+| OCR scan quota | 30 | 300 | unlimited |
+
+**Peppol receive is NEVER blocked** — soft cap only, bookkeeping always continues.
+
+---
+
+### Component-Level Gates (hardcoded `planType` / `isPro` / `isEnterprise` checks)
+
+| Component | What is gated | Gate type |
+|---|---|---|
+| `RecordDetailPage` | Full record detail view | `planType === 'FREE'` → locked |
+| `NotionGrid` | Add Column button | `isPro \|\| isEnterprise` |
+| `NotionGrid` | Row click → modal | `!isFree` |
+| `FormulaColumn` | Edit formula | `isEnterprise` only |
+| `AddColumnFlyout` | Enterprise column types | `enterpriseOnly && !isEnterprise` |
+| `AdminLayout` | Upgrade CTA banner | `planType === 'FREE'` |
+| `files/page` | File Manager | `isPro` |
+| `library/articles/page` | Articles Library | `isPro` |
+| `library/bestek/page` | Pricebook (Bestek) | `isPro` |
+| `crm/page` | CRM module | `isPro` |
+| `email/page` | Email module | `isEnterprise` |
+| `DocumentTemplatesModule` | Stationery/templates | `planType: 'FOUNDER'` in preview |
+
+---
+
+### Schema Lock Rules
+
+- **System databases** (invoices, expenses, contacts, suppliers, articles, bestek): schema is IMMUTABLE for all tiers
+- **Custom databases**: schema editing requires `isPro || isEnterprise`
+- **Schema self-healing**: `DatabaseClone useEffect` resets canonical properties on hydrate
+- **4 entry points blocked**: Add column, Delete column, Rename column, Change type
+
+---
+
+### PDF Watermark Rules
+
+- FREE + PRO: "Powered by CoralOS" watermark on all generated PDFs
+- ENTERPRISE: watermark removed (`WHITELABEL` flag)
+- FOUNDER + CUSTOM: watermark removed (bypass all gates)
+
+---
+
+*Written: 2026-05-13. Author: Florin + Antigravity.*
 *This file is a living document. Update the premises table after each validated change.*
+

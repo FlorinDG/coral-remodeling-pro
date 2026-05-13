@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2 } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -447,6 +447,49 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         router.push(`/${locale}/admin/projects-management?projectId=${newProject.id}`);
     };
 
+    // Convert accepted quotation → invoice
+    const handleConvertToInvoice = () => {
+        if (!clientId) return toast.warning('Selecteer eerst een klant.');
+
+        const invoiceDbId = resolveDbId('db-invoices');
+        const today = new Date().toISOString().split('T')[0];
+
+        // Create invoice with data from quotation
+        const newInvoice = createPage(invoiceDbId, {
+            // title is auto-numbered by store (FAC-YYYY-XXX)
+            client: [clientId],
+            betreft: betreft || quotationTitle,
+            status: 'opt-draft',
+            invoiceDate: today,
+            deliveryDate: today,
+            // dueDate will be auto-calculated by store automation
+            totalExVat: Math.round((quotation?.properties?.['totalExVat'] as number || grandTotal) * 100) / 100,
+            totalVat: Math.round((quotation?.properties?.['totalVat'] as number || vatAmount) * 100) / 100,
+            totalIncVat: Math.round((quotation?.properties?.['totalIncVat'] as number || totalIncVat) * 100) / 100,
+        });
+
+        if (!newInvoice) {
+            toast.error('Factuur aanmaken mislukt.');
+            return;
+        }
+
+        // Copy line items (blocks) to the invoice
+        if (blocks.length > 0) {
+            // Deep clone blocks with new IDs to avoid cross-references
+            const cloneBlocks = (nodes: Block[]): Block[] => {
+                return nodes.map(b => ({
+                    ...b,
+                    id: crypto.randomUUID(),
+                    children: b.children ? cloneBlocks(b.children) : undefined,
+                }));
+            };
+            updatePageBlocks(invoiceDbId, newInvoice.id, cloneBlocks(blocks));
+        }
+
+        toast.success('Factuur aangemaakt vanuit offerte!');
+        router.push(`/${locale}/admin/invoices/${newInvoice.id}`);
+    };
+
     // Create an addendum — independent quotation linked to the parent
     const handleCreateAddendum = () => {
         const addendumTitle = `ADD-${quotationTitle}`;
@@ -722,6 +765,25 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     }}
                                 >
                                     <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
+                                </button>
+                            ) : null;
+                        })()}
+
+                        {/* Convert to Invoice — only when accepted */}
+                        {(() => {
+                            const currentStatus = String(quotation?.properties?.['status'] || '');
+                            const isAccepted = currentStatus === 'opt-accepted';
+                            return isAccepted ? (
+                                <button
+                                    onClick={handleConvertToInvoice}
+                                    className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
+                                    style={{
+                                        backgroundColor: 'color-mix(in srgb, #16a34a 10%, white)',
+                                        borderColor: 'color-mix(in srgb, #16a34a 25%, transparent)',
+                                        color: '#16a34a',
+                                    }}
+                                >
+                                    <Receipt className="w-3.5 h-3.5" /> Factureren
                                 </button>
                             ) : null;
                         })()}

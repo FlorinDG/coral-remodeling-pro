@@ -141,6 +141,18 @@ export async function POST(
 
     try {
         const record = await model.create({ data });
+
+        // ── POST Automations ───────────────────────────────────────────
+        // Clock-in with shiftId → set shift status to 'in-progress'
+        if (entity === 'clock-entries' && record.shiftId) {
+            try {
+                await prisma.scheduledShift.update({
+                    where: { id: record.shiftId },
+                    data: { status: 'in-progress' },
+                });
+            } catch { /* shift may not exist */ }
+        }
+
         return NextResponse.json(record, { status: 201 });
     } catch (error: any) {
         console.error(`[HR API] POST ${entity} error:`, error);
@@ -185,6 +197,34 @@ export async function PATCH(
 
     try {
         const record = await model.update({ where: { id }, data });
+
+        // ── PATCH Automations ──────────────────────────────────────────
+        // Clock-out (clockOutTime set) → set shift status to 'completed'
+        if (entity === 'clock-entries' && data.clockOutTime && record.shiftId) {
+            try {
+                await prisma.scheduledShift.update({
+                    where: { id: record.shiftId },
+                    data: { status: 'completed' },
+                });
+            } catch { /* shift may not exist */ }
+        }
+
+        // Shift task completed → check if all sibling tasks are done
+        if (entity === 'shift-tasks' && data.status === 'completed') {
+            try {
+                const allTasks = await prisma.shiftTask.findMany({
+                    where: { shiftId: record.shiftId },
+                });
+                const allDone = allTasks.every(t => t.status === 'completed');
+                if (allDone && allTasks.length > 0) {
+                    await prisma.scheduledShift.update({
+                        where: { id: record.shiftId },
+                        data: { status: 'completed' },
+                    });
+                }
+            } catch { /* silent */ }
+        }
+
         return NextResponse.json(record);
     } catch (error: any) {
         console.error(`[HR API] PATCH ${entity} error:`, error);

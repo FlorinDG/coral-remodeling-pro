@@ -621,6 +621,24 @@ export const useDatabaseStore = create<DatabaseState>()(
                         fullProperties['title'] = `CEO-${year}-${nextStr}.00`;
                     }
 
+                    // Custom Auto-Numbering for Invoices (FAC-YYYY-XXX)
+                    if (isBaseDb(databaseId, 'db-invoices') && !fullProperties['title']) {
+                        const year = new Date().getFullYear();
+                        let maxNum = 0;
+                        db.pages.forEach((p: Page) => {
+                            const title = p.properties['title'] as string;
+                            if (title && title.startsWith(`FAC-${year}-`)) {
+                                const match = title.match(/FAC-\d{4}-(\d+)/);
+                                if (match && match[1]) {
+                                    const parsed = parseInt(match[1], 10);
+                                    if (parsed > maxNum) maxNum = parsed;
+                                }
+                            }
+                        });
+                        const nextStr = String(maxNum + 1).padStart(3, '0');
+                        fullProperties['title'] = `FAC-${year}-${nextStr}`;
+                    }
+
                     // Custom Auto-Numbering for Articles (ART-XX-XXX)
                     if (databaseId === 'db-articles' && !fullProperties['prop-art-id']) {
                         let groupCode = '00';
@@ -923,10 +941,74 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
-                                // Automations for Invoice: status → 'sent' sets invoiceDate to today
+                                // Automations for Invoice status changes
                                 if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'status') {
-                                    if (value === 'opt-sent' && !newProps['invoiceDate']) {
-                                        newProps['invoiceDate'] = new Date().toISOString().split('T')[0];
+                                    const today = new Date().toISOString().split('T')[0];
+                                    if (value === 'opt-sent') {
+                                        // Auto-set invoiceDate to today if empty
+                                        if (!newProps['invoiceDate']) {
+                                            newProps['invoiceDate'] = today;
+                                        }
+                                        // Auto-set deliveryDate to today if empty (Belgian fiscal mandate)
+                                        if (!newProps['deliveryDate']) {
+                                            newProps['deliveryDate'] = today;
+                                        }
+                                    }
+                                }
+
+                                // Invoice: invoiceDate set → auto-calculate dueDate
+                                if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'invoiceDate' && value) {
+                                    if (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate']) {
+                                        // Fetch tenant payment terms and calculate dueDate async
+                                        fetch('/api/tenant/profile').then(r => r.json()).then(data => {
+                                            const days = data.defaultPaymentTermDays ?? 30;
+                                            const invoiceDate = new Date(value as string);
+                                            invoiceDate.setDate(invoiceDate.getDate() + days);
+                                            const dueDate = invoiceDate.toISOString().split('T')[0];
+                                            // Use store's own method to set the dueDate
+                                            get().updatePageProperty(databaseId, pageId, 'dueDate', dueDate);
+                                        }).catch(() => { /* silent — fallback to manual */ });
+                                    }
+                                }
+
+                                // Automations for Quotation: status → 'sent' sets date to today
+                                if (isBaseDb(databaseId, 'db-quotations') && propertyId === 'status') {
+                                    if (value === 'opt-sent' && !newProps['date']) {
+                                        newProps['date'] = new Date().toISOString().split('T')[0];
+                                    }
+                                }
+
+                                // Task status → cascade to parent Project
+                                if (isBaseDb(databaseId, 'db-tasks') && propertyId === 'prop-task-status') {
+                                    const projectRelation = newProps['prop-task-project'];
+                                    const projectId = Array.isArray(projectRelation) ? projectRelation[0] : projectRelation;
+                                    if (projectId) {
+                                        // Find the projects database
+                                        const projectsDb = get().databases.find(d => isBaseDb(d.id, 'db-1'));
+                                        if (projectsDb) {
+                                            const project = projectsDb.pages.find((p: Page) => p.id === projectId);
+                                            if (project) {
+                                                // First task goes Busy → set project to In Progress
+                                                if (value === 't-prog' && project.properties['prop-execution-status'] === 'opt-to-do') {
+                                                    get().updatePageProperty(projectsDb.id, projectId, 'prop-execution-status', 'opt-in-prog');
+                                                }
+                                                // All tasks Done → set project to Done
+                                                if (value === 't-done') {
+                                                    const allTasks = db.pages.filter((p: Page) => {
+                                                        const rel = p.properties['prop-task-project'];
+                                                        const pid = Array.isArray(rel) ? rel[0] : rel;
+                                                        return pid === projectId;
+                                                    });
+                                                    const allDone = allTasks.every((t: Page) => {
+                                                        if (t.id === pageId) return true; // current page is being set to done
+                                                        return t.properties['prop-task-status'] === 't-done';
+                                                    });
+                                                    if (allDone && allTasks.length > 0) {
+                                                        get().updatePageProperty(projectsDb.id, projectId, 'prop-execution-status', 'opt-done');
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 

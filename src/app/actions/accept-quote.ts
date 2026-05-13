@@ -18,11 +18,11 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
         if (!quote) throw new Error("Quote not found.");
 
         const currentProps = typeof quote.properties === 'object' && quote.properties !== null
-            ? (quote.properties as Record<string, any>)
+            ? (quote.properties as Record<string, unknown>)
             : {};
 
         // Check if already accepted
-        if (currentProps.status === 'ACCEPTED') {
+        if (currentProps.status === 'ACCEPTED' || currentProps.status === 'opt-accepted') {
             return { success: false, error: 'This quotation has already been accepted.' };
         }
 
@@ -40,9 +40,20 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
             }
         });
 
+        // Auto-create project after successful acceptance
+        const quoteWithDb = await prisma.globalPage.findUnique({
+            where: { id: quoteId },
+            select: { database: { select: { tenantId: true } } }
+        });
+        
+        if (quoteWithDb?.database.tenantId) {
+            const { autoCreateProjectFromQuote } = await import('@/lib/services/quote-service');
+            await autoCreateProjectFromQuote(quoteId, quoteWithDb.database.tenantId);
+        }
+
         return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Signature acceptance failed:", error);
-        return { success: false, error: error.message || "An error occurred while saving." };
+        return { success: false, error: error instanceof Error ? error.message : "An error occurred while saving." };
     }
 }

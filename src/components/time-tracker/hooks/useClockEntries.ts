@@ -105,17 +105,46 @@ export function useClockEntries() {
     clockOutLatitude?: number;
     clockOutLongitude?: number;
     taskDescription?: string;
+    photos?: File[];
+    noBreak?: boolean;
   }) => {
     if (!activeEntry) return { data: null, error: new Error('No active entry') };
     try {
+      let photoUrls: string[] = [];
+      
+      // Upload photos if any
+      if (data?.photos && data.photos.length > 0) {
+        const uploadPromises = data.photos.map(async (file) => {
+          const formData = new FormData();
+          formData.append('file', file);
+          // Optional: context for file manager
+          formData.append('contextType', 'hr');
+          formData.append('contextId', activeEntry.id);
+          
+          const res = await fetch('/api/drive/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          if (!res.ok) throw new Error('Upload failed');
+          const result = await res.json();
+          return result.url;
+        });
+        photoUrls = await Promise.all(uploadPromises);
+      }
+
       const updated = await hrUpdate<ClockEntry>('clock-entries', activeEntry.id, {
         clockOutTime: new Date().toISOString(),
-        ...data,
+        taskDescription: data?.taskDescription,
+        clockOutLatitude: data?.clockOutLatitude,
+        clockOutLongitude: data?.clockOutLongitude,
+        photos: photoUrls.length > 0 ? photoUrls : undefined,
+        noBreak: data?.noBreak,
       });
       const enriched = addSnake(updated);
       setEntries(prev => prev.map(e => e.id === enriched.id ? enriched : e));
       return { data: enriched, error: null };
     } catch (err: any) {
+      console.error('[useClockEntries] Clock out error:', err);
       return { data: null, error: err };
     }
   }, [activeEntry]);

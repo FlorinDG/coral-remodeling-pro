@@ -1,23 +1,20 @@
 export const hrTabs = [
     { label: 'HR DASHBOARD', href: '/admin/hr', id: 'hr-dashboard' },
     { label: 'WORKFORCE SCHEDULER', href: '/admin/hr/time-tracker/schedule', id: 'scheduler' },
+    { label: 'TIMESHEETS', href: '/admin/hr/timesheets', id: 'timesheets' },
     { label: 'WORK HUB', href: '/admin/hr/time-tracker', id: 'workhub' },
     { label: 'LEAVE MANAGEMENT', href: '/admin/hr/leave', id: 'leave' },
     { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
 ];
 
 export const relationsTabs = [
-    { label: 'CONTACTEN', href: '/admin/contacts', id: 'rel-contacts' },
-    { label: 'LEVERANCIERS', href: '/admin/suppliers', id: 'rel-suppliers' },
     { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' },
     { label: 'OFFERTES', href: '/admin/quotations', id: 'rel-offertes' }
 ];
 
 const RELATIONS_TAB_KEYS: Record<string, string> = {
-    'rel-contacts': 'contacts',
-    'rel-suppliers': 'suppliers',
     'pipeline': 'sales',
-    'rel-offertes': 'sales', // Or quotations
+    'rel-offertes': 'sales',
 };
 
 export function getRelationsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {

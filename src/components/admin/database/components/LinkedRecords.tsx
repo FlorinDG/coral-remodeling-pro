@@ -6,34 +6,64 @@ import { Briefcase, FileText, Receipt, ExternalLink, Loader2, Plus } from 'lucid
 import { Link } from '@/i18n/routing';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database, Page, Property } from '@/components/admin/database/types';
+import { useTenant } from '@/context/TenantContext';
+import { useRouter, useParams } from 'next/navigation';
+import { createPageServerFirst } from '@/app/actions/pages';
 
 interface LinkedRecordsProps {
     databaseId: string;
     pageId: string;
 }
 
-export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps) {
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState<{
-        projects: any[];
-        quotations: any[];
-        invoices: any[];
-    } | null>(null);
+interface LinkedRecordBase {
+    id: string;
+    status: string;
+}
 
+interface ProjectRecord extends LinkedRecordBase {
+    name: string;
+    projectCode: string;
+}
+
+interface QuotationRecord extends LinkedRecordBase {
+    quoteNumber: string;
+    total: number;
+}
+
+interface InvoiceRecord extends LinkedRecordBase {
+    invoiceNumber: string;
+    total: number;
+}
+
+export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps) {
     const isClientDb = databaseId.includes('db-clients');
-    const allDatabases = useDatabaseStore((state: any) => state.databases as Database[]);
+    const [loading, setLoading] = useState(isClientDb);
+    const [data, setData] = useState<{
+        projects: ProjectRecord[];
+        quotations: QuotationRecord[];
+        invoices: InvoiceRecord[];
+    } | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+
+    const { resolveDbId } = useTenant();
+    const router = useRouter();
+    const params = useParams();
+    const locale = (params.locale as string) || 'nl';
+
+    const allDatabases = useDatabaseStore((state) => state.databases);
     const database = allDatabases.find((d: Database) => d.id === databaseId);
     const page = database?.pages.find((p: Page) => p.id === pageId);
 
     useEffect(() => {
-        if (!isClientDb) {
-            setLoading(false);
-            return;
-        }
+        if (!isClientDb) return;
 
         getLinkedRecordsForClient(pageId).then(res => {
             if (res.success && res.data) {
-                setData(res.data as any);
+                setData(res.data as {
+                    projects: ProjectRecord[];
+                    quotations: QuotationRecord[];
+                    invoices: InvoiceRecord[];
+                });
             }
             setLoading(false);
         });
@@ -64,7 +94,7 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
 
             if (linkedPages.length === 0) return null;
             return { prop, linkedPages };
-        }).filter(Boolean) as { prop: any, linkedPages: any[] }[];
+        }).filter(Boolean) as { prop: Property, linkedPages: { db: Database, page: Page }[] }[];
 
         if (activeRelations.length === 0) {
             return (
@@ -126,8 +156,9 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
             items: data?.projects || [],
             emptyMsg: 'No projects found.',
             linkBase: '/admin/projects-management/bordereau/',
-            getLabel: (item: any) => `${item.projectCode}: ${item.name}`,
-            getStatus: (item: any) => item.status,
+            getLabel: (item: ProjectRecord) => `${item.projectCode}: ${item.name}`,
+            getStatus: (item: ProjectRecord) => item.status,
+            getValue: null as ((item: ProjectRecord) => string) | null,
         },
         {
             title: 'Quotations',
@@ -135,9 +166,9 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
             items: data?.quotations || [],
             emptyMsg: 'No quotations found.',
             linkBase: '/admin/quotations/',
-            getLabel: (item: any) => `${item.quoteNumber}`,
-            getStatus: (item: any) => item.status,
-            getValue: (item: any) => `€${item.total.toFixed(2)}`,
+            getLabel: (item: QuotationRecord) => `${item.quoteNumber}`,
+            getStatus: (item: QuotationRecord) => item.status,
+            getValue: (item: QuotationRecord) => `€${item.total.toFixed(2)}`,
         },
         {
             title: 'Invoices',
@@ -145,9 +176,9 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
             items: data?.invoices || [],
             emptyMsg: 'No invoices found.',
             linkBase: '/admin/financials/invoices/',
-            getLabel: (item: any) => `${item.invoiceNumber}`,
-            getStatus: (item: any) => item.status,
-            getValue: (item: any) => `€${item.total.toFixed(2)}`,
+            getLabel: (item: InvoiceRecord) => `${item.invoiceNumber}`,
+            getStatus: (item: InvoiceRecord) => item.status,
+            getValue: (item: InvoiceRecord) => `€${item.total.toFixed(2)}`,
         }
     ];
 
@@ -159,7 +190,31 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
                     <p className="text-xs text-neutral-500">Cross-module links for this client.</p>
                 </div>
                 <div className="flex gap-2">
-                    {/* Add shortcut buttons if needed */}
+                    <button
+                        disabled={isCreating}
+                        onClick={async () => {
+                            setIsCreating(true);
+                            const quoteDbId = resolveDbId('db-quotations');
+                            const clientName = String(page?.properties['title'] || page?.properties['name'] || 'Client');
+                            
+                            const res = await createPageServerFirst(quoteDbId, {
+                                betreft: `Offerte voor ${clientName}`,
+                                client: [pageId],
+                                status: 'opt-1776890873348', // Draft ID from db-quotations config
+                            });
+
+                            if (res.success) {
+                                router.push(`/${locale}/admin/database/${quoteDbId}/${res.page.id}`);
+                            } else {
+                                setIsCreating(false);
+                                console.error('Failed to create quotation:', res.error);
+                            }
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                    >
+                        {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                        Create Quotation
+                    </button>
                 </div>
             </header>
 

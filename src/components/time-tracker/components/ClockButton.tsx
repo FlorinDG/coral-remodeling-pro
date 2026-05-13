@@ -132,12 +132,13 @@ function ClockButtonComponent() {
     setIsProcessing(true);
     const location = await requestLocation();
     
-    const { error } = await clockOut(
-      data.taskDescription,
-      location ? { latitude: location.latitude, longitude: location.longitude } : null,
-      activeShiftId,
-      data.noBreak
-    );
+    const { error } = await clockOut({
+      taskDescription: data.taskDescription,
+      clockOutLatitude: location?.latitude,
+      clockOutLongitude: location?.longitude,
+      photos: data.photos,
+      noBreak: data.noBreak
+    });
     
     // If this was a user-created shift, update the end time
     if (activeShiftId) {

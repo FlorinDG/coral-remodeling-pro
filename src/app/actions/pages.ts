@@ -157,6 +157,20 @@ export async function updatePageServerFirst(
             }
         });
 
+        // Automation Trigger: If Quote status changed to ACCEPTED, create Project
+        const oldStatus = (existing.properties as Record<string, unknown>)?.status;
+        const newStatus = (properties as Record<string, unknown>)?.status;
+        const isQuoteDb = existing.databaseId.startsWith('db-quotations');
+
+        if (isQuoteDb && oldStatus !== newStatus && (newStatus === 'opt-accepted' || newStatus === 'ACCEPTED')) {
+            try {
+                const { autoCreateProjectFromQuote } = await import('@/lib/services/quote-service');
+                await autoCreateProjectFromQuote(pageId, tenantId);
+            } catch (err) {
+                console.error('[Automation] Failed to auto-create project:', err);
+            }
+        }
+
         const page: Page = {
             id: saved.id,
             databaseId: saved.databaseId,

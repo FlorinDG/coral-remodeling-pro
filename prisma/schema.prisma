@@ -790,6 +790,8 @@ model ClockEntry {
   approvedBy        String?
   approvedAt        DateTime?
   shiftId           String?
+  photos            Json?      // URLs of photos attached during clock-out
+  noBreak           Boolean   @default(false) // Whether 30-min break was skipped
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

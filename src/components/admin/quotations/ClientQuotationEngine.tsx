@@ -6,10 +6,9 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
-import { Page, Block, BlockType } from '@/components/admin/database/types';
+import { Page, Block } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
-import { pdf } from '@react-pdf/renderer';
 import { generatePdfBlob } from '@/lib/generate-pdf';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
@@ -23,6 +22,7 @@ import { t as ti18n } from '@/lib/document-i18n';
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { toast } from 'sonner';
+import InternalTasklist from './InternalTasklist';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -41,7 +41,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const router = useRouter();
     const { activeModules, planType, resolveDbId } = useTenant();
     const hasProjects  = activeModules.includes('PROJECTS');
-    const hasCRM       = activeModules.includes('CRM');
     // Library access: PRO+ feature (article search, save-to-library, PDF library import)
     const hasLibraryAccess = canAccess('QUOTATION_LIBRARY_SEARCH', planType);
     // Dedup: PRO+ feature — detect lines already present in the quotation before import
@@ -146,7 +145,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty(quotationsDbId, quotation.id, 'totalExVat', roundedEx);
         if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty(quotationsDbId, quotation.id, 'totalVat', roundedVat);
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
-    }, [quotation?.blocks, isHydrated]);
+    }, [quotation, isHydrated, quotationsDbId, updatePageProperty]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
@@ -312,7 +311,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 />
             );
 
-            const asPdf = pdf(doc);
             const blob = await generatePdfBlob(doc, tenantProfile);
 
             const reader = new FileReader();
@@ -370,7 +368,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 />
             );
 
-            const asPdf = pdf(doc);
             const blob = await generatePdfBlob(doc, tenantProfile);
 
             const file = new File([blob], `Offerte_${quotationTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
@@ -733,11 +730,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                 {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
                 {showProperties && (
-                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
-                        <DbPropertiesPanel
-                            databaseId={quotationsDbId}
-                            pageId={id}
-                            title={ti18n('engine_record_properties', locale)}
+                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">
+                        <div className="flex-1 overflow-y-auto">
+                            <DbPropertiesPanel
+                                databaseId={quotationsDbId}
+                                pageId={id}
+                                title={ti18n('engine_record_properties', locale)}
+                            />
+                        </div>
+                        <InternalTasklist 
+                            tasks={(quotation?.properties?.['internalTasks'] as { id: string; content: string; completed: boolean }[]) || []}
+                            onTasksChange={(tasks) => handleUpdateProperty('internalTasks', tasks)}
+                            brandColor="var(--brand-color, #d35400)"
                         />
                     </aside>
                 )}

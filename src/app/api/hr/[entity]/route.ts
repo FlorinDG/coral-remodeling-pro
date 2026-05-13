@@ -42,11 +42,12 @@ async function getTenantAndUser() {
 function getModel(entity: string) {
     const modelName = ENTITY_MAP[entity];
     if (!modelName) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (prisma as any)[modelName];
 }
 
-function sanitize(data: Record<string, any>) {
-    const clean: Record<string, any> = {};
+function sanitize(data: Record<string, unknown>) {
+    const clean: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(data)) {
         if (!PROTECTED_FIELDS.includes(k)) clean[k] = v;
     }
@@ -63,13 +64,15 @@ export async function GET(
 
     const { entity } = await params;
     const model = getModel(entity);
-    if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
+    if (!model && entity !== 'erp-projects' && entity !== 'erp-tasks') {
+        return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
+    }
 
     const url = new URL(_req.url);
     const userId = url.searchParams.get('userId');
 
     // team-members don't have tenantId, they're scoped via team
-    const where: Record<string, any> = entity === 'team-members'
+    const where: Record<string, unknown> = entity === 'team-members'
         ? {}
         : { tenantId: ctx.tenantId };
 
@@ -84,23 +87,71 @@ export async function GET(
     // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
     if (entity === 'erp-projects' || entity === 'erp-tasks') {
         try {
-            const dbId = entity === 'erp-projects' ? 'db-projects' : 'db-tasks';
-            const records = await prisma.globalPage.findMany({
-                where: { databaseId: dbId, database: { tenantId: ctx.tenantId } },
-                orderBy: { createdAt: 'desc' },
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: ctx.tenantId },
+                select: { lockedDbIds: true }
             });
-            // Map GlobalPage to a simpler structure for the scheduler
-            return NextResponse.json(records.map(p => ({
-                id: p.id,
-                name: (p.properties as any)?.title || 'Untitled',
-                properties: p.properties,
-                createdAt: p.createdAt,
-            })));
-        } catch (error: any) {
+            const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
+            
+            if (entity === 'erp-projects') {
+                const projectDbId = locked['projects'] || 'db-1';
+                
+                // Fetch from GlobalPage (Dynamic DB)
+                const dynamicProjects = await prisma.globalPage.findMany({
+                    where: { databaseId: projectDbId, database: { tenantId: ctx.tenantId } },
+                    select: { id: true, properties: true, createdAt: true }
+                });
+
+                // Fetch from InternalProject (Specialized Model)
+                const internalProjects = await prisma.internalProject.findMany({
+                    where: { tenantId: ctx.tenantId },
+                    select: { id: true, name: true, projectCode: true, createdAt: true }
+                });
+
+                // Merge
+                const merged = [
+                    ...dynamicProjects.map(p => {
+                        const props = p.properties as Record<string, unknown>;
+                        return {
+                            id: p.id,
+                            name: String(props?.title || props?.name || 'Untitled'),
+                            source: 'dynamic',
+                            createdAt: p.createdAt,
+                        };
+                    }),
+                    ...internalProjects.map(p => ({
+                        id: p.id,
+                        name: `${p.projectCode}: ${p.name}`,
+                        source: 'internal',
+                        createdAt: p.createdAt,
+                    }))
+                ];
+
+                return NextResponse.json(merged);
+            }
+
+            if (entity === 'erp-tasks') {
+                const tasksDbId = locked['tasks'] || 'db-tasks';
+                const tasks = await prisma.globalPage.findMany({
+                    where: { databaseId: tasksDbId, database: { tenantId: ctx.tenantId } },
+                    select: { id: true, properties: true, createdAt: true }
+                });
+                return NextResponse.json(tasks.map(t => {
+                    const props = t.properties as Record<string, unknown>;
+                    return {
+                        id: t.id,
+                        name: String(props?.title || 'Untitled Task'),
+                        projectId: (props?.['prop-task-project'] as string[])?.[0] || null,
+                    };
+                }));
+            }
+        } catch (error: unknown) {
             console.error(`[HR API] GET ${entity} error:`, error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+            return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
         }
     }
+
+    if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
     try {
         const records = await model.findMany({
@@ -108,9 +159,9 @@ export async function GET(
             orderBy: { createdAt: 'desc' },
         });
         return NextResponse.json(records);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`[HR API] GET ${entity} error:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }
 
@@ -144,19 +195,19 @@ export async function POST(
 
         // ── POST Automations ───────────────────────────────────────────
         // Clock-in with shiftId → set shift status to 'in-progress'
-        if (entity === 'clock-entries' && record.shiftId) {
+        if (entity === 'clock-entries' && (record as { shiftId?: string }).shiftId) {
             try {
                 await prisma.scheduledShift.update({
-                    where: { id: record.shiftId },
+                    where: { id: (record as { shiftId: string }).shiftId },
                     data: { status: 'in-progress' },
                 });
             } catch { /* shift may not exist */ }
         }
 
         return NextResponse.json(record, { status: 201 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`[HR API] POST ${entity} error:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }
 
@@ -180,7 +231,11 @@ export async function PATCH(
     try {
         if (entity === 'team-members') {
             // team-members don't have tenantId — verify via parent team
-            const member = await (prisma as any).hrTeamMember.findUnique({ where: { id }, include: { team: { select: { tenantId: true } } } });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const member = await (prisma as any).hrTeamMember.findUnique({ 
+                where: { id }, 
+                include: { team: { select: { tenantId: true } } } 
+            });
             if (!member || member.team?.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
@@ -188,7 +243,7 @@ export async function PATCH(
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
             if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
-    } catch (error: any) {
+    } catch {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
@@ -200,25 +255,26 @@ export async function PATCH(
 
         // ── PATCH Automations ──────────────────────────────────────────
         // Clock-out (clockOutTime set) → set shift status to 'completed'
-        if (entity === 'clock-entries' && data.clockOutTime && record.shiftId) {
+        if (entity === 'clock-entries' && data.clockOutTime && (record as { shiftId?: string }).shiftId) {
             try {
                 await prisma.scheduledShift.update({
-                    where: { id: record.shiftId },
+                    where: { id: (record as { shiftId: string }).shiftId },
                     data: { status: 'completed' },
                 });
             } catch { /* shift may not exist */ }
         }
 
         // Shift task completed → check if all sibling tasks are done
-        if (entity === 'shift-tasks' && data.status === 'completed') {
+        if (entity === 'shift-tasks' && data.status === 'completed' && (record as { shiftId?: string }).shiftId) {
             try {
+                const shiftId = (record as { shiftId: string }).shiftId;
                 const allTasks = await prisma.shiftTask.findMany({
-                    where: { shiftId: record.shiftId },
+                    where: { shiftId },
                 });
                 const allDone = allTasks.every(t => t.status === 'completed');
                 if (allDone && allTasks.length > 0) {
                     await prisma.scheduledShift.update({
-                        where: { id: record.shiftId },
+                        where: { id: shiftId },
                         data: { status: 'completed' },
                     });
                 }
@@ -226,9 +282,9 @@ export async function PATCH(
         }
 
         return NextResponse.json(record);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`[HR API] PATCH ${entity} error:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }
 
@@ -251,7 +307,11 @@ export async function DELETE(
     // Verify tenant ownership before deletion
     try {
         if (entity === 'team-members') {
-            const member = await (prisma as any).hrTeamMember.findUnique({ where: { id }, include: { team: { select: { tenantId: true } } } });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const member = await (prisma as any).hrTeamMember.findUnique({ 
+                where: { id }, 
+                include: { team: { select: { tenantId: true } } } 
+            });
             if (!member || member.team?.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
@@ -259,15 +319,15 @@ export async function DELETE(
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
             if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
-    } catch (error: any) {
+    } catch {
         return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     try {
         await model.delete({ where: { id } });
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`[HR API] DELETE ${entity} error:`, error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }

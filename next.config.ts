@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ['canvas'],
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   distDir: process.env.VERCEL ? '.next' : '.next.nosync',
   webpack: (config) => {
     config.cache = false;

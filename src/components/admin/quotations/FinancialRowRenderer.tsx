@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Database as DatabaseIcon, Check, Search, X, Package } from 'lucide-react';
+import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
 
 // ── Labor rate constants ─────────────────────────────────────────────────────

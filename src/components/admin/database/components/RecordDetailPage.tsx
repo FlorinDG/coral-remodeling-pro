@@ -139,33 +139,23 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
 
                 {/* Right: Dashboard Content */}
                 <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-neutral-50 dark:bg-[#0a0a0a]">
-                    <div className="flex flex-col gap-6 h-full min-h-min max-w-[1600px] mx-auto">
+                    <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
                         
-                        {/* Top row: 3 columns */}
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 flex-shrink-0 xl:min-h-[600px]">
-                            {/* Journal */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                                <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <PenLine className="w-4 h-4 text-orange-500" /> Journal
+                        {/* Row 1: Stats + Context (side by side on wide, stacked on narrow) */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            {/* Stats */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[280px]">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <BarChart2 className="w-4 h-4 text-orange-500" /> Stats
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
+                                    <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
                                 </div>
                             </div>
 
-                            {/* Files */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                                <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <FileText className="w-4 h-4 text-orange-500" /> Files
-                                </div>
-                                <div className="flex-1 overflow-hidden relative">
-                                    <FileManager contextType="global" contextId={pageId} />
-                                </div>
-                            </div>
-
-                            {/* Linked Records */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm">
-                                <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                            {/* Context Card — Connected Properties */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[280px]">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
                                     <ExternalLink className="w-4 h-4 text-orange-500" /> Connected Properties
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
@@ -174,13 +164,26 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                             </div>
                         </div>
 
-                        {/* Bottom row: Stats */}
-                        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[400px]">
-                            <div className="px-5 py-3.5 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                <BarChart2 className="w-4 h-4 text-orange-500" /> Stats
+                        {/* Row 2: Journal + Files (side by side on wide, stacked on narrow) */}
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                            {/* Journal */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[360px]">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <PenLine className="w-4 h-4 text-orange-500" /> Journal
+                                </div>
+                                <div className="flex-1 overflow-y-auto p-5">
+                                    <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
+                                </div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-5">
-                                <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
+
+                            {/* Files */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[360px]">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <FileText className="w-4 h-4 text-orange-500" /> Files
+                                </div>
+                                <div className="flex-1 overflow-hidden relative">
+                                    <FileManager contextType="global" contextId={pageId} />
+                                </div>
                             </div>
                         </div>
 

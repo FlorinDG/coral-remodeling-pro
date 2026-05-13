@@ -12,7 +12,7 @@ import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import { Property, VariantsConfig } from '../types';
-import { Search, Loader2, Check, GripVertical, Globe, Mail, Phone, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
+import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
 import { toast } from 'sonner';

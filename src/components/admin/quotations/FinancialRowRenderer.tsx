@@ -1,8 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
+import { Database as DatabaseIcon, Check, Search, X, Package } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
+
+// ── Labor rate constants ─────────────────────────────────────────────────────
+const LABOR_RATES: Record<string, number> = {
+    'opt-general': 35,
+    'opt-specialised': 45,
+};
 
 interface FinancialRowRendererProps {
     block: Block;
@@ -141,56 +147,115 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 return undefined;
             };
 
-            const rawBruto = getPropVal(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
-            const rawVerkoop = getPropVal(['verkoop', 'selling']);
-            const rawMarge = getPropVal(['marge', 'margin', 'marge stanndard', 'marge standard']);
-            const rawDiscount = getPropVal(['korting', 'discount', 'disc', 'remise', 'lever']);
-            const rawUnit = getPropVal(['eenheid', 'unit', 'maat', 'eeh']);
-            const rawType = getPropVal(['type', 'calculatietype', 'calculationtype']);
+            // ── BESTEK PRICEBOOK: Auto-expand linked articles + labor ────────
+            if (entity.databaseId === 'db-bestek') {
+                const linkedArticleIds = page.properties['prop-bst-articles'];
+                const childBlocks: Block[] = [];
 
-            const numBruto = parseNumber(rawBruto);
-            if (numBruto !== undefined) payload.brutoPrice = numBruto;
+                if (Array.isArray(linkedArticleIds) && linkedArticleIds.length > 0) {
+                    const articlesDb = getDatabase('db-articles');
+                    if (articlesDb) {
+                        linkedArticleIds.forEach((artId: string) => {
+                            const artPage = articlesDb.pages.find((p: any) => p.id === artId);
+                            if (!artPage) return;
+                            const props = artPage.properties;
+                            const bruto = typeof props['prop-art-bruto'] === 'number' ? props['prop-art-bruto'] : 0;
+                            const remise = typeof props['prop-art-remise'] === 'number' ? props['prop-art-remise'] : 0;
+                            const marge = typeof props['prop-art-margin'] === 'number' ? props['prop-art-margin'] : 0;
+                            const cost = bruto * (1 - remise / 100);
+                            const verkoop = Math.round(cost * (1 + marge / 100) * 100) / 100;
 
-            const numDiscount = parseNumber(rawDiscount);
-            if (numDiscount !== undefined) payload.discountPercent = numDiscount;
-
-            const numMarge = parseNumber(rawMarge);
-            if (numMarge !== undefined) payload.margePercent = numMarge;
-
-            if (rawUnit !== undefined && rawUnit !== null) payload.unit = String(rawUnit);
-
-            if (rawType !== undefined && rawType !== null) {
-                const lowerType = String(rawType).toLowerCase();
-                if (['materieel', 'levering', 'loon', 'indirect'].includes(lowerType)) {
-                    payload.calculationType = lowerType as any;
+                            childBlocks.push({
+                                id: crypto.randomUUID(),
+                                type: 'article' as BlockType,
+                                content: String(props['title'] || 'Article'),
+                                articleId: artPage.id,
+                                brutoPrice: bruto,
+                                discountPercent: remise,
+                                margePercent: marge,
+                                verkoopPrice: verkoop,
+                                quantity: 1,
+                                unit: String(props['prop-art-unit'] || 'stuk'),
+                                calculationType: 'materieel',
+                            });
+                        });
+                    }
                 }
-            }
 
-            if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
-                const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
-                const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
-                const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
-                const cCost = bPrice * (1 - dPerc / 100);
-                payload.verkoopPrice = Math.round(cCost * (1 + mPerc / 100) * 100) / 100;
-            } else {
-                const numVerkoop = parseNumber(rawVerkoop);
-                if (numVerkoop !== undefined) {
-                    payload.verkoopPrice = numVerkoop;
-                }
-            }
-
-            // Morph subcomponents recursively from template library
-            if (page.blocks && page.blocks.length > 0) {
-                const cloneBlocks = (blocks: Block[]): Block[] => {
-                    return blocks.map(b => ({
-                        ...b,
+                // Add labor child block if hours specified
+                const laborHours = page.properties['prop-bst-labor-hours'];
+                const laborType = String(page.properties['prop-bst-labor-type'] || 'opt-general');
+                const laborRate = LABOR_RATES[laborType] ?? 35;
+                if (typeof laborHours === 'number' && laborHours > 0) {
+                    childBlocks.push({
                         id: crypto.randomUUID(),
-                        children: b.children ? cloneBlocks(b.children) : undefined
-                    }));
-                };
-                payload.children = cloneBlocks(page.blocks);
+                        type: 'line' as BlockType,
+                        content: `Arbeid: ${String(page.properties['title'] || 'Post')}`,
+                        quantity: laborHours,
+                        unit: 'uur',
+                        verkoopPrice: laborRate,
+                        calculationType: 'loon',
+                    });
+                }
+
+                payload.children = childBlocks;
+                // Set parent unit from bestek
+                const bstUnit = page.properties['prop-bst-unit'];
+                if (bstUnit) payload.unit = String(bstUnit);
+
             } else {
-                payload.children = []; // Purge previous structure if switching to empty
+                // ── STANDARD ARTICLE / OTHER: existing field mapping ────────
+                const rawBruto = getPropVal(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']);
+                const rawVerkoop = getPropVal(['verkoop', 'selling']);
+                const rawMarge = getPropVal(['marge', 'margin', 'marge stanndard', 'marge standard']);
+                const rawDiscount = getPropVal(['korting', 'discount', 'disc', 'remise', 'lever']);
+                const rawUnit = getPropVal(['eenheid', 'unit', 'maat', 'eeh']);
+                const rawType = getPropVal(['type', 'calculatietype', 'calculationtype']);
+
+                const numBruto = parseNumber(rawBruto);
+                if (numBruto !== undefined) payload.brutoPrice = numBruto;
+
+                const numDiscount = parseNumber(rawDiscount);
+                if (numDiscount !== undefined) payload.discountPercent = numDiscount;
+
+                const numMarge = parseNumber(rawMarge);
+                if (numMarge !== undefined) payload.margePercent = numMarge;
+
+                if (rawUnit !== undefined && rawUnit !== null) payload.unit = String(rawUnit);
+
+                if (rawType !== undefined && rawType !== null) {
+                    const lowerType = String(rawType).toLowerCase();
+                    if (['materieel', 'levering', 'loon', 'indirect'].includes(lowerType)) {
+                        payload.calculationType = lowerType as any;
+                    }
+                }
+
+                if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
+                    const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
+                    const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
+                    const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
+                    const cCost = bPrice * (1 - dPerc / 100);
+                    payload.verkoopPrice = Math.round(cCost * (1 + mPerc / 100) * 100) / 100;
+                } else {
+                    const numVerkoop = parseNumber(rawVerkoop);
+                    if (numVerkoop !== undefined) {
+                        payload.verkoopPrice = numVerkoop;
+                    }
+                }
+
+                // Morph subcomponents recursively from template library
+                if (page.blocks && page.blocks.length > 0) {
+                    const cloneBlocks = (blocks: Block[]): Block[] => {
+                        return blocks.map(b => ({
+                            ...b,
+                            id: crypto.randomUUID(),
+                            children: b.children ? cloneBlocks(b.children) : undefined
+                        }));
+                    };
+                    payload.children = cloneBlocks(page.blocks);
+                } else {
+                    payload.children = []; // Purge previous structure if switching to empty
+                }
             }
         }
 
@@ -255,25 +320,61 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 <div className="px-3 py-2 text-[10px] font-bold tracking-widest uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 backdrop-blur-md sticky top-0">
                                     Search Results
                                 </div>
-                                {searchResults.map(entity => (
-                                    <div
-                                        key={entity.id}
-                                        onClick={() => handleSelectEntity(entity)}
-                                        className="p-3 border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/10 cursor-pointer flex flex-col gap-1 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm ${entity.type === 'article' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-purple-100/50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
-                                                {entity.type}
-                                            </span>
-                                            <span className="text-sm font-bold text-black dark:text-white line-clamp-1">{entity.title}</span>
+                                {searchResults.map(entity => {
+                                    // Bestek metadata for enhanced display
+                                    const isBestek = entity.type === 'bestek';
+                                    const isArticle = entity.type === 'article';
+                                    const linkedCount = isBestek && Array.isArray(entity.page?.properties?.['prop-bst-articles'])
+                                        ? entity.page.properties['prop-bst-articles'].length
+                                        : 0;
+                                    const laborType = isBestek ? entity.page?.properties?.['prop-bst-labor-type'] : null;
+                                    const laborLabel = laborType === 'opt-specialised' ? 'Gespec.' : laborType === 'opt-general' ? 'Alg.' : null;
+
+                                    // Variant axes preview for articles
+                                    const variantsConfig = isArticle ? entity.page?.properties?.['prop-art-variants'] : null;
+                                    const hasVariants = Array.isArray(variantsConfig) && variantsConfig.length > 0;
+
+                                    return (
+                                        <div
+                                            key={entity.id}
+                                            onClick={() => handleSelectEntity(entity)}
+                                            className="p-3 border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-orange-50 dark:hover:bg-orange-900/10 cursor-pointer flex flex-col gap-1 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-sm ${entity.type === 'article' ? 'bg-amber-100/50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-purple-100/50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'}`}>
+                                                    {isBestek ? 'pricebook' : entity.type}
+                                                </span>
+                                                <span className="text-sm font-bold text-black dark:text-white line-clamp-1">{entity.title}</span>
+                                                {/* Bestek badges */}
+                                                {isBestek && linkedCount > 0 && (
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                                                        {linkedCount} art.
+                                                    </span>
+                                                )}
+                                                {isBestek && laborLabel && (
+                                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                                                        ⚒ {laborLabel}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {entity.description && (
+                                                <span className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 pl-[42px] leading-snug">
+                                                    {entity.description.replace(/ › /g, ' - ')}
+                                                </span>
+                                            )}
+                                            {/* Variant preview chips for articles */}
+                                            {hasVariants && (
+                                                <div className="flex items-center gap-1.5 pl-[42px] mt-0.5 flex-wrap">
+                                                    {variantsConfig.slice(0, 3).map((axis: any) => (
+                                                        <span key={axis.id} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400">
+                                                            {axis.name} ({axis.options?.length || 0})
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                        {entity.description && (
-                                            <span className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 pl-[42px] leading-snug">
-                                                {entity.description.replace(/ › /g, ' - ')}
-                                            </span>
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
@@ -383,6 +484,33 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
                         className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
+                    {/* Packaging calculator info */}
+                    {(() => {
+                        if (!block.articleId) return null;
+                        const artDb = getDatabase('db-articles');
+                        const artPage = artDb?.pages.find((p: any) => p.id === block.articleId);
+                        if (!artPage) return null;
+                        const coverage = artPage.properties['prop-art-coverage'] as number;
+                        const pcsPerPack = artPage.properties['prop-art-pcs-pack'] as number;
+                        const qty = block.quantity || 0;
+                        const perPack = coverage || pcsPerPack;
+                        if (!perPack || perPack <= 0 || qty <= 0) return null;
+
+                        const packsNeeded = Math.ceil(qty / perPack);
+                        const adjustedQty = Math.round(packsNeeded * perPack * 100) / 100;
+                        const waste = Math.round((adjustedQty - qty) * 100) / 100;
+
+                        if (packsNeeded <= 1 && waste === 0) return null;
+
+                        return (
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 w-[180px] text-center z-10" title={`${packsNeeded} pak × ${perPack} ${block.unit || 'eeh'}/pak = ${adjustedQty} ${block.unit || 'eeh'}`}>
+                                <div className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 border border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
+                                    📦 {packsNeeded} pak → {adjustedQty} {block.unit || 'eeh'}
+                                    {waste > 0 && <span className="text-blue-400 dark:text-blue-500"> (+{waste})</span>}
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 {/* 3. Unit (UNITÉ) */}

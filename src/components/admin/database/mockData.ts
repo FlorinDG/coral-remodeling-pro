@@ -572,6 +572,8 @@ export const mockDatabases: Database[] = [
 
             { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },
             { id: 'prop-art-packaging', name: 'Packaging', type: 'select', config: { options: [{ id: 'opt-stk', name: 'stuk', color: 'gray' }, { id: 'opt-plaat', name: 'plaat', color: 'blue' }, { id: 'opt-rol', name: 'rol', color: 'yellow' }, { id: 'opt-doos', name: 'doos', color: 'orange' }] } },
+            { id: 'prop-art-coverage', name: 'Dekking/pak', type: 'number', config: { format: 'number' } },
+            { id: 'prop-art-pcs-pack', name: 'Stuks/pak', type: 'number', config: { format: 'number' } },
             { id: 'prop-art-min-order', name: 'Minimum Order', type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
 
             { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }
@@ -579,7 +581,7 @@ export const mockDatabases: Database[] = [
         pages: [
             {
                 id: 'page-art-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
-                properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.', 'prop-art-bruto': 12.50, 'prop-art-remise': 20, 'prop-art-margin': 65, 'prop-art-verkoop': 16.50, 'prop-art-unit': 'u-m2', 'prop-art-packaging': 'plaat', 'prop-art-min-order': 3.12 }
+                properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.', 'prop-art-bruto': 12.50, 'prop-art-remise': 20, 'prop-art-margin': 65, 'prop-art-verkoop': 16.50, 'prop-art-unit': 'u-m2', 'prop-art-packaging': 'opt-plaat', 'prop-art-coverage': 3.12, 'prop-art-min-order': 3.12 }
             },
             {
                 id: 'page-art-2', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
@@ -606,15 +608,72 @@ export const mockDatabases: Database[] = [
     },
     {
         id: 'db-bestek',
-        name: 'Bestek Specifications',
-        description: 'Standardized technical specifications and building codes context.',
-        icon: '🏗️',
+        name: 'Pricebook (Bestek)',
+        description: 'Standardized work posts with linked articles and labor — the pricebook for quotations.',
+        icon: '📋',
         properties: [
-            { id: 'title', name: 'Artikel', type: 'text' }
+            { id: 'title', name: 'Post Naam', type: 'text' },
+            { id: 'prop-bst-nr', name: 'Post Nr', type: 'text' },
+            { id: 'prop-bst-cat', name: 'Categorie', type: 'select', config: { options: [
+                { id: 'opt-grondwerken', name: 'Grondwerken', color: 'gray' },
+                { id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'orange' },
+                { id: 'opt-dakwerken', name: 'Dakwerken', color: 'red' },
+                { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' },
+                { id: 'opt-elektriciteit', name: 'Elektriciteit', color: 'yellow' },
+                { id: 'opt-sanitair', name: 'Sanitair', color: 'purple' },
+                { id: 'opt-hvac', name: 'HVAC', color: 'green' },
+                { id: 'opt-buitenaanleg', name: 'Buitenaanleg', color: 'pink' }
+            ] } },
+            { id: 'prop-bst-desc', name: 'Omschrijving', type: 'text' },
+            { id: 'prop-bst-unit', name: 'Eenheid', type: 'select', config: { options: [
+                { id: 'u-m2', name: 'm²', color: 'green' },
+                { id: 'u-m3', name: 'm³', color: 'purple' },
+                { id: 'u-m', name: 'm', color: 'blue' },
+                { id: 'u-stk', name: 'stk', color: 'gray' },
+                { id: 'u-uur', name: 'uur', color: 'orange' },
+                { id: 'u-forfait', name: 'forfait', color: 'pink' }
+            ] } },
+            { id: 'prop-bst-articles', name: 'Artikelen', type: 'relation', config: { relationDatabaseId: 'db-articles' } },
+            { id: 'prop-bst-labor-type', name: 'Arbeid Type', type: 'select', config: { options: [
+                { id: 'opt-general', name: 'Algemeen (€35/u)', color: 'blue' },
+                { id: 'opt-specialised', name: 'Gespecialiseerd (€45/u)', color: 'orange' }
+            ] } },
+            { id: 'prop-bst-labor-hours', name: 'Arbeidsuren/eenheid', type: 'number' },
+            { id: 'prop-bst-total', name: 'Eenheidsprijs', type: 'formula', config: { formulaExpression: 'round2(sum(prop("Artikelen"), "Verkoopprijs") + prop("Arbeidsuren/eenheid") * (prop("Arbeid Type") === "opt-specialised" ? 45 : 35))' } }
         ],
-        pages: [],
+        pages: [
+            {
+                id: 'page-bst-1', databaseId: 'db-bestek', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                properties: {
+                    'title': 'Gyproc plafond plaatsen',
+                    'prop-bst-nr': 'AF-001',
+                    'prop-bst-cat': 'opt-afwerking',
+                    'prop-bst-desc': 'Gyproc plafond plaatsen incl. lattenstelsel, platen, voegen en afwerking. Per m².',
+                    'prop-bst-unit': 'u-m2',
+                    'prop-bst-articles': ['page-art-1', 'page-art-2'],
+                    'prop-bst-labor-type': 'opt-general',
+                    'prop-bst-labor-hours': 0.75
+                }
+            },
+            {
+                id: 'page-bst-2', databaseId: 'db-bestek', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                properties: {
+                    'title': 'Doucheput plaatsen',
+                    'prop-bst-nr': 'SAN-001',
+                    'prop-bst-cat': 'opt-sanitair',
+                    'prop-bst-desc': 'Doucheput monteren en aansluiten op afvoer. Per stuk.',
+                    'prop-bst-unit': 'u-stk',
+                    'prop-bst-articles': ['page-art-drain-1'],
+                    'prop-bst-labor-type': 'opt-specialised',
+                    'prop-bst-labor-hours': 2.5
+                }
+            }
+        ],
         activeFilters: [],
-        views: [{ id: 'view-bst-table', name: 'All Specs', type: 'table' }],
+        views: [
+            { id: 'view-bst-table', name: 'All Posts', type: 'table' },
+            { id: 'view-bst-board', name: 'Per Categorie', type: 'board', config: { groupByPropertyId: 'prop-bst-cat' } }
+        ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ownerId: 'system'

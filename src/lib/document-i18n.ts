@@ -143,6 +143,20 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     // Portal — Footer
     'portal_powered_by': { nl: 'Powered by', fr: 'Propulsé par', en: 'Powered by' },
 
+    // Portal — Invoice-specific overrides
+    'portal_inv_total': { nl: 'Totaal Factuur', fr: 'Total Facture', en: 'Invoice Total' },
+    'portal_inv_details': { nl: 'Factuur Details', fr: 'Détails de la Facture', en: 'Invoice Details' },
+    'portal_inv_accept_button': { nl: 'Factuur Accepteren', fr: 'Accepter la Facture', en: 'Accept Invoice' },
+    'portal_inv_consent_text': {
+        nl: 'Ik bevestig dat ik deze factuur heb gelezen en ga akkoord met de hierin beschreven voorwaarden en het verschuldigde bedrag.',
+        fr: "Je confirme avoir lu cette facture et j'accepte les conditions et le montant dû décrits ci-dessous.",
+        en: 'I confirm that I have reviewed this invoice and agree to the terms and the amount due described herein.',
+    },
+    'portal_inv_success_title': { nl: 'Factuur Succesvol Geaccepteerd!', fr: 'Facture Acceptée avec Succès !', en: 'Invoice Successfully Accepted!' },
+    'portal_inv_success_body': { nl: 'Bedankt. We hebben uw bevestiging ontvangen.', fr: 'Merci. Nous avons reçu votre confirmation.', en: 'Thank you. We have received your confirmation.' },
+    'portal_inv_valid_until': { nl: 'Betaling verwacht voor', fr: 'Paiement attendu avant le', en: 'Payment expected by' },
+    'portal_inv_expired': { nl: 'De betalingstermijn van deze factuur is verstreken. Neem contact op.', fr: 'Le délai de paiement de cette facture est dépassé. Veuillez nous contacter.', en: 'The payment term for this invoice has passed. Please contact us.' },
+
     // ── Quotation Engine UI ──────────────────────────────────────────
     'engine_loading': { nl: 'Engine laden...', fr: 'Chargement du moteur...', en: 'Loading Engine...' },
     'engine_not_found': { nl: 'Offerte niet gevonden', fr: 'Devis introuvable', en: 'Quotation Not Found' },

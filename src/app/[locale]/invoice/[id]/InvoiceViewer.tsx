@@ -1,154 +1,450 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { acceptInvoice } from '@/app/actions/accept-invoice';
 import { Block } from '@/components/admin/database/types';
-import { PenTool, CheckCircle, FileText, AlertCircle } from 'lucide-react';
+import { t } from '@/lib/document-i18n';
+import {
+    PenTool, CheckCircle, FileText, AlertCircle,
+    Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
+} from 'lucide-react';
 
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
 
-export default function InvoiceViewer({ invoiceId, properties, blocks }: { invoiceId: string, properties: any, blocks: any }) {
+type SignatureMode = 'draw' | 'type' | 'upload';
+
+interface TenantBranding {
+    companyName: string;
+    logoUrl: string | null;
+    brandColor: string | null;
+    email: string | null;
+    vatNumber: string | null;
+    planType: string;
+}
+
+interface InvoiceViewerProps {
+    invoiceId: string;
+    properties: any;
+    blocks: any;
+    tenant: TenantBranding;
+    lang: string;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+}
+
+function brandAlpha(color: string | null, alpha: number): string {
+    if (!color) return `rgba(215, 93, 0, ${alpha})`;
+    const rgb = hexToRgb(color);
+    if (!rgb) return `rgba(215, 93, 0, ${alpha})`;
+    return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+}
+
+function TypedSignature({ name, color }: { name: string; color: string }) {
+    return (
+        <div className="flex items-center justify-center h-48 w-full">
+            <span className="text-5xl select-none" style={{ fontFamily: "'Dancing Script', cursive", color: color || '#1a1a1a', letterSpacing: '2px' }}>
+                {name || ''}
+            </span>
+        </div>
+    );
+}
+
+function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang: string; brandColor: string }) {
+    const renderBlock = (block: Block, depth: number = 0): React.ReactNode => {
+        if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
+            const sectionTotal = calculateBlockTotal(block);
+            return (
+                <React.Fragment key={block.id}>
+                    <tr className={`${depth === 0 ? 'border-t-2' : 'border-t'} border-neutral-200`}>
+                        <td colSpan={3} className={`py-3 font-bold ${depth === 0 ? 'text-base' : 'text-sm text-neutral-600'}`} style={{ paddingLeft: `${depth * 20 + 16}px` }}>
+                            <span dangerouslySetInnerHTML={{ __html: block.content || t('portal_section', lang) }} />
+                        </td>
+                        <td className="py-3 text-right font-bold pr-4 tabular-nums whitespace-nowrap" style={{ color: brandColor }}>
+                            {`€${sectionTotal.toFixed(2)}`}
+                        </td>
+                    </tr>
+                    {(block.children || []).map(child => renderBlock(child, depth + 1))}
+                </React.Fragment>
+            );
+        }
+        const lineTotal = (block.verkoopPrice || 0) * (block.quantity || 1);
+        return (
+            <tr key={block.id} className="border-t border-neutral-100 hover:bg-neutral-50/50 transition-colors">
+                <td className="py-2.5 text-sm text-neutral-700" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
+                    <span dangerouslySetInnerHTML={{ __html: block.content || '—' }} />
+                </td>
+                <td className="py-2.5 text-sm text-neutral-500 text-center tabular-nums whitespace-nowrap">
+                    {block.quantity || 1} {block.unit || ''}
+                </td>
+                <td className="py-2.5 text-sm text-neutral-500 text-right tabular-nums whitespace-nowrap pr-2">
+                    €{(block.verkoopPrice || 0).toFixed(2)}
+                </td>
+                <td className="py-2.5 text-sm text-neutral-900 text-right font-medium tabular-nums whitespace-nowrap pr-4">
+                    €{lineTotal.toFixed(2)}
+                </td>
+            </tr>
+        );
+    };
+
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="border-b-2 border-neutral-200">
+                        <th className="py-3 pl-4 text-xs font-bold text-neutral-400 uppercase tracking-wider">{t('description', lang)}</th>
+                        <th className="py-3 text-xs font-bold text-neutral-400 uppercase tracking-wider text-center">{t('qty', lang)}</th>
+                        <th className="py-3 text-xs font-bold text-neutral-400 uppercase tracking-wider text-right pr-2">{t('unit_price', lang)}</th>
+                        <th className="py-3 text-xs font-bold text-neutral-400 uppercase tracking-wider text-right pr-4">{t('total_excl', lang)}</th>
+                    </tr>
+                </thead>
+                <tbody>{blocks.map(block => renderBlock(block))}</tbody>
+            </table>
+        </div>
+    );
+}
+
+function calculateBlockTotal(block: Block): number {
+    if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
+        return (block.children || []).reduce((sum, child) => sum + calculateBlockTotal(child), 0);
+    }
+    return (block.verkoopPrice || 0) * (block.quantity || 1);
+}
+
+function calculateGrandTotal(nodes: Block[]): number {
+    return nodes.reduce((sum, block) => sum + calculateBlockTotal(block), 0);
+}
+
+export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, lang }: InvoiceViewerProps) {
     const sigCanvas = useRef<any>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isAccepted, setIsAccepted] = useState(properties?.status === 'ACCEPTED');
     const [error, setError] = useState('');
+    const [signatureMode, setSignatureMode] = useState<SignatureMode>('draw');
+    const [typedName, setTypedName] = useState('');
+    const [uploadedSignature, setUploadedSignature] = useState<string | null>(null);
+    const [consentChecked, setConsentChecked] = useState(false);
+    const [consentName, setConsentName] = useState('');
+    const [showDetails, setShowDetails] = useState(true);
+    const [successAnim, setSuccessAnim] = useState(false);
 
     const parsedBlocks = (Array.isArray(blocks) ? blocks : []) as Block[];
-    const betreft = properties?.betreft || 'Factuur';
+    const betreft = properties?.betreft || t('invoice', lang);
     const invoiceTitle = properties?.title || 'Concept';
     const existingSignature = properties?.clientSignature;
     const signedDate = properties?.signedAt;
+    const dueDate = properties?.dueDate;
 
-    const calculateGrandTotal = (nodes: Block[]): number => {
-        return nodes.reduce((sum, block) => {
-            if (block.isOptional) return sum;
-            if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                return sum + calculateGrandTotal(block.children || []);
-            }
-            return sum + ((block.verkoopPrice || 0) * (block.quantity || 1));
-        }, 0);
-    };
-
+    const brandColor = tenant.brandColor || '#d75d00';
     const grandTotal = calculateGrandTotal(parsedBlocks);
+    const vatAmount = grandTotal * 0.21;
+    const totalInclVat = grandTotal + vatAmount;
+
+    const isOverdue = dueDate ? new Date(dueDate) < new Date() : false;
+
+    useEffect(() => {
+        const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if (!touch) setSignatureMode('type');
+    }, []);
+
+    useEffect(() => {
+        if (!document.querySelector('link[href*="Dancing+Script"]')) {
+            const link = document.createElement('link');
+            link.href = 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap';
+            link.rel = 'stylesheet';
+            document.head.appendChild(link);
+        }
+    }, []);
 
     const clearSignature = () => {
-        if (sigCanvas.current) {
-            sigCanvas.current.clear();
+        if (signatureMode === 'draw' && sigCanvas.current) sigCanvas.current.clear();
+        else if (signatureMode === 'type') setTypedName('');
+        else if (signatureMode === 'upload') setUploadedSignature(null);
+    };
+
+    const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 2 * 1024 * 1024) { setError('File too large. Max 2MB.'); return; }
+        const reader = new FileReader();
+        reader.onload = () => setUploadedSignature(reader.result as string);
+        reader.readAsDataURL(file);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (!file || !file.type.startsWith('image/')) return;
+        if (file.size > 2 * 1024 * 1024) { setError('File too large. Max 2MB.'); return; }
+        const reader = new FileReader();
+        reader.onload = () => setUploadedSignature(reader.result as string);
+        reader.readAsDataURL(file);
+    }, []);
+
+    const getSignatureBase64 = (): string | null => {
+        if (signatureMode === 'draw') {
+            if (!sigCanvas.current || sigCanvas.current.isEmpty()) return null;
+            return sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
         }
+        if (signatureMode === 'type') {
+            if (!typedName.trim() || typedName.trim().length < 2) return null;
+            const canvas = document.createElement('canvas');
+            canvas.width = 600; canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+            ctx.fillStyle = 'transparent';
+            ctx.fillRect(0, 0, 600, 200);
+            ctx.font = '64px "Dancing Script", cursive';
+            ctx.fillStyle = '#1a1a1a';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(typedName.trim(), 300, 100);
+            return canvas.toDataURL('image/png');
+        }
+        if (signatureMode === 'upload') return uploadedSignature;
+        return null;
     };
 
     const handleAccept = async () => {
-        if (!sigCanvas.current || sigCanvas.current.isEmpty()) {
-            setError('Plaats a.u.b. uw handtekening voordat u akkoord gaat.');
-            return;
-        }
+        setError('');
+        if (!consentChecked) { setError(t('portal_error_consent', lang)); return; }
+        if (!consentName.trim() || consentName.trim().length < 3) { setError(t('portal_error_name', lang)); return; }
+        const sig = getSignatureBase64();
+        if (!sig) { setError(t('portal_error_signature', lang)); return; }
 
         setIsSubmitting(true);
-        setError('');
-
-        // Extract native Canvas base64 export
-        const signatureBase64 = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
-
-        const result = await acceptInvoice(invoiceId, signatureBase64);
+        const result = await acceptInvoice({ invoiceId, signatureBase64: sig, signatureMethod: signatureMode, consentName: consentName.trim() });
         if (result.success) {
-            setIsAccepted(true);
+            setSuccessAnim(true);
+            setTimeout(() => setIsAccepted(true), 600);
         } else {
-            setError(result.error || 'Er ging iets mis tijdens het verwerken van uw handtekening.');
+            setError(result.error || t('portal_error_generic', lang));
             setIsSubmitting(false);
         }
     };
 
+    const showPoweredBy = tenant.planType !== 'ENTERPRISE';
+    const localeStr = lang === 'nl' ? 'nl-BE' : lang === 'fr' ? 'fr-BE' : 'en-GB';
+
     return (
-        <div className="flex flex-col gap-8 w-full">
-            {/* Minimal Read-Only Presentation */}
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="p-8 border-b border-neutral-100 flex justify-between items-start">
-                    <div>
-                        <h1 className="text-2xl font-bold text-neutral-900">{betreft}</h1>
-                        <p className="text-sm text-neutral-500 font-mono mt-1">REF: {invoiceTitle}</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">Totaal Investering</p>
-                        <p className="text-3xl font-black text-[#d75d00]">€{grandTotal.toFixed(2)}</p>
-                    </div>
-                </div>
-
-                <div className="p-8 bg-neutral-50/50 flex flex-col items-center justify-center text-center gap-4 py-16">
-                    <FileText className="w-12 h-12 text-neutral-300" />
-                    <p className="text-neutral-500 max-w-sm">
-                        De uitgebreide berekening en details van deze factuur vindt u in de originele PDF die u per e-mail is toegestuurd.
-                    </p>
-                </div>
-            </div>
-
-            {/* Interactive Signature Block */}
-            <div className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden">
-                <div className="p-6 border-b border-neutral-100 bg-neutral-50 flex items-center gap-3">
-                    <PenTool className="w-5 h-5 text-neutral-500" />
-                    <h2 className="font-bold text-neutral-900">Digitaal Ondertekenen</h2>
-                </div>
-
-                <div className="p-6">
-                    {isAccepted || existingSignature ? (
-                        <div className="flex flex-col items-center justify-center py-8 gap-4">
-                            <CheckCircle className="w-16 h-16 text-emerald-500" />
-                            <div className="text-center">
-                                <h3 className="text-xl font-bold text-emerald-600 mb-1">Factuur Succesvol Geaccepteerd!</h3>
-                                <p className="text-neutral-500">Bedankt voor het vertrouwen. Wij nemen spoedig contact met u op.</p>
-                                {signedDate && (
-                                    <p className="text-xs text-neutral-400 mt-4">Ondertekend op: {new Date(signedDate).toLocaleString()}</p>
-                                )}
+        <div className="min-h-screen flex flex-col font-sans" style={{ backgroundColor: brandAlpha(brandColor, 0.04) }}>
+            {/* Branded Header */}
+            <header className="w-full border-b" style={{ backgroundColor: 'white', borderColor: brandAlpha(brandColor, 0.15) }}>
+                <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        {tenant.logoUrl ? (
+                            <img src={tenant.logoUrl} alt={tenant.companyName} className="h-10 w-auto object-contain" />
+                        ) : (
+                            <div className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-black text-lg" style={{ backgroundColor: brandColor }}>
+                                {tenant.companyName.charAt(0)}
                             </div>
-                            {existingSignature && (
-                                <div className="mt-6 p-4 border border-neutral-200 bg-white rounded-lg shadow-sm">
-                                    <img src={existingSignature} alt="Handtekening" className="max-h-32 object-contain" />
-                                </div>
-                            )}
+                        )}
+                        <span className="text-lg font-bold text-neutral-900 hidden sm:block">{tenant.companyName}</span>
+                    </div>
+                    <div className="text-right text-xs text-neutral-400 hidden sm:block">
+                        {tenant.email && <div>{tenant.email}</div>}
+                        {tenant.vatNumber && <div>{tenant.vatNumber}</div>}
+                    </div>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-6">
+
+                {/* Overdue Banner */}
+                {isOverdue && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 flex items-start gap-3">
+                        <Clock className="w-5 h-5 shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium">{t('portal_inv_expired', lang)}</p>
+                    </div>
+                )}
+
+                {dueDate && !isOverdue && (
+                    <div className="flex items-center gap-2 text-sm text-neutral-500 bg-white border border-neutral-200 rounded-xl px-4 py-3 shadow-sm">
+                        <Clock className="w-4 h-4" />
+                        <span>{t('portal_inv_valid_until', lang)} <strong>{new Date(dueDate).toLocaleDateString(localeStr)}</strong></span>
+                    </div>
+                )}
+
+                {/* Invoice Header Card */}
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
+                    <div className="p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="min-w-0">
+                            <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 break-words">{betreft}</h1>
+                            <p className="text-sm text-neutral-500 font-mono mt-1">{t('portal_ref', lang)}: {invoiceTitle}</p>
                         </div>
-                    ) : (
-                        <div className="flex flex-col gap-4">
-                            <p className="text-sm text-neutral-600 mb-2">
-                                Door hieronder te tekenen en op &quot;Factuur Accepteren&quot; te klikken, gaat u officieel akkoord met de uitvoering van het project.
+                        <div className="text-right shrink-0">
+                            <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t('portal_inv_total', lang)}</p>
+                            <p className="text-3xl sm:text-4xl font-black tabular-nums" style={{ color: brandColor }}>
+                                €{totalInclVat.toFixed(2)}
                             </p>
+                        </div>
+                    </div>
+                </div>
 
-                            {error && (
-                                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm border border-red-100">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                    <span>{error}</span>
+                {/* Invoice Details — Collapsible */}
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
+                    <button onClick={() => setShowDetails(!showDetails)} className="w-full p-5 sm:p-6 flex items-center justify-between hover:bg-neutral-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                            <FileText className="w-5 h-5 text-neutral-500" />
+                            <h2 className="font-bold text-neutral-900">{t('portal_inv_details', lang)}</h2>
+                        </div>
+                        {showDetails ? <ChevronUp className="w-5 h-5 text-neutral-400" /> : <ChevronDown className="w-5 h-5 text-neutral-400" />}
+                    </button>
+
+                    {showDetails && (
+                        <div className="border-t border-neutral-100">
+                            <InvoiceLineItems blocks={parsedBlocks} lang={lang} brandColor={brandColor} />
+                            <div className="border-t-2 border-neutral-200 p-6 sm:p-8">
+                                <div className="flex flex-col gap-2 max-w-xs ml-auto">
+                                    <div className="flex justify-between text-sm text-neutral-600">
+                                        <span>{t('portal_subtotal', lang)}</span>
+                                        <span className="tabular-nums font-medium">€{grandTotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm text-neutral-600">
+                                        <span>{t('portal_vat_21', lang)}</span>
+                                        <span className="tabular-nums font-medium">€{vatAmount.toFixed(2)}</span>
+                                    </div>
+                                    <div className="border-t border-neutral-200 pt-2 mt-1 flex justify-between text-lg font-bold">
+                                        <span>{t('portal_grand_total', lang)}</span>
+                                        <span className="tabular-nums" style={{ color: brandColor }}>€{totalInclVat.toFixed(2)}</span>
+                                    </div>
                                 </div>
-                            )}
-
-                            <div className="bg-white border-2 border-dashed border-neutral-300 rounded-xl relative overflow-hidden group hover:border-[#d75d00]/50 transition-colors">
-                                <SignatureCanvas
-                                    {...{ ref: sigCanvas } as any}
-                                    canvasProps={{ className: 'w-full h-64 cursor-crosshair' }}
-                                    backgroundColor="transparent"
-                                />
-                                <div className="absolute top-4 right-4 text-xs font-bold text-neutral-300 uppercase tracking-widest pointer-events-none">
-                                    Teken Hier
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between items-center mt-2">
-                                <button
-                                    onClick={clearSignature}
-                                    className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors px-4 py-2"
-                                >
-                                    Wissen
-                                </button>
-                                <button
-                                    onClick={handleAccept}
-                                    disabled={isSubmitting}
-                                    className={`px-8 py-3 bg-[#d75d00] hover:bg-[#b04b00] text-white font-bold rounded-lg shadow-sm transition-all focus:ring-4 focus:ring-[#d75d00]/20 ${isSubmitting ? 'opacity-70 cursor-wait' : ''}`}
-                                >
-                                    {isSubmitting ? 'Bezig met verwerken...' : 'Factuur Accepteren'}
-                                </button>
                             </div>
                         </div>
                     )}
                 </div>
-            </div>
+
+                {/* Signature Block */}
+                <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
+                    <div className="p-5 sm:p-6 border-b border-neutral-100 flex items-center gap-3" style={{ backgroundColor: brandAlpha(brandColor, 0.03) }}>
+                        <PenTool className="w-5 h-5 text-neutral-500" />
+                        <h2 className="font-bold text-neutral-900">{t('portal_sign_title', lang)}</h2>
+                    </div>
+
+                    <div className="p-5 sm:p-6">
+                        {isAccepted || existingSignature ? (
+                            <div className={`flex flex-col items-center justify-center py-8 sm:py-12 gap-4 transition-all duration-500 ${successAnim ? 'animate-pulse' : ''}`}>
+                                <div className="relative">
+                                    <CheckCircle className="w-20 h-20 text-emerald-500" />
+                                    <Sparkles className="w-6 h-6 text-amber-400 absolute -top-1 -right-1 animate-bounce" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-xl sm:text-2xl font-bold text-emerald-600 mb-2">{t('portal_inv_success_title', lang)}</h3>
+                                    <p className="text-neutral-500 max-w-md">{t('portal_inv_success_body', lang)}</p>
+                                    {signedDate && (
+                                        <p className="text-xs text-neutral-400 mt-4">{t('portal_signed_on', lang)}: {new Date(signedDate).toLocaleString(localeStr)}</p>
+                                    )}
+                                </div>
+                                {existingSignature && (
+                                    <div className="mt-6 p-4 border border-neutral-200 bg-neutral-50 rounded-xl shadow-sm">
+                                        <img src={existingSignature} alt="Signature" className="max-h-32 object-contain" />
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-5">
+                                {error && (
+                                    <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-lg text-sm border border-red-100">
+                                        <AlertCircle className="w-4 h-4 shrink-0" /><span>{error}</span>
+                                    </div>
+                                )}
+
+                                {/* Signature Mode Tabs */}
+                                <div className="flex rounded-xl overflow-hidden border border-neutral-200 bg-neutral-100">
+                                    {([
+                                        { mode: 'draw' as const, icon: Pencil, label: t('portal_tab_draw', lang) },
+                                        { mode: 'type' as const, icon: Type, label: t('portal_tab_type', lang) },
+                                        { mode: 'upload' as const, icon: Upload, label: t('portal_tab_upload', lang) },
+                                    ]).map(({ mode, icon: Icon, label }) => (
+                                        <button key={mode} onClick={() => setSignatureMode(mode)}
+                                            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 text-sm font-medium transition-all ${signatureMode === mode ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}>
+                                            <Icon className="w-4 h-4" /><span className="hidden sm:inline">{label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* Draw */}
+                                {signatureMode === 'draw' && (
+                                    <div className="bg-white border-2 border-dashed rounded-xl relative overflow-hidden transition-colors" style={{ borderColor: brandAlpha(brandColor, 0.3) }}>
+                                        <SignatureCanvas {...{ ref: sigCanvas } as any} canvasProps={{ className: 'w-full h-48 sm:h-64 cursor-crosshair' }} backgroundColor="transparent" />
+                                        <div className="absolute top-4 right-4 text-xs font-bold uppercase tracking-widest pointer-events-none" style={{ color: brandAlpha(brandColor, 0.2) }}>{t('portal_draw_hint', lang)}</div>
+                                    </div>
+                                )}
+
+                                {/* Type */}
+                                {signatureMode === 'type' && (
+                                    <div className="flex flex-col gap-3">
+                                        <input type="text" value={typedName} onChange={(e) => setTypedName(e.target.value)} placeholder={t('portal_type_placeholder', lang)} maxLength={80}
+                                            className="w-full px-4 py-3 border border-neutral-300 rounded-xl text-base focus:outline-none focus:ring-2 transition-colors" />
+                                        <div className="border-2 border-dashed rounded-xl bg-neutral-50/50" style={{ borderColor: brandAlpha(brandColor, 0.2) }}>
+                                            <TypedSignature name={typedName} color={brandColor} />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Upload */}
+                                {signatureMode === 'upload' && (
+                                    <div className="border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer hover:bg-neutral-50"
+                                        style={{ borderColor: brandAlpha(brandColor, 0.3) }}
+                                        onClick={() => fileInputRef.current?.click()} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
+                                        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleFileUpload} className="hidden" />
+                                        {uploadedSignature ? (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <img src={uploadedSignature} alt="Uploaded signature" className="max-h-32 object-contain rounded" />
+                                                <button onClick={(e) => { e.stopPropagation(); setUploadedSignature(null); }} className="text-xs text-red-500 hover:text-red-700 font-medium">{t('portal_clear', lang)}</button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <Upload className="w-10 h-10 text-neutral-300" />
+                                                <p className="text-sm text-neutral-500">{t('portal_upload_hint', lang)}</p>
+                                                <p className="text-xs text-neutral-400">{t('portal_upload_formats', lang)}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex justify-start">
+                                    <button onClick={clearSignature} className="text-sm font-medium text-neutral-400 hover:text-neutral-700 transition-colors px-1 py-1">{t('portal_clear', lang)}</button>
+                                </div>
+
+                                {/* Consent */}
+                                <div className="border border-neutral-200 rounded-xl p-4 sm:p-5 bg-neutral-50/50 flex flex-col gap-4">
+                                    <label className="flex items-start gap-3 cursor-pointer select-none">
+                                        <input type="checkbox" checked={consentChecked} onChange={(e) => setConsentChecked(e.target.checked)}
+                                            className="mt-0.5 w-5 h-5 rounded border-neutral-300 accent-current shrink-0" style={{ accentColor: brandColor }} />
+                                        <span className="text-sm text-neutral-700 leading-relaxed">{t('portal_inv_consent_text', lang)}</span>
+                                    </label>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider">{t('portal_consent_name_label', lang)}</label>
+                                        <input type="text" value={consentName} onChange={(e) => setConsentName(e.target.value)} placeholder={t('portal_consent_name_placeholder', lang)} maxLength={100}
+                                            className="w-full px-4 py-2.5 border border-neutral-300 rounded-lg text-sm focus:outline-none focus:ring-2 transition-colors" style={{ '--tw-ring-color': brandColor } as any} />
+                                    </div>
+                                </div>
+
+                                <button onClick={handleAccept} disabled={isSubmitting || !consentChecked || consentName.trim().length < 3}
+                                    className="w-full py-4 text-white font-bold rounded-xl shadow-lg transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                    style={{ backgroundColor: isSubmitting ? brandAlpha(brandColor, 0.7) : brandColor }}>
+                                    {isSubmitting ? t('portal_processing', lang) : t('portal_inv_accept_button', lang)}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </main>
+
+            {showPoweredBy && (
+                <footer className="w-full py-6 text-center">
+                    <a href="https://coral-group.be" target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-neutral-300 hover:text-neutral-500 transition-colors inline-flex items-center gap-1.5">
+                        {t('portal_powered_by', lang)} <span className="font-semibold">CoralOS</span> · Coral Enterprises
+                    </a>
+                </footer>
+            )}
         </div>
     );
 }

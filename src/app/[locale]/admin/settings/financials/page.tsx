@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from '@/config/tabs';
 import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { Receipt, Save, Loader2, Check } from 'lucide-react';
+import { Receipt, Save, Loader2, Check, Calculator, UserPlus, Trash2, Mail, ShieldCheck, Download } from 'lucide-react';
+
+// ── Types ──────────────────────────────────────────────────────────────────
+interface AccountantUser {
+    id: string;
+    name: string | null;
+    email: string | null;
+    inviteAccepted: boolean;
+    invitedAt: string | null;
+}
 
 export default function FinancialsSettingsPage() {
     usePageTitle('Financials Settings');
@@ -19,6 +28,14 @@ export default function FinancialsSettingsPage() {
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
 
+    // ── Accountant state ────────────────────────────────────────────────
+    const [accountant, setAccountant] = useState<AccountantUser | null>(null);
+    const [acctEmail, setAcctEmail] = useState('');
+    const [acctName, setAcctName] = useState('');
+    const [acctSaving, setAcctSaving] = useState(false);
+    const [acctError, setAcctError] = useState('');
+    const [acctLoading, setAcctLoading] = useState(true);
+
     useEffect(() => {
         fetch('/api/tenant/profile')
             .then(r => r.json())
@@ -29,6 +46,52 @@ export default function FinancialsSettingsPage() {
             })
             .finally(() => setLoading(false));
     }, []);
+
+    const fetchAccountant = useCallback(async () => {
+        try {
+            const res = await fetch('/api/tenant/accountant');
+            if (res.ok) {
+                const data = await res.json();
+                setAccountant(data.accountant || null);
+            }
+        } catch { /* silent */ }
+        finally { setAcctLoading(false); }
+    }, []);
+
+    useEffect(() => { fetchAccountant(); }, [fetchAccountant]);
+
+    const handleInviteAccountant = async () => {
+        if (!acctEmail) { setAcctError('Email is required'); return; }
+        setAcctSaving(true);
+        setAcctError('');
+        try {
+            const res = await fetch('/api/tenant/accountant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: acctEmail, name: acctName }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setAcctError(data.error || 'Failed to invite');
+                return;
+            }
+            setAccountant(data.accountant);
+            setAcctEmail('');
+            setAcctName('');
+        } catch {
+            setAcctError('Network error');
+        } finally {
+            setAcctSaving(false);
+        }
+    };
+
+    const handleRevokeAccountant = async () => {
+        if (!confirm('Remove accountant access? They will no longer be able to view your financial data.')) return;
+        try {
+            await fetch('/api/tenant/accountant', { method: 'DELETE' });
+            setAccountant(null);
+        } catch { /* silent */ }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -131,6 +194,122 @@ export default function FinancialsSettingsPage() {
                             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                             {saved ? 'Saved' : 'Save Changes'}
                         </button>
+
+                        {/* ── Divider ─────────────────────────────────────── */}
+                        <div className="border-t border-neutral-200 dark:border-white/10 pt-2 mt-8" />
+
+                        {/* ── Accountant Access ──────────────────────────── */}
+                        <div className="bg-white dark:bg-white/5 rounded-2xl border border-blue-200 dark:border-blue-500/20 p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center">
+                                    <Calculator className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Accountant Access</h2>
+                                    <p className="text-xs text-neutral-500">Give your bookkeeper read-only access to your financial data.</p>
+                                </div>
+                            </div>
+
+                            {/* What the accountant can do */}
+                            <div className="bg-blue-50 dark:bg-blue-500/5 rounded-xl p-4 mb-5 space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">What your accountant can do</p>
+                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                                    <span>View invoices, expenses, and expense tickets</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                    <Download className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Export data to CSV for import into accounting software</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                                    <span>Filter by date range (month, trimester, semester, year)</span>
+                                </div>
+                                <p className="text-[10px] text-blue-500 dark:text-blue-400/60 mt-1">
+                                    Read-only — your accountant cannot edit, delete, or create records.
+                                    Exported records are automatically locked from further editing.
+                                </p>
+                            </div>
+
+                            {acctLoading ? (
+                                <div className="flex items-center justify-center h-16">
+                                    <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+                                </div>
+                            ) : accountant ? (
+                                /* ── Current accountant ────────────────────── */
+                                <div className="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
+                                        {(accountant.name || accountant.email || '?')[0].toUpperCase()}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-sm text-neutral-900 dark:text-white truncate">
+                                                {accountant.name || accountant.email}
+                                            </span>
+                                            {accountant.inviteAccepted ? (
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                                                    ACTIVE
+                                                </span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                                                    PENDING
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                            <Mail className="w-3 h-3 text-neutral-400" />
+                                            <span className="text-xs text-neutral-500 truncate">{accountant.email}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleRevokeAccountant}
+                                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        Revoke
+                                    </button>
+                                </div>
+                            ) : (
+                                /* ── Invite form ───────────────────────────── */
+                                <div className="space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Accountant Email *</label>
+                                            <input
+                                                type="email"
+                                                value={acctEmail}
+                                                onChange={e => setAcctEmail(e.target.value)}
+                                                placeholder="accountant@firm.be"
+                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Name (optional)</label>
+                                            <input
+                                                type="text"
+                                                value={acctName}
+                                                onChange={e => setAcctName(e.target.value)}
+                                                placeholder="John Doe"
+                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {acctError && (
+                                        <p className="text-xs text-red-600 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg">{acctError}</p>
+                                    )}
+
+                                    <button
+                                        onClick={handleInviteAccountant}
+                                        disabled={acctSaving || !acctEmail}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-all"
+                                    >
+                                        {acctSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                                        Send Invite
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

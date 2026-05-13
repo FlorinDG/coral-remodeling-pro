@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
-import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, Lock, Copy } from 'lucide-react';
+import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, Lock, Copy, ClipboardList } from 'lucide-react';
 import { Block } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
 
@@ -66,6 +66,7 @@ export default function PDFImportModal({
     canDedup = false,
 }: PDFImportModalProps) {
     const [file, setFile] = useState<File | null>(null);
+    const [docType, setDocType] = useState<'supplier' | 'meetstaat' | 'other'>('supplier');
     const [isProcessing, setIsProcessing] = useState(false);
     const [extractedItems, setExtractedItems] = useState<ExtractedItem[]>([]);
     const [isDuplicate, setIsDuplicate] = useState<boolean[]>([]);
@@ -104,13 +105,23 @@ export default function PDFImportModal({
 
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('docType', docType);
 
         try {
-            const res = await fetch('/api/extract-pdf', { method: 'POST', body: formData });
+            const res = await fetch('/api/integrations/parse-pdf', { method: 'POST', body: formData });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Server processing error');
 
-            const items: ExtractedItem[] = data.articles || [];
+            const items: ExtractedItem[] = (data.articles || data.data || []).map((item: any) => ({
+                title: item.title || item.Title || '',
+                brutoPrice: item.brutoPrice || item.UnitPrice || 0,
+                discountPercent: item.discountPercent || item.Discount || 0,
+                quantity: item.quantity || item.Quantity || 1,
+                unit: item.unit || item.Unit || 'stk',
+                brand: item.brand || item.Brand || '',
+                group: item.group || item.Section || '',
+                calculationType: item.calculationType || undefined,
+            }));
 
             // Run dedup detection (PRO+ only)
             const existingTitles = canDedup ? collectExistingTitles(existingBlocks) : [];
@@ -239,14 +250,48 @@ export default function PDFImportModal({
                 <DialogHeader className="p-6 pb-2">
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         <Bot className="w-5 h-5 text-purple-600" />
-                        AI PDF Article Extraction
+                        AI Document Import
                     </DialogTitle>
                     <DialogDescription className="text-sm text-neutral-500">
-                        Upload a supplier invoice or quotation PDF. OpenAI will extract line items, quantities, and prices.
+                        Upload a supplier PDF, meetstaat, or quotation. AI will extract line items, quantities, and prices.
                     </DialogDescription>
                 </DialogHeader>
 
                 <div className="px-6 py-4 flex flex-col gap-4 max-h-[72vh] overflow-y-auto">
+
+                    {/* Document type selector */}
+                    {!hasItems && !isProcessing && (
+                        <div className="flex gap-2">
+                            {[
+                                { id: 'supplier' as const, label: 'Leverancier PDF', desc: 'Factuur / offerte van leverancier', icon: FileText, color: 'purple' },
+                                { id: 'meetstaat' as const, label: 'Meetstaat', desc: 'Bill of Quantities (hoeveelheden)', icon: ClipboardList, color: 'blue' },
+                                { id: 'other' as const, label: 'Ander', desc: 'Vrij document met prijzen', icon: Upload, color: 'gray' },
+                            ].map(opt => {
+                                const isActive = docType === opt.id;
+                                return (
+                                    <button
+                                        key={opt.id}
+                                        onClick={() => setDocType(opt.id)}
+                                        className={`flex-1 p-3 rounded-xl text-left transition-all border ${
+                                            isActive
+                                                ? `border-${opt.color}-400 dark:border-${opt.color}-500/40 bg-${opt.color}-50 dark:bg-${opt.color}-500/10`
+                                                : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/20'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <opt.icon className={`w-4 h-4 ${
+                                                isActive ? `text-${opt.color}-600 dark:text-${opt.color}-400` : 'text-neutral-400'
+                                            }`} />
+                                            <span className={`text-xs font-bold ${
+                                                isActive ? 'text-neutral-900 dark:text-white' : 'text-neutral-600 dark:text-neutral-300'
+                                            }`}>{opt.label}</span>
+                                        </div>
+                                        <p className="text-[10px] text-neutral-500 leading-tight">{opt.desc}</p>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
 
                     {/* Upload Zone */}
                     {!hasItems && !isProcessing && (

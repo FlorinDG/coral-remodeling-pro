@@ -13,6 +13,7 @@ export async function POST(req: Request) {
 
         // Optional: target database property names for schema-aware extraction
         const schemaHint = formData.get('schemaHint') as string | null;
+        const docType = (formData.get('docType') as string) || 'supplier';
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -42,7 +43,59 @@ export async function POST(req: Request) {
             ? `\nThe target database has these columns: [${schemaHint}]. Use these EXACT names as JSON keys where they match your extracted data. For any data that doesn't match an existing column, use a descriptive key.`
             : '';
 
-        const prompt = `You are an expert document data extraction engine for Belgian construction and remodeling businesses.
+        // ── Meetstaat-specific prompt ─────────────────────────────────────────
+        const meetstaatPrompt = `You are an expert Belgian construction document parser, specializing in meetstaten (Bills of Quantities / BoQ).
+
+TASK: Extract all line items from this meetstaat document.
+
+A meetstaat is a structured quantity survey document used in Belgian construction. It lists:
+- Post numbers (article/line identifiers like 01.01, 02.03, etc.)
+- Work categories/sections (e.g. Grondwerken, Ruwbouw, Dakwerken, Afwerking, Elektriciteit, Sanitair, HVAC, Buitenaanleg)
+- Detailed work descriptions
+- Measurement units (m², m³, m, lm, stk, kg, l, uur, forfait, PM — pro memorie)
+- Quantities (calculated from architectural plans)
+- Unit prices (may be blank — to be filled by the contractor)
+- Total prices (may be blank)
+
+EXTRACTION RULES:
+1. Extract EVERY post/line item. Do NOT skip any.
+2. Section headers (Hoofdstuk, Afdeling) are NOT line items — use them as the "Section" field.
+3. "PM" (pro memorie) or "VH" (voorbehouden hoeveelheid) means the quantity is provisional — set quantity to 1 and note "PM" in Notes.
+4. If unit price is blank (contractor fills it in), set UnitPrice to 0.
+5. Merge multi-line descriptions into one Title.
+6. European number format: 1.250,00 → convert to 1250.00
+7. Common units: m² (vierkante meter), m³ (kubieke meter), lm (lopende meter), stk (stuks), kg, l (liter), uur, forfait, PM
+
+Return a single JSON object:
+{
+  "documentType": "MEETSTAAT",
+  "metadata": {
+    "projectName": "...",
+    "architect": "...",
+    "documentRef": "...",
+    "documentDate": "YYYY-MM-DD",
+    "norm": "NBN B 06-001 if referenced"
+  },
+  "articles": [
+    {
+      "Title": "Work description",
+      "Quantity": 1,
+      "Unit": "m²",
+      "UnitPrice": 0,
+      "TotalPrice": 0,
+      "Section": "Parent section name",
+      "Subsection": "Sub-section if any",
+      "PostNumber": "01.01",
+      "Notes": "extra specs, dimensions, material"
+    }
+  ]
+}
+
+TEXT TO PARSE:
+${text.substring(0, 120000)}`;
+
+        // ── Standard prompt (supplier/other) ─────────────────────────────────
+        const standardPrompt = `You are an expert document data extraction engine for Belgian construction and remodeling businesses.
 
 TASK: Extract all structured data from the document text below.
 
@@ -50,6 +103,7 @@ STEP 1 — CLASSIFY the document. Set "documentType" to one of:
   • "CATALOG" — a pricelist or product catalog with many items in columns/rows
   • "QUOTATION" — a quote/offerte from a contractor, with sections and priced line items
   • "INVOICE" — a bill/factuur with line items and totals
+  • "MEETSTAAT" — a bill of quantities (meetstaat/bestek) with posts, quantities, and units
   • "INFORMAL" — free-form text (email, letter) with prices or quantities embedded in prose
   • "MIXED" — multiple types or unclear format
 
@@ -98,6 +152,8 @@ Return a single JSON object: { "documentType": "...", "metadata": {...}, "articl
 
 TEXT TO PARSE:
 ${text.substring(0, 120000)}`;
+
+        const prompt = docType === 'meetstaat' ? meetstaatPrompt : standardPrompt;
 
         const response = await openai.chat.completions.create({
             model: 'gpt-4o',

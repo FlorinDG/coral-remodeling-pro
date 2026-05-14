@@ -377,6 +377,48 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-task-qty',      name: 'Quantity',          type: 'text' },
       { id: 'prop-task-price',    name: 'Unit Price',        type: 'currency' },
     ],
+    'db-articles': [
+      { id: 'title',              name: 'Naam',              type: 'text' },
+      { id: 'prop-art-id',        name: 'ID',                type: 'text' },
+      { id: 'prop-art-desc',      name: 'Omschrijving',      type: 'text' },
+      { id: 'prop-art-brand',     name: 'Merk',              type: 'text' },
+      { id: 'prop-art-group',     name: 'Artikelgroep',      type: 'select', config: { options: [
+        { id: 'opt-general',      name: 'General',      color: 'default' },
+        { id: 'opt-ruwbouw',     name: 'Ruwbouw',      color: 'gray'    },
+        { id: 'opt-afwerking',   name: 'Afwerking',    color: 'blue'    },
+        { id: 'opt-elektriciteit', name: 'Elektriciteit', color: 'yellow'  },
+        { id: 'opt-sanitaire',    name: 'Sanitaire',    color: 'blue'    },
+        { id: 'opt-ventilatie',   name: 'Ventilatie',   color: 'purple'  },
+        { id: 'opt-verwarming',   name: 'Verwarming',   color: 'red'     },
+      ]}},
+      { id: 'prop-art-supplier',  name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-art-bruto',     name: 'BruttoKost',        type: 'currency' },
+      { id: 'prop-art-remise',    name: 'Discount',          type: 'percent' },
+      { id: 'prop-art-netto',     name: 'NettoKost',         type: 'formula', config: { formulaExpression: 'if(empty(Discount), BruttoKost, BruttoKost * Discount)' } },
+      { id: 'prop-art-margin',    name: 'Marge Standard',    type: 'percent' },
+      { id: 'prop-art-margin-euro', name: 'Marge€',          type: 'formula', config: { formulaExpression: 'if(empty(Marge Standard), 0, NettoKost * Marge Standard)' } },
+      { id: 'prop-art-verkoop',   name: 'Verkoopprijs',      type: 'formula', config: { formulaExpression: 'NettoKost + Marge€' } },
+      { id: 'prop-art-unit',      name: 'Eeh',               type: 'select', config: { options: [
+        { id: 'u-stk', name: 'stk', color: 'gray'   },
+        { id: 'u-m',   name: 'm',   color: 'blue'   },
+        { id: 'u-m2',  name: 'm2',  color: 'green'  },
+        { id: 'u-m3',  name: 'm3',  color: 'purple' },
+        { id: 'u-l',   name: 'L',   color: 'yellow' },
+        { id: 'u-uur', name: 'uur', color: 'orange' },
+        { id: 'u-set', name: 'set', color: 'pink'   },
+        { id: 'u-kg',  name: 'kg',  color: 'red'    },
+      ]}},
+      { id: 'prop-art-packaging', name: 'Packaging',         type: 'select', config: { options: [
+        { id: 'opt-stk',   name: 'stuk',  color: 'gray'   },
+        { id: 'opt-plaat', name: 'plaat', color: 'blue'   },
+        { id: 'opt-rol',   name: 'rol',   color: 'yellow' },
+        { id: 'opt-doos',  name: 'doos',  color: 'orange' },
+      ]}},
+      { id: 'prop-art-coverage',  name: 'Dekking/pak',       type: 'number' },
+      { id: 'prop-art-pcs-pack',  name: 'Stuks/pak',         type: 'number' },
+      { id: 'prop-art-min-order', name: 'Minimum Order',     type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
+      { id: 'prop-art-variants',  name: 'Product Variants',  type: 'variants' },
+    ],
   }), [resolveDbId]);
 
   // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
@@ -409,6 +451,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
           if (!hasState) {
             store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true }); // use resolvedId
+          }
+        });
+      });
+    }
+
+    if (databaseId === 'db-articles') {
+      const HIDDEN_BY_DEFAULT = ['prop-art-brand', 'prop-art-packaging', 'prop-art-coverage', 'prop-art-pcs-pack', 'prop-art-min-order', 'prop-art-variants'];
+      const store = useDatabaseStore.getState();
+      database.views.forEach(view => {
+        HIDDEN_BY_DEFAULT.forEach(propId => {
+          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
+          if (!hasState) {
+            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true });
           }
         });
       });

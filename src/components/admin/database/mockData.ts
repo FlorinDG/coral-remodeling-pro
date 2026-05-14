@@ -562,18 +562,18 @@ export const mockDatabases: Database[] = [
             { id: 'prop-art-group', name: 'Artikelgroep', type: 'select', config: { options: [{ id: 'opt-general', name: 'General', color: 'default' }, { id: 'opt-ruwbouw', name: 'Ruwbouw', color: 'gray' }, { id: 'opt-afwerking', name: 'Afwerking', color: 'blue' }, { id: 'opt-elektriciteit', name: 'Elektriciteit', color: 'yellow' }, { id: 'opt-sanitaire', name: 'Sanitaire', color: 'blue' }, { id: 'opt-ventilatie', name: 'Ventilatie', color: 'purple' }, { id: 'opt-verwarming', name: 'Verwarming', color: 'red' }] } },
             { id: 'prop-art-supplier', name: 'Leverancier', type: 'relation', config: { relationDatabaseId: 'db-suppliers' } },
 
-            { id: 'prop-art-bruto', name: 'Brutoprijs', type: 'number', config: { format: 'euro' } },
-            { id: 'prop-art-remise', name: 'Lever.%', type: 'number', config: { format: 'percent' } },
-            { id: 'prop-art-netto', name: 'Netto kostprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Brutoprijs") * (1 - (prop("Lever.%") / 100)))' } },
+            { id: 'prop-art-bruto', name: 'BruttoKost', type: 'currency' },
+            { id: 'prop-art-remise', name: 'Discount', type: 'percent' },
+            { id: 'prop-art-netto', name: 'NettoKost', type: 'formula', config: { formulaExpression: 'if(empty(Discount), BruttoKost, BruttoKost * Discount)' } },
 
-            { id: 'prop-art-margin', name: 'Marge', type: 'number', config: { format: 'percent' } },
-            { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") * (prop("Marge") / 100))' } },
-            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'formula', config: { formulaExpression: 'round2(prop("Netto kostprijs") + prop("Marge€"))' } },
+            { id: 'prop-art-margin', name: 'Marge Standard', type: 'percent' },
+            { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'if(empty(Marge Standard), 0, NettoKost * Marge Standard)' } },
+            { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'formula', config: { formulaExpression: 'NettoKost + Marge€' } },
 
             { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },
             { id: 'prop-art-packaging', name: 'Packaging', type: 'select', config: { options: [{ id: 'opt-stk', name: 'stuk', color: 'gray' }, { id: 'opt-plaat', name: 'plaat', color: 'blue' }, { id: 'opt-rol', name: 'rol', color: 'yellow' }, { id: 'opt-doos', name: 'doos', color: 'orange' }] } },
-            { id: 'prop-art-coverage', name: 'Dekking/pak', type: 'number', config: { format: 'number' } },
-            { id: 'prop-art-pcs-pack', name: 'Stuks/pak', type: 'number', config: { format: 'number' } },
+            { id: 'prop-art-coverage', name: 'Dekking/pak', type: 'number' },
+            { id: 'prop-art-pcs-pack', name: 'Stuks/pak', type: 'number' },
             { id: 'prop-art-min-order', name: 'Minimum Order', type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
 
             { id: 'prop-art-variants', name: 'Product Variants', type: 'variants' }

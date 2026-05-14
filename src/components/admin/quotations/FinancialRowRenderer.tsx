@@ -586,6 +586,24 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
                 </div>
 
+                {/* 5.5. Unit Price (P.U. HT) — Selling price per unit before quantity */}
+                <div className={`flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Unit Price driven by subcomponents' : 'Selling price per unit (exclusive of VAT)'}>
+                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">P.U. HT</label>
+                    <div className="w-full relative">
+                        <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={((block.verkoopPrice || 0) + variantDeltas).toFixed(2)}
+                            onChange={(e) => handleMathChange('verkoopPrice', (parseFloat(e.target.value) || 0) - variantDeltas)}
+                            readOnly={childrenTotal !== undefined}
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                        />
+                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
+                    </div>
+                </div>
+
                 {/* 6. Total (TOTAL HT) */}
                 <div className="flex flex-col gap-0.5 w-[100px] shrink-0 self-start mt-0.5 relative text-right">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Total</label>

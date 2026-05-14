@@ -46,6 +46,12 @@ export async function GET() {
         return NextResponse.redirect(url);
     } catch (error: unknown) {
         console.error('Failed to initialize Gmail OAuth URL:', error);
-        return new NextResponse('Internal Server Error: ' + (error instanceof Error ? error.message : String(error)), { status: 500 });
+        
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
+            || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
+            || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+            || 'https://app.coral-group.be';
+
+        return NextResponse.redirect(`${baseUrl}/admin/email?error=oauth_init_failed`);
     }
 }

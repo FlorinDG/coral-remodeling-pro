@@ -6,6 +6,8 @@ import { EmailReader } from "./EmailReader";
 import { useEffect, useState } from "react";
 import { useEmailStore } from "./store";
 import { useBreadcrumbStore } from "@/store/useBreadcrumbStore";
+import { useSearchParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 export function EmailLayout() {
     const fetchThreads = useEmailStore((state) => state.fetchThreads);
@@ -14,6 +16,8 @@ export function EmailLayout() {
     const setPageTitle = useBreadcrumbStore((state) => state.setPageTitle);
     const activeFolder = useEmailStore((state) => state.activeFolder);
     const activeLabel = useEmailStore((state) => state.activeLabel);
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
     useEffect(() => {
         const timer = setTimeout(() => setIsHydrated(true), 0);
@@ -33,6 +37,28 @@ export function EmailLayout() {
         };
         init();
     }, [fetchThreads, fetchAccounts]);
+
+    useEffect(() => {
+        const error = searchParams.get('error');
+        const connected = searchParams.get('connected');
+
+        if (error || connected) {
+            if (error) {
+                toast.error(`Connection failed: ${error.replace(/_/g, ' ')}`);
+            }
+            if (connected) {
+                toast.success('Google account connected successfully!');
+                fetchAccounts();
+            }
+            
+            // Clear URL parameters to avoid re-triggering the toast
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete('error');
+            params.delete('connected');
+            const newUrl = params.toString() ? `?${params.toString()}` : '';
+            router.replace(`/admin/email${newUrl}`);
+        }
+    }, [searchParams, fetchAccounts, router]);
 
     if (!isHydrated) {
         return (

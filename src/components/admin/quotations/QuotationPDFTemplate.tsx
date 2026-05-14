@@ -157,8 +157,8 @@ export const QuotationPDFTemplate = ({
                         <Text style={colDesc}>{cleanContent}</Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
-                        <Text style={colPrice}>€{unitPrice.toFixed(2)}</Text>
-                        <Text style={colTotal}>€{blockTotal.toFixed(2)}</Text>
+                        <Text style={colPrice}>€  {unitPrice.toFixed(2)}</Text>
+                        <Text style={colTotal}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             }
@@ -217,15 +217,15 @@ export const QuotationPDFTemplate = ({
                             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{grandTotal.toFixed(2)}</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {grandTotal.toFixed(2)}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} (21%):</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{taxAmount.toFixed(2)}</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
                                     <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('grand_total_incl', lang)}:</Text>
-                                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€{totalInclTax.toFixed(2)}</Text>
+                                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€  {totalInclTax.toFixed(2)}</Text>
                                 </View>
                             </View>
                         </View>
@@ -374,7 +374,7 @@ export const QuotationPDFTemplate = ({
                         {t('grand_total_incl', lang)}
                     </Text>
                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#ffffff' }}>
-                        €{totalInclTax.toFixed(2)}
+                        €  {totalInclTax.toFixed(2)}
                     </Text>
                 </View>
             );
@@ -382,7 +382,7 @@ export const QuotationPDFTemplate = ({
         return (
             <View style={{ ...s.summaryRow, marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
                 <Text style={{ ...s.summaryLabel, color: '#000', fontWeight: 'bold' }}>{t('grand_total_incl', lang)}:</Text>
-                <Text style={s.grandTotalValue}>€{totalInclTax.toFixed(2)}</Text>
+                <Text style={s.grandTotalValue}>€  {totalInclTax.toFixed(2)}</Text>
             </View>
         );
     };
@@ -466,11 +466,11 @@ export const QuotationPDFTemplate = ({
                     <View style={s.summaryBox}>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
-                            <Text style={s.summaryValue}>€{grandTotal.toFixed(2)}</Text>
+                            <Text style={s.summaryValue}>€  {grandTotal.toFixed(2)}</Text>
                         </View>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('vat', lang)} (21%):</Text>
-                            <Text style={s.summaryValue}>€{taxAmount.toFixed(2)}</Text>
+                            <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
                         </View>
                         {renderGrandTotal()}
                     </View>

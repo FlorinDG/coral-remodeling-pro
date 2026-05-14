@@ -284,7 +284,61 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       ]}},
       { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
       { id: 'notes',      name: 'Notities', type: 'text' },
+      { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
       { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
+    ],
+    'db-crm': [
+      { id: 'title',             name: 'Name',              type: 'text' },
+      { id: 'prop-c-address',    name: 'Address',           type: 'text' },
+      { id: 'prop-c-call',       name: 'Call Lead',         type: 'checkbox' },
+      { id: 'prop-c-lead',       name: 'Lead',              type: 'text' },
+      { id: 'prop-c-datein',     name: 'Date IN',           type: 'date' },
+      { id: 'prop-c-lost',       name: 'LOST',              type: 'checkbox' },
+      { id: 'prop-c-lang',       name: 'Language',          type: 'select', config: { options: [
+        { id: 'l-nl', name: 'NL', color: 'orange' },
+        { id: 'l-fr', name: 'FR', color: 'blue' },
+        { id: 'l-en', name: 'EN', color: 'green' },
+      ]}},
+      { id: 'prop-c-type',       name: 'Lead Type',         type: 'select', config: { options: [
+        { id: 't-private', name: 'PRIVATE', color: 'purple' },
+        { id: 't-b2b',     name: 'B2B',     color: 'orange' },
+      ]}},
+      { id: 'prop-c-mail',       name: 'Mail Lead',         type: 'checkbox' },
+      { id: 'prop-c-opm',        name: 'OFF OPMAAK',        type: 'checkbox' },
+      { id: 'prop-c-sent',       name: 'OFF sent',          type: 'checkbox' },
+      { id: 'prop-c-offertes',   name: 'Offertes [C-SYS]',  type: 'relation', config: { relationDatabaseId: resolveDbId('db-quotations'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-c-projects',   name: 'Projects [C-SYS]',  type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-c-note',       name: 'Status Note',       type: 'text' },
+      { id: 'prop-c-tasks',      name: 'Tasks [C-SYS]',     type: 'relation', config: { relationDatabaseId: resolveDbId('db-tasks'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-c-town',       name: 'Town',              type: 'text' },
+    ],
+    'db-bobex': [
+      { id: 'prop-b-nr',         name: 'Nr',                type: 'text' },
+      { id: 'title',             name: 'Name',              type: 'text' },
+      { id: 'prop-b-client',     name: 'Client',            type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-b-datein',     name: 'Date IN',           type: 'date' },
+      { id: 'prop-b-town',       name: 'Town',              type: 'rollup', config: { rollupPropertyId: 'prop-b-client', rollupTargetPropertyId: 'city' } },
+      { id: 'prop-b-note',       name: 'Status Note',       type: 'text' },
+      { id: 'prop-b-mail',       name: 'Mail Lead',         type: 'checkbox' },
+      { id: 'prop-b-call',       name: 'Call Lead',         type: 'checkbox' },
+      { id: 'prop-b-visit',      name: 'Visit Planned',     type: 'checkbox' },
+      { id: 'prop-b-protest',    name: 'PROTEST',           type: 'checkbox' },
+      { id: 'prop-b-opm',        name: 'OFF OPMAAK',        type: 'checkbox' },
+      { id: 'prop-b-sent',       name: 'OFF sent',          type: 'checkbox' },
+      { id: 'prop-b-won',        name: 'WON',               type: 'checkbox' },
+      { id: 'prop-b-lost',       name: 'LOST',              type: 'checkbox' },
+      { id: 'prop-b-lang',       name: 'Language',          type: 'select', config: { options: [
+        { id: 'l-fr', name: 'FR', color: 'blue' },
+        { id: 'l-nl', name: 'NL', color: 'orange' },
+        { id: 'l-en', name: 'EN', color: 'green' },
+        { id: 'l-ro', name: 'RO', color: 'yellow' },
+        { id: 'l-ru', name: 'RUS', color: 'red' },
+      ]}},
+      { id: 'prop-b-type',       name: 'Lead Type',         type: 'select', config: { options: [
+        { id: 't-private', name: 'PRIVATE', color: 'purple' },
+        { id: 't-b2b',     name: 'B2B',     color: 'orange' },
+      ]}},
+      { id: 'prop-b-phone',      name: 'Phone',             type: 'rollup', config: { rollupPropertyId: 'prop-b-client', rollupTargetPropertyId: 'phone' } },
     ],
     'db-1': [
       { id: 'title',             name: 'Project Naam',      type: 'text' },
@@ -380,6 +434,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-invoices') parsedName = 'Sales Invoices';
     if (databaseId === 'db-clients') parsedName = 'Contacts';
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
+    if (databaseId === 'db-crm') parsedName = 'Main Pipeline';
+    if (databaseId === 'db-bobex') parsedName = 'Bobex Pipeline';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
     useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps); // use resolvedId

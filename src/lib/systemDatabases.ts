@@ -21,6 +21,8 @@ export const SYSTEM_DB_PREFIXES = [
     'db-quotations',
     'db-1',       // Projects
     'db-tasks',   // Project Tasks
+    'db-crm',     // Main Pipeline
+    'db-bobex',   // Bobex Pipeline
 ] as const;
 
 /**

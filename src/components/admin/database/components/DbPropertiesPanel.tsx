@@ -145,7 +145,7 @@ function PropertyRow({
     property: Property;
     value: PropertyValue;
     onChange: (propId: string, newVal: PropertyValue) => void;
-    dragHandleProps?: unknown;
+    dragHandleProps?: any;
 }) {
     const isReadOnly = READ_ONLY_TYPES.has(property.type);
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;

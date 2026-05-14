@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
-import { Database, Page, Property, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
+import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useEmailStore, EmailFolder } from "./store";
 import { cn } from "@/components/time-tracker/lib/utils";
-import { Inbox, Send, FileText, Star, Archive, Trash, Tag, Settings, Plus } from "lucide-react";
+import { Inbox, Send, FileText, Star, Archive, Trash, Tag, Plus } from "lucide-react";
 import { AccountSettingsModal } from "./AccountSettingsModal";
 
 interface SidebarItem {
@@ -29,15 +29,40 @@ export function MailSidebar() {
     const setActiveLabel = useEmailStore((state) => state.setActiveLabel);
     const isLoading = useEmailStore((state) => state.isLoading);
     const threads = useEmailStore((state) => state.threads);
+    const accounts = useEmailStore((state) => state.accounts);
+    const activeAccount = useEmailStore((state) => state.activeAccount);
+    const setActiveAccount = useEmailStore((state) => state.setActiveAccount);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     return (
         <div className="w-64 min-w-[16rem] h-full border-r border-border bg-card flex-col hidden md:flex relative overflow-hidden">
-            <div className="p-4 border-b border-border z-10 bg-card shrink-0 flex items-center justify-between">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground">Mailboxes</h2>
-                {isLoading && (
-                    <div className="flex h-4 w-4 items-center justify-center">
-                        <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-[var(--brand-color,#d35400)]"></div>
+            <div className="p-4 border-b border-border z-10 bg-card shrink-0 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Inbox</h2>
+                    {isLoading && (
+                        <div className="flex h-4 w-4 items-center justify-center">
+                            <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-[var(--brand-color,#d35400)]"></div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Account Switcher */}
+                {accounts.length > 0 && (
+                    <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                            Active Account
+                        </label>
+                        <select
+                            value={activeAccount || ''}
+                            onChange={(e) => setActiveAccount(e.target.value)}
+                            className="w-full bg-muted/50 border border-border rounded-md px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary truncate"
+                        >
+                            {accounts.map((acc) => (
+                                <option key={acc.id} value={acc.email}>
+                                    {acc.email}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 )}
             </div>

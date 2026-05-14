@@ -2,8 +2,43 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from "@prisma/client";
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
+import { getGmailOAuth2Client } from './connect/google/route';
+import { auth } from '@/auth';
 
 const prisma = new PrismaClient();
+
+async function ensureValidToken(account: { id: string; email: string; accessToken?: string | null; refreshToken?: string | null; expiresAt?: Date | null }) {
+    if (!account.accessToken || !account.refreshToken) return account.accessToken;
+    
+    // If not expired, return current token (with 1 minute buffer)
+    if (account.expiresAt && new Date(account.expiresAt).getTime() > Date.now() + 60000) {
+        return account.accessToken;
+    }
+    
+    try {
+        // Refresh token
+        const oauth2Client = getGmailOAuth2Client();
+        oauth2Client.setCredentials({
+            access_token: account.accessToken,
+            refresh_token: account.refreshToken,
+        });
+        
+        const { credentials } = await oauth2Client.refreshAccessToken();
+        
+        await prisma.connectedEmailAccount.update({
+            where: { id: account.id },
+            data: {
+                accessToken: credentials.access_token,
+                expiresAt: credentials.expiry_date ? new Date(credentials.expiry_date) : null,
+            }
+        });
+        
+        return credentials.access_token;
+    } catch (err) {
+        console.error('Failed to refresh Gmail token for', account.email, err);
+        return null;
+    }
+}
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -14,9 +49,13 @@ export async function GET(request: Request) {
     let client: ImapFlow | null = null;
 
     try {
-        // 1. Retrieve the credentials from the database
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        // 1. Retrieve the credentials from the database for this tenant
         const accounts = await prisma.connectedEmailAccount.findMany({
-            where: { isActive: true }
+            where: { tenantId, isActive: true }
         });
 
         if (accounts.length === 0) {
@@ -30,12 +69,17 @@ export async function GET(request: Request) {
             return NextResponse.json({ error: "Account not found" }, { status: 404 });
         }
 
-        // 2. Initialize the direct IMAP client
+        // 2. Initialize the direct IMAP client (supporting both password and OAuth2)
+        const validToken = await ensureValidToken(targetAccount);
+
         client = new ImapFlow({
-            host: targetAccount.imapHost,
-            port: targetAccount.imapPort,
+            host: targetAccount.imapHost || 'imap.gmail.com',
+            port: targetAccount.imapPort || 993,
             secure: true,
-            auth: {
+            auth: validToken ? {
+                user: targetAccount.email,
+                accessToken: validToken
+            } : {
                 user: targetAccount.email,
                 pass: targetAccount.password
             },
@@ -57,12 +101,12 @@ export async function GET(request: Request) {
         let lock;
         try {
             lock = await client.getMailboxLock(imapPath);
-        } catch (e) {
+        } catch {
             // Fallback to INBOX if the specific label isn't found
             lock = await client.getMailboxLock('INBOX');
         }
 
-        const threadsMap = new Map<string, any>();
+        const threadsMap = new Map<string, { id: string; subject: string; isRead: boolean; lastActivityDate: string; emails: unknown[] }>();
 
         try {
             // 4. Fetch the most recent 40 messages or search by label
@@ -94,14 +138,16 @@ export async function GET(request: Request) {
                 for await (const message of client.fetch(sequence, { source: true, envelope: true, flags: true }, { uid: useUid })) {
                     if (!message.source) continue;
 
-                    const parsed: any = await simpleParser(message.source);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const parsed = await simpleParser(message.source) as any;
 
                     // Normalize subject
                     let normalizedSubject = (parsed.subject || "No Subject").replace(/^(Re|Fwd|RE|FWD|re|fwd):\s*/g, '').trim();
                     if (!normalizedSubject) normalizedSubject = "No Subject";
 
                     // Process attachments safely
-                    const attachments = parsed.attachments?.map((att: any) => ({
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const attachments = (parsed.attachments as any[])?.map((att: any) => ({
                         filename: att.filename || 'unnamed_attachment',
                         contentType: att.contentType,
                         size: att.size,
@@ -169,24 +215,25 @@ export async function GET(request: Request) {
         threads.sort((a, b) => new Date(b.lastActivityDate).getTime() - new Date(a.lastActivityDate).getTime());
 
         // Sort emails within each thread (newest first)
-        threads.forEach(t => t.emails.sort((a: any, b: any) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        threads.forEach((t) => (t as any).emails.sort((a: any, b: any) => new Date(b.sentDate).getTime() - new Date(a.sentDate).getTime()));
 
         return NextResponse.json({
             threads: threads,
             source: 'imapflow'
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         if (client) {
             try {
                 await client.logout();
-            } catch (e) { }
+            } catch { }
         }
 
         console.error("🔥 Native IMAP Engine Error:", error);
 
         return NextResponse.json(
-            { error: "Failed to sync with IMAP provider", details: error.message },
+            { error: "Failed to sync with IMAP provider", details: error instanceof Error ? error.message : String(error) },
             { status: 500 }
         );
     }

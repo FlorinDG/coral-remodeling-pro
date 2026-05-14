@@ -1,15 +1,11 @@
 "use client";
 
-import { useEmailStore, EmailThread } from "./store";
+import { useEmailStore } from "./store";
 import { PenSquare, Search, Check, Clock, Archive, RefreshCw } from "lucide-react";
 import { cn } from "@/components/time-tracker/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
-interface ThreadActionsProps {
-    threadId: string | number;
-}
-
-function ThreadActions({ threadId }: ThreadActionsProps) {
+function ThreadActions() {
     // Mock actions for now. In reality, these would call a mutation to EmailEngine 
     return (
         <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -124,7 +120,7 @@ export function ThreadList() {
                                         <div className="flex items-center">
                                             {/* Actions override timestamp on hover */}
                                             <div className="hidden group-hover:flex absolute right-4 top-4 bg-background/80 backdrop-blur pl-2">
-                                                <ThreadActions threadId={thread.id} />
+                                                <ThreadActions />
                                             </div>
                                             <span className={cn(
                                                 "text-xs font-medium tabular-nums text-muted-foreground",

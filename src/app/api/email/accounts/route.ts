@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
+export async function GET() {
+    try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const accounts = await prisma.connectedEmailAccount.findMany({
+            where: { tenantId, isActive: true },
+            select: { id: true, email: true, isActive: true }
+        });
+
+        return NextResponse.json({ accounts });
+    } catch (error: unknown) {
+        console.error("Account Fetch Error:", error);
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to fetch accounts." }, { status: 500 });
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const session = await auth();
@@ -51,8 +69,8 @@ export async function POST(req: Request) {
             message: "Account connected successfully."
         }, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Account Registration Error:", error);
-        return NextResponse.json({ error: error.message || "Failed to register account." }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to register account." }, { status: 500 });
     }
 }

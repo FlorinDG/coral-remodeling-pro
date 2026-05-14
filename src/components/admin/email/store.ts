@@ -39,9 +39,17 @@ export interface EmailThread {
     emails: EmailMessage[];
 }
 
+export interface EmailAccount {
+    id: string;
+    email: string;
+    isActive: boolean;
+}
+
 interface EmailState {
     activeFolder: EmailFolder;
     activeLabel: string | null;
+    activeAccount: string | null; // email address
+    accounts: EmailAccount[];
     selectedThreadId: number | string | null;
     threads: EmailThread[];
     searchQuery: string;
@@ -51,9 +59,11 @@ interface EmailState {
     // Actions
     setActiveFolder: (folder: EmailFolder) => void;
     setActiveLabel: (label: string | null) => void;
+    setActiveAccount: (email: string | null) => void;
     setSelectedThreadId: (id: number | string | null) => void;
     setSearchQuery: (query: string) => void;
     setThreads: (threads: EmailThread[]) => void;
+    fetchAccounts: () => Promise<void>;
     fetchThreads: (folder?: EmailFolder, silent?: boolean, label?: string | null) => Promise<void>;
 }
 
@@ -62,6 +72,8 @@ export const useEmailStore = create<EmailState>()(
         (set, get) => ({
             activeFolder: 'inbox',
             activeLabel: null,
+            activeAccount: null,
+            accounts: [],
             selectedThreadId: null,
             threads: [],
             searchQuery: '',
@@ -76,13 +88,35 @@ export const useEmailStore = create<EmailState>()(
                 set({ activeLabel: label });
                 get().fetchThreads(get().activeFolder, false, label);
             },
+            setActiveAccount: (email) => {
+                set({ activeAccount: email, selectedThreadId: null, threads: [] });
+                get().fetchThreads(get().activeFolder, false, get().activeLabel);
+            },
             setSelectedThreadId: (id) => set({ selectedThreadId: id }),
             setSearchQuery: (query) => set({ searchQuery: query }),
             setThreads: (threads) => set({ threads }),
 
+            fetchAccounts: async () => {
+                try {
+                    const res = await fetch('/api/email/accounts');
+                    if (!res.ok) throw new Error("Failed to load accounts");
+                    const data = await res.json();
+                    set({ accounts: data.accounts || [] });
+                    
+                    // If no active account is set, default to the first one
+                    if (!get().activeAccount && data.accounts?.length > 0) {
+                        set({ activeAccount: data.accounts[0].email });
+                    }
+                } catch (err) {
+                    console.error("fetchAccounts Error:", err);
+                }
+            },
+
             fetchThreads: async (folder, silent = false, labelArg) => {
                 const activeFolder = folder || get().activeFolder;
                 const activeLabel = labelArg !== undefined ? labelArg : get().activeLabel;
+                const activeAccount = get().activeAccount;
+
                 if (!silent) set({ isLoading: true, error: null });
 
                 try {
@@ -90,14 +124,18 @@ export const useEmailStore = create<EmailState>()(
                     if (activeLabel) {
                         url += `&label=${encodeURIComponent(activeLabel)}`;
                     }
+                    if (activeAccount) {
+                        url += `&account=${encodeURIComponent(activeAccount)}`;
+                    }
+                    
                     const res = await fetch(url);
                     if (!res.ok) throw new Error("Failed to load emails");
 
                     const data = await res.json();
                     set({ threads: data.threads, isLoading: false, error: null });
-                } catch (err: any) {
+                } catch (err: unknown) {
                     console.error("fetchThreads Error:", err);
-                    set({ error: err.message, isLoading: false });
+                    set({ error: err instanceof Error ? err.message : "Unknown error", isLoading: false });
                 }
             }
         }),
@@ -106,11 +144,13 @@ export const useEmailStore = create<EmailState>()(
             partialize: (state) => ({
                 activeFolder: state.activeFolder,
                 activeLabel: state.activeLabel,
+                activeAccount: state.activeAccount,
                 searchQuery: state.searchQuery,
                 threads: state.threads.map(thread => ({
                     ...thread,
                     emails: thread.emails.map(email => {
                         // Omit bulky data from localStorage to prevent QuotaExceededError
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         const { body, attachments, ...lightweightEmail } = email;
                         return lightweightEmail;
                     })

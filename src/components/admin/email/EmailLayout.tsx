@@ -9,6 +9,7 @@ import { useBreadcrumbStore } from "@/store/useBreadcrumbStore";
 
 export function EmailLayout() {
     const fetchThreads = useEmailStore((state) => state.fetchThreads);
+    const fetchAccounts = useEmailStore((state) => state.fetchAccounts);
     const [isHydrated, setIsHydrated] = useState(false);
     const setPageTitle = useBreadcrumbStore((state) => state.setPageTitle);
     const activeFolder = useEmailStore((state) => state.activeFolder);
@@ -26,8 +27,12 @@ export function EmailLayout() {
     }, [activeFolder, activeLabel, setPageTitle]);
 
     useEffect(() => {
-        fetchThreads();
-    }, [fetchThreads]);
+        const init = async () => {
+            await fetchAccounts();
+            await fetchThreads();
+        };
+        init();
+    }, [fetchThreads, fetchAccounts]);
 
     if (!isHydrated) {
         return (

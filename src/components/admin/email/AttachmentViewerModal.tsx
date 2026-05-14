@@ -59,6 +59,7 @@ export function AttachmentViewerModal({ attachment, onClose }: AttachmentViewerM
                 <div className="flex-1 w-full bg-[#f8f9fa] relative flex items-center justify-center overflow-auto h-full p-4 md:p-8">
                     {canPreview ? (
                         isImage ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
                             <img
                                 src={dataUri}
                                 alt={attachment.filename}

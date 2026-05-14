@@ -739,7 +739,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             />
                         </div>
                         <InternalTasklist 
-                            tasks={(quotation?.properties?.['internalTasks'] as { id: string; content: string; completed: boolean }[]) || []}
+                            tasks={(quotation?.properties?.['internalTasks'] as { id: string; text: string; completed: boolean }[]) || []}
                             onTasksChange={(tasks) => handleUpdateProperty('internalTasks', tasks)}
                             brandColor="var(--brand-color, #d35400)"
                         />

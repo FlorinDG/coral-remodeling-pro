@@ -149,36 +149,44 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
         );
     }
 
+    interface DisplayItem extends LinkedRecordBase {
+        name?: string;
+        projectCode?: string;
+        quoteNumber?: string;
+        invoiceNumber?: string;
+        total?: number;
+    }
+
     const sections = [
         {
             title: 'Projects',
             icon: <Briefcase className="w-4 h-4 text-blue-500" />,
-            items: data?.projects || [],
+            items: (data?.projects || []) as DisplayItem[],
             emptyMsg: 'No projects found.',
             linkBase: '/admin/projects-management/bordereau/',
-            getLabel: (item: ProjectRecord) => `${item.projectCode}: ${item.name}`,
-            getStatus: (item: ProjectRecord) => item.status,
-            getValue: null as ((item: ProjectRecord) => string) | null,
+            getLabel: (item: DisplayItem) => `${item.projectCode}: ${item.name}`,
+            getStatus: (item: DisplayItem) => item.status,
+            getValue: null as ((item: DisplayItem) => string) | null,
         },
         {
             title: 'Quotations',
             icon: <FileText className="w-4 h-4 text-orange-500" />,
-            items: data?.quotations || [],
+            items: (data?.quotations || []) as DisplayItem[],
             emptyMsg: 'No quotations found.',
             linkBase: '/admin/quotations/',
-            getLabel: (item: QuotationRecord) => `${item.quoteNumber}`,
-            getStatus: (item: QuotationRecord) => item.status,
-            getValue: (item: QuotationRecord) => `€${item.total.toFixed(2)}`,
+            getLabel: (item: DisplayItem) => `${item.quoteNumber}`,
+            getStatus: (item: DisplayItem) => item.status,
+            getValue: (item: DisplayItem) => `€${(item.total || 0).toFixed(2)}`,
         },
         {
             title: 'Invoices',
             icon: <Receipt className="w-4 h-4 text-emerald-500" />,
-            items: data?.invoices || [],
+            items: (data?.invoices || []) as DisplayItem[],
             emptyMsg: 'No invoices found.',
             linkBase: '/admin/financials/invoices/',
-            getLabel: (item: InvoiceRecord) => `${item.invoiceNumber}`,
-            getStatus: (item: InvoiceRecord) => item.status,
-            getValue: (item: InvoiceRecord) => `€${item.total.toFixed(2)}`,
+            getLabel: (item: DisplayItem) => `${item.invoiceNumber}`,
+            getStatus: (item: DisplayItem) => item.status,
+            getValue: (item: DisplayItem) => `€${(item.total || 0).toFixed(2)}`,
         }
     ];
 

@@ -343,6 +343,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     'db-1': [
       { id: 'title',             name: 'Project Naam',      type: 'text' },
       { id: 'prop-client',       name: 'Klant',             type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
+      { id: 'prop-project-quote', name: 'Offerte',          type: 'relation', config: { relationDatabaseId: resolveDbId('db-quotations'), relationDisplayPropertyId: 'title' } },
       { id: 'prop-execution-status', name: 'Execution Status', type: 'select', config: { options: [
         { id: 'opt-to-do',   name: 'To Do',       color: 'gray'   },
         { id: 'opt-in-prog', name: 'In Progress', color: 'blue'   },

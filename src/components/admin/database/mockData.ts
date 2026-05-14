@@ -76,6 +76,9 @@ export const mockProperties: Property[] = [
         config: { formulaExpression: 'length(prop("Name"))' }
     },
     {
+        id: 'prop-project-quote', name: 'Offerte',          type: 'relation', config: { relationDatabaseId: 'db-quotations' }
+    },
+    {
         id: 'prop-custom-label', name: 'Custom Label', type: 'formula',
         config: { formulaExpression: 'concat("Task: ", prop("Name"))' }
     }

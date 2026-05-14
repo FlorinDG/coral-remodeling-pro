@@ -931,6 +931,23 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
+                                // Project -> Client inference from Quotation
+                                if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-project-quote') {
+                                    const quoteIds = Array.isArray(value) ? value : (value ? [value] : []);
+                                    if (quoteIds.length > 0) {
+                                        const quoteId = quoteIds[0];
+                                        // Look for the quote in any db-quotations prefixed database
+                                        const quotePage = state.databases
+                                            .filter(d => isBaseDb(d.id, 'db-quotations'))
+                                            .flatMap(d => d.pages)
+                                            .find(p => p.id === quoteId);
+
+                                        if (quotePage && quotePage.properties['client']) {
+                                            newProps['prop-client'] = quotePage.properties['client'];
+                                        }
+                                    }
+                                }
+
                                 // Automations mapping for Project Tracker Execution Status
                                 if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-execution-status') {
                                     const today = new Date().toISOString().split('T')[0];

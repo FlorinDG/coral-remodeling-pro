@@ -39,9 +39,13 @@ export default function QuotationFooterReport({
         const accumulate = (nodes: Block[]) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
-                if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
-                    accumulate(b.children || []);
-                } else if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
+                
+                if (b.children && b.children.length > 0) {
+                    accumulate(b.children);
+                    return;
+                }
+
+                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
                     const qty = b.quantity || 1;
                     const price = b.verkoopPrice || 0;
                     const lineTotal = price * qty;
@@ -85,9 +89,17 @@ export default function QuotationFooterReport({
         const accumulate = (nodes: Block[]) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
-                if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
-                    accumulate(b.children || []);
-                } else if (b.type === 'article' || b.type === 'bestek' || b.type === 'line') {
+
+                if (b.children && b.children.length > 0) {
+                    accumulate(b.children);
+                    // If it's a line/article with children, the parent's own values are usually 0 or ignored
+                    // but we still apply the parent's quantity to the children's rolled-up total
+                    // However, for simplicity and accuracy in this engine, we sum children directly
+                    // as they are already leaf nodes in the tree logic.
+                    return;
+                }
+
+                if (b.type === 'article' || b.type === 'bestek' || b.type === 'line') {
                     const qty = b.quantity || 1;
                     grandKost += (b.brutoPrice || 0) * (1 - (b.discountPercent || 0) / 100) * qty;
                     grandVerkoop += (b.verkoopPrice || 0) * qty;

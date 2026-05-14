@@ -23,11 +23,13 @@ interface QuotationPDFProps {
     tenantProfile?: any;
     templateId?: TemplateId;
     language?: string;
+    showSubcomponents?: boolean;
 }
 
 export const QuotationPDFTemplate = ({
     blocks, quotationTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
+    showSubcomponents = false,
 }: QuotationPDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
@@ -132,14 +134,16 @@ export const QuotationPDFTemplate = ({
                 rows.push(
                     <View key={block.id} style={sectionStyle}>
                         <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
+                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
                     <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
+                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'text') {
@@ -163,8 +167,8 @@ export const QuotationPDFTemplate = ({
                 );
             }
 
-            // Only recurse for containers (Sections/Subsections/Posts), hide subcomponents of Lines
-            if (hasChildren && isContainer) {
+            // Only recurse for containers (Sections/Subsections/Posts), hide subcomponents of Lines UNLESS showSubcomponents is true
+            if (hasChildren && (isContainer || showSubcomponents)) {
                 rows = rows.concat(renderBlocks(block.children!, depth + 1));
             }
         });

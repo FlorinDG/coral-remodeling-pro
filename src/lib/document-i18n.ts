@@ -177,6 +177,7 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'engine_drive': { nl: 'Drive', fr: 'Drive', en: 'Drive' },
     'engine_generating': { nl: 'Genereren...', fr: 'Génération...', en: 'Generating...' },
     'engine_export_pdf': { nl: 'PDF Exporteren', fr: 'Exporter PDF', en: 'Export PDF' },
+    'engine_export_detailed': { nl: 'Gedetailleerde Offerte', fr: 'Devis Détaillé', en: 'Detailed Quotation' },
     'engine_identity_missing': { nl: 'Identiteit ontbreekt:', fr: 'Identité manquante :', en: 'Identity Missing:' },
     'engine_identity_warning': { nl: 'Uw PDF-exports lijken onvolledig. Vul uw bedrijfsnaam en BTW-nummer in bij de instellingen.', fr: 'Vos exports PDF apparaîtront incomplets. Veuillez renseigner le nom de votre entreprise et votre numéro de TVA dans les paramètres.', en: 'Your PDF exports will appear incomplete. Please link your Company Name and VAT Number in the settings.' },
     'engine_update_settings': { nl: 'Instellingen bijwerken', fr: 'Mettre à jour', en: 'Update Settings' },

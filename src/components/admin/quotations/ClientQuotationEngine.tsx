@@ -865,6 +865,52 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         <div className="flex-1" />
 
+                        {/* Detailed Offerte — secondary action */}
+                        <button
+                            onClick={async () => {
+                                if (isDownloading) return;
+                                setIsDownloading(true);
+                                try {
+                                    const doc = (
+                                        <QuotationPDFTemplate
+                                            blocks={blocks}
+                                            quotationTitle={String(quotationTitle)}
+                                            betreft={String(betreft)}
+                                            clientInfo={buildClientInfo()}
+                                            projectId={String(projectId)}
+                                            grandTotal={grandTotal}
+                                            databaseStoreState={useDatabaseStore.getState()}
+                                            tenantProfile={tenantProfile}
+                                            templateId={tenantProfile?.documentTemplate || 't1'}
+                                            language={docLanguage}
+                                            showSubcomponents={true}
+                                        />
+                                    );
+                                    const blob = await generatePdfBlob(doc, tenantProfile);
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `Offerte_Detail_${quotationTitle || 'Draft'}.pdf`;
+                                    a.click();
+                                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                } catch (e) {
+                                    console.error('[PDF] detailed export failed:', e);
+                                    toast.error('PDF genereren mislukt.');
+                                } finally {
+                                    setIsDownloading(false);
+                                }
+                            }}
+                            disabled={isDownloading}
+                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border hover:bg-neutral-50 dark:hover:bg-white/5 disabled:opacity-60"
+                            style={{ 
+                                borderColor: 'var(--brand-color, #d35400)',
+                                color: 'var(--brand-color, #d35400)',
+                            }}
+                        >
+                            <FileText className="w-3.5 h-3.5" />
+                            {ti18n('engine_export_detailed', locale)}
+                        </button>
+
                         {/* Export PDF — primary action */}
                         <button
                             onClick={async () => {
@@ -883,6 +929,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             tenantProfile={tenantProfile}
                                             templateId={tenantProfile?.documentTemplate || 't1'}
                                             language={docLanguage}
+                                            showSubcomponents={false}
                                         />
                                     );
                                     const blob = await generatePdfBlob(doc, tenantProfile);

@@ -47,7 +47,7 @@ export const QuotationPDFTemplate = ({
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
-    const accent = brandColor || '#ea580c';
+    const accent = brandColor || '#d75d00';
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';
@@ -87,28 +87,35 @@ export const QuotationPDFTemplate = ({
             if (block.isOptional) return;
             const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
             const cleanContent = stripHtml(block.content);
-            let blockTotal = 0;
-            let variantDeltas = 0;
-
-            if (!isContainer && !(block.children && block.children.length > 0)) {
-                if (block.selectedVariants && block.articleId) {
+            
+            // Helper to calculate total including nested children and variants
+            const getBlockTotalRecursive = (b: Block): number => {
+                if (b.children && b.children.length > 0) {
+                    const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursive(child), 0);
+                    return childrenSum * (b.quantity || 1);
+                }
+                
+                let vDeltas = 0;
+                if (b.selectedVariants && b.articleId) {
                     const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
-                    const page = db?.pages.find((p: any) => p.id === block.articleId);
+                    const page = db?.pages.find((p: any) => p.id === b.articleId);
                     const vProp = db?.properties.find((p: any) => p.type === 'variants');
                     if (page && vProp) {
                         const vConfig = page.properties[vProp.id];
                         if (vConfig && Array.isArray(vConfig)) {
-                            Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
+                            Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
                                 const axis = vConfig.find((a: any) => a.id === axisId);
                                 const opt = axis?.options.find((o: any) => o.id === optId);
-                                if (opt) variantDeltas += opt.priceDelta;
+                                if (opt) vDeltas += opt.priceDelta;
                             });
                         }
                     }
                 }
-                const unitRetail = (block.verkoopPrice || 0) + variantDeltas;
-                blockTotal = unitRetail * (block.quantity || 1);
-            }
+                return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
+            };
+
+            const blockTotal = getBlockTotalRecursive(block);
+            const hasChildren = block.children && block.children.length > 0;
 
             // Stationery mode uses minimal styling
             const baseRowStyle = isStationery
@@ -144,18 +151,21 @@ export const QuotationPDFTemplate = ({
                 );
             } else {
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
+                const unitPrice = blockTotal / (block.quantity || 1);
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
                         <Text style={colDesc}>{cleanContent}</Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
-                        <Text style={colPrice}>€{((block.verkoopPrice || 0) + variantDeltas).toFixed(2)}</Text>
+                        <Text style={colPrice}>€{unitPrice.toFixed(2)}</Text>
                         <Text style={colTotal}>€{blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             }
-            if (block.children && block.children.length > 0) {
-                rows = rows.concat(renderBlocks(block.children, depth + 1));
+
+            // Only recurse for containers (Sections/Subsections/Posts), hide subcomponents of Lines
+            if (hasChildren && isContainer) {
+                rows = rows.concat(renderBlocks(block.children!, depth + 1));
             }
         });
         return rows;
@@ -221,9 +231,6 @@ export const QuotationPDFTemplate = ({
                         </View>
 
                         {/* Legal text */}
-                        <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 24, lineHeight: 1.4 }}>
-                            {t('quote_legal', lang)}
-                        </Text>
                     </View>
 
                     {showWatermark && (
@@ -469,9 +476,6 @@ export const QuotationPDFTemplate = ({
                     </View>
                 </View>
 
-                <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 28, paddingHorizontal: padH, lineHeight: 1.4 }}>
-                    {t('quote_legal', lang)}
-                </Text>
 
                 {renderFooter()}
 

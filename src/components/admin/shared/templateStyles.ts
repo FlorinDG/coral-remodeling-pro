@@ -12,7 +12,7 @@
 
 export type TemplateId = 't1' | 't2' | 't3' | 't4';
 
-const DEFAULT_ACCENT = '#ea580c';
+const DEFAULT_ACCENT = '#d75d00';
 
 // ── Color utilities ─────────────────────────────────────────────────────────
 function hexToRgb(hex: string): [number, number, number] {

@@ -112,10 +112,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
             return nodes.reduce((acc, block) => {
                 if (block.isOptional) return acc;
-                if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                    const childTotals = calcTotals(block.children || []);
-                    return { exVat: acc.exVat + childTotals.exVat, vat: acc.vat + childTotals.vat };
+
+                if (block.children && block.children.length > 0) {
+                    const childTotals = calcTotals(block.children);
+                    const q = (block.type === 'line' || block.type === 'post') ? (block.quantity || 1) : 1;
+                    return { 
+                        exVat: acc.exVat + childTotals.exVat * q, 
+                        vat: acc.vat + childTotals.vat * q 
+                    };
                 }
+
                 const lineTotal = (block.verkoopPrice || 0) * (block.quantity || 1);
                 const lineVatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
                 return { exVat: acc.exVat + lineTotal, vat: acc.vat + lineTotal * (lineVatRate / 100) };
@@ -252,11 +258,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Deep recursive total calculation mapping for all mathematical block mutations
     const calculateGrandTotal = (nodes: Block[]): number => {
         return nodes.reduce((sum, block) => {
-            if (block.isOptional) return sum; // Phase 10: Ignore optional blocks globally
+            if (block.isOptional) return sum;
 
-            if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                return sum + calculateGrandTotal(block.children || []);
+            if (block.children && block.children.length > 0) {
+                // If it's a container or a line with children, sum its children first
+                const childrenSum = calculateGrandTotal(block.children);
+                // For lines, multiply the children's sum by the parent's quantity
+                if (block.type === 'line' || block.type === 'post') {
+                    return sum + (childrenSum * (block.quantity || 1));
+                }
+                // For sections/subsections, just add the children's sum
+                return sum + childrenSum;
             }
+            
+            // Leaf node line
             return sum + ((block.verkoopPrice || 0) * (block.quantity || 1));
         }, 0);
     };

@@ -18,6 +18,7 @@ import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
+import LinkedRecords from './LinkedRecords';
 
 const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const databases = useDatabaseStore(state => state.databases);
@@ -896,12 +897,21 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     </div>
 
                     {/* Content / Invoice Preview */}
-                    <div className="mt-8 mb-12 px-6 md:px-0">
-                        {databaseId === 'db-expenses' ? (
-                            <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
-                        ) : (
-                            <BlockEditor databaseId={databaseId} pageId={pageId} />
                         )}
+                    </div>
+
+                    {/* Connected Records Section */}
+                    <div className="mt-12 pt-8 border-t border-neutral-100 dark:border-white/5 px-6 md:px-0">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-orange-500/10 rounded-2xl">
+                                <Link2 className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">Connected Records</h3>
+                                <p className="text-xs text-neutral-500">Cross-reference and quick-create related items.</p>
+                            </div>
+                        </div>
+                        <LinkedRecords databaseId={databaseId} pageId={pageId} />
                     </div>
                 </div>
             </div>

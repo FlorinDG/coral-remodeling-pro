@@ -49,23 +49,45 @@ function SelectBadge({ option }: { option: SelectOption }) {
     );
 }
 
+import { useRouter, useParams } from 'next/navigation';
+
 // ─── Relation display: resolves page IDs → titles ─────────────────────────
 function RelationValue({ ids }: { ids: string[] }) {
+    const router = useRouter();
+    const params = useParams();
+    const locale = (params.locale as string) || 'nl';
     const databases = useDatabaseStore(state => state.databases);
+
     const resolved = ids.map(id => {
         for (const db of databases) {
             const page = db.pages.find(p => p.id === id);
-            if (page) return String(page.properties['title'] || page.properties['name'] || id.slice(0, 8));
+            if (page) return { 
+                title: String(page.properties['title'] || page.properties['name'] || id.slice(0, 8)),
+                dbId: db.id,
+                pageId: page.id
+            };
         }
-        return id.slice(0, 8) + '…';
+        return { title: id.slice(0, 8) + '…', dbId: null, pageId: id };
     });
+
     if (!resolved.length) return <span className="text-neutral-400 text-xs italic">—</span>;
+
     return (
         <div className="flex flex-wrap gap-1">
-            {resolved.map((t, i) => (
-                <span key={i} className="inline-flex items-center px-2 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-xs text-neutral-700 dark:text-neutral-300">
-                    {t}
-                </span>
+            {resolved.map((item, i) => (
+                <button
+                    key={i}
+                    onClick={() => {
+                        if (item.dbId) {
+                            router.push(`/${locale}/admin/database/${item.dbId}/${item.pageId}`);
+                        }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-xs text-neutral-700 dark:text-neutral-300 hover:border-orange-500/50 hover:bg-neutral-200 dark:hover:bg-white/10 transition-all group/rel"
+                >
+                    <Link2 className="w-2.5 h-2.5 opacity-50" />
+                    {item.title}
+                    <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover/rel:opacity-100 transition-opacity ml-0.5" />
+                </button>
             ))}
         </div>
     );

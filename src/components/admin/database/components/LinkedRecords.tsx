@@ -37,13 +37,7 @@ interface InvoiceRecord extends LinkedRecordBase {
 
 export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps) {
     const isClientDb = databaseId.includes('db-clients');
-    const [loading, setLoading] = useState(isClientDb);
-    const [data, setData] = useState<{
-        projects: ProjectRecord[];
-        quotations: QuotationRecord[];
-        invoices: InvoiceRecord[];
-    } | null>(null);
-    const [isCreating, setIsCreating] = useState(false);
+    const [isCreating, setIsCreating] = useState<string | null>(null);
 
     const { resolveDbId } = useTenant();
     const router = useRouter();
@@ -51,229 +45,131 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     const locale = (params.locale as string) || 'nl';
 
     const allDatabases = useDatabaseStore((state) => state.databases);
+    const updatePageProperty = useDatabaseStore((state) => state.updatePageProperty);
+    const createPage = useDatabaseStore((state) => state.createPage);
+
     const database = allDatabases.find((d: Database) => d.id === databaseId);
     const page = database?.pages.find((p: Page) => p.id === pageId);
 
-    useEffect(() => {
-        if (!isClientDb) return;
+    if (!database || !page) return null;
 
-        getLinkedRecordsForClient(pageId).then(res => {
-            if (res.success && res.data) {
-                setData(res.data as {
-                    projects: ProjectRecord[];
-                    quotations: QuotationRecord[];
-                    invoices: InvoiceRecord[];
-                });
-            }
-            setLoading(false);
-        });
-    }, [pageId, isClientDb]);
+    const relationProps = database.properties.filter((p: Property) => p.type === 'relation');
 
-    if (!isClientDb) {
-        if (!database || !page) return null;
+    const handleCreateAndLink = async (prop: Property) => {
+        const targetDbId = prop.config?.relationDatabaseId;
+        if (!targetDbId) return;
 
-        const relationProps = database.properties.filter((p: Property) => p.type === 'relation');
-        const activeRelations = relationProps.map((prop: Property) => {
-            const ids = (page.properties[prop.id] as string[]) || [];
-            if (ids.length === 0) return null;
+        setIsCreating(prop.id);
+        const resolvedTargetDbId = resolveDbId(targetDbId);
+        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+        
+        const clientName = String(page.properties['title'] || page.properties['name'] || 'Item');
+        
+        // Prepare initial properties for the new page
+        const initialProps: Record<string, any> = {
+            title: `New ${targetDb?.name || 'Item'} for ${clientName}`,
+        };
 
-            const targetDbId = prop.config?.relationDatabaseId;
-            const targetDb = allDatabases.find((d: Database) => d.id === targetDbId);
-            
-            const linkedPages = ids.map(id => {
-                const p = targetDb?.pages.find((pg: Page) => pg.id === id);
-                if (!p) {
-                    for (const d of allDatabases) {
-                        const found = d.pages.find((pg: Page) => pg.id === id);
-                        if (found) return { db: d, page: found };
-                    }
-                    return null;
-                }
-                return { db: targetDb, page: p };
-            }).filter(Boolean);
-
-            if (linkedPages.length === 0) return null;
-            return { prop, linkedPages };
-        }).filter(Boolean) as { prop: Property, linkedPages: { db: Database, page: Page }[] }[];
-
-        if (activeRelations.length === 0) {
-            return (
-                <div className="flex flex-col items-center justify-center h-full text-neutral-400">
-                    <ExternalLink className="w-8 h-8 opacity-20 mb-3" />
-                    <p className="text-xs">No connected records found for this item.</p>
-                </div>
-            );
+        // If the target DB has a relation back to this DB, try to auto-link it
+        // This is a "best effort" back-link
+        const targetRelationToCurrent = targetDb?.properties.find(p => 
+            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
+        );
+        if (targetRelationToCurrent) {
+            initialProps[targetRelationToCurrent.id] = [pageId];
         }
 
-        return (
-            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex flex-col gap-4">
-                    {activeRelations.map(rel => (
-                        <div key={rel.prop.id} className="flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                            <h3 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-3">
-                                {rel.prop.name}
-                            </h3>
-                            <div className="flex flex-col gap-2">
-                                {rel.linkedPages.map((lp, idx) => (
-                                    <Link
-                                        key={idx}
-                                        href={`/admin/database/${lp.db.id}/${lp.page.id}`}
-                                        className="flex items-center justify-between p-3 bg-neutral-50/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-xl hover:border-orange-500/50 hover:shadow-sm transition-all group"
-                                    >
-                                        <div className="flex flex-col min-w-0 pr-2">
-                                            <span className="text-sm font-bold text-neutral-900 dark:text-white group-hover:text-orange-500 transition-colors truncate">
-                                                {String(lp.page.properties['title'] || lp.page.properties['name'] || 'Untitled')}
-                                            </span>
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mt-1">
-                                                {lp.db.name}
-                                            </span>
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 shrink-0 group-hover:bg-orange-50 dark:group-hover:bg-orange-500/10 transition-colors">
-                                            <ExternalLink className="w-3.5 h-3.5 text-neutral-400 group-hover:text-orange-500 transition-colors" />
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    }
+        // Create the page in the store
+        const newPageId = createPage(resolvedTargetDbId, initialProps);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
-            </div>
-        );
-    }
+        // Link it to the current page
+        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPageId]);
 
-    interface DisplayItem extends LinkedRecordBase {
-        name?: string;
-        projectCode?: string;
-        quoteNumber?: string;
-        invoiceNumber?: string;
-        total?: number;
-    }
-
-    const sections = [
-        {
-            title: 'Projects',
-            icon: <Briefcase className="w-4 h-4 text-blue-500" />,
-            items: (data?.projects || []) as DisplayItem[],
-            emptyMsg: 'No projects found.',
-            linkBase: '/admin/projects-management/bordereau/',
-            getLabel: (item: DisplayItem) => `${item.projectCode}: ${item.name}`,
-            getStatus: (item: DisplayItem) => item.status,
-            getValue: null as ((item: DisplayItem) => string) | null,
-        },
-        {
-            title: 'Quotations',
-            icon: <FileText className="w-4 h-4 text-orange-500" />,
-            items: (data?.quotations || []) as DisplayItem[],
-            emptyMsg: 'No quotations found.',
-            linkBase: '/admin/quotations/',
-            getLabel: (item: DisplayItem) => `${item.quoteNumber}`,
-            getStatus: (item: DisplayItem) => item.status,
-            getValue: (item: DisplayItem) => `€${(item.total || 0).toFixed(2)}`,
-        },
-        {
-            title: 'Invoices',
-            icon: <Receipt className="w-4 h-4 text-emerald-500" />,
-            items: (data?.invoices || []) as DisplayItem[],
-            emptyMsg: 'No invoices found.',
-            linkBase: '/admin/financials/invoices/',
-            getLabel: (item: DisplayItem) => `${item.invoiceNumber}`,
-            getStatus: (item: DisplayItem) => item.status,
-            getValue: (item: DisplayItem) => `€${(item.total || 0).toFixed(2)}`,
-        }
-    ];
+        // Navigate to the new page
+        router.push(`/${locale}/admin/database/${resolvedTargetDbId}/${newPageId}`);
+        setIsCreating(null);
+    };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <header className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-lg font-black tracking-tight">Customer Context</h2>
-                    <p className="text-xs text-neutral-500">Cross-module links for this client.</p>
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {relationProps.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-neutral-400 border-2 border-dashed border-neutral-100 dark:border-white/5 rounded-2xl">
+                    <ExternalLink className="w-8 h-8 opacity-20 mb-3" />
+                    <p className="text-xs italic">No relationship fields defined for this database.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        disabled={isCreating}
-                        onClick={async () => {
-                            setIsCreating(true);
-                            const quoteDbId = resolveDbId('db-quotations');
-                            const clientName = String(page?.properties['title'] || page?.properties['name'] || 'Client');
-                            
-                            const res = await createPageServerFirst(quoteDbId, {
-                                betreft: `Offerte voor ${clientName}`,
-                                client: [pageId],
-                                status: 'opt-1776890873348', // Draft ID from db-quotations config
-                            });
+            )}
 
-                            if (res.success) {
-                                router.push(`/${locale}/admin/database/${quoteDbId}/${res.page.id}`);
-                            } else {
-                                setIsCreating(false);
-                                console.error('Failed to create quotation:', res.error);
+            <div className="grid grid-cols-1 gap-4">
+                {relationProps.map(prop => {
+                    const ids = (page.properties[prop.id] as string[]) || [];
+                    const targetDbId = prop.config?.relationDatabaseId;
+                    const resolvedTargetDbId = targetDbId ? resolveDbId(targetDbId) : null;
+                    const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+                    
+                    const linkedPages = ids.map(id => {
+                        const p = targetDb?.pages.find((pg: Page) => pg.id === id);
+                        if (!p) {
+                            // Fallback search across all DBs
+                            for (const d of allDatabases) {
+                                const found = d.pages.find((pg: Page) => pg.id === id);
+                                if (found) return { db: d, page: found };
                             }
-                        }}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
-                    >
-                        {isCreating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                        Create Quotation
-                    </button>
-                </div>
-            </header>
+                            return null;
+                        }
+                        return { db: targetDb as Database, page: p };
+                    }).filter(Boolean) as { db: Database, page: Page }[];
 
-            <div className="flex flex-col gap-4">
-                {sections.map(section => (
-                    <div key={section.title} className="flex flex-col bg-neutral-50/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-2xl p-4">
-                        <div className="flex items-center gap-2 mb-4">
-                            {section.icon}
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-700 dark:text-neutral-300">
-                                {section.title}
-                            </h3>
-                            <span className="ml-auto text-[10px] font-bold text-neutral-400 bg-neutral-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
-                                {section.items.length}
-                            </span>
-                        </div>
+                    return (
+                        <div key={prop.id} className="flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="flex items-center justify-between px-4 py-3 bg-neutral-50/50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/5">
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-2">
+                                    <Link2 className="w-3 h-3 opacity-50" />
+                                    {prop.name}
+                                </h3>
+                                <button
+                                    disabled={!!isCreating}
+                                    onClick={() => handleCreateAndLink(prop)}
+                                    className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50"
+                                >
+                                    {isCreating === prop.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
+                                    Connect New
+                                </button>
+                            </div>
 
-                        <div className="space-y-2 flex-1">
-                            {section.items.length > 0 ? (
-                                section.items.map(item => (
-                                    <Link
-                                        key={item.id}
-                                        href={`${section.linkBase}${item.id}`}
-                                        className="group flex flex-col p-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl hover:border-orange-500/50 hover:shadow-md transition-all"
-                                    >
-                                        <div className="flex items-start justify-between gap-2">
-                                            <span className="text-xs font-bold truncate group-hover:text-orange-500 transition-colors">
-                                                {section.getLabel(item)}
-                                            </span>
-                                            <ExternalLink className="w-3 h-3 text-neutral-300 group-hover:text-orange-500 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
-                                        </div>
-                                        <div className="flex items-center justify-between mt-1.5">
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">
-                                                {section.getStatus(item).replace('opt-', '').replace('_', ' ')}
-                                            </span>
-                                            {section.getValue && (
-                                                <span className="text-[10px] font-mono font-bold text-neutral-600 dark:text-neutral-300">
-                                                    {section.getValue(item)}
+                            <div className="p-2 space-y-1.5">
+                                {linkedPages.length > 0 ? (
+                                    linkedPages.map((lp, idx) => (
+                                        <button
+                                            key={lp.page.id}
+                                            onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
+                                            className="w-full flex items-center justify-between p-2.5 bg-transparent hover:bg-neutral-50 dark:hover:bg-white/[0.03] border border-transparent hover:border-neutral-200 dark:hover:border-white/10 rounded-xl transition-all group text-left"
+                                        >
+                                            <div className="flex flex-col min-w-0 pr-2">
+                                                <span className="text-xs font-bold text-neutral-900 dark:text-white group-hover:text-orange-500 transition-colors truncate">
+                                                    {String(lp.page.properties['title'] || lp.page.properties['name'] || 'Untitled')}
                                                 </span>
-                                            )}
-                                        </div>
-                                    </Link>
-                                ))
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-neutral-100 dark:border-white/5 rounded-xl">
-                                    <p className="text-[10px] text-neutral-400 italic">{section.emptyMsg}</p>
-                                </div>
-                            )}
+                                                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mt-0.5">
+                                                    {lp.db.name}
+                                                </span>
+                                            </div>
+                                            <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 shrink-0 group-hover:bg-orange-500/10 transition-colors">
+                                                <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-orange-500 transition-colors" />
+                                            </div>
+                                        </button>
+                                    ))
+                                ) : (
+                                    <div className="py-6 flex flex-col items-center justify-center text-neutral-400 opacity-50">
+                                        <p className="text-[10px] italic">No records connected</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
 }
+
+import { Link2 } from 'lucide-react';

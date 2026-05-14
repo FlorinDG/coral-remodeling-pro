@@ -554,6 +554,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         if (!database) return [];
         const activeSorts = activeView?.sorts || database.activeSorts || [];
 
+        // Use Intl.Collator with numeric: true for natural sorting (e.g., "10" > "2")
+        const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
         return [...filteredPages].sort((a, b) => {
             if (!activeSorts || activeSorts.length === 0) {
                 // Default: Newest on top
@@ -568,11 +571,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                 const isAsc = sort.direction === 'ascending';
 
-                if (!valA) return isAsc ? 1 : -1;
-                if (!valB) return isAsc ? -1 : 1;
+                // Handle nulls/empties consistently
+                if (valA === undefined || valA === null || valA === '') return isAsc ? 1 : -1;
+                if (valB === undefined || valB === null || valB === '') return isAsc ? -1 : 1;
 
-                if (valA < valB) return isAsc ? -1 : 1;
-                if (valA > valB) return isAsc ? 1 : -1;
+                // Compare
+                const result = collator.compare(String(valA), String(valB));
+                if (result !== 0) {
+                    return isAsc ? result : -result;
+                }
             }
 
             return 0;

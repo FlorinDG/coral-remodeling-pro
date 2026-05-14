@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
 import {
@@ -49,7 +50,6 @@ function SelectBadge({ option }: { option: SelectOption }) {
     );
 }
 
-import { useRouter, useParams } from 'next/navigation';
 
 // ─── Relation display: resolves page IDs → titles ─────────────────────────
 function RelationValue({ ids }: { ids: string[] }) {
@@ -103,7 +103,7 @@ function DebouncedInput({
     step,
     placeholder = '—'
 }: { 
-    value: any; 
+    value: PropertyValue; 
     onChange: (val: string) => void; 
     isReadOnly: boolean; 
     inputBase: string; 
@@ -145,7 +145,7 @@ function PropertyRow({
     property: Property;
     value: PropertyValue;
     onChange: (propId: string, newVal: PropertyValue) => void;
-    dragHandleProps?: any;
+    dragHandleProps?: unknown;
 }) {
     const isReadOnly = READ_ONLY_TYPES.has(property.type);
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;
@@ -353,7 +353,7 @@ function Section({
     props: Property[]; 
     collapsed: Set<string>; 
     onToggle: (id: string) => void; 
-    pageProperties: Record<string, any>; 
+    pageProperties: Record<string, PropertyValue>; 
     onChange: (propId: string, newVal: PropertyValue) => void; 
 }) {
     if (!props.length) return null;

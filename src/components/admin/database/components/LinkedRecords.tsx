@@ -1,42 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { getLinkedRecordsForClient } from '@/app/actions/crm';
-import { Briefcase, FileText, Receipt, ExternalLink, Loader2, Plus } from 'lucide-react';
-import { Link } from '@/i18n/routing';
+import React, { useState } from 'react';
+import { ExternalLink, Loader2, Plus, Link2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Database, Page, Property } from '@/components/admin/database/types';
+import { Database, Page, Property, PropertyValue } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
 import { useRouter, useParams } from 'next/navigation';
-import { createPageServerFirst } from '@/app/actions/pages';
 
 interface LinkedRecordsProps {
     databaseId: string;
     pageId: string;
 }
 
-interface LinkedRecordBase {
-    id: string;
-    status: string;
-}
-
-interface ProjectRecord extends LinkedRecordBase {
-    name: string;
-    projectCode: string;
-}
-
-interface QuotationRecord extends LinkedRecordBase {
-    quoteNumber: string;
-    total: number;
-}
-
-interface InvoiceRecord extends LinkedRecordBase {
-    invoiceNumber: string;
-    total: number;
-}
-
 export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps) {
-    const isClientDb = databaseId.includes('db-clients');
     const [isCreating, setIsCreating] = useState<string | null>(null);
 
     const { resolveDbId } = useTenant();
@@ -66,12 +42,11 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
         const clientName = String(page.properties['title'] || page.properties['name'] || 'Item');
         
         // Prepare initial properties for the new page
-        const initialProps: Record<string, any> = {
+        const initialProps: Record<string, PropertyValue> = {
             title: `New ${targetDb?.name || 'Item'} for ${clientName}`,
         };
 
         // If the target DB has a relation back to this DB, try to auto-link it
-        // This is a "best effort" back-link
         const targetRelationToCurrent = targetDb?.properties.find(p => 
             p.type === 'relation' && p.config?.relationDatabaseId === databaseId
         );
@@ -139,7 +114,7 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
 
                             <div className="p-2 space-y-1.5">
                                 {linkedPages.length > 0 ? (
-                                    linkedPages.map((lp, idx) => (
+                                    linkedPages.map((lp) => (
                                         <button
                                             key={lp.page.id}
                                             onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
@@ -171,5 +146,3 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
         </div>
     );
 }
-
-import { Link2 } from 'lucide-react';

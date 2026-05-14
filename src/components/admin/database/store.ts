@@ -147,12 +147,12 @@ interface DatabaseState {
     updatePropertyOptionOrder: (databaseId: string, propertyId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
-    createPage: (databaseId: string, initialProperties?: Record<string, any>, customId?: string) => Page;
+    createPage: (databaseId: string, initialProperties?: Record<string, PropertyValue>, customId?: string) => Page;
     /** Add a page that was already confirmed by the server (e.g. from /api/scan or createPageServerFirst) */
     addConfirmedPage: (page: Page) => void;
-    addPages: (databaseId: string, pagesProperties: Record<string, any>[]) => void;
-    updatePages: (databaseId: string, updates: { id: string, properties: any }[]) => void;
-    updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: any) => void;
+    addPages: (databaseId: string, pagesProperties: Record<string, PropertyValue>[]) => void;
+    updatePages: (databaseId: string, updates: { id: string, properties: Record<string, PropertyValue> }[]) => void;
+    updatePageProperty: (databaseId: string, pageId: string, propertyId: string, value: PropertyValue) => void;
     updatePageBlocks: (databaseId: string, pageId: string, blocks: Block[]) => void;
     deletePage: (databaseId: string, pageId: string) => void;
     deletePages: (databaseId: string, pageIds: string[]) => void;
@@ -798,7 +798,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             }
 
                             // Evaluate max sequence counters for articles
-                            let currentArticleMax: Record<string, number> = {};
+                            const currentArticleMax: Record<string, number> = {};
                             if (databaseId === 'db-articles') {
                                 db.pages.forEach((p: Page) => {
                                     const artId = p.properties['prop-art-id'] as string;
@@ -864,7 +864,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             updatePages: (databaseId, updates) => {
-                let updatedPages: Page[] = [];
+                const updatedPages: Page[] = [];
                 set((state) => {
                     return {
                         databases: state.databases.map(db => {
@@ -1339,7 +1339,8 @@ export const useDatabaseStore = create<DatabaseState>()(
             storage: createJSONStorage(() => idbStorage),
             partialize: (state) => {
                 // Exclude transient undo stack from persistence
-                const { undoStack, ...rest } = state;
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { undoStack: _undoStack, ...rest } = state;
                 return rest as any;
             },
             migrate: (persistedState: any, version: number) => {

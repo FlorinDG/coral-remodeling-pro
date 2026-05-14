@@ -1,5 +1,4 @@
 import { Database, Property, Page } from './types';
-import { v4 as uuidv4 } from 'uuid';
 
 export const mockProperties: Property[] = [
     { id: 'title', name: 'Name', type: 'text' },

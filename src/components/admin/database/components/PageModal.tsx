@@ -89,7 +89,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
         };
     }, []);
 
-    const displayPropertyId = (property.config as any)?.displayPropertyId || 'title';
+    const displayPropertyId = property.config?.relationDisplayPropertyId || 'title';
 
     const selectedTitles = React.useMemo(() => {
         if (!targetDatabase || value.length === 0) return [];
@@ -897,6 +897,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     </div>
 
                     {/* Content / Invoice Preview */}
+                    <div className="mt-8 mb-12 px-6 md:px-0">
+                        {databaseId === 'db-expenses' ? (
+                            <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
+                        ) : (
+                            <BlockEditor databaseId={databaseId} pageId={pageId} />
                         )}
                     </div>
 

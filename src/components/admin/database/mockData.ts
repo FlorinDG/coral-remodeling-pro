@@ -11,7 +11,10 @@ export const mockProperties: Property[] = [
             options: [
                 { id: 'opt-to-do', name: 'To Do', color: 'gray' },
                 { id: 'opt-in-prog', name: 'In Progress', color: 'blue' },
-                { id: 'opt-done', name: 'Done', color: 'green' }
+                { id: 'opt-done', name: 'Done', color: 'green' },
+                { id: 'opt-dropped', name: 'Dropped', color: 'charcoal' },
+                { id: 'opt-late', name: 'Late', color: 'red' },
+                { id: 'opt-problems', name: 'Problems', color: 'orange' }
             ]
         }
     },
@@ -24,6 +27,7 @@ export const mockProperties: Property[] = [
                 { id: 'opt-quote', name: 'Quotation', color: 'gray' },
                 { id: 'opt-budget', name: 'Budgeted', color: 'yellow' },
                 { id: 'opt-invo', name: 'Invoiced', color: 'blue' },
+                { id: 'opt-partial', name: 'Partially Paid', color: 'indigo' },
                 { id: 'opt-paid', name: 'Paid', color: 'green' },
                 { id: 'opt-overdue', name: 'Overdue', color: 'red' }
             ]

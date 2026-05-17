@@ -157,12 +157,12 @@ export const QuotationPDFTemplate = ({
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
                 const unitPrice = blockTotal / (block.quantity || 1);
                 rows.push(
-                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
-                        <Text style={colDesc}>{cleanContent}</Text>
-                        <Text style={colQty}>{block.quantity || 1}</Text>
-                        <Text style={colUnit}>{block.unit || 'stk'}</Text>
-                        <Text style={colPrice}>€  {unitPrice.toFixed(2)}</Text>
-                        <Text style={colTotal}>€  {blockTotal.toFixed(2)}</Text>
+                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad, backgroundColor: depth > 0 ? '#fafafa' : undefined }}>
+                        <Text style={{ ...colDesc, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{cleanContent}</Text>
+                        <Text style={{ ...colQty, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.quantity || 1}</Text>
+                        <Text style={{ ...colUnit, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.unit || 'stk'}</Text>
+                        <Text style={{ ...colPrice, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>€  {unitPrice.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', fontWeight: depth > 0 ? 'normal' : 'bold' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             }
@@ -183,12 +183,12 @@ export const QuotationPDFTemplate = ({
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ padding: 0, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
-                    {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />}
+                    {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
                     {/* Content area — offset from top/bottom to avoid letterhead/footer zones */}
-                    <View style={{ paddingTop: 180, paddingBottom: 60, paddingHorizontal: 40 }}>
+                    <View style={{ flex: 1 }}>
                         {/* Document title + meta */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                             <View>
@@ -238,7 +238,7 @@ export const QuotationPDFTemplate = ({
                     </View>
 
                     {showWatermark && (
-                        <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }}>
+                        <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }} fixed>
                             Powered by CoralOS — coral-os.com
                         </Text>
                     )}
@@ -395,7 +395,7 @@ export const QuotationPDFTemplate = ({
     const renderFooter = () => {
         if (isT1) {
             return (
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }}>
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }} fixed>
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
                         <View style={{ width: 10, height: 10, backgroundColor: darkBrand }} />
                         <Text style={{ fontSize: 7.5, color: '#777777', lineHeight: 1.5 }}>
@@ -411,7 +411,7 @@ export const QuotationPDFTemplate = ({
             );
         }
         return (
-            <View style={s.footerText}>
+            <View style={s.footerText} fixed>
                 <Text>
                     {companyName || 'Coral Enterprises'}
                     {vatNumber ? `  ·  ${t('vat', lang)}: ${vatNumber}` : ''}
@@ -466,7 +466,7 @@ export const QuotationPDFTemplate = ({
 
                 {renderBlocks(blocks)}
 
-                <View style={{ alignItems: 'flex-end', width: '100%' }}>
+                <View style={{ alignItems: 'flex-end', width: '100%' }} wrap={false}>
                     <View style={s.summaryBox}>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
@@ -484,7 +484,7 @@ export const QuotationPDFTemplate = ({
                 {renderFooter()}
 
                 {showWatermark && (
-                    <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }}>
+                    <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }} fixed>
                         Powered by CoralOS — coral-os.com
                     </Text>
                 )}

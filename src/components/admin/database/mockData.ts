@@ -468,22 +468,165 @@ export const mockDatabases: Database[] = [
     {
         id: 'db-tasks',
         name: 'Task Management',
-        description: 'Track internal technical and design tasks.',
+        description: 'Internal workspace tasks — the single source of truth across the app.',
         icon: '✅',
         properties: [
-            { id: 'title', name: 'Task Name', type: 'text' },
-            { id: 'prop-task-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-todo', name: 'To Do', color: 'gray' }, { id: 'opt-doing', name: 'In Progress', color: 'blue' }, { id: 'opt-done', name: 'Done', color: 'green' }] } },
-            { id: 'prop-task-assignee', name: 'Assignee', type: 'text' },
-            { id: 'prop-task-priority', name: 'Priority', type: 'select', config: { options: [{ id: 'opt-low', name: 'Low', color: 'green' }, { id: 'opt-med', name: 'Medium', color: 'yellow' }, { id: 'opt-high', name: 'High', color: 'red' }] } },
-            { id: 'prop-task-due', name: 'Due Date', type: 'date' },
-            { id: 'prop-task-project', name: 'Project Link', type: 'relation', config: { relationDatabaseId: 'db-1' } }
+            { id: 'title',                  name: 'Task Name',      type: 'text' },
+            {
+                id: 'prop-task-status', name: 'Status', type: 'select',
+                config: { options: [
+                    { id: 'opt-todo',    name: 'To Do',       color: 'gray'   },
+                    { id: 'opt-doing',   name: 'In Progress', color: 'blue'   },
+                    { id: 'opt-review',  name: 'In Review',   color: 'purple' },
+                    { id: 'opt-done',    name: 'Done',        color: 'green'  },
+                    { id: 'opt-dropped', name: 'Dropped',     color: 'red'    },
+                ] }
+            },
+            { id: 'prop-task-assignee',     name: 'Assignee',       type: 'person' },
+            {
+                id: 'prop-task-priority', name: 'Priority', type: 'select',
+                config: { options: [
+                    { id: 'opt-p1', name: 'P1 — Urgent',    color: 'red'    },
+                    { id: 'opt-p2', name: 'P2 — High',      color: 'orange' },
+                    { id: 'opt-p3', name: 'P3 — Medium',    color: 'yellow' },
+                    { id: 'opt-p4', name: 'P4 — Low',       color: 'gray'   },
+                ] }
+            },
+            { id: 'prop-task-due',          name: 'Due Date',       type: 'date' },
+            { id: 'prop-task-project',      name: 'Project',        type: 'relation', config: { relationDatabaseId: 'db-1' } },
+            // ── Task-First Properties ──────────────────────────────────────
+            {
+                id: 'prop-task-tags', name: 'Tags', type: 'multi_select',
+                config: { options: [
+                    { id: 'tag-site',     name: 'On-Site',    color: 'orange' },
+                    { id: 'tag-office',   name: 'Office',     color: 'blue'   },
+                    { id: 'tag-design',   name: 'Design',     color: 'pink'   },
+                    { id: 'tag-client',   name: 'Client',     color: 'purple' },
+                    { id: 'tag-urgent',   name: 'Urgent',     color: 'red'    },
+                    { id: 'tag-admin',    name: 'Admin',      color: 'gray'   },
+                ] }
+            },
+            { id: 'prop-task-defer',        name: 'Defer Until',    type: 'date' },
+            { id: 'prop-task-my-day',       name: 'My Day',         type: 'checkbox' },
+            { id: 'prop-task-flagged',      name: 'Flagged',        type: 'checkbox' },
+            {
+                id: 'prop-task-section', name: 'Section', type: 'select',
+                config: { options: [
+                    { id: 'sec-planning',  name: 'Planning',    color: 'blue'   },
+                    { id: 'sec-execution', name: 'Execution',   color: 'orange' },
+                    { id: 'sec-review',    name: 'Review',      color: 'purple' },
+                    { id: 'sec-admin',     name: 'Admin',       color: 'gray'   },
+                ] }
+            },
+            { id: 'prop-task-recurrence',   name: 'Recurrence',     type: 'text' },
+            { id: 'prop-task-depends-on',   name: 'Blocked By',     type: 'relation', config: { relationDatabaseId: 'db-tasks' } },
+            { id: 'prop-task-estimated',    name: 'Estimate (min)', type: 'number' },
+            { id: 'prop-task-completed-at', name: 'Completed At',   type: 'date' },
+            { id: 'prop-task-notes',        name: 'Notes',          type: 'text' },
+            { id: 'prop-task-reviewed-at',  name: 'Last Reviewed',  type: 'date' },
         ],
-        pages: [],
+        pages: [
+            {
+                id: 'task-sample-1', databaseId: 'db-tasks', blocks: [],
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                createdBy: 'system', lastEditedBy: 'system', order: 0,
+                properties: {
+                    title: 'Finalize kitchen layout drawings',
+                    'prop-task-status': 'opt-doing', 'prop-task-priority': 'opt-p1',
+                    'prop-task-assignee': [], 'prop-task-due': new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+                    'prop-task-tags': ['tag-design', 'tag-client'], 'prop-task-my-day': true,
+                    'prop-task-flagged': false, 'prop-task-section': 'sec-execution',
+                    'prop-task-estimated': 90, 'prop-task-notes': 'Client review scheduled Friday.',
+                    'prop-task-defer': '', 'prop-task-recurrence': '',
+                    'prop-task-depends-on': [], 'prop-task-completed-at': '', 'prop-task-reviewed-at': '',
+                }
+            },
+            {
+                id: 'task-sample-2', databaseId: 'db-tasks', blocks: [],
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                createdBy: 'system', lastEditedBy: 'system', order: 1,
+                properties: {
+                    title: 'Order Carrara marble slabs',
+                    'prop-task-status': 'opt-todo', 'prop-task-priority': 'opt-p2',
+                    'prop-task-assignee': [], 'prop-task-due': new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
+                    'prop-task-tags': ['tag-site'], 'prop-task-my-day': false,
+                    'prop-task-flagged': true, 'prop-task-section': 'sec-planning',
+                    'prop-task-estimated': 30, 'prop-task-notes': 'Check lead times with Euro-Marble.',
+                    'prop-task-defer': '', 'prop-task-recurrence': '',
+                    'prop-task-depends-on': [], 'prop-task-completed-at': '', 'prop-task-reviewed-at': '',
+                }
+            },
+            {
+                id: 'task-sample-3', databaseId: 'db-tasks', blocks: [],
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                createdBy: 'system', lastEditedBy: 'system', order: 2,
+                properties: {
+                    title: 'Weekly invoice reconciliation',
+                    'prop-task-status': 'opt-todo', 'prop-task-priority': 'opt-p3',
+                    'prop-task-assignee': [], 'prop-task-due': new Date().toISOString().slice(0, 10),
+                    'prop-task-tags': ['tag-admin', 'tag-office'], 'prop-task-my-day': true,
+                    'prop-task-flagged': false, 'prop-task-section': 'sec-admin',
+                    'prop-task-estimated': 45, 'prop-task-notes': '',
+                    'prop-task-defer': '', 'prop-task-recurrence': 'every monday',
+                    'prop-task-depends-on': [], 'prop-task-completed-at': '', 'prop-task-reviewed-at': '',
+                }
+            },
+            {
+                id: 'task-sample-4', databaseId: 'db-tasks', blocks: [],
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                createdBy: 'system', lastEditedBy: 'system', order: 3,
+                properties: {
+                    title: 'Site inspection — bathroom tiling',
+                    'prop-task-status': 'opt-done', 'prop-task-priority': 'opt-p2',
+                    'prop-task-assignee': [], 'prop-task-due': new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+                    'prop-task-tags': ['tag-site'], 'prop-task-my-day': false,
+                    'prop-task-flagged': false, 'prop-task-section': 'sec-execution',
+                    'prop-task-estimated': 120, 'prop-task-notes': 'All tiles aligned. Grout curing.',
+                    'prop-task-defer': '', 'prop-task-recurrence': '',
+                    'prop-task-depends-on': [], 'prop-task-completed-at': new Date(Date.now() - 86400000).toISOString().slice(0, 10),
+                    'prop-task-reviewed-at': '',
+                }
+            },
+            {
+                id: 'task-sample-5', databaseId: 'db-tasks', blocks: [],
+                createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                createdBy: 'system', lastEditedBy: 'system', order: 4,
+                properties: {
+                    title: 'Update client portal with progress photos',
+                    'prop-task-status': 'opt-todo', 'prop-task-priority': 'opt-p4',
+                    'prop-task-assignee': [], 'prop-task-due': new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10),
+                    'prop-task-tags': ['tag-client', 'tag-office'], 'prop-task-my-day': false,
+                    'prop-task-flagged': false, 'prop-task-section': 'sec-admin',
+                    'prop-task-estimated': 20, 'prop-task-notes': '',
+                    'prop-task-defer': new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10),
+                    'prop-task-recurrence': '', 'prop-task-depends-on': ['task-sample-4'],
+                    'prop-task-completed-at': '', 'prop-task-reviewed-at': '',
+                }
+            },
+        ],
         activeFilters: [],
         views: [
-            { id: 'view-task-table', name: 'All Tasks List', type: 'table' },
-            { id: 'view-task-board', name: 'Kanban Board', type: 'board', config: { groupByPropertyId: 'prop-task-status' } },
-            { id: 'view-task-calendar', name: 'Timeline Calendar', type: 'calendar', config: { datePropertyId: 'prop-task-due' } }
+            { id: 'view-task-table',    name: 'All Tasks',        type: 'table' },
+            { id: 'view-task-board',    name: 'Kanban Board',     type: 'board',    config: { groupByPropertyId: 'prop-task-status' } },
+            { id: 'view-task-calendar', name: 'Calendar',         type: 'calendar', config: { datePropertyId: 'prop-task-due' } },
+            {
+                id: 'view-task-today', name: '📅 Today', type: 'table',
+                filters: [
+                    { id: 'f-today-done', propertyId: 'prop-task-status', operator: 'does_not_equal', value: 'opt-done' },
+                ]
+            },
+            {
+                id: 'view-task-myday', name: '☀️ My Day', type: 'table',
+                filters: [
+                    { id: 'f-myday', propertyId: 'prop-task-my-day', operator: 'equals', value: 'true' },
+                ]
+            },
+            {
+                id: 'view-task-flagged', name: '🚩 Flagged', type: 'table',
+                filters: [
+                    { id: 'f-flagged', propertyId: 'prop-task-flagged', operator: 'equals', value: 'true' },
+                ]
+            },
         ],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

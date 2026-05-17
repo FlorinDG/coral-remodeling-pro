@@ -70,7 +70,7 @@ export const InvoicePDFTemplate = ({
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
-    const accent = brandColor || '#ea580c';
+    const accent = brandColor || '#d75d00';
     const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang);
 
     const isT1 = templateId === 't1';
@@ -243,11 +243,11 @@ export const InvoicePDFTemplate = ({
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ padding: 0, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
-                    {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} />}
+                    {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
-                    <View style={{ paddingTop: 180, paddingBottom: 60, paddingHorizontal: 40 }}>
+                    <View style={{ flex: 1 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
                             <View>
                                 <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{t('bill_to', lang)}:</Text>
@@ -308,7 +308,7 @@ export const InvoicePDFTemplate = ({
                     </View>
 
                     {showWatermark && (
-                        <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }}>
+                        <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#cccccc', letterSpacing: 1.5 }} fixed>
                             Powered by CoralOS — coral-os.com
                         </Text>
                     )}
@@ -469,7 +469,7 @@ export const InvoicePDFTemplate = ({
     const renderFooter = () => {
         if (isT1) {
             return (
-                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }}>
+                <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'stretch' }} fixed>
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
                         <View style={{ width: 10, height: 10, backgroundColor: darkBrand }} />
                         <Text style={{ fontSize: 7.5, color: '#777777', lineHeight: 1.5 }}>
@@ -485,7 +485,7 @@ export const InvoicePDFTemplate = ({
             );
         }
         return (
-            <View style={s.footerText}>
+            <View style={s.footerText} fixed>
                 <Text>
                     {companyName || 'Coral Enterprises'}
                     {vatNumber ? ` | ${t('vat', lang)}: ${vatNumber}` : ''}
@@ -582,7 +582,7 @@ export const InvoicePDFTemplate = ({
 
                 {/* Watermark */}
                 {showWatermark && (
-                    <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#c0c0c0', letterSpacing: 1.5 }}>
+                    <Text style={{ position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 6.5, color: '#c0c0c0', letterSpacing: 1.5 }} fixed>
                         Powered by CoralOS — coral-os.com
                     </Text>
                 )}

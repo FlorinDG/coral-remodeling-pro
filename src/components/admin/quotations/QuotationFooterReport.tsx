@@ -86,23 +86,31 @@ export default function QuotationFooterReport({
     const { grandKost, grandVerkoop } = useMemo(() => {
         let grandKost = 0;
         let grandVerkoop = 0;
-        const accumulate = (nodes: Block[]) => {
+        const accumulate = (nodes: Block[], parentIsLoon = false) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
 
-                if (b.children && b.children.length > 0) {
-                    accumulate(b.children);
-                    // If it's a line/article with children, the parent's own values are usually 0 or ignored
-                    // but we still apply the parent's quantity to the children's rolled-up total
-                    // However, for simplicity and accuracy in this engine, we sum children directly
-                    // as they are already leaf nodes in the tree logic.
+                const hasChildren = b.children && b.children.length > 0;
+                const qty = b.quantity || 1;
+
+                if (b.calculationType === 'loon' && hasChildren) {
+                    // Parent is Loon and has subcomponents:
+                    // Profit is parent's selling price minus children's purchase costs (Brutto)
+                    grandVerkoop += (b.verkoopPrice || 0) * qty;
+                    accumulate(b.children || [], true); // Recurse children, skip their selling price
+                    return;
+                }
+
+                if (hasChildren) {
+                    accumulate(b.children || [], false);
                     return;
                 }
 
                 if (b.type === 'article' || b.type === 'bestek' || b.type === 'line') {
-                    const qty = b.quantity || 1;
                     grandKost += (b.brutoPrice || 0) * (1 - (b.discountPercent || 0) / 100) * qty;
-                    grandVerkoop += (b.verkoopPrice || 0) * qty;
+                    if (!parentIsLoon) {
+                        grandVerkoop += (b.verkoopPrice || 0) * qty;
+                    }
                 }
             });
         };
@@ -116,11 +124,11 @@ export default function QuotationFooterReport({
     const grandProfit = grandVerkoop - grandKost;
 
     const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat('nl-BE', {
-            style: 'currency',
-            currency: 'EUR',
+        const parts = new Intl.NumberFormat('nl-BE', {
             minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
         }).format(val);
+        return `€  ${parts}`;
     };
 
     const isLinesMode = vatCalcMode === 'lines';
@@ -329,7 +337,7 @@ export default function QuotationFooterReport({
                             </tr>
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white">
                                 <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">{ti18n('profit_margin', language)}</td>
-                                <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-500">{grandKost > 0 ? `${((grandProfit / grandKost) * 100).toFixed(2)}%` : '0.00%'}</td>
+                                <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-500">{grandVerkoop > 0 ? `${((grandProfit / grandVerkoop) * 100).toFixed(2)}%` : '0.00%'}</td>
                             </tr>
                         </tbody>
                     </table>

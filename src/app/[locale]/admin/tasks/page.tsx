@@ -5,11 +5,11 @@ import { FolderKanban } from "lucide-react";
 import { useTenant } from "@/context/TenantContext";
 import LockedFeature from "@/components/admin/LockedFeature";
 
-const DatabaseCloneDynamic = dynamic(
-    () => import('@/components/admin/database/DatabaseClone'),
+const TaskModuleShellDynamic = dynamic(
+    () => import('@/components/admin/tasks/TaskModuleShell'),
     {
         ssr: false,
-        loading: () => <div className="w-full h-full min-h-[500px] border border-neutral-200 dark:border-white/10 rounded-2xl animate-pulse bg-neutral-100/50 dark:bg-white/5" />
+        loading: () => <div className="w-full h-full min-h-[500px] border border-neutral-200 dark:border-white/10 rounded-2xl animate-pulse bg-neutral-100/50 dark:bg-white/5 flex items-center justify-center text-sm text-neutral-500 font-medium">Loading Workspace Task Manager...</div>
     }
 );
 
@@ -40,10 +40,7 @@ export default function TasksPage() {
                     />
                 ) : (
                     <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
-                        <DatabaseCloneDynamic
-                            databaseId="db-tasks"
-                            hideViewTabs={false}
-                        />
+                        <TaskModuleShellDynamic />
                     </div>
                 )}
             </div>

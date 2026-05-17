@@ -154,11 +154,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     let activeTopPath = null;
     for (const item of menuItems) {
         // Highlighting logic: check if pathname starts with item.href
-        // Special case: /admin/quotations belongs to the Sales (CRM) module
-        const isSalesItem = item.id === 'sales';
-        const matchesSales = isSalesItem && (pathname === '/admin/quotations' || pathname.startsWith('/admin/quotations/'));
-
-        if (matchesSales || (item.href && (pathname === item.href || pathname.startsWith(item.href + "/")))) {
+        if (item.href && (pathname === item.href || pathname.startsWith(item.href + "/"))) {
             if (!activeTopPath || (item.href?.length || 0) > (activeTopPath.href?.length || 0)) {
                 activeTopPath = item;
             }

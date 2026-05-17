@@ -7,43 +7,21 @@ export const hrTabs = [
     { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
 ];
 
-export const relationsTabs = [
-    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'pipeline' },
-    { label: 'OFFERTES', href: '/admin/quotations', id: 'rel-offertes' }
-];
+export const relationsTabs: { label: string; href: string; id: string; }[] = [];
 
-const RELATIONS_TAB_KEYS: Record<string, string> = {
-    'pipeline': 'sales',
-    'rel-offertes': 'sales',
-};
+const RELATIONS_TAB_KEYS: Record<string, string> = {};
 
 export function getRelationsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
-    if (!t || !tHas) return relationsTabs;
-    return relationsTabs.map(tab => {
-        // Special mapping for Sales Pipeline / Offertes if needed, but sidebar keys are good
-        let key = `nav.sidebar.${RELATIONS_TAB_KEYS[tab.id]}`;
-        if (tab.id === 'rel-offertes') key = 'nav.financialTabs.quotations';
-        
-        return { ...tab, label: tHas(key) ? t(key) : tab.label };
-    });
+    return [];
 }
 
 /**
  * Relations tabs filtered by plan — Sales Pipeline hidden for FREE.
  */
 const REL_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;
-const REL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {
-    'pipeline': 'PRO',
-};
+const REL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {};
 export function getFilteredRelationsTabs(planType: string, t?: (key: string) => string, tHas?: (key: string) => boolean): typeof relationsTabs {
-    const allTabs = getRelationsTabs(t, tHas);
-    if (planType === 'FOUNDER' || planType === 'CUSTOM') return allTabs;
-    const curIdx = REL_TIER_ORDER.indexOf(planType as typeof REL_TIER_ORDER[number]);
-    return allTabs.filter(tab => {
-        const minTier = REL_PLAN_GATE[tab.id];
-        if (!minTier) return true;
-        return curIdx >= REL_TIER_ORDER.indexOf(minTier);
-    });
+    return [];
 }
 
 export const frontendTabs = [

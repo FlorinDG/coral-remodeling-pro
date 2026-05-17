@@ -63,7 +63,7 @@ function resolveValue(
             if (relationProp) {
                 const relatedIds = currentPage.properties[relationProp.id];
                 if (Array.isArray(relatedIds) && relatedIds.length > 0) {
-                    pages = targetDb.pages.filter(p => relatedIds.includes(p.id));
+                    pages = targetDb.pages.filter(p => p && relatedIds.includes(p.id));
                 }
             }
         }
@@ -73,12 +73,12 @@ function resolveValue(
     if (config.filter) {
         const filterProp = targetDb.properties.find(p => p.id === config.filter!.propertyId);
         if (filterProp && config.filter.value) {
-            pages = pages.filter(p => String(p.properties[config.filter!.propertyId]) === config.filter!.value);
+            pages = pages.filter(p => p && p.properties && String(p.properties[config.filter!.propertyId]) === config.filter!.value);
         }
     }
 
     // Extract all values of the target property from filtered pages
-    const values = pages.map(p => p.properties[config.propertyId]).filter(v => v !== null && v !== undefined);
+    const values = pages.filter(p => p && p.properties).map(p => p.properties[config.propertyId]).filter(v => v !== null && v !== undefined);
 
     // Apply aggregator
     const agg = config.aggregator || 'first';

@@ -58,18 +58,18 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
     // Recursive calculation for nested Phase (Post/Section) totals + Subcomponents
     const calculateBlockTotal = (b: Block): number => {
-        if (b.isOptional) return 0; // Phase 10: Globally drop any optional value
+        if (!b || b.isOptional) return 0; // Phase 10: Globally drop any optional value
 
         // Strict Containers (No quantity multiplier)
         if (b.type === 'post' || b.type === 'section' || b.type === 'subsection') {
-            return (b.children || []).reduce((sum, child) => sum + calculateBlockTotal(child), 0);
+            return (b.children || []).reduce((sum, child) => sum + (child ? calculateBlockTotal(child) : 0), 0);
         }
 
         // Base Items (Multiply by Quantity)
         let unitTotal = 0;
         if (b.children && b.children.length > 0) {
             // Aggregate all subcomponents to form the new base price
-            unitTotal = b.children.reduce((sum, child) => sum + calculateBlockTotal(child), 0);
+            unitTotal = b.children.reduce((sum, child) => sum + (child ? calculateBlockTotal(child) : 0), 0);
         } else {
             unitTotal = b.verkoopPrice || 0;
 
@@ -405,7 +405,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     block={block}
                                                     databaseId={block.type === 'article' ? 'db-articles' : 'db-bestek'}
                                                     onUpdate={(updates) => onUpdate(block.id, updates)}
-                                                    childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + calculateBlockTotal(c), 0) : undefined}
+                                                    childrenTotal={block.children && block.children.length > 0 ? block.children.reduce((sum, c) => sum + (c ? calculateBlockTotal(c) : 0), 0) : undefined}
                                                     hasLibraryAccess={hasLibraryAccess}
                                                     vatCalcMode={vatCalcMode}
                                                     language={language}
@@ -506,10 +506,10 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 <div className="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                                     <Layers className="w-3 h-3" /> Subcomponents
                                                 </div>
-                                                <Droppable droppableId={`sub-${block.id}`} type="block">
+                                                <Droppable droppableId={block.id} type="block">
                                                     {(provided) => (
                                                         <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-1">
-                                                            {block.children!.map((child, idx) => (
+                                                            {block.children!.map((child, idx) => child && (
                                                                 <QuotationRow
                                                                     key={child.id}
                                                                     block={child}
@@ -586,14 +586,14 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                             </DialogHeader>
 
                             <div className="flex flex-col gap-4 w-full">
-                                <Droppable droppableId={`modal-${block.id}`} type="block">
+                                <Droppable droppableId={block.id} type="block">
                                     {(providedDroppable) => (
                                         <div
                                             {...providedDroppable.droppableProps}
                                             ref={providedDroppable.innerRef}
                                             className="flex flex-col p-2 gap-2 border-l-4 border-orange-200 dark:border-orange-900/40 ml-1 rounded-sm min-h-[150px] bg-neutral-50 dark:bg-[#151515]"
                                         >
-                                            {(block.children || []).map((child, childIndex) => (
+                                            {(block.children || []).map((child, childIndex) => child && (
                                                 <QuotationRow
                                                     key={child.id}
                                                     block={child}

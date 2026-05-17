@@ -37,6 +37,28 @@ export default function GlobalDatabaseSyncer({ databases }: { databases: Databas
                 });
             }
 
+            const freshDbTasks = databases.find(d => d.id === 'db-tasks');
+            if (freshDbTasks) {
+                useDatabaseStore.setState(state => {
+                    const localDbTasks = state.databases.find(db => db.id === 'db-tasks');
+                    const localViewStateMap = new Map(
+                        (localDbTasks?.views || []).map(v => [v.id, v.propertiesState])
+                    );
+                    return {
+                        databases: state.databases.map(db =>
+                            db.id === 'db-tasks' ? {
+                                ...db,
+                                properties: freshDbTasks.properties,
+                                views: freshDbTasks.views.map(v => ({
+                                    ...v,
+                                    propertiesState: localViewStateMap.get(v.id) || v.propertiesState,
+                                })),
+                            } : db
+                        )
+                    };
+                });
+            }
+
             hasHydrated.current = true;
         }
     }, [databases]);

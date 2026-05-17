@@ -59,16 +59,16 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
         const db = getDatabase('db-articles');
         const page = db?.pages.find(p => p.id === block.articleId);
         const vProp = db?.properties.find(p => p.type === 'variants');
-        if (page && vProp) {
-            const vConfig = page.properties[vProp.id] as VariantsConfig;
-            if (vConfig && Array.isArray(vConfig)) {
-                Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
-                    const axis = vConfig.find(a => a.id === axisId);
-                    const opt = axis?.options.find(o => o.id === optId);
-                    if (opt) deltas += opt.priceDelta;
-                });
+            if (page && vProp) {
+                const vConfig = page.properties[vProp.id] as VariantsConfig;
+                if (vConfig && Array.isArray(vConfig)) {
+                    Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
+                        const axis = vConfig.find(a => a?.id === axisId);
+                        const opt = axis?.options?.find(o => o?.id === optId);
+                        if (opt) deltas += opt.priceDelta;
+                    });
+                }
             }
-        }
         return deltas;
     }, [block.selectedVariants, block.articleId, getDatabase]);
 
@@ -84,6 +84,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             const namePropId = nameProp?.id || 'title';
 
             db.pages.forEach(page => {
+                if (!page || !page.properties) return;
                 const titleVal = String(page.properties[namePropId] || 'Untitled');
                 const contextValues = Object.entries(page.properties)
                     .filter(([key, val]) => key !== namePropId && val !== null && val !== undefined && String(val).trim() !== '')
@@ -246,7 +247,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 // Morph subcomponents recursively from template library
                 if (page.blocks && page.blocks.length > 0) {
                     const cloneBlocks = (blocks: Block[]): Block[] => {
-                        return blocks.map(b => ({
+                        return (blocks || []).filter(Boolean).map(b => ({
                             ...b,
                             id: crypto.randomUUID(),
                             children: b.children ? cloneBlocks(b.children) : undefined

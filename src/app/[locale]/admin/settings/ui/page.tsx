@@ -172,7 +172,6 @@ export default function SidebarOrderSettings() {
     // We map over all the imported tabs to find the matching objects
     const allKnownTabs = [
         ...require('@/config/tabs').hrTabs,
-        ...require('@/config/tabs').relationsTabs,
         ...require('@/config/tabs').frontendTabs,
         ...require('@/config/tabs').financialTabs,
         ...require('@/config/tabs').settingsTabs,

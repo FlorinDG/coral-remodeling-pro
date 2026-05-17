@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
@@ -110,8 +111,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const blocks = quotation.blocks || [];
 
         const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
-            return nodes.reduce((acc, block) => {
-                if (block.isOptional) return acc;
+            return (nodes || []).reduce((acc, block) => {
+                if (!block || block.isOptional) return acc;
 
                 if (block.children && block.children.length > 0) {
                     const childTotals = calcTotals(block.children);
@@ -524,7 +525,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     return (
-        <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
+        <ErrorBoundary componentName="QuotationEngine">
+            <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
                 <div className="flex flex-wrap items-center gap-3 px-4 py-3">
@@ -964,6 +966,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 existingBlocks={blocks}
                 canDedup={canDedup}
             />
-        </div >
+        </div>
+        </ErrorBoundary>
     );
 }

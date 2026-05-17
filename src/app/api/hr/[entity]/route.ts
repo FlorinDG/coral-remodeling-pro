@@ -92,10 +92,10 @@ export async function GET(
                 select: { lockedDbIds: true }
             });
             const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
-            
+
             if (entity === 'erp-projects') {
                 const projectDbId = locked['projects'] || 'db-1';
-                
+
                 // Fetch from GlobalPage (Dynamic DB)
                 const dynamicProjects = await prisma.globalPage.findMany({
                     where: { databaseId: projectDbId, database: { tenantId: ctx.tenantId } },
@@ -132,16 +132,41 @@ export async function GET(
 
             if (entity === 'erp-tasks') {
                 const tasksDbId = locked['tasks'] || 'db-tasks';
+
+                // Scope filter: admin/accountant roles see all tasks.
+                // Employee/workforce role sees only tasks assigned to or created by them.
+                // Mirrors the ASSIGNED_AND_OWN rule in access-control.ts.
+                const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT'].includes(ctx.role);
+                const pageWhere: Record<string, unknown> = {
+                    databaseId: tasksDbId,
+                    database: { tenantId: ctx.tenantId },
+                };
+                if (!isAdminRole) {
+                    pageWhere.OR = [
+                        { assignedTo: { has: ctx.userId } },
+                        { createdBy: ctx.userId },
+                    ];
+                }
+
                 const tasks = await prisma.globalPage.findMany({
-                    where: { databaseId: tasksDbId, database: { tenantId: ctx.tenantId } },
-                    select: { id: true, properties: true, createdAt: true }
+                    where: pageWhere,
+                    select: { id: true, properties: true, createdAt: true, assignedTo: true }
                 });
+
                 return NextResponse.json(tasks.map(t => {
                     const props = t.properties as Record<string, unknown>;
+                    // prop-task-project is a relation stored as string[]
+                    const projectArr = props['prop-task-project'] as string[] | undefined;
                     return {
                         id: t.id,
-                        name: String(props?.title || 'Untitled Task'),
-                        projectId: (props?.['prop-task-project'] as string[])?.[0] || null,
+                        name: String(props['title'] || 'Untitled Task'),
+                        // Expose full properties for client-side filtering / display
+                        properties: props,
+                        // Convenience scalars for the time-tracker hooks
+                        projectId: Array.isArray(projectArr) ? (projectArr[0] || null) : null,
+                        status: String(props['prop-task-status'] || 'opt-todo'),
+                        priority: String(props['prop-task-priority'] || 'opt-low'),
+                        assignedTo: t.assignedTo,
                     };
                 }));
             }

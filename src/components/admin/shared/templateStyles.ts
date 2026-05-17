@@ -60,7 +60,7 @@ function blockStyles(accent: string) {
     const dark = darken(accent, 0.65);       // deep brand for header block
     const darkMid = darken(accent, 0.50);    // slightly lighter for info text
     return {
-        page: { padding: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
+        page: { paddingTop: 0, paddingBottom: 65, paddingLeft: 0, paddingRight: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
         headerRow: { flexDirection: 'row' as const, alignItems: 'stretch' as const, marginBottom: 0 },
         headerLeft:  { flexDirection: 'column' as const, justifyContent: 'flex-end' as const, backgroundColor: dark, padding: 28, flex: 0.55 },
         headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, justifyContent: 'flex-end' as const, padding: 28, flex: 0.45 },
@@ -77,7 +77,7 @@ function blockStyles(accent: string) {
         sectionRow:       { flexDirection: 'row' as const, backgroundColor: lighten(accent, 0.92), borderTop: `0.5px solid ${lighten(accent, 0.60)}`, borderBottom: `0.5px solid ${lighten(accent, 0.60)}`, paddingVertical: 7, paddingHorizontal: 28, marginTop: 10, marginBottom: 2 },
         sectionText:      { fontWeight: 'bold' as const, color: dark, fontSize: 10, textTransform: 'uppercase' as const },
         subsectionRow:    { flexDirection: 'row' as const, borderBottom: `0.5px solid ${lighten(accent, 0.85)}`, paddingVertical: 5, paddingHorizontal: 28 },
-        summaryBox:       { marginTop: 24, paddingHorizontal: 28, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryBox:       { marginTop: 12, paddingHorizontal: 28, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
         summaryRow:       { flexDirection: 'row' as const, width: 250, justifyContent: 'space-between' as const },
         summaryLabel:     { fontSize: 8.5, color: '#777777', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
         summaryValue:     { fontSize: 10, fontWeight: 'bold' as const },
@@ -96,7 +96,7 @@ function mistStyles(accent: string) {
     const muted = lighten(accent, 0.40);        // muted brand for labels
     const footerBg = lighten(accent, 0.85);
     return {
-        page: { padding: 0, backgroundColor: pageBg, fontFamily: 'Helvetica', fontSize: 10, color: darken(accent, 0.60) },
+        page: { paddingTop: 0, paddingBottom: 60, paddingLeft: 0, paddingRight: 0, backgroundColor: pageBg, fontFamily: 'Helvetica', fontSize: 10, color: darken(accent, 0.60) },
         headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, padding: 32, paddingBottom: 24, backgroundColor: pageBg },
         headerLeft:  { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14 },
         headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 3 },
@@ -113,7 +113,7 @@ function mistStyles(accent: string) {
         sectionRow:      { flexDirection: 'row' as const, backgroundColor: withAlpha(accent, '1a'), borderLeft: `3px solid ${accent}`, paddingVertical: 7, paddingHorizontal: 32, marginTop: 0, marginBottom: 0 },
         sectionText:     { fontWeight: 'bold' as const, color: accent, fontSize: 10 },
         subsectionRow:   { flexDirection: 'row' as const, backgroundColor: lighten(accent, 0.93), paddingVertical: 6, paddingHorizontal: 32, borderBottom: `0.5px solid ${lighten(accent, 0.82)}` },
-        summaryBox:      { marginTop: 20, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryBox:      { marginTop: 12, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
         summaryRow:      { flexDirection: 'row' as const, width: 240, justifyContent: 'space-between' as const },
         summaryLabel:    { fontSize: 8.5, color: muted, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
         summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },
@@ -128,7 +128,7 @@ function navyStyles(accent: string) {
     const dark = darken(accent, 0.55);          // deepest brand shade (was #1a3a5c)
     const darkMid = darken(accent, 0.40);       // mid dark (was #245076)
     return {
-        page: { padding: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
+        page: { paddingTop: 40, paddingBottom: 60, paddingHorizontal: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
         headerRow:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 20 },
         headerLeft:  { flexDirection: 'column' as const, gap: 2, flex: 0.6 },
         headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, flex: 0.4 },
@@ -145,7 +145,7 @@ function navyStyles(accent: string) {
         sectionRow:      { flexDirection: 'row' as const, backgroundColor: lighten(accent, 0.88), borderLeft: `4px solid ${dark}`, paddingVertical: 7, paddingHorizontal: 8, marginTop: 10, marginBottom: 2 },
         sectionText:     { fontWeight: 'bold' as const, color: dark, fontSize: 10, textTransform: 'uppercase' as const },
         subsectionRow:   { flexDirection: 'row' as const, backgroundColor: lighten(accent, 0.93), borderBottom: `1px solid ${lighten(accent, 0.87)}`, paddingVertical: 5, paddingHorizontal: 8, marginLeft: 12 },
-        summaryBox:      { marginTop: 16, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 4 },
+        summaryBox:      { marginTop: 12, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 4 },
         summaryRow:      { flexDirection: 'row' as const, width: 265, justifyContent: 'space-between' as const },
         summaryLabel:    { fontSize: 9, color: '#666666', textTransform: 'uppercase' as const, fontWeight: 'bold' as const },
         summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },
@@ -162,7 +162,7 @@ function prismStyles(accent: string) {
     const dark = darken(accent, 0.55);          // was #1c2e4a
     const darkMid = darken(accent, 0.40);       // was #26405e
     return {
-        page: { padding: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#222222' },
+        page: { paddingTop: 0, paddingBottom: 60, paddingLeft: 0, paddingRight: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#222222' },
         headerRow:   { flexDirection: 'row' as const, alignItems: 'center' as const },
         headerLeft:  { flexDirection: 'column' as const, gap: 3 },
         headerRight: { flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 3 },
@@ -179,7 +179,7 @@ function prismStyles(accent: string) {
         sectionRow:      { flexDirection: 'row' as const, backgroundColor: withAlpha(dark, '12'), borderLeft: `3px solid ${dark}`, paddingVertical: 7, paddingHorizontal: 32, marginTop: 8, marginBottom: 0 },
         sectionText:     { fontWeight: 'bold' as const, color: dark, fontSize: 10, textTransform: 'uppercase' as const },
         subsectionRow:   { flexDirection: 'row' as const, borderBottom: `0.5px solid ${lighten(accent, 0.85)}`, paddingVertical: 5, paddingHorizontal: 32, marginLeft: 12 },
-        summaryBox:      { marginTop: 20, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
+        summaryBox:      { marginTop: 12, paddingHorizontal: 32, flexDirection: 'column' as const, alignItems: 'flex-end' as const, gap: 5 },
         summaryRow:      { flexDirection: 'row' as const, width: 250, justifyContent: 'space-between' as const },
         summaryLabel:    { fontSize: 8.5, color: '#666666', textTransform: 'uppercase' as const, letterSpacing: 0.5 },
         summaryValue:    { fontSize: 10, fontWeight: 'bold' as const },

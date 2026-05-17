@@ -2,6 +2,50 @@ import React from 'react';
 import prisma from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import QuotationViewer from './QuotationViewer';
+import { Block, VariantsConfig } from '@/components/admin/database/types';
+
+async function enrichBlocks(blocks: Block[], articlesDbId: string): Promise<Block[]> {
+    // Fetch articles DB to resolve variants
+    const articlesDb = await prisma.globalDatabase.findUnique({
+        where: { id: articlesDbId },
+        include: { pages: true, properties: true }
+    });
+
+    if (!articlesDb) return blocks;
+
+    const variantsProp = articlesDb.properties.find(p => p.type === 'variants');
+    if (!variantsProp) return blocks;
+
+    const enrich = (nodes: Block[]): Block[] => {
+        return nodes.map(block => {
+            let enriched = { ...block };
+
+            if (block.articleId && block.selectedVariants) {
+                const articlePage = articlesDb.pages.find(p => p.id === block.articleId);
+                if (articlePage) {
+                    const variantsConfig = articlePage.properties[variantsProp.id] as VariantsConfig;
+                    if (Array.isArray(variantsConfig)) {
+                        let delta = 0;
+                        Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
+                            const axis = variantsConfig.find(a => a.id === axisId);
+                            const opt = axis?.options.find(o => o.id === optId);
+                            if (opt) delta += opt.priceDelta;
+                        });
+                        (enriched as any).variantPriceDelta = delta;
+                    }
+                }
+            }
+
+            if (block.children && block.children.length > 0) {
+                enriched.children = enrich(block.children);
+            }
+
+            return enriched;
+        });
+    };
+
+    return enrich(blocks);
+}
 
 export default async function PublicQuotePage({ params }: { params: Promise<{ locale: string, id: string }> }) {
     const { locale, id: quoteId } = await params;
@@ -39,11 +83,14 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
     // Language priority: URL locale > tenant document language > 'nl'
     const lang = locale || tenant.documentLanguage || 'nl';
 
+    // Enrich blocks with variant pricing deltas for accurate totals
+    const enrichedBlocks = await enrichBlocks((quote.blocks as any) || [], 'db-articles');
+
     return (
         <QuotationViewer
             quoteId={quote.id}
             properties={quote.properties}
-            blocks={quote.blocks}
+            blocks={enrichedBlocks}
             tenant={{
                 companyName: tenant.companyName,
                 logoUrl: tenant.logoUrl,

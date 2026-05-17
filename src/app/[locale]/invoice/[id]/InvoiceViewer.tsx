@@ -64,7 +64,7 @@ function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang:
                             <span dangerouslySetInnerHTML={{ __html: block.content || t('portal_section', lang) }} />
                         </td>
                         <td className="py-3 text-right font-bold pr-4 tabular-nums whitespace-nowrap" style={{ color: brandColor }}>
-                            {`€${sectionTotal.toFixed(2)}`}
+                            {`€  ${sectionTotal.toFixed(2)}`}
                         </td>
                     </tr>
                     {(block.children || []).map(child => renderBlock(child, depth + 1))}
@@ -81,10 +81,10 @@ function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang:
                     {block.quantity || 1} {block.unit || ''}
                 </td>
                 <td className="py-2.5 text-sm text-neutral-500 text-right tabular-nums whitespace-nowrap pr-2">
-                    €{(block.verkoopPrice || 0).toFixed(2)}
+                    €  {((block.verkoopPrice || 0) + ((block as any).variantPriceDelta || 0)).toFixed(2)}
                 </td>
                 <td className="py-2.5 text-sm text-neutral-900 text-right font-medium tabular-nums whitespace-nowrap pr-4">
-                    €{lineTotal.toFixed(2)}
+                    €  {lineTotal.toFixed(2)}
                 </td>
             </tr>
         );
@@ -109,13 +109,23 @@ function InvoiceLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang:
 
 function calculateBlockTotal(block: Block): number {
     if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-        return (block.children || []).reduce((sum, child) => sum + calculateBlockTotal(child), 0);
+        return (block.children || []).reduce((sum, child) => sum + (child ? calculateBlockTotal(child) : 0), 0);
     }
-    return (block.verkoopPrice || 0) * (block.quantity || 1);
+
+    let unitTotal = 0;
+    if (block.children && block.children.length > 0) {
+        // Aggregate all subcomponents to form the new base price
+        unitTotal = block.children.reduce((sum, child) => sum + (child ? calculateBlockTotal(child) : 0), 0);
+    } else {
+        // Use verkoopPrice plus the variant deltas injected by the server
+        unitTotal = (block.verkoopPrice || 0) + ((block as any).variantPriceDelta || 0);
+    }
+
+    return unitTotal * (block.quantity || 1);
 }
 
 function calculateGrandTotal(nodes: Block[]): number {
-    return nodes.reduce((sum, block) => sum + calculateBlockTotal(block), 0);
+    return (nodes || []).reduce((sum, block) => sum + (block ? calculateBlockTotal(block) : 0), 0);
 }
 
 export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, lang }: InvoiceViewerProps) {
@@ -280,7 +290,7 @@ export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, l
                         <div className="text-right shrink-0">
                             <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t('portal_inv_total', lang)}</p>
                             <p className="text-3xl sm:text-4xl font-black tabular-nums" style={{ color: brandColor }}>
-                                €{totalInclVat.toFixed(2)}
+                                €  {totalInclVat.toFixed(2)}
                             </p>
                         </div>
                     </div>
@@ -303,15 +313,15 @@ export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, l
                                 <div className="flex flex-col gap-2 max-w-xs ml-auto">
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_subtotal', lang)}</span>
-                                        <span className="tabular-nums font-medium">€{grandTotal.toFixed(2)}</span>
+                                        <span className="tabular-nums font-medium">€  {grandTotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_vat_21', lang)}</span>
-                                        <span className="tabular-nums font-medium">€{vatAmount.toFixed(2)}</span>
+                                        <span className="tabular-nums font-medium">€  {vatAmount.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t border-neutral-200 pt-2 mt-1 flex justify-between text-lg font-bold">
                                         <span>{t('portal_grand_total', lang)}</span>
-                                        <span className="tabular-nums" style={{ color: brandColor }}>€{totalInclVat.toFixed(2)}</span>
+                                        <span className="tabular-nums" style={{ color: brandColor }}>€  {totalInclVat.toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>

@@ -900,14 +900,22 @@ model HrProject {
 }
 
 model ShiftTask {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   shiftId      String
-  taskId       String   // GlobalPage ID from db-tasks
-  status       String   @default("pending")
+  taskId       String    // GlobalPage ID from db-tasks
+  /// Worker-reported progress status for this shift assignment.
+  /// Values: pending | in_progress | done_by_worker
+  /// Separate from the db-tasks page status — only management can close the actual task.
+  status       String    @default("pending")
   completedBy  String?
   completedAt  DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  /// Checklist items added by the worker for this specific shift assignment.
+  /// Shape: [{ id, title, done, doneAt?, doneBy? }]
+  subtasks     Json?     @default("[]")
+  /// Free-text notes from the worker about their progress on this shift task.
+  workerNotes  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([shiftId])
 }

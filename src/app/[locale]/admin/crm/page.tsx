@@ -1,8 +1,6 @@
 "use client";
 
 import dynamic from 'next/dynamic';
-import ModuleTabs from "@/components/admin/ModuleTabs";
-import { getFilteredRelationsTabs } from "@/config/tabs";
 import { useState } from 'react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useTenant } from '@/context/TenantContext';
@@ -43,7 +41,10 @@ export default function CRMPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <ModuleTabs tabs={getFilteredRelationsTabs(planType)} groupId="relations" planType={planType} />
+            {/* Page Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 flex-shrink-0">
+                <h1 className="text-xl font-bold tracking-tight">Sales Pipeline</h1>
+            </div>
 
             {!isPro ? (
                 <LockedFeature

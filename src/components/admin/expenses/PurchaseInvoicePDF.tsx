@@ -273,7 +273,8 @@ const styles = StyleSheet.create({
 
 // ── PDF Document Component ─────────────────────────────────────────────────────
 
-function PurchaseInvoicePDFDocument({ data }: { data: PurchaseInvoicePDFData }) {
+function PurchaseInvoicePDFDocument({ data, brandColor }: { data: PurchaseInvoicePDFData; brandColor?: string }) {
+    const accentColor = brandColor || colors.accent;
     const fmt = (n: number) =>
         `${data.currency || '€'}${n.toFixed(2)}`;
 
@@ -289,7 +290,7 @@ function PurchaseInvoicePDFDocument({ data }: { data: PurchaseInvoicePDFData }) 
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        <Text style={styles.docTitle}>PURCHASE INVOICE</Text>
+                        <Text style={[styles.docTitle, { color: accentColor }]}>PURCHASE INVOICE</Text>
                         <Text style={styles.docNumber}>{data.invoiceNumber || 'Untitled'}</Text>
                         {data.source && (
                             <Text style={styles.sourceBadge}>Source: {data.source}</Text>
@@ -444,7 +445,7 @@ function PurchaseInvoicePDFDocument({ data }: { data: PurchaseInvoicePDFData }) 
                         </View>
                         <View style={styles.totalsRowFinal}>
                             <Text style={styles.totalsFinalLabel}>Total (incl. VAT)</Text>
-                            <Text style={styles.totalsFinalValue}>{fmt(data.totalIncVat)}</Text>
+                            <Text style={[styles.totalsFinalValue, { color: accentColor }]}>{fmt(data.totalIncVat)}</Text>
                         </View>
                     </View>
                 </View>
@@ -469,8 +470,8 @@ function PurchaseInvoicePDFDocument({ data }: { data: PurchaseInvoicePDFData }) 
 /**
  * Call this from an onClick handler to download the PDF client-side.
  */
-export async function downloadPurchaseInvoicePDF(data: PurchaseInvoicePDFData): Promise<void> {
-    const blob = await pdf(<PurchaseInvoicePDFDocument data={data} />).toBlob();
+export async function downloadPurchaseInvoicePDF(data: PurchaseInvoicePDFData, brandColor?: string): Promise<void> {
+    const blob = await pdf(<PurchaseInvoicePDFDocument data={data} brandColor={brandColor} />).toBlob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

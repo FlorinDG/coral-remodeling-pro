@@ -575,8 +575,22 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 if (valA === undefined || valA === null || valA === '') return isAsc ? 1 : -1;
                 if (valB === undefined || valB === null || valB === '') return isAsc ? -1 : 1;
 
-                // Compare
-                const result = collator.compare(String(valA), String(valB));
+                const strA = String(valA || '').trim();
+                const strB = String(valB || '').trim();
+
+                // 1. Numerical parse attempt
+                const numA = parseFloat(strA.replace(',', '.'));
+                const numB = parseFloat(strB.replace(',', '.'));
+                const isNumA = !isNaN(numA) && isFinite(numA);
+                const isNumB = !isNaN(numB) && isFinite(numB);
+
+                let result = 0;
+                if (isNumA && isNumB) {
+                    result = numA - numB;
+                } else {
+                    result = collator.compare(strA, strB);
+                }
+
                 if (result !== 0) {
                     return isAsc ? result : -result;
                 }

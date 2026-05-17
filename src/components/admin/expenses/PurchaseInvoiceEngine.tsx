@@ -77,6 +77,26 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const [peppolAction, setPeppolAction] = useState<'accept' | 'reject' | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [exportingPdf, setExportingPdf] = useState(false);
+    const [tenantProfile, setTenantProfile] = useState<{
+        companyName?: string;
+        commercialName?: string;
+        vatNumber?: string;
+        street?: string;
+        postalCode?: string;
+        city?: string;
+        country?: string;
+        brandColor?: string;
+        email?: string;
+    } | null>(null);
+
+    useEffect(() => {
+        fetch('/api/tenant/profile')
+            .then(res => res.json())
+            .then(data => {
+                if (data && !data.error) setTenantProfile(data);
+            })
+            .catch(err => console.error('Failed to fetch tenant profile:', err));
+    }, []);
 
     // Editable fields for manual/draft invoices
     const [editData, setEditData] = useState({
@@ -173,9 +193,16 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
             const lines = peppolDetail?.lines || [];
 
+            const buyerAddress = [
+                tenantProfile?.street,
+                [tenantProfile?.postalCode, tenantProfile?.city].filter(Boolean).join(' '),
+                tenantProfile?.country
+            ].filter(Boolean).join(', ');
+
             await downloadPurchaseInvoicePDF({
-                buyerName: 'Coral Remodeling',
-                buyerVat: '',
+                buyerName: tenantProfile?.commercialName || tenantProfile?.companyName || 'Coral Remodeling',
+                buyerVat: tenantProfile?.vatNumber || '',
+                buyerAddress: buyerAddress || '',
                 supplierName,
                 supplierVat: peppolDetail?.supplierVat || '',
                 supplierAddress: peppolDetail?.supplierAddress || '',
@@ -188,7 +215,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 totalExVat: parseFloat(String(page.properties.totalExVat || 0)),
                 totalVat: parseFloat(String(page.properties.totalVat || 0)),
                 totalIncVat: parseFloat(String(page.properties.totalIncVat || 0)),
-            });
+            }, tenantProfile?.brandColor);
         } catch (err) {
             console.error('PDF export failed:', err);
         } finally {
@@ -463,7 +490,7 @@ function InfoField({ label, value, editable, type, onChange }: {
 
 function FinancialCell({ label, value, editable, highlight, onChange }: {
     label: string;
-    value: any;
+    value: string | number | null | undefined;
     editable?: boolean;
     highlight?: boolean;
     onChange?: (v: string) => void;

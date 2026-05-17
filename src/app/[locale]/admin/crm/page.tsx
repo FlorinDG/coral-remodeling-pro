@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useTenant } from '@/context/TenantContext';
 import LockedFeature from "@/components/admin/LockedFeature";
+import ModuleTabs from "@/components/admin/ModuleTabs";
+import { salesTabs } from "@/config/tabs";
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -41,10 +43,7 @@ export default function CRMPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            {/* Page Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 flex-shrink-0">
-                <h1 className="text-xl font-bold tracking-tight">Sales Pipeline</h1>
-            </div>
+            <ModuleTabs tabs={salesTabs} groupId="sales" />
 
             {!isPro ? (
                 <LockedFeature
@@ -54,9 +53,8 @@ export default function CRMPage() {
                     description="Manage your sales pipeline with customizable stages, deal tracking, and revenue forecasting. PRO gets 1 pipeline; ENTERPRISE gets unlimited pipelines with automation."
                 />
             ) : (
-                <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
-                    {/* Sub-database Render */}
-                    <div className="flex-1 w-full min-h-0">
+                <div className="w-full flex-1 flex flex-col pt-6 pb-6 px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
+                    <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 relative">
                         <DatabaseCloneDynamic key={activeDb} databaseId={activeDb} headerExtra={headerTabs} hideViewTabs />
                     </div>
                 </div>

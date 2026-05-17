@@ -9,20 +9,22 @@ export const hrTabs = [
 
 export const relationsTabs: { label: string; href: string; id: string; }[] = [];
 
-const RELATIONS_TAB_KEYS: Record<string, string> = {};
+export const contactsTabs = [
+    { label: 'CONTACTS', href: '/admin/contacts', id: 'contacts' }
+];
 
-export function getRelationsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
-    return [];
-}
+export const suppliersTabs = [
+    { label: 'SUPPLIERS', href: '/admin/suppliers', id: 'suppliers' }
+];
 
-/**
- * Relations tabs filtered by plan — Sales Pipeline hidden for FREE.
- */
-const REL_TIER_ORDER = ['FREE', 'PRO', 'ENTERPRISE'] as const;
-const REL_PLAN_GATE: Record<string, 'PRO' | 'ENTERPRISE'> = {};
-export function getFilteredRelationsTabs(planType: string, t?: (key: string) => string, tHas?: (key: string) => boolean): typeof relationsTabs {
-    return [];
-}
+export const salesTabs = [
+    { label: 'SALES PIPELINE', href: '/admin/crm', id: 'sales' }
+];
+
+export const quotationsTabs = [
+    { label: 'QUOTATIONS', href: '/admin/quotations', id: 'quotations' }
+];
+
 
 export const frontendTabs = [
     { label: 'PAGES / CONTENT', href: '/admin/content', id: 'content' },

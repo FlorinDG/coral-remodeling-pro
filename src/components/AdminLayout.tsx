@@ -60,7 +60,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const { data: session } = useSession();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [companyName, setCompanyName] = useState<string>('');
-    const [brandColor, setBrandColor] = useState<string>('#d75d00');
+    const [brandColor, setBrandColor] = useState<string>('#d35400');
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
     const [verifyBannerDismissed, setVerifyBannerDismissed] = useState(false);
     const [resendingVerification, setResendingVerification] = useState(false);

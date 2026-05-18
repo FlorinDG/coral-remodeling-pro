@@ -70,7 +70,7 @@ export const InvoicePDFTemplate = ({
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
-    const accent = brandColor || '#d75d00';
+    const accent = brandColor || '#d35400';
     const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang);
 
     const isT1 = templateId === 't1';

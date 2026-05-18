@@ -49,7 +49,7 @@ export const QuotationPDFTemplate = ({
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
-    const accent = brandColor || '#d75d00';
+    const accent = brandColor || '#d35400';
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';

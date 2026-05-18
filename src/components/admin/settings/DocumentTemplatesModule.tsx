@@ -156,7 +156,7 @@ export default function DocumentTemplatesModule() {
     const [mode, setMode] = useState<'dynamic' | 'stationery'>('dynamic');
 
     const [selectedTemplate, setSelectedTemplate] = useState('t1');
-    const [primaryColor, setPrimaryColor] = useState('#d75d00');
+    const [primaryColor, setPrimaryColor] = useState('#d35400');
     const [documentLanguage, setDocumentLanguage] = useState('nl');
 
     const [logoPreview, setLogoPreview] = useState<string | null>(null);

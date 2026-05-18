@@ -212,7 +212,50 @@ function PropertyRow({
         );
     } else if (property.type === 'relation') {
         const ids: string[] = Array.isArray(value) ? (value as string[]) : [];
-        valueEl = <RelationValue ids={ids} />;
+        const relationDatabaseId = property.config?.relationDatabaseId;
+        const targetDb = useDatabaseStore.getState().databases.find(db => db.id === relationDatabaseId);
+        const unselected = targetDb 
+            ? targetDb.pages.filter(p => !ids.includes(p.id)) 
+            : [];
+        valueEl = (
+            <div className="flex flex-col gap-1.5 w-full">
+                <div className="flex flex-wrap gap-1">
+                    {ids.map(sid => {
+                        let title = sid.slice(0, 8) + '…';
+                        if (targetDb) {
+                            const page = targetDb.pages.find(p => p.id === sid);
+                            if (page) {
+                                title = String(page.properties['title'] || page.properties['name'] || sid.slice(0, 8));
+                            }
+                        }
+                        return (
+                            <div key={sid} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-[11px] text-neutral-700 dark:text-neutral-300">
+                                <span className="truncate max-w-[120px]">{title}</span>
+                                {!isReadOnly && (
+                                    <button onClick={() => onChange(property.id, ids.filter(x => x !== sid))} className="hover:text-red-500 transition-colors ml-1">
+                                        <X className="w-2.5 h-2.5" />
+                                    </button>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+                {!isReadOnly && unselected.length > 0 && (
+                    <select
+                        value=""
+                        onChange={e => { if (e.target.value) onChange(property.id, [...ids, e.target.value]); }}
+                        className={`${inputBase} text-neutral-400 cursor-pointer border border-neutral-200 dark:border-white/10 rounded px-1 py-0.5 mt-0.5`}
+                    >
+                        <option value="">+ link record…</option>
+                        {unselected.map(p => {
+                            const pTitle = String(p.properties['title'] || p.properties['name'] || p.id.slice(0, 8));
+                            return <option key={p.id} value={p.id}>{pTitle}</option>;
+                        })}
+                    </select>
+                )}
+                {ids.length === 0 && isReadOnly && <span className="text-neutral-400 text-xs italic">—</span>}
+            </div>
+        );
     } else if (property.type === 'date') {
         const strVal = String(value || '').slice(0, 10); // ISO date
         valueEl = (
@@ -316,12 +359,17 @@ function PropertyRow({
 
     return (
         <div className="group flex items-center gap-2 py-1 hover:bg-neutral-100 dark:hover:bg-white/[0.03] transition-colors -mx-4 px-4 border-b border-neutral-100/50 dark:border-white/5 last:border-0">
-            {/* Grip (only if not read-only and provided) */}
-            {!isReadOnly && (
-                <div {...dragHandleProps} className="w-4 flex-shrink-0 text-neutral-300 dark:text-neutral-700 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing">
-                    <GripVertical className="w-3.5 h-3.5" />
-                </div>
-            )}
+            {/* Grip (always rendered to prevent hello-pangea/dnd invariant crashes, but visually hidden if read-only) */}
+            <div 
+                {...dragHandleProps} 
+                className={`w-4 flex-shrink-0 text-neutral-300 dark:text-neutral-700 cursor-grab active:cursor-grabbing transition-all ${
+                    isReadOnly 
+                        ? 'opacity-0 pointer-events-none w-0 h-0 overflow-hidden invisible' 
+                        : 'opacity-0 group-hover:opacity-100'
+                }`}
+            >
+                {!isReadOnly && <GripVertical className="w-3.5 h-3.5" />}
+            </div>
             
             {/* Label Column */}
             <div className="w-24 lg:w-32 flex-shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 py-1">

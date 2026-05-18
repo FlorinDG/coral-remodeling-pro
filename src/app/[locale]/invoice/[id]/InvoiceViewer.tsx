@@ -149,7 +149,7 @@ export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, l
     const signedDate = properties?.signedAt;
     const dueDate = properties?.dueDate;
 
-    const brandColor = tenant.brandColor || '#d75d00';
+    const brandColor = tenant.brandColor || '#d35400';
     const grandTotal = calculateGrandTotal(parsedBlocks);
     const vatAmount = grandTotal * 0.21;
     const totalInclVat = grandTotal + vatAmount;

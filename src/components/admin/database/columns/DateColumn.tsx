@@ -159,6 +159,7 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
     return createPortal(
         <div
             ref={panelRef}
+            onMouseDown={(e) => e.stopPropagation()}
             className="fixed bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden select-none animate-in fade-in zoom-in-95 duration-150"
             style={{ top, left, zIndex: 99999, width: 280 }}
         >

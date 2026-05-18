@@ -154,7 +154,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                             </div>
 
                             {/* Context Card — Connected Properties */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[280px]">
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[280px] relative">
                                 <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
                                     <ExternalLink className="w-4 h-4 text-orange-500" /> Connected Properties
                                 </div>

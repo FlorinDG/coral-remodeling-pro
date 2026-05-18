@@ -311,7 +311,7 @@ function PropertyRow({
         );
     } else {
         // text, title, etc.
-        return <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} />;
+        valueEl = <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} />;
     }
 
     return (

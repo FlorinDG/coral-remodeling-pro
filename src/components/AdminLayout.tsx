@@ -144,6 +144,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const ACCOUNTANT_SIDEBAR_IDS = ['dashboard', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'];
 
     const isModuleLocked = (moduleId: string) => {
+        // Superadmin bypass
+        if (userRole === 'SUPERADMIN') return false;
         // Accountants only see financial items
         if (isAccountant && !ACCOUNTANT_SIDEBAR_IDS.includes(moduleId)) return true;
         const requiredModules = MODULE_MAP[moduleId];

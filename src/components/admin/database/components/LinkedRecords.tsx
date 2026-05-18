@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from 'react';
-import { ExternalLink, Loader2, Plus, Link2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ExternalLink, Loader2, Plus, Link2, Search, X, Check } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database, Page, Property, PropertyValue } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
@@ -10,10 +10,16 @@ import { useRouter, useParams } from 'next/navigation';
 interface LinkedRecordsProps {
     databaseId: string;
     pageId: string;
+    isModal?: boolean;
 }
 
-export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps) {
+export default function LinkedRecords({ databaseId, pageId, isModal = false }: LinkedRecordsProps) {
     const [isCreating, setIsCreating] = useState<string | null>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const [selectedPropId, setSelectedPropId] = useState<string | null>(null);
+    
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { resolveDbId } = useTenant();
     const router = useRouter();
@@ -27,9 +33,33 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
     const database = allDatabases.find((d: Database) => d.id === databaseId);
     const page = database?.pages.find((p: Page) => p.id === pageId);
 
+    const relationProps = database ? database.properties.filter((p: Property) => p.type === 'relation') : [];
+
+    // Set default selected property if not set
+    useEffect(() => {
+        if (relationProps.length > 0 && !selectedPropId) {
+            setSelectedPropId(relationProps[0].id);
+        }
+    }, [relationProps, selectedPropId]);
+
+    // Handle clicking outside the dropdown popover
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
     if (!database || !page) return null;
 
-    const relationProps = database.properties.filter((p: Property) => p.type === 'relation');
+    const selectedProp = relationProps.find(p => p.id === selectedPropId);
 
     const handleCreateAndLink = async (prop: Property) => {
         const targetDbId = prop.config?.relationDatabaseId;
@@ -55,19 +85,196 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
         }
 
         // Create the page in the store
-        const newPageId = createPage(resolvedTargetDbId, initialProps);
+        const newPage = createPage(resolvedTargetDbId, initialProps);
 
         // Link it to the current page
         const currentRelations = (page.properties[prop.id] as string[]) || [];
-        updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPageId]);
+        updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
         // Navigate to the new page
-        router.push(`/${locale}/admin/database/${resolvedTargetDbId}/${newPageId}`);
+        router.push(`/${locale}/admin/database/${resolvedTargetDbId}/${newPage.id}`);
         setIsCreating(null);
+        setIsOpen(false);
     };
 
+    const handleLinkExisting = (prop: Property, targetPageId: string) => {
+        const targetDbId = prop.config?.relationDatabaseId;
+        if (!targetDbId) return;
+
+        const resolvedTargetDbId = resolveDbId(targetDbId);
+        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+
+        // 1. Update current page's relation to include the targetPageId
+        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        if (!currentRelations.includes(targetPageId)) {
+            updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, targetPageId]);
+        }
+
+        // 2. Establish backlink if target database has a relation field back to this database
+        const targetRelationToCurrent = targetDb?.properties.find(p => 
+            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
+        );
+        if (targetRelationToCurrent) {
+            const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
+            if (targetPage) {
+                const targetRelations = (targetPage.properties[targetRelationToCurrent.id] as string[]) || [];
+                if (!targetRelations.includes(pageId)) {
+                    updatePageProperty(resolvedTargetDbId, targetPageId, targetRelationToCurrent.id, [...targetRelations, pageId]);
+                }
+            }
+        }
+
+        setIsOpen(false);
+    };
+
+    const handleUnlink = (prop: Property, targetPageId: string) => {
+        const targetDbId = prop.config?.relationDatabaseId;
+        if (!targetDbId) return;
+
+        const resolvedTargetDbId = resolveDbId(targetDbId);
+        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+
+        // 1. Remove targetPageId from current page's relations
+        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        updatePageProperty(databaseId, pageId, prop.id, currentRelations.filter(id => id !== targetPageId));
+
+        // 2. Remove pageId from the target page's relations (backlink)
+        const targetRelationToCurrent = targetDb?.properties.find(p => 
+            p.type === 'relation' && p.config?.relationDatabaseId === databaseId
+        );
+        if (targetRelationToCurrent) {
+            const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
+            if (targetPage) {
+                const targetRelations = (targetPage.properties[targetRelationToCurrent.id] as string[]) || [];
+                updatePageProperty(resolvedTargetDbId, targetPageId, targetRelationToCurrent.id, targetRelations.filter(id => id !== pageId));
+            }
+        }
+    };
+
+    // Gather existing pages for the search dropdown of the selected target database
+    const getTargetDbOptions = () => {
+        if (!selectedProp) return [];
+        const targetDbId = selectedProp.config?.relationDatabaseId;
+        if (!targetDbId) return [];
+
+        const resolvedTargetDbId = resolveDbId(targetDbId);
+        const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
+        if (!targetDb) return [];
+
+        const currentRelations = (page.properties[selectedProp.id] as string[]) || [];
+
+        return targetDb.pages
+            .filter(p => !currentRelations.includes(p.id)) // exclude already connected ones
+            .filter(p => {
+                if (!search.trim()) return true;
+                const title = String(p.properties['title'] || p.properties['name'] || 'Untitled').toLowerCase();
+                return title.includes(search.toLowerCase());
+            });
+    };
+
+    const targetOptions = getTargetDbOptions();
+
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            {/* Cardinal Button - absolutely placed inside the card header */}
+            {relationProps.length > 0 && (
+                <div
+                    className={`absolute z-20 ${
+                        isModal 
+                            ? 'top-8 right-6' 
+                            : 'top-2.5 right-4'
+                    }`}
+                    ref={dropdownRef}
+                >
+                    <button
+                        onClick={() => setIsOpen(!isOpen)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+                    >
+                        <Plus className="w-3 h-3" />
+                        Connect New
+                    </button>
+
+                    {/* Popover Dropdown */}
+                    {isOpen && (
+                        <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-xl z-50 p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100">
+                            {/* Header / Relation Switcher (if multiple relation fields exist) */}
+                            {relationProps.length > 1 ? (
+                                <div className="flex flex-col gap-1 border-b border-neutral-100 dark:border-white/5 pb-2">
+                                    <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Relation Property</span>
+                                    <div className="flex flex-wrap gap-1">
+                                        {relationProps.map(p => (
+                                            <button
+                                                key={p.id}
+                                                onClick={() => { setSelectedPropId(p.id); setSearch(''); }}
+                                                className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+                                                    selectedPropId === p.id 
+                                                        ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400' 
+                                                        : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/10'
+                                                }`}
+                                            >
+                                                {p.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-[10px] font-extrabold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest border-b border-neutral-100 dark:border-white/5 pb-1.5">
+                                    Link {selectedProp?.name || 'Record'}
+                                </div>
+                            )}
+
+                            {/* Create New Action */}
+                            {selectedProp && (
+                                <button
+                                    disabled={!!isCreating}
+                                    onClick={() => handleCreateAndLink(selectedProp)}
+                                    className="w-full flex items-center justify-center gap-1.5 py-2 bg-neutral-50 hover:bg-neutral-100 dark:bg-white/5 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-200 border border-neutral-200 dark:border-white/10 rounded-xl text-xs font-bold transition-all active:scale-98 disabled:opacity-50"
+                                >
+                                    {isCreating === selectedProp.id ? <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" /> : <Plus className="w-3.5 h-3.5 text-orange-500" />}
+                                    Create New {selectedProp.name}
+                                </button>
+                            )}
+
+                            {/* Search & Link Existing Record */}
+                            {selectedProp && (
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-neutral-400" />
+                                        <input
+                                            type="text"
+                                            placeholder={`Search existing...`}
+                                            value={search}
+                                            onChange={e => setSearch(e.target.value)}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 outline-none text-xs pl-9 pr-3 py-2 rounded-xl text-neutral-900 dark:text-white placeholder-neutral-400"
+                                        />
+                                    </div>
+
+                                    {/* Existing Records List */}
+                                    <div className="max-h-40 overflow-y-auto flex flex-col gap-1 no-scrollbar pr-0.5">
+                                        {targetOptions.length > 0 ? (
+                                            targetOptions.map(opt => (
+                                                <button
+                                                    key={opt.id}
+                                                    onClick={() => handleLinkExisting(selectedProp, opt.id)}
+                                                    className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-all text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 group"
+                                                >
+                                                    <span className="truncate pr-2">{String(opt.properties['title'] || opt.properties['name'] || 'Untitled')}</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">Link</span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="py-4 text-center text-[10px] italic text-neutral-400">
+                                                No unlinked records found
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {relationProps.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-neutral-400 border-2 border-dashed border-neutral-100 dark:border-white/5 rounded-2xl">
                     <ExternalLink className="w-8 h-8 opacity-20 mb-3" />
@@ -75,9 +282,13 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
                 </div>
             )}
 
-            <div className="grid grid-cols-1 gap-4">
+            {/* Compact Cardless List Layout */}
+            <div className="flex flex-col gap-4">
                 {relationProps.map(prop => {
-                    const ids = (page.properties[prop.id] as string[]) || [];
+                    const rawVal = page.properties[prop.id];
+                    const ids: string[] = Array.isArray(rawVal)
+                        ? rawVal
+                        : (typeof rawVal === 'string' && rawVal ? [rawVal] : []);
                     const targetDbId = prop.config?.relationDatabaseId;
                     const resolvedTargetDbId = targetDbId ? resolveDbId(targetDbId) : null;
                     const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
@@ -96,46 +307,54 @@ export default function LinkedRecords({ databaseId, pageId }: LinkedRecordsProps
                     }).filter(Boolean) as { db: Database, page: Page }[];
 
                     return (
-                        <div key={prop.id} className="flex flex-col bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                            <div className="flex items-center justify-between px-4 py-3 bg-neutral-50/50 dark:bg-white/5 border-b border-neutral-100 dark:border-white/5">
-                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 flex items-center gap-2">
-                                    <Link2 className="w-3 h-3 opacity-50" />
-                                    {prop.name}
-                                </h3>
-                                <button
-                                    disabled={!!isCreating}
-                                    onClick={() => handleCreateAndLink(prop)}
-                                    className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50"
-                                >
-                                    {isCreating === prop.id ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Plus className="w-2.5 h-2.5" />}
-                                    Connect New
-                                </button>
-                            </div>
+                        <div key={prop.id} className="flex flex-col">
+                            {/* Section Label */}
+                            <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-1.5 flex items-center gap-1.5">
+                                <Link2 className="w-3.5 h-3.5 opacity-60 text-orange-500" />
+                                {prop.name}
+                            </h3>
 
-                            <div className="p-2 space-y-1.5">
+                            {/* Clean List */}
+                            <div className="space-y-1">
                                 {linkedPages.length > 0 ? (
                                     linkedPages.map((lp) => (
-                                        <button
+                                        <div
                                             key={lp.page.id}
-                                            onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
-                                            className="w-full flex items-center justify-between p-2.5 bg-transparent hover:bg-neutral-50 dark:hover:bg-white/[0.03] border border-transparent hover:border-neutral-200 dark:hover:border-white/10 rounded-xl transition-all group text-left"
+                                            className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/[0.02] border border-neutral-100 dark:border-white/5 hover:border-neutral-200 dark:hover:border-white/10 rounded-xl transition-all group"
                                         >
-                                            <div className="flex flex-col min-w-0 pr-2">
-                                                <span className="text-xs font-bold text-neutral-900 dark:text-white group-hover:text-orange-500 transition-colors truncate">
+                                            <button
+                                                onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
+                                                className="flex-1 flex items-center gap-2 min-w-0 text-left"
+                                            >
+                                                <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
                                                     {String(lp.page.properties['title'] || lp.page.properties['name'] || 'Untitled')}
                                                 </span>
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 mt-0.5">
+                                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-neutral-100 dark:bg-white/5 text-neutral-500 rounded uppercase tracking-wider shrink-0">
                                                     {lp.db.name}
                                                 </span>
+                                            </button>
+                                            
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
+                                                    className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                                                    title="View Detail"
+                                                >
+                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleUnlink(prop, lp.page.id)}
+                                                    className="p-1 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg transition-colors"
+                                                    title="Unlink"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
                                             </div>
-                                            <div className="w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center border border-neutral-200 dark:border-white/10 shrink-0 group-hover:bg-orange-500/10 transition-colors">
-                                                <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-orange-500 transition-colors" />
-                                            </div>
-                                        </button>
+                                        </div>
                                     ))
                                 ) : (
-                                    <div className="py-6 flex flex-col items-center justify-center text-neutral-400 opacity-50">
-                                        <p className="text-[10px] italic">No records connected</p>
+                                    <div className="text-xs italic text-neutral-400 dark:text-neutral-500 pl-5">
+                                        —
                                     </div>
                                 )}
                             </div>

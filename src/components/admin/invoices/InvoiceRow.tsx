@@ -422,13 +422,13 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                 if (block.content) props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = block.content.replace(/<[^>]*>?/gm, '');
 
                                                                 const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                if (bProp && block.brutoPrice !== undefined && block.brutoPrice !== null) props[bProp] = block.brutoPrice;
                                                                 const vProp = findProp(['verkoop', 'selling']);
-                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                if (vProp && block.verkoopPrice !== undefined && block.verkoopPrice !== null) props[vProp] = block.verkoopPrice;
                                                                 const mProp = findProp(['marge', 'margin']);
-                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                if (mProp && block.margePercent !== undefined && block.margePercent !== null) props[mProp] = block.margePercent;
                                                                 const kProp = findProp(['korting', 'discount']);
-                                                                if (kProp && block.discountPercent) props[kProp] = block.discountPercent;
+                                                                if (kProp && block.discountPercent !== undefined && block.discountPercent !== null) props[kProp] = block.discountPercent;
                                                                 const uProp = findProp(['eenheid', 'unit', 'maat']);
                                                                 if (uProp && block.unit) props[uProp] = block.unit;
 
@@ -447,11 +447,11 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                 props[findProp(['naam', 'titel', 'title', 'name']) || 'title'] = (block.content || 'Nieuw Item').replace(/<[^>]*>?/gm, '');
 
                                                                 const bProp = findProp(['bruto', 'kost', 'prijs', 'price', 'inkoop']);
-                                                                if (bProp && block.brutoPrice) props[bProp] = block.brutoPrice;
+                                                                if (bProp && block.brutoPrice !== undefined && block.brutoPrice !== null) props[bProp] = block.brutoPrice;
                                                                 const vProp = findProp(['verkoop', 'selling']);
-                                                                if (vProp && block.verkoopPrice) props[vProp] = block.verkoopPrice;
+                                                                if (vProp && block.verkoopPrice !== undefined && block.verkoopPrice !== null) props[vProp] = block.verkoopPrice;
                                                                 const mProp = findProp(['marge', 'margin']);
-                                                                if (mProp && block.margePercent) props[mProp] = block.margePercent;
+                                                                if (mProp && block.margePercent !== undefined && block.margePercent !== null) props[mProp] = block.margePercent;
                                                                 const uProp = findProp(['eenheid', 'unit', 'maat']);
                                                                 if (uProp && block.unit) props[uProp] = block.unit;
 

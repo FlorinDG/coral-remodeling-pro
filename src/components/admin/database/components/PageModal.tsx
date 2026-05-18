@@ -622,51 +622,48 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                             <Droppable droppableId="modal-properties-list">
                                 {(provided) => (
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-collapse">
-                                            <thead className="bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10">
-                                                <tr>
-                                                    <th className="w-10 px-4 py-2"></th>
-                                                    <th className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500 w-[160px]">Property</th>
-                                                    <th className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Value</th>
-                                                    <th className="w-10 px-4 py-2 text-right"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody
+                                        <div className="w-full flex flex-col min-w-[600px]">
+                                            {/* Table Header */}
+                                            <div className="flex items-center bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10 px-4 py-2 font-semibold">
+                                                <div className="w-10 flex-shrink-0"></div>
+                                                <div className="w-[160px] flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Property</div>
+                                                <div className="flex-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Value</div>
+                                                <div className="w-10 flex-shrink-0 text-right"></div>
+                                            </div>
+                                            {/* Table Body */}
+                                            <div
                                                 {...provided.droppableProps}
                                                 ref={provided.innerRef}
-                                                className="divide-y divide-neutral-100 dark:divide-white/5"
+                                                className="divide-y divide-neutral-100 dark:divide-white/5 flex flex-col"
                                             >
                                                 {database.properties.filter(p => p.id !== 'title').map((prop, index) => (
                                                     <Draggable key={prop.id} draggableId={prop.id} index={index}>
                                                         {(provided, snapshot) => (
-                                                            <tr
+                                                            <div
                                                                 ref={provided.innerRef}
                                                                 {...provided.draggableProps}
-                                                                className={`group transition-colors ${snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded-xl z-50' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`}
-                                                                style={{
-                                                                    ...provided.draggableProps.style,
-                                                                    display: snapshot.isDragging ? 'table' : 'table-row'
-                                                                }}
+                                                                className={`flex items-center group transition-colors px-4 py-2 ${snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded-xl z-50' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`}
+                                                                style={provided.draggableProps.style}
                                                             >
-                                                                <td className="px-4 py-2 align-top pt-3">
+                                                                <div className="w-10 flex-shrink-0 align-top">
                                                                     <div
                                                                         {...provided.dragHandleProps}
-                                                                        className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing"
+                                                                        className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing w-fit"
                                                                     >
                                                                         <GripVertical className="w-3.5 h-3.5" />
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-4 py-2 align-top pt-3">
+                                                                </div>
+                                                                <div className="w-[160px] flex-shrink-0 align-top pr-4">
                                                                     <div className="flex flex-col gap-0.5">
                                                                         <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate">
                                                                             {prop.name}
                                                                         </span>
                                                                         <span className="text-[9px] text-neutral-400 opacity-50 font-mono truncate">{prop.type}</span>
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-4 py-2 align-top">
+                                                                </div>
+                                                                <div className="flex-1 align-top min-w-0 pr-4">
                                                                     <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
-                                                                        {(prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer') ? (
+                                                                        {(prop.type === 'text' && (prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer')) ? (
                                                                             <SmartVATLookup
                                                                                 value={(page.properties[prop.id] as string) || ''}
                                                                                 onChange={(val) => updatePageProperty(databaseId, pageId, prop.id, val)}
@@ -849,8 +846,8 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                             />
                                                                         )}
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-4 py-2 align-top pt-3 text-right">
+                                                                </div>
+                                                                <div className="w-10 flex-shrink-0 text-right align-top pt-1">
                                                                     <DropdownMenu>
                                                                         <DropdownMenuTrigger asChild>
                                                                             <button className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -878,14 +875,14 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                             </DropdownMenuItem>
                                                                         </DropdownMenuContent>
                                                                     </DropdownMenu>
-                                                                </td>
-                                                            </tr>
+                                                                </div>
+                                                            </div>
                                                         )}
                                                     </Draggable>
                                                 ))}
                                                 {provided.placeholder}
-                                            </tbody>
-                                        </table>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </Droppable>
@@ -908,7 +905,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         </div>
 
                         {/* Connected Records Section */}
-                        <div className="mt-12 pt-8 border-t border-neutral-100 dark:border-white/5 px-6 md:px-0">
+                        <div className="mt-12 pt-8 border-t border-neutral-100 dark:border-white/5 px-6 md:px-0 relative">
                             <div className="flex items-center gap-3 mb-6">
                                 <div className="p-2.5 bg-orange-500/10 rounded-2xl">
                                     <Link2 className="w-5 h-5 text-orange-500" />
@@ -918,7 +915,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                     <p className="text-xs text-neutral-500">Cross-reference and quick-create related items.</p>
                                 </div>
                             </div>
-                            <LinkedRecords databaseId={databaseId} pageId={pageId} />
+                            <LinkedRecords databaseId={databaseId} pageId={pageId} isModal />
                         </div>
                     </ErrorBoundary>
                 </div>

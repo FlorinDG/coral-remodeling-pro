@@ -34,7 +34,7 @@ export function getModuleAccess(
     const role = user.role ?? '';
 
     // Owners/admins always get ALL
-    if (WORKSPACE_OWNER_ROLES.includes(role as typeof WORKSPACE_OWNER_ROLES[number])) {
+    if (WORKSPACE_OWNER_ROLES.includes(role as typeof WORKSPACE_OWNER_ROLES[number]) || role === ROLES.SUPERADMIN) {
         return 'ALL';
     }
 

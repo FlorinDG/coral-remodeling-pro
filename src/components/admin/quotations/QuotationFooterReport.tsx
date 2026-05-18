@@ -36,19 +36,23 @@ export default function QuotationFooterReport({
         let hasLineMedecontractant = false;
         const vatMap = new Map<number, { base: number; vat: number }>();
 
-        const accumulate = (nodes: Block[]) => {
+        const accumulate = (nodes: Block[], multiplier = 1) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
+
+                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
+                    ? (b.quantity || 1) 
+                    : 1;
+                const nextMultiplier = multiplier * currentQty;
                 
                 if (b.children && b.children.length > 0) {
-                    accumulate(b.children);
+                    accumulate(b.children, nextMultiplier);
                     return;
                 }
 
                 if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    const qty = b.quantity || 1;
                     const price = b.verkoopPrice || 0;
-                    const lineTotal = price * qty;
+                    const lineTotal = price * nextMultiplier;
                     subtotal += lineTotal;
                     lineCount++;
 
@@ -73,7 +77,7 @@ export default function QuotationFooterReport({
             });
         };
 
-        accumulate(blocks);
+        accumulate(blocks, 1);
 
         const vatBreakdown = Array.from(vatMap.entries())
             .sort((a, b) => b[0] - a[0])
@@ -86,36 +90,39 @@ export default function QuotationFooterReport({
     const { grandKost, grandVerkoop } = useMemo(() => {
         let grandKost = 0;
         let grandVerkoop = 0;
-        const accumulate = (nodes: Block[], parentIsLoon = false) => {
+        const accumulate = (nodes: Block[], parentIsLoon = false, multiplier = 1) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
 
                 const hasChildren = b.children && b.children.length > 0;
-                const qty = b.quantity || 1;
+                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
+                    ? (b.quantity || 1) 
+                    : 1;
+                const nextMultiplier = multiplier * currentQty;
 
                 if (b.calculationType === 'loon' && hasChildren) {
                     // Parent is Loon and has subcomponents:
                     // Profit is parent's selling price minus children's purchase costs (Brutto)
-                    grandVerkoop += (b.verkoopPrice || 0) * qty;
-                    accumulate(b.children || [], true); // Recurse children, skip their selling price
+                    grandVerkoop += (b.verkoopPrice || 0) * nextMultiplier;
+                    accumulate(b.children || [], true, nextMultiplier); // Recurse children, skip their selling price
                     return;
                 }
 
                 if (hasChildren) {
-                    accumulate(b.children || [], false);
+                    accumulate(b.children || [], parentIsLoon, nextMultiplier);
                     return;
                 }
 
                 if (b.type === 'article' || b.type === 'bestek' || b.type === 'line') {
                     const nettokost = b.costPrice !== undefined ? b.costPrice : (b.brutoPrice || 0) * (1 - (b.discountPercent || 0) / 100);
-                    grandKost += nettokost * qty;
+                    grandKost += nettokost * nextMultiplier;
                     if (!parentIsLoon) {
-                        grandVerkoop += (b.verkoopPrice || 0) * qty;
+                        grandVerkoop += (b.verkoopPrice || 0) * nextMultiplier;
                     }
                 }
             });
         };
-        accumulate(blocks);
+        accumulate(blocks, false, 1);
         return { grandKost, grandVerkoop };
     }, [blocks]);
 

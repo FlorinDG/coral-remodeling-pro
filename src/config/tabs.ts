@@ -9,6 +9,10 @@ export const hrTabs = [
 
 export const relationsTabs: { label: string; href: string; id: string; }[] = [];
 
+export function getFilteredRelationsTabs(planType: string, t?: (key: string) => string, tHas?: (key: string) => boolean) {
+    return relationsTabs;
+}
+
 export const contactsTabs = [
     { label: 'CONTACTS', href: '/admin/contacts', id: 'contacts' }
 ];

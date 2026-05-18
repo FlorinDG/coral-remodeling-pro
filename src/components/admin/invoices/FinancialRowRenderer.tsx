@@ -203,8 +203,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
                 const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
                 const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
-                const cCost = bPrice * (1 - dPerc / 100);
-                payload.verkoopPrice = Math.round(cCost * (1 + mPerc / 100) * 100) / 100;
+                const nettokost = bPrice * (1 - dPerc / 100);
+                payload.costPrice = nettokost; // Derived Nettokost (nettokost = brutoPrice * (1 - discountPercent / 100))
+                const margeEuro = nettokost * (mPerc / 100); // margeEuro = nettokost * (margePercent / 100)
+                payload.verkoopPrice = Math.round((nettokost + margeEuro) * 100) / 100; // verkoopPrice = nettokost + margeEuro
             } else {
                 const numVerkoop = parseNumber(rawVerkoop);
                 if (numVerkoop !== undefined) {
@@ -242,20 +244,22 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
         const currentBruto = b.brutoPrice || 0;
         const currentDiscount = b.discountPercent || 0;
-        const currentCost = currentBruto * (1 - currentDiscount / 100);
+        const nettokost = currentBruto * (1 - currentDiscount / 100);
+        payload.costPrice = nettokost; // Derived Nettokost (nettokost = brutoPrice * (1 - discountPercent / 100))
 
         if (field === 'verkoopPrice') {
             // Backwards engineering: User explicitly overwrites Verkoop, derive Marge explicitly
             const manualVerkoop = value;
-            if (currentCost > 0) {
-                payload.margePercent = Math.round(((manualVerkoop / currentCost) - 1) * 10000) / 100;
+            if (nettokost > 0) {
+                payload.margePercent = Math.round(((manualVerkoop - nettokost) / nettokost) * 10000) / 100;
             } else {
                 payload.margePercent = 100; // Infinity edge case lock
             }
         } else {
             // Standard Propagation: Parent variable shifted, compute resulting Verkoop
             const currentMarge = b.margePercent || 0;
-            const computedVerkoop = Math.round(currentCost * (1 + currentMarge / 100) * 100) / 100;
+            const margeEuro = nettokost * (currentMarge / 100); // margeEuro = nettokost * (margePercent / 100)
+            const computedVerkoop = Math.round((nettokost + margeEuro) * 100) / 100; // verkoopPrice = nettokost + margeEuro
             payload.verkoopPrice = computedVerkoop;
         }
 

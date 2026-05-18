@@ -107,7 +107,8 @@ export default function QuotationFooterReport({
                 }
 
                 if (b.type === 'article' || b.type === 'bestek' || b.type === 'line') {
-                    grandKost += (b.brutoPrice || 0) * (1 - (b.discountPercent || 0) / 100) * qty;
+                    const nettokost = b.costPrice !== undefined ? b.costPrice : (b.brutoPrice || 0) * (1 - (b.discountPercent || 0) / 100);
+                    grandKost += nettokost * qty;
                     if (!parentIsLoon) {
                         grandVerkoop += (b.verkoopPrice || 0) * qty;
                     }

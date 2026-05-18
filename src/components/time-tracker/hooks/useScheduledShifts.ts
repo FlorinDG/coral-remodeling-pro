@@ -158,6 +158,8 @@ export function useScheduledShifts() {
     if ('shift_date' in data && !data.shiftDate) normalized.shiftDate = data.shift_date;
     if ('shift_start' in data && !data.shiftStart) normalized.shiftStart = data.shift_start;
     if ('shift_end' in data && !data.shiftEnd) normalized.shiftEnd = data.shift_end;
+    if ('shift_name' in data && !data.shiftName) normalized.shiftName = data.shift_name;
+    if ('project_id' in data && !data.projectId) normalized.projectId = data.project_id;
 
     try {
       const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -226,7 +227,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                 if (rawType !== undefined && rawType !== null) {
                     const lowerType = String(rawType).toLowerCase();
-                    if (['materieel', 'levering', 'loon', 'indirect'].includes(lowerType)) {
+                    if (['materieel', 'levering', 'loon', 'indirect', 'bestek', 'oa'].includes(lowerType)) {
                         payload.calculationType = lowerType as any;
                     }
                 }
@@ -467,6 +468,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Type</label>
                     <select
                         className="w-full bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5"
+                        style={{ textAlign: 'center', textAlignLast: 'center' }}
                         value={block.calculationType || 'loon'}
                         onChange={(e) => onUpdate({ calculationType: e.target.value as any })}
                     >
@@ -474,6 +476,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         <option value="levering" className="text-black bg-white dark:text-white dark:bg-[#111]">Levering</option>
                         <option value="loon" className="text-black bg-white dark:text-white dark:bg-[#111]">Loon</option>
                         <option value="indirect" className="text-black bg-white dark:text-white dark:bg-[#111]">Indirect</option>
+                        <option value="bestek" className="text-black bg-white dark:text-white dark:bg-[#111]">Bestek</option>
+                        <option value="oa" className="text-black bg-white dark:text-white dark:bg-[#111]">OA</option>
                     </select>
                 </div>
 
@@ -567,7 +571,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             value={block.discountPercent || ''}
                             onChange={(e) => handleMathChange('discountPercent', parseFloat(e.target.value) || 0)}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-red-500 dark:text-red-400 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>

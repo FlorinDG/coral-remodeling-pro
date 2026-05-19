@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
@@ -24,12 +25,16 @@ interface QuotationPDFProps {
     templateId?: TemplateId;
     language?: string;
     showSubcomponents?: boolean;
+    vatCalcMode?: 'lines' | 'total';
+    vatRegime?: string;
 }
 
 export const QuotationPDFTemplate = ({
     blocks, quotationTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     showSubcomponents = false,
+    vatCalcMode = 'lines',
+    vatRegime = '21',
 }: QuotationPDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
@@ -92,6 +97,7 @@ export const QuotationPDFTemplate = ({
             
             // Helper to calculate total including nested children and variants
             const getBlockTotalRecursive = (b: Block): number => {
+                if (b.isOptional) return 0;
                 if (b.children && b.children.length > 0) {
                     const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursive(child), 0);
                     return childrenSum * (b.quantity || 1);
@@ -183,8 +189,131 @@ export const QuotationPDFTemplate = ({
         return rows;
     };
 
-    const taxAmount   = grandTotal * 0.21;
+    const calcVatAndTotal = () => {
+        let computedSubtotal = 0;
+        let totalVat = 0;
+        const vatMap = new Map<number, { base: number; vat: number }>();
+        let hasLineMedecontractant = false;
+
+        const accumulateVat = (nodes: Block[], multiplier = 1) => {
+            (nodes || []).forEach(b => {
+                if (b.isOptional) return;
+
+                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
+                    ? (b.quantity || 1) 
+                    : 1;
+                const nextMultiplier = multiplier * currentQty;
+                
+                if (b.children && b.children.length > 0) {
+                    accumulateVat(b.children, nextMultiplier);
+                    return;
+                }
+
+                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
+                    const price = b.verkoopPrice || 0;
+                    const lineTotal = price * nextMultiplier;
+                    computedSubtotal += lineTotal;
+
+                    const lineVatRate = b.vatRate ?? 21;
+
+                    if (b.vatMedecontractant) {
+                        hasLineMedecontractant = true;
+                    }
+
+                    let effectiveRate: number;
+                    if (vatCalcMode === 'lines') {
+                        effectiveRate = b.vatMedecontractant ? 0 : lineVatRate;
+                    } else {
+                        effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime);
+                    }
+
+                    const existing = vatMap.get(effectiveRate) || { base: 0, vat: 0 };
+                    existing.base += lineTotal;
+                    existing.vat += lineTotal * (effectiveRate / 100);
+                    vatMap.set(effectiveRate, existing);
+                }
+            });
+        };
+
+        accumulateVat(blocks, 1);
+        
+        const vatBreakdown = Array.from(vatMap.entries())
+            .sort((a, b) => b[0] - a[0])
+            .map(([rate, data]) => ({ rate, ...data }));
+
+        totalVat = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
+
+        return {
+            subtotal: computedSubtotal,
+            taxAmount: totalVat,
+            vatBreakdown,
+            hasLineMedecontractant,
+        };
+    };
+
+    const { taxAmount, vatBreakdown, hasLineMedecontractant } = calcVatAndTotal();
     const totalInclTax = grandTotal + taxAmount;
+
+    const renderVatRows = (boxWidth: number) => {
+        if (vatCalcMode === 'lines') {
+            if (vatBreakdown.length === 0) {
+                return (
+                    <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} (21%):</Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  0.00</Text>
+                    </View>
+                );
+            }
+            return vatBreakdown.map(({ rate, vat }) => {
+                const label = `${t('vat', lang)} (${rate === 0 ? (hasLineMedecontractant ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : '0%') : `${rate}%`}):`;
+                return (
+                    <View key={rate} style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between', marginTop: 2 }}>
+                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {vat.toFixed(2)}</Text>
+                    </View>
+                );
+            });
+        } else {
+            const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
+            return (
+                <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
+                </View>
+            );
+        }
+    };
+
+    const renderVatRowsDynamic = () => {
+        if (vatCalcMode === 'lines') {
+            if (vatBreakdown.length === 0) {
+                return (
+                    <View style={s.summaryRow}>
+                        <Text style={s.summaryLabel}>{t('vat', lang)} (21%):</Text>
+                        <Text style={s.summaryValue}>€  0.00</Text>
+                    </View>
+                );
+            }
+            return vatBreakdown.map(({ rate, vat }) => {
+                const label = `${t('vat', lang)} (${rate === 0 ? (hasLineMedecontractant ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : '0%') : `${rate}%`}):`;
+                return (
+                    <View key={rate} style={s.summaryRow}>
+                        <Text style={s.summaryLabel}>{label}</Text>
+                        <Text style={s.summaryValue}>€  {vat.toFixed(2)}</Text>
+                    </View>
+                );
+            });
+        } else {
+            const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
+            return (
+                <View style={s.summaryRow}>
+                    <Text style={s.summaryLabel}>{label}</Text>
+                    <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
+                </View>
+            );
+        }
+    };
+
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 
     // ── STATIONERY MODE ─────────────────────────────────────────────────────
@@ -231,10 +360,7 @@ export const QuotationPDFTemplate = ({
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
                                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {grandTotal.toFixed(2)}</Text>
                                 </View>
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} (21%):</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
-                                </View>
+                                {renderVatRows(240)}
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
                                     <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('grand_total_incl', lang)}:</Text>
                                     <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€  {totalInclTax.toFixed(2)}</Text>
@@ -242,7 +368,14 @@ export const QuotationPDFTemplate = ({
                             </View>
                         </View>
 
-                        {/* Legal text */}
+                        {/* Medecontractant Legal Notice */}
+                        {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                            <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                                <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                    {t('footer_medecontractant_legal', lang)}
+                                </Text>
+                            </View>
+                        )}
                     </View>
 
                     {showWatermark && (
@@ -480,14 +613,19 @@ export const QuotationPDFTemplate = ({
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
                             <Text style={s.summaryValue}>€  {grandTotal.toFixed(2)}</Text>
                         </View>
-                        <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>{t('vat', lang)} (21%):</Text>
-                            <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
-                        </View>
+                        {renderVatRowsDynamic()}
                         {renderGrandTotal()}
                     </View>
                 </View>
 
+                {/* Medecontractant Legal Notice */}
+                {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                    <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }} wrap={false}>
+                        <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                            {t('footer_medecontractant_legal', lang)}
+                        </Text>
+                    </View>
+                )}
 
                 {renderFooter()}
 

@@ -50,7 +50,7 @@ export function withAlpha(hex: string, alphaHex: string): string {
         // Convert hex alpha (e.g. '12' or '1a') to decimal fraction (e.g. 18/255 = 0.07)
         const a = parseInt(alphaHex, 16) / 255;
         return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
-    } catch (e) {
+    } catch {
         return hex;
     }
 }
@@ -135,8 +135,8 @@ function mistStyles(accent: string) {
 
 // ─── T3: NAVY — Classic Corporate ───────────────────────────────────────────
 function navyStyles(accent: string) {
-    const dark = '#1a3a5c';          // Restored Classic Navy
-    const darkMid = '#245076';       // Restored Classic Navy Mid
+    const dark = darken(accent, 0.4);          // Dynamic Brand Navy Dark
+    const darkMid = darken(accent, 0.2);       // Dynamic Brand Navy Mid
     return {
         page: { paddingTop: 40, paddingBottom: 60, paddingHorizontal: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
         headerRow:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 20 },
@@ -169,8 +169,8 @@ function navyStyles(accent: string) {
 
 // ─── T4: PRISM — Geometric Diagonal ─────────────────────────────────────────
 function prismStyles(accent: string) {
-    const dark = '#1c2e4a';          // Restored Classic Prism Navy
-    const darkMid = '#26405e';       // Restored Classic Prism Mid
+    const dark = darken(accent, 0.4);          // Dynamic Brand Prism Dark
+    const darkMid = darken(accent, 0.2);       // Dynamic Brand Prism Mid
     return {
         page: { paddingTop: 0, paddingBottom: 60, paddingLeft: 0, paddingRight: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#222222' },
         headerRow:   { flexDirection: 'row' as const, alignItems: 'center' as const },

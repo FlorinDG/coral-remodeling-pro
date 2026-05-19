@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save } from 'lucide-react';
@@ -314,7 +315,18 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         )}
                                     </div>
 
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className="flex items-center gap-4 shrink-0">
+                                        {/* Optional Checkbox */}
+                                        <label className={`flex items-center gap-1.5 cursor-pointer select-none text-[10px] uppercase tracking-wider ${block.type === 'section' ? 'text-white/80 hover:text-white' : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-100'} transition-colors font-bold`}>
+                                            <input
+                                                type="checkbox"
+                                                checked={!!block.isOptional}
+                                                onChange={(e) => onUpdate(block.id, { isOptional: e.target.checked })}
+                                                className={`w-3.5 h-3.5 rounded border-neutral-350 dark:border-neutral-700 text-orange-500 focus:ring-orange-500 bg-transparent ${block.type === 'section' ? 'border-white/40 checked:bg-white checked:border-white focus:ring-white/20' : ''}`}
+                                            />
+                                            {language === 'nl' ? 'Optioneel' : language === 'fr' ? 'Optionnel' : 'Optional'}
+                                        </label>
+
                                         {/* Recursive Line Margin Mapping Engine */}
                                         <div className="flex flex-row items-center justify-end w-[160px] pr-[56px] relative group/del">
                                             <div className="flex flex-col items-end w-full">
@@ -431,6 +443,16 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 <button onClick={() => onDelete(block.id)} className="flex items-center hover:text-[#d75d00] transition-colors">
                                                     <Trash className="w-3.5 h-3.5 mr-1" /> Delete
                                                 </button>
+
+                                                <label className="flex items-center gap-1.5 cursor-pointer hover:text-[#d75d00] transition-colors select-none text-neutral-500 dark:text-neutral-450 normal-case font-bold">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={!!block.isOptional}
+                                                        onChange={(e) => onUpdate(block.id, { isOptional: e.target.checked })}
+                                                        className="w-3.5 h-3.5 rounded border-neutral-300 dark:border-neutral-700 text-orange-500 focus:ring-orange-500 bg-transparent"
+                                                    />
+                                                    {language === 'nl' ? 'Optioneel' : language === 'fr' ? 'Optionnel' : 'Optional'}
+                                                </label>
 
                                                 {hasLibraryAccess && (
                                                     <button

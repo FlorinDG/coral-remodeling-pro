@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
@@ -106,6 +107,32 @@ export const InvoicePDFTemplate = ({
         email || '',
     ].filter(Boolean);
 
+    const getBlockTotalRecursive = (b: Block): number => {
+        if (b.isOptional) return 0;
+        if (b.children && b.children.length > 0) {
+            const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursive(child), 0);
+            return childrenSum * (b.quantity || 1);
+        }
+        
+        let vDeltas = 0;
+        if (b.selectedVariants && b.articleId) {
+            const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
+            const page = db?.pages.find((p: any) => p.id === b.articleId);
+            const vProp = db?.properties.find((p: any) => p.type === 'variants');
+            if (page && vProp) {
+                const vConfig = page.properties[vProp.id];
+                if (vConfig && Array.isArray(vConfig)) {
+                    Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
+                        const axis = vConfig.find((a: any) => a.id === axisId);
+                        const opt = axis?.options.find((o: any) => o.id === optId);
+                        if (opt) vDeltas += opt.priceDelta;
+                    });
+                }
+            }
+        }
+        return ((b.unitPrice || b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
+    };
+
     // ── Recursive block renderer ────────────────────────────────────────────
     const renderBlocks = (nodes: Block[], depth = 0): React.ReactNode[] => {
         let rows: React.ReactNode[] = [];
@@ -113,29 +140,8 @@ export const InvoicePDFTemplate = ({
             if (block.isOptional) return;
             const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
             const cleanContent = stripHtml(block.content);
-            let blockTotal = 0;
-            let variantDeltas = 0;
-
-            if (!isContainer && !(block.children && block.children.length > 0)) {
-                if (block.selectedVariants && block.articleId) {
-                    const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
-                    const page = db?.pages.find((p: any) => p.id === block.articleId);
-                    const vProp = db?.properties.find((p: any) => p.type === 'variants');
-                    if (page && vProp) {
-                        const vConfig = page.properties[vProp.id];
-                        if (vConfig && Array.isArray(vConfig)) {
-                            Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {
-                                const axis = vConfig.find((a: any) => a.id === axisId);
-                                const opt = axis?.options.find((o: any) => o.id === optId);
-                                if (opt) variantDeltas += opt.priceDelta;
-                            });
-                        }
-                    }
-                }
-                const unitRetail = (block.unitPrice || block.verkoopPrice || 0) + variantDeltas;
-                blockTotal = unitRetail * (block.quantity || 1);
-            }
-
+            const blockTotal = getBlockTotalRecursive(block);
+            
             // Stationery mode uses minimal styling
             const baseRowStyle = isStationery
                 ? { flexDirection: 'row' as const, borderBottom: '0.5px solid #e0e0e0', paddingVertical: 5, paddingHorizontal: 40, fontSize: 9 }
@@ -151,14 +157,16 @@ export const InvoicePDFTemplate = ({
                 rows.push(
                     <View key={block.id} style={sectionStyle}>
                         <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
+                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
                     <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
+                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'text') {
@@ -170,16 +178,18 @@ export const InvoicePDFTemplate = ({
                 );
             } else {
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
+                const unitPrice = blockTotal / (block.quantity || 1);
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
                         <Text style={colDesc}>{cleanContent}</Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
-                        <Text style={colPrice}>€{((block.unitPrice || block.verkoopPrice || 0) + variantDeltas).toFixed(2)}</Text>
-                        <Text style={colTotal}>€{blockTotal.toFixed(2)}</Text>
+                        <Text style={colPrice}>€ {unitPrice.toFixed(2)}</Text>
+                        <Text style={colTotal}>€ {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             }
+
             if (block.children && block.children.length > 0) {
                 rows = rows.concat(renderBlocks(block.children, depth + 1));
             }
@@ -191,14 +201,21 @@ export const InvoicePDFTemplate = ({
     const vatBreakdown = useMemo(() => {
         const vatMap = new Map<number, { base: number; vat: number; isMedecontractant: boolean }>();
         
-        const accumulate = (nodes: Block[]) => {
-            nodes.forEach(b => {
+        const accumulate = (nodes: Block[], multiplier = 1) => {
+            (nodes || []).forEach(b => {
                 if (b.isOptional) return;
-                if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
-                    accumulate(b.children || []);
-                } else if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    const price = (b.unitPrice || b.verkoopPrice || 0) + (b.articleId ? 0 : 0); // variants handled in render loop but here we need totals
-                    // Actually, let's simplify and use the same logic as the render loop for consistency
+                
+                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
+                    ? (b.quantity || 1) 
+                    : 1;
+                const nextMultiplier = multiplier * currentQty;
+
+                if (b.children && b.children.length > 0) {
+                    accumulate(b.children, nextMultiplier);
+                    return;
+                }
+
+                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
                     let variantDeltas = 0;
                     if (b.selectedVariants && b.articleId) {
                         const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
@@ -215,7 +232,7 @@ export const InvoicePDFTemplate = ({
                             }
                         }
                     }
-                    const lineTotal = ((b.unitPrice || b.verkoopPrice || 0) + variantDeltas) * (b.quantity || 1);
+                    const lineTotal = ((b.unitPrice || b.verkoopPrice || 0) + variantDeltas) * nextMultiplier;
                     const rate = b.vatMedecontractant ? 0 : (b.vatRate ?? 21);
                     
                     const existing = vatMap.get(rate) || { base: 0, vat: 0, isMedecontractant: !!b.vatMedecontractant };

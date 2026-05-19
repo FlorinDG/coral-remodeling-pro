@@ -324,6 +324,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
                     language={docLanguage}
+                    vatCalcMode={vatCalcMode}
+                    vatRegime={vatRegime}
                 />
             );
 
@@ -381,6 +383,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     tenantProfile={tenantProfile}
                     templateId={tenantProfile?.documentTemplate || 't1'}
                     language={docLanguage}
+                    vatCalcMode={vatCalcMode}
+                    vatRegime={vatRegime}
                 />
             );
 
@@ -886,6 +890,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             templateId={tenantProfile?.documentTemplate || 't1'}
                                             language={docLanguage}
                                             showSubcomponents={true}
+                                            vatCalcMode={vatCalcMode}
+                                            vatRegime={vatRegime}
                                         />
                                     );
                                     const blob = await generatePdfBlob(doc, tenantProfile);
@@ -932,6 +938,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             templateId={tenantProfile?.documentTemplate || 't1'}
                                             language={docLanguage}
                                             showSubcomponents={false}
+                                            vatCalcMode={vatCalcMode}
+                                            vatRegime={vatRegime}
                                         />
                                     );
                                     const blob = await generatePdfBlob(doc, tenantProfile);

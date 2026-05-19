@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type PropertyType =
     | 'text'
     | 'number'
@@ -89,7 +90,7 @@ export interface Block {
 
     // --- Phase 10: Advanced Profitability & Hierarchies ---
     isOptional?: boolean; // If true, omit from Grand Total
-    calculationType?: 'levering' | 'materieel' | 'loon' | 'indirect'; // Used for the final Reporting Matrix
+    calculationType?: 'levering' | 'materieel' | 'loon' | 'indirect' | 'bestek' | 'oa'; // Used for the final Reporting Matrix
 
     // --- Phase 11: Product Variants ---
     selectedVariants?: Record<string, string>; // Maps axisId -> optionId

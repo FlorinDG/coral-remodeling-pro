@@ -116,6 +116,8 @@ const SETTINGS_TAB_KEYS: Record<string, string> = {
     'opt-relations': 'relations',
     'opt-tasks': 'tasks',
     'opt-website': 'website',
+    'opt-databases': 'databases',
+    'opt-templates': 'templates'
 };
 
 const settingsTabsBase = [
@@ -131,7 +133,9 @@ const settingsTabsBase = [
     { label: 'RELATIONS', href: '/admin/settings/relations', id: 'opt-relations' },
     { label: 'TASKS', href: '/admin/settings/tasks', id: 'opt-tasks' },
     { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' },
-    { label: 'PEPPOL', href: '/admin/settings/peppol', id: 'opt-peppol' }
+    { label: 'PEPPOL', href: '/admin/settings/peppol', id: 'opt-peppol' },
+    { label: 'DATABASES SCHEMA', href: '/admin/settings/databases', id: 'opt-databases' },
+    { label: 'TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' }
 ];
 
 export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {

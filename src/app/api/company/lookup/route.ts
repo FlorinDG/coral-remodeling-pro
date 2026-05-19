@@ -30,7 +30,27 @@ export async function GET(req: NextRequest) {
 
         const data = await response.json();
 
-        return NextResponse.json(data);
+        // Check Peppol Directory
+        let peppolActive = false;
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+            const peppolRes = await fetch(`https://directory.peppol.eu/search/1.0/json?q=${countryCode}${vatNumber}`, {
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (peppolRes.ok) {
+                const peppolData = await peppolRes.json();
+                if (peppolData['total-result-count'] > 0) {
+                    peppolActive = true;
+                }
+            }
+        } catch (err) {
+            console.log('Peppol check failed (non-blocking)', err);
+        }
+
+        return NextResponse.json({ ...data, peppolActive });
     } catch (e) {
         console.error('VAT lookup error', e);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

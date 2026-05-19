@@ -115,7 +115,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         vatNumber: string;
         rowId: string;
         anchorRect: DOMRect | null;
-        data?: { name: string | null; street: string | null; postalCode: string | null; city: string | null };
+        data?: { name: string | null; street: string | null; postalCode: string | null; city: string | null; peppolActive?: boolean };
     } | null;
     const [vatLookup, setVatLookup] = useState<VatLookupState>(null);
     const vatDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +143,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         street: streetLine,
                         postalCode: cityLineParts?.[1] || null,
                         city: cityLineParts?.[2] || null,
+                        peppolActive: !!data.peppolActive
                     }
                 } : null);
             })
@@ -750,6 +751,50 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         };
     }, [database?.id, database?.properties, rowData]);
 
+    // ── Automatic Background Peppol Verification ──────────────────────────
+    useEffect(() => {
+        if (!database || (database.id !== 'db-suppliers' && database.id !== 'db-clients')) return;
+        
+        const vatPropId = database.properties.find(p => 
+            ['vat', 'tva', 'btw', 'vat_number'].some(v => (p.name || '').toLowerCase().includes(v)) ||
+            p.id.toLowerCase() === 'vat'
+        )?.id;
+        
+        if (!vatPropId) return;
+
+        // Find pages that have a VAT but no peppol_active flag (not even false)
+        const uncheckedPages = database.pages.filter(p => {
+            const vatVal = String(p.properties[vatPropId] || '').replace(/[\s.]/g, '');
+            const hasVat = vatVal.length >= 8;
+            const isUnchecked = p.properties['peppol_active'] === undefined;
+            return hasVat && isUnchecked;
+        }).slice(0, 3); // process in small batches of 3
+
+        if (uncheckedPages.length === 0) return;
+
+        const checkBatch = async () => {
+            for (const page of uncheckedPages) {
+                const vatVal = String(page.properties[vatPropId] || '').replace(/[\s.]/g, '');
+                try {
+                    const res = await fetch(`/api/company/lookup?vat=${encodeURIComponent(vatVal)}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        updatePageProperty(database.id, page.id, 'peppol_active', !!data.peppolActive);
+                    } else {
+                        // Mark as checked (false) so we don't infinitely retry failed lookups
+                        updatePageProperty(database.id, page.id, 'peppol_active', false);
+                    }
+                } catch (err) {
+                    updatePageProperty(database.id, page.id, 'peppol_active', false);
+                }
+                // small delay between checks to avoid rate limits
+                await new Promise(r => setTimeout(r, 1000));
+            }
+        };
+
+        checkBatch();
+    }, [database, database?.id, database?.pages.length, updatePageProperty]); // trigger on DB load or new pages
+
     // Apply the VAT lookup data to the row
     const applyVatLookup = () => {
         if (!vatLookup?.data || !database) return;
@@ -762,11 +807,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
         const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
 
-        const { name, street, city, postalCode } = vatLookup.data;
+        const { name, street, city, postalCode, peppolActive } = vatLookup.data;
         if (companyPropId && name) updatePageProperty(database.id, vatLookup.rowId, companyPropId, name);
         if (addressPropId && street) updatePageProperty(database.id, vatLookup.rowId, addressPropId, street);
         if (cityPropId && city) updatePageProperty(database.id, vatLookup.rowId, cityPropId, city);
         if (postalPropId && postalCode) updatePageProperty(database.id, vatLookup.rowId, postalPropId, postalCode);
+        
+        // Save peppol_active flag internally
+        updatePageProperty(database.id, vatLookup.rowId, 'peppol_active', !!peppolActive);
+        
         setVatLookup(null);
     };
 
@@ -1209,6 +1258,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 disableContextMenu={isAccountant}
                                 headerRowHeight={0}
                                 height={gridHeight}
+                                rowClassName={({ rowData }: { rowData: Record<string, unknown> }) => rowData.peppol_active ? 'peppol-active-row' : ''}
                                 className="database-grid-custom tracking-wider"
                             />
                         </div>
@@ -1449,6 +1499,21 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         }
         .dsg-row:hover .title-open-button {
             opacity: 1 !important;
+        }
+
+        /* Peppol Active Styling */
+        .peppol-active-row [class*="dsg-col-vat"] .dsg-input,
+        .peppol-active-row [class*="dsg-col-btw"] .dsg-input,
+        .peppol-active-row [class*="dsg-col-tva"] .dsg-input {
+            color: #16a34a !important;
+            font-weight: 900 !important;
+            background-color: #f0fdf4 !important;
+        }
+        .dark .peppol-active-row [class*="dsg-col-vat"] .dsg-input,
+        .dark .peppol-active-row [class*="dsg-col-btw"] .dsg-input,
+        .dark .peppol-active-row [class*="dsg-col-tva"] .dsg-input {
+            color: #22c55e !important;
+            background-color: rgba(34, 197, 94, 0.1) !important;
         }
         `}} />
         </div>

@@ -318,7 +318,8 @@
         "tasks": "TAKEN",
         "calendar": "AGENDA",
         "files": "ARCHIEF",
-        "sales": "SALES"
+        "sales": "SALES",
+        "quotations": "QUOTATIONS"
       },
       "financialTabs": {
         "purchaseInvoices": "AANKOOPFACTUREN",
@@ -326,7 +327,7 @@
         "purchaseCreditNotes": "CREDITNOTA - AANKOOP",
         "salesCreditNotes": "CREDITNOTA - VERKOOP",
         "salesInvoices": "FACTUREN",
-        "quotations": "OFFERTES"
+        "quotations": "QUOTATIONS"
       },
       "pages": {
         "salesInvoices": "Verkoopfacturen",

@@ -317,7 +317,8 @@
         "tasks": "TÂCHES",
         "calendar": "AGENDA",
         "files": "FICHIERS",
-        "sales": "VENTES"
+        "sales": "VENTES",
+        "quotations": "QUOTATIONS"
       },
       "financialTabs": {
         "purchaseInvoices": "FACTURES D'ACHAT",
@@ -325,7 +326,7 @@
         "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
         "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
         "salesInvoices": "FACTURES",
-        "quotations": "DEVIS"
+        "quotations": "QUOTATIONS"
       },
       "pages": {
         "salesInvoices": "Factures de Vente",

@@ -318,7 +318,8 @@
         "tasks": "TASKS",
         "calendar": "CALENDAR",
         "files": "FILES",
-        "sales": "SALES"
+        "sales": "SALES",
+        "quotations": "QUOTATIONS"
       },
       "financialTabs": {
         "purchaseInvoices": "PURCHASE INVOICES",

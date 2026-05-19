@@ -317,7 +317,8 @@
         "tasks": "SARCINI",
         "calendar": "CALENDAR",
         "files": "FIȘIERE",
-        "sales": "VÂNZĂRI"
+        "sales": "VÂNZĂRI",
+        "quotations": "QUOTATIONS"
       },
       "financialTabs": {
         "purchaseInvoices": "FACTURI ACHIZIȚIE",
@@ -325,7 +326,7 @@
         "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
         "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
         "salesInvoices": "FACTURI",
-        "quotations": "OFERTE"
+        "quotations": "QUOTATIONS"
       },
       "pages": {
         "salesInvoices": "Facturi de Vânzare",

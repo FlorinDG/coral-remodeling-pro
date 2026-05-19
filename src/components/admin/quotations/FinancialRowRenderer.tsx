@@ -141,6 +141,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             const parseNumber = (val: any): number | undefined => {
                 if (val === undefined || val === null || val === '') return undefined;
                 if (typeof val === 'number') return val;
+                if (Array.isArray(val) && val.length > 0) return parseNumber(val[0]);
                 if (typeof val === 'string') {
                     const cleaned = val.replace(/[^0-9,-.]/g, '').replace(',', '.');
                     const parsed = parseFloat(cleaned);
@@ -489,8 +490,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         min="0"
                         step="0.01"
                         placeholder="1"
-                        value={block.quantity || ''}
-                        onChange={(e) => onUpdate({ quantity: parseFloat(e.target.value) || 0 })}
+                        value={block.quantity ?? ''}
+                        onChange={(e) => {
+                            const parsed = parseFloat(e.target.value);
+                            onUpdate({ quantity: isNaN(parsed) ? 0 : parsed });
+                        }}
                         className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     {/* Packaging calculator info */}
@@ -550,8 +554,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             min="0"
                             step="0.01"
                             placeholder="0.00"
-                            value={block.brutoPrice || ''}
-                            onChange={(e) => handleMathChange('brutoPrice', parseFloat(e.target.value) || 0)}
+                            value={block.brutoPrice ?? ''}
+                            onChange={(e) => {
+                                const parsed = parseFloat(e.target.value);
+                                handleMathChange('brutoPrice', isNaN(parsed) ? 0 : parsed);
+                            }}
                             readOnly={childrenTotal !== undefined}
                             className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
@@ -568,8 +575,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             min="0"
                             step="0.01"
                             placeholder="0"
-                            value={block.discountPercent || ''}
-                            onChange={(e) => handleMathChange('discountPercent', parseFloat(e.target.value) || 0)}
+                            value={block.discountPercent ?? ''}
+                            onChange={(e) => {
+                                const parsed = parseFloat(e.target.value);
+                                handleMathChange('discountPercent', isNaN(parsed) ? 0 : parsed);
+                            }}
                             readOnly={childrenTotal !== undefined}
                             className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
@@ -586,8 +596,11 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             min="0"
                             step="0.01"
                             placeholder="20"
-                            value={block.margePercent || ''}
-                            onChange={(e) => handleMathChange('margePercent', parseFloat(e.target.value) || 0)}
+                            value={block.margePercent ?? ''}
+                            onChange={(e) => {
+                                const parsed = parseFloat(e.target.value);
+                                handleMathChange('margePercent', isNaN(parsed) ? 0 : parsed);
+                            }}
                             readOnly={childrenTotal !== undefined}
                             className="w-full bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />
@@ -605,7 +618,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             step="0.01"
                             placeholder="0.00"
                             value={((block.verkoopPrice || 0) + variantDeltas).toFixed(2)}
-                            onChange={(e) => handleMathChange('verkoopPrice', (parseFloat(e.target.value) || 0) - variantDeltas)}
+                            onChange={(e) => {
+                                const parsed = parseFloat(e.target.value);
+                                handleMathChange('verkoopPrice', (isNaN(parsed) ? 0 : parsed) - variantDeltas);
+                            }}
                             readOnly={childrenTotal !== undefined}
                             className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
                         />

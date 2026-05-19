@@ -146,12 +146,12 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     // Specialist roles see only what they need — sidebar is cosmetic,
     // middleware hard gates are the real security layer.
     const ROLE_SIDEBAR_ALLOW: Partial<Record<string, string[]>> = {
-        ACCOUNTANT:      ['dashboard', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'],
-        BOOKKEEPING:     ['dashboard', 'financials', 'contacts', 'suppliers', 'library', 'settings'],
-        OFFERTES:        ['dashboard', 'quotations', 'contacts', 'library', 'projects', 'settings'],
+        ACCOUNTANT:      ['dashboard', 'journal', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'],
+        BOOKKEEPING:     ['dashboard', 'journal', 'financials', 'contacts', 'suppliers', 'library', 'settings'],
+        OFFERTES:        ['dashboard', 'journal', 'quotations', 'contacts', 'library', 'projects', 'settings'],
         HR_OFFICER:      ['dashboard', 'hr', 'settings'],
-        TEAMLEAD:        ['dashboard', 'projects', 'tasks', 'calendar', 'hr', 'settings'],
-        PROJECT_MANAGER: ['dashboard', 'projects', 'tasks', 'calendar', 'contacts', 'settings'],
+        TEAMLEAD:        ['dashboard', 'journal', 'projects', 'tasks', 'calendar', 'hr', 'settings'],
+        PROJECT_MANAGER: ['dashboard', 'journal', 'projects', 'tasks', 'calendar', 'contacts', 'settings'],
     };
 
     const isModuleLocked = (moduleId: string) => {

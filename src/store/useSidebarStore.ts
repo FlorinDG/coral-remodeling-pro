@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
@@ -18,6 +19,7 @@ import {
     Settings,
     Briefcase,
     TrendingUp,
+    PenLine,
 } from 'lucide-react';
 
 export type SidebarItem = {
@@ -49,12 +51,14 @@ export const getIconComponent = (iconName: string) => {
         case 'Library': return Library;
         case 'Settings': return Settings;
         case 'TrendingUp': return TrendingUp;
+        case 'PenLine': return PenLine;
         default: return LayoutDashboard;
     }
 };
 
 export const defaultSidebarItems: SidebarItem[] = [
     { id: 'dashboard',  iconName: 'LayoutDashboard', label: 'DASHBOARD',  href: '/admin/dashboard' },
+    { id: 'journal',    iconName: 'PenLine',          label: 'JOURNAL',    href: '/admin/journal' },
     { id: 'email',      iconName: 'Mail',             label: 'EMAIL',      href: '/admin/email' },
     { id: 'financials', iconName: 'Landmark',         label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
     { id: 'library',    iconName: 'Library',          label: 'LIBRARY',    href: '/admin/library/articles' },
@@ -86,9 +90,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 17, // bump: added QUOTATIONS sidebar item
+            version: 18, // bump: added JOURNAL sidebar item
             migrate: (persistedState: any, version: number) => {
-                if (version < 17) {
+                if (version < 18) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

@@ -27,6 +27,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [tempArticleId, setTempArticleId] = useState<string | null>(null);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
@@ -212,11 +213,14 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
     return (
         <>
-            {isReferenceModalOpen && (block.articleId || block.bestekId) && (
+            {isReferenceModalOpen && (block.articleId || block.bestekId || tempArticleId) && (
                 <PageModal
-                    databaseId={block.articleId ? 'db-articles' : 'db-bestek'}
-                    pageId={block.articleId || block.bestekId || ''}
-                    onClose={() => setIsReferenceModalOpen(false)}
+                    databaseId={(block.articleId || tempArticleId) ? 'db-articles' : 'db-bestek'}
+                    pageId={block.articleId || block.bestekId || tempArticleId || ''}
+                    onClose={() => {
+                        setIsReferenceModalOpen(false);
+                        setTempArticleId(null);
+                    }}
                 />
             )}
             <Draggable draggableId={block.id} index={index}>
@@ -725,7 +729,11 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                 onSaveSuccess={(articleId) => {
                     setIsSaving(true);
                     onUpdate(block.id, { articleId, type: 'article' });
-                    setTimeout(() => setIsSaving(false), 2000);
+                    setTimeout(() => {
+                        setIsSaving(false);
+                        setTempArticleId(articleId);
+                        setIsReferenceModalOpen(true);
+                    }, 800);
                 }}
             />
         </>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+    const [tempArticleId, setTempArticleId] = useState<string | null>(null);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
 
     const getTypeIcon = (type: BlockType) => {
@@ -191,11 +193,14 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
 
     return (
         <>
-            {isReferenceModalOpen && (block.articleId || block.bestekId) && (
+            {isReferenceModalOpen && (block.articleId || block.bestekId || tempArticleId) && (
                 <PageModal
-                    databaseId={block.articleId ? 'db-articles' : 'db-bestek'}
-                    pageId={block.articleId || block.bestekId || ''}
-                    onClose={() => setIsReferenceModalOpen(false)}
+                    databaseId={(block.articleId || tempArticleId) ? 'db-articles' : 'db-bestek'}
+                    pageId={block.articleId || block.bestekId || tempArticleId || ''}
+                    onClose={() => {
+                        setIsReferenceModalOpen(false);
+                        setTempArticleId(null);
+                    }}
                 />
             )}
             <Draggable draggableId={block.id} index={index}>
@@ -435,7 +440,11 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                 Object.keys(props).forEach(k => useDatabaseStore.getState().updatePageProperty(activeDbId, sourceId, k, props[k]));
                                                                 if (block.children !== undefined) useDatabaseStore.getState().updatePageBlocks(activeDbId, sourceId, block.children);
                                                             }
-                                                            setTimeout(() => setIsSaving(false), 800);
+                                                            setTimeout(() => {
+                                                                setIsSaving(false);
+                                                                setTempArticleId(sourceId);
+                                                                setIsReferenceModalOpen(true);
+                                                            }, 800);
                                                         } else {
                                                             if (!window.confirm('Save this custom row as a new permanent item in the Database Library?')) return;
                                                             setIsSaving(true);
@@ -460,8 +469,15 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                                     useDatabaseStore.getState().updatePageBlocks(dbToCreateIn, newPage.id, block.children);
                                                                 }
                                                                 onUpdate(block.id, { type: 'article', articleId: newPage.id });
+                                                                
+                                                                setTimeout(() => {
+                                                                    setIsSaving(false);
+                                                                    setTempArticleId(newPage.id);
+                                                                    setIsReferenceModalOpen(true);
+                                                                }, 800);
+                                                            } else {
+                                                                setIsSaving(false);
                                                             }
-                                                            setTimeout(() => setIsSaving(false), 800);
                                                         }
                                                     }}
                                                     disabled={isSaving}
@@ -614,7 +630,11 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                 onSaveSuccess={(articleId) => {
                     setIsSaving(true);
                     onUpdate(block.id, { articleId, type: 'article' });
-                    setTimeout(() => setIsSaving(false), 2000);
+                    setTimeout(() => {
+                        setIsSaving(false);
+                        setTempArticleId(articleId);
+                        setIsReferenceModalOpen(true);
+                    }, 800);
                 }}
             />
         </>

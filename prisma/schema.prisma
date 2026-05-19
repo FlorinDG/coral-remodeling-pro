@@ -128,6 +128,7 @@ model Tenant {
 
   // Relations
   users                 User[]
+  userProjectAccesses   UserProjectAccess[]
   leads                 Lead[]
   bookings              Booking[]
   clientPortals         ClientPortal[]
@@ -930,4 +931,22 @@ model ShiftAttachment {
   createdAt DateTime @default(now())
 
   @@index([shiftId])
+}
+
+// ── Workforce: per-user project access assignments ────────────────────────
+// Many-to-many: one user can be assigned to many projects.
+// projectId = GlobalPage.id from the tenant's db-projects database.
+// Used by the Team Settings matrix UI and data-layer filtering.
+model UserProjectAccess {
+  id        String   @id @default(cuid())
+  tenantId  String
+  userId    String
+  projectId String   // GlobalPage.id from db-projects-<tenantId> database
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId])
+  @@index([tenantId])
+  @@index([userId])
 }

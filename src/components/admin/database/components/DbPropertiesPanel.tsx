@@ -12,6 +12,7 @@ import {
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import SelectDropdown from './SelectDropdown';
+import { RecurrenceSelector } from '../../tasks/RecurrenceSelector';
 
 // ─── Type icon map ────────────────────────────────────────────────────────
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -351,6 +352,13 @@ function PropertyRow({
                     </a>
                 )}
             </div>
+        );
+    } else if (property.id === 'prop-task-recurrence') {
+        valueEl = (
+            <RecurrenceSelector
+                value={String(value || '')}
+                onChange={v => onChange(property.id, v)}
+            />
         );
     } else {
         // text, title, etc.

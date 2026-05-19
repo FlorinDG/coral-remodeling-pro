@@ -194,6 +194,28 @@ export default async function middleware(req: NextRequest) {
             }
         }
 
+        // ── Specialist role route hard gates ─────────────────────────────────
+        // Mirrors the sidebar allow-lists in AdminLayout — middleware is the real guard.
+        // Specialist users who navigate directly to restricted routes are redirected.
+        const ROLE_ROUTE_ALLOWLISTS: Partial<Record<string, string[]>> = {
+            OFFERTES:        ['/admin/quotations', '/admin/contacts', '/admin/library', '/admin/projects-management', '/admin/settings', '/admin/dashboard'],
+            BOOKKEEPING:     ['/admin/financials', '/admin/contacts', '/admin/suppliers', '/admin/library', '/admin/settings', '/admin/dashboard'],
+            HR_OFFICER:      ['/admin/hr', '/admin/settings', '/admin/dashboard'],
+            TEAMLEAD:        ['/admin/projects-management', '/admin/tasks', '/admin/calendar', '/admin/hr', '/admin/settings', '/admin/dashboard'],
+            PROJECT_MANAGER: ['/admin/projects-management', '/admin/tasks', '/admin/calendar', '/admin/contacts', '/admin/settings', '/admin/dashboard'],
+        };
+        const roleAllowList = ROLE_ROUTE_ALLOWLISTS[role ?? ''];
+        if (roleAllowList && isLoggedIn) {
+            // Strip locale prefix for consistent comparison
+            const normalised = pathname.replace(/^\/(en|fr|nl|ro|ru)/, '');
+            const allowed = roleAllowList.some(r => normalised === r || normalised.startsWith(r + '/'));
+            if (!allowed && normalised.startsWith('/admin')) {
+                const locale  = resolveLocale(req);
+                const landing = roleAllowList[0] ?? '/admin/dashboard';
+                return NextResponse.redirect(new URL(`/${locale}${landing}`, req.nextUrl.origin));
+            }
+        }
+
         // ── Sync NEXT_LOCALE cookie from JWT language preference ──────────
         // NOTE: We no longer short-circuit here. Instead we set `pendingLocale`
         // and apply the cookie to whichever response the rest of the middleware

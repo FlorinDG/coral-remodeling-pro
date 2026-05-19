@@ -3,22 +3,36 @@
 import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
+import { Circle, CircleDot, Eye, CheckCircle2, XCircle } from 'lucide-react';
+
+// ── StatusIcon component ──────────────────────────────────────────────────────
+
+export function StatusIcon({ status, className }: { status: string; className?: string }) {
+    switch (status) {
+        case 'opt-todo':    return <Circle className={className} />;
+        case 'opt-doing':   return <CircleDot className={className} />;
+        case 'opt-review':  return <Eye className={className} />;
+        case 'opt-done':    return <CheckCircle2 className={className} />;
+        case 'opt-dropped': return <XCircle className={className} />;
+        default:            return <Circle className={className} />;
+    }
+}
 
 // ── Priority config ───────────────────────────────────────────────────────────
 
 export const PRIORITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-    'opt-p1': { label: 'P1', color: '#ef4444', bg: '#fef2f2' },
-    'opt-p2': { label: 'P2', color: '#f97316', bg: '#fff7ed' },
-    'opt-p3': { label: 'P3', color: '#eab308', bg: '#fefce8' },
-    'opt-p4': { label: 'P4', color: '#9ca3af', bg: '#f9fafb' },
+    'opt-p1': { label: 'Urgent', color: '#dc2626', bg: '#fef2f2' },
+    'opt-p2': { label: 'High',   color: '#ea580c', bg: '#fff7ed' },
+    'opt-p3': { label: 'Medium', color: '#ca8a04', bg: '#fefce8' },
+    'opt-p4': { label: 'Low',    color: '#4b5563', bg: '#f3f4f6' },
 };
 
-export const STATUS_CONFIG: Record<string, { icon: string; color: string; label: string }> = {
-    'opt-todo':    { icon: '○',  color: '#9ca3af', label: 'To Do'       },
-    'opt-doing':   { icon: '◉',  color: '#3b82f6', label: 'In Progress' },
-    'opt-review':  { icon: '◈',  color: '#a855f7', label: 'In Review'   },
-    'opt-done':    { icon: '●',  color: '#22c55e', label: 'Done'        },
-    'opt-dropped': { icon: '✕',  color: '#ef4444', label: 'Dropped'     },
+export const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
+    'opt-todo':    { color: '#4b5563', label: 'To Do'       },
+    'opt-doing':   { color: '#2563eb', label: 'In Progress' },
+    'opt-review':  { color: '#7c3aed', label: 'In Review'   },
+    'opt-done':    { color: '#16a34a', label: 'Done'        },
+    'opt-dropped': { color: '#dc2626', label: 'Dropped'     },
 };
 
 // ── Due date helpers ──────────────────────────────────────────────────────────
@@ -31,7 +45,7 @@ export function getDueDateDisplay(due: string | undefined): {
     const d = due.slice(0, 10);
     if (d < today) return { label: formatDate(d) + ' ⚠', color: '#ef4444' };
     if (d === today) return { label: 'Today', color: '#f97316' };
-    return { label: formatDate(d), color: '#6b7280' };
+    return { label: formatDate(d), color: '#4b5563' };
 }
 
 function formatDate(iso: string): string {
@@ -73,10 +87,10 @@ export function TaskRow({
 
     return (
         <div
-            className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-100
+            className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-100 border
                 ${selected
-                    ? 'bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800'
-                    : 'hover:bg-neutral-50 dark:hover:bg-white/5 border border-transparent'
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700'
+                    : 'hover:bg-neutral-100 dark:hover:bg-white/5 border-transparent'
                 }
                 ${done ? 'opacity-55' : ''}
             `}
@@ -85,18 +99,18 @@ export function TaskRow({
         >
             {/* Status button */}
             <button
-                className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-sm hover:scale-110 transition-transform"
+                className="flex-shrink-0 w-5 h-5 flex items-center justify-center hover:scale-110 transition-all duration-100"
                 style={{ color: statusCfg.color }}
                 onClick={e => { e.stopPropagation(); onComplete(page); }}
                 title={statusCfg.label}
             >
-                {statusCfg.icon}
+                <StatusIcon status={status} className="w-4.5 h-4.5 stroke-[2.5]" />
             </button>
 
-            {/* Priority flag */}
+            {/* Priority tag */}
             {priorityCfg && (
                 <span
-                    className="flex-shrink-0 text-[10px] font-bold px-1 py-0.5 rounded"
+                    className="flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded border border-current"
                     style={{ color: priorityCfg.color, backgroundColor: priorityCfg.bg }}
                 >
                     {priorityCfg.label}
@@ -104,26 +118,26 @@ export function TaskRow({
             )}
 
             {/* Title */}
-            <span className={`flex-1 min-w-0 text-sm font-medium truncate
-                ${done ? 'line-through text-neutral-400' : 'text-neutral-900 dark:text-white'}
+            <span className={`flex-1 min-w-0 text-sm font-semibold truncate
+                ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
             `}>
                 {(props['title'] as string) || 'Untitled'}
             </span>
 
             {/* Defer indicator */}
             {deferred && (
-                <span className="flex-shrink-0 text-xs text-neutral-400" title={`Deferred until ${defer}`}>💤</span>
+                <span className="flex-shrink-0 text-xs text-neutral-500 dark:text-neutral-400" title={`Deferred until ${defer}`}>💤</span>
             )}
 
             {/* Recurrence indicator */}
             {recur && parseRecurrenceRule(recur) && (
-                <span className="flex-shrink-0 text-xs text-neutral-400" title={recur}>↺</span>
+                <span className="flex-shrink-0 text-xs text-neutral-600 dark:text-neutral-400 font-bold" title={recur}>↺</span>
             )}
 
             {/* Tags */}
             <div className="flex-shrink-0 hidden group-hover:flex items-center gap-1">
                 {tags.slice(0, 2).map(t => (
-                    <span key={t} className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-500 dark:text-neutral-400">
+                    <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-white/5">
                         {t.replace('tag-', '#')}
                     </span>
                 ))}
@@ -131,14 +145,14 @@ export function TaskRow({
 
             {/* Estimate */}
             {est && (
-                <span className="flex-shrink-0 text-xs text-neutral-400">
-                    {est >= 60 ? `${Math.round(est / 60)}h` : `${est}m`}
+                <span className="flex-shrink-0 text-xs font-semibold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-white/5 px-1.5 py-0.5 rounded">
+                    ⏱ {est >= 60 ? `${Math.round(est / 60)}h` : `${est}m`}
                 </span>
             )}
 
             {/* Due date */}
             {dueCfg.label && (
-                <span className="flex-shrink-0 text-xs" style={{ color: dueCfg.color }}>
+                <span className="flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: dueCfg.color, backgroundColor: dueCfg.color + '15' }}>
                     {dueCfg.label}
                 </span>
             )}
@@ -148,7 +162,7 @@ export function TaskRow({
                 className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110
                     ${myDay ? '!opacity-100' : ''}
                 `}
-                style={{ color: myDay ? '#f97316' : '#9ca3af' }}
+                style={{ color: myDay ? '#ea580c' : '#4b5563' }}
                 onClick={e => { e.stopPropagation(); onToggleMyDay(page); }}
                 title={myDay ? 'Remove from My Day' : 'Add to My Day'}
             >
@@ -160,7 +174,7 @@ export function TaskRow({
                 className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110
                     ${flagged ? '!opacity-100' : ''}
                 `}
-                style={{ color: flagged ? '#ef4444' : '#9ca3af' }}
+                style={{ color: flagged ? '#dc2626' : '#4b5563' }}
                 onClick={e => { e.stopPropagation(); onToggleFlag(page); }}
                 title={flagged ? 'Unflag' : 'Flag'}
             >

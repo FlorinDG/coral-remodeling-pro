@@ -36,8 +36,10 @@ export async function mergeStationery(
         const [copiedDataPage] = await merged.copyPages(dataDoc, [i]);
         const page = merged.addPage(copiedDataPage);
 
-        // Embed the stationery page as a form XObject
-        const [embeddedStationery] = await merged.embedPdf(stationeryDoc, [0]);
+        // Embed the corresponding page of the stationery PDF if it exists, fallback to the last page otherwise
+        const stationeryPageCount = stationeryDoc.getPageCount();
+        const stationeryPageIndex = Math.min(i, stationeryPageCount - 1);
+        const [embeddedStationery] = await merged.embedPdf(stationeryDoc, [stationeryPageIndex]);
 
         // Get current page size
         const { width, height } = page.getSize();

@@ -91,19 +91,19 @@ export function TaskSidebar({
         return (
             <button
                 onClick={() => onSelectPerspective(perspective)}
-                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all
+                className={`group w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all border
                     ${active
-                        ? 'bg-orange-50 dark:bg-orange-900/25 text-orange-700 dark:text-orange-400 font-medium'
-                        : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5'
+                        ? 'bg-orange-100 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700 text-orange-950 dark:text-orange-300 font-bold shadow-sm'
+                        : 'text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-white/10 border-transparent'
                     }`}
             >
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? color : undefined }} />
                 <span className="flex-1 text-left truncate">{label}</span>
                 {count !== undefined && count > 0 && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold border
                         ${active
-                            ? 'bg-orange-100 dark:bg-orange-900/40 text-orange-600'
-                            : 'bg-neutral-100 dark:bg-white/10 text-neutral-500'
+                            ? 'bg-orange-200 dark:bg-orange-900/50 border-orange-300 dark:border-orange-600 text-orange-900 dark:text-orange-200'
+                            : 'bg-neutral-200 dark:bg-white/15 border-neutral-300 dark:border-white/10 text-neutral-800 dark:text-neutral-200'
                         }`}
                     >
                         {count}
@@ -114,9 +114,9 @@ export function TaskSidebar({
     };
 
     return (
-        <div className="h-full flex flex-col overflow-y-auto py-4 px-3 gap-1">
+        <div className="h-full flex flex-col overflow-y-auto py-4 px-3 gap-1 bg-white dark:bg-neutral-950">
             {/* Smart Lists */}
-            <p className="px-3 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Smart Lists</p>
+            <p className="px-3 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">Smart Lists</p>
             {SMART_LISTS.map(sl => (
                 <NavItem
                     key={sl.id}
@@ -133,24 +133,24 @@ export function TaskSidebar({
                 <>
                     <button
                         onClick={() => setTagsExpanded(e => !e)}
-                        className="flex items-center gap-2 px-3 pt-4 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider w-full hover:text-neutral-600 transition-colors"
+                        className="flex items-center gap-2 px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider w-full hover:text-neutral-900 dark:hover:text-white transition-colors"
                     >
-                        <ChevronRight className={`w-3 h-3 transition-transform ${tagsExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${tagsExpanded ? 'rotate-90' : ''}`} />
                         Tags
                     </button>
                     {tagsExpanded && [...tagCounts.entries()].map(([tagId, count]) => (
                         <button
                             key={tagId}
                             onClick={() => onSelectPerspective({ type: 'tag', id: tagId, name: tagId.replace('tag-', '#'), tagId })}
-                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors
+                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors border
                                 ${isActive({ type: 'tag', id: tagId, name: '' })
-                                    ? 'bg-purple-50 dark:bg-purple-900/25 text-purple-700 dark:text-purple-400'
-                                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5'
+                                    ? 'bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700 text-purple-950 dark:text-purple-300 font-bold shadow-sm'
+                                    : 'text-neutral-800 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-white/10 border-transparent font-semibold'
                                 }`}
                         >
-                            <Tag className="w-3.5 h-3.5 text-purple-400" />
+                            <Tag className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
                             <span className="flex-1 text-left">{tagId.replace('tag-', '#')}</span>
-                            <span className="text-xs text-neutral-400">{count}</span>
+                            <span className="text-xs font-bold text-neutral-800 dark:text-neutral-300">{count}</span>
                         </button>
                     ))}
                 </>
@@ -161,9 +161,9 @@ export function TaskSidebar({
                 <>
                     <button
                         onClick={() => setPerspExpanded(e => !e)}
-                        className="flex items-center gap-2 px-3 pt-4 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider w-full hover:text-neutral-600 transition-colors"
+                        className="flex items-center gap-2 px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider w-full hover:text-neutral-900 dark:hover:text-white transition-colors"
                     >
-                        <ChevronRight className={`w-3 h-3 transition-transform ${perspExpanded ? 'rotate-90' : ''}`} />
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${perspExpanded ? 'rotate-90' : ''}`} />
                         Perspectives
                     </button>
                     {perspExpanded && (
@@ -171,7 +171,7 @@ export function TaskSidebar({
                             {savedPerspectives.map(sp => (
                                 <NavItem
                                     key={sp.id}
-                                    perspective={{ type: 'custom', id: sp.id, name: sp.name, filters: sp.filters as any }}
+                                    perspective={{ type: 'custom', id: sp.id, name: sp.name, filters: sp.filters as import('@/components/admin/database/types').FilterRule[] }}
                                     icon={Layers}
                                     label={sp.name}
                                     color="#6b7280"
@@ -179,9 +179,9 @@ export function TaskSidebar({
                             ))}
                             <button
                                 onClick={onNewPerspective}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors font-bold border border-dashed border-neutral-300 dark:border-white/10 mt-1"
                             >
-                                <Plus className="w-3.5 h-3.5" />
+                                <Plus className="w-4 h-4" />
                                 New Perspective
                             </button>
                         </>

@@ -132,6 +132,15 @@ When starting a new session on this project:
 | `localePrefix: 'never'` — locale lives in `NEXT_LOCALE` cookie | ✅ | Code + deploy |
 | Gate button on login (`?plan` absent) → points to `coral-sys` | ✅ | Code review |
 | ESLint errors in any file block Vercel build silently | ✅ | Multiple failed deploys |
+| PRO/ENTERPRISE seat cap removed — `PLAN_USER_LIMITS[PRO] = Infinity` | ✅ | 2026-05-18 code change |
+| `BOOKKEEPING` role → sidebar: Financials, Contacts, Suppliers, Library | ✅ | 2026-05-18 `ROLE_SIDEBAR_ALLOW` + middleware gate |
+| `TEAMLEAD` role → sidebar: Projects, Tasks, Calendar, HR | ✅ | 2026-05-18 `ROLE_SIDEBAR_ALLOW` + middleware gate |
+| `PROJECT_MANAGER` role → sidebar: Projects, Tasks, Calendar, Contacts | ✅ | 2026-05-18 `ROLE_SIDEBAR_ALLOW` + middleware gate |
+| `HR_OFFICER` role → sidebar: HR only | ✅ | 2026-05-18 `ROLE_SIDEBAR_ALLOW` + middleware gate |
+| `OFFERTES` role → sidebar: Quotations, Contacts, Library, Projects (assigned) | ✅ | 2026-05-18 `ROLE_SIDEBAR_ALLOW` + middleware gate |
+| `UserProjectAccess` table — many-to-many user↔project assignments | ✅ | 2026-05-18 Prisma `db push` |
+| `/api/tenant/project-access` GET/PUT — project assignment CRUD | ✅ | 2026-05-18 |
+| `ROLE_SIDEBAR_ALLOW` replaces `ACCOUNTANT_SIDEBAR_IDS` in AdminLayout | ✅ | 2026-05-18 — backward-compatible, ACCOUNTANT still in map |
 
 ---
 
@@ -172,9 +181,11 @@ Missing from any one = invisible gap in enforcement.
 | | FREE | PRO (€29/mo) | ENTERPRISE (€99/mo) |
 |---|---|---|---|
 | **Billing** | Free forever | 3-month trial, then paid | 2-month trial, then paid |
-| **Included seats** | 1 | 1 (+€19/extra) | 2 (+€79/extra) |
+| **Included seats** | 1 (hard cap) | Unlimited (Stripe-billed per seat) | Unlimited (Stripe-billed per seat) |
 | **Workforce seats** | — | €4.99/seat | €1.99/seat |
 | **Quarterly discount** | — | 5% (10% after 1yr) | 5% (10% after 1yr) |
+
+> **Seat cap rule**: FREE plan hard-capped at 1 user in `PLAN_USER_LIMITS`. PRO/ENTERPRISE = Infinity — code never blocks. Stripe handles per-seat billing. Adding a seat mid-month invoices the current month; removing takes effect from next month.
 
 ---
 

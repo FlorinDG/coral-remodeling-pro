@@ -393,7 +393,7 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
                 <div className="flex-1 relative">
                     {/* Prefix for lists/todos */}
                     {block.type === 'bulleted_list_item' && <span className="absolute left-[-16px] top-[4px] text-neutral-500">•</span>}
-                    {block.type === 'todo' && <input type="checkbox" className="absolute left-[-20px] top-[7px]" />}
+                    {block.type === 'todo' && <input type="checkbox" className="absolute left-[-20px] top-[7px] w-4 h-4 cursor-pointer accent-orange-500 rounded" />}
 
                     <textarea
                         id={`block-${block.id}`}

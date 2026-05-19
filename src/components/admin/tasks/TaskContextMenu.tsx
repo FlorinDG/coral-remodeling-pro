@@ -9,6 +9,26 @@ interface MenuItem {
     action: () => void;
     danger?: boolean;
     divider?: boolean;
+    onClose: () => void;
+}
+
+function Item({ label, icon, action, danger, divider, onClose }: MenuItem) {
+    return (
+        <>
+            {divider && <div className="my-1 border-t border-neutral-300 dark:border-white/20" />}
+            <button
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded transition-colors font-semibold
+                    ${danger
+                        ? 'text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20'
+                        : 'text-neutral-800 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10'
+                    }`}
+                onClick={() => { action(); onClose(); }}
+            >
+                {icon && <span className="w-4 text-center text-xs">{icon}</span>}
+                {label}
+            </button>
+        </>
+    );
 }
 
 interface TaskContextMenuProps {
@@ -56,40 +76,25 @@ export function TaskContextMenu({
         left: Math.min(x, window.innerWidth - 220),
     };
 
-    const Item = ({ label, icon, action, danger, divider }: MenuItem) => (
-        <>
-            {divider && <div className="my-1 border-t border-neutral-100 dark:border-white/10" />}
-            <button
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded transition-colors
-                    ${danger
-                        ? 'text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'
-                        : 'text-neutral-700 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/10'
-                    }`}
-                onClick={() => { action(); onClose(); }}
-            >
-                {icon && <span className="w-4 text-center text-xs">{icon}</span>}
-                {label}
-            </button>
-        </>
-    );
+
 
     return (
         <div
             ref={ref}
             style={style}
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1.5 min-w-[200px]"
+            className="bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/25 rounded-xl shadow-xl p-1.5 min-w-[200px]"
         >
             {/* Priority */}
-            <div className="px-3 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">Priority</div>
+            <div className="px-3 py-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Priority</div>
             {[
-                { id: 'opt-p1', label: 'P1 — Urgent',  color: '#ef4444' },
-                { id: 'opt-p2', label: 'P2 — High',    color: '#f97316' },
-                { id: 'opt-p3', label: 'P3 — Medium',  color: '#eab308' },
-                { id: 'opt-p4', label: 'P4 — Low',     color: '#9ca3af' },
+                { id: 'opt-p1', label: 'Urgent',  color: '#dc2626' },
+                { id: 'opt-p2', label: 'High',    color: '#ea580c' },
+                { id: 'opt-p3', label: 'Medium',  color: '#ca8a04' },
+                { id: 'opt-p4', label: 'Low',     color: '#4b5563' },
             ].map(p => (
                 <button
                     key={p.id}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-200 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left rounded hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-800 dark:text-neutral-200 transition-colors font-semibold"
                     onClick={() => { onSetPriority(page, p.id); onClose(); }}
                 >
                     <span className="text-xs font-bold" style={{ color: p.color }}>●</span>
@@ -97,12 +102,12 @@ export function TaskContextMenu({
                 </button>
             ))}
 
-            <Item label="Set Due Date" icon="📅" action={() => onSetDue(page)} divider />
-            <Item label="Defer Until…"  icon="💤" action={() => onSetDefer(page)} />
-            <Item label={myDay   ? 'Remove from My Day' : 'Add to My Day'} icon="☀" action={() => onToggleMyDay(page)}  divider />
-            <Item label={flagged ? 'Unflag'              : 'Flag'}          icon="🚩" action={() => onToggleFlag(page)}  />
-            <Item label="Duplicate" icon="⎘" action={() => onDuplicate(page)} divider />
-            <Item label="Delete"    icon="🗑" action={() => onDelete(page)}    danger />
+            <Item label="Set Due Date" icon="📅" action={() => onSetDue(page)} divider onClose={onClose} />
+            <Item label="Defer Until…"  icon="💤" action={() => onSetDefer(page)} onClose={onClose} />
+            <Item label={myDay   ? 'Remove from My Day' : 'Add to My Day'} icon="☀" action={() => onToggleMyDay(page)} divider onClose={onClose} />
+            <Item label={flagged ? 'Unflag'              : 'Flag'}          icon="🚩" action={() => onToggleFlag(page)} onClose={onClose} />
+            <Item label="Duplicate" icon="⎘" action={() => onDuplicate(page)} divider onClose={onClose} />
+            <Item label="Delete"    icon="🗑" action={() => onDelete(page)}    danger onClose={onClose} />
         </div>
     );
 }

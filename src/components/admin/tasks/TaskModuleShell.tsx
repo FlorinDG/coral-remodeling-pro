@@ -107,7 +107,7 @@ export default function TaskModuleShell() {
 
     // ── Operations ────────────────────────────────────────────────────────────
     const handleQuickAdd = async (parsed: ParsedTask) => {
-        const initialProps: Record<string, any> = {
+        const initialProps: Record<string, unknown> = {
             title:                  parsed.title,
             'prop-task-status':     'opt-todo',
             'prop-task-priority':   parsed.priority || 'opt-p4',

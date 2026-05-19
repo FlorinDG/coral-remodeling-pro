@@ -58,7 +58,7 @@ function parseNLP(raw: string): ParsedTask {
     }
 
     // Due date keywords
-    const duePatterns: [RegExp, (m?: any) => string | undefined][] = [
+    const duePatterns: [RegExp, (m?: RegExpMatchArray | null) => string | undefined][] = [
         [/\btoday\b/i,    () => offsetDate(0)],
         [/\btomorrow\b/i, () => offsetDate(1)],
         [/\bnext week\b/i,() => offsetDate(7)],

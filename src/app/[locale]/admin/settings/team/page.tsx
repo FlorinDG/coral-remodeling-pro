@@ -31,12 +31,12 @@ const MODULES = ['INVOICING', 'CRM', 'PROJECTS', 'CALENDAR', 'DATABASES', 'HR', 
 
 const MODULE_LABELS: Record<string, string> = {
     INVOICING: 'Financials',
-    CRM: 'CRM & Contacts',
-    PROJECTS: 'Projects',
-    CALENDAR: 'Calendar',
+    CRM:       'Contacts',
+    PROJECTS:  'Projects',
+    CALENDAR:  'Calendar',
     DATABASES: 'Databases',
-    HR: 'HR & Workforce',
-    TASKS: 'Tasks',
+    HR:        'HR & Workforce',
+    TASKS:     'Tasks',
 };
 
 const ACCESS_LABELS: Record<AccessLevel, { label: string; desc: string; icon: typeof Eye }> = {
@@ -47,12 +47,32 @@ const ACCESS_LABELS: Record<AccessLevel, { label: string; desc: string; icon: ty
 };
 
 const ROLE_OPTIONS = [
-    { value: 'ACCOUNTANT',                   label: 'Accountant', icon: Calculator, desc: 'Read-only financial access for your bookkeeper', tier: 'ALL' },
-    { value: 'TENANT_PRO_EMPLOYEE',          label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'PRO' },
-    { value: 'TENANT_ENTERPRISE_MANAGER',    label: 'Manager',   icon: Crown,      desc: 'Management-level access, can manage team', tier: 'ENTERPRISE' },
-    { value: 'TENANT_ENTERPRISE_EMPLOYEE',   label: 'Employee',  icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'ENTERPRISE' },
-    { value: 'TENANT_ENTERPRISE_WORKFORCE',  label: 'Workforce', icon: HardHat,    desc: 'Field/labour — tasks todo, time tracker only', tier: 'ENTERPRISE' },
+    { value: 'ACCOUNTANT',                   label: 'Accountant',          icon: Calculator, desc: 'Read-only financial access for your bookkeeper', tier: 'ALL' },
+    { value: 'TENANT_PRO_EMPLOYEE',          label: 'Employee',            icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'PRO' },
+    { value: 'TENANT_ENTERPRISE_MANAGER',    label: 'Manager',             icon: Crown,      desc: 'Management-level access, can manage team', tier: 'ENTERPRISE' },
+    { value: 'TENANT_ENTERPRISE_EMPLOYEE',   label: 'Employee',            icon: Briefcase,  desc: 'Standard user with configurable access', tier: 'ENTERPRISE' },
+    { value: 'TENANT_ENTERPRISE_WORKFORCE',  label: 'Workforce',           icon: HardHat,    desc: 'Field/labour — tasks todo, time tracker only', tier: 'ENTERPRISE' },
+    { value: 'BOOKKEEPING',                  label: 'Bookkeeping',         icon: Calculator, desc: 'Financials access only, no projects or HR', tier: 'PRO' },
+    { value: 'TEAMLEAD',                     label: 'Team Lead',           icon: Crown,      desc: 'Projects, Tasks, HR team view — no financials', tier: 'PRO' },
+    { value: 'PROJECT_MANAGER',              label: 'Project Manager',     icon: Briefcase,  desc: 'Full Projects + Tasks + Contacts access', tier: 'PRO' },
+    { value: 'HR_OFFICER',                   label: 'HR Officer',          icon: HardHat,    desc: 'HR module only — no financials or projects', tier: 'ENTERPRISE' },
+    { value: 'OFFERTES',                     label: 'Offertes Specialist', icon: Briefcase,  desc: 'Quotations, Contacts, Library & assigned Projects only', tier: 'ENTERPRISE' },
 ];
+
+// ── Default module access per role ─────────────────────────────────────────
+// Applied automatically when an owner selects a role in the invite form.\n// The owner can override these before sending the invite.
+const ROLE_ACCESS_DEFAULTS: Record<string, Record<string, AccessLevel>> = {
+    ACCOUNTANT:                  { INVOICING: 'ALL',  CRM: 'ALL',              PROJECTS: 'NONE', CALENDAR: 'NONE', DATABASES: 'NONE', HR: 'NONE', TASKS: 'NONE' },
+    BOOKKEEPING:                 { INVOICING: 'ALL',  CRM: 'NONE',             PROJECTS: 'NONE', CALENDAR: 'OWN',  DATABASES: 'NONE', HR: 'NONE', TASKS: 'NONE' },
+    TEAMLEAD:                    { INVOICING: 'NONE', CRM: 'OWN',              PROJECTS: 'ALL',  CALENDAR: 'ALL',  DATABASES: 'OWN',  HR: 'OWN',  TASKS: 'ALL'  },
+    PROJECT_MANAGER:             { INVOICING: 'NONE', CRM: 'ASSIGNED_AND_OWN', PROJECTS: 'ALL',  CALENDAR: 'ALL',  DATABASES: 'OWN',  HR: 'NONE', TASKS: 'ALL'  },
+    HR_OFFICER:                  { INVOICING: 'NONE', CRM: 'NONE',             PROJECTS: 'NONE', CALENDAR: 'OWN',  DATABASES: 'NONE', HR: 'ALL',  TASKS: 'OWN'  },
+    OFFERTES:                    { INVOICING: 'NONE', CRM: 'OWN',              PROJECTS: 'ASSIGNED_AND_OWN', CALENDAR: 'NONE', DATABASES: 'NONE', HR: 'NONE', TASKS: 'NONE' },
+    TENANT_PRO_EMPLOYEE:         { INVOICING: 'OWN',  CRM: 'OWN',              PROJECTS: 'OWN',  CALENDAR: 'OWN',  DATABASES: 'OWN',  HR: 'NONE', TASKS: 'OWN'  },
+    TENANT_ENTERPRISE_MANAGER:   { INVOICING: 'ALL',  CRM: 'ALL',              PROJECTS: 'ALL',  CALENDAR: 'ALL',  DATABASES: 'ALL',  HR: 'ALL',  TASKS: 'ALL'  },
+    TENANT_ENTERPRISE_EMPLOYEE:  { INVOICING: 'OWN',  CRM: 'OWN',              PROJECTS: 'OWN',  CALENDAR: 'OWN',  DATABASES: 'OWN',  HR: 'NONE', TASKS: 'OWN'  },
+    TENANT_ENTERPRISE_WORKFORCE: { INVOICING: 'NONE', CRM: 'NONE',             PROJECTS: 'NONE', CALENDAR: 'NONE', DATABASES: 'NONE', HR: 'NONE', TASKS: 'OWN'  },
+};
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function TeamSettingsPage() {
@@ -101,11 +121,21 @@ export default function TeamSettingsPage() {
 
     useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
+    // Auto-populate module access when role changes (tenant admin can still override)
+    useEffect(() => {
+        const defaults = ROLE_ACCESS_DEFAULTS[inviteRole];
+        if (defaults) setInviteAccess(defaults as Record<string, AccessLevel>);
+        else setInviteAccess({});
+    }, [inviteRole]);
+
     // Filter role options based on plan
     const availableRoles = ROLE_OPTIONS.filter(r => {
         if (r.tier === 'ALL') return true; // ACCOUNTANT always available
-        if (planType === 'PRO' || planType === 'FOUNDER') return r.value === 'TENANT_PRO_EMPLOYEE';
-        return r.value.startsWith('TENANT_ENTERPRISE_');
+        if (r.tier === 'PRO') {
+            return planType === 'PRO' || planType === 'ENTERPRISE' || planType === 'FOUNDER' || planType === 'CUSTOM';
+        }
+        // ENTERPRISE tier roles
+        return planType === 'ENTERPRISE' || planType === 'FOUNDER' || planType === 'CUSTOM';
     });
 
     const handleInvite = async () => {
@@ -163,17 +193,22 @@ export default function TeamSettingsPage() {
     };
 
     const getRoleIcon = (role: string) => {
-        if (role === 'ACCOUNTANT') return Calculator;
-        if (role.includes('OWNER') || role === 'APP_MANAGER' || role === 'TENANT_ADMIN') return Crown;
-        if (role.includes('MANAGER')) return Crown;
-        if (role.includes('WORKFORCE')) return HardHat;
+        if (role === 'ACCOUNTANT' || role === 'BOOKKEEPING') return Calculator;
+        if (role.includes('OWNER') || role === 'APP_MANAGER' || role === 'TENANT_ADMIN' || role === 'TEAMLEAD') return Crown;
+        if (role.includes('MANAGER') || role === 'PROJECT_MANAGER') return Crown;
+        if (role.includes('WORKFORCE') || role === 'HR_OFFICER') return HardHat;
         return Briefcase;
     };
 
     const getRoleLabel = (role: string) => {
-        if (role === 'ACCOUNTANT') return 'Accountant';
+        if (role === 'ACCOUNTANT')      return 'Accountant';
+        if (role === 'BOOKKEEPING')     return 'Bookkeeping';
+        if (role === 'TEAMLEAD')        return 'Team Lead';
+        if (role === 'PROJECT_MANAGER') return 'Project Manager';
+        if (role === 'HR_OFFICER')      return 'HR Officer';
+        if (role === 'OFFERTES')        return 'Offertes';
         if (role.includes('OWNER') || role === 'APP_MANAGER' || role === 'TENANT_ADMIN') return 'Owner';
-        if (role.includes('MANAGER')) return 'Manager';
+        if (role.includes('MANAGER'))   return 'Manager';
         if (role.includes('WORKFORCE')) return 'Workforce';
         return 'Employee';
     };
@@ -195,7 +230,9 @@ export default function TeamSettingsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-xs font-bold text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg">
-                            {users.length} / {maxUsers === Infinity ? '∞' : maxUsers} seats
+                            {maxUsers === Infinity
+                                ? `${users.length} member${users.length !== 1 ? 's' : ''}`
+                                : `${users.length} / ${maxUsers} seats`}
                         </span>
                         {isWorkspaceOwner && (
                             <button
@@ -344,13 +381,22 @@ export default function TeamSettingsPage() {
 
                                     {/* Expanded access editor */}
                                     {isEditing && !isOwner && (
-                                        <AccessEditor
-                                            moduleAccess={(u.moduleAccess || {}) as Record<string, string>}
-                                            activeModules={activeModules}
-                                            onSave={(access) => handleUpdateAccess(u.id, access)}
-                                            onCancel={() => setEditingUser(null)}
-                                            saving={saving}
-                                        />
+                                        <>
+                                            <AccessEditor
+                                                moduleAccess={(u.moduleAccess || {}) as Record<string, string>}
+                                                activeModules={activeModules}
+                                                onSave={(access) => handleUpdateAccess(u.id, access)}
+                                                onCancel={() => setEditingUser(null)}
+                                                saving={saving}
+                                            />
+                                            {/* Project assignment matrix — shown when user has any PROJECTS access */}
+                                            {(() => {
+                                                const projAccess = ((u.moduleAccess || {}) as Record<string, string>)['PROJECTS'] || 'OWN';
+                                                return projAccess !== 'NONE' ? (
+                                                    <ProjectAssignmentMatrix userId={u.id} />
+                                                ) : null;
+                                            })()}
+                                        </>
                                     )}
                                 </div>
                             );
@@ -531,6 +577,117 @@ function AccessEditor({
                     </button>
                 </div>
             )}
+        </div>
+    );
+}
+
+// ── Project Assignment Matrix ─────────────────────────────────────────────
+// Displays for users with PROJECTS access != NONE.
+// Owner can check/uncheck individual projects to grant explicit assignment.
+function ProjectAssignmentMatrix({ userId }: { userId: string }) {
+    const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+    const [assigned, setAssigned] = useState<Set<string>>(new Set());
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState<string | null>(null); // projectId being toggled
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                // Fetch project list from the database store endpoint
+                const [projRes, accessRes] = await Promise.all([
+                    fetch('/api/tenant/projects-list'),
+                    fetch(`/api/tenant/project-access?userId=${encodeURIComponent(userId)}`),
+                ]);
+                if (cancelled) return;
+                const projData = projRes.ok ? await projRes.json() : { pages: [] };
+                const accessData = accessRes.ok ? await accessRes.json() : { projectIds: [] };
+                setProjects((projData.pages ?? []).map((p: { id: string; properties?: { Name?: string; title?: string } }) => ({
+                    id: p.id,
+                    name: (p.properties?.Name || p.properties?.title || 'Untitled Project') as string,
+                })));
+                setAssigned(new Set(accessData.projectIds ?? []));
+            } catch {
+                // silent fail — the matrix just stays empty
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        load();
+        return () => { cancelled = true; };
+    }, [userId]);
+
+    const toggle = async (projectId: string) => {
+        const next = new Set(assigned);
+        if (next.has(projectId)) next.delete(projectId);
+        else next.add(projectId);
+        setSaving(projectId);
+        try {
+            const res = await fetch('/api/tenant/project-access', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, projectIds: Array.from(next) }),
+            });
+            if (res.ok) setAssigned(next);
+        } catch {
+            // revert on error — assigned stays unchanged
+        } finally {
+            setSaving(null);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 flex items-center gap-2 text-xs text-neutral-400">
+                <Loader2 className="w-3 h-3 animate-spin" /> Loading projects…
+            </div>
+        );
+    }
+
+    if (projects.length === 0) {
+        return (
+            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 text-xs text-neutral-400 italic">
+                No projects found. Create projects in the Projects module first.
+            </div>
+        );
+    }
+
+    return (
+        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2">
+                Assigned Projects
+            </p>
+            <div className="grid gap-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                {projects.map(proj => {
+                    const isAssigned = assigned.has(proj.id);
+                    const isSaving  = saving === proj.id;
+                    return (
+                        <label
+                            key={proj.id}
+                            className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer transition-colors group"
+                        >
+                            <div className="relative flex-shrink-0">
+                                {isSaving ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--brand-color,#d35400)]" />
+                                ) : (
+                                    <input
+                                        type="checkbox"
+                                        checked={isAssigned}
+                                        onChange={() => toggle(proj.id)}
+                                        className="w-3.5 h-3.5 rounded border-neutral-300 dark:border-white/20 accent-[var(--brand-color,#d35400)] cursor-pointer"
+                                    />
+                                )}
+                            </div>
+                            <span className="text-xs text-neutral-700 dark:text-neutral-300 truncate flex-1">
+                                {proj.name}
+                            </span>
+                            {isAssigned && !isSaving && (
+                                <Check className="w-3 h-3 text-[var(--brand-color,#d35400)] flex-shrink-0 opacity-70" />
+                            )}
+                        </label>
+                    );
+                })}
+            </div>
         </div>
     );
 }

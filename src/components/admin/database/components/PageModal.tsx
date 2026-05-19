@@ -703,7 +703,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                     type="checkbox"
                                                                                     checked={(page.properties[prop.id] as boolean) || false}
                                                                                     onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.checked)}
-                                                                                    className="w-4 h-4 cursor-pointer accent-blue-600 rounded"
+                                                                                    className="w-4 h-4 cursor-pointer accent-orange-500 rounded"
                                                                                 />
                                                                                 <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 select-none group-hover/label:text-neutral-900 dark:group-hover/label:text-neutral-200 transition-colors">
                                                                                     {page.properties[prop.id] ? "Done" : "Pending"}

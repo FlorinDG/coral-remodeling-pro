@@ -12,7 +12,7 @@
 
 export type TemplateId = 't1' | 't2' | 't3' | 't4';
 
-const DEFAULT_ACCENT = '#d35400';
+const DEFAULT_ACCENT = '#ea580c';
 
 // ── Color utilities ─────────────────────────────────────────────────────────
 function hexToRgb(hex: string): [number, number, number] {
@@ -29,20 +29,30 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /** Mix color with black (amount 0–1, 1 = fully black) */
-function darken(hex: string, amount: number): string {
+export function darken(hex: string, amount: number): string {
     const [r, g, b] = hexToRgb(hex);
     return rgbToHex(r * (1 - amount), g * (1 - amount), b * (1 - amount));
 }
 
 /** Mix color with white (amount 0–1, 1 = fully white) */
-function lighten(hex: string, amount: number): string {
+export function lighten(hex: string, amount: number): string {
     const [r, g, b] = hexToRgb(hex);
     return rgbToHex(r + (255 - r) * amount, g + (255 - g) * amount, b + (255 - b) * amount);
 }
 
-/** Brand color with hex opacity suffix */
-function withAlpha(hex: string, alpha: string): string {
-    return hex + alpha;
+/** Brand color with safe rgba opacity */
+export function withAlpha(hex: string, alphaHex: string): string {
+    try {
+        const h = hex.replace('#', '');
+        const r = parseInt(h.substring(0, 2), 16);
+        const g = parseInt(h.substring(2, 4), 16);
+        const b = parseInt(h.substring(4, 6), 16);
+        // Convert hex alpha (e.g. '12' or '1a') to decimal fraction (e.g. 18/255 = 0.07)
+        const a = parseInt(alphaHex, 16) / 255;
+        return `rgba(${r}, ${g}, ${b}, ${a.toFixed(2)})`;
+    } catch (e) {
+        return hex;
+    }
 }
 
 export function getTemplateStyles(templateId: TemplateId, brandColor?: string) {
@@ -57,8 +67,8 @@ export function getTemplateStyles(templateId: TemplateId, brandColor?: string) {
 
 // ─── T1: BLOCK — Dark/White Impact ──────────────────────────────────────────
 function blockStyles(accent: string) {
-    const dark = darken(accent, 0.65);       // deep brand for header block
-    const darkMid = darken(accent, 0.50);    // slightly lighter for info text
+    const dark = '#111111';       // Locked deep charcoal for maximum contrast
+    const darkMid = '#222222';    // Slightly lighter dark
     return {
         page: { paddingTop: 0, paddingBottom: 65, paddingLeft: 0, paddingRight: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
         headerRow: { flexDirection: 'row' as const, alignItems: 'stretch' as const, marginBottom: 0 },
@@ -67,7 +77,7 @@ function blockStyles(accent: string) {
         logo:             { width: 110, marginBottom: 8 },
         title:            { fontSize: 20, fontWeight: 'bold' as const, color: dark, textTransform: 'uppercase' as const, letterSpacing: 1 },
         subtitle:         { fontSize: 9, color: '#555555' },
-        companyInfoText:  { fontSize: 8.5, color: lighten(accent, 0.65) },
+        companyInfoText:  { fontSize: 8.5, color: '#d1d5db' }, // High contrast light grey
         companyFallback:  { fontSize: 22, fontWeight: 'bold' as const, color: '#ffffff', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 },
         clientLabel:      { fontSize: 8, fontWeight: 'bold' as const, color: '#999999', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 3 },
         betreftLabel:     { fontSize: 12, fontWeight: 'bold' as const, color: dark },
@@ -91,10 +101,10 @@ function blockStyles(accent: string) {
 
 // ─── T2: MIST — Soft Tinted ────────────────────────────────────────────────
 function mistStyles(accent: string) {
-    const pageBg = lighten(accent, 0.92);       // very light brand tint
-    const clientBg = lighten(accent, 0.87);     // slightly darker band
-    const muted = lighten(accent, 0.40);        // muted brand for labels
-    const footerBg = lighten(accent, 0.85);
+    const pageBg = lighten(accent, 0.95);       // very light brand tint
+    const clientBg = lighten(accent, 0.90);     // slightly darker band
+    const muted = darken(accent, 0.20);        // dark brand for labels (no low contrast)
+    const footerBg = lighten(accent, 0.88);
     return {
         page: { paddingTop: 0, paddingBottom: 60, paddingLeft: 0, paddingRight: 0, backgroundColor: pageBg, fontFamily: 'Helvetica', fontSize: 10, color: darken(accent, 0.60) },
         headerRow: { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const, padding: 32, paddingBottom: 24, backgroundColor: pageBg },
@@ -125,8 +135,8 @@ function mistStyles(accent: string) {
 
 // ─── T3: NAVY — Classic Corporate ───────────────────────────────────────────
 function navyStyles(accent: string) {
-    const dark = darken(accent, 0.55);          // deepest brand shade (was #1a3a5c)
-    const darkMid = darken(accent, 0.40);       // mid dark (was #245076)
+    const dark = '#1a3a5c';          // Restored Classic Navy
+    const darkMid = '#245076';       // Restored Classic Navy Mid
     return {
         page: { paddingTop: 40, paddingBottom: 60, paddingHorizontal: 40, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#111111' },
         headerRow:   { flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'flex-start' as const, marginBottom: 20 },
@@ -159,8 +169,8 @@ function navyStyles(accent: string) {
 
 // ─── T4: PRISM — Geometric Diagonal ─────────────────────────────────────────
 function prismStyles(accent: string) {
-    const dark = darken(accent, 0.55);          // was #1c2e4a
-    const darkMid = darken(accent, 0.40);       // was #26405e
+    const dark = '#1c2e4a';          // Restored Classic Prism Navy
+    const darkMid = '#26405e';       // Restored Classic Prism Mid
     return {
         page: { paddingTop: 0, paddingBottom: 60, paddingLeft: 0, paddingRight: 0, backgroundColor: '#ffffff', fontFamily: 'Helvetica', fontSize: 10, color: '#222222' },
         headerRow:   { flexDirection: 'row' as const, alignItems: 'center' as const },
@@ -169,7 +179,7 @@ function prismStyles(accent: string) {
         logo:            { width: 70, marginBottom: 6 },
         title:           { fontSize: 26, fontWeight: 'bold' as const, color: dark, textTransform: 'uppercase' as const, letterSpacing: 2 },
         subtitle:        { fontSize: 9, color: '#666666' },
-        companyInfoText: { fontSize: 8, color: 'rgba(255,255,255,0.7)' },
+        companyInfoText: { fontSize: 8, color: 'rgba(255,255,255,0.8)' },
         companyFallback: { fontSize: 20, fontWeight: 'bold' as const, color: '#ffffff', letterSpacing: 0.5 },
         clientLabel:     { fontSize: 8, fontWeight: 'bold' as const, color: '#888888', textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 3 },
         betreftLabel:    { fontSize: 12, fontWeight: 'bold' as const, color: dark },

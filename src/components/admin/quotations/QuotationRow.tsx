@@ -541,20 +541,80 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         )}
 
                                         {block.type === 'image' && (
-                                            <div className="flex flex-col gap-2 w-full pt-2">
-                                                <div className="flex items-center gap-2">
-                                                    <ImageIcon className="w-4 h-4 text-neutral-400" />
-                                                    <input
-                                                        type="url"
-                                                        placeholder="Paste Image URL here (https://...)"
-                                                        value={block.content || ''}
-                                                        onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-                                                        className="w-full bg-transparent border-b border-neutral-200 dark:border-neutral-800 outline-none pb-1 text-sm focus:border-orange-500 text-blue-500"
-                                                    />
+                                            <div className="flex flex-col gap-3 w-full pt-2">
+                                                <div className="flex flex-col md:flex-row gap-4 items-stretch">
+                                                    {/* Custom Dropzone / Upload area */}
+                                                    <div 
+                                                        className="flex-1 border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-orange-500/80 dark:hover:border-orange-500/80 rounded-xl p-6 flex flex-col items-center justify-center gap-2 bg-neutral-50 dark:bg-white/[0.02] hover:bg-neutral-100/50 dark:hover:bg-white/[0.04] transition-all cursor-pointer group"
+                                                        onDragOver={(e) => e.preventDefault()}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            const file = e.dataTransfer.files?.[0];
+                                                            if (file) {
+                                                                const reader = new FileReader();
+                                                                reader.onload = (ev) => {
+                                                                    const base64 = ev.target?.result as string;
+                                                                    if (base64) onUpdate(block.id, { content: base64 });
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        }}
+                                                        onClick={() => {
+                                                            const input = document.createElement('input');
+                                                            input.type = 'file';
+                                                            input.accept = 'image/*';
+                                                            input.onchange = (ev) => {
+                                                                const file = (ev.target as HTMLInputElement).files?.[0];
+                                                                if (file) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = (rEv) => {
+                                                                        const base64 = rEv.target?.result as string;
+                                                                        if (base64) onUpdate(block.id, { content: base64 });
+                                                                    };
+                                                                    reader.readAsDataURL(file);
+                                                                }
+                                                            };
+                                                            input.click();
+                                                        }}
+                                                    >
+                                                        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform">
+                                                            <ArrowUpToLine className="w-5 h-5" />
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <p className="text-xs font-bold text-neutral-750 dark:text-neutral-250">
+                                                                Sleep een foto hierheen of <span className="text-orange-500 underline">blader</span>
+                                                            </p>
+                                                            <p className="text-[10px] text-neutral-450 mt-1">PNG, JPG, WebP of GIF (inline base64)</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Fallback URL Paste */}
+                                                    <div className="flex-1 flex flex-col justify-center gap-2.5 p-4 rounded-xl border border-neutral-200 dark:border-neutral-850 bg-white dark:bg-neutral-900">
+                                                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">Of gebruik een afbeelding URL</label>
+                                                        <div className="flex items-center gap-2 border-b border-neutral-200 dark:border-neutral-800 pb-1.5 focus-within:border-orange-500 transition-colors">
+                                                            <Link className="w-3.5 h-3.5 text-neutral-400" />
+                                                            <input
+                                                                type="url"
+                                                                placeholder="https://example.com/image.jpg"
+                                                                value={block.content && !block.content.startsWith('data:') ? block.content : ''}
+                                                                onChange={(e) => onUpdate(block.id, { content: e.target.value })}
+                                                                className="w-full bg-transparent outline-none text-xs text-neutral-800 dark:text-neutral-200 placeholder:text-neutral-400"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                {block.content && block.content.startsWith('http') && (
-                                                    <div className="mt-2 relative w-full max-w-md rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-white/5">
-                                                        <img src={block.content} alt="Media Attachment" className="w-full h-auto object-cover" />
+
+                                                {/* Preview Area */}
+                                                {block.content && (block.content.startsWith('http') || block.content.startsWith('data:')) && (
+                                                    <div className="mt-2 relative w-full max-w-sm rounded-lg overflow-hidden border border-neutral-200 dark:border-neutral-855 bg-neutral-100 dark:bg-white/5 group/preview">
+                                                        <img src={block.content} alt="Media Attachment" className="w-full h-auto object-cover max-h-60" />
+                                                        <button 
+                                                            onClick={() => onUpdate(block.id, { content: '' })}
+                                                            className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/60 hover:bg-red-650 text-white transition-all shadow-lg backdrop-blur-sm"
+                                                            title="Verwijder afbeelding"
+                                                        >
+                                                            <Trash className="w-3.5 h-3.5" />
+                                                        </button>
                                                     </div>
                                                 )}
                                             </div>

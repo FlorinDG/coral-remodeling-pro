@@ -432,7 +432,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     return next;
                                 });
                             }}
-                            className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                            className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
                         />
                     </div>
                 )
@@ -1029,7 +1029,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (e.target.checked) setSelectedRowIds(new Set(filteredPages.map(p => p.id)));
                                             else setSelectedRowIds(new Set());
                                         }}
-                                        className="w-3.5 h-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
                                     />
                                 </div>
 

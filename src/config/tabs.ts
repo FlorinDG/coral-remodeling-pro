@@ -164,7 +164,8 @@ const SETTINGS_MODULE_MAP: Record<string, string> = {
  * Returns settings tabs filtered by which modules are active.
  * Company Info and UI Layout are always shown.
  */
-export function getFilteredSettingsTabs(activeModules: string[]): typeof settingsTabsBase {
+export function getFilteredSettingsTabs(activeModules: string[], role?: string): typeof settingsTabsBase {
+    if (role === 'SUPERADMIN') return settingsTabsBase;
     return settingsTabsBase.filter(tab => {
         const requiredModule = SETTINGS_MODULE_MAP[tab.id];
         if (!requiredModule) return true; // always visible (company-info, ui)

@@ -335,9 +335,11 @@ export default function QuotationFooterReport({
                                 <td className="px-4 py-3 font-medium text-neutral-600 dark:text-neutral-400">{ti18n('profit_cost', language)}</td>
                                 <td className="px-4 py-3 text-right font-bold opacity-70">{formatCurrency(grandKost)}</td>
                             </tr>
-                            <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white bg-blue-50/30 dark:bg-blue-900/10">
-                                <td className="px-4 py-3 font-medium text-blue-600 dark:text-blue-400">{ti18n('profit_sales', language)}</td>
-                                <td className="px-4 py-3 text-right font-bold text-blue-600 dark:text-blue-400 text-lg">{formatCurrency(grandVerkoop)}</td>
+                            <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white"
+                                style={{ backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 7%, transparent)' }}
+                            >
+                                <td className="px-4 py-3 font-medium" style={{ color: 'var(--brand-color, #d35400)' }}>{ti18n('profit_sales', language)}</td>
+                                <td className="px-4 py-3 text-right font-bold text-lg" style={{ color: 'var(--brand-color, #d35400)' }}>{formatCurrency(grandVerkoop)}</td>
                             </tr>
                             <tr className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors text-black dark:text-white bg-emerald-50/30 dark:bg-emerald-900/10">
                                 <td className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">{ti18n('profit_estimate', language)}</td>

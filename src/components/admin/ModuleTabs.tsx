@@ -9,6 +9,8 @@ import { useTenant } from "@/context/TenantContext";
 import { useTranslations } from 'next-intl';
 import { getFinancialTabs, getSettingsTabs, getFilteredRelationsTabs } from "@/config/tabs";
 
+import { useSession } from "next-auth/react";
+
 export interface TabConfig {
     label: string;
     href: string;
@@ -26,6 +28,7 @@ export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps)
     const { tabOrders } = useTabStore();
     const { activeModules } = useTenant();
     const t = useTranslations('Admin');
+    const { data: session } = useSession();
 
     // Auto-resolve localized tabs for known groups
     const resolvedTabs = useMemo(() => {
@@ -38,6 +41,8 @@ export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps)
     }, [tabs, groupId, t, planType]);
 
     const allowedTabs = useMemo(() => {
+        if (session?.user?.role === 'SUPERADMIN') return resolvedTabs;
+
         const SETTINGS_MODULE_MAP: Record<string, string[]> = {
             // Financial settings — requires INVOICING but ALSO at least one other module
             // (i.e. not shown to pure FREE/INVOICING-only tenants — they configure via Company Info)
@@ -66,7 +71,7 @@ export default function ModuleTabs({ tabs, groupId, planType }: ModuleTabsProps)
             if (!req) return true;
             return req.some(m => activeModules.includes(m));
         });
-    }, [resolvedTabs, activeModules]);
+    }, [resolvedTabs, activeModules, session]);
 
     // Reorder tabs if a custom order exists for this group
     const orderedTabs = useMemo(() => {

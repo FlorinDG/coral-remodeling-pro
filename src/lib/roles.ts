@@ -42,6 +42,18 @@ export const ROLES = {
     // ── External collaborator roles ──────────────────────────────────
     /** Read-only access to financial data. Does NOT count against seat limits. */
     ACCOUNTANT:                  'ACCOUNTANT',
+
+    // ── Functional specialist roles (module-scoped, all paid plans) ──
+    /** Financials read + write access. No HR, Projects, or Contacts module. */
+    BOOKKEEPING:                 'BOOKKEEPING',
+    /** Projects + Tasks + HR team view. No Financials. */
+    TEAMLEAD:                    'TEAMLEAD',
+    /** Full Projects + Tasks + Contacts. No Financials, no HR payroll. */
+    PROJECT_MANAGER:             'PROJECT_MANAGER',
+    /** HR module only. No Financials, no Projects. */
+    HR_OFFICER:                  'HR_OFFICER',
+    /** Quotations + Contacts + assigned Projects + Article Library ONLY. Enterprise tier. */
+    OFFERTES:                    'OFFERTES',
 } as const;
 
 export type Role = typeof ROLES[keyof typeof ROLES];
@@ -66,6 +78,11 @@ export const ERP_ROLES: Role[] = [
     ROLES.TENANT_ENTERPRISE_EMPLOYEE,
     ROLES.TENANT_ENTERPRISE_WORKFORCE,
     ROLES.ACCOUNTANT,          // read-only financial access
+    ROLES.BOOKKEEPING,
+    ROLES.TEAMLEAD,
+    ROLES.PROJECT_MANAGER,
+    ROLES.HR_OFFICER,
+    ROLES.OFFERTES,
 ];
 
 /** Roles that can manage their workspace's users. */
@@ -78,11 +95,15 @@ export const WORKSPACE_OWNER_ROLES: Role[] = [
 
 // ── User count limits per plan (enforced at invite time) ─────────────
 
-/** Maximum total users allowed per workspace by plan type. */
+/**
+ * Maximum total users allowed per workspace by plan type.
+ * FREE: hard capped at 1 — no sub-user management on free tier.
+ * All paid plans: Infinity — Stripe handles per-seat billing, code never blocks.
+ */
 export const PLAN_USER_LIMITS: Record<string, number> = {
     FREE:       1,
-    PRO:        3,   // 1 owner + 2 employees
-    ENTERPRISE: Infinity, // TBD when enterprise tier is built
+    PRO:        Infinity, // Stripe-billed per seat — no code cap
+    ENTERPRISE: Infinity,
     FOUNDER:    Infinity,
     CUSTOM:     Infinity,
 };

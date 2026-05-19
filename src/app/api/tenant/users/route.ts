@@ -93,7 +93,8 @@ export async function POST(req: Request) {
         const maxUsers = PLAN_USER_LIMITS[tenant?.planType ?? 'FREE'] ?? 1;
         const isAccountantInvite = role === 'ACCOUNTANT';
 
-        if (!isAccountantInvite) {
+        // Seat limit only enforced on FREE plan — paid plans are billed per seat via Stripe
+        if (!isAccountantInvite && maxUsers !== Infinity) {
             const currentCount = await prisma.user.count({
                 where: { tenantId: inviter.tenantId, role: { not: 'ACCOUNTANT' } },
             });
@@ -101,7 +102,7 @@ export async function POST(req: Request) {
             if (currentCount >= maxUsers) {
                 return NextResponse.json({
                     error: 'SEAT_LIMIT_REACHED',
-                    message: `Your ${tenant?.planType} plan allows ${maxUsers} users. Upgrade to add more.`,
+                    message: `The Free plan is limited to ${maxUsers} user. Upgrade to add team members.`,
                     maxUsers,
                     currentCount,
                 }, { status: 403 });

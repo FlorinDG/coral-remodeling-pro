@@ -486,10 +486,10 @@ export const mockDatabases: Database[] = [
             {
                 id: 'prop-task-priority', name: 'Priority', type: 'select',
                 config: { options: [
-                    { id: 'opt-p1', name: 'P1 — Urgent',    color: 'red'    },
-                    { id: 'opt-p2', name: 'P2 — High',      color: 'orange' },
-                    { id: 'opt-p3', name: 'P3 — Medium',    color: 'yellow' },
-                    { id: 'opt-p4', name: 'P4 — Low',       color: 'gray'   },
+                    { id: 'opt-p1', name: 'Urgent',    color: 'red'    },
+                    { id: 'opt-p2', name: 'High',      color: 'orange' },
+                    { id: 'opt-p3', name: 'Medium',    color: 'yellow' },
+                    { id: 'opt-p4', name: 'Low',       color: 'gray'   },
                 ] }
             },
             { id: 'prop-task-due',          name: 'Due Date',       type: 'date' },

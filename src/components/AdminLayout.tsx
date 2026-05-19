@@ -141,13 +141,26 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     // ── Accountant role: restrict sidebar to financial items only ──────
     const userRole = session?.user?.role ?? '';
     const isAccountant = userRole === 'ACCOUNTANT';
-    const ACCOUNTANT_SIDEBAR_IDS = ['dashboard', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'];
+
+    // ── Role-specific sidebar allow-lists ───────────────────────────────────
+    // Specialist roles see only what they need — sidebar is cosmetic,
+    // middleware hard gates are the real security layer.
+    const ROLE_SIDEBAR_ALLOW: Partial<Record<string, string[]>> = {
+        ACCOUNTANT:      ['dashboard', 'financials', 'contacts', 'suppliers', 'quotations', 'settings'],
+        BOOKKEEPING:     ['dashboard', 'financials', 'contacts', 'suppliers', 'library', 'settings'],
+        OFFERTES:        ['dashboard', 'quotations', 'contacts', 'library', 'projects', 'settings'],
+        HR_OFFICER:      ['dashboard', 'hr', 'settings'],
+        TEAMLEAD:        ['dashboard', 'projects', 'tasks', 'calendar', 'hr', 'settings'],
+        PROJECT_MANAGER: ['dashboard', 'projects', 'tasks', 'calendar', 'contacts', 'settings'],
+    };
 
     const isModuleLocked = (moduleId: string) => {
-        // Superadmin bypass
+        // Superadmin bypass — sees everything
         if (userRole === 'SUPERADMIN') return false;
-        // Accountants only see financial items
-        if (isAccountant && !ACCOUNTANT_SIDEBAR_IDS.includes(moduleId)) return true;
+        // Role-specific allow-list takes priority over module subscription gates
+        const allowList = ROLE_SIDEBAR_ALLOW[userRole];
+        if (allowList) return !allowList.includes(moduleId);
+        // Default: check module subscription
         const requiredModules = MODULE_MAP[moduleId];
         if (!requiredModules) return false;
         return !requiredModules.some(m => activeModules.includes(m));

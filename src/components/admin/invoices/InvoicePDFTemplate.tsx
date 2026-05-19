@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
-import { getTemplateStyles, TemplateId } from '@/components/admin/shared/templateStyles';
+import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 
@@ -143,7 +143,7 @@ export const InvoicePDFTemplate = ({
 
             if (block.type === 'section') {
                 const sectionStyle = isStationery
-                    ? { flexDirection: 'row' as const, backgroundColor: `${accent}12`, borderLeft: `3px solid ${accent}`, paddingVertical: 6, paddingHorizontal: 40, marginTop: 6 }
+                    ? { flexDirection: 'row' as const, backgroundColor: withAlpha(accent, '12'), borderLeft: `3px solid ${accent}`, paddingVertical: 6, paddingHorizontal: 40, marginTop: 6 }
                     : s.sectionRow;
                 const textStyle = isStationery
                     ? { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const }
@@ -403,15 +403,15 @@ export const InvoicePDFTemplate = ({
                     {t('bill_to', lang)}
                 </Text>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 40 }}>
-                    <Text style={{ color: '#aac4dc', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>Invoice #</Text>
-                    <Text style={{ color: '#aac4dc', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>Date</Text>
+                    <Text style={{ color: lighten(navy, 0.60), fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>{docTitle} #</Text>
+                    <Text style={{ color: lighten(navy, 0.60), fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>{t('date', lang)}</Text>
                 </View>
             </View>
             <View style={{ flexDirection: 'row', backgroundColor: navyMid, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 20 }}>
-                <Text style={{ flex: 1, color: '#ddeaf6', fontSize: 9 }}>{clientInfo.name || '—'}</Text>
+                <Text style={{ flex: 1, color: lighten(navy, 0.85), fontSize: 9 }}>{clientInfo.name || '—'}</Text>
                 <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 36 }}>
-                    <Text style={{ color: '#ddeaf6', fontSize: 9 }}>#{invoiceTitle || 'DRAFT'}</Text>
-                    <Text style={{ color: '#ddeaf6', fontSize: 9 }}>{dateStr}</Text>
+                    <Text style={{ color: lighten(navy, 0.85), fontSize: 9 }}>#{invoiceTitle || 'DRAFT'}</Text>
+                    <Text style={{ color: lighten(navy, 0.85), fontSize: 9 }}>{dateStr}</Text>
                 </View>
             </View>
         </>

@@ -87,6 +87,7 @@ export const ERP_ROLES: Role[] = [
 
 /** Roles that can manage their workspace's users. */
 export const WORKSPACE_OWNER_ROLES: Role[] = [
+    ROLES.SUPERADMIN,
     ROLES.APP_MANAGER,
     ROLES.TENANT_PRO_OWNER,
     ROLES.TENANT_ENTERPRISE_OWNER,

@@ -212,8 +212,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         </div>
                     )}
 
-                    {/* ── Platform owner quick-links (Coral Enterprises only) ── */}
-                    {isOwner && !isAccountant && (
+                    {/* ── Platform owner quick-links (Coral Enterprises only + Superadmin bypass) ── */}
+                    {(isOwner || userRole === 'SUPERADMIN') && !isAccountant && (
                         <>
                             {isSidebarOpen && (
                                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400 px-3 pt-3 pb-1.5">

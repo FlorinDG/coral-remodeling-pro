@@ -6,6 +6,7 @@ import { getFilteredSettingsTabs } from '@/config/tabs';
 import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { useSession } from 'next-auth/react';
+import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 import {
     Users, UserPlus, Shield, Eye, EyeOff, Edit3, Trash2,
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
-const OWNER_ROLES = ['APP_MANAGER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER'];
+const OWNER_ROLES = WORKSPACE_OWNER_ROLES;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type AccessLevel = 'ALL' | 'OWN' | 'ASSIGNED_AND_OWN' | 'NONE';
@@ -77,7 +78,7 @@ const ROLE_ACCESS_DEFAULTS: Record<string, Record<string, AccessLevel>> = {
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function TeamSettingsPage() {
     usePageTitle('Team');
-    const { activeModules, planType, isPro } = useTenant();
+    const { activeModules, planType } = useTenant();
     const { data: session } = useSession();
     const currentRole = session?.user?.role ?? '';
     const isWorkspaceOwner = OWNER_ROLES.includes(currentRole);
@@ -230,7 +231,7 @@ export default function TeamSettingsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="text-xs font-bold text-neutral-400 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-lg">
-                            {maxUsers === Infinity
+                            {maxUsers === null || maxUsers === Infinity
                                 ? `${users.length} member${users.length !== 1 ? 's' : ''}`
                                 : `${users.length} / ${maxUsers} seats`}
                         </span>
@@ -292,8 +293,8 @@ export default function TeamSettingsPage() {
                                             <span className="text-xs font-bold text-neutral-600 dark:text-neutral-300">{getRoleLabel(u.role)}</span>
                                         </div>
 
-                                        {/* Actions — only workspace owners can edit/remove */}
-                                        {!isOwner && isWorkspaceOwner && (
+                                        {/* Actions — only workspace owners can edit/remove (Superadmin can manage any user except themselves) */}
+                                        {((!isOwner && isWorkspaceOwner) || (currentRole === 'SUPERADMIN' && u.id !== session?.user?.id)) && (
                                             <div className="flex items-center gap-1 shrink-0">
                                                 {/* Password reset */}
                                                 {resetSuccess === u.id ? (
@@ -380,7 +381,7 @@ export default function TeamSettingsPage() {
                                     </div>
 
                                     {/* Expanded access editor */}
-                                    {isEditing && !isOwner && (
+                                    {isEditing && (!isOwner || currentRole === 'SUPERADMIN') && (
                                         <>
                                             <AccessEditor
                                                 moduleAccess={(u.moduleAccess || {}) as Record<string, string>}

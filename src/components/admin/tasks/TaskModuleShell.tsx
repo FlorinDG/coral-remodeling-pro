@@ -177,7 +177,7 @@ export default function TaskModuleShell() {
             'prop-task-completed-at': '',
             'prop-task-my-day':       false,
         };
-        const newPage = createPage('db-tasks', freshProps);
+        const newPage = createPage('db-tasks', freshProps, undefined, page.blocks);
         setSelectedPageId(newPage.id);
     };
 

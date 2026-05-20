@@ -155,8 +155,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     };
 
     const isModuleLocked = (moduleId: string) => {
-        // Superadmin bypass — sees everything
-        if (userRole === 'SUPERADMIN') return false;
+        // Superadmin/Impersonation bypass — sees everything
+        if (isImpersonating || userRole === 'SUPERADMIN' || userRole === 'TENANT_MANAGER') return false;
         // Role-specific allow-list takes priority over module subscription gates
         const allowList = ROLE_SIDEBAR_ALLOW[userRole];
         if (allowList) return !allowList.includes(moduleId);
@@ -430,7 +430,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         <div className="flex items-center gap-3">
                             <ShieldAlert className="w-4 h-4 text-violet-200 flex-shrink-0" />
                             <p className="text-xs font-bold text-white">
-                                IMPERSONATION MODE — You are viewing this workspace as SuperAdmin for customer support.
+                                IMPERSONATION MODE (Gating-Agnostic) — You are viewing this workspace with full Enterprise/ERP access as SuperAdmin for customer support.
                             </p>
                         </div>
                         <button

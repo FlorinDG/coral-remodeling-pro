@@ -26,12 +26,12 @@ coral-website/
 ## 2. Subscription Tiers — LOCKED ✅
 
 ### Pricing
-| | **FREE** | **PRO** — €29/mo | **ENTERPRISE** — €79/mo |
+| | **FREE** | **PRO** — €29/mo | **ENTERPRISE** — €99/mo |
 |---|----------|-------------------|-------------------------|
 | **Strategy** | Acquisition funnel | Core revenue | Full ERP |
 
 > [!IMPORTANT]
-> €29/€79 is at the bottom edge for Belgian SMEs but strategic for customer acquisition. Revisit after 50+ paying tenants.
+> €29/€99 is at the bottom edge for Belgian SMEs but strategic for customer acquisition. Revisit after 50+ paying tenants.
 
 ---
 
@@ -63,13 +63,12 @@ coral-website/
 
 ### Module Access Per Tier
 
-| Module | FREE | PRO | ENTERPRISE |
-|--------|------|-----|------------|
-| **Dashboard** | ✅ | ✅ | ✅ |
-| **CRM** | ✅ Basic | ✅ Full | ✅ Full |
-| **Contacts** | ✅ (50 max) | ✅ (500) | ✅ Unlimited |
-| **Suppliers** | ✅ (10 max) | ✅ (100) | ✅ Unlimited |
-| | | | |
+| Module        | FREE          | PRO           | ENTERPRISE    |
+|---------------|---------------|---------------|---------------|
+| **Dashboard** | ✅            | ✅            | ✅            |
+| **CRM**       | ✅ Basic      | ✅ Full       | ✅ Full       |
+
+
 | **Invoicing** | ✅ Basic (create, PDF) | ✅ Full | ✅ Full |
 | **Credit Notes** | ✅ Basic | ✅ Full | ✅ Full |
 | **Quotations** | ✅ Basic (create, PDF, send, online sign) | ✅ Full | ✅ Full |

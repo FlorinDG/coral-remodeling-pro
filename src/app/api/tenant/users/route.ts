@@ -94,7 +94,9 @@ export async function POST(req: Request) {
         const isAccountantInvite = role === 'ACCOUNTANT';
 
         // Seat limit only enforced on FREE plan — paid plans are billed per seat via Stripe
-        if (!isAccountantInvite && maxUsers !== Infinity) {
+        // SuperAdmin impersonation bypasses all gating limits to allow full remote setup.
+        const isImpersonating = !!session?.user?.isImpersonating;
+        if (!isAccountantInvite && maxUsers !== Infinity && !isImpersonating) {
             const currentCount = await prisma.user.count({
                 where: { tenantId: inviter.tenantId, role: { not: 'ACCOUNTANT' } },
             });

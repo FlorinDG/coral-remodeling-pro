@@ -49,9 +49,10 @@ export async function verifyModuleAccess(requiredModule: string): Promise<string
         throw new Error('Unauthorized — tenant not found');
     }
 
-    // SUPERADMIN / PLATFORM_ADMIN bypass — they can do everything
+    // SUPERADMIN / TENANT_MANAGER / Impersonation bypass — they can do everything
     const role = session?.user?.role ?? '';
-    if (['SUPERADMIN', 'PLATFORM_ADMIN'].includes(role)) {
+    const isImpersonating = !!session?.user?.isImpersonating;
+    if (isImpersonating || ['SUPERADMIN', 'TENANT_MANAGER', 'PLATFORM_ADMIN'].includes(role)) {
         return tenantId;
     }
 

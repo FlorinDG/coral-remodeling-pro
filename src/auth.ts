@@ -173,6 +173,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 (session.user as any).emailVerified       = token.emailVerified;
                 (session.user as any).activeModules       = token.activeModules ?? ['INVOICING'];
                 (session.user as any).planType            = token.planType ?? 'FREE';
+
+                // Impersonation override: If SuperAdmin is impersonating, override tenantId with the cookie value
+                // and mark as impersonating so the entire session knows.
+                const role = token.role as string;
+                if (role && ['SUPERADMIN', 'TENANT_MANAGER'].includes(role)) {
+                    try {
+                        const cookieStore = await cookies();
+                        const impersonatedTenant = cookieStore.get('x-impersonate-tenant')?.value;
+                        if (impersonatedTenant) {
+                            (session.user as any).tenantId = impersonatedTenant;
+                            (session.user as any).isImpersonating = true;
+                        }
+                    } catch (e) {
+                        console.error('[auth] Impersonation cookie check failed:', e);
+                    }
+                }
             }
             return session;
         },

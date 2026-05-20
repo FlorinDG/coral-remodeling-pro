@@ -15,6 +15,7 @@ declare module "next-auth" {
             emailVerified?: any;
             activeModules?: string[];
             planType?: string;
+            isImpersonating?: boolean;
         }
     }
 
@@ -38,5 +39,6 @@ declare module "next-auth/jwt" {
         emailVerified?: any;
         activeModules?: string[];
         planType?: string;
+        isImpersonating?: boolean;
     }
 }

@@ -29,7 +29,8 @@ export async function POST(req: Request) {
             where: { id: user.tenantId },
             select: { planType: true },
         });
-        if (!tenant || !['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(tenant.planType)) {
+        const isImpersonating = !!session?.user?.isImpersonating;
+        if (!isImpersonating && (!tenant || !['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(tenant.planType))) {
             return NextResponse.json({
                 error: 'ENTERPRISE_ONLY',
                 message: 'Expense approval workflow is available on Enterprise plans.',

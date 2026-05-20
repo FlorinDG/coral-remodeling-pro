@@ -79,10 +79,15 @@ export default async function Layout({ children }: { children: React.ReactNode }
         }
     }
 
+    const displayActiveModules = isImpersonating
+        ? ["INVOICING", "CRM", "DATABASES", "PROJECTS", "CALENDAR", "HR", "WEBSITES", "EMAIL"]
+        : activeModules;
+    const displayPlanType = isImpersonating ? "ENTERPRISE" : planType;
+
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating}>
+            <AdminLayout activeModules={displayActiveModules} planType={displayPlanType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating}>
                 {children}
             </AdminLayout>
         </AuthProvider>

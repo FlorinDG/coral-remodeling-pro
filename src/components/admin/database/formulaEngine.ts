@@ -44,17 +44,34 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
         }
 
         // 1. Resolve prop("Property Name") → literal JS values
+        //    If the referenced property is itself a formula, recursively evaluate it.
+        //    Depth guard prevents circular references from causing infinite loops.
 
-        const propRegex = /prop\(['"]([^'"]+)['"]\)/g;
-        parsed = parsed.replace(propRegex, (_match, propName) => {
+        const MAX_FORMULA_DEPTH = 10;
+        const resolvePropertyValue = (propName: string, depth: number = 0): string => {
+            if (depth > MAX_FORMULA_DEPTH) return '0'; // Circular reference guard
+
             const property = context.schema.find(p => p.name === propName);
             if (!property) throw new Error(`Property "${propName}" not found in schema`);
+
+            // If it's a formula property, recursively evaluate it
+            if (property.type === 'formula' && property.config?.formulaExpression) {
+                const formulaResult = evaluateFormula(property.config.formulaExpression, context);
+                if (formulaResult === null || formulaResult === undefined) return '0';
+                if (typeof formulaResult === 'string') return `"${formulaResult.replace(/"/g, '\\"')}"`;
+                return String(formulaResult);
+            }
 
             const val = context.rowProperties[property.id];
             if (typeof val === 'string') return `"${val.replace(/"/g, '\\"')}"`;
             if (typeof val === 'number' || typeof val === 'boolean') return String(val);
             if (Array.isArray(val)) return JSON.stringify(val);
             return 'null';
+        };
+
+        const propRegex = /prop\(['"]([^'"]+)['"]\)/g;
+        parsed = parsed.replace(propRegex, (_match, propName) => {
+            return resolvePropertyValue(propName);
         });
 
         // 2. Preprocess operators

@@ -29,15 +29,16 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
         const formatted = isNaN(numeric) ? String(val) : numeric.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return (
             <div className={`w-full h-full flex items-center justify-end px-3 py-1 text-sm font-medium tracking-wide tabular-nums ${readOnly ? 'text-neutral-500 dark:text-neutral-400 bg-neutral-50/50 dark:bg-white/[0.02]' : 'text-neutral-700 dark:text-neutral-300'}`}>
-                <span className="text-neutral-400 mr-auto select-none opacity-70">{symbol}</span>
+                {symbol !== '%' && <span className="text-neutral-400 mr-auto select-none opacity-70">{symbol}</span>}
                 {formatted}
+                {symbol === '%' && <span className="text-neutral-400 ml-1 select-none opacity-70">%</span>}
             </div>
         );
     }
 
     return (
         <div className="w-full h-full flex items-center px-3 py-1 bg-blue-50/50 dark:bg-blue-900/10">
-            <span className="text-neutral-400 mr-2 select-none text-sm">{symbol}</span>
+            {symbol !== '%' && <span className="text-neutral-400 mr-2 select-none text-sm">{symbol}</span>}
             <input
                 ref={inputRef}
                 className="w-full h-full text-sm bg-transparent outline-none focus:ring-0 text-right tabular-nums text-neutral-900 dark:text-white"
@@ -58,6 +59,7 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
                     }
                 }}
             />
+            {symbol === '%' && <span className="text-neutral-400 ml-1 select-none text-sm">%</span>}
         </div>
     );
 };

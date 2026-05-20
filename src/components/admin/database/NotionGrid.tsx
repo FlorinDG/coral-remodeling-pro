@@ -370,10 +370,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     baseColumn = dateColumn as any;
                 } else if (prop.type === 'created_time' || prop.type === 'last_edited_time') {
                     baseColumn = metaDateColumn as any;
-                } else if (prop.type === 'currency' || prop.type === 'number') {
-                    const symbol = prop.config?.format === 'dollar' ? '$' : '€';
+                } else if (prop.type === 'currency' || prop.type === 'number' || prop.type === 'percent') {
+                    const symbol = prop.type === 'currency' ? (prop.config?.format === 'dollar' ? '$' : '€') : prop.type === 'percent' ? '%' : '';
                     const isComputed = ['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id);
-                    baseColumn = currencyColumn(prop.id, prop.type === 'currency' ? symbol : '', isComputed) as any;
+                    baseColumn = currencyColumn(prop.id, symbol, isComputed) as any;
                 } else if (prop.type === 'variants') {
                     baseColumn = variantsColumn as any;
                 }

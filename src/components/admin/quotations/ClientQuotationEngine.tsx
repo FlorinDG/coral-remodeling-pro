@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2 } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block } from '@/components/admin/database/types';
@@ -63,6 +63,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isDownloading, setIsDownloading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<TenantProfile | null>(null);
     const [showProperties, setShowProperties] = useState(false);
+    const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
+
+    // Universal Transactional Undo History Setup
+    const [history, setHistory] = useState<Block[][]>([]);
+    const historyRef = useRef<Block[][]>([]);
+    const blocksRef = useRef<Block[]>([]);
+    const quotationsDbIdRef = useRef<string>('');
+    const idRef = useRef<string>('');
+
+    // Dynamic timing & pending refs for keystroke-level undo debouncing
+    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingHistoryBlocksRef = useRef<Block[] | null>(null);
 
     useEffect(() => {
         useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -83,6 +95,111 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     // Read the resolved clients database from Zustand
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
+
+    const blocks = quotation?.blocks || [];
+
+    useEffect(() => {
+        historyRef.current = history;
+    }, [history]);
+
+    useEffect(() => {
+        blocksRef.current = blocks;
+    }, [blocks]);
+
+    useEffect(() => {
+        quotationsDbIdRef.current = quotationsDbId;
+        idRef.current = id;
+    }, [quotationsDbId, id]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const savePendingHistoryImmediate = () => {
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+            debounceTimeoutRef.current = null;
+        }
+        if (pendingHistoryBlocksRef.current) {
+            pushToHistory(pendingHistoryBlocksRef.current);
+            pendingHistoryBlocksRef.current = null;
+        }
+    };
+
+    const pushToHistoryDebounced = (currentBlocks: Block[]) => {
+        if (!pendingHistoryBlocksRef.current) {
+            pendingHistoryBlocksRef.current = JSON.parse(JSON.stringify(currentBlocks)) as Block[];
+        }
+        if (debounceTimeoutRef.current) {
+            clearTimeout(debounceTimeoutRef.current);
+        }
+        debounceTimeoutRef.current = setTimeout(() => {
+            savePendingHistoryImmediate();
+        }, 800);
+    };
+
+    const pushToHistory = (currentBlocks: Block[]) => {
+        const clone = JSON.parse(JSON.stringify(currentBlocks)) as Block[];
+        setHistory(prev => {
+            if (prev.length > 0 && JSON.stringify(prev[prev.length - 1]) === JSON.stringify(clone)) {
+                return prev;
+            }
+            const next = [...prev, clone];
+            if (next.length > 20) {
+                next.shift();
+            }
+            return next;
+        });
+    };
+
+    const handleUndo = () => {
+        savePendingHistoryImmediate();
+        const currentHistory = historyRef.current;
+        if (currentHistory.length === 0) return;
+        
+        const nextHistory = [...currentHistory];
+        const previousState = nextHistory.pop();
+        
+        setHistory(nextHistory);
+        
+        if (previousState) {
+            updatePageBlocks(quotationsDbIdRef.current, idRef.current, previousState);
+            toast.success('Bewerking ongedaan gemaakt');
+        }
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isZ = e.key.toLowerCase() === 'z';
+            const isMod = e.metaKey || e.ctrlKey;
+            const isShift = e.shiftKey;
+            
+            if (isMod && isZ && !isShift) {
+                e.preventDefault();
+                handleUndo();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
+
+    const isStructuralChange = (oldBlocks: Block[], newBlocks: Block[]): boolean => {
+        const getStructure = (nodes: Block[]): string => {
+            return (nodes || []).map(node => {
+                const childStruct = node.children ? getStructure(node.children) : '';
+                const variantStr = node.selectedVariants ? JSON.stringify(node.selectedVariants) : '';
+                return `${node.id}:${node.type}:${!!node.isOptional}:${node.articleId || ''}:${node.bestekId || ''}:${variantStr}[${childStruct}]`;
+            }).join(',');
+        };
+        return getStructure(oldBlocks) !== getStructure(newBlocks);
+    };
 
     // Derive client list with useMemo to avoid infinite re-render loops
     const clients = useMemo(() => {
@@ -108,7 +225,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Must be placed before early returns to satisfy Rules of Hooks
     useEffect(() => {
         if (!quotation || !isHydrated) return;
-        const blocks = quotation.blocks || [];
+        const currentBlocks = quotation.blocks || [];
 
         const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
             return (nodes || []).reduce((acc, block) => {
@@ -136,12 +253,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         let totalVat = 0;
 
         if (vatMode === 'total') {
-            const totals = calcTotals(blocks);
+            const totals = calcTotals(currentBlocks);
             totalExVat = totals.exVat;
             const rate = vatReg === 'medecontractant' ? 0 : parseFloat(vatReg) / 100;
             totalVat = totalExVat * rate;
         } else {
-            const totals = calcTotals(blocks);
+            const totals = calcTotals(currentBlocks);
             totalExVat = totals.exVat;
             totalVat = totals.vat;
         }
@@ -168,14 +285,22 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const vatCalcMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
 
-    const blocks = quotation.blocks || [];
-
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
         const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
+        
+        const structural = isStructuralChange(blocks, newBlocks);
+        if (structural) {
+            savePendingHistoryImmediate();
+            pushToHistory(blocks);
+        } else {
+            pushToHistoryDebounced(blocks);
+        }
+        
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
     const handleDragEnd = (result: DropResult) => {
+        setIsDraggingGlobal(false);
         if (!result.destination) return;
 
         const { source, destination, draggableId } = result;
@@ -200,31 +325,64 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             return false;
         };
 
-        // Phase 11: Recursive Injector
-        const insertNode = (nodes: Block[], parentId: string) => {
-            if (parentId === 'root') {
-                nodes.splice(destination.index, 0, movedBlock!);
-                return true;
-            }
-            for (let i = 0; i < nodes.length; i++) {
-                if (nodes[i].id === parentId) {
-                    nodes[i].children = nodes[i].children || [];
-                    nodes[i].children!.splice(destination.index, 0, movedBlock!);
-                    return true;
+        const findNode = (nodes: Block[], targetId: string): Block | null => {
+            for (const node of nodes) {
+                if (node.id === targetId) return node;
+                if (node.children) {
+                    const found = findNode(node.children, targetId);
+                    if (found) return found;
                 }
-                if (nodes[i].children && insertNode(nodes[i].children!, parentId)) return true;
             }
-            return false;
+            return null;
         };
 
         extractNode(newBlocks);
+
         if (movedBlock) {
-            insertNode(newBlocks, destination.droppableId);
-            updatePageBlocks(quotationsDbId, id, newBlocks);
+            // Hierarchy Protection: Prevent containers from being nested inside calculation lines
+            if (destination.droppableId !== 'root') {
+                const parentBlock = findNode(blocks, destination.droppableId);
+                if (parentBlock) {
+                    const isParentContainer = parentBlock.type === 'section' || parentBlock.type === 'subsection' || parentBlock.type === 'post';
+                    const isMovedContainer = (movedBlock as Block).type === 'section' || (movedBlock as Block).type === 'subsection' || (movedBlock as Block).type === 'post';
+                    
+                    if (!isParentContainer && isMovedContainer) {
+                        toast.error('Mappen/secties kunnen niet in een calculatieregel worden geplaatst.');
+                        return;
+                    }
+                }
+            }
+
+            // Phase 11: Recursive Injector
+            const insertNode = (nodes: Block[], parentId: string) => {
+                if (parentId === 'root') {
+                    nodes.splice(destination.index, 0, movedBlock!);
+                    return true;
+                }
+                for (let i = 0; i < nodes.length; i++) {
+                    if (nodes[i].id === parentId) {
+                        nodes[i].children = nodes[i].children || [];
+                        nodes[i].children!.splice(destination.index, 0, movedBlock!);
+                        return true;
+                    }
+                    if (nodes[i].children && insertNode(nodes[i].children!, parentId)) return true;
+                }
+                return false;
+            };
+
+            const inserted = insertNode(newBlocks, destination.droppableId);
+            // Boundary & Deletion Protection: Only update blocks array if insertion was fully successful
+            if (inserted) {
+                savePendingHistoryImmediate();
+                pushToHistory(blocks);
+                updatePageBlocks(quotationsDbId, id, newBlocks);
+            }
         }
     };
 
     const handleDeleteBlock = (blockId: string) => {
+        savePendingHistoryImmediate();
+        pushToHistory(blocks);
         const newBlocks = blocks.filter(b => b.id !== blockId);
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
@@ -233,6 +391,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const blockToDuplicate = blocks.find(b => b.id === blockId);
         if (!blockToDuplicate) return;
 
+        savePendingHistoryImmediate();
+        pushToHistory(blocks);
         const newBlock: Block = { ...blockToDuplicate, id: crypto.randomUUID() };
         const index = blocks.findIndex(b => b.id === blockId);
 
@@ -243,11 +403,15 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     const handleAddBlock = (type: Block['type'] = 'line') => {
+        savePendingHistoryImmediate();
+        pushToHistory(blocks);
         const newBlock: Block = { id: crypto.randomUUID(), type, content: '' };
         updatePageBlocks(quotationsDbId, id, [...blocks, newBlock]);
     };
 
     const handleImportComplete = (newBlocks: Block[]) => {
+        savePendingHistoryImmediate();
+        pushToHistory(blocks);
         updatePageBlocks(quotationsDbId, id, [...blocks, ...newBlocks]);
     };
 
@@ -647,11 +811,24 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none cursor-pointer pl-7 pr-3 py-2 focus:ring-0 w-36"
                             />
                         </div>
-
                     </div>
 
-                    {/* Properties panel toggle — only control remaining in topbar */}
+                                  {/* Properties panel toggle — only control remaining in topbar */}
                     <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                        {/* Undo Button */}
+                        <button
+                            onClick={handleUndo}
+                            disabled={history.length === 0}
+                            title={history.length === 0 ? 'Niets om ongedaan te maken' : 'Ongedaan maken (Cmd+Z)'}
+                            className={`p-2 rounded-lg border transition-all ${
+                                history.length === 0
+                                    ? 'border-neutral-200 dark:border-white/5 text-neutral-300 dark:text-white/10 cursor-not-allowed opacity-40 bg-transparent'
+                                    : 'border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 hover:border-orange-300 dark:hover:border-orange-700'
+                            }`}
+                        >
+                            <Undo2 className="w-4 h-4" />
+                        </button>
+
                         <button
                             onClick={() => setShowProperties(v => !v)}
                             title={showProperties ? 'Hide properties' : 'Show record properties'}
@@ -686,7 +863,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                         {/* Mathematical Blocks */}
-                        <DragDropContext onDragEnd={handleDragEnd}>
+                        <DragDropContext onDragStart={() => setIsDraggingGlobal(true)} onDragEnd={handleDragEnd}>
                             <Droppable droppableId="root" type="block">
                                 {(provided) => (
                                     <div
@@ -705,6 +882,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 hasLibraryAccess={hasLibraryAccess}
                                                 vatCalcMode={vatCalcMode}
                                                 language={docLanguage}
+                                                isDraggingGlobal={isDraggingGlobal}
                                             />
                                         ))}
                                         {provided.placeholder}

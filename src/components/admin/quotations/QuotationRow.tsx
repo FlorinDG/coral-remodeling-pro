@@ -19,9 +19,10 @@ interface QuotationRowProps {
     hasLibraryAccess?: boolean;
     vatCalcMode?: 'lines' | 'total';
     language?: string;
+    isDraggingGlobal?: boolean;
 }
 
-export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl' }: QuotationRowProps) {
+export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl', isDraggingGlobal = false }: QuotationRowProps) {
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -230,7 +231,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                         {...provided.draggableProps}
                         className={`group relative w-full transition-all py-1.5 rounded flex flex-col 
                         ${block.isOptional ? 'opacity-50 grayscale' : ''} 
-                        ${!isContainer ? 'even:bg-neutral-50/80 dark:even:bg-white/5 odd:bg-transparent' : ''}
+                        ${!isContainer ? 'bg-black/[0.03] dark:bg-white/[0.03] mb-2 border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm' : ''}
                         ${snapshot.isDragging ? 'z-50 shadow-2xl bg-white dark:bg-neutral-900 border border-orange-500' : ''}
                     `}
                     >
@@ -362,11 +363,15 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                             {/* --- Accordion Children Injection (Excluding Post Modal) --- */}
                             {isContainer && isExpanded && block.type !== 'post' && (
                                 <Droppable droppableId={block.id} type="block">
-                                    {(providedDroppable) => (
+                                    {(providedDroppable, snapshot) => (
                                         <div
                                             {...providedDroppable.droppableProps}
                                             ref={providedDroppable.innerRef}
-                                            className="flex flex-col w-full gap-1 mt-1"
+                                            className={`flex flex-col w-full gap-1 mt-1 rounded-lg transition-all ${
+                                                snapshot.isDraggingOver
+                                                    ? 'border-2 border-dashed border-orange-400/50 dark:border-orange-500/30 bg-orange-500/5 p-2'
+                                                    : ''
+                                            }`}
                                         >
 
                                             {/* Recursive Child Mounting */}
@@ -381,6 +386,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     hasLibraryAccess={hasLibraryAccess}
                                                     vatCalcMode={vatCalcMode}
                                                     language={language}
+                                                    isDraggingGlobal={isDraggingGlobal}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}
@@ -409,7 +415,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                             {/* --- Raw Base-Level Rows (Line/Article/Bestek) --- */}
                             {!isContainer && (
-                                <div className="w-full flex items-start gap-1 p-1 bg-white dark:bg-[#111] even:bg-neutral-50 dark:even:bg-[#1a1a1a] transition-colors rounded-sm border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 group relative">
+                                <div className="w-full flex items-start gap-1 p-1 bg-transparent transition-colors rounded-sm border border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 group relative">
                                     <div className="pt-2 pl-1 shrink-0">
                                         {/* Render context menu right at the start of the row */}
                                         {renderContextMenu(provided)}
@@ -527,14 +533,22 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         </div>
 
                                         {/* Dynamic Subcomponents Rendering Block */}
-                                        {block.children && block.children.length > 0 && (
+                                        {block.children && block.children.length > 0 ? (
                                             <div className="mt-2 w-full flex flex-col relative pt-2 border-t border-neutral-100 dark:border-neutral-800/50">
                                                 <div className="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                                     <Layers className="w-3 h-3" /> Subcomponents
                                                 </div>
                                                 <Droppable droppableId={block.id} type="block">
-                                                    {(provided) => (
-                                                        <div ref={provided.innerRef} {...provided.droppableProps} className="flex flex-col gap-1">
+                                                    {(provided, snapshot) => (
+                                                        <div
+                                                            ref={provided.innerRef}
+                                                            {...provided.droppableProps}
+                                                            className={`flex flex-col gap-1 rounded-lg transition-all ${
+                                                                snapshot.isDraggingOver
+                                                                    ? 'border-2 border-dashed border-orange-400/50 dark:border-orange-500/30 bg-orange-500/5 p-2 min-h-[60px]'
+                                                                    : ''
+                                                            }`}
+                                                        >
                                                             {block.children!.map((child, idx) => child && (
                                                                 <QuotationRow
                                                                     key={child.id}
@@ -546,6 +560,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                                     hasLibraryAccess={hasLibraryAccess}
                                                                     vatCalcMode={vatCalcMode}
                                                                     language={language}
+                                                                    isDraggingGlobal={isDraggingGlobal}
                                                                 />
                                                             ))}
                                                             {provided.placeholder}
@@ -553,6 +568,37 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     )}
                                                 </Droppable>
                                             </div>
+                                        ) : (
+                                            isDraggingGlobal && (
+                                                <div className="mt-2 w-full pt-1">
+                                                    <Droppable droppableId={block.id} type="block">
+                                                        {(provided, snapshot) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.droppableProps}
+                                                                className={`w-full rounded-lg transition-all duration-300 flex items-center justify-center font-bold text-xs text-orange-600 dark:text-orange-400
+                                                                    ${
+                                                                        snapshot.isDraggingOver
+                                                                            ? 'h-[60px] border-2 border-dashed border-orange-500 bg-orange-500/10 shadow-lg scale-[1.01]'
+                                                                            : 'h-3 border border-dashed border-orange-400/20 bg-orange-500/[0.02] hover:h-12 hover:bg-orange-500/5'
+                                                                    }
+                                                                `}
+                                                            >
+                                                                {snapshot.isDraggingOver ? (
+                                                                    <span className="animate-pulse flex items-center gap-1.5">
+                                                                        <Plus className="w-4 h-4 animate-bounce" /> + Drop hier om als Subcomponent in te voegen
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[10px] text-orange-500/40">
+                                                                        + Drop hier om als Subcomponent in te voegen
+                                                                    </span>
+                                                                )}
+                                                                <div className="hidden">{provided.placeholder}</div>
+                                                            </div>
+                                                        )}
+                                                    </Droppable>
+                                                </div>
+                                            )
                                         )}
 
                                         {block.type === 'text' && (
@@ -673,11 +719,15 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
 
                             <div className="flex flex-col gap-4 w-full">
                                 <Droppable droppableId={block.id} type="block">
-                                    {(providedDroppable) => (
+                                    {(providedDroppable, snapshot) => (
                                         <div
                                             {...providedDroppable.droppableProps}
                                             ref={providedDroppable.innerRef}
-                                            className="flex flex-col p-2 gap-2 border-l-4 border-orange-200 dark:border-orange-900/40 ml-1 rounded-sm min-h-[150px] bg-neutral-50 dark:bg-[#151515]"
+                                            className={`flex flex-col p-2 gap-2 border-l-4 border-orange-200 dark:border-orange-900/40 ml-1 rounded-sm min-h-[150px] bg-neutral-50 dark:bg-[#151515] transition-all ${
+                                                snapshot.isDraggingOver
+                                                    ? 'border-2 border-dashed border-orange-400/50 dark:border-orange-500/30 bg-orange-500/5'
+                                                    : ''
+                                            }`}
                                         >
                                             {(block.children || []).map((child, childIndex) => child && (
                                                 <QuotationRow
@@ -690,6 +740,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     hasLibraryAccess={hasLibraryAccess}
                                                     vatCalcMode={vatCalcMode}
                                                     language={language}
+                                                    isDraggingGlobal={isDraggingGlobal}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}

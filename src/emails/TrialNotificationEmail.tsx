@@ -60,7 +60,7 @@ export const TrialNotificationEmail = ({
                     {isExpired ? (
                         <Text style={text}>
                             Your free trial of the <strong>PRO</strong> features for <strong>{companyName}</strong> has expired. 
-                            Your account has been downgraded to the <strong>FREE</strong> tier. Don't worry, all your data is still safe!
+                            Your account has been downgraded to the <strong>FREE</strong> tier. Don&apos;t worry, all your data is still safe!
                         </Text>
                     ) : (
                         <Text style={text}>

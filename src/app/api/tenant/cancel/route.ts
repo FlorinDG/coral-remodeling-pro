@@ -14,7 +14,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { PLAN_PRICING } from '@/lib/stripe';
+import { PLAN_PRICING, calculatePeppolOverage, getStripeInstance } from '@/lib/stripe';
 
 export async function POST() {
     try {
@@ -32,6 +32,7 @@ export async function POST() {
                 cancellationRequestedAt: true,
                 peppolSentThisMonth: true,
                 peppolReceivedThisMonth: true,
+                stripeSubscriptionId: true,
             },
         });
 
@@ -48,7 +49,13 @@ export async function POST() {
 
         // FREE: immediate cancellation (check for unsettled overage)
         if (tenant.planType === 'FREE') {
-            // TODO: Check for unsettled Peppol overage before allowing termination
+            const overage = await calculatePeppolOverage(tenantId);
+            if (overage > 0) {
+                return NextResponse.json({
+                    error: `You have unsettled Peppol overage charges of €${overage.toFixed(2)}. Please settle these charges in your billing settings before cancelling.`,
+                    overage,
+                }, { status: 400 });
+            }
 
             await prisma.tenant.update({
                 where: { id: tenantId },
@@ -84,10 +91,19 @@ export async function POST() {
             },
         });
 
-        // TODO: Notify Stripe to cancel at period end
-        // if (tenant.stripeSubscriptionId) {
-        //   await stripe.subscriptions.update(tenant.stripeSubscriptionId, { cancel_at_period_end: true });
-        // }
+        // Notify Stripe to cancel at period end
+        if (tenant.stripeSubscriptionId) {
+            try {
+                const stripe = getStripeInstance();
+                await stripe.subscriptions.update(tenant.stripeSubscriptionId, {
+                    cancel_at_period_end: true,
+                });
+            } catch (stripeError: unknown) {
+                const message = stripeError instanceof Error ? stripeError.message : String(stripeError);
+                console.warn('[Cancel] Stripe subscription cancellation call failed/bypassed:', message);
+                // Silent graceful degradation: log error but proceed with database update
+            }
+        }
 
         return NextResponse.json({
             effectiveAt: effectiveAt.toISOString(),

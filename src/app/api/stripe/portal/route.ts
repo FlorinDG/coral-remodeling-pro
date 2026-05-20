@@ -51,3 +51,40 @@ export async function POST() {
         return NextResponse.json({ error: String(error) }, { status: 500 });
     }
 }
+
+export async function GET() {
+    try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
+
+        if (!tenantId) {
+            return NextResponse.redirect(new URL('/login', origin));
+        }
+
+        if (!process.env.STRIPE_SECRET_KEY) {
+            return NextResponse.redirect(new URL('/admin/settings/billing?error=stripe_not_configured', origin));
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { stripeCustomerId: true },
+        });
+
+        if (!tenant?.stripeCustomerId) {
+            return NextResponse.redirect(new URL('/admin/settings/billing?error=no_billing_account', origin));
+        }
+
+        const stripe = getStripeInstance();
+        const portalSession = await stripe.billingPortal.sessions.create({
+            customer: tenant.stripeCustomerId,
+            return_url: `${origin}/admin/settings/billing`,
+        });
+
+        return NextResponse.redirect(portalSession.url);
+    } catch (error: unknown) {
+        console.error('[Stripe Portal GET]', error);
+        const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
+        return NextResponse.redirect(new URL('/admin/settings/billing?error=portal_failed', origin));
+    }
+}

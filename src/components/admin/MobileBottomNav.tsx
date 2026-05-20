@@ -15,12 +15,13 @@ interface MobileNavItem {
 }
 
 // Core mobile tabs — keep to 5 for thumb reach
+// Per Issue #7: Work Hub is the mobile homepage
 const MOBILE_ITEMS: MobileNavItem[] = [
-    { id: 'dashboard',  label: 'Home',      href: '/admin',                   icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'tasks',      label: 'Tasks',     href: '/admin/tasks',             icon: <CheckSquare className="w-5 h-5" /> },
+    { id: 'workhub',    label: 'Home',      href: '/admin/hr/time-tracker',     icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'tasks',      label: 'Tasks',     href: '/admin/tasks',               icon: <CheckSquare className="w-5 h-5" /> },
     { id: 'projects',   label: 'Projects',  href: '/admin/projects-management', icon: <FolderKanban className="w-5 h-5" /> },
-    { id: 'calendar',   label: 'Calendar',  href: '/admin/calendar',          icon: <CalendarDays className="w-5 h-5" /> },
-    { id: 'more',       label: 'More',      href: '/admin/settings',          icon: <MoreHorizontal className="w-5 h-5" /> },
+    { id: 'calendar',   label: 'Calendar',  href: '/admin/calendar',            icon: <CalendarDays className="w-5 h-5" /> },
+    { id: 'more',       label: 'More',      href: '/admin/settings',            icon: <MoreHorizontal className="w-5 h-5" /> },
 ];
 
 export default function MobileBottomNav() {

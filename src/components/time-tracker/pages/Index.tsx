@@ -44,11 +44,11 @@ export default function Index({ embedded = false }: IndexProps) {
     <div className={embedded ? '' : 'min-h-screen bg-background'}>
       {!embedded && <Header />}
 
-      <main className={embedded ? 'py-4' : 'container mx-auto px-4 py-8 md:py-12'}>
+      <main className={embedded ? 'py-2 md:py-4' : 'container mx-auto px-4 py-6 md:py-12'}>
         {/* Hero Section with Clock Button */}
-        <section className="text-center mb-16 md:mb-20">
-          <div className="max-w-2xl mx-auto mb-10">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 animate-fade-in">
+        <section className="text-center mb-8 md:mb-16 lg:mb-20">
+          <div className="max-w-2xl mx-auto mb-6 md:mb-10">
+            <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-foreground mb-2 md:mb-4 animate-fade-in">
               Welcome back, <span className="text-primary">{firstName}</span>
             </h1>
           </div>
@@ -59,7 +59,7 @@ export default function Index({ embedded = false }: IndexProps) {
         </section>
 
         {/* Today's Overview */}
-        <div className="mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
+        <div className="mb-8 md:mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
           <DailySummary />
         </div>
 
@@ -67,25 +67,25 @@ export default function Index({ embedded = false }: IndexProps) {
         <QuickLinks />
 
         {/* Announcements Section */}
-        <div className="mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
+        <div className="mt-8 md:mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
           <Announcements />
         </div>
 
         {/* Documents Section */}
-        <div className="mt-12 animate-fade-in" style={{ animationDelay: '500ms' }}>
+        <div className="mt-8 md:mt-12 animate-fade-in" style={{ animationDelay: '500ms' }}>
           <Documents />
         </div>
 
         {/* Notifications Section */}
-        <section className="mt-12 space-y-6">
-          <h2 className="text-2xl font-bold text-foreground">Notifications</h2>
+        <section className="mt-8 md:mt-12 space-y-4 md:space-y-6">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">Notifications</h2>
           <NotificationSettings />
         </section>
       </main>
 
       {/* Footer — standalone mode only */}
       {!embedded && (
-        <footer className="border-t border-border mt-16">
+        <footer className="border-t border-border mt-12 md:mt-16">
           <div className="container mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
             <p>WorkHub — Time & Task Management</p>
           </div>

@@ -67,11 +67,17 @@ function ClockButtonComponent() {
     setIsProcessing(true);
     const location = await requestLocation();
     
-    // Clock in and link to scheduled shift if exists
-    const { data, error } = await clockIn(
-      location ? { latitude: location.latitude, longitude: location.longitude } : null,
-      todayShift?.id || null
-    );
+    // Clock in — pass location + shiftId as a single object
+    const clockInData: Record<string, any> = {};
+    if (location) {
+      clockInData.clockInLatitude = location.latitude;
+      clockInData.clockInLongitude = location.longitude;
+    }
+    if (todayShift?.id) {
+      clockInData.shiftId = todayShift.id;
+    }
+
+    const { data, error } = await clockIn(clockInData);
     
     if (error) {
       setIsProcessing(false);
@@ -81,9 +87,9 @@ function ClockButtonComponent() {
     
     // If no scheduled shift, create a user-initiated shift
     if (!todayShift && data) {
-      const userShift = await createUserShift(data.id);
-      if (userShift) {
-        setActiveShiftId(userShift.id);
+      const userShift = await createUserShift();
+      if (userShift?.data) {
+        setActiveShiftId(userShift.data.id);
       }
     } else if (todayShift) {
       setActiveShiftId(todayShift.id);
@@ -93,6 +99,7 @@ function ClockButtonComponent() {
     setIsProcessing(false);
 
     // Geofence validation (soft fence — warn but allow)
+    // HrProject stores address string; lat/lng may be available via geocoding
     if (location && todayShift?.project?.latitude && todayShift?.project?.longitude) {
       const fence = validateGeofence(
         { latitude: location.latitude, longitude: location.longitude, accuracy: 0 },

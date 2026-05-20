@@ -71,12 +71,19 @@ export async function GET(
     const url = new URL(_req.url);
     const userId = url.searchParams.get('userId');
 
-    // team-members don't have tenantId, they're scoped via team
-    const where: Record<string, unknown> = entity === 'team-members'
+    // team-members, shift-tasks, shift-attachments don't have tenantId — they're scoped via parent
+    const noTenantEntities = ['team-members', 'shift-tasks', 'shift-attachments'];
+    const where: Record<string, unknown> = noTenantEntities.includes(entity)
         ? {}
         : { tenantId: ctx.tenantId };
 
     if (userId) where.userId = userId;
+
+    // For shift-tasks and shift-attachments, scope by shiftId from query
+    if (entity === 'shift-tasks' || entity === 'shift-attachments') {
+        const shiftId = url.searchParams.get('shiftId');
+        if (shiftId) where.shiftId = shiftId;
+    }
 
     // For team-members, scope by teamId from query
     if (entity === 'team-members') {
@@ -205,13 +212,14 @@ export async function POST(
     const body = await req.json();
     const data = sanitize(body);
 
-    // Auto-inject tenantId (except team-members which are scoped via team)
-    if (entity !== 'team-members') {
+    // Auto-inject tenantId (except entities scoped via parent: team-members, shift-tasks, shift-attachments)
+    const noTenantEntities = ['team-members', 'shift-tasks', 'shift-attachments'];
+    if (!noTenantEntities.includes(entity)) {
         data.tenantId = ctx.tenantId;
     }
 
-    // Auto-inject userId if not provided
-    if (!data.userId && entity !== 'team-members') {
+    // Auto-inject userId if not provided (only for entities that have userId)
+    if (!data.userId && !noTenantEntities.includes(entity)) {
         data.userId = ctx.userId;
     }
 
@@ -263,6 +271,17 @@ export async function PATCH(
             });
             if (!member || member.team?.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+        } else if (entity === 'shift-tasks' || entity === 'shift-attachments') {
+            // shift-tasks/attachments don't have tenantId — verify via parent shift
+            const existing = await model.findUnique({ where: { id } });
+            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            // Verify the parent shift belongs to this tenant
+            if (existing.shiftId) {
+                const parentShift = await prisma.scheduledShift.findFirst({
+                    where: { id: existing.shiftId, tenantId: ctx.tenantId }
+                });
+                if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
         } else {
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });
@@ -339,6 +358,16 @@ export async function DELETE(
             });
             if (!member || member.team?.tenantId !== ctx.tenantId) {
                 return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+        } else if (entity === 'shift-tasks' || entity === 'shift-attachments') {
+            // Verify via parent shift
+            const existing = await model.findUnique({ where: { id } });
+            if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            if (existing.shiftId) {
+                const parentShift = await prisma.scheduledShift.findFirst({
+                    where: { id: existing.shiftId, tenantId: ctx.tenantId }
+                });
+                if (!parentShift) return NextResponse.json({ error: 'Not found' }, { status: 404 });
             }
         } else {
             const existing = await model.findFirst({ where: { id, tenantId: ctx.tenantId } });

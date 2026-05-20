@@ -36,7 +36,7 @@ import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { hrList } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
 import { format, parseISO, differenceInMinutes, isToday } from 'date-fns';
 
@@ -110,14 +110,23 @@ export function ShiftViewDialog({
       }
 
       setLoadingClock(true);
-      const { data, error } = await supabase
-        .from('clock_entries')
-        .select('*')
-        .eq('id', shift.clock_entry_id)
-        .single();
-
-      if (!error && data) {
-        setClockEntry(data);
+      try {
+        const entries = await hrList<any>('clock-entries', { id: shift.clock_entry_id });
+        if (entries && entries.length > 0) {
+          const e = entries[0];
+          setClockEntry({
+            id: e.id,
+            clock_in_time: e.clockInTime,
+            clock_out_time: e.clockOutTime,
+            clock_in_latitude: e.clockInLatitude,
+            clock_in_longitude: e.clockInLongitude,
+            clock_out_latitude: e.clockOutLatitude,
+            clock_out_longitude: e.clockOutLongitude,
+            task_description: e.taskDescription,
+          });
+        }
+      } catch (err) {
+        console.error('[ShiftViewDialog] Failed to fetch clock entry:', err);
       }
       setLoadingClock(false);
     };
@@ -178,8 +187,13 @@ export function ShiftViewDialog({
     
     setIsClockingIn(true);
     try {
-      await requestLocation();
-      const { error } = await clockIn(location, shift.id);
+      const loc = await requestLocation();
+      const clockInData: Record<string, any> = { shiftId: shift.id };
+      if (loc) {
+        clockInData.clockInLatitude = loc.latitude;
+        clockInData.clockInLongitude = loc.longitude;
+      }
+      const { error } = await clockIn(clockInData);
       
       if (error) {
         toast.error('Failed to clock in');

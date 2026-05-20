@@ -258,16 +258,20 @@ export function EditShiftDialog({
     
     setCreatingTask(true);
     try {
-      const newTask = await createTask({
+      const result = await createTask({
         project_id: pid,
         title: newTaskTitle.trim(),
         priority: newTaskPriority,
       });
-      await assignTask(newTask.id);
-      setNewTaskTitle('');
-      setNewTaskPriority('normal');
-      setShowQuickCreate(false);
-      toast.success('Task created and assigned');
+      if (result?.data?.id) {
+        await assignTask(result.data.id);
+        setNewTaskTitle('');
+        setNewTaskPriority('normal');
+        setShowQuickCreate(false);
+        toast.success('Task created and assigned');
+      } else {
+        toast.error(result?.error || 'Failed to create task');
+      }
     } catch {
       toast.error('Failed to create task');
     } finally {

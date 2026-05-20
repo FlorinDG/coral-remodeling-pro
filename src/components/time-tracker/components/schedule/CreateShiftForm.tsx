@@ -252,12 +252,12 @@ export function CreateShiftForm({
   const handleQuickCreateTask = async () => {
     if (!projectId || !quickTaskTitle.trim()) return;
     try {
-      const newTask = await createTask({
+      const result = await createTask({
         project_id: projectId,
         title: quickTaskTitle.trim(),
       });
-      if (newTask) {
-        setSelectedTasks(prev => [...prev, { task: newTask as Task, isNew: true }]);
+      if (result?.data) {
+        setSelectedTasks(prev => [...prev, { task: result.data as Task, isNew: true }]);
         setQuickTaskTitle('');
         await refetchTasks();
         toast.success('Task created and added');
@@ -430,11 +430,13 @@ export function CreateShiftForm({
 
         for (const shift of shiftsToCreate) {
           const result = await onCreateShift(shift);
-          if (pendingAttachments.length > 0 && result && typeof result === 'object' && 'id' in result) {
-            await uploadAttachmentsForShift((result as { id: string }).id);
+          // createShift returns { data, error } — unwrap to get the shift ID
+          const shiftId = result?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as { id: string }).id : null);
+          if (pendingAttachments.length > 0 && shiftId) {
+            await uploadAttachmentsForShift(shiftId);
           }
-          if (selectedTasks.length > 0 && result && typeof result === 'object' && 'id' in result) {
-            await assignTasksToShift((result as { id: string }).id);
+          if (selectedTasks.length > 0 && shiftId) {
+            await assignTasksToShift(shiftId);
           }
         }
 
@@ -451,12 +453,14 @@ export function CreateShiftForm({
             notes: notes || null,
           });
 
-          if (pendingAttachments.length > 0 && result && typeof result === 'object' && 'id' in result) {
-            await uploadAttachmentsForShift((result as { id: string }).id);
+          // createShift returns { data, error } — unwrap to get the shift ID
+          const shiftId = result?.data?.id || (result && typeof result === 'object' && 'id' in result ? (result as { id: string }).id : null);
+          if (pendingAttachments.length > 0 && shiftId) {
+            await uploadAttachmentsForShift(shiftId);
           }
 
-          if (selectedTasks.length > 0 && result && typeof result === 'object' && 'id' in result) {
-            await assignTasksToShift((result as { id: string }).id);
+          if (selectedTasks.length > 0 && shiftId) {
+            await assignTasksToShift(shiftId);
           }
         }
 

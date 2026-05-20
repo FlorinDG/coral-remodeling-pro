@@ -31,11 +31,13 @@ function calculateShiftHours(shiftStart: string, shiftEnd: string): number {
 }
 
 function getNotionColor(colorInput: string): string {
-  // NOTION_COLORS is a flat array of hex strings like '#3b82f6'
-  // Projects store the hex color directly, so return as-is if it's a hex, or find a match
+  // Handle hex colors stored in DB
   if (colorInput.startsWith('#')) return colorInput;
-  // Fallback: return a default color
-  return NOTION_COLORS[6] || '#14b8a6';
+  // Look up by name in NOTION_COLORS objects
+  const found = NOTION_COLORS.find(c => c.name === colorInput);
+  if (found) return found.value;
+  // Fallback
+  return NOTION_COLORS[6]?.value || '#14b8a6';
 }
 
 function formatTime(time: string) {

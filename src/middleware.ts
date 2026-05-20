@@ -81,6 +81,7 @@ export default async function middleware(req: NextRequest) {
 
     const isStoreSubdomain = hostname === 'coral-sys.coral-group.be' || hostname.startsWith('coral-sys.');
     const isAppSubdomain   = hostname === 'app.coral-group.be'       || hostname.startsWith('app.');
+    const isWorkSubdomain  = hostname === 'work.coral-group.be'      || hostname.startsWith('work.');
 
     // No-cache headers for all subdomain responses
     const noCache = () => ({
@@ -117,6 +118,55 @@ export default async function middleware(req: NextRequest) {
         const isAllowedPath = ALLOWED_STORE_PATHS.some(p => rest.startsWith(p));
         const targetPath = isAllowedPath ? `/${targetLocale}/${rest}` : `/${targetLocale}/store`;
 
+        const rewriteUrl = new URL(targetPath, req.nextUrl.origin);
+        const res = NextResponse.rewrite(rewriteUrl);
+        Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+        return res;
+    }
+
+
+    // ══════════════════════════════════════════════════════════════════════
+    // BRANCH W: work.coral-group.be → WorkHub Standalone Workforce App
+    // Auth-protected — rewrites all paths to /[locale]/workhub/*
+    // ══════════════════════════════════════════════════════════════════════
+    if (isWorkSubdomain) {
+        // Let API calls and static assets through
+        if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+            const res = NextResponse.next();
+            Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+            return res;
+        }
+
+        const token = await getToken(req);
+        const isLoggedIn = !!token;
+        const locale = resolveLocale(req);
+
+        const isLoginPage = pathname.includes('/login');
+        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy');
+
+        // Redirect to login if not authenticated
+        if (!isLoggedIn && !isLoginPage && !isPublicPage) {
+            const loginUrl = new URL(`/${locale}/login`, req.nextUrl.origin);
+            loginUrl.searchParams.set('callbackUrl', pathname);
+            const res = NextResponse.redirect(loginUrl);
+            Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+            return res;
+        }
+
+        // Login, help, terms, privacy — serve normally via intl middleware
+        if (isLoginPage || isPublicPage) {
+            const res = intlMiddleware(req);
+            Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+            return res;
+        }
+
+        // Rewrite everything else → /[locale]/workhub/*
+        let rest = pathname.replace(/^\/(en|fr|nl|ro|ru)/, '').replace(/^\//, '');
+        // If they're already on /workhub, strip it to avoid /workhub/workhub
+        if (rest.startsWith('workhub')) {
+            rest = rest.replace(/^workhub\/?/, '');
+        }
+        const targetPath = `/${locale}/workhub${rest ? `/${rest}` : ''}`;
         const rewriteUrl = new URL(targetPath, req.nextUrl.origin);
         const res = NextResponse.rewrite(rewriteUrl);
         Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
@@ -233,7 +283,7 @@ export default async function middleware(req: NextRequest) {
 
         // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
         const locale = pendingLocaleCookie || resolveLocale(req);
-        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', '_next', 'api'];
+        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'workhub', '_next', 'api'];
         // Strip any accidental locale prefix (e.g. /fr/admin/… → /admin/…)
         // next-intl's router.replace may inject the prefix despite localePrefix:'never'
         const strippedPath = hasLocalePrefix(pathname)

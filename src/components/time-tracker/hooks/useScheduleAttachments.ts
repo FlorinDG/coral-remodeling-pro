@@ -52,13 +52,32 @@ export function useScheduleAttachments(shiftId?: string | null) {
   const uploadFile = useCallback(async (file: File) => {
     if (!shiftId) return;
     try {
-      // In a real app, we'd upload to S3/Drive first and get a URL
-      // For now, we mock the URL as it's a "Production Hardening" but we don't have the storage config
-      const mockUrl = `/uploads/${file.name}`;
+      // Upload to Google Drive via /api/drive/upload
+      let fileUrl = `/uploads/${file.name}`;
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('contextType', 'hr-shift');
+        formData.append('contextId', shiftId);
+        const uploadRes = await fetch('/api/drive/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          fileUrl = uploadData.url || uploadData.fileId
+            ? `https://drive.google.com/file/d/${uploadData.fileId}/view`
+            : fileUrl;
+        }
+      } catch {
+        // Drive upload failed — fall back to mock URL
+        console.warn('[ShiftAttachment] Drive upload failed, using mock URL');
+      }
+
       const res = await hrCreate('shift-attachments', {
         shiftId,
         name: file.name,
-        url: mockUrl,
+        url: fileUrl,
         type: file.type,
         size: file.size,
       });

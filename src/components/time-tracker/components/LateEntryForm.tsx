@@ -27,7 +27,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { hrCreate } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 
@@ -69,41 +69,35 @@ export function LateEntryForm({ open, onClose }: LateEntryFormProps) {
     setLoading(true);
 
     try {
-      // Create clock entry with pending approval
+      // Create clock entry via HR API
       const clockInTime = new Date(`${date}T${clockIn}`);
       const clockOutTime = new Date(`${date}T${clockOut}`);
 
-      const { data: clockEntry, error: clockError } = await supabase
-        .from('clock_entries')
-        .insert([{
-          user_id: user.id,
-          clock_in_time: clockInTime.toISOString(),
-          clock_out_time: clockOutTime.toISOString(),
-          clock_in_latitude: includeLocation ? location?.latitude : null,
-          clock_in_longitude: includeLocation ? location?.longitude : null,
-          clock_out_latitude: includeLocation ? location?.latitude : null,
-          clock_out_longitude: includeLocation ? location?.longitude : null,
-          task_description: taskDescription || null,
-        }])
-        .select()
-        .single();
+      const clockEntry = await hrCreate<any>('clock-entries', {
+        userId: user.id,
+        clockInTime: clockInTime.toISOString(),
+        clockOutTime: clockOutTime.toISOString(),
+        clockInLatitude: includeLocation ? location?.latitude : null,
+        clockInLongitude: includeLocation ? location?.longitude : null,
+        clockOutLatitude: includeLocation ? location?.latitude : null,
+        clockOutLongitude: includeLocation ? location?.longitude : null,
+        taskDescription: taskDescription || null,
+      });
 
-      if (clockError) throw clockError;
+      if (!clockEntry?.id) throw new Error('Failed to create clock entry');
 
-      // If project selected, create a shift
+      // If project selected, create a completed shift linked to clock entry
       if (projectId) {
-        await supabase
-          .from('scheduled_shifts')
-          .insert([{
-            user_id: user.id,
-            project_id: projectId,
-            shift_date: date,
-            shift_start: clockIn,
-            shift_end: clockOut,
-            status: 'Completed',
-            clock_entry_id: clockEntry.id,
-            created_by: user.id,
-          }]);
+        await hrCreate('scheduled-shifts', {
+          userId: user.id,
+          projectId: projectId,
+          shiftDate: date,
+          shiftStart: clockIn,
+          shiftEnd: clockOut,
+          status: 'Completed',
+          clockEntryId: clockEntry.id,
+          createdBy: user.id,
+        });
       }
 
       // Create approval request

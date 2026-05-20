@@ -137,7 +137,7 @@ export default async function middleware(req: NextRequest) {
         const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy');
 
         // Virtualise path for auth checks
-        const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin')
+        const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin') && !pathname.startsWith('/workhub')
             ? `/admin${pathname === '/' ? '' : pathname}`
             : pathname;
 
@@ -155,8 +155,8 @@ export default async function middleware(req: NextRequest) {
             }
         }
 
-        // ── Admin / Portal protection ──
-        const isProtectedPath   = virtualPath.startsWith('/admin') || virtualPath.startsWith('/portal');
+        // ── Admin / Portal / WorkHub protection ──
+        const isProtectedPath   = virtualPath.startsWith('/admin') || virtualPath.startsWith('/portal') || pathname.startsWith('/workhub');
         const isTimeTrackerPath = virtualPath.includes('/admin/time-tracker');
 
         if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {

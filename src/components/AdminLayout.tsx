@@ -22,6 +22,7 @@ import {
 import { useState, useEffect } from "react";
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import UniversalSearch from "@/components/admin/UniversalSearch";
+import MobileBottomNav from "@/components/admin/MobileBottomNav";
 import GlobalLoadingModal from "@/components/admin/GlobalLoadingModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
@@ -190,8 +191,8 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
-            {/* Sidebar */}
-            <aside className={`${isSidebarOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-200 dark:border-white/10 flex flex-col fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl`}>
+            {/* Sidebar — hidden on mobile, replaced by MobileBottomNav */}
+            <aside className={`${isSidebarOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-200 dark:border-white/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl`}>
                 <div className="p-4 flex items-center gap-3">
                     <div className="w-7 h-7 flex-shrink-0">
                         {logoUrl ? (
@@ -332,7 +333,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             </aside>
 
             {/* Main Content */}
-            <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'pl-56' : 'pl-16'} transition-all duration-300`}>
+            <main className={`flex-1 flex flex-col min-w-0 h-screen overflow-hidden ${isSidebarOpen ? 'md:pl-56' : 'md:pl-16'} transition-all duration-300 pb-16 md:pb-0`}>
                 <header className="flex-shrink-0 h-12 border-b border-neutral-200 dark:border-white/10 flex items-center px-4 sm:px-6 sticky top-0 bg-white/50 dark:bg-black/50 backdrop-blur-md z-40 gap-3">
                     <div className="flex items-center gap-3 shrink-0">
                         <button
@@ -508,6 +509,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 </div>
             </main>
             <GlobalLoadingModal />
+            <MobileBottomNav />
             <Toaster position="top-right" richColors closeButton />
         </div>
     );

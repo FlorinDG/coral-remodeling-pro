@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
-import { Users, Plus, Mail, Phone, Briefcase, X, Loader2, Pencil, Trash2, Search, Euro } from "lucide-react";
+import {
+    Users, Plus, Mail, Phone, Briefcase, X, Loader2, Pencil, Trash2, Search, Euro,
+    Calendar, MapPin, Clock, Award, ChevronRight, FileText, Building2,
+    Shield, Heart, GraduationCap, MoreHorizontal, ArrowLeft, Save, User
+} from "lucide-react";
 
 interface Employee {
     id: string;
@@ -17,10 +21,73 @@ interface Employee {
     hireDate: string | null;
 }
 
+// Extended profile fields (stored locally for now, will be API-backed)
+interface EmployeeProfile extends Employee {
+    department?: string;
+    employmentType?: string;
+    emergencyContact?: string;
+    emergencyPhone?: string;
+    address?: string;
+    birthDate?: string;
+    certifications?: string[];
+    notes?: string;
+}
+
 const ROLES = ["Foreman", "Carpenter", "Electrician", "Plumber", "Painter", "Laborer", "Project Manager", "Architect", "Admin", "Other"];
+const DEPARTMENTS = ["Operations", "Construction", "Design", "Administration", "Finance", "HR", "Sales", "Marketing"];
+const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contractor", "Intern", "Temporary"];
 
-const emptyForm = { firstName: "", lastName: "", email: "", phone: "", role: "Laborer", status: "ACTIVE", hourlyCost: "", hireDate: "" };
+const emptyForm = {
+    firstName: "", lastName: "", email: "", phone: "", role: "Laborer", status: "ACTIVE",
+    hourlyCost: "", hireDate: "", department: "", employmentType: "Full-time",
+    emergencyContact: "", emergencyPhone: "", address: "", birthDate: "", notes: ""
+};
 
+// ── Stat helpers ──────────────────────────────────────────────────────
+function getInitials(first: string, last: string) {
+    return `${first?.[0] || ''}${last?.[0] || ''}`.toUpperCase();
+}
+
+function getStatusConfig(status: string) {
+    switch (status) {
+        case 'ACTIVE': return { bg: 'bg-emerald-100 dark:bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500' };
+        case 'ON_LEAVE': return { bg: 'bg-amber-100 dark:bg-amber-500/10', text: 'text-amber-700 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/20', dot: 'bg-amber-500' };
+        case 'INACTIVE': return { bg: 'bg-neutral-100 dark:bg-white/5', text: 'text-neutral-600 dark:text-neutral-400', border: 'border-neutral-200 dark:border-neutral-700', dot: 'bg-neutral-400' };
+        default: return { bg: 'bg-neutral-100', text: 'text-neutral-600', border: 'border-neutral-200', dot: 'bg-neutral-400' };
+    }
+}
+
+function getTenure(hireDate: string | null) {
+    if (!hireDate) return null;
+    const hire = new Date(hireDate);
+    const now = new Date();
+    const years = now.getFullYear() - hire.getFullYear();
+    const months = now.getMonth() - hire.getMonth();
+    const totalMonths = years * 12 + months;
+    if (totalMonths < 1) return 'New hire';
+    if (totalMonths < 12) return `${totalMonths}mo`;
+    const y = Math.floor(totalMonths / 12);
+    const m = totalMonths % 12;
+    return m > 0 ? `${y}y ${m}mo` : `${y}y`;
+}
+
+const GRADIENT_COLORS = [
+    'from-blue-500 to-indigo-600',
+    'from-emerald-500 to-teal-600',
+    'from-violet-500 to-purple-600',
+    'from-rose-500 to-pink-600',
+    'from-amber-500 to-orange-600',
+    'from-cyan-500 to-blue-600',
+    'from-fuchsia-500 to-pink-600',
+    'from-lime-500 to-green-600',
+];
+
+function getGradient(id: string) {
+    const idx = id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % GRADIENT_COLORS.length;
+    return GRADIENT_COLORS[idx];
+}
+
+// ── Main Component ───────────────────────────────────────────────────
 export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +98,9 @@ export default function EmployeesPage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [deleting, setDeleting] = useState<string | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
     const fetchEmployees = useCallback(async () => {
         try {
@@ -49,6 +119,8 @@ export default function EmployeesPage() {
             firstName: emp.firstName, lastName: emp.lastName, email: emp.email,
             phone: emp.phone || "", role: emp.role, status: emp.status,
             hourlyCost: emp.hourlyCost?.toString() || "", hireDate: emp.hireDate?.split("T")[0] || "",
+            department: "", employmentType: "Full-time",
+            emergencyContact: "", emergencyPhone: "", address: "", birthDate: "", notes: ""
         });
         setError("");
         setShowDialog(true);
@@ -74,13 +146,170 @@ export default function EmployeesPage() {
         try {
             await fetch(`/api/tenant/employees/${id}`, { method: "DELETE" });
             fetchEmployees();
+            if (selectedEmployee?.id === id) setSelectedEmployee(null);
         } catch { /* empty */ } finally { setDeleting(null); }
     };
 
-    const filtered = employees.filter(e =>
-        `${e.firstName} ${e.lastName} ${e.email} ${e.role}`.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = employees.filter(e => {
+        const matchesSearch = `${e.firstName} ${e.lastName} ${e.email} ${e.role}`.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === 'ALL' || e.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
+    // ── Employee Detail View ──────────────────────────────────────────
+    if (selectedEmployee) {
+        const emp = selectedEmployee;
+        const statusCfg = getStatusConfig(emp.status);
+        const tenure = getTenure(emp.hireDate);
+
+        return (
+            <div className="flex flex-col w-full h-full">
+                <ModuleTabs tabs={hrTabs} groupId="hr" />
+                <div className="w-full h-full flex flex-col hide-scrollbar overflow-y-auto">
+                    {/* Profile Header */}
+                    <div className={`relative bg-gradient-to-r ${getGradient(emp.id)} p-6 pb-20`}>
+                        <button
+                            onClick={() => setSelectedEmployee(null)}
+                            className="flex items-center gap-2 text-white/80 hover:text-white text-sm font-medium transition-colors mb-4"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Back to Directory
+                        </button>
+                        <div className="absolute -bottom-12 left-6 flex items-end gap-4">
+                            <div className="w-24 h-24 rounded-2xl bg-white dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-xl flex items-center justify-center">
+                                <span className={`text-2xl font-black bg-gradient-to-br ${getGradient(emp.id)} bg-clip-text text-transparent`}>
+                                    {getInitials(emp.firstName, emp.lastName)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="px-6 pt-16 pb-8">
+                        {/* Name & Actions */}
+                        <div className="flex items-start justify-between mb-6">
+                            <div>
+                                <h1 className="text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
+                                    {emp.firstName} {emp.lastName}
+                                </h1>
+                                <div className="flex items-center gap-3 mt-1.5">
+                                    <span className="text-sm font-medium text-neutral-500">{emp.role}</span>
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                                        {emp.status}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => openEdit(emp)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-neutral-200 dark:border-white/10 text-sm font-bold hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                                    <Pencil className="w-3.5 h-3.5" /> Edit
+                                </button>
+                                <button onClick={() => handleDelete(emp.id)} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-red-200 dark:border-red-500/20 text-red-600 text-sm font-bold hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
+                                    <Trash2 className="w-3.5 h-3.5" /> Delete
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Info Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-8">
+                            {/* Contact Card */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                                    <Mail className="w-3.5 h-3.5" /> Contact Information
+                                </h3>
+                                <div className="space-y-3">
+                                    <DetailRow icon={<Mail className="w-4 h-4" />} label="Email" value={emp.email} />
+                                    <DetailRow icon={<Phone className="w-4 h-4" />} label="Phone" value={emp.phone || '—'} />
+                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value="Not set" />
+                                </div>
+                            </div>
+
+                            {/* Employment Card */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                                    <Briefcase className="w-3.5 h-3.5" /> Employment Details
+                                </h3>
+                                <div className="space-y-3">
+                                    <DetailRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={emp.role} />
+                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value="Operations" />
+                                    <DetailRow icon={<Calendar className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                                    {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label="Tenure" value={tenure} />}
+                                </div>
+                            </div>
+
+                            {/* Compensation Card */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                                    <Euro className="w-3.5 h-3.5" /> Compensation
+                                </h3>
+                                <div className="space-y-3">
+                                    <DetailRow icon={<Euro className="w-4 h-4" />} label="Hourly Rate" value={emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : '—'} />
+                                    <DetailRow icon={<FileText className="w-4 h-4" />} label="Contract" value="Full-time" />
+                                    <DetailRow icon={<Shield className="w-4 h-4" />} label="Benefits" value="Standard Package" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Bottom Row: Emergency + Certifications + Quick Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {/* Emergency Contact */}
+                            <div className="bg-red-50/50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 flex items-center gap-2">
+                                    <Heart className="w-3.5 h-3.5" /> Emergency Contact
+                                </h3>
+                                <div className="space-y-3">
+                                    <DetailRow icon={<User className="w-4 h-4 text-red-400" />} label="Name" value="Not set" />
+                                    <DetailRow icon={<Phone className="w-4 h-4 text-red-400" />} label="Phone" value="Not set" />
+                                </div>
+                            </div>
+
+                            {/* Certifications */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                                    <GraduationCap className="w-3.5 h-3.5" /> Certifications & Skills
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {['VCA Basic', 'First Aid'].map(cert => (
+                                        <span key={cert} className="px-2.5 py-1 rounded-lg bg-neutral-100 dark:bg-white/5 text-xs font-semibold text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10">
+                                            {cert}
+                                        </span>
+                                    ))}
+                                    <button className="px-2.5 py-1 rounded-lg border border-dashed border-neutral-300 dark:border-white/20 text-xs font-semibold text-neutral-400 hover:text-neutral-600 hover:border-neutral-400 transition-colors">
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Quick Stats */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                                    <Award className="w-3.5 h-3.5" /> Quick Stats
+                                </h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-black text-neutral-900 dark:text-white">0h</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">This Week</p>
+                                    </div>
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Leave Days</p>
+                                    </div>
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Projects</p>
+                                    </div>
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-lg p-3 text-center">
+                                        <p className="text-xl font-black text-neutral-900 dark:text-white">0</p>
+                                        <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">Tasks</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── Directory View ────────────────────────────────────────────────
     return (
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={hrTabs} groupId="hr" />
@@ -96,15 +325,51 @@ export default function EmployeesPage() {
                     </button>
                 </div>
 
-                {/* Search */}
+                {/* Stats Overview */}
                 {employees.length > 0 && (
-                    <div className="relative mb-4 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees..." className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30" />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                        {[
+                            { label: 'Total', value: employees.length, color: 'text-neutral-900 dark:text-white' },
+                            { label: 'Active', value: employees.filter(e => e.status === 'ACTIVE').length, color: 'text-emerald-600' },
+                            { label: 'On Leave', value: employees.filter(e => e.status === 'ON_LEAVE').length, color: 'text-amber-600' },
+                            { label: 'Inactive', value: employees.filter(e => e.status === 'INACTIVE').length, color: 'text-neutral-400' },
+                        ].map(s => (
+                            <div key={s.label} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-center">
+                                <p className={`text-2xl font-black ${s.color}`}>{s.value}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">{s.label}</p>
+                            </div>
+                        ))}
                     </div>
                 )}
 
-                {/* Table / Empty */}
+                {/* Search + Filters */}
+                {employees.length > 0 && (
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="relative flex-1 max-w-sm">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search employees..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                            />
+                        </div>
+                        <div className="flex items-center gap-1 bg-neutral-100 dark:bg-white/5 rounded-lg p-0.5">
+                            {['ALL', 'ACTIVE', 'ON_LEAVE', 'INACTIVE'].map(s => (
+                                <button
+                                    key={s}
+                                    onClick={() => setStatusFilter(s)}
+                                    className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                                        statusFilter === s
+                                            ? 'bg-white dark:bg-neutral-800 shadow-sm text-neutral-900 dark:text-white'
+                                            : 'text-neutral-500 hover:text-neutral-700'
+                                    }`}
+                                >
+                                    {s === 'ON_LEAVE' ? 'Leave' : s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Employee Cards Grid */}
                 <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
                     {loading ? (
                         <div className="p-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-neutral-400" /></div>
@@ -112,54 +377,62 @@ export default function EmployeesPage() {
                         <div className="p-12 flex flex-col items-center justify-center text-center">
                             <div className="w-16 h-16 bg-neutral-100 dark:bg-white/5 rounded-full flex items-center justify-center mb-4"><Users className="w-8 h-8 text-neutral-400" /></div>
                             <h3 className="text-lg font-bold text-neutral-900 dark:text-white">{search ? "No matches" : "No Employees Found"}</h3>
-                            <p className="text-neutral-500 text-sm mt-2 max-w-sm">{search ? "Try a different search term." : "Get started by adding your first team member to enable workforce scheduling and time tracking."}</p>
+                            <p className="text-neutral-500 text-sm mt-2 max-w-sm">{search ? "Try a different search term." : "Get started by adding your first team member."}</p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse min-w-[900px]">
-                                <thead>
-                                    <tr className="border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.02]">
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Employee</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Contact</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Hourly Rate</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-neutral-500 uppercase tracking-wider text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filtered.map(emp => (
-                                        <tr key={emp.id} className="border-b border-neutral-100 dark:border-white/5 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-xs uppercase">{emp.firstName[0]}{emp.lastName[0]}</div>
-                                                    <div>
-                                                        <span className="font-medium text-sm text-neutral-900 dark:text-white">{emp.firstName} {emp.lastName}</span>
-                                                        {emp.hireDate && <p className="text-[11px] text-neutral-400 mt-0.5">Since {new Date(emp.hireDate).toLocaleDateString()}</p>}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 space-y-1">
-                                                <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium"><Mail className="w-3 h-3" /> {emp.email}</div>
-                                                {emp.phone && <div className="flex items-center gap-2 text-xs text-neutral-500 font-medium"><Phone className="w-3 h-3" /> {emp.phone}</div>}
-                                            </td>
-                                            <td className="px-6 py-4"><div className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300 font-medium"><Briefcase className="w-4 h-4 text-neutral-400" />{emp.role}</div></td>
-                                            <td className="px-6 py-4 text-sm font-medium text-neutral-700 dark:text-neutral-300">{emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : "—"}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${emp.status === "ACTIVE" ? "bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400 border border-green-200 dark:border-green-500/20" : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700"}`}>{emp.status}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button onClick={() => openEdit(emp)} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors" title="Edit"><Pencil className="w-4 h-4 text-neutral-500" /></button>
-                                                    <button onClick={() => handleDelete(emp.id)} disabled={deleting === emp.id} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
-                                                        {deleting === emp.id ? <Loader2 className="w-4 h-4 animate-spin text-red-500" /> : <Trash2 className="w-4 h-4 text-red-500" />}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-0.5 p-0.5">
+                            {filtered.map(emp => {
+                                const statusCfg = getStatusConfig(emp.status);
+                                const tenure = getTenure(emp.hireDate);
+
+                                return (
+                                    <div
+                                        key={emp.id}
+                                        onClick={() => setSelectedEmployee(emp)}
+                                        className="group bg-white dark:bg-neutral-900 rounded-xl p-4 cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 border border-transparent hover:border-neutral-200 dark:hover:border-white/10"
+                                    >
+                                        {/* Top: Avatar + Status */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getGradient(emp.id)} flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
+                                                {getInitials(emp.firstName, emp.lastName)}
+                                            </div>
+                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
+                                                {emp.status === 'ON_LEAVE' ? 'Leave' : emp.status.charAt(0) + emp.status.slice(1).toLowerCase()}
+                                            </span>
+                                        </div>
+
+                                        {/* Name & Role */}
+                                        <h3 className="text-sm font-bold text-neutral-900 dark:text-white truncate">{emp.firstName} {emp.lastName}</h3>
+                                        <p className="text-xs text-neutral-500 font-medium mt-0.5 flex items-center gap-1.5">
+                                            <Briefcase className="w-3 h-3" /> {emp.role}
+                                        </p>
+
+                                        {/* Meta */}
+                                        <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-white/5 space-y-1.5">
+                                            <p className="text-[11px] text-neutral-400 flex items-center gap-1.5 truncate">
+                                                <Mail className="w-3 h-3 flex-shrink-0" /> {emp.email}
+                                            </p>
+                                            {emp.hourlyCost != null && (
+                                                <p className="text-[11px] text-neutral-400 flex items-center gap-1.5">
+                                                    <Euro className="w-3 h-3 flex-shrink-0" /> €{emp.hourlyCost.toFixed(2)}/h
+                                                </p>
+                                            )}
+                                            {tenure && (
+                                                <p className="text-[11px] text-neutral-400 flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3 flex-shrink-0" /> {tenure}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Hover action hint */}
+                                        <div className="mt-3 flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">View Profile</span>
+                                            <ChevronRight className="w-3.5 h-3.5 text-neutral-300" />
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -176,36 +449,74 @@ export default function EmployeesPage() {
                         </div>
                         <div className="p-6 space-y-4">
                             {error && <p className="text-red-600 text-sm font-medium bg-red-50 dark:bg-red-500/10 rounded-lg px-3 py-2">{error}</p>}
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="First Name *" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
-                                <Field label="Last Name *" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
-                            </div>
-                            <Field label="Email *" type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
-                            <Field label="Phone" type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
-                                    <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30">
-                                        {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                                    </select>
+
+                            {/* Personal Info Section */}
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Personal Information</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Field label="First Name *" value={form.firstName} onChange={v => setForm(f => ({ ...f, firstName: v }))} />
+                                    <Field label="Last Name *" value={form.lastName} onChange={v => setForm(f => ({ ...f, lastName: v }))} />
                                 </div>
-                                <div>
-                                    <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
-                                    <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30">
-                                        <option value="ACTIVE">Active</option>
-                                        <option value="INACTIVE">Inactive</option>
-                                        <option value="ON_LEAVE">On Leave</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <Field label="Email *" type="email" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
+                                    <Field label="Phone" type="tel" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
-                                <Field label="Hire Date" type="date" value={form.hireDate} onChange={v => setForm(f => ({ ...f, hireDate: v }))} />
+
+                            {/* Employment Section */}
+                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400 mb-3">Employment</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
+                                        <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                                            className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                        >
+                                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
+                                        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
+                                            className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                        >
+                                            <option value="ACTIVE">Active</option>
+                                            <option value="INACTIVE">Inactive</option>
+                                            <option value="ON_LEAVE">On Leave</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
+                                    <Field label="Hire Date" type="date" value={form.hireDate} onChange={v => setForm(f => ({ ...f, hireDate: v }))} />
+                                </div>
+                            </div>
+
+                            {/* Emergency Contact Section */}
+                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Emergency Contact</p>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Field label="Contact Name" value={form.emergencyContact} onChange={v => setForm(f => ({ ...f, emergencyContact: v }))} />
+                                    <Field label="Contact Phone" type="tel" value={form.emergencyPhone} onChange={v => setForm(f => ({ ...f, emergencyPhone: v }))} />
+                                </div>
+                            </div>
+
+                            {/* Notes */}
+                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                                <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Notes</label>
+                                <textarea
+                                    value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                    rows={3} placeholder="Additional notes..."
+                                    className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 resize-none"
+                                />
                             </div>
                         </div>
                         <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-white/10">
                             <button onClick={() => setShowDialog(false)} className="px-4 py-2.5 rounded-xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors">Cancel</button>
-                            <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:opacity-90 transition-colors disabled:opacity-50" style={{ backgroundColor: "var(--brand-color, #d35400)" }}>
+                            <button onClick={handleSave} disabled={saving}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm hover:opacity-90 transition-colors disabled:opacity-50"
+                                style={{ backgroundColor: "var(--brand-color, #d35400)" }}
+                            >
                                 {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                                 {editing ? "Save Changes" : "Add Employee"}
                             </button>
@@ -217,11 +528,27 @@ export default function EmployeesPage() {
     );
 }
 
+// ── Shared Sub-Components ────────────────────────────────────────────
+
+function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+    return (
+        <div className="flex items-center gap-3">
+            <span className="text-neutral-400">{icon}</span>
+            <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">{label}</p>
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 truncate">{value}</p>
+            </div>
+        </div>
+    );
+}
+
 function Field({ label, value, onChange, type = "text", placeholder }: { label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string }) {
     return (
         <div>
             <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">{label}</label>
-            <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30" />
+            <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+                className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+            />
         </div>
     );
 }

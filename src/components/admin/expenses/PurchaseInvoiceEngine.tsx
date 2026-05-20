@@ -77,6 +77,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const [peppolAction, setPeppolAction] = useState<'accept' | 'reject' | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [exportingPdf, setExportingPdf] = useState(false);
+    // Approve/Reject workflow (universal — not just Peppol)
+    const [rejectMode, setRejectMode] = useState(false);
+    const [rejectComment, setRejectComment] = useState('');
+    const [approveLoading, setApproveLoading] = useState(false);
     const [tenantProfile, setTenantProfile] = useState<{
         companyName?: string;
         commercialName?: string;
@@ -172,6 +176,34 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
     const handleMarkPaid = () => {
         updatePageProperty(expensesDbId, pageId, 'status', 'opt-paid');
+    };
+
+    // Universal approve / reject (works for all invoice sources)
+    const handleApprove = async () => {
+        setApproveLoading(true);
+        const isPeppolInvoice = page?.properties.source === 'src-peppol';
+        if (isPeppolInvoice && page?.properties.peppolDocId) {
+            await handlePeppolAction('accept');
+        } else {
+            updatePageProperty(expensesDbId, pageId, 'status', 'opt-unpaid');
+        }
+        setApproveLoading(false);
+    };
+
+    const handleRejectConfirm = async () => {
+        setApproveLoading(true);
+        const isPeppolInvoice = page?.properties.source === 'src-peppol';
+        if (isPeppolInvoice && page?.properties.peppolDocId) {
+            await handlePeppolAction('reject');
+        } else {
+            updatePageProperty(expensesDbId, pageId, 'status', 'opt-disputed');
+        }
+        if (rejectComment.trim()) {
+            updatePageProperty(expensesDbId, pageId, 'rejectionNote', rejectComment.trim());
+        }
+        setRejectMode(false);
+        setRejectComment('');
+        setApproveLoading(false);
     };
 
     const resolvedSupplier = (() => {
@@ -320,19 +352,19 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                         <div className="grid grid-cols-3 divide-x divide-neutral-200 dark:divide-white/10">
                             <FinancialCell
                                 label="Excl. VAT"
-                                value={isEditing ? editData.totalExVat : page.properties.totalExVat}
+                                value={isEditing ? editData.totalExVat : (page.properties.totalExVat as string | number | null | undefined)}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalExVat: v }))}
                             />
                             <FinancialCell
                                 label="VAT"
-                                value={isEditing ? editData.totalVat : page.properties.totalVat}
+                                value={isEditing ? editData.totalVat : (page.properties.totalVat as string | number | null | undefined)}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalVat: v }))}
                             />
                             <FinancialCell
                                 label="Incl. VAT"
-                                value={isEditing ? editData.totalIncVat : page.properties.totalIncVat}
+                                value={isEditing ? editData.totalIncVat : (page.properties.totalIncVat as string | number | null | undefined)}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
                                 highlight
@@ -386,26 +418,55 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                     )}
                 </div>
 
+                {/* Reject comment field (appears when reject mode is active) */}
+                {rejectMode && status === 'opt-received' && (
+                    <div className="px-6 py-4 bg-red-50/60 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800/40">
+                        <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-2">Rejection Reason</p>
+                        <textarea
+                            value={rejectComment}
+                            onChange={e => setRejectComment(e.target.value)}
+                            placeholder="Describe why this invoice is being rejected (optional)…"
+                            rows={3}
+                            className="w-full bg-white dark:bg-neutral-900 border border-red-300 dark:border-red-700/50 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/30 resize-none placeholder:text-neutral-400 dark:text-white"
+                        />
+                        <div className="flex items-center gap-2 mt-3">
+                            <button
+                                onClick={handleRejectConfirm}
+                                disabled={approveLoading}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                {approveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                Confirm Rejection
+                            </button>
+                            <button
+                                onClick={() => { setRejectMode(false); setRejectComment(''); }}
+                                className="px-4 py-2 bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Footer actions */}
                 <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.02]">
                     <div className="flex items-center gap-2">
-                        {/* Peppol accept/reject */}
-                        {isPeppol && status === 'opt-received' && (
+                        {/* Universal approve / reject — for ALL invoices in received state */}
+                        {status === 'opt-received' && !rejectMode && (
                             <>
                                 <button
-                                    onClick={() => handlePeppolAction('accept')}
-                                    disabled={!!peppolAction}
-                                    className="flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                                    onClick={handleApprove}
+                                    disabled={approveLoading}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
                                 >
-                                    {peppolAction === 'accept' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                    Accept
+                                    {approveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                                    Approve
                                 </button>
                                 <button
-                                    onClick={() => handlePeppolAction('reject')}
-                                    disabled={!!peppolAction}
-                                    className="flex items-center gap-1.5 px-3 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                                    onClick={() => setRejectMode(true)}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
                                 >
-                                    {peppolAction === 'reject' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                                    <XCircle className="w-3.5 h-3.5" />
                                     Reject
                                 </button>
                             </>
@@ -419,6 +480,14 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                             >
                                 <Check className="w-3.5 h-3.5" /> Mark Paid
                             </button>
+                        )}
+
+                        {/* Show rejection note if invoice was disputed */}
+                        {status === 'opt-disputed' && page?.properties.rejectionNote && (
+                            <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg max-w-xs">
+                                <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                                <p className="text-xs text-red-700 dark:text-red-400 leading-relaxed">{String(page.properties.rejectionNote)}</p>
+                            </div>
                         )}
                     </div>
 
@@ -495,8 +564,8 @@ function FinancialCell({ label, value, editable, highlight, onChange }: {
     highlight?: boolean;
     onChange?: (v: string) => void;
 }) {
-    const formatted = value && !isNaN(parseFloat(value))
-        ? `€${parseFloat(value).toFixed(2)}`
+    const formatted = value && !isNaN(parseFloat(String(value)))
+        ? `€${parseFloat(String(value)).toFixed(2)}`
         : '-';
 
     return (

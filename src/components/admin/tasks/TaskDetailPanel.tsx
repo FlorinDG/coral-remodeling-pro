@@ -43,6 +43,7 @@ function Select({ value, options, onChange, renderIcon }: {
     renderIcon?: (id: string) => React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
+    const [dropUp, setDropUp] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const current = options.find(o => o.id === value);
 
@@ -54,10 +55,20 @@ function Select({ value, options, onChange, renderIcon }: {
         return () => document.removeEventListener('mousedown', h);
     }, []);
 
+    // Check if dropdown would clip below the viewport
+    const handleToggle = () => {
+        if (!open && ref.current) {
+            const rect = ref.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            setDropUp(spaceBelow < 260); // 260px is approx dropdown height
+        }
+        setOpen(o => !o);
+    };
+
     return (
         <div ref={ref} className="relative">
             <button
-                onClick={() => setOpen(o => !o)}
+                onClick={handleToggle}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-350 dark:border-white/20 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-white/5 transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200"
                 style={{ color: current?.color }}
             >
@@ -66,7 +77,7 @@ function Select({ value, options, onChange, renderIcon }: {
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
             {open && (
-                <div className="absolute top-full mt-1.5 left-0 z-50 bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/25 rounded-xl shadow-xl py-1.5 min-w-[180px]">
+                <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} left-0 z-[100] bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/25 rounded-xl shadow-xl py-1.5 min-w-[180px] max-h-[220px] overflow-y-auto`}>
                     {options.map(o => (
                         <button
                             key={o.id}
@@ -199,7 +210,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-white dark:bg-neutral-950">
+            <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-white dark:bg-neutral-950 min-h-0">
                 {/* Title */}
                 <textarea
                     value={title}

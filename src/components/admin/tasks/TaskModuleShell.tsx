@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
@@ -18,7 +18,7 @@ import { useTaskFilter, ActivePerspective } from './hooks/useTaskFilter';
 import { useMyDayReset } from './hooks/useMyDayReset';
 import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
-import { Layers, Kanban, Eye, Network } from 'lucide-react';
+import { Layers, Kanban, Eye, Network, Plus } from 'lucide-react';
 
 export default function TaskModuleShell() {
     const { data: session } = useSession();
@@ -46,6 +46,34 @@ export default function TaskModuleShell() {
     } | null>(null);
     const [activeView, setActiveView] = useState<'list' | 'board' | 'review' | 'dependencies'>('list');
     const [showPerspBuilder, setShowPerspBuilder] = useState(false);
+
+    // ── Resizable detail panel ────────────────────────────────────────────────
+    const [panelWidth, setPanelWidth] = useState(384); // default w-96 = 384px
+    const isResizing = useRef(false);
+    const panelRef = useRef<HTMLDivElement>(null);
+
+    const startResize = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isResizing.current = true;
+        const startX = e.clientX;
+        const startWidth = panelWidth;
+
+        const onMouseMove = (ev: MouseEvent) => {
+            if (!isResizing.current) return;
+            const delta = startX - ev.clientX; // dragging left = bigger panel
+            const newWidth = Math.min(700, Math.max(280, startWidth + delta));
+            setPanelWidth(newWidth);
+        };
+
+        const onMouseUp = () => {
+            isResizing.current = false;
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+    }, [panelWidth]);
 
     const pages = db?.pages || [];
     const selectedPage = pages.find(p => p.id === selectedPageId);
@@ -107,7 +135,7 @@ export default function TaskModuleShell() {
 
     // ── Operations ────────────────────────────────────────────────────────────
     const handleQuickAdd = async (parsed: ParsedTask) => {
-        const initialProps: Record<string, unknown> = {
+        const initialProps: Record<string, PropertyValue> = {
             title:                  parsed.title,
             'prop-task-status':     'opt-todo',
             'prop-task-priority':   parsed.priority || 'opt-p4',
@@ -212,7 +240,7 @@ export default function TaskModuleShell() {
             {/* Center Task List + Quick Add */}
             <div className="flex-1 flex flex-col min-w-0 h-full relative">
                 {/* View Switcher Header */}
-                <div className="px-4 py-2 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-neutral-950">
+                <div className="px-4 py-2 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-neutral-950 flex-shrink-0">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setActiveView('list')}
@@ -259,6 +287,22 @@ export default function TaskModuleShell() {
                             Dependencies
                         </button>
                     </div>
+
+                    {/* Explicit New Task Button */}
+                    <button
+                        onClick={() => {
+                            const newPage = createPage('db-tasks', {
+                                title: 'New Task',
+                                'prop-task-status': 'opt-todo',
+                                'prop-task-priority': 'opt-p4',
+                                'prop-task-my-day': perspective.id === 'my-day',
+                            } as Record<string, PropertyValue>);
+                            setSelectedPageId(newPage.id);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-orange-500 hover:bg-orange-600 text-white transition-colors shadow-sm"
+                    >
+                        <Plus className="w-3.5 h-3.5" /> New Task
+                    </button>
                 </div>
 
                 {activeView === 'list' && (
@@ -333,16 +377,29 @@ export default function TaskModuleShell() {
                 </div>
             </div>
 
-            {/* Slide-out detail panel */}
+            {/* Drag-resize handle + Slide-out detail panel */}
             {selectedPage && (
-                <div className="w-96 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 h-full hidden lg:block">
-                    <TaskDetailPanel
-                        page={selectedPage}
-                        onClose={() => setSelectedPageId(undefined)}
-                        onUpdate={handleUpdate}
-                        onDelete={handleDelete}
+                <>
+                    {/* Resize Handle */}
+                    <div
+                        ref={panelRef}
+                        onMouseDown={startResize}
+                        className="w-1 flex-shrink-0 cursor-col-resize bg-neutral-200 dark:bg-white/10 hover:bg-orange-400 dark:hover:bg-orange-500 transition-colors h-full hidden lg:block select-none"
+                        title="Drag to resize panel"
                     />
-                </div>
+                    {/* Detail Panel */}
+                    <div
+                        className="flex-shrink-0 border-l border-neutral-200 dark:border-white/10 h-full hidden lg:block overflow-hidden"
+                        style={{ width: panelWidth }}
+                    >
+                        <TaskDetailPanel
+                            page={selectedPage}
+                            onClose={() => setSelectedPageId(undefined)}
+                            onUpdate={handleUpdate}
+                            onDelete={handleDelete}
+                        />
+                    </div>
+                </>
             )}
 
             {/* Context Menu */}

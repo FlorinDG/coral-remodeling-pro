@@ -6,16 +6,17 @@ import { Block, Page } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
     Users, Layout, ArrowRight, Table, Plus, X, MessageSquare, 
-    Send, ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, CheckSquare, List
+    Send, ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
+    CheckSquare, List, BookOpen, Globe, Notebook
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Button } from '@/components/time-tracker/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { useTenant } from '@/context/TenantContext';
 import { v4 as uuidv4 } from 'uuid';
 
-type ModuleType = 'projects' | 'clients' | 'crm' | 'all';
+type ModuleType = 'projects' | 'clients' | 'crm' | 'general' | 'all';
 type ViewType = 'feed' | 'database';
 
 interface JournalEntry {
@@ -39,8 +40,29 @@ interface CommentItem {
 
 const DEFAULT_REACTIONS = { '👍': 0, '❤️': 0, '🚀': 0, '🎉': 0 };
 
+// Notion-style relative date labels
+function getDateGroupLabel(date: Date): string {
+    if (isToday(date)) return 'Today';
+    if (isYesterday(date)) return 'Yesterday';
+    if (isThisWeek(date, { weekStartsOn: 1 })) return 'This Week';
+    if (isThisMonth(date)) return 'This Month';
+    return format(date, 'MMMM yyyy', { locale: nl });
+}
+
+function groupEntriesByDate(entries: JournalEntry[]): { label: string; entries: JournalEntry[] }[] {
+    const groups: Map<string, JournalEntry[]> = new Map();
+    for (const entry of entries) {
+        const label = getDateGroupLabel(entry.updatedAt);
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label)!.push(entry);
+    }
+    return Array.from(groups.entries()).map(([label, entries]) => ({ label, entries }));
+}
+
+const GENERAL_DB_ID = 'db-journal-general';
+
 export default function JournalModulePage() {
-    const { databases, updatePageBlocks } = useDatabaseStore();
+    const { databases, updatePageBlocks, createPage, createDatabase } = useDatabaseStore();
     const { resolveDbId } = useTenant();
     
     // Core Navigation & View States
@@ -50,26 +72,32 @@ export default function JournalModulePage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Modal creation states
-    const [targetModule, setTargetModule] = useState<Exclude<ModuleType, 'all'>>('projects');
+    const [targetModule, setTargetModule] = useState<Exclude<ModuleType, 'all'>>('general');
     const [selectedPageId, setSelectedPageId] = useState('');
     const [selectedBlockType, setSelectedBlockType] = useState<Block['type']>('paragraph');
     const [newEntryContent, setNewEntryContent] = useState('');
-    const [authorName, setAuthorName] = useState('Florin (Manager)');
+    const [newEntryTitle, setNewEntryTitle] = useState('');
+    const [authorName, setAuthorName] = useState('');
 
     const loading = databases.length === 0;
 
-    // Database Mapping
+    // Ensure the general journal DB exists (create on first access if missing)
+    const generalDb = databases.find(d => d.id === GENERAL_DB_ID);
+
+    // Database Mapping for module tabs
     const moduleMap = useMemo(() => ({
-        [resolveDbId('projects') || 'db-1']: 'projects' as ModuleType,
-        [resolveDbId('clients') || 'db-clients']: 'clients' as ModuleType,
-        [resolveDbId('crm') || 'db-crm']: 'crm' as ModuleType,
+        [resolveDbId('db-1') || 'db-1']: 'projects' as ModuleType,
+        [resolveDbId('db-clients') || 'db-clients']: 'clients' as ModuleType,
+        [resolveDbId('db-crm') || 'db-crm']: 'crm' as ModuleType,
+        [GENERAL_DB_ID]: 'general' as ModuleType,
     }), [resolveDbId]);
 
     // Reverse map module to dbId
     const getDbIdFromModule = (mod: Exclude<ModuleType, 'all'>) => {
-        if (mod === 'projects') return resolveDbId('projects') || 'db-1';
-        if (mod === 'clients') return resolveDbId('clients') || 'db-clients';
-        return resolveDbId('crm') || 'db-crm';
+        if (mod === 'projects') return resolveDbId('db-1') || 'db-1';
+        if (mod === 'clients') return resolveDbId('db-clients') || 'db-clients';
+        if (mod === 'crm') return resolveDbId('db-crm') || 'db-crm';
+        return GENERAL_DB_ID;
     };
 
     // Extract all entries chronologically (Computed dynamically to satisfy React Compiler)
@@ -89,7 +117,7 @@ export default function JournalModulePage() {
                     module: modType,
                     updatedAt: new Date(page.updatedAt),
                     blocks: page.blocks,
-                    author: (props?.['prop-owner'] as string[])?.[0] || 'System',
+                    author: (props?.['prop-owner'] as string[])?.[0] || (props?.['author'] as string) || 'System',
                     page: page
                 });
             }
@@ -97,10 +125,10 @@ export default function JournalModulePage() {
     });
     allEntries.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-    // Available target pages for creation dropdown (Computed dynamically)
+    // Available target pages for creation dropdown (only for non-general modules)
     const targetDbId = getDbIdFromModule(targetModule);
     const targetDb = databases.find(d => d.id === targetDbId);
-    const availablePages = targetDb 
+    const availablePages = (targetModule !== 'general' && targetDb)
         ? targetDb.pages.map(p => {
             const props = p.properties as Record<string, unknown>;
             return {
@@ -110,31 +138,24 @@ export default function JournalModulePage() {
         })
         : [];
 
-    // Filtered entries for render (Computed dynamically)
+    // Filtered entries
     const filteredEntries = allEntries.filter(entry => {
         const matchesTab = activeTab === 'all' || entry.module === activeTab;
-        
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch = 
             entry.title.toLowerCase().includes(searchLower) || 
             entry.databaseName.toLowerCase().includes(searchLower) ||
             entry.blocks.some(b => b.content?.toLowerCase().includes(searchLower));
-        
         return matchesTab && matchesSearch;
     });
+
+    const dateGroupedEntries = groupEntriesByDate(filteredEntries);
 
     // Handle saving new journal entry block
     const handleSaveNewEntry = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedPageId || !newEntryContent.trim()) return;
+        if (!newEntryContent.trim()) return;
 
-        const activeDbId = getDbIdFromModule(targetModule);
-        const activeDb = databases.find(d => d.id === activeDbId);
-        const targetPage = activeDb?.pages.find(p => p.id === selectedPageId);
-
-        if (!targetPage) return;
-
-        // Build the new Notion-inspired progress note block
         const newBlock: Block = {
             id: uuidv4(),
             type: selectedBlockType,
@@ -147,38 +168,80 @@ export default function JournalModulePage() {
             }
         };
 
-        // Append the new block to existing page blocks
-        const existingBlocks = targetPage.blocks || [];
-        const nextBlocks = [...existingBlocks, newBlock];
+        if (targetModule === 'general') {
+            // Create a standalone journal page in the general journal DB
+            let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
+            if (!db) {
+                db = createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
+                    { id: 'title', name: 'Title', type: 'text' },
+                    { id: 'author', name: 'Author', type: 'text' },
+                    { id: 'created', name: 'Created', type: 'created_time' },
+                ]);
+            }
+            createPage(GENERAL_DB_ID, {
+                title: newEntryTitle || `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
+                author: authorName || 'System',
+            }, undefined, [newBlock]);
+        } else {
+            // Append block to an existing record
+            const activeDbId = getDbIdFromModule(targetModule);
+            const activeDb = databases.find(d => d.id === activeDbId);
+            const targetPage = activeDb?.pages.find(p => p.id === selectedPageId);
+            if (!targetPage) return;
 
-        // Trigger store action
-        updatePageBlocks(activeDbId, selectedPageId, nextBlocks);
+            const existingBlocks = targetPage.blocks || [];
+            updatePageBlocks(activeDbId, selectedPageId, [...existingBlocks, newBlock]);
+        }
 
         // Reset & Close Modal
         setNewEntryContent('');
+        setNewEntryTitle('');
         setIsAddModalOpen(false);
     };
 
     const tabs: { id: ModuleType; label: string; icon: React.ReactNode }[] = [
-        { id: 'all',      label: 'All Updates', icon: <Layout className="w-4 h-4" /> },
-        { id: 'projects', label: 'Projects',    icon: <Briefcase className="w-4 h-4" /> },
-        { id: 'clients',  label: 'Clients',     icon: <Users className="w-4 h-4" /> },
-        { id: 'crm',      label: 'CRM / Leads', icon: <PenLine className="w-4 h-4" /> },
+        { id: 'all',      label: 'All',       icon: <Layout className="w-4 h-4" /> },
+        { id: 'general',  label: 'General',   icon: <Notebook className="w-4 h-4" /> },
+        { id: 'projects', label: 'Projects',  icon: <Briefcase className="w-4 h-4" /> },
+        { id: 'clients',  label: 'Clients',   icon: <Users className="w-4 h-4" /> },
+        { id: 'crm',      label: 'CRM',       icon: <PenLine className="w-4 h-4" /> },
+    ];
+
+    const journalContextLinks = [
+        { label: 'Projects', href: '/admin/database/db-1', icon: <Briefcase className="w-3.5 h-3.5" /> },
+        { label: 'Clients',  href: '/admin/database/db-clients', icon: <Users className="w-3.5 h-3.5" /> },
+        { label: 'CRM',      href: '/admin/database/db-crm', icon: <Globe className="w-3.5 h-3.5" /> },
     ];
 
     return (
         <div className="flex flex-col h-full bg-neutral-50 dark:bg-black overflow-hidden">
             {/* Header */}
-            <header className="flex-shrink-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-white/10 px-8 py-6">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
+            <header className="flex-shrink-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-white/10 px-6 lg:px-8 py-5">
+                <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
+                    <div className="min-w-0">
                         <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
-                            <PenLine className="w-6 h-6 text-orange-500" /> Organization Journal
+                            <PenLine className="w-6 h-6 text-orange-500 flex-shrink-0" /> Organization Journal
                         </h1>
-                        <p className="text-sm text-neutral-500">A unified Notion-inspired feed of all project logs, client communications, and progress notes.</p>
+                        <p className="text-sm text-neutral-500 mt-0.5">A Notion-style feed of project logs, client communications, and personal notes.</p>
                     </div>
-                    <div className="flex items-center gap-3">
-                        {/* Search & Filters */}
+
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* Journal context links */}
+                        <div className="hidden lg:flex items-center gap-1.5 bg-neutral-100 dark:bg-white/5 rounded-xl px-3 py-1.5">
+                            <BookOpen className="w-3.5 h-3.5 text-neutral-400" />
+                            {journalContextLinks.map(link => (
+                                <Link
+                                    key={link.href}
+                                    href={link.href as `/${string}`}
+                                    className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-neutral-500 hover:text-orange-500 hover:bg-white dark:hover:bg-white/5 transition-all"
+                                >
+                                    {link.icon}
+                                    {link.label}
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Search */}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                             <input 
@@ -186,7 +249,7 @@ export default function JournalModulePage() {
                                 placeholder="Search journal..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-10 pr-4 py-2 bg-neutral-100 dark:bg-white/5 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 transition-all w-64"
+                                className="pl-10 pr-4 py-2 bg-neutral-100 dark:bg-white/5 border-none rounded-xl text-sm focus:ring-2 focus:ring-orange-500/20 transition-all w-56"
                             />
                         </div>
 
@@ -212,10 +275,8 @@ export default function JournalModulePage() {
                         <Button 
                             onClick={() => {
                                 setIsAddModalOpen(true);
-                                // Set initial page selection
-                                const initialDbId = getDbIdFromModule(targetModule);
-                                const firstDb = databases.find(d => d.id === initialDbId);
-                                if (firstDb?.pages?.[0]) setSelectedPageId(firstDb.pages[0].id);
+                                setTargetModule('general');
+                                setSelectedPageId('');
                             }}
                             className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all"
                         >
@@ -225,7 +286,7 @@ export default function JournalModulePage() {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-white/5 rounded-xl w-fit">
+                <div className="flex items-center gap-1 p-1 bg-neutral-100 dark:bg-white/5 rounded-xl w-fit flex-wrap">
                     {tabs.map(tab => (
                         <button
                             key={tab.id}
@@ -244,29 +305,52 @@ export default function JournalModulePage() {
             </header>
 
             {/* Content Feed */}
-            <main className="flex-1 overflow-y-auto p-8">
+            <main className="flex-1 overflow-y-auto p-6 lg:p-8">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center h-64">
                         <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
                     </div>
                 ) : (
-                    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+                    <div className="max-w-4xl mx-auto pb-20">
                         {viewType === 'feed' ? (
                             <>
-                                {filteredEntries.map(entry => (
-                                    <JournalFeedCard 
-                                        key={entry.id} 
-                                        entry={entry} 
-                                        updatePageBlocks={updatePageBlocks}
-                                    />
-                                ))}
-
-                                {filteredEntries.length === 0 && (
+                                {dateGroupedEntries.length === 0 && (
                                     <div className="text-center py-20">
-                                        <PenLine className="w-12 h-12 text-neutral-200 mx-auto mb-4" />
-                                        <p className="text-neutral-400">No journal entries found for this criteria.</p>
+                                        <PenLine className="w-12 h-12 text-neutral-200 dark:text-neutral-700 mx-auto mb-4" />
+                                        <p className="text-neutral-400 mb-4">No journal entries found for this criteria.</p>
+                                        <button
+                                            onClick={() => setIsAddModalOpen(true)}
+                                            className="flex items-center gap-2 mx-auto px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors"
+                                        >
+                                            <Plus className="w-4 h-4" /> Create your first note
+                                        </button>
                                     </div>
                                 )}
+                                {dateGroupedEntries.map(group => (
+                                    <div key={group.label} className="mb-8">
+                                        {/* Date Group Header */}
+                                        <div className="flex items-center gap-3 mb-4">
+                                            <span className="text-xs font-black uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
+                                                {group.label}
+                                            </span>
+                                            <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
+                                            <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-600">
+                                                {group.entries.length} {group.entries.length === 1 ? 'entry' : 'entries'}
+                                            </span>
+                                        </div>
+
+                                        {/* Entries */}
+                                        <div className="space-y-4">
+                                            {group.entries.map(entry => (
+                                                <JournalFeedCard 
+                                                    key={entry.id} 
+                                                    entry={entry} 
+                                                    updatePageBlocks={updatePageBlocks}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </>
                         ) : (
                             <JournalDatabaseView entries={filteredEntries} />
@@ -275,29 +359,31 @@ export default function JournalModulePage() {
                 )}
             </main>
 
-            {/* Add Entry sliding drawer / modal */}
+            {/* ── New Entry Modal (centered) ── */}
             {isAddModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-end transition-opacity duration-300">
-                    <div className="w-full max-w-lg bg-white dark:bg-neutral-900 h-full p-8 shadow-2xl flex flex-col justify-between transform transition-transform duration-300 animate-in slide-in-from-right">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between border-b border-neutral-100 dark:border-white/5 pb-4">
-                                <h2 className="text-lg font-black tracking-tight uppercase flex items-center gap-2">
-                                    <Plus className="w-5 h-5 text-orange-500" /> Add Journal Entry
-                                </h2>
-                                <button 
-                                    onClick={() => setIsAddModalOpen(false)}
-                                    className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-all"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200">
+                    <div className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5">
+                            <h2 className="text-base font-black tracking-tight uppercase flex items-center gap-2">
+                                <Plus className="w-5 h-5 text-orange-500" /> New Journal Entry
+                            </h2>
+                            <button 
+                                onClick={() => setIsAddModalOpen(false)}
+                                className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-all"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
 
-                            <form onSubmit={handleSaveNewEntry} className="space-y-4">
-                                {/* Target Database Selection */}
+                        {/* Modal Body */}
+                        <div className="overflow-y-auto flex-1">
+                            <form onSubmit={handleSaveNewEntry} className="p-6 space-y-5">
+                                {/* Target Module Selector */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">1. Target Module</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {(['projects', 'clients', 'crm'] as const).map(mod => (
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Context</label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {(['general', 'projects', 'clients', 'crm'] as const).map(mod => (
                                             <button
                                                 key={mod}
                                                 type="button"
@@ -305,46 +391,60 @@ export default function JournalModulePage() {
                                                     setTargetModule(mod);
                                                     const activeDbId = getDbIdFromModule(mod);
                                                     const db = databases.find(d => d.id === activeDbId);
-                                                    if (db?.pages?.[0]) {
-                                                        setSelectedPageId(db.pages[0].id);
-                                                    } else {
-                                                        setSelectedPageId('');
-                                                    }
+                                                    setSelectedPageId(db?.pages?.[0]?.id || '');
                                                 }}
-                                                className={`py-2 px-3 text-xs font-black uppercase tracking-wider rounded-xl border transition-all ${
+                                                className={`py-2 px-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all flex flex-col items-center gap-1 ${
                                                     targetModule === mod 
                                                         ? 'bg-orange-500/10 border-orange-500 text-orange-500' 
-                                                        : 'border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                                        : 'border-neutral-200 dark:border-white/10 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'
                                                 }`}
                                             >
+                                                {mod === 'general' ? <Notebook className="w-3.5 h-3.5" /> : 
+                                                 mod === 'projects' ? <Briefcase className="w-3.5 h-3.5" /> :
+                                                 mod === 'clients' ? <Users className="w-3.5 h-3.5" /> :
+                                                 <Globe className="w-3.5 h-3.5" />}
                                                 {mod}
                                             </button>
                                         ))}
                                     </div>
                                 </div>
 
-                                {/* Target Page/Record Dropdown */}
-                                <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">2. Target Record</label>
-                                    <select
-                                        value={selectedPageId}
-                                        onChange={(e) => setSelectedPageId(e.target.value)}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
-                                        required
-                                    >
-                                        <option value="" disabled>Select a record...</option>
-                                        {availablePages.map(p => (
-                                            <option key={p.id} value={p.id}>{p.title}</option>
-                                        ))}
-                                    </select>
-                                    {availablePages.length === 0 && (
-                                        <p className="text-[10px] text-red-500 mt-1 font-bold">No records found in this module.</p>
-                                    )}
-                                </div>
+                                {/* General journal: allow a custom title */}
+                                {targetModule === 'general' && (
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Title (optional)</label>
+                                        <input
+                                            type="text"
+                                            value={newEntryTitle}
+                                            onChange={(e) => setNewEntryTitle(e.target.value)}
+                                            placeholder={`Note — ${format(new Date(), 'dd MMM yyyy')}`}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Target Record (only for non-general) */}
+                                {targetModule !== 'general' && (
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
+                                            Target Record <span className="text-neutral-300 normal-case font-normal">(optional)</span>
+                                        </label>
+                                        <select
+                                            value={selectedPageId}
+                                            onChange={(e) => setSelectedPageId(e.target.value)}
+                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
+                                        >
+                                            <option value="">No specific record</option>
+                                            {availablePages.map(p => (
+                                                <option key={p.id} value={p.id}>{p.title}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Entry Style Selector */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">3. Style Theme</label>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Style</label>
                                     <div className="grid grid-cols-4 gap-2">
                                         {[
                                             { type: 'paragraph',          label: 'Plain',   icon: <AlignLeft className="w-3.5 h-3.5" /> },
@@ -359,7 +459,7 @@ export default function JournalModulePage() {
                                                 className={`py-2 px-1 text-[10px] font-black uppercase tracking-wider rounded-xl border flex flex-col items-center gap-1 transition-all ${
                                                     selectedBlockType === style.type
                                                         ? 'bg-orange-500/10 border-orange-500 text-orange-500'
-                                                        : 'border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                                        : 'border-neutral-200 dark:border-white/10 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'
                                                 }`}
                                             >
                                                 {style.icon}
@@ -371,35 +471,34 @@ export default function JournalModulePage() {
 
                                 {/* Author name */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">4. Written By</label>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Author</label>
                                     <input
                                         type="text"
                                         value={authorName}
                                         onChange={(e) => setAuthorName(e.target.value)}
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
-                                        placeholder="Author name..."
-                                        required
+                                        placeholder="Your name..."
                                     />
                                 </div>
 
                                 {/* Content */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">5. Journal Note</label>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Note</label>
                                     <textarea
                                         value={newEntryContent}
                                         onChange={(e) => setNewEntryContent(e.target.value)}
                                         rows={6}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none font-serif leading-relaxed italic"
-                                        placeholder="Type the progressive updates..."
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none font-serif leading-relaxed"
+                                        placeholder="Write your note or progress update..."
                                         required
                                     />
                                 </div>
 
-                                <div className="pt-4 flex items-center gap-3">
+                                <div className="flex items-center gap-3 pt-2">
                                     <Button 
                                         type="submit" 
-                                        className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 uppercase tracking-wider text-xs rounded-xl"
-                                        disabled={!selectedPageId || !newEntryContent.trim()}
+                                        className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 uppercase tracking-wider text-xs rounded-xl"
+                                        disabled={!newEntryContent.trim()}
                                     >
                                         Publish Entry
                                     </Button>
@@ -407,15 +506,12 @@ export default function JournalModulePage() {
                                         type="button" 
                                         variant="outline" 
                                         onClick={() => setIsAddModalOpen(false)}
-                                        className="flex-1 border-neutral-200 dark:border-white/10 py-3 uppercase tracking-wider text-xs rounded-xl"
+                                        className="flex-1 border-neutral-200 dark:border-white/10 py-2.5 uppercase tracking-wider text-xs rounded-xl"
                                     >
                                         Cancel
                                     </Button>
                                 </div>
                             </form>
-                        </div>
-                        <div className="text-center text-[10px] text-neutral-400">
-                            Notes are saved directly inside target entity block records.
                         </div>
                     </div>
                 </div>
@@ -435,29 +531,29 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
     const [isCommentOpen, setIsCommentOpen] = useState(false);
     const [commentText, setCommentText] = useState('');
 
-    const moduleColors: Record<string, string> = {
-        projects: '#3b82f6', // Blue
-        clients: '#22c55e',  // Green
-        crm: '#a855f7',      // Purple
+    const moduleColors: Record<string, { accent: string; badge: string }> = {
+        projects: { accent: '#3b82f6', badge: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+        clients:  { accent: '#22c55e', badge: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
+        crm:      { accent: '#a855f7', badge: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
+        general:  { accent: '#f97316', badge: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     };
 
-    const cardBorderColor = moduleColors[entry.module] || '#d1d5db';
+    const mc = moduleColors[entry.module] || moduleColors.general;
     
-    // Add reaction to the page's last block (or create a general one)
     const handleReact = (emoji: string) => {
         if (!entry.blocks.length) return;
         const lastBlock = entry.blocks[entry.blocks.length - 1];
         const nextBlocks = entry.blocks.map(b => {
             if (b.id !== lastBlock.id) return b;
             const props = b.properties || {};
-            const reactions = props.reactions || {};
+            const reactions = { ...(props.reactions || {}) };
             reactions[emoji] = (reactions[emoji] || 0) + 1;
             return { ...b, properties: { ...props, reactions } };
         });
         updatePageBlocks(entry.databaseId, entry.id, nextBlocks);
     };
 
-    // Aggregate reactions dynamically (Computed on-the-fly to satisfy React Compiler)
+    // Aggregate reactions dynamically
     const aggregatedReactions = { ...DEFAULT_REACTIONS } as Record<string, number>;
     entry.blocks.forEach(b => {
         const rx = b.properties?.reactions as Record<string, number> | undefined;
@@ -468,7 +564,6 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
         }
     });
 
-    // Handle adding comments to the main log page
     const handleAddComment = (e: React.FormEvent) => {
         e.preventDefault();
         if (!commentText.trim() || !entry.blocks.length) return;
@@ -480,7 +575,7 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
             const comments = props.comments || [];
             const newComment = {
                 id: uuidv4(),
-                author: 'Florin (Manager)',
+                author: 'Me',
                 text: commentText,
                 createdAt: new Date().toISOString()
             };
@@ -491,7 +586,7 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
         setCommentText('');
     };
 
-    // Extract comments dynamically (Computed on-the-fly to satisfy React Compiler)
+    // Extract comments dynamically
     const allComments: { id: string; author: string; text: string; createdAt: Date }[] = [];
     entry.blocks.forEach(b => {
         const comments = b.properties?.comments as CommentItem[] | undefined;
@@ -510,122 +605,116 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
 
     return (
         <div 
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition-all group overflow-hidden border-l-[6px]"
-            style={{ borderLeftColor: cardBorderColor }}
+            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden border-l-[4px]"
+            style={{ borderLeftColor: mc.accent }}
         >
-            {/* Card Main Area */}
-            <div className="p-6">
-                {/* Author & Profile details */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 flex items-center justify-center font-bold text-neutral-600 dark:text-neutral-300">
-                            {entry.author ? entry.author.charAt(0) : 'S'}
+            <div className="p-5">
+                {/* Author & meta */}
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                        <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center font-black text-sm text-white select-none"
+                            style={{ backgroundColor: mc.accent }}
+                        >
+                            {(entry.author || 'S').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-black tracking-tight text-neutral-900 dark:text-white uppercase">{entry.author || 'System'}</span>
-                                <span className="text-[9px] px-2 py-0.5 bg-neutral-100 dark:bg-white/5 font-extrabold rounded-full text-neutral-400 uppercase tracking-wider">{entry.module}</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-black text-neutral-900 dark:text-white">{entry.author || 'System'}</span>
+                                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${mc.badge}`}>{entry.module}</span>
                             </div>
-                            <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">{entry.databaseName}</span>
+                            <span className="text-[10px] text-neutral-400 font-medium">{entry.databaseName}</span>
                         </div>
                     </div>
-
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                        <Calendar className="w-3.5 h-3.5 text-neutral-300" />
+                    <div className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                        <Calendar className="w-3 h-3" />
                         {formatDistanceToNow(entry.updatedAt, { addSuffix: true, locale: nl })}
                     </div>
                 </div>
 
-                {/* Article Header */}
-                <div className="mb-4">
-                    <h2 className="text-lg font-black tracking-tight text-neutral-900 dark:text-white uppercase hover:text-orange-500 transition-colors">
-                        {entry.title}
-                    </h2>
-                </div>
+                {/* Title */}
+                <h2 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white uppercase mb-3 hover:text-orange-500 transition-colors">
+                    {entry.title}
+                </h2>
 
-                {/* Collapsible Properties Tray (Notion-style properties panels) */}
-                <div className="mb-4 border-t border-b border-neutral-100 dark:border-white/5 py-2">
+                {/* Collapsible Properties */}
+                <div className="mb-3 border-t border-b border-neutral-100 dark:border-white/5 py-1.5">
                     <button
                         onClick={() => setIsPropertiesOpen(!isPropertiesOpen)}
                         className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 uppercase tracking-widest"
                     >
                         {isPropertiesOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        {isPropertiesOpen ? 'Hide' : 'Show'} Notion Properties
+                        {isPropertiesOpen ? 'Hide' : 'Show'} Properties
                     </button>
 
                     {isPropertiesOpen && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-3 text-xs animate-in fade-in duration-200">
-                            <div className="space-y-1">
-                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Owner</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2.5 text-xs animate-in fade-in duration-200">
+                            <div className="space-y-0.5">
+                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Author</span>
                                 <div className="font-medium flex items-center gap-1.5">
                                     <User className="w-3.5 h-3.5 text-neutral-300" />
                                     {entry.author || 'System'}
                                 </div>
                             </div>
-                            <div className="space-y-1">
-                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Module Type</span>
-                                <div className="font-medium text-orange-500 uppercase tracking-wide font-bold">{entry.module}</div>
+                            <div className="space-y-0.5">
+                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Module</span>
+                                <div className="font-bold text-orange-500 uppercase tracking-wide">{entry.module}</div>
                             </div>
-                            <div className="space-y-1">
-                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Total Blocks</span>
+                            <div className="space-y-0.5">
+                                <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Blocks</span>
                                 <div className="font-medium text-neutral-500">{entry.blocks.length} elements</div>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Rich Feed Content Area (Native Block Rendering) */}
-                <div className="space-y-3.5 text-sm leading-relaxed mb-6 font-serif italic text-neutral-700 dark:text-neutral-300">
+                {/* Rich Feed Content */}
+                <div className="space-y-2.5 text-sm leading-relaxed mb-4 text-neutral-700 dark:text-neutral-300">
                     {entry.blocks.map((block) => {
                         if (block.type === 'paragraph') {
-                            return (
-                                <p key={block.id} className="pl-2 border-l-2 border-neutral-100 dark:border-white/5">
-                                    &quot;{block.content}&quot;
-                                </p>
-                            );
+                            return <p key={block.id} className="pl-2 border-l-2 border-neutral-100 dark:border-white/10 font-serif italic">{block.content}</p>;
                         }
                         if (block.type === 'quote') {
                             return (
-                                <blockquote key={block.id} className="pl-4 border-l-4 border-orange-500 dark:border-orange-600 italic text-neutral-500 bg-neutral-50 dark:bg-white/5 py-2 pr-2 rounded-r-xl">
+                                <blockquote key={block.id} className="pl-4 border-l-4 border-orange-500 italic text-neutral-500 bg-neutral-50 dark:bg-white/5 py-2 pr-2 rounded-r-xl">
                                     &quot;{block.content}&quot;
                                 </blockquote>
                             );
                         }
                         if (block.type === 'callout') {
                             return (
-                                <div key={block.id} className="flex gap-3 bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/25 p-4 rounded-2xl">
-                                    <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0" />
-                                    <div className="text-orange-950 dark:text-orange-200">{block.content}</div>
+                                <div key={block.id} className="flex gap-3 bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/25 p-3.5 rounded-2xl">
+                                    <AlertCircle className="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" />
+                                    <div className="text-orange-950 dark:text-orange-200 text-sm">{block.content}</div>
                                 </div>
                             );
                         }
                         if (block.type === 'bulleted_list_item') {
                             return (
-                                <div key={block.id} className="flex items-center gap-2 pl-4">
-                                    <div className="w-1.5 h-1.5 bg-neutral-400 dark:bg-neutral-500 rounded-full" />
+                                <div key={block.id} className="flex items-start gap-2 pl-3">
+                                    <div className="w-1.5 h-1.5 bg-neutral-400 dark:bg-neutral-500 rounded-full mt-1.5 flex-shrink-0" />
                                     <span>{block.content}</span>
                                 </div>
                             );
                         }
                         if (block.type === 'todo') {
                             return (
-                                <div key={block.id} className="flex items-center gap-2 pl-4 font-bold">
-                                    <CheckSquare className="w-4 h-4 text-orange-500" />
+                                <div key={block.id} className="flex items-center gap-2 pl-3">
+                                    <CheckSquare className="w-4 h-4 text-orange-500 flex-shrink-0" />
                                     <span className="line-through text-neutral-400">{block.content}</span>
                                 </div>
                             );
                         }
-                        return (
-                            <div key={block.id} className="text-xs text-neutral-400">
-                                Unsupported block: {block.type}
-                            </div>
-                        );
+                        // Render any other known block types as plain text
+                        if (block.content) {
+                            return <p key={block.id} className="text-sm text-neutral-600 dark:text-neutral-400">{block.content}</p>;
+                        }
+                        return null;
                     })}
                 </div>
 
-                {/* Reactions Drawer */}
-                <div className="flex items-center justify-between pt-4 border-t border-neutral-100 dark:border-white/5">
-                    {/* Emoji Interactions */}
+                {/* Reactions & Actions */}
+                <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-white/5">
                     <div className="flex items-center gap-1.5">
                         {Object.keys(DEFAULT_REACTIONS).map(emoji => {
                             const count = aggregatedReactions[emoji] || 0;
@@ -633,73 +722,69 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
                                 <button
                                     key={emoji}
                                     onClick={() => handleReact(emoji)}
-                                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full border transition-all text-xs ${
+                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all text-xs ${
                                         count > 0 
-                                            ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-500 text-orange-500' 
+                                            ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-400 text-orange-600' 
                                             : 'border-neutral-200 dark:border-white/10 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
                                     }`}
                                 >
                                     <span>{emoji}</span>
-                                    {count > 0 && <span className="font-bold">{count}</span>}
+                                    {count > 0 && <span className="font-bold text-[10px]">{count}</span>}
                                 </button>
                             );
                         })}
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Comments Toggle */}
                         <button
                             onClick={() => setIsCommentOpen(!isCommentOpen)}
-                            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-orange-500 transition-colors py-1.5 px-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-white/5 font-bold uppercase tracking-wider text-[10px]"
+                            className="flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-orange-500 transition-colors py-1 px-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-white/5 font-bold uppercase tracking-wider"
                         >
-                            <MessageSquare className="w-4 h-4" /> 
-                            {allComments.length > 0 ? `${allComments.length} Comments` : 'Comment'}
+                            <MessageSquare className="w-3.5 h-3.5" /> 
+                            {allComments.length > 0 ? `${allComments.length}` : 'Comment'}
                         </button>
 
-                        <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}`}>
+                        <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}` as `/${string}`}>
                             <Button variant="ghost" size="sm" className="gap-1.5 text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-bold uppercase tracking-widest text-[10px] rounded-xl">
-                                Open Record <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+                                Open <ArrowRight className="w-3 h-3" />
                             </Button>
                         </Link>
                     </div>
                 </div>
             </div>
 
-            {/* Comment drawer expanded at the bottom */}
+            {/* Comment drawer */}
             {isCommentOpen && (
-                <div className="bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-white/5 p-6 space-y-4">
-                    {/* Render existing comments */}
-                    <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+                <div className="bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-white/5 p-5 space-y-3">
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {allComments.map(c => (
-                            <div key={c.id} className="bg-white dark:bg-neutral-900 p-3 rounded-2xl border border-neutral-100 dark:border-white/5 space-y-1">
-                                <div className="flex items-center justify-between text-[9px] font-bold text-neutral-400 uppercase tracking-wider">
+                            <div key={c.id} className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-neutral-100 dark:border-white/5">
+                                <div className="flex items-center justify-between text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
                                     <span className="text-neutral-800 dark:text-neutral-300 font-black">{c.author}</span>
                                     <span>{formatDistanceToNow(c.createdAt, { addSuffix: true, locale: nl })}</span>
                                 </div>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-sans italic">{c.text}</p>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400">{c.text}</p>
                             </div>
                         ))}
-
                         {allComments.length === 0 && (
-                            <p className="text-xs text-neutral-400 text-center py-4 italic">No comments yet. Write one below!</p>
+                            <p className="text-xs text-neutral-400 text-center py-3 italic">No comments yet.</p>
                         )}
                     </div>
 
-                    {/* Add comment form */}
                     <form onSubmit={handleAddComment} className="flex gap-2">
                         <input
                             type="text"
                             placeholder="Add a comment..."
                             value={commentText}
                             onChange={(e) => setCommentText(e.target.value)}
-                            className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs outline-none focus:ring-2 focus:ring-orange-500/20"
+                            className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs outline-none focus:ring-2 focus:ring-orange-500/20"
                             required
                         />
                         <button
                             type="submit"
-                            className="bg-orange-500 hover:bg-orange-600 text-white p-2.5 rounded-xl transition-colors"
+                            className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-xl transition-colors"
                         >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3.5 h-3.5" />
                         </button>
                     </form>
                 </div>
@@ -716,50 +801,36 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Record Title</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Module</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Source DB</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Author</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Blocks Count</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Last Updated</th>
-                            <th className="px-6 py-4 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 text-right">Action</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Title</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Module</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Source DB</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Author</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Last Updated</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 text-right">Action</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-neutral-100 dark:divide-white/5">
                         {entries.map(entry => (
                             <tr key={entry.id} className="hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
-                                <td className="px-6 py-4">
-                                    <div className="font-black text-xs text-neutral-900 dark:text-white uppercase tracking-tight">
-                                        {entry.title}
-                                    </div>
+                                <td className="px-5 py-3.5">
+                                    <div className="font-black text-xs text-neutral-900 dark:text-white uppercase tracking-tight">{entry.title}</div>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-[9px] px-2 py-0.5 bg-neutral-100 dark:bg-white/5 font-extrabold rounded-full text-neutral-400 uppercase tracking-wider">
-                                        {entry.module}
-                                    </span>
+                                <td className="px-5 py-3.5">
+                                    <span className="text-[9px] px-2 py-0.5 bg-neutral-100 dark:bg-white/5 font-extrabold rounded-full text-neutral-400 uppercase tracking-wider">{entry.module}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
-                                        {entry.databaseName}
-                                    </span>
+                                <td className="px-5 py-3.5">
+                                    <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{entry.databaseName}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-xs text-neutral-500 font-bold">
-                                        {entry.author || 'System'}
-                                    </span>
+                                <td className="px-5 py-3.5">
+                                    <span className="text-xs text-neutral-500 font-bold">{entry.author || 'System'}</span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className="text-xs font-bold text-orange-500">
-                                        {entry.blocks.length} elements
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
+                                <td className="px-5 py-3.5">
                                     <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">
                                         {format(entry.updatedAt, 'dd MMM yyyy HH:mm', { locale: nl })}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-right">
-                                    <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}`}>
+                                <td className="px-5 py-3.5 text-right">
+                                    <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}` as `/${string}`}>
                                         <button className="text-xs font-black text-orange-500 hover:text-orange-600 uppercase tracking-wider text-[10px] hover:underline">
                                             Open
                                         </button>
@@ -770,7 +841,7 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
 
                         {entries.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-xs text-neutral-400 italic">
+                                <td colSpan={6} className="px-5 py-12 text-center text-xs text-neutral-400 italic">
                                     No records matching active query.
                                 </td>
                             </tr>

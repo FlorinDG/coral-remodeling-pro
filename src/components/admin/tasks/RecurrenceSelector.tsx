@@ -54,6 +54,7 @@ interface RecurrenceSelectorProps {
 
 export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps) {
     const [open, setOpen] = useState(false);
+    const [dropUp, setDropUp] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const { pattern, interval, dayOfWeek, customUnit } = parseRecurrenceString(value);
 
@@ -112,7 +113,13 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
     return (
         <div ref={ref} className="relative">
             <button
-                onClick={() => setOpen(o => !o)}
+                onClick={() => {
+                    if (!open && ref.current) {
+                        const rect = ref.current.getBoundingClientRect();
+                        setDropUp(window.innerHeight - rect.bottom < 300);
+                    }
+                    setOpen(o => !o);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-350 dark:border-white/20 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-white/5 transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200"
             >
                 <span className="text-xs">↺</span>
@@ -120,7 +127,7 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
             {open && (
-                <div className="absolute top-full mt-1.5 right-0 lg:left-0 z-50 bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/20 rounded-xl shadow-xl p-3.5 min-w-[280px] space-y-3">
+                <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} right-0 lg:left-0 z-[100] bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/20 rounded-xl shadow-xl p-3.5 min-w-[280px] space-y-3 max-h-[300px] overflow-y-auto`}>
                     <div>
                         <label className="block text-[10px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Repeat Pattern</label>
                         <select

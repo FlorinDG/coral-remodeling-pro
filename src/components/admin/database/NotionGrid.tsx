@@ -479,7 +479,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 if (newProps.title) {
                                     newProps.title = `${newProps.title} (Copy)`;
                                 }
-                                createPage(databaseIdRef, newProps);
+                                createPage(databaseIdRef, newProps, undefined, rowData.blocks);
                             }} className="cursor-pointer">
                                 <Copy className="w-4 h-4 mr-2" />
                                 <span>Duplicate</span>

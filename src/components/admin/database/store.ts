@@ -77,6 +77,18 @@ const syncPagesBatch = (pages: Page[], parentDb?: Database) => {
     }
 };
 
+/**
+ * Recursively clones block arrays, regenerating all IDs to keep them unique in the database
+ */
+const cloneBlocks = (blocks: Block[]): Block[] => {
+    return blocks.map(b => ({
+        ...b,
+        id: uuidv4(),
+        children: b.children ? cloneBlocks(b.children) : undefined
+    }));
+};
+
+
 // Custom IndexedDB storage object to bypass the 5MB browser localStorage limit
 const idbStorage: StateStorage = {
     getItem: async (name: string): Promise<string | null> => {
@@ -147,7 +159,7 @@ interface DatabaseState {
     updatePropertyOptionOrder: (databaseId: string, propertyId: string, sourceIndex: number, destinationIndex: number) => void;
 
     // Page (Row) Operations
-    createPage: (databaseId: string, initialProperties?: Record<string, PropertyValue>, customId?: string) => Page;
+    createPage: (databaseId: string, initialProperties?: Record<string, PropertyValue>, customId?: string, initialBlocks?: Block[]) => Page;
     /** Add a page that was already confirmed by the server (e.g. from /api/scan or createPageServerFirst) */
     addConfirmedPage: (page: Page) => void;
     addPages: (databaseId: string, pagesProperties: Record<string, PropertyValue>[]) => void;
@@ -593,7 +605,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 syncDb(get().databases.find(d => d.id === databaseId));
             },
 
-            createPage: (databaseId, initialProperties = {}, customId) => {
+            createPage: (databaseId, initialProperties = {}, customId, initialBlocks) => {
                 let newPage: Page | null = null;
 
                 set((state) => {
@@ -686,7 +698,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databaseId,
                         order: db.pages.length,
                         properties: fullProperties,
-                        blocks: [],
+                        blocks: initialBlocks ? cloneBlocks(initialBlocks) : [],
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         createdBy: 'system',
@@ -713,7 +725,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databaseId,
                         order: 0,
                         properties: initialProperties,
-                        blocks: [],
+                        blocks: initialBlocks ? cloneBlocks(initialBlocks) : [],
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         createdBy: 'system',

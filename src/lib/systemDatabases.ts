@@ -35,3 +35,15 @@ export const SYSTEM_DB_PREFIXES = [
 export function isSystemDatabase(id: string): boolean {
     return SYSTEM_DB_PREFIXES.some(prefix => id === prefix || id.startsWith(prefix + '-'));
 }
+
+/**
+ * Returns the base DB prefix for a given ID (strips tenant suffix).
+ * e.g. 'db-clients-abc123' → 'db-clients'
+ */
+export function getBaseDbId(id: string): string {
+    for (const prefix of SYSTEM_DB_PREFIXES) {
+        if (id === prefix || id.startsWith(prefix + '-')) return prefix;
+    }
+    return id;
+}
+

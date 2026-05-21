@@ -182,6 +182,11 @@ interface DatabaseState {
     updateSort: (databaseId: string, viewId: string | null | undefined, sortId: string, updates: Partial<SortRule>) => void;
     removeSort: (databaseId: string, viewId: string | null | undefined, sortId: string) => void;
     clearSorts: (databaseId: string, viewId: string | null | undefined) => void;
+
+    // Schema Ungating — superadmin-controlled custom properties on system DBs
+    ungatedSchemas: string[];
+    toggleSchemaUngating: (databaseId: string) => void;
+    isSchemaUngated: (databaseId: string) => boolean;
 }
 
 export const useDatabaseStore = create<DatabaseState>()(
@@ -191,6 +196,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
             undoStack: [] as UndoEntry[],
+            ungatedSchemas: [] as string[],
 
             _syncStart: () => set(s => ({ pendingSyncs: s.pendingSyncs + 1, syncStatus: 'saving' as const })),
             _syncDone: () => set(s => {
@@ -1343,7 +1349,23 @@ export const useDatabaseStore = create<DatabaseState>()(
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
-            }
+            },
+
+            // Schema Ungating — superadmin-controlled custom properties on system DBs
+            toggleSchemaUngating: (databaseId) => {
+                set(s => {
+                    const isCurrently = s.ungatedSchemas.includes(databaseId);
+                    return {
+                        ungatedSchemas: isCurrently
+                            ? s.ungatedSchemas.filter(id => id !== databaseId)
+                            : [...s.ungatedSchemas, databaseId]
+                    };
+                });
+            },
+
+            isSchemaUngated: (databaseId) => {
+                return get().ungatedSchemas.includes(databaseId);
+            },
         }),
         {
             name: 'coral-database-storage-v4', // Nuclear Option to abandon all legacy schemas

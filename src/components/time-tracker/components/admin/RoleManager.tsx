@@ -1,162 +1,111 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { Loader2, UserCog, Plus, Trash2 } from 'lucide-react';
+import { Loader2, UserCog, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
 import { Button } from '@/components/time-tracker/components/ui/button';
 import { Badge } from '@/components/time-tracker/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/time-tracker/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/time-tracker/components/ui/table';
 import { toast } from 'sonner';
-import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 
 export type ScheduleViewPermission = 'own' | 'team' | 'all_except_admin' | 'all';
 
-interface UserWithRoles {
-  user_id: string;
-  full_name: string;
-  roles: AppRole[];
-  schedule_view_permission: ScheduleViewPermission;
+interface UserWithRole {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  inviteAccepted: boolean;
 }
 
-export function RoleManager() {
-  const [users, setUsers] = useState<UserWithRoles[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<AppRole | ''>('');
-  const [adding, setAdding] = useState(false);
+const ROLE_OPTIONS = [
+  { value: 'APP_MANAGER', label: 'Manager' },
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'ACCOUNTANT', label: 'Accountant' },
+];
 
-  const fetchUsersWithRoles = async () => {
+export function RoleManager() {
+  const [users, setUsers] = useState<UserWithRole[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUsers = async () => {
     setLoading(true);
     
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('user_id, full_name');
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch all roles with schedule permissions
-    const { data: roles, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('user_id, role, schedule_view_permission');
-
-    if (rolesError) {
-      console.error('Error fetching roles:', rolesError);
-      setLoading(false);
-      return;
-    }
-
-    // Combine profiles with their roles
-    const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => {
-      const userRoles = (roles || []).filter(r => r.user_id === profile.user_id);
-      // Get the highest schedule permission (all > all_except_admin > team > own)
-      const permissionOrder: ScheduleViewPermission[] = ['all', 'all_except_admin', 'team', 'own'];
-      const schedulePermission = userRoles.reduce<ScheduleViewPermission>((highest, r) => {
-        const perm = (r.schedule_view_permission || 'own') as ScheduleViewPermission;
-        return permissionOrder.indexOf(perm) < permissionOrder.indexOf(highest) ? perm : highest;
-      }, 'own');
+    try {
+      const res = await fetch('/api/tenant/users');
+      if (!res.ok) {
+        console.error('Error fetching users:', await res.text());
+        setLoading(false);
+        return;
+      }
       
-      return {
-        user_id: profile.user_id,
-        full_name: profile.full_name || 'Unknown User',
-        roles: userRoles.map(r => r.role as AppRole),
-        schedule_view_permission: schedulePermission,
-      };
-    });
-
-    setUsers(usersWithRoles);
-    setLoading(false);
+      const data = await res.json();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchUsersWithRoles();
+    fetchUsers();
   }, []);
 
-  const addRole = async () => {
-    if (!selectedUser || !selectedRole) {
-      toast.error('Please select a user and role');
-      return;
-    }
-
-    setAdding(true);
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: selectedUser,
-        role: selectedRole,
+  const updateRole = async (userId: string, newRole: string) => {
+    try {
+      const res = await fetch(`/api/tenant/users/${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole }),
       });
 
-    if (error) {
-      if (error.code === '23505') {
-        toast.error('User already has this role');
-      } else {
-        toast.error('Failed to add role');
-        console.error(error);
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to update role');
+        return;
       }
-    } else {
-      toast.success('Role added successfully');
-      setSelectedUser('');
-      setSelectedRole('');
-      fetchUsersWithRoles();
-    }
-    setAdding(false);
-  };
 
-  const removeRole = async (userId: string, role: AppRole) => {
-    const { error } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId)
-      .eq('role', role);
-
-    if (error) {
-      toast.error('Failed to remove role');
+      toast.success('Role updated successfully');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Failed to update role');
       console.error(error);
-    } else {
-      toast.success('Role removed successfully');
-      fetchUsersWithRoles();
     }
   };
 
-  const updateSchedulePermission = async (userId: string, permission: ScheduleViewPermission) => {
-    const { error } = await supabase
-      .from('user_roles')
-      .update({ schedule_view_permission: permission })
-      .eq('user_id', userId);
+  const removeUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to remove this user from the workspace?')) return;
+    
+    try {
+      const res = await fetch(`/api/tenant/users/${userId}`, {
+        method: 'DELETE',
+      });
 
-    if (error) {
-      toast.error('Failed to update schedule permission');
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data.error || 'Failed to remove user');
+        return;
+      }
+
+      toast.success('User removed successfully');
+      fetchUsers();
+    } catch (error) {
+      toast.error('Failed to remove user');
       console.error(error);
-    } else {
-      toast.success('Schedule permission updated');
-      fetchUsersWithRoles();
     }
   };
 
-  const getRoleBadgeVariant = (role: AppRole) => {
+  const getRoleBadgeVariant = (role: string): 'outline' | 'destructive' | 'default' | 'secondary' => {
     switch (role) {
-      case 'owner':
-        return 'outline';
-      case 'admin':
-        return 'destructive';
-      case 'manager':
+      case 'APP_MANAGER':
         return 'default';
+      case 'ACCOUNTANT':
+        return 'outline';
+      case 'EMPLOYEE':
+        return 'secondary';
       default:
         return 'secondary';
-    }
-  };
-
-  const getPermissionLabel = (permission: ScheduleViewPermission) => {
-    switch (permission) {
-      case 'all': return 'All Schedules';
-      case 'all_except_admin': return 'All (except Admin)';
-      case 'team': return 'Team Schedules';
-      case 'own': return 'Own Schedule';
     }
   };
 
@@ -182,102 +131,53 @@ export function RoleManager() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Add Role Form */}
-        <div className="flex flex-col sm:flex-row gap-3 p-4 bg-muted/30 rounded-lg border border-border">
-          <Select value={selectedUser} onValueChange={setSelectedUser}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select user..." />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map(user => (
-                <SelectItem key={user.user_id} value={user.user_id}>
-                  {user.full_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as AppRole)}>
-            <SelectTrigger className="sm:w-40">
-              <SelectValue placeholder="Select role..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="owner">Owner</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="manager">Manager</SelectItem>
-              <SelectItem value="user">User</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Button onClick={addRole} disabled={adding || !selectedUser || !selectedRole}>
-            {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            <span className="ml-2">Add Role</span>
-          </Button>
-        </div>
-
         {/* Users Table */}
         <div className="rounded-lg border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
                 <TableHead>User</TableHead>
-                <TableHead>Roles</TableHead>
-                <TableHead>Schedule Access</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Current Role</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map(user => (
-                <TableRow key={user.user_id}>
-                  <TableCell className="font-medium">{user.full_name}</TableCell>
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name || 'Pending'}</TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{user.email}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-2">
-                      {user.roles.length > 0 ? (
-                        user.roles.map(role => (
-                          <Badge key={role} variant={getRoleBadgeVariant(role)}>
-                            {role}
-                          </Badge>
-                        ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">No roles assigned</span>
-                      )}
-                    </div>
+                    <Select
+                      value={user.role}
+                      onValueChange={(v) => updateRole(user.id, v)}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLE_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </TableCell>
                   <TableCell>
-                    {user.roles.length > 0 ? (
-                      <Select
-                        value={user.schedule_view_permission}
-                        onValueChange={(v) => updateSchedulePermission(user.user_id, v as ScheduleViewPermission)}
-                      >
-                        <SelectTrigger className="w-44">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="own">Own Schedule</SelectItem>
-                          <SelectItem value="team">Team Schedules</SelectItem>
-                          <SelectItem value="all_except_admin">All (except Admin)</SelectItem>
-                          <SelectItem value="all">All Schedules</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
+                    <Badge variant={user.inviteAccepted ? 'default' : 'outline'}>
+                      {user.inviteAccepted ? 'Active' : 'Pending Invite'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-1">
-                      {user.roles.map(role => (
-                        <Button
-                          key={role}
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => removeRole(user.user_id, role)}
-                          title={`Remove ${role} role`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ))}
-                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => removeUser(user.id)}
+                      title="Remove user"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

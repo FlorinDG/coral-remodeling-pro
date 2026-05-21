@@ -55,6 +55,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
   const isLockedSchemaDB = isSystemDatabase(databaseId);
+  const isUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -444,8 +445,31 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       });
 
     if (!schemasMatch) {
-      console.log(`[Schema Enforcement] Resetting ${resolvedId} properties to canonical schema`);
-      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: expectedProps }); // use resolvedId
+      // When ungated: only ensure canonical properties EXIST; preserve any custom ones
+      if (isUngated) {
+        const currentIds = new Set(database.properties.map(p => p.id));
+        const missingProps = expectedProps.filter((expected: Property) => !currentIds.has(expected.id));
+        const propsToFix = expectedProps.filter((expected: Property) => {
+          const current = database.properties.find(p => p.id === expected.id);
+          if (!current) return false;
+          return current.type !== expected.type || current.name !== expected.name ||
+            JSON.stringify(current.config || {}) !== JSON.stringify(expected.config || {});
+        });
+
+        if (missingProps.length > 0 || propsToFix.length > 0) {
+          console.log(`[Schema Enforcement] Ungated ${resolvedId}: adding ${missingProps.length} missing, fixing ${propsToFix.length} canonical properties (preserving custom)`);
+          const updatedProperties = database.properties.map(p => {
+            const canonical = expectedProps.find((ep: Property) => ep.id === p.id);
+            return canonical ? canonical : p; // Fix canonical, keep custom
+          });
+          // Add missing canonical properties
+          missingProps.forEach((mp: Property) => updatedProperties.push(mp));
+          useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
+        }
+      } else {
+        console.log(`[Schema Enforcement] Resetting ${resolvedId} properties to canonical schema`);
+        useDatabaseStore.getState().updateDatabase(resolvedId, { properties: expectedProps });
+      }
     }
 
     if (databaseId === 'db-expenses') {
@@ -473,7 +497,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         });
       });
     }
-  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, DEFAULT_PROPERTIES_MAP]);
+  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);
 
 
   useEffect(() => {
@@ -551,10 +575,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     <>
       {headerExtra}
 
-      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Hidden for locked schema DBs (canonical schema is enforced in DatabaseClone) */}
-      {!isLockedSchemaDB && (
+      {/* EDIT SCHEMA FIELDS GLOBAL BUTTON — Shown for non-system DBs or ungated system DBs */}
+      {(!isLockedSchemaDB || isUngated) && (
         <Link href={`/admin/settings/databases/${resolvedId}`} className="flex items-center gap-1.5 text-neutral-500 hover:text-[var(--brand-color,#d35400)] px-3 py-1 mx-2 mb-[5px] bg-neutral-100 dark:bg-white/5 hover:bg-[var(--brand-color,#d35400)]/10 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors shrink-0">
-          <Settings className="w-3.5 h-3.5" /> Edit Schema Fields
+          <Settings className="w-3.5 h-3.5" /> {isUngated ? 'Edit Custom Fields' : 'Edit Schema Fields'}
         </Link>
       )}
 
@@ -656,7 +680,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   return (
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full relative">
-        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
+        {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}

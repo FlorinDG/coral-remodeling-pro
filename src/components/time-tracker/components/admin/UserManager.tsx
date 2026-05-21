@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { Loader2, Users, Plus, Mail } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
 import { Button } from '@/components/time-tracker/components/ui/button';
@@ -39,79 +38,39 @@ export function UserManager() {
   
   // Create user form state
   const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [newFullName, setNewFullName] = useState('');
   const [creating, setCreating] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Fetch all profiles
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .order('full_name');
+    try {
+      const res = await fetch('/api/tenant/users');
+      if (!res.ok) {
+        console.error('Error fetching users:', await res.text());
+        setLoading(false);
+        return;
+      }
+      
+      const data = await res.json();
+      
+      // Map Prisma user format to UserProfile format
+      const usersWithRoles: UserProfile[] = (data.users || []).map((user: any) => ({
+        id: user.id,
+        user_id: user.id,
+        full_name: user.name || 'Unknown User',
+        hourly_rate: 0,
+        created_at: user.invitedAt || new Date().toISOString(),
+        roles: [user.role?.toLowerCase() as AppRole].filter(Boolean),
+        teams: [],
+      }));
 
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
+      setUsers(usersWithRoles);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Fetch all roles
-    const { data: roles, error: rolesError } = await supabase
-      .from('user_roles')
-      .select('user_id, role');
-
-    if (rolesError) {
-      console.error('Error fetching roles:', rolesError);
-    }
-
-    // Fetch all team memberships
-    const { data: teamMemberships, error: teamError } = await supabase
-      .from('team_members')
-      .select('user_id, team_id, role');
-
-    if (teamError) {
-      console.error('Error fetching team memberships:', teamError);
-    }
-
-    // Fetch team names
-    const teamIds = [...new Set((teamMemberships || []).map(m => m.team_id))];
-    let teamsData: { id: string; name: string }[] = [];
-    if (teamIds.length > 0) {
-      const { data: fetchedTeams } = await supabase
-        .from('teams')
-        .select('id, name')
-        .in('id', teamIds);
-      teamsData = fetchedTeams || [];
-    }
-
-    // Combine profiles with their roles and teams
-    const usersWithRoles: UserProfile[] = (profiles || []).map(profile => {
-      const userRoles = (roles || []).filter(r => r.user_id === profile.user_id);
-      const userTeamMemberships = (teamMemberships || []).filter(m => m.user_id === profile.user_id);
-      const userTeams = userTeamMemberships.map(m => {
-        const team = teamsData.find(t => t.id === m.team_id);
-        return {
-          id: m.team_id,
-          name: team?.name || 'Unknown',
-          role: m.role,
-        };
-      });
-      return {
-        id: profile.id,
-        user_id: profile.user_id,
-        full_name: profile.full_name || 'Unknown User',
-        hourly_rate: profile.hourly_rate || 0,
-        created_at: profile.created_at,
-        roles: userRoles.map(r => r.role as AppRole),
-        teams: userTeams,
-      };
-    });
-
-    setUsers(usersWithRoles);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -121,61 +80,44 @@ export function UserManager() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!newEmail || !newPassword || !newFullName) {
+    if (!newEmail || !newFullName) {
       toast.error('Please fill in all fields');
-      return;
-    }
-
-    // Strong password validation
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
-      return;
-    }
-    if (!/[A-Z]/.test(newPassword)) {
-      toast.error('Password must contain an uppercase letter');
-      return;
-    }
-    if (!/[a-z]/.test(newPassword)) {
-      toast.error('Password must contain a lowercase letter');
-      return;
-    }
-    if (!/[0-9]/.test(newPassword)) {
-      toast.error('Password must contain a number');
       return;
     }
 
     setCreating(true);
     
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          data: {
-            full_name: newFullName,
-          },
-        },
+      const res = await fetch('/api/tenant/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newEmail,
+          name: newFullName,
+          role: 'EMPLOYEE',
+        }),
       });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === 'SEAT_LIMIT_REACHED') {
+          toast.error(data.message || 'Seat limit reached. Upgrade your plan.');
+        } else if (res.status === 409) {
           toast.error('A user with this email already exists');
         } else {
-          toast.error(error.message);
+          toast.error(data.error || 'Failed to create user');
         }
         return;
       }
 
-      if (data.user) {
-        toast.success('User created successfully');
-        setNewEmail('');
-        setNewPassword('');
-        setNewFullName('');
-        setCreateDialogOpen(false);
-        
-        // Refresh the user list after a short delay
-        setTimeout(fetchUsers, 1000);
-      }
+      toast.success('User invited successfully! An invite email has been sent.');
+      setNewEmail('');
+      setNewFullName('');
+      setCreateDialogOpen(false);
+      
+      // Refresh the user list
+      setTimeout(fetchUsers, 500);
     } catch (error) {
       toast.error('Failed to create user');
     } finally {
@@ -233,7 +175,7 @@ export function UserManager() {
             </div>
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Create User
+              Invite User
             </Button>
           </div>
         </CardHeader>
@@ -256,13 +198,13 @@ export function UserManager() {
         </CardContent>
       </Card>
 
-      {/* Create User Dialog */}
+      {/* Invite User Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>Invite New User</DialogTitle>
             <DialogDescription>
-              Add a new user account to the system.
+              Send an invitation email to add a new team member.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">
@@ -289,23 +231,13 @@ export function UserManager() {
                 />
               </div>
             </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Min 8 chars, uppercase, lowercase, number"
-              />
-            </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCreateDialogOpen(false)}>
                 Cancel
               </Button>
               <Button type="submit" disabled={creating}>
                 {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Create User
+                Send Invitation
               </Button>
             </DialogFooter>
           </form>

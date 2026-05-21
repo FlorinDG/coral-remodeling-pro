@@ -5,8 +5,8 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Block, Page } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
-    Users, Layout, ArrowRight, Table, Plus, X, MessageSquare, 
-    Send, ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
+    Users, Layout, ArrowRight, Table, Plus, X,
+    ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
     CheckSquare, List, BookOpen, Globe, Notebook
 } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
@@ -32,14 +32,7 @@ interface JournalEntry {
     page: Page;
 }
 
-interface CommentItem {
-    id: string;
-    author: string;
-    text: string;
-    createdAt: string;
-}
 
-const DEFAULT_REACTIONS = { '👍': 0, '❤️': 0, '🚀': 0, '🎉': 0 };
 
 // Notion-style relative date labels
 function getDateGroupLabel(date: Date): string {
@@ -346,7 +339,6 @@ export default function JournalModulePage() {
                                                 <JournalFeedCard 
                                                     key={entry.id} 
                                                     entry={entry} 
-                                                    updatePageBlocks={updatePageBlocks}
                                                 />
                                             ))}
                                         </div>
@@ -524,13 +516,10 @@ export default function JournalModulePage() {
 // ── Notion Feed Card Component ───────────────────────────────────────────
 interface JournalFeedCardProps {
     entry: JournalEntry;
-    updatePageBlocks: (dbId: string, pageId: string, blocks: Block[]) => void;
 }
 
-function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
+function JournalFeedCard({ entry }: JournalFeedCardProps) {
     const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
-    const [isCommentOpen, setIsCommentOpen] = useState(false);
-    const [commentText, setCommentText] = useState('');
 
     const moduleColors: Record<string, { accent: string; badge: string }> = {
         projects: { accent: '#d97706', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
@@ -540,69 +529,13 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
     };
 
     const mc = moduleColors[entry.module] || moduleColors.general;
+
+    // Determine the correct href: general journal entries go to /journal/[id], others go to database record
+    const entryHref = entry.databaseId === GENERAL_DB_ID
+        ? `/admin/journal/${entry.id}` as `/${string}`
+        : `/admin/database/${entry.databaseId}/${entry.id}` as `/${string}`;
     
-    const handleReact = (emoji: string) => {
-        if (!entry.blocks.length) return;
-        const lastBlock = entry.blocks[entry.blocks.length - 1];
-        const nextBlocks = entry.blocks.map(b => {
-            if (b.id !== lastBlock.id) return b;
-            const props = b.properties || {};
-            const reactions = { ...(props.reactions || {}) };
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
-            return { ...b, properties: { ...props, reactions } };
-        });
-        updatePageBlocks(entry.databaseId, entry.id, nextBlocks);
-    };
 
-    // Aggregate reactions dynamically
-    const aggregatedReactions = { ...DEFAULT_REACTIONS } as Record<string, number>;
-    entry.blocks.forEach(b => {
-        const rx = b.properties?.reactions as Record<string, number> | undefined;
-        if (rx) {
-            Object.keys(rx).forEach(key => {
-                aggregatedReactions[key] = (aggregatedReactions[key] || 0) + (rx[key] || 0);
-            });
-        }
-    });
-
-    const handleAddComment = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!commentText.trim() || !entry.blocks.length) return;
-
-        const lastBlock = entry.blocks[entry.blocks.length - 1];
-        const nextBlocks = entry.blocks.map(b => {
-            if (b.id !== lastBlock.id) return b;
-            const props = b.properties || {};
-            const comments = props.comments || [];
-            const newComment = {
-                id: uuidv4(),
-                author: 'Me',
-                text: commentText,
-                createdAt: new Date().toISOString()
-            };
-            return { ...b, properties: { ...props, comments: [...comments, newComment] } };
-        });
-
-        updatePageBlocks(entry.databaseId, entry.id, nextBlocks);
-        setCommentText('');
-    };
-
-    // Extract comments dynamically
-    const allComments: { id: string; author: string; text: string; createdAt: Date }[] = [];
-    entry.blocks.forEach(b => {
-        const comments = b.properties?.comments as CommentItem[] | undefined;
-        if (comments) {
-            comments.forEach(c => {
-                allComments.push({
-                    id: c.id,
-                    author: c.author,
-                    text: c.text,
-                    createdAt: new Date(c.createdAt)
-                });
-            });
-        }
-    });
-    allComments.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     return (
         <div 
@@ -633,10 +566,12 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
                     </div>
                 </div>
 
-                {/* Title */}
-                <h2 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white uppercase mb-3 hover:text-orange-500 transition-colors">
-                    {entry.title}
-                </h2>
+                {/* Title — clickable to open */}
+                <Link href={entryHref}>
+                    <h2 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white uppercase mb-3 hover:text-orange-500 transition-colors cursor-pointer">
+                        {entry.title}
+                    </h2>
+                </Link>
 
                 {/* Collapsible Properties */}
                 <div className="mb-3 border-t border-b border-neutral-100 dark:border-white/5 py-1.5">
@@ -714,82 +649,7 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
                     })}
                 </div>
 
-                {/* Reactions & Actions */}
-                <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-white/5">
-                    <div className="flex items-center gap-1.5">
-                        {Object.keys(DEFAULT_REACTIONS).map(emoji => {
-                            const count = aggregatedReactions[emoji] || 0;
-                            return (
-                                <button
-                                    key={emoji}
-                                    onClick={() => handleReact(emoji)}
-                                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border transition-all text-xs ${
-                                        count > 0 
-                                            ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-400 text-orange-600' 
-                                            : 'border-neutral-200 dark:border-white/10 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5'
-                                    }`}
-                                >
-                                    <span>{emoji}</span>
-                                    {count > 0 && <span className="font-bold text-[10px]">{count}</span>}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setIsCommentOpen(!isCommentOpen)}
-                            className="flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-orange-500 transition-colors py-1 px-2.5 rounded-xl hover:bg-neutral-50 dark:hover:bg-white/5 font-bold uppercase tracking-wider"
-                        >
-                            <MessageSquare className="w-3.5 h-3.5" /> 
-                            {allComments.length > 0 ? `${allComments.length}` : 'Comment'}
-                        </button>
-
-                        <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}` as `/${string}`}>
-                            <Button variant="ghost" size="sm" className="gap-1.5 text-orange-500 hover:text-orange-600 hover:bg-orange-50 font-bold uppercase tracking-widest text-[10px] rounded-xl">
-                                Open <ArrowRight className="w-3 h-3" />
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
             </div>
-
-            {/* Comment drawer */}
-            {isCommentOpen && (
-                <div className="bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-white/5 p-5 space-y-3">
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                        {allComments.map(c => (
-                            <div key={c.id} className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-neutral-100 dark:border-white/5">
-                                <div className="flex items-center justify-between text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
-                                    <span className="text-neutral-800 dark:text-neutral-300 font-black">{c.author}</span>
-                                    <span>{formatDistanceToNow(c.createdAt, { addSuffix: true, locale: nl })}</span>
-                                </div>
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400">{c.text}</p>
-                            </div>
-                        ))}
-                        {allComments.length === 0 && (
-                            <p className="text-xs text-neutral-400 text-center py-3 italic">No comments yet.</p>
-                        )}
-                    </div>
-
-                    <form onSubmit={handleAddComment} className="flex gap-2">
-                        <input
-                            type="text"
-                            placeholder="Add a comment..."
-                            value={commentText}
-                            onChange={(e) => setCommentText(e.target.value)}
-                            className="flex-1 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs outline-none focus:ring-2 focus:ring-orange-500/20"
-                            required
-                        />
-                        <button
-                            type="submit"
-                            className="bg-orange-500 hover:bg-orange-600 text-white p-2 rounded-xl transition-colors"
-                        >
-                            <Send className="w-3.5 h-3.5" />
-                        </button>
-                    </form>
-                </div>
-            )}
         </div>
     );
 }
@@ -831,7 +691,11 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
                                     </span>
                                 </td>
                                 <td className="px-5 py-3.5 text-right">
-                                    <Link href={`/admin/database/${entry.databaseId}/page/${entry.id}` as `/${string}`}>
+                                    <Link href={
+                                        entry.databaseId === GENERAL_DB_ID
+                                            ? `/admin/journal/${entry.id}` as `/${string}`
+                                            : `/admin/database/${entry.databaseId}/${entry.id}` as `/${string}`
+                                    }>
                                         <button className="text-xs font-black text-orange-500 hover:text-orange-600 uppercase tracking-wider text-[10px] hover:underline">
                                             Open
                                         </button>

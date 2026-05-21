@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
 import { isSystemDatabase } from '@/lib/systemDatabases';
+import { useSession } from 'next-auth/react';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'text', label: 'Text', icon: Type },
@@ -44,12 +45,31 @@ export default function DatabaseConfigurator() {
     const deleteProperty = useDatabaseStore(state => state.deleteProperty);
     const addProperty = useDatabaseStore(state => state.addProperty);
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
+    const toggleSchemaUngating = useDatabaseStore(state => state.toggleSchemaUngating);
+    const { data: session } = useSession();
+    const isSuperadmin = session?.user?.role === 'SUPERADMIN' || session?.user?.role === 'TENANT_MANAGER' || (session?.user as any)?.isImpersonating;
     
     const [newPropName, setNewPropName] = useState('');
     const [formulaEditingProp, setFormulaEditingProp] = useState<any>(null);
 
     // System database schemas are immutable for all users (core platform functionality).
     const isSchemaLocked = isSystemDatabase(databaseId);
+    const isUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
+
+    // In ungated mode: system properties are those originally defined in the canonical schema.
+    // We detect them by checking if they appear before any custom property was added.
+    // For simplicity: if the DB is system & ungated, all properties known to DEFAULT_PROPERTIES_MAP
+    // in DatabaseClone are "canonical". We approximate by storing canonical IDs at first access.
+    const canonicalPropertyIds = useDatabaseStore(state => {
+        if (!isSchemaLocked || !isUngated) return new Set<string>();
+        // All property IDs that are NOT uuid-formatted (user-generated via addProperty) are canonical
+        // This works because addProperty generates uuid v4 IDs, while system properties use
+        // readable IDs like 'title', 'status', 'prop-inv-amount', etc.
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        const db = state.databases.find(d => d.id === databaseId);
+        if (!db) return new Set<string>();
+        return new Set(db.properties.filter(p => !uuidPattern.test(p.id)).map(p => p.id));
+    });
 
     if (!database) {
         return (
@@ -89,15 +109,36 @@ export default function DatabaseConfigurator() {
                         </div>
                         <p className="text-sm text-neutral-500">Configure columns, strict types, and logic for this database.</p>
                     </div>
-                    {isSchemaLocked && (
+                    {isSchemaLocked && !isUngated && (
                         <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/30 rounded-lg">
                             <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             <span className="text-xs font-bold text-amber-700 dark:text-amber-300">System Schema — Columns are managed by the platform</span>
                         </div>
                     )}
+                    {isSchemaLocked && isUngated && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-700/30 rounded-lg">
+                            <Settings2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Ungated — Add custom properties (system fields are locked)</span>
+                        </div>
+                    )}
+
+                    {/* Superadmin ungating toggle */}
+                    {isSchemaLocked && isSuperadmin && (
+                        <button
+                            onClick={() => toggleSchemaUngating(databaseId)}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                isUngated
+                                    ? 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600'
+                                    : 'bg-neutral-100 dark:bg-white/5 border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:border-orange-400'
+                            }`}
+                        >
+                            <Settings2 className="w-3.5 h-3.5" />
+                            {isUngated ? 'Schema Ungated' : 'Ungate Schema'}
+                        </button>
+                    )}
                 </div>
                 
-                {!isSchemaLocked && (
+                {(!isSchemaLocked || isUngated) && (
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2 bg-neutral-100 dark:bg-white/5 p-1 rounded-xl border border-neutral-200 dark:border-white/5">
                             <input
@@ -138,6 +179,8 @@ export default function DatabaseConfigurator() {
                                     <tbody {...provided.droppableProps} ref={provided.innerRef}>
                                         {database.properties.map((prop, index) => {
                                             const isTitle = prop.id === 'title';
+                                            const isCanonical = canonicalPropertyIds.has(prop.id);
+                                            const isLocked = isSchemaLocked && !isUngated ? true : (isUngated && isCanonical);
                                             const propType = PROPERTY_TYPES.find(t => t.id === prop.type) || PROPERTY_TYPES[0];
                                             const Icon = propType.icon;
 
@@ -170,11 +213,12 @@ export default function DatabaseConfigurator() {
                                                                         <div className="flex items-center gap-2">
                                                                             <input
                                                                                 value={prop.name}
-                                                                                readOnly={isSchemaLocked}
+                                                                                readOnly={isLocked}
                                                                                 onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
-                                                                                className={`bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full ${isSchemaLocked ? 'cursor-default' : 'hover:border-neutral-300 focus:border-orange-500'}`}
+                                                                                className={`bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full ${isLocked ? 'cursor-default' : 'hover:border-neutral-300 focus:border-orange-500'}`}
                                                                             />
                                                                             {isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
+                                                                            {isCanonical && !isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-white/5 dark:text-neutral-400 font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> System</span>}
                                                                         </div>
                                                                         <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
                                                                     </div>
@@ -183,9 +227,9 @@ export default function DatabaseConfigurator() {
                                                             <td className="px-2 py-1.5 align-middle w-[180px]">
                                                                 <select
                                                                     value={prop.type}
-                                                                    disabled={isTitle || isSchemaLocked}
+                                                                    disabled={isTitle || isLocked}
                                                                     onChange={(e) => updateProperty(databaseId, prop.id, { type: e.target.value as PropertyType })}
-                                                                    className={`w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs font-medium outline-none focus:bg-white dark:focus:bg-black transition-all ${isSchemaLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                                    className={`w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs font-medium outline-none focus:bg-white dark:focus:bg-black transition-all ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                                 >
                                                                     {PROPERTY_TYPES.map(t => (
                                                                         <option key={t.id} value={t.id}>{t.label}</option>
@@ -201,7 +245,7 @@ export default function DatabaseConfigurator() {
                                                                             {prop.config?.options?.map(opt => (
                                                                                 <div key={opt.id} className="flex items-center gap-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 px-1.5 py-0.5 rounded text-[10px]">
                                                                                     <span>{opt.name}</span>
-                                                                                    {!isSchemaLocked && (
+                                                                                    {!isLocked && (
                                                                                         <button
                                                                                             onClick={() => updateProperty(databaseId, prop.id, { config: { ...prop.config, options: prop.config?.options?.filter(o => o.id !== opt.id) || [] } })}
                                                                                             className="text-neutral-400 hover:text-red-500 transition-colors"
@@ -211,7 +255,7 @@ export default function DatabaseConfigurator() {
                                                                                     )}
                                                                                 </div>
                                                                             ))}
-                                                                            {!isSchemaLocked && (
+                                                                            {!isLocked && (
                                                                                 <button
                                                                                     onClick={() => {
                                                                                         const name = prompt('New option name:');
@@ -329,7 +373,7 @@ export default function DatabaseConfigurator() {
                                                                 </div>
                                                             </td>
                                                             <td className="w-10 px-2 py-1.5 align-middle text-right">
-                                                                {!isTitle && !isSchemaLocked && (
+                                                                {!isTitle && !isLocked && (
                                                                     <button
                                                                         onClick={() => { if (window.confirm(`Delete property "${prop.name}"?`)) deleteProperty(databaseId, prop.id); }}
                                                                         className="p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"

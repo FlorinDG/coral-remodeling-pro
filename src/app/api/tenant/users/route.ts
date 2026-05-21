@@ -138,8 +138,12 @@ export async function POST(req: Request) {
             },
         });
 
-        // Send invite email with tenant branding
-        const inviteUrl = `${process.env.NEXTAUTH_URL || 'https://app.coral-group.be'}/accept-invite?token=${inviteToken}`;
+        // Workforce users get invited to the WorkHub domain; all others to the ERP domain
+        const isWorkforceInvite = role === 'TENANT_ENTERPRISE_WORKFORCE';
+        const baseUrl = isWorkforceInvite
+            ? (process.env.WORKHUB_URL || 'https://work.coral-group.be')
+            : (process.env.NEXTAUTH_URL || 'https://app.coral-group.be');
+        const inviteUrl = `${baseUrl}/accept-invite?token=${inviteToken}`;
         
         const inviterName = session?.user?.name || 'A team member';
         const brandCompany = tenant?.commercialName || tenant?.companyName || 'CoralOS';
@@ -148,13 +152,16 @@ export async function POST(req: Request) {
             await resend.emails.send({
                 from: `${brandCompany} <noreply@coral-group.be>`,
                 to: [email],
-                subject: `Invitation to join ${brandCompany} on CoralOS`,
+                subject: isWorkforceInvite
+                    ? `Join ${brandCompany} on WorkHub`
+                    : `Invitation to join ${brandCompany} on CoralOS`,
                 react: React.createElement(InvitationEmail, {
                     inviterName,
                     companyName: brandCompany,
                     logoUrl: tenant?.logoUrl || undefined,
                     brandColor: tenant?.brandColor || '#d35400',
                     acceptUrl: inviteUrl,
+                    isWorkforce: isWorkforceInvite,
                 }),
             }).catch(err => console.error(`[Invite Email] Failed to send to ${email}:`, err));
         }

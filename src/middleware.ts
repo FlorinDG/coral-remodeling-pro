@@ -142,7 +142,7 @@ export default async function middleware(req: NextRequest) {
         const locale = resolveLocale(req);
 
         const isLoginPage = pathname.includes('/login');
-        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy');
+        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite');
 
         // Redirect to login if not authenticated
         if (!isLoggedIn && !isLoginPage && !isPublicPage) {
@@ -184,7 +184,7 @@ export default async function middleware(req: NextRequest) {
         const role       = token?.role;
 
         const isLoginPage  = pathname.includes('/login');
-        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy');
+        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite');
 
         // Virtualise path for auth checks
         const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin') && !pathname.startsWith('/workhub')
@@ -283,7 +283,7 @@ export default async function middleware(req: NextRequest) {
 
         // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
         const locale = pendingLocaleCookie || resolveLocale(req);
-        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'workhub', '_next', 'api'];
+        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'accept-invite', 'workhub', '_next', 'api'];
         // Strip any accidental locale prefix (e.g. /fr/admin/… → /admin/…)
         // next-intl's router.replace may inject the prefix despite localePrefix:'never'
         const strippedPath = hasLocalePrefix(pathname)

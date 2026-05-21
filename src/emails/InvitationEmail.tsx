@@ -18,6 +18,7 @@ interface InvitationEmailProps {
     logoUrl?: string;
     brandColor?: string;
     acceptUrl: string;
+    isWorkforce?: boolean;
 }
 
 export const InvitationEmail = ({
@@ -26,6 +27,7 @@ export const InvitationEmail = ({
     logoUrl,
     brandColor = "#d35400",
     acceptUrl = "https://app.coral-group.be",
+    isWorkforce = false,
 }: InvitationEmailProps) => {
     return (
         <Html>
@@ -46,8 +48,10 @@ export const InvitationEmail = ({
                     </Text>
                     
                     <Text style={text}>
-                        <strong>{inviterName}</strong> has invited you to join the <strong>{companyName}</strong> team on CoralOS.
-                        CoralOS is your central hub for managing projects, invoices, and client relations.
+                        <strong>{inviterName}</strong> has invited you to join the <strong>{companyName}</strong> team{isWorkforce ? ' on WorkHub' : ' on CoralOS'}.
+                        {isWorkforce
+                            ? ' WorkHub is your app for clocking in, viewing your schedule, and managing tasks on the go.'
+                            : ' CoralOS is your central hub for managing projects, invoices, and client relations.'}
                     </Text>
                     
                     <Section style={buttonContainer}>

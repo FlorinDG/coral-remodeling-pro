@@ -55,6 +55,7 @@ export async function POST(req: Request) {
             success: true,
             message: 'Invite accepted. You can now log in.',
             email: user.email,
+            role: user.role,
         });
     } catch (error: unknown) {
         console.error('[Accept Invite] Error:', error);

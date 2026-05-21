@@ -53,8 +53,8 @@ export default function CalendarSettingsPage() {
             <div className="flex-1 overflow-y-auto p-6 pb-16 bg-neutral-50/50 dark:bg-[#0a0a0a]">
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center">
-                            <CalendarDays className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center">
+                            <CalendarDays className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div>
                             <h1 className="text-xl font-bold text-neutral-900 dark:text-white">Calendar Settings</h1>

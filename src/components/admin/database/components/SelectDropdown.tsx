@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Search } from 'lucide-react';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import { SelectOption } from '../types';
 
@@ -29,6 +29,12 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
 
     const selected = options.find(o => o.id === value);
     const styles = selected ? (COLOR_STYLES[selected.color] || COLOR_STYLES.gray) : null;
+    const [searchQuery, setSearchQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const filteredOptions = searchQuery.trim()
+        ? options.filter(o => o.name.toLowerCase().includes(searchQuery.toLowerCase()))
+        : options;
 
     useLayoutEffect(() => {
         if (isOpen && triggerRef.current) {
@@ -72,7 +78,16 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
     const handleSelect = (optId: string | null) => {
         onChange(optId);
         setIsOpen(false);
+        setSearchQuery('');
     };
+
+    // Auto-focus search when dropdown opens
+    useEffect(() => {
+        if (isOpen && searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+        if (!isOpen) setSearchQuery('');
+    }, [isOpen]);
 
     return (
         <>
@@ -101,6 +116,24 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                     style={{ top: pos.top, left: pos.left, minWidth: pos.minWidth }}
                     onMouseDown={e => e.preventDefault()}
                 >
+                    {/* Search input for long lists */}
+                    {options.length > 6 && (
+                        <div className="px-2 pb-1.5 pt-0.5">
+                            <div className="relative">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400" />
+                                <input
+                                    ref={searchInputRef}
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search..."
+                                    className="w-full pl-7 pr-2 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-400 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        </div>
+                    )}
+
                     {/* Empty / clear option */}
                     <button
                         className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
@@ -116,11 +149,12 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                         <span className="text-xs text-neutral-400 italic font-medium">Empty</span>
                     </button>
 
-                    {options.length > 0 && (
+                    {filteredOptions.length > 0 && (
                         <div className="h-px bg-neutral-100 dark:bg-neutral-800 mx-2 my-0.5" />
                     )}
 
-                    {options.map(choice => {
+                    <div className={options.length > 6 ? 'max-h-48 overflow-y-auto' : ''}>
+                    {filteredOptions.map(choice => {
                         const c = COLOR_STYLES[choice.color] || COLOR_STYLES.gray;
                         const isSelected = choice.id === value;
                         return (
@@ -143,6 +177,11 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                             </button>
                         );
                     })}
+                    </div>
+
+                    {filteredOptions.length === 0 && searchQuery && (
+                        <div className="px-3 py-3 text-center text-xs text-neutral-400 italic">No options match &ldquo;{searchQuery}&rdquo;</div>
+                    )}
                 </div>,
                 document.body
             )}

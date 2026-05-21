@@ -131,7 +131,7 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
                                                         {isHidden ? (
                                                             <EyeOff size={16} className="text-neutral-400 dark:text-neutral-500" />
                                                         ) : (
-                                                            <Eye size={16} className="text-blue-500 dark:text-blue-400" />
+                                                            <Eye size={16} className="text-orange-500 dark:text-orange-400" />
                                                         )}
                                                     </button>
                                                 </div>

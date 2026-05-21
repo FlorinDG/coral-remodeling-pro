@@ -309,7 +309,7 @@ export default function TeamSettingsPage() {
                                                                 value={resetPassword}
                                                                 onChange={(e) => setResetPassword(e.target.value)}
                                                                 placeholder="New password"
-                                                                className="w-28 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-500"
+                                                                className="w-28 bg-neutral-50 dark:bg-neutral-800 border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-orange-500"
                                                             />
                                                             <button type="button" onClick={() => setResetShowPw(!resetShowPw)} className="absolute right-1 top-1 text-neutral-400">
                                                                 {resetShowPw ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -340,7 +340,7 @@ export default function TeamSettingsPage() {
                                                                     setResetLoading(false);
                                                                 }
                                                             }}
-                                                            className="p-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                                            className="p-1 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors"
                                                             title="Confirm reset"
                                                         >
                                                             {resetLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
@@ -356,7 +356,7 @@ export default function TeamSettingsPage() {
                                                 ) : (
                                                     <button
                                                         onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetShowPw(false); }}
-                                                        className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-neutral-400 hover:text-blue-600 transition-colors"
+                                                        className="p-2 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-500/10 text-neutral-400 hover:text-orange-600 transition-colors"
                                                         title="Reset password"
                                                     >
                                                         <KeyRound className="w-4 h-4" />

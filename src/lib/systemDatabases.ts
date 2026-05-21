@@ -23,6 +23,8 @@ export const SYSTEM_DB_PREFIXES = [
     'db-tasks',   // Project Tasks
     'db-crm',     // Main Pipeline
     'db-bobex',   // Bobex Pipeline
+    'db-articles', // Material Articles
+    'db-bestek',   // Pricebook (Bestek)
 ] as const;
 
 /**

@@ -15,7 +15,7 @@ const PLAN_MRR: Record<string, number> = {
 
 const PLAN_BADGE: Record<string, string> = {
     FREE:       "bg-neutral-100 text-neutral-600",
-    PRO:        "bg-blue-100 text-blue-700",
+    PRO:        "bg-orange-100 text-orange-700",
     ENTERPRISE: "bg-violet-100 text-violet-700",
     FOUNDER:    "bg-amber-100 text-amber-700",
     CUSTOM:     "bg-pink-100 text-pink-700",
@@ -23,7 +23,7 @@ const PLAN_BADGE: Record<string, string> = {
 
 const STATUS_ICON: Record<string, React.ReactNode> = {
     ACTIVE:    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />,
-    TRIAL:     <Clock        className="w-3.5 h-3.5 text-blue-500"    />,
+    TRIAL:     <Clock        className="w-3.5 h-3.5 text-orange-500"    />,
     INACTIVE:  <AlertCircle  className="w-3.5 h-3.5 text-yellow-500"  />,
     CANCELLED: <XCircle      className="w-3.5 h-3.5 text-red-500"     />,
 };
@@ -82,7 +82,7 @@ export default async function SuperadminBillingPage() {
                 {[
                     { label: "Est. MRR",       value: `€${mrr}`,          sub: `€${arr} ARR`,       icon: TrendingUp,   color: "text-emerald-500" },
                     { label: "Active",          value: active.length,      sub: "paying tenants",    icon: CheckCircle2, color: "text-emerald-500" },
-                    { label: "Trials",          value: trial.length,       sub: "converting soon",   icon: Clock,        color: "text-blue-500"    },
+                    { label: "Trials",          value: trial.length,       sub: "converting soon",   icon: Clock,        color: "text-orange-500"    },
                     { label: "Churned",         value: cancelled.length,   sub: "cancelled",         icon: XCircle,      color: "text-red-400"     },
                 ].map(({ label, value, sub, icon: Icon, color }) => (
                     <div key={label} className="bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-5 py-4">

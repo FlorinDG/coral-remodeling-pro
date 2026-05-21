@@ -517,31 +517,31 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             {backlinks.length > 0 && (
                 <div className="flex flex-col mt-2">
                     <h3 className="text-[10px] font-extrabold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-1.5 flex items-center gap-1.5">
-                        <Link2 className="w-3.5 h-3.5 opacity-60 text-blue-500" />
+                        <Link2 className="w-3.5 h-3.5 opacity-60 text-orange-500" />
                         Backlinks
-                        <span className="text-[9px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-bold">{backlinks.length}</span>
+                        <span className="text-[9px] bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full font-bold">{backlinks.length}</span>
                     </h3>
                     <div className="space-y-1">
                         {backlinks.map((bl) => (
                             <div
                                 key={`${bl.db.id}-${bl.page.id}`}
-                                className="w-full flex items-center justify-between p-2 hover:bg-blue-50/50 dark:hover:bg-blue-950/10 border border-neutral-100 dark:border-white/5 hover:border-blue-200 dark:hover:border-blue-800/30 rounded-xl transition-all group"
+                                className="w-full flex items-center justify-between p-2 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 border border-neutral-100 dark:border-white/5 hover:border-orange-200 dark:hover:border-orange-800/30 rounded-xl transition-all group"
                             >
                                 <button
                                     onClick={() => router.push(`/${locale}/admin/database/${bl.db.id}/${bl.page.id}`)}
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                 >
-                                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-blue-500 transition-colors truncate">
+                                    <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
                                         {String(bl.page.properties['title'] || bl.page.properties['name'] || 'Untitled')}
                                     </span>
-                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/20 text-blue-500 rounded uppercase tracking-wider shrink-0">
+                                    <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-orange-50 dark:bg-orange-950/20 text-orange-500 rounded uppercase tracking-wider shrink-0">
                                         {bl.db.name}
                                     </span>
                                 </button>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
                                         onClick={() => router.push(`/${locale}/admin/database/${bl.db.id}/${bl.page.id}`)}
-                                        className="p-1 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-colors"
+                                        className="p-1 text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg transition-colors"
                                         title="View"
                                     >
                                         <ExternalLink className="w-3.5 h-3.5" />

@@ -116,7 +116,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
             <DialogContent className="sm:max-w-[500px] border-none bg-white dark:bg-[#0a0a0a] text-black dark:text-white shadow-2xl p-0">
                 <DialogHeader className="p-6 pb-4 border-b border-neutral-100 dark:border-white/10">
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                        {isEdit ? <AlertTriangle className="w-5 h-5 text-orange-500" /> : <Save className="w-5 h-5 text-blue-500" />}
+                        {isEdit ? <AlertTriangle className="w-5 h-5 text-orange-500" /> : <Save className="w-5 h-5 text-orange-500" />}
                         {isEdit ? 'Update Global Article' : 'Save New Article'}
                     </DialogTitle>
                     <DialogDescription className="text-sm text-neutral-500 mt-1">
@@ -179,7 +179,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
                         disabled={isSaving}
                         className={`text-sm font-bold flex items-center gap-2 py-2 px-5 rounded-lg transition-colors ${isEdit
                                 ? 'bg-orange-600 hover:bg-orange-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-orange-600 hover:bg-orange-700 text-white'
                             }`}
                     >
                         {isSaving ? (

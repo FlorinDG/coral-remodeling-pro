@@ -154,7 +154,7 @@ export default function FAQPage() {
                 <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8"><Logo /></div>
-                        <span className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">CoralOS</span>
+                        <span className="text-lg font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">CoralOS</span>
                     </div>
                     <Link href="/login" className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors">
                         <ArrowLeft className="w-4 h-4" />
@@ -165,7 +165,7 @@ export default function FAQPage() {
 
             <main className="max-w-4xl mx-auto px-6 py-12">
                 <div className="flex items-center gap-3 mb-2">
-                    <HelpCircle className="w-7 h-7 text-blue-600" />
+                    <HelpCircle className="w-7 h-7 text-orange-600" />
                     <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Frequently Asked Questions</h1>
                 </div>
                 <p className="text-sm text-neutral-500 mb-10">Everything you need to know about CoralOS</p>
@@ -188,7 +188,7 @@ export default function FAQPage() {
                     <p className="text-sm text-neutral-500 mb-4">Our team is ready to help.</p>
                     <a
                         href="mailto:support@coral-group.be"
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors text-sm shadow-lg shadow-blue-600/20"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors text-sm shadow-lg shadow-orange-600/20"
                     >
                         Contact Support
                     </a>

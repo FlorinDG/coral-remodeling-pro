@@ -169,7 +169,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
 
             {/* Resize Handle overlaying the right border edge */}
             <div
-                className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-500 hover:opacity-100 opacity-0 z-10 transition-colors ${isResizing ? 'bg-blue-500 opacity-100' : ''}`}
+                className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-orange-500 hover:opacity-100 opacity-0 z-10 transition-colors ${isResizing ? 'bg-orange-500 opacity-100' : ''}`}
                 onPointerDown={handleResizeStart}
             />
 
@@ -179,7 +179,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
                         <div className="p-1 px-2">
                             <input
                                 autoFocus
-                                className="w-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 text-sm outline-none focus:border-blue-500"
+                                className="w-full bg-neutral-100 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 rounded px-2 py-1 text-sm outline-none focus:border-orange-500"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleRename()}

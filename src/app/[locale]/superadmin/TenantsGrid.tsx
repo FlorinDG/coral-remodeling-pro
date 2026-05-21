@@ -40,7 +40,7 @@ const PLAN_USER_LIMITS: Record<string, number | null> = {
 
 const PLAN_BADGE: Record<string, string> = {
     FREE:       "bg-neutral-100 text-neutral-600 dark:bg-white/10 dark:text-neutral-300",
-    PRO:        "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    PRO:        "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
     ENTERPRISE: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
     FOUNDER:    "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
     CUSTOM:     "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
@@ -48,7 +48,7 @@ const PLAN_BADGE: Record<string, string> = {
 
 const STATUS_BADGE: Record<string, string> = {
     ACTIVE:    "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
-    TRIAL:     "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400",
+    TRIAL:     "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400",
     PAST_DUE:  "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
     INACTIVE:  "bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-400",
     CANCELLED: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
@@ -127,7 +127,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
             {/* ── Stats bar ────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {([
-                    { label: "Total",   value: total,   icon: Building2,  cls: "text-blue-500"   },
+                    { label: "Total",   value: total,   icon: Building2,  cls: "text-orange-500"   },
                     { label: "Active",  value: active,  icon: Activity,   cls: "text-emerald-500" },
                     { label: "Founders",value: founders, icon: Zap,       cls: "text-amber-500"  },
                     { label: "Cap left",value: capLeft, icon: Users,
@@ -394,7 +394,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                                                         value={resetPassword}
                                                                                         onChange={(e) => setResetPassword(e.target.value)}
                                                                                         placeholder="New password"
-                                                                                        className="w-28 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-blue-500"
+                                                                                        className="w-28 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-white/20 rounded-lg px-2 py-1 text-[11px] outline-none focus:border-orange-500"
                                                                                     />
                                                                                     <button type="button" onClick={() => setResetShowPw(!resetShowPw)} className="absolute right-1 top-1 text-neutral-400">
                                                                                         {resetShowPw ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
@@ -425,7 +425,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                                                             setResetLoading(false);
                                                                                         }
                                                                                     }}
-                                                                                    className="p-1 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                                                                                    className="p-1 rounded bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 transition-colors"
                                                                                     title="Confirm reset"
                                                                                 >
                                                                                     {resetLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
@@ -441,7 +441,7 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                                         ) : (
                                                                             <button
                                                                                 onClick={() => { setResetUserId(u.id); setResetPassword(''); setResetShowPw(false); }}
-                                                                                className="shrink-0 p-1 rounded text-neutral-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all"
+                                                                                className="shrink-0 p-1 rounded text-neutral-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-all"
                                                                                 title="Reset password"
                                                                             >
                                                                                 <KeyRound className="w-3 h-3" />

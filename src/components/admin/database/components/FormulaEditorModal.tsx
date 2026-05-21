@@ -77,7 +77,7 @@ function HighlightedFormula({ expression, properties }: { expression: string; pr
             if (fnMatch) {
                 const isKnown = FORMULA_FUNCTIONS.some(f => f.name === fnMatch[1]);
                 result.push(
-                    <span key={keyIdx++} className={isKnown ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-red-500'}>
+                    <span key={keyIdx++} className={isKnown ? 'text-orange-600 dark:text-orange-400 font-semibold' : 'text-red-500'}>
                         {fnMatch[1]}
                     </span>
                 );
@@ -257,7 +257,7 @@ export default function FormulaEditorModal({
                 {/* Editor zone */}
                 <div className="px-6 py-4 border-b border-neutral-100 dark:border-white/5">
                     {/* Expression input */}
-                    <div className="relative border border-blue-300 dark:border-blue-500/40 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-blue-200 dark:focus-within:ring-blue-500/20 transition-shadow">
+                    <div className="relative border border-orange-300 dark:border-orange-500/40 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-orange-200 dark:focus-within:ring-orange-500/20 transition-shadow">
                         <div className="absolute inset-0 p-4 text-sm font-mono pointer-events-none whitespace-pre-wrap break-words overflow-hidden text-neutral-800 dark:text-neutral-200" aria-hidden="true">
                             <HighlightedFormula expression={expression} properties={properties} />
                         </div>
@@ -329,7 +329,7 @@ export default function FormulaEditorModal({
                                     value={search}
                                     onChange={e => setSearch(e.target.value)}
                                     placeholder="Search functions..."
-                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-blue-400 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-400 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
                                 />
                             </div>
                         </div>
@@ -356,13 +356,13 @@ export default function FormulaEditorModal({
                                                     onMouseLeave={() => setHoveredFunction(null)}
                                                     className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm transition-colors ${
                                                         isActive
-                                                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                                                            ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300'
                                                             : 'hover:bg-neutral-100 dark:hover:bg-white/5 text-neutral-700 dark:text-neutral-300'
                                                     }`}
                                                 >
                                                     <span className="text-neutral-400 dark:text-neutral-500 text-xs font-mono">#</span>
                                                     <span className="font-mono text-xs">{fn.name}()</span>
-                                                    {isActive && <ChevronRight className="w-3 h-3 ml-auto text-blue-500" />}
+                                                    {isActive && <ChevronRight className="w-3 h-3 ml-auto text-orange-500" />}
                                                 </button>
                                             );
                                         })}
@@ -434,7 +434,7 @@ export default function FormulaEditorModal({
                     <button
                         onClick={handleSave}
                         disabled={!expression.trim()}
-                        className="px-5 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        className="px-5 py-2 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
                         Save Formula
                     </button>

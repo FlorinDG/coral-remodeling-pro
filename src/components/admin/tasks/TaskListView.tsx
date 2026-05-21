@@ -70,9 +70,9 @@ export function TaskListView({
 
                         // High contrast border/bg coloring based on section
                         const sectionColors: Record<string, { bg: string; text: string; dot: string }> = {
-                            'sec-planning':  { bg: 'bg-blue-100/70 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/50', text: 'text-blue-900 dark:text-blue-300', dot: 'bg-blue-600' },
+                            'sec-planning':  { bg: 'bg-amber-100/70 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/50', text: 'text-amber-900 dark:text-amber-300', dot: 'bg-amber-600' },
                             'sec-execution': { bg: 'bg-orange-100/70 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800/50', text: 'text-orange-900 dark:text-orange-300', dot: 'bg-orange-600' },
-                            'sec-review':    { bg: 'bg-purple-100/70 dark:bg-purple-900/20 border-b border-purple-200 dark:border-purple-800/50', text: 'text-purple-900 dark:text-purple-300', dot: 'bg-purple-600' },
+                            'sec-review':    { bg: 'bg-emerald-100/70 dark:bg-emerald-900/20 border-b border-emerald-200 dark:border-emerald-800/50', text: 'text-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-600' },
                             'sec-admin':     { bg: 'bg-neutral-100 dark:bg-neutral-800/40 border-b border-neutral-200 dark:border-neutral-700/50', text: 'text-neutral-900 dark:text-neutral-200', dot: 'bg-neutral-600' },
                         };
 

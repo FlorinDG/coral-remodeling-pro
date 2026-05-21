@@ -292,7 +292,7 @@ function PropertyRow({
                 {strVal && (
                     <a
                         href={`mailto:${strVal}`}
-                        className="flex-shrink-0 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                        className="flex-shrink-0 p-1 rounded hover:bg-orange-100 dark:hover:bg-orange-900/30 text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"
                         title={`Send email to ${strVal}`}
                     >
                         <Mail className="w-3.5 h-3.5" />
@@ -345,7 +345,7 @@ function PropertyRow({
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-shrink-0 p-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                        className="flex-shrink-0 p-1 rounded hover:bg-orange-100 dark:hover:bg-orange-900/30 text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"
                         title={`Open ${strVal}`}
                     >
                         <ExternalLink className="w-3.5 h-3.5" />

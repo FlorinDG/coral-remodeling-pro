@@ -181,7 +181,7 @@ export default function DatabaseFooter({
                                         <DropdownMenuItem
                                             key={opt}
                                             onClick={() => setSummaryForProp(prop.id, opt)}
-                                            className={`cursor-pointer text-xs ${currentType === opt ? 'font-bold text-blue-600' : ''}`}
+                                            className={`cursor-pointer text-xs ${currentType === opt ? 'font-bold text-orange-600' : ''}`}
                                         >
                                             {SUMMARY_LABELS[opt]}
                                         </DropdownMenuItem>

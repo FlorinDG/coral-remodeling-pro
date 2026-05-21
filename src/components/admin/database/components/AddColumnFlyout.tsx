@@ -120,7 +120,7 @@ export default function AddColumnFlyout({ anchorRef, isOpen, onClose, onAdd }: A
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Filter property type..."
-                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
                     />
                 </div>
             </div>

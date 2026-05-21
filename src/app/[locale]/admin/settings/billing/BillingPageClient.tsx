@@ -36,7 +36,7 @@ interface BillingData {
 
 const PLAN_BADGE: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
     FREE:       { bg: "bg-neutral-100", text: "text-neutral-700", icon: <Zap className="w-4 h-4" /> },
-    PRO:        { bg: "bg-blue-100", text: "text-blue-700", icon: <Crown className="w-4 h-4" /> },
+    PRO:        { bg: "bg-orange-100", text: "text-orange-700", icon: <Crown className="w-4 h-4" /> },
     ENTERPRISE: { bg: "bg-violet-100", text: "text-violet-700", icon: <Shield className="w-4 h-4" /> },
     FOUNDER:    { bg: "bg-amber-100", text: "text-amber-700", icon: <Sparkles className="w-4 h-4" /> },
     CUSTOM:     { bg: "bg-pink-100", text: "text-pink-700", icon: <Shield className="w-4 h-4" /> },
@@ -209,7 +209,7 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
                                     data.trialDaysLeft <= 7
                                         ? "bg-amber-100 text-amber-700"
-                                        : "bg-blue-100 text-blue-700"
+                                        : "bg-orange-100 text-orange-700"
                                 }`}>
                                     <Clock className="w-3 h-3" />
                                     Trial: {data.trialDaysLeft} days left
@@ -365,14 +365,14 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                                     key={plan.id}
                                     className={`relative bg-white dark:bg-white/5 rounded-2xl border-2 p-6 flex flex-col transition-all ${
                                         plan.highlight
-                                            ? "border-blue-400 dark:border-blue-500/50 shadow-lg shadow-blue-500/10"
+                                            ? "border-blue-400 dark:border-orange-500/50 shadow-lg shadow-blue-500/10"
                                             : isCurrent
                                                 ? "border-neutral-900 dark:border-white/30"
                                                 : "border-neutral-200 dark:border-white/10"
                                     }`}
                                 >
                                     {plan.highlight && (
-                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest">
+                                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-orange-600 text-white text-[10px] font-bold uppercase tracking-widest">
                                             Most Popular
                                         </div>
                                     )}

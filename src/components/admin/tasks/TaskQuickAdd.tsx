@@ -182,7 +182,7 @@ export function TaskQuickAdd({ onAdd, placeholder }: TaskQuickAddProps) {
                         </span>
                     )}
                     {parsed.due && (
-                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
                             📅 {formatTokenDate(parsed.due)}
                         </span>
                     )}

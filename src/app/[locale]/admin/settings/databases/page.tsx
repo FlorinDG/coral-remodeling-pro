@@ -47,7 +47,7 @@ export default function DatabaseListSettingsPage() {
                     <div className="flex flex-col gap-2 p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-blue-50/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xl">
+                                <div className="w-12 h-12 flex items-center justify-center rounded-xl bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xl">
                                     <DatabaseIcon className="w-6 h-6" />
                                 </div>
                                 <div>
@@ -108,7 +108,7 @@ export default function DatabaseListSettingsPage() {
                                                                     </div>
                                                                 </td>
                                                                 <td className="py-3">
-                                                                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50/50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                                                    <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-orange-50/50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400">
                                                                         {db.icon ? (
                                                                             <span className="text-base">{db.icon}</span>
                                                                         ) : (
@@ -118,7 +118,7 @@ export default function DatabaseListSettingsPage() {
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <div className="flex flex-col">
-                                                                        <Link href={`/admin/settings/databases/${db.id}`} className="font-bold text-neutral-900 dark:text-neutral-100 hover:text-blue-600 transition-colors">
+                                                                        <Link href={`/admin/settings/databases/${db.id}`} className="font-bold text-neutral-900 dark:text-neutral-100 hover:text-orange-600 transition-colors">
                                                                             {db.name}
                                                                         </Link>
                                                                         <span className="text-[10px] text-neutral-500 font-mono opacity-60 lg:hidden">ID: {db.id}</span>
@@ -141,7 +141,7 @@ export default function DatabaseListSettingsPage() {
                                                                 <td className="px-4 py-3 text-right">
                                                                     <Link
                                                                         href={`/admin/settings/databases/${db.id}`}
-                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 hover:bg-blue-500 hover:text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-white/5 hover:bg-orange-500 hover:text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-all"
                                                                     >
                                                                         <Settings2 className="w-3.5 h-3.5" />
                                                                         <span className="hidden sm:inline">Schema</span>

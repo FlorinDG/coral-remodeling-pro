@@ -79,7 +79,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 <p className="text-sm font-medium">Record not found</p>
                 <button
                     onClick={() => router.back()}
-                    className="text-xs text-blue-500 hover:underline"
+                    className="text-xs text-orange-500 hover:underline"
                 >
                     Go back
                 </button>

@@ -133,7 +133,7 @@ function PlatformOverviewPanel() {
         <SectionShell title="Platform Overview" description="Global system status and metrics.">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                    { label: 'Active Tenants', value: '—', icon: <Users className="w-5 h-5 text-blue-500" /> },
+                    { label: 'Active Tenants', value: '—', icon: <Users className="w-5 h-5 text-orange-500" /> },
                     { label: 'Total Users', value: '—', icon: <UserCog className="w-5 h-5 text-green-500" /> },
                     { label: 'System Health', value: 'OK', icon: <BarChart2 className="w-5 h-5 text-emerald-500" /> },
                 ].map(stat => (
@@ -314,7 +314,7 @@ function RolesPermissionsPanel() {
     const roles = [
         { name: 'Admin', count: 1, color: 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400' },
         { name: 'Manager', count: 2, color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' },
-        { name: 'Employee', count: 8, color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' },
+        { name: 'Employee', count: 8, color: 'bg-orange-100 text-orange-700 dark:bg-orange-500/10 dark:text-orange-400' },
         { name: 'Viewer', count: 0, color: 'bg-neutral-100 text-neutral-600 dark:bg-white/5 dark:text-neutral-400' },
     ];
 
@@ -440,7 +440,7 @@ function IntegrationsPanel() {
                         {accounts.map((acc, idx) => (
                             <div key={idx} className="flex items-center justify-between p-3 rounded-lg border border-neutral-100 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/50">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold">{acc.email.charAt(0).toUpperCase()}</div>
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 font-bold">{acc.email.charAt(0).toUpperCase()}</div>
                                     <div>
                                         <p className="text-sm font-bold">{acc.email}</p>
                                         <p className="text-[10px] text-neutral-500">{acc.calendars?.length || 0} calendars synced</p>

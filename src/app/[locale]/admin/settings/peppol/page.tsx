@@ -87,7 +87,7 @@ export default function PeppolSettingsPage() {
                 <div className="max-w-3xl">
                     {/* Header */}
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                        <div className="w-12 h-12 rounded-2xl bg-orange-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
                             <Globe className="w-6 h-6 text-white" />
                         </div>
                         <div>
@@ -124,7 +124,7 @@ export default function PeppolSettingsPage() {
                                             <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Peppol ID (EAS:VAT)</label>
                                             <div className="flex items-center gap-2 p-3 rounded-xl bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5">
                                                 <Globe className="w-4 h-4 text-neutral-400" />
-                                                <span className="text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{status?.peppolId}</span>
+                                                <span className="text-sm font-mono font-bold text-orange-600 dark:text-orange-400">{status?.peppolId}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -147,10 +147,10 @@ export default function PeppolSettingsPage() {
                                         Invoices sent through Coral will be legally valid e-documents.
                                     </p>
 
-                                    <label className="flex items-start gap-3 p-4 rounded-2xl bg-blue-500/5 border border-blue-500/20 cursor-pointer transition-all hover:bg-blue-500/10">
+                                    <label className="flex items-start gap-3 p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 cursor-pointer transition-all hover:bg-orange-500/10">
                                         <input 
                                             type="checkbox" 
-                                            className="mt-1 w-4 h-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
+                                            className="mt-1 w-4 h-4 rounded border-neutral-300 text-orange-600 focus:ring-orange-500"
                                             checked={agreed}
                                             onChange={e => setAgreed(e.target.checked)}
                                         />
@@ -176,7 +176,7 @@ export default function PeppolSettingsPage() {
                                     <button
                                         onClick={handleRegister}
                                         disabled={registering || status?.peppolRegistered}
-                                        className="mt-8 w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20"
+                                        className="mt-8 w-full py-4 rounded-2xl bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-bold transition-all flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20"
                                     >
                                         {registering ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
@@ -224,11 +224,11 @@ export default function PeppolSettingsPage() {
                                 <div className="space-y-2">
                                     <a href="https://peppol.org" target="_blank" className="flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-white/5 group transition-colors">
                                         <span className="text-xs text-neutral-600 dark:text-neutral-400">Peppol.org</span>
-                                        <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-blue-500" />
+                                        <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-orange-500" />
                                     </a>
                                     <a href="https://e-invoice.be" target="_blank" className="flex items-center justify-between p-3 rounded-xl hover:bg-neutral-50 dark:hover:bg-white/5 group transition-colors">
                                         <span className="text-xs text-neutral-600 dark:text-neutral-400">E-Invoice.be Portal</span>
-                                        <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-blue-500" />
+                                        <ExternalLink className="w-3 h-3 text-neutral-400 group-hover:text-orange-500" />
                                     </a>
                                 </div>
                             </div>

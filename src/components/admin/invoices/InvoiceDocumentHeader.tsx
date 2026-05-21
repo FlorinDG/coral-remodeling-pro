@@ -65,7 +65,7 @@ export default function InvoiceDocumentHeader({ invoice, onUpdateProperty }: Inv
             </div>
 
             {/* Betreft (Subject) Hero Input */}
-            <div className="w-full mt-4 flex items-center gap-3 bg-neutral-50/50 dark:bg-[#111] py-1.5 px-3 rounded border border-neutral-200 dark:border-neutral-800 focus-within:border-blue-500 transition-colors">
+            <div className="w-full mt-4 flex items-center gap-3 bg-neutral-50/50 dark:bg-[#111] py-1.5 px-3 rounded border border-neutral-200 dark:border-neutral-800 focus-within:border-orange-500 transition-colors">
                 <label className="text-[11px] uppercase tracking-widest font-bold text-neutral-400 whitespace-nowrap">Betreft:</label>
                 <input
                     type="text"

@@ -38,7 +38,7 @@ interface ParsedInvoice {
 
 const STATUS_COLORS: Record<string, string> = {
     'opt-draft': 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
-    'opt-received': 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    'opt-received': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
     'opt-unpaid': 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
     'opt-paid': 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
     'opt-overdue': 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
@@ -55,7 +55,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
-    'src-peppol': { label: 'Peppol', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300' },
+    'src-peppol': { label: 'Peppol', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300' },
     'src-manual': { label: 'Manual', color: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400' },
     'src-pdf': { label: 'PDF Import', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300' },
 };
@@ -260,7 +260,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
             <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
                 <div className="bg-white dark:bg-neutral-900 rounded-2xl p-8 text-center">
                     <p className="text-neutral-500">Invoice not found</p>
-                    <button onClick={onClose} className="mt-4 text-sm text-blue-500 hover:underline">Close</button>
+                    <button onClick={onClose} className="mt-4 text-sm text-orange-500 hover:underline">Close</button>
                 </div>
             </div>
         );
@@ -277,8 +277,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
@@ -309,7 +309,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                     {/* Peppol loading */}
                     {loadingPeppol && (
                         <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+                            <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
                             <span className="ml-2 text-sm text-neutral-500">Loading Peppol document...</span>
                         </div>
                     )}
@@ -375,8 +375,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                     {/* Peppol line items (from UBL) */}
                     {peppolDetail && peppolDetail.lines.length > 0 && (
                         <div className="rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden">
-                            <div className="px-4 py-2.5 bg-blue-50 dark:bg-blue-950/20 border-b border-neutral-200 dark:border-white/10">
-                                <h3 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                            <div className="px-4 py-2.5 bg-orange-50 dark:bg-blue-950/20 border-b border-neutral-200 dark:border-white/10">
+                                <h3 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
                                     Line Items (from UBL)
                                 </h3>
                             </div>
@@ -407,8 +407,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
                     {/* Peppol supplier info */}
                     {peppolDetail && (
-                        <div className="rounded-xl bg-blue-50/50 dark:bg-blue-950/10 border border-blue-200/50 dark:border-blue-800/30 p-4 space-y-2">
-                            <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Supplier (from Peppol)</h4>
+                        <div className="rounded-xl bg-orange-50/50 dark:bg-blue-950/10 border border-orange-200/50 dark:border-blue-800/30 p-4 space-y-2">
+                            <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Supplier (from Peppol)</h4>
                             <div className="grid grid-cols-2 gap-2 text-sm">
                                 <div><span className="text-neutral-500">Name:</span> <span className="text-neutral-900 dark:text-white font-medium">{peppolDetail.supplierName}</span></div>
                                 <div><span className="text-neutral-500">VAT:</span> <span className="text-neutral-900 dark:text-white font-medium">{peppolDetail.supplierVat}</span></div>
@@ -497,7 +497,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                             isEditing ? (
                                 <button
                                     onClick={handleSaveEdit}
-                                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
                                 >
                                     Save Changes
                                 </button>
@@ -569,7 +569,7 @@ function FinancialCell({ label, value, editable, highlight, onChange }: {
         : '-';
 
     return (
-        <div className={`px-4 py-3 ${highlight ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''}`}>
+        <div className={`px-4 py-3 ${highlight ? 'bg-orange-50/50 dark:bg-blue-950/10' : ''}`}>
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-0.5">{label}</p>
             {editable ? (
                 <input
@@ -580,7 +580,7 @@ function FinancialCell({ label, value, editable, highlight, onChange }: {
                     className="w-full px-2 py-1.5 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 />
             ) : (
-                <p className={`text-lg font-bold ${highlight ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-900 dark:text-white'}`}>
+                <p className={`text-lg font-bold ${highlight ? 'text-orange-600 dark:text-orange-400' : 'text-neutral-900 dark:text-white'}`}>
                     {formatted}
                 </p>
             )}

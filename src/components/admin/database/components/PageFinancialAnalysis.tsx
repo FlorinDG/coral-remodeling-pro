@@ -66,9 +66,9 @@ export default function PageFinancialAnalysis({ databaseId, pageId }: { database
 
             {/* Quick Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Total Budget</p>
-                    <p className="text-xl font-black text-blue-700 dark:text-blue-300 mt-0.5">€{budget.toLocaleString()}</p>
+                <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Budget</p>
+                    <p className="text-xl font-black text-orange-700 dark:text-orange-300 mt-0.5">€{budget.toLocaleString()}</p>
                 </div>
                 <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Realized Costs</p>

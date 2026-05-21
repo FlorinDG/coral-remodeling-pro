@@ -109,7 +109,7 @@ export default function WebsiteSettingsConfig({ initialData }: WebsiteSettingsCo
             {/* Tracking Scripts */}
             <div className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
                 <div className="bg-neutral-50 dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/10 px-6 py-4 flex items-center gap-3">
-                    <Code className="w-5 h-5 text-blue-500" />
+                    <Code className="w-5 h-5 text-orange-500" />
                     <h3 className="font-bold text-neutral-900 dark:text-white">Tracking & Analytics Scripts</h3>
                 </div>
                 <div className="p-6 space-y-6">

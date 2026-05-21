@@ -574,14 +574,14 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
 
                             {/* PDF Document Metadata Card */}
                             {pdfMeta && Object.keys(pdfMeta).length > 0 && (
-                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800/50 rounded-xl p-4 text-sm">
+                                <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20 border border-orange-200 dark:border-orange-800/50 rounded-xl p-4 text-sm">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                        <span className="font-bold text-blue-900 dark:text-blue-200">
+                                        <FileText className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                        <span className="font-bold text-orange-900 dark:text-orange-200">
                                             {pdfDocType === 'INVOICE' ? 'Invoice' : pdfDocType === 'QUOTATION' ? 'Quotation' : pdfDocType === 'CATALOG' ? 'Catalog' : 'Document'} Detected
                                         </span>
                                         {pdfDocType && (
-                                            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300">
+                                            <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/40 text-orange-600 dark:text-orange-300">
                                                 {pdfDocType}
                                             </span>
                                         )}
@@ -612,7 +612,7 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                             </div>
                                         )}
                                         {(pdfMeta.grandTotalExcl || pdfMeta.grandTotalIncl) && (
-                                            <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 col-span-2 mt-1 pt-1.5 border-t border-blue-200/60 dark:border-blue-800/40">
+                                            <div className="flex items-center gap-1.5 text-neutral-700 dark:text-neutral-300 col-span-2 mt-1 pt-1.5 border-t border-orange-200/60 dark:border-orange-800/40">
                                                 <Coins className="w-3 h-3 text-neutral-400 shrink-0" />
                                                 <span className="font-semibold">
                                                     {pdfMeta.grandTotalExcl != null && `€${Number(pdfMeta.grandTotalExcl).toFixed(2)} excl.`}

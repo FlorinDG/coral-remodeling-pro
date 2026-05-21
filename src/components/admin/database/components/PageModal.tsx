@@ -147,7 +147,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                     {selectedTitles.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
                             {value.map((id, i) => (
-                                <span key={id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs">
+                                <span key={id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded text-xs">
                                     <Link className="w-3 h-3" />
                                     {selectedTitles[i]}
                                     <button
@@ -173,7 +173,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                                         if (isSelected) updatePageProperty(databaseId, pageId, property.id, value.filter(v => v !== p.id));
                                         else updatePageProperty(databaseId, pageId, property.id, [...value, p.id]);
                                     }}
-                                    className={`w-full text-left px-2 py-1.5 rounded text-sm ${isSelected ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}`}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-sm ${isSelected ? 'bg-orange-50 text-orange-700 dark:bg-orange-900/20' : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'}`}
                                 >
                                     {String(p.properties[displayPropertyId] || 'Untitled')}
                                 </button>
@@ -758,7 +758,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 {page.properties[prop.id] && (
                                                                                     <a
                                                                                         href={`mailto:${page.properties[prop.id]}`}
-                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/30 text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"
                                                                                         title={`Send email to ${page.properties[prop.id]}`}
                                                                                     >
                                                                                         <Mail className="w-4 h-4" />
@@ -824,7 +824,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                         href={String(page.properties[prop.id]).startsWith('http') ? String(page.properties[prop.id]) : `https://${page.properties[prop.id]}`}
                                                                                         target="_blank"
                                                                                         rel="noopener noreferrer"
-                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                                                                        className="flex-shrink-0 p-1.5 rounded-md hover:bg-orange-100 dark:hover:bg-orange-900/30 text-neutral-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors opacity-0 group-hover:opacity-100"
                                                                                         title={`Open ${page.properties[prop.id]}`}
                                                                                     >
                                                                                         <ExternalLink className="w-4 h-4" />

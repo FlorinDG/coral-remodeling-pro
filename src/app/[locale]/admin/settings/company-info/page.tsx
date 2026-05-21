@@ -752,7 +752,7 @@ export default function CompanyInfoSettings() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-6">
-                            <div className="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+                            <div className="w-12 h-12 rounded-full bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-4">
                                 <Globe className="w-6 h-6" />
                             </div>
                             <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
@@ -768,7 +768,7 @@ export default function CompanyInfoSettings() {
                                 <Button
                                     onClick={handlePeppolOptIn}
                                     disabled={saving}
-                                    className="w-full font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                                    className="w-full font-bold bg-orange-600 hover:bg-orange-700 text-white"
                                 >
                                     {saving ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
                                     Yes, activate Peppol automatically

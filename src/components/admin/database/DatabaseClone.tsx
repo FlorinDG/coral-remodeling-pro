@@ -567,7 +567,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
             return (
               <div key={view.id} className="relative flex items-center group">
                 {isRenaming ? (
-                  <div className="flex items-center bg-white dark:bg-neutral-800 rounded-t-lg px-2 py-1 mb-[-1px] border-b-2 border-blue-500 shadow-sm z-10">
+                  <div className="flex items-center bg-white dark:bg-neutral-800 rounded-t-lg px-2 py-1 mb-[-1px] border-b-2 border-orange-500 shadow-sm z-10">
                     <input
                       autoFocus
                       className="text-sm font-semibold bg-transparent outline-none w-24 text-neutral-900 dark:text-white"

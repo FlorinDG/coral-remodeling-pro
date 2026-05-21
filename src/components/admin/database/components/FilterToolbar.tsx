@@ -154,7 +154,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
 
                                 <div className="relative flex-shrink-0">
                                     <select
-                                        className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors min-w-[110px] cursor-pointer"
+                                        className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-[110px] cursor-pointer"
                                         value={filter.propertyId}
                                         onChange={e => updateFilter(databaseId, viewId, filter.id, { propertyId: e.target.value })}
                                     >
@@ -167,7 +167,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
 
                                 <div className="relative flex-shrink-0">
                                     <select
-                                        className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-blue-400 dark:focus:border-blue-500 transition-colors min-w-[120px] cursor-pointer"
+                                        className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-[120px] cursor-pointer"
                                         value={filter.operator}
                                         onChange={e => updateFilter(databaseId, viewId, filter.id, { operator: e.target.value as FilterOperator })}
                                     >
@@ -180,7 +180,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
 
                                 {needsValue && (
                                     <input
-                                        className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-blue-400 dark:focus:border-blue-500 transition-colors min-w-0"
+                                        className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-0"
                                         placeholder="Type a value..."
                                         value={filter.value as string || ''}
                                         onChange={e => updateFilter(databaseId, viewId, filter.id, { value: e.target.value })}
@@ -203,7 +203,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
 
             {/* Footer */}
             <div className="px-4 py-2.5 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
-                <button onClick={handleAddFilter} className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+                <button onClick={handleAddFilter} className="flex items-center gap-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition-colors">
                     <Plus className="w-3.5 h-3.5" />
                     Add filter rule
                 </button>
@@ -229,7 +229,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                 }}
                 className={`flex items-center gap-1.5 px-2.5 py-1 text-sm font-medium rounded-md transition-all ${
                     activeFilters.length > 0
-                        ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'
+                        ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30'
                         : isOpen
                             ? 'text-neutral-700 dark:text-neutral-200 bg-neutral-100 dark:bg-white/10'
                             : 'text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-white/5'
@@ -238,7 +238,7 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                 <Filter className="w-3.5 h-3.5" />
                 {t('db.toolbar.filter')}
                 {activeFilters.length > 0 && (
-                    <span className="bg-blue-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-semibold">
+                    <span className="bg-orange-600 text-white rounded-full w-4 h-4 text-[10px] flex items-center justify-center font-semibold">
                         {activeFilters.length}
                     </span>
                 )}

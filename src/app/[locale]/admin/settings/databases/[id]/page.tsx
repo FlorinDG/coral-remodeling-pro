@@ -55,7 +55,7 @@ export default function DatabaseConfigurator() {
         return (
             <div className="p-8 text-center">
                 <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Database not found</h1>
-                <Link href="/admin/settings/databases" className="text-blue-500 hover:underline mt-4 inline-block">Back to databases</Link>
+                <Link href="/admin/settings/databases" className="text-orange-500 hover:underline mt-4 inline-block">Back to databases</Link>
             </div>
         );
     }
@@ -172,9 +172,9 @@ export default function DatabaseConfigurator() {
                                                                                 value={prop.name}
                                                                                 readOnly={isSchemaLocked}
                                                                                 onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
-                                                                                className={`bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full ${isSchemaLocked ? 'cursor-default' : 'hover:border-neutral-300 focus:border-blue-500'}`}
+                                                                                className={`bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full ${isSchemaLocked ? 'cursor-default' : 'hover:border-neutral-300 focus:border-orange-500'}`}
                                                                             />
-                                                                            {isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
+                                                                            {isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
                                                                         </div>
                                                                         <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
                                                                     </div>
@@ -217,7 +217,7 @@ export default function DatabaseConfigurator() {
                                                                                         const name = prompt('New option name:');
                                                                                         if (name) updateProperty(databaseId, prop.id, { config: { ...prop.config, options: [...(prop.config?.options || []), { id: `opt-${Date.now()}`, name, color: 'gray' }] } });
                                                                                     }}
-                                                                                    className="text-[10px] text-blue-500 hover:text-blue-600 dark:text-blue-400 px-1.5 font-bold uppercase tracking-tight"
+                                                                                    className="text-[10px] text-orange-500 hover:text-orange-600 dark:text-orange-400 px-1.5 font-bold uppercase tracking-tight"
                                                                                 >
                                                                                     + Add
                                                                                 </button>
@@ -273,7 +273,7 @@ export default function DatabaseConfigurator() {
                                                                             />
                                                                             <button
                                                                                 onClick={() => setFormulaEditingProp(prop)}
-                                                                                className="p-1 text-blue-500 hover:text-blue-600 transition-colors"
+                                                                                className="p-1 text-orange-500 hover:text-orange-600 transition-colors"
                                                                             >
                                                                                 <Calculator className="w-3.5 h-3.5" />
                                                                             </button>

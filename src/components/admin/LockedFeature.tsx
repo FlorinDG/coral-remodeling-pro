@@ -31,9 +31,9 @@ function meetsMinimum(current: string, required: Tier): boolean {
 const PLAN_COLORS: Record<string, { bg: string; text: string; border: string; badge: string }> = {
     PRO: {
         bg: 'from-blue-500/5 to-indigo-500/5',
-        text: 'text-blue-600 dark:text-blue-400',
-        border: 'border-blue-200 dark:border-blue-500/20',
-        badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+        text: 'text-orange-600 dark:text-orange-400',
+        border: 'border-orange-200 dark:border-orange-500/20',
+        badge: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
     },
     ENTERPRISE: {
         bg: 'from-violet-500/5 to-purple-500/5',

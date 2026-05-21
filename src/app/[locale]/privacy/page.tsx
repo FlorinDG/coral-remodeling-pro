@@ -23,7 +23,7 @@ export default function PrivacyPolicyPage() {
 
             <main className="max-w-4xl mx-auto px-6 py-12">
                 <div className="flex items-center gap-3 mb-2">
-                    <Shield className="w-7 h-7 text-blue-600" />
+                    <Shield className="w-7 h-7 text-orange-600" />
                     <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Privacy Policy</h1>
                 </div>
                 <p className="text-sm text-neutral-500 mb-10">Last updated: 15 April 2026</p>
@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
                         <p>For privacy-related inquiries or to file a complaint:</p>
                         <ul className="mt-2 space-y-1">
                             <li><strong>Email:</strong> privacy@coral-group.be</li>
-                            <li><strong>Supervisory authority:</strong> Belgian Data Protection Authority (GBA/APD) — <a href="https://www.gegevensbeschermingsautoriteit.be" className="text-blue-500 hover:underline" target="_blank" rel="noopener">www.gegevensbeschermingsautoriteit.be</a></li>
+                            <li><strong>Supervisory authority:</strong> Belgian Data Protection Authority (GBA/APD) — <a href="https://www.gegevensbeschermingsautoriteit.be" className="text-orange-500 hover:underline" target="_blank" rel="noopener">www.gegevensbeschermingsautoriteit.be</a></li>
                         </ul>
                     </section>
                 </div>

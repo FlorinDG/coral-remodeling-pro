@@ -213,7 +213,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
-    if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-blue-500">Go Back</button></div>;
+    if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-orange-500">Go Back</button></div>;
 
     const invoiceTitle = invoice.properties?.['title'] || 'Draft Invoice';
     const rawClient = invoice.properties?.['client'];
@@ -666,7 +666,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 {isHydrated && (() => {
                                     const STATUS_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
                                         'opt-draft':          { label: 'Concept',   bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
-                                        'opt-sent':           { label: 'Verzonden', bg: 'bg-blue-50 dark:bg-blue-900/30',     text: 'text-blue-700 dark:text-blue-300',       dot: 'bg-blue-500' },
+                                        'opt-sent':           { label: 'Verzonden', bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
                                         'opt-paid':           { label: 'Betaald',   bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
                                         'opt-overdue':        { label: 'Vervallen', bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
                                         'opt-uncollectible':  { label: 'Oninbaar',  bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },

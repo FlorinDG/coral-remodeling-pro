@@ -34,11 +34,11 @@ const ROW_HEIGHT = 40;
 const SIDE_PANEL_WIDTH = 220;
 
 const BAR_COLORS = [
-    'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500',
+    'bg-orange-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500',
     'bg-pink-500', 'bg-cyan-500', 'bg-orange-500', 'bg-indigo-500',
 ];
 const BAR_COLORS_DARK = [
-    'dark:bg-blue-600', 'dark:bg-emerald-600', 'dark:bg-amber-600', 'dark:bg-purple-600',
+    'dark:bg-orange-600', 'dark:bg-emerald-600', 'dark:bg-amber-600', 'dark:bg-purple-600',
     'dark:bg-pink-600', 'dark:bg-cyan-600', 'dark:bg-orange-600', 'dark:bg-indigo-600',
 ];
 
@@ -331,7 +331,7 @@ export default function TimelineView({ databaseId, viewId, renderTabs }: Timelin
 
                             {/* Bars */}
                             {renderBars.map(bar => (
-                                <div key={bar.page.id} className={`absolute flex items-center rounded-md shadow-sm transition-shadow group ${bar.color} ${bar.isDragging ? 'opacity-80 shadow-lg ring-2 ring-blue-400' : 'hover:shadow-md'}`} style={{ left: bar.left, width: Math.max(bar.width, 20), top: bar.idx * ROW_HEIGHT + 6, height: ROW_HEIGHT - 12, cursor: dragState ? 'grabbing' : 'grab', zIndex: bar.isDragging ? 50 : 1 }} onMouseDown={e => handleMouseDown(e, bar.page.id, 'move', bar)}>
+                                <div key={bar.page.id} className={`absolute flex items-center rounded-md shadow-sm transition-shadow group ${bar.color} ${bar.isDragging ? 'opacity-80 shadow-lg ring-2 ring-orange-400' : 'hover:shadow-md'}`} style={{ left: bar.left, width: Math.max(bar.width, 20), top: bar.idx * ROW_HEIGHT + 6, height: ROW_HEIGHT - 12, cursor: dragState ? 'grabbing' : 'grab', zIndex: bar.isDragging ? 50 : 1 }} onMouseDown={e => handleMouseDown(e, bar.page.id, 'move', bar)}>
                                     <div className="absolute left-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 rounded-l-md transition-colors" onMouseDown={e => { e.stopPropagation(); handleMouseDown(e, bar.page.id, 'resize-left', bar); }} />
                                     <span className="text-[11px] font-semibold text-white truncate px-2.5 select-none pointer-events-none">{bar.title}</span>
                                     <div className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-white/30 rounded-r-md transition-colors" onMouseDown={e => { e.stopPropagation(); handleMouseDown(e, bar.page.id, 'resize-right', bar); }} />

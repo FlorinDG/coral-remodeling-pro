@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, CalendarRange, Lock } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { useTenant } from '@/context/TenantContext';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
 import { selectColumn } from './columns/SelectColumn';
 import { dateColumn } from './columns/DateColumn';
@@ -889,7 +890,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     <FilterToolbar databaseId={database.id} viewId={activeViewId} />
                     <SortToolbar databaseId={database.id} viewId={activeViewId} />
 
-                    {!lockedSchema && !isAccountant && (
+                    {!isAccountant && (
                     <button
                         onClick={handleExportCSV}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -903,27 +904,27 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     {isAccountant && (
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Period preset */}
-                        <div className="relative">
-                            <select
+                        <div className="relative min-w-[160px]">
+                            <SearchableSelect
+                                options={[
+                                    { value: 'this-year', label: 'This Year' },
+                                    { value: 'last-month', label: 'Last Month' },
+                                    { value: 'last-trimester', label: 'Last Trimester' },
+                                    { value: 'last-semester', label: 'Last Semester' },
+                                    { value: 'last-calendar-year', label: 'Last Calendar Year' },
+                                    { value: 'last-year', label: 'Last Year' },
+                                    { value: 'custom', label: 'Custom Range' },
+                                ]}
                                 value={acctDatePreset}
-                                onChange={e => {
-                                    setAcctDatePreset(e.target.value);
-                                    if (e.target.value !== 'custom') {
+                                onChange={(v) => {
+                                    setAcctDatePreset(v);
+                                    if (v !== 'custom') {
                                         setAcctDateFrom('');
                                         setAcctDateTo('');
                                     }
                                 }}
-                                className="appearance-none text-xs font-bold px-3 py-1.5 pr-7 rounded-lg border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
-                            >
-                                <option value="this-year">This Year</option>
-                                <option value="last-month">Last Month</option>
-                                <option value="last-trimester">Last Trimester</option>
-                                <option value="last-semester">Last Semester</option>
-                                <option value="last-calendar-year">Last Calendar Year</option>
-                                <option value="last-year">Last Year</option>
-                                <option value="custom">Custom Range</option>
-                            </select>
-                            <CalendarRange className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-emerald-400 pointer-events-none" />
+                                placeholder="Period..."
+                            />
                         </div>
 
                         {/* Custom date inputs */}
@@ -1301,7 +1302,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             {/* Header */}
                             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-white/10 bg-neutral-50 dark:bg-white/5">
                                 <div className="flex items-center gap-2">
-                                    <Search className="w-4 h-4 text-blue-500" />
+                                    <Search className="w-4 h-4 text-orange-500" />
                                     <span className="text-xs font-bold uppercase tracking-widest text-neutral-600 dark:text-neutral-300">{t('db.vatLookup.title')}</span>
                                 </div>
                                 <button
@@ -1316,7 +1317,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             <div className="p-4">
                                 {/* VAT badge */}
                                 <div className="flex items-center gap-2 mb-3">
-                                    <code className="text-xs font-mono font-bold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
+                                    <code className="text-xs font-mono font-bold px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-100 dark:border-orange-500/20">
                                         {vatLookup.vatNumber}
                                     </code>
                                     {vatLookup.status === 'loading' && (
@@ -1352,7 +1353,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                         {/* Progress bar */}
                                         <div className="w-full h-1 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                                className="h-full bg-orange-500 rounded-full transition-all duration-300"
                                                 style={{ width: `${Math.min((vatLookup.vatNumber.length / 12) * 100, 100)}%` }}
                                             />
                                         </div>
@@ -1363,8 +1364,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 {vatLookup.status === 'loading' && (
                                     <div className="flex flex-col items-center justify-center py-6 gap-3">
                                         <div className="relative">
-                                            <div className="w-10 h-10 rounded-full border-2 border-blue-200 dark:border-blue-500/30 border-t-blue-500 animate-spin" />
-                                            <Search className="w-4 h-4 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                                            <div className="w-10 h-10 rounded-full border-2 border-orange-200 dark:border-orange-500/30 border-t-blue-500 animate-spin" />
+                                            <Search className="w-4 h-4 text-orange-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                                         </div>
                                         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('db.vatLookup.searchingPublic')}</p>
                                     </div>

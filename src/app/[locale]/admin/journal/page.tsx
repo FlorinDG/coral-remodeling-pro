@@ -15,6 +15,7 @@ import { Button } from '@/components/time-tracker/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { useTenant } from '@/context/TenantContext';
 import { v4 as uuidv4 } from 'uuid';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 type ModuleType = 'projects' | 'clients' | 'crm' | 'general' | 'all';
 type ViewType = 'feed' | 'database';
@@ -429,16 +430,16 @@ export default function JournalModulePage() {
                                         <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
                                             Target Record <span className="text-neutral-300 normal-case font-normal">(optional)</span>
                                         </label>
-                                        <select
+                                        <SearchableSelect
+                                            options={[
+                                                { value: '', label: 'No specific record' },
+                                                ...availablePages.map(p => ({ value: p.id, label: p.title }))
+                                            ]}
                                             value={selectedPageId}
-                                            onChange={(e) => setSelectedPageId(e.target.value)}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none"
-                                        >
-                                            <option value="">No specific record</option>
-                                            {availablePages.map(p => (
-                                                <option key={p.id} value={p.id}>{p.title}</option>
-                                            ))}
-                                        </select>
+                                            onChange={setSelectedPageId}
+                                            placeholder="Select a record..."
+                                            searchPlaceholder="Search records..."
+                                        />
                                     </div>
                                 )}
 
@@ -532,10 +533,10 @@ function JournalFeedCard({ entry, updatePageBlocks }: JournalFeedCardProps) {
     const [commentText, setCommentText] = useState('');
 
     const moduleColors: Record<string, { accent: string; badge: string }> = {
-        projects: { accent: '#3b82f6', badge: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
-        clients:  { accent: '#22c55e', badge: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
-        crm:      { accent: '#a855f7', badge: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
-        general:  { accent: '#f97316', badge: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
+        projects: { accent: '#d97706', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+        clients:  { accent: '#16a34a', badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+        crm:      { accent: '#78716c', badge: 'bg-stone-100 text-stone-700 dark:bg-stone-900/30 dark:text-stone-400' },
+        general:  { accent: '#d35400', badge: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' },
     };
 
     const mc = moduleColors[entry.module] || moduleColors.general;

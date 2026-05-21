@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import {
@@ -469,21 +470,25 @@ export default function EmployeesPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
-                                        <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
-                                            className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
-                                        >
-                                            {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                                        </select>
+                                        <SearchableSelect
+                                            options={ROLES.map(r => ({ value: r, label: r }))}
+                                            value={form.role}
+                                            onChange={v => setForm(f => ({ ...f, role: v }))}
+                                            placeholder="Select role..."
+                                        />
                                     </div>
                                     <div>
                                         <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Status</label>
-                                        <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-                                            className="w-full px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium text-neutral-900 dark:text-white outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
-                                        >
-                                            <option value="ACTIVE">Active</option>
-                                            <option value="INACTIVE">Inactive</option>
-                                            <option value="ON_LEAVE">On Leave</option>
-                                        </select>
+                                        <SearchableSelect
+                                            options={[
+                                                { value: 'ACTIVE', label: 'Active' },
+                                                { value: 'INACTIVE', label: 'Inactive' },
+                                                { value: 'ON_LEAVE', label: 'On Leave' },
+                                            ]}
+                                            value={form.status}
+                                            onChange={v => setForm(f => ({ ...f, status: v }))}
+                                            placeholder="Select status..."
+                                        />
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-4">

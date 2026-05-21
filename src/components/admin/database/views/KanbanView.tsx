@@ -42,7 +42,7 @@ function DroppableColumnBody({ columnId, children }: { columnId: string; childre
             ref={setNodeRef} 
             className={cn(
                 "flex-1 overflow-y-auto no-scrollbar pb-10 space-y-2.5 min-h-[100px] rounded-lg transition-colors duration-150",
-                isOver ? 'bg-blue-50/50 dark:bg-blue-900/10 ring-2 ring-blue-300/30 ring-inset' : 'bg-transparent'
+                isOver ? 'bg-orange-50/50 dark:bg-orange-900/10 ring-2 ring-orange-300/30 ring-inset' : 'bg-transparent'
             )}
         >
             {children}
@@ -145,7 +145,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId }: {
             <div className="p-3">
                 <div className="flex items-start justify-between mb-1">
                     {isEditing ? (
-                        <input className="flex-1 text-sm font-semibold text-neutral-800 dark:text-neutral-200 bg-transparent border-b border-blue-400 outline-none px-0 py-0.5" value={editTitle} onChange={e => setEditTitle(e.target.value)} onBlur={handleSaveTitle} onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setIsEditing(false); }} autoFocus />
+                        <input className="flex-1 text-sm font-semibold text-neutral-800 dark:text-neutral-200 bg-transparent border-b border-orange-400 outline-none px-0 py-0.5" value={editTitle} onChange={e => setEditTitle(e.target.value)} onBlur={handleSaveTitle} onKeyDown={e => { if (e.key === 'Enter') handleSaveTitle(); if (e.key === 'Escape') setIsEditing(false); }} autoFocus />
                     ) : (
                         <div className="line-clamp-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200 leading-snug cursor-text" onClick={e => { e.stopPropagation(); setIsEditing(true); setEditTitle(title); }}>{title}</div>
                     )}
@@ -208,7 +208,7 @@ function SortableColumn({
                 <div className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 whitespace-nowrap" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>{col.name}</div>
                 <span className="mt-2 text-[10px] font-bold text-neutral-400">{col.pages.length}</span>
                 {/* Drag Handle Indicator */}
-                <div className="absolute top-0 inset-x-0 h-1 bg-blue-500/0 group-hover:bg-blue-500/20 transition-colors rounded-t-lg" />
+                <div className="absolute top-0 inset-x-0 h-1 bg-orange-500/0 group-hover:bg-orange-500/20 transition-colors rounded-t-lg" />
             </div>
         );
     }
@@ -531,14 +531,14 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
                     easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
                 }}>
                     {activeId && activeType === 'card' && (
-                        <div className="bg-white dark:bg-neutral-900 border border-blue-400 rounded-lg p-3 shadow-xl w-[300px] opacity-90 rotate-2 cursor-grabbing">
+                        <div className="bg-white dark:bg-neutral-900 border border-orange-400 rounded-lg p-3 shadow-xl w-[300px] opacity-90 rotate-2 cursor-grabbing">
                             <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-200 truncate">
                                 {String((activeData as Page)?.properties?.['title'] || 'Untitled')}
                             </div>
                         </div>
                     )}
                     {activeId && activeType === 'column' && (
-                        <div className="flex flex-col min-w-[300px] max-w-[300px] bg-neutral-100/50 dark:bg-neutral-800/50 rounded-lg p-2 border border-blue-400 shadow-xl opacity-90 rotate-1 cursor-grabbing">
+                        <div className="flex flex-col min-w-[300px] max-w-[300px] bg-neutral-100/50 dark:bg-neutral-800/50 rounded-lg p-2 border border-orange-400 shadow-xl opacity-90 rotate-1 cursor-grabbing">
                              <div className={cn("px-2.5 py-0.5 rounded-md text-xs font-semibold w-fit mb-3", getColor((activeData as KanbanColumn).color).header)}>
                                 {(activeData as KanbanColumn).name}
                             </div>

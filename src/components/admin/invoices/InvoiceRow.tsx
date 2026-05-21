@@ -166,7 +166,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
 
                     {/* Optional Matrix Override */}
                     <DropdownMenuItem onClick={() => onUpdate(block.id, { isOptional: !block.isOptional })}>
-                        <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-blue-500' : ''}`} />
+                        <Ban className={`w-4 h-4 mr-2 ${block.isOptional ? 'text-orange-500' : ''}`} />
                         {block.isOptional ? 'Mark as Required' : 'Mark as Optional'}
                     </DropdownMenuItem>
 
@@ -177,7 +177,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                     </DropdownMenuItem>
 
                     {!isContainer && (
-                        <DropdownMenuItem onClick={() => setIsSaveModalOpen(true)} className="text-blue-600 dark:text-blue-400">
+                        <DropdownMenuItem onClick={() => setIsSaveModalOpen(true)} className="text-orange-600 dark:text-orange-400">
                             {isSaving ? <Check className="w-4 h-4 mr-2" /> : <Save className="w-4 h-4 mr-2" />}
                             {isSaving ? 'Opgeslagen!' : (block.articleId ? 'Update Library Article...' : 'Save to Library...')}
                         </DropdownMenuItem>
@@ -537,7 +537,7 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                                         placeholder="Paste Image URL here (https://...)"
                                                         value={block.content || ''}
                                                         onChange={(e) => onUpdate(block.id, { content: e.target.value })}
-                                                        className="w-full bg-transparent border-b border-neutral-200 dark:border-neutral-800 outline-none pb-1 text-sm focus:border-orange-500 text-blue-500"
+                                                        className="w-full bg-transparent border-b border-neutral-200 dark:border-neutral-800 outline-none pb-1 text-sm focus:border-orange-500 text-orange-500"
                                                     />
                                                 </div>
                                                 {block.content && block.content.startsWith('http') && (

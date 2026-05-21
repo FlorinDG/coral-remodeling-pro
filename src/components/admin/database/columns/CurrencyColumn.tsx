@@ -37,7 +37,7 @@ const CurrencyComponent = ({ focus, active, rowData, setRowData, propertyId, sym
     }
 
     return (
-        <div className="w-full h-full flex items-center px-3 py-1 bg-blue-50/50 dark:bg-blue-900/10">
+        <div className="w-full h-full flex items-center px-3 py-1 bg-orange-50/50 dark:bg-orange-900/10">
             {symbol !== '%' && <span className="text-neutral-400 mr-2 select-none text-sm">{symbol}</span>}
             <input
                 ref={inputRef}

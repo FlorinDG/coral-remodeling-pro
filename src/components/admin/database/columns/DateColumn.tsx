@@ -203,7 +203,7 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
                                     : isSelected
                                         ? 'bg-neutral-900 dark:bg-white text-white dark:text-black shadow-sm'
                                         : isTodayDate
-                                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold ring-1 ring-blue-200 dark:ring-blue-500/30'
+                                            ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold ring-1 ring-orange-200 dark:ring-orange-500/30'
                                             : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                                 }
                             `}
@@ -218,7 +218,7 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
             <div className="flex items-center justify-between px-3 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-black/20">
                 <button
                     onClick={goToToday}
-                    className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition px-2 py-1 rounded-md hover:bg-blue-50 dark:hover:bg-blue-500/10"
+                    className="text-xs font-medium text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition px-2 py-1 rounded-md hover:bg-orange-50 dark:hover:bg-orange-500/10"
                 >
                     Today
                 </button>
@@ -286,9 +286,9 @@ const DateComponent = ({ rowData, setRowData, focus, active, stopEditing }: Cell
     }
 
     return (
-        <div ref={cellRef} className="w-full h-full p-2 flex items-center text-sm border border-blue-500 rounded-sm bg-white dark:bg-neutral-900">
+        <div ref={cellRef} className="w-full h-full p-2 flex items-center text-sm border border-orange-500 rounded-sm bg-white dark:bg-neutral-900">
             <span className="text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                <Calendar className="w-3.5 h-3.5 text-orange-500" />
                 {value ? formatDisplayDate(value) : <span className="text-neutral-400">Pick a date...</span>}
             </span>
             {showPicker && rect && typeof document !== 'undefined' && (

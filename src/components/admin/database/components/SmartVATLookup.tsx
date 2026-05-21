@@ -183,7 +183,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
             {/* Loading state */}
             {isSearching && (
                 <div className="flex items-center gap-3 px-4 py-4 text-sm text-neutral-500">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                    <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
                     <span>Zoeken in EU VIES register...</span>
                 </div>
             )}
@@ -237,7 +237,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
                         ) : (
                             <button
                                 onClick={handleImport}
-                                className="w-full flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md transition-colors text-xs font-bold uppercase tracking-wider"
+                                className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-md transition-colors text-xs font-bold uppercase tracking-wider"
                             >
                                 <ArrowDownToLine className="w-3.5 h-3.5" />
                                 Gegevens importeren
@@ -269,7 +269,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
                     onFocus={() => { if (result || error) { setShowResults(true); updateDropdownPosition(); } }}
                     placeholder="BTW nummer invoeren (bv. BE0848.970.428)"
                 />
-                {isSearching && <Loader2 className="w-4 h-4 text-blue-500 animate-spin flex-shrink-0" />}
+                {isSearching && <Loader2 className="w-4 h-4 text-orange-500 animate-spin flex-shrink-0" />}
                 {!isSearching && result?.isValid && <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
                 {!isSearching && error && <XCircle className="w-4 h-4 text-red-400 flex-shrink-0" />}
 
@@ -277,7 +277,7 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
                 {value && !isSearching && !showResults && (
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${
                         isVATFormat
-                            ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-500'
+                            ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-500'
                             : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
                     }`}>
                         {isVATFormat ? '↵ Enter' : 'BTW?'}

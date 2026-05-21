@@ -199,10 +199,10 @@ export default function FinancialsSettingsPage() {
                         <div className="border-t border-neutral-200 dark:border-white/10 pt-2 mt-8" />
 
                         {/* ── Accountant Access ──────────────────────────── */}
-                        <div className="bg-white dark:bg-white/5 rounded-2xl border border-blue-200 dark:border-blue-500/20 p-6">
+                        <div className="bg-white dark:bg-white/5 rounded-2xl border border-orange-200 dark:border-orange-500/20 p-6">
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center">
-                                    <Calculator className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center">
+                                    <Calculator className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-bold text-neutral-900 dark:text-white">Accountant Access</h2>
@@ -211,21 +211,21 @@ export default function FinancialsSettingsPage() {
                             </div>
 
                             {/* What the accountant can do */}
-                            <div className="bg-blue-50 dark:bg-blue-500/5 rounded-xl p-4 mb-5 space-y-2">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2">What your accountant can do</p>
-                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                            <div className="bg-orange-50 dark:bg-orange-500/5 rounded-xl p-4 mb-5 space-y-2">
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-orange-600 dark:text-orange-400 mb-2">What your accountant can do</p>
+                                <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300">
                                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                                     <span>View invoices, expenses, and expense tickets</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300">
                                     <Download className="w-3.5 h-3.5 shrink-0" />
                                     <span>Export data to CSV for import into accounting software</span>
                                 </div>
-                                <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                                <div className="flex items-center gap-2 text-xs text-orange-700 dark:text-orange-300">
                                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
                                     <span>Filter by date range (month, trimester, semester, year)</span>
                                 </div>
-                                <p className="text-[10px] text-blue-500 dark:text-blue-400/60 mt-1">
+                                <p className="text-[10px] text-orange-500 dark:text-orange-400/60 mt-1">
                                     Read-only — your accountant cannot edit, delete, or create records.
                                     Exported records are automatically locked from further editing.
                                 </p>
@@ -238,7 +238,7 @@ export default function FinancialsSettingsPage() {
                             ) : accountant ? (
                                 /* ── Current accountant ────────────────────── */
                                 <div className="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center text-sm font-bold text-blue-600 dark:text-blue-400">
+                                    <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center text-sm font-bold text-orange-600 dark:text-orange-400">
                                         {(accountant.name || accountant.email || '?')[0].toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -280,7 +280,7 @@ export default function FinancialsSettingsPage() {
                                                 value={acctEmail}
                                                 onChange={e => setAcctEmail(e.target.value)}
                                                 placeholder="accountant@firm.be"
-                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                                             />
                                         </div>
                                         <div>
@@ -290,7 +290,7 @@ export default function FinancialsSettingsPage() {
                                                 value={acctName}
                                                 onChange={e => setAcctName(e.target.value)}
                                                 placeholder="John Doe"
-                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30"
                                             />
                                         </div>
                                     </div>
@@ -302,7 +302,7 @@ export default function FinancialsSettingsPage() {
                                     <button
                                         onClick={handleInviteAccountant}
                                         disabled={acctSaving || !acctEmail}
-                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-all"
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 disabled:opacity-50 transition-all"
                                     >
                                         {acctSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                                         Send Invite

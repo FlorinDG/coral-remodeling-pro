@@ -30,6 +30,26 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     const host = rawHost.split(':')[0].split(',')[0].trim();
     const isERP = host.startsWith('app.');
     const isStorefront = host.startsWith('coral-sys.');
+    const isWorkHub = host.startsWith('work.');
+
+    // ── WorkHub workforce app (work.coral-group.be) ──
+    if (isWorkHub) {
+        return {
+            metadataBase: new URL(`https://${host}`),
+            title: {
+                default: 'WorkHub',
+                template: '%s | WorkHub',
+            },
+            description: 'Clock in, view your schedule, manage tasks and documents',
+            robots: { index: false, follow: false },
+            icons: { icon: '/icon.svg' },
+            other: {
+                'mobile-web-app-capable': 'yes',
+                'apple-mobile-web-app-capable': 'yes',
+                'apple-mobile-web-app-status-bar-style': 'black-translucent',
+            },
+        };
+    }
 
 
     // ── CoralOS storefront (coral-sys.coral-group.be) ──
@@ -144,14 +164,15 @@ export default async function RootLayout({
     // On Vercel, x-forwarded-host is the real hostname; fall back to host
     const rawHost = headersList2.get('x-forwarded-host') || headersList2.get('host') || '';
     const host = rawHost.split(':')[0].split(',')[0].trim();
-    const isMainSite = !host.startsWith('app.') && !host.startsWith('coral-sys.');
+    const isMainSite = !host.startsWith('app.') && !host.startsWith('coral-sys.') && !host.startsWith('work.');
+    const isWorkHub = host.startsWith('work.');
 
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>
             <head>
-                {/* Manifest: main site gets construction manifest, app gets CoralOS PWA manifest */}
-                {isMainSite
-                    ? <link rel="manifest" href="/manifest.json" />
+                {/* Manifest: work subdomain gets WorkHub PWA manifest, others get CoralOS */}
+                {isWorkHub
+                    ? <link rel="manifest" href="/manifest-workhub.json" />
                     : <link rel="manifest" href="/manifest.json" />
                 }
                 {/* Apple touch icon — used by iOS home screen and Chrome PWA on Mac */}
@@ -238,14 +259,29 @@ export default async function RootLayout({
                         __html: `
                           (function() {
                             try {
-                              // Unregister all service workers
+                              var subdomain = window.location.hostname;
+
+                              // WorkHub subdomain: register the real service worker
+                              if (subdomain.startsWith('work.')) {
+                                if ('serviceWorker' in navigator) {
+                                  navigator.serviceWorker.register('/sw-workhub.js', { scope: '/' })
+                                    .then(function(reg) {
+                                      console.log('[WorkHub] SW registered, scope:', reg.scope);
+                                    })
+                                    .catch(function(err) {
+                                      console.warn('[WorkHub] SW registration failed:', err);
+                                    });
+                                }
+                                return; // Don't kill SW on work subdomain
+                              }
+
+                              // Other subdomains: kill stale service workers
                               if ('serviceWorker' in navigator) {
                                 navigator.serviceWorker.getRegistrations().then(function(regs) {
                                   regs.forEach(function(r) { r.unregister(); });
                                 });
                               }
                               // Nuke all Cache API entries on ERP/storefront subdomains
-                              var subdomain = window.location.hostname;
                               if (subdomain.startsWith('app.') || subdomain.startsWith('coral-sys.')) {
                                 if ('caches' in window) {
                                   caches.keys().then(function(keys) {

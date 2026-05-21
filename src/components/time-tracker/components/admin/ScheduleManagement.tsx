@@ -142,6 +142,56 @@ export function ScheduleManagement() {
     setPrefilledDate(undefined);
   };
 
+  const handleCopyWeek = async (sourceWeekStart: Date, targetWeekStart: Date) => {
+    // Find all shifts in the source week
+    const sourceEnd = new Date(sourceWeekStart);
+    sourceEnd.setDate(sourceEnd.getDate() + 6);
+    const sourceStartStr = sourceWeekStart.toISOString().split('T')[0];
+    const sourceEndStr = sourceEnd.toISOString().split('T')[0];
+
+    const sourceShifts = shifts.filter(s => {
+      const d = s.shiftDate || s.shift_date || '';
+      return d >= sourceStartStr && d <= sourceEndStr;
+    });
+
+    if (sourceShifts.length === 0) {
+      toast.error('No shifts found in the previous week to copy');
+      return;
+    }
+
+    // Calculate the day offset
+    const dayOffset = Math.round((targetWeekStart.getTime() - sourceWeekStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    let created = 0;
+    for (const shift of sourceShifts) {
+      const srcDate = new Date(shift.shiftDate || shift.shift_date || '');
+      const newDate = new Date(srcDate);
+      newDate.setDate(newDate.getDate() + dayOffset);
+      const newDateStr = newDate.toISOString().split('T')[0];
+
+      // Check if a shift already exists for this user on this date
+      const alreadyExists = shifts.some(s => {
+        const uid = s.userId || s.user_id || '';
+        const sd = s.shiftDate || s.shift_date || '';
+        return uid === (shift.userId || shift.user_id) && sd === newDateStr;
+      });
+      if (alreadyExists) continue;
+
+      await createShift({
+        user_id: shift.userId || shift.user_id || '',
+        project_id: shift.projectId || shift.project_id || null,
+        shift_date: newDateStr,
+        shift_start: shift.shiftStart || shift.shift_start || '08:00',
+        shift_end: shift.shiftEnd || shift.shift_end || '17:00',
+        role: shift.role || null,
+        notes: shift.notes || null,
+      });
+      created++;
+    }
+
+    toast.success(`Copied ${created} shift(s) from previous week`);
+  };
+
 
   // Filter shifts for the matrix view date range
   const matrixShifts = useMemo(() => {
@@ -235,6 +285,7 @@ export function ScheduleManagement() {
           onShiftMove={handleShiftMove}
           onShiftClick={handleShiftClick}
           onAddShift={handleAddShift}
+          onCopyWeek={handleCopyWeek}
           canManage={canManage}
         />
       )}

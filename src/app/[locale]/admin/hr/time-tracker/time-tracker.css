@@ -236,3 +236,47 @@
   color: transparent;
   background-image: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
 }
+
+/* ── Print Styles ── */
+@media print {
+  /* Hide everything except the schedule matrix */
+  body > * { visibility: hidden; }
+  body { background: white !important; }
+
+  /* Show only the print content */
+  .print\:shadow-none,
+  .print\:shadow-none * {
+    visibility: visible;
+  }
+
+  /* Remove sidebar, header, footer, tabs, etc */
+  nav, header, footer,
+  [data-sidebar], [data-module-tabs],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Optimize table for paper */
+  table {
+    font-size: 10px !important;
+    border-collapse: collapse !important;
+  }
+
+  table th, table td {
+    border: 1px solid #ccc !important;
+    padding: 3px 4px !important;
+  }
+
+  /* Force light backgrounds */
+  .dark table th, .dark table td {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Page layout */
+  @page {
+    size: landscape;
+    margin: 0.5cm;
+  }
+}
+

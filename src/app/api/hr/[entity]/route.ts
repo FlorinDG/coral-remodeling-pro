@@ -24,10 +24,23 @@ const ENTITY_MAP: Record<string, string> = {
     'time-off':         'timeOffRequest',
     'worker-schedules': 'workerSchedule',
     'projects':         'hrProject',
-    'employees':        'employee',
+    // 'employees' is handled as a virtual entity — queries User table, not Employee
     'shift-tasks':      'shiftTask',
     'shift-attachments': 'shiftAttachment',
 };
+
+// Roles that count as "employees" in HR context (queryable via /api/hr/employees)
+const HR_EMPLOYEE_ROLES = [
+    'TENANT_PRO_EMPLOYEE',
+    'TENANT_ENTERPRISE_EMPLOYEE',
+    'TENANT_ENTERPRISE_WORKFORCE',
+    'TENANT_ENTERPRISE_MANAGER',
+    'BOOKKEEPING',
+    'TEAMLEAD',
+    'PROJECT_MANAGER',
+    'HR_OFFICER',
+    'OFFERTES',
+];
 
 // Fields that should NOT be overwritten by client
 const PROTECTED_FIELDS = ['id', 'tenantId', 'tenant', 'createdAt', 'updatedAt'];
@@ -63,6 +76,42 @@ export async function GET(
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { entity } = await params;
+
+    // ── VIRTUAL ENTITY: Employees (backed by User table) ──────────────
+    if (entity === 'employees') {
+        try {
+            const users = await prisma.user.findMany({
+                where: {
+                    tenantId: ctx.tenantId,
+                    role: { in: HR_EMPLOYEE_ROLES },
+                },
+                select: {
+                    id: true, name: true, email: true, phone: true,
+                    role: true, hourlyCost: true, hireDate: true,
+                    employeeStatus: true, image: true,
+                },
+                orderBy: { name: 'asc' },
+            });
+
+            // Return in Employee shape for backward compatibility
+            return NextResponse.json(users.map(u => ({
+                id: u.id,
+                firstName: u.name?.split(' ')[0] || '',
+                lastName: u.name?.split(' ').slice(1).join(' ') || '',
+                email: u.email,
+                phone: u.phone,
+                role: u.role,
+                status: u.employeeStatus || 'ACTIVE',
+                hourlyCost: u.hourlyCost,
+                hireDate: u.hireDate,
+                image: u.image,
+            })));
+        } catch (error: unknown) {
+            console.error('[HR API] GET employees error:', error);
+            return NextResponse.json({ error: String(error) }, { status: 500 });
+        }
+    }
+
     const model = getModel(entity);
     if (!model && entity !== 'erp-projects' && entity !== 'erp-tasks') {
         return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
@@ -206,6 +255,53 @@ export async function POST(
     if (!ctx) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { entity } = await params;
+
+    // ── VIRTUAL ENTITY: Create employee as a User ─────────────────────
+    if (entity === 'employees') {
+        const body = await req.json();
+        const { firstName, lastName, email, phone, role, hourlyCost, hireDate } = body;
+        if (!firstName || !lastName || !email) {
+            return NextResponse.json({ error: 'firstName, lastName, and email are required' }, { status: 400 });
+        }
+        // Check if User already exists
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
+        }
+        try {
+            const user = await prisma.user.create({
+                data: {
+                    tenantId: ctx.tenantId,
+                    name: `${firstName} ${lastName}`.trim(),
+                    email,
+                    phone: phone || null,
+                    role: role || 'TENANT_ENTERPRISE_WORKFORCE',
+                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                    hireDate: hireDate ? new Date(hireDate) : null,
+                    employeeStatus: 'ACTIVE',
+                    invitedBy: ctx.userId,
+                    invitedAt: new Date(),
+                    inviteAccepted: false,
+                },
+            });
+            // Return in Employee shape
+            return NextResponse.json({
+                id: user.id,
+                firstName: user.name?.split(' ')[0] || '',
+                lastName: user.name?.split(' ').slice(1).join(' ') || '',
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                status: user.employeeStatus || 'ACTIVE',
+                hourlyCost: user.hourlyCost,
+                hireDate: user.hireDate,
+            }, { status: 201 });
+        } catch (error: unknown) {
+            console.error('[HR API] POST employees error:', error);
+            return NextResponse.json({ error: String(error) }, { status: 500 });
+        }
+    }
+
     const model = getModel(entity);
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 

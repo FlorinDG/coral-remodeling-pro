@@ -68,11 +68,14 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { email, name, role, moduleAccess } = body as {
+        const { email, name, role, moduleAccess, phone, hourlyCost, hireDate } = body as {
             email: string;
             name?: string;
             role: string;
             moduleAccess?: Record<string, string>;
+            phone?: string;
+            hourlyCost?: number;
+            hireDate?: string;
         };
 
         if (!email || !role) {
@@ -114,7 +117,7 @@ export async function POST(req: Request) {
         // Generate invite token
         const inviteToken = crypto.randomBytes(32).toString('hex');
 
-        // Create user record (pending invite)
+        // Create user record (pending invite) — includes HR fields
         const newUser = await prisma.user.create({
             data: {
                 email,
@@ -126,6 +129,11 @@ export async function POST(req: Request) {
                 invitedAt: new Date(),
                 inviteAccepted: false,
                 inviteToken,
+                // HR fields
+                phone: phone || null,
+                hourlyCost: hourlyCost ? parseFloat(String(hourlyCost)) : null,
+                hireDate: hireDate ? new Date(hireDate) : null,
+                employeeStatus: 'ACTIVE',
             },
             select: {
                 id: true,
@@ -135,6 +143,7 @@ export async function POST(req: Request) {
                 moduleAccess: true,
                 inviteAccepted: true,
                 invitedAt: true,
+                phone: true,
             },
         });
 

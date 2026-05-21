@@ -345,6 +345,14 @@ model User {
   inviteAccepted  Boolean  @default(false)
   inviteToken     String?  @unique  // one-time accept token
 
+  // ── HR / Workforce fields ─────────────────────────────────────────────
+  // These fields unify User ↔ Employee. Every person is a User.
+  // The `role` field determines their type (employee vs workforce).
+  phone           String?
+  hourlyCost      Float?
+  hireDate        DateTime?
+  employeeStatus  String?   @default("ACTIVE")  // ACTIVE | INACTIVE | ON_LEAVE
+
   accounts      Account[]
   sessions      Session[]
   events        Event[]

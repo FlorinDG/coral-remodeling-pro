@@ -1,6 +1,6 @@
 /**
- * PUT    /api/tenant/employees/[employeeId]  — update employee
- * DELETE /api/tenant/employees/[employeeId]  — delete employee
+ * PUT    /api/tenant/employees/[employeeId]  — update employee (backed by User table)
+ * DELETE /api/tenant/employees/[employeeId]  — delete employee (backed by User table)
  */
 
 import { NextResponse } from 'next/server';
@@ -8,7 +8,7 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
-// ── PUT — update employee ─────────────────────────────────────────────
+// ── PUT — update employee (User record) ───────────────────────────────
 export async function PUT(
     req: Request,
     { params }: { params: Promise<{ employeeId: string }> }
@@ -27,33 +27,49 @@ export async function PUT(
         const body = await req.json();
         const { firstName, lastName, email, phone, role, status, hourlyCost, hireDate } = body;
 
-        // Verify ownership
-        const existing = await prisma.employee.findFirst({
+        // Verify ownership — user belongs to this tenant
+        const existing = await prisma.user.findFirst({
             where: { id: employeeId, tenantId: user.tenantId },
         });
         if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
         // Check email uniqueness (excluding self)
         if (email && email !== existing.email) {
-            const emailTaken = await prisma.employee.findUnique({ where: { email } });
+            const emailTaken = await prisma.user.findUnique({ where: { email } });
             if (emailTaken) {
-                return NextResponse.json({ error: 'An employee with this email already exists' }, { status: 409 });
+                return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
             }
         }
 
-        const employee = await prisma.employee.update({
+        // Build name from firstName + lastName if provided
+        const newName = (firstName !== undefined || lastName !== undefined)
+            ? `${firstName ?? existing.name?.split(' ')[0] ?? ''} ${lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? ''}`.trim()
+            : undefined;
+
+        const updated = await prisma.user.update({
             where: { id: employeeId },
             data: {
-                ...(firstName !== undefined && { firstName }),
-                ...(lastName !== undefined && { lastName }),
+                ...(newName !== undefined && { name: newName }),
                 ...(email !== undefined && { email }),
                 ...(phone !== undefined && { phone: phone || null }),
                 ...(role !== undefined && { role }),
-                ...(status !== undefined && { status }),
+                ...(status !== undefined && { employeeStatus: status }),
                 ...(hourlyCost !== undefined && { hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null }),
                 ...(hireDate !== undefined && { hireDate: hireDate ? new Date(hireDate) : null }),
             },
         });
+
+        const employee = {
+            id: updated.id,
+            firstName: updated.name?.split(' ')[0] || '',
+            lastName: updated.name?.split(' ').slice(1).join(' ') || '',
+            email: updated.email,
+            phone: updated.phone,
+            role: updated.role,
+            status: updated.employeeStatus || 'ACTIVE',
+            hourlyCost: updated.hourlyCost,
+            hireDate: updated.hireDate,
+        };
 
         return NextResponse.json({ employee });
     } catch (error: unknown) {
@@ -62,7 +78,7 @@ export async function PUT(
     }
 }
 
-// ── DELETE — remove employee ──────────────────────────────────────────
+// ── DELETE — deactivate employee (soft delete via status) ─────────────
 export async function DELETE(
     req: Request,
     { params }: { params: Promise<{ employeeId: string }> }
@@ -80,12 +96,17 @@ export async function DELETE(
         const { employeeId } = await params;
 
         // Verify ownership
-        const existing = await prisma.employee.findFirst({
+        const existing = await prisma.user.findFirst({
             where: { id: employeeId, tenantId: user.tenantId },
         });
         if (!existing) return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
 
-        await prisma.employee.delete({ where: { id: employeeId } });
+        // Soft-delete: set status to INACTIVE instead of hard-deleting the User
+        // This preserves shift history, clock entries, etc.
+        await prisma.user.update({
+            where: { id: employeeId },
+            data: { employeeStatus: 'INACTIVE' },
+        });
 
         return NextResponse.json({ success: true });
     } catch (error: unknown) {

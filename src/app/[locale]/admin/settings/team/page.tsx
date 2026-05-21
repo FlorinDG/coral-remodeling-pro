@@ -10,7 +10,7 @@ import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
 import {
     Users, UserPlus, Shield, Eye, EyeOff, Edit3, Trash2,
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
-    ChevronDown, KeyRound, Calculator,
+    ChevronDown, KeyRound, Calculator, Phone,
 } from 'lucide-react';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
@@ -101,6 +101,7 @@ export default function TeamSettingsPage() {
     // Invite form state
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteName, setInviteName] = useState('');
+    const [invitePhone, setInvitePhone] = useState('');
     const [inviteRole, setInviteRole] = useState('TENANT_PRO_EMPLOYEE');
     const [inviteAccess, setInviteAccess] = useState<Record<string, AccessLevel>>({});
     const [inviteError, setInviteError] = useState('');
@@ -152,6 +153,7 @@ export default function TeamSettingsPage() {
                     name: inviteName,
                     role: inviteRole,
                     moduleAccess: inviteAccess,
+                    phone: invitePhone || undefined,
                 }),
             });
             const data = await res.json();
@@ -163,6 +165,7 @@ export default function TeamSettingsPage() {
             setShowInvite(false);
             setInviteEmail('');
             setInviteName('');
+            setInvitePhone('');
             setInviteAccess({});
             fetchUsers();
         } catch {
@@ -434,6 +437,20 @@ export default function TeamSettingsPage() {
                                         placeholder="John Doe"
                                         className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">Phone</label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                                        <input
+                                            type="tel"
+                                            value={invitePhone}
+                                            onChange={e => setInvitePhone(e.target.value)}
+                                            placeholder="+32 4XX XX XX XX"
+                                            className="w-full pl-10 pr-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div>

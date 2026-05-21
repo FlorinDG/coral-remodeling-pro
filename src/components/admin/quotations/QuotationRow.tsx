@@ -339,6 +339,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     €{calculateBlockTotal(block).toFixed(2)}
                                                 </span>
                                             </div>
+                                            {!isDraggingGlobal && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -354,6 +355,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                             >
                                                 <Trash className="w-3.5 h-3.5" />
                                             </button>
+                                            )}
                                         </div>
                                         {/* Context menu is now in the left gutter */}
                                     </div>
@@ -436,7 +438,8 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                             </>
                                         )}
 
-                                        {/* Action Toolbar (Universally available for base rows to prevent undeletable orphans) */}
+                                        {/* Action Toolbar — hidden during drag to prevent accidental delete */}
+                                        {!isDraggingGlobal && (
                                         <div className="flex justify-start pl-2 py-0.5 mt-0.5 border-t border-neutral-100 dark:border-neutral-800">
                                             <div className="flex items-center gap-4 py-1 text-xs font-bold uppercase tracking-wide text-neutral-500">
                                                 {(block.articleId || block.bestekId) && (
@@ -531,6 +534,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 )}
                                             </div>
                                         </div>
+                                        )}
 
                                         {/* Dynamic Subcomponents Rendering Block */}
                                         {block.children && block.children.length > 0 ? (

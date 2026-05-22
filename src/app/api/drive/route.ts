@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
-import { getOAuth2Client } from './auth/route';
+import { getOAuth2Client } from '@/lib/google-drive-oauth';
 
 // Helper to initialize the Drive API client using OAuth 2.0 User Consent
 const getDriveClient = () => {

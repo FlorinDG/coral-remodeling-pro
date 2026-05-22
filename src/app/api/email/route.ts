@@ -77,11 +77,11 @@ export async function GET(request: Request) {
             port: targetAccount.imapPort || 993,
             secure: true,
             auth: validToken ? {
-                user: targetAccount.email,
+                user: targetAccount.email || '',
                 accessToken: validToken
             } : {
-                user: targetAccount.email,
-                pass: targetAccount.password
+                user: targetAccount.email || '',
+                pass: targetAccount.password || undefined
             },
             logger: false // Disable logging to keep the console clean
         });
@@ -185,17 +185,19 @@ export async function GET(request: Request) {
                         });
                     } else {
                         const existingThread = threadsMap.get(normalizedSubject);
-                        emailData.threadId = existingThread.id;
-                        existingThread.emails.push(emailData);
+                        if (existingThread) {
+                            emailData.threadId = Number(existingThread.id);
+                            existingThread.emails.push(emailData);
 
-                        // If any email in the thread is unread, the thread is unread
-                        if (!emailData.isRead) {
-                            existingThread.isRead = false;
-                        }
+                            // If any email in the thread is unread, the thread is unread
+                            if (!emailData.isRead) {
+                                existingThread.isRead = false;
+                            }
 
-                        // Update lastActivityDate if this email is newer
-                        if (new Date(emailData.sentDate) > new Date(existingThread.lastActivityDate)) {
-                            existingThread.lastActivityDate = emailData.sentDate;
+                            // Update lastActivityDate if this email is newer
+                            if (new Date(emailData.sentDate) > new Date(existingThread.lastActivityDate)) {
+                                existingThread.lastActivityDate = emailData.sentDate;
+                            }
                         }
                     }
                 }

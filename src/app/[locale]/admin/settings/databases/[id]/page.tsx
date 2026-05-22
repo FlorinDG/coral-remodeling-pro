@@ -184,8 +184,49 @@ export default function DatabaseConfigurator() {
                                             const propType = PROPERTY_TYPES.find(t => t.id === prop.type) || PROPERTY_TYPES[0];
                                             const Icon = propType.icon;
 
+                                            // Title row is rendered as a static (non-draggable) row
+                                            if (isTitle) {
+                                                return (
+                                                    <tr key={prop.id} className="hover:bg-neutral-50 dark:hover:bg-white/[0.02]">
+                                                        <td className="w-10 px-2 py-1.5 align-middle text-center">
+                                                            <div className="flex items-center justify-center p-1 rounded text-neutral-300 dark:text-neutral-700 opacity-0 cursor-default">
+                                                                <GripVertical className="w-4 h-4" />
+                                                            </div>
+                                                        </td>
+                                                        <td className="w-8 py-1.5 align-middle text-center">
+                                                            <Icon className="w-4 h-4 text-neutral-400" />
+                                                        </td>
+                                                        <td className="px-2 py-1.5 align-middle">
+                                                            <div className="flex items-center gap-3 group/name">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <input
+                                                                            value={prop.name}
+                                                                            readOnly
+                                                                            className="bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full cursor-default"
+                                                                        />
+                                                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>
+                                                                    </div>
+                                                                    <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-2 py-1.5 align-middle w-[180px]">
+                                                            <select value="text" disabled className="w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent rounded-md px-2 py-1 text-xs font-medium outline-none opacity-60 cursor-not-allowed">
+                                                                <option value="text">Primary Text</option>
+                                                            </select>
+                                                        </td>
+                                                        <td className="px-2 py-1.5 align-middle" />
+                                                        <td className="w-10 px-2 py-1.5 align-middle" />
+                                                    </tr>
+                                                );
+                                            }
+
+                                            // Draggable index must be sequential starting from 0 for non-title rows
+                                            const draggableIndex = index - 1;
+
                                             return (
-                                                <Draggable key={prop.id} draggableId={prop.id} index={index - 1} isDragDisabled={isTitle}>
+                                                <Draggable key={prop.id} draggableId={prop.id} index={draggableIndex} isDragDisabled={isLocked}>
                                                     {(provided, snapshot) => (
                                                         <tr
                                                             ref={provided.innerRef}
@@ -199,7 +240,7 @@ export default function DatabaseConfigurator() {
                                                             <td className="w-10 px-2 py-1.5 align-middle text-center">
                                                                 <div
                                                                     {...provided.dragHandleProps}
-                                                                    className={`flex items-center justify-center p-1 rounded text-neutral-300 dark:text-neutral-700 ${isTitle ? 'opacity-0 cursor-default' : 'hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors'}`}
+                                                                    className={`flex items-center justify-center p-1 rounded text-neutral-300 dark:text-neutral-700 ${isLocked ? 'opacity-30 cursor-default' : 'hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing transition-colors'}`}
                                                                 >
                                                                     <GripVertical className="w-4 h-4" />
                                                                 </div>
@@ -217,8 +258,7 @@ export default function DatabaseConfigurator() {
                                                                                 onChange={(e) => updateProperty(databaseId, prop.id, { name: e.target.value })}
                                                                                 className={`bg-transparent text-sm font-bold text-neutral-900 dark:text-neutral-100 border-b border-transparent outline-none px-1 transition w-full ${isLocked ? 'cursor-default' : 'hover:border-neutral-300 focus:border-orange-500'}`}
                                                                             />
-                                                                            {isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 font-bold uppercase tracking-wider whitespace-nowrap">Primary</span>}
-                                                                            {isCanonical && !isTitle && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-white/5 dark:text-neutral-400 font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> System</span>}
+                                                                            {isCanonical && <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 dark:bg-white/5 dark:text-neutral-400 font-bold uppercase tracking-wider whitespace-nowrap flex items-center gap-0.5"><Lock className="w-2.5 h-2.5" /> System</span>}
                                                                         </div>
                                                                         <span className="text-[9px] text-neutral-400 font-mono pl-1">ID: {prop.id}</span>
                                                                     </div>
@@ -227,14 +267,13 @@ export default function DatabaseConfigurator() {
                                                             <td className="px-2 py-1.5 align-middle w-[180px]">
                                                                 <select
                                                                     value={prop.type}
-                                                                    disabled={isTitle || isLocked}
+                                                                    disabled={isLocked}
                                                                     onChange={(e) => updateProperty(databaseId, prop.id, { type: e.target.value as PropertyType })}
                                                                     className={`w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs font-medium outline-none focus:bg-white dark:focus:bg-black transition-all ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
                                                                 >
                                                                     {PROPERTY_TYPES.map(t => (
                                                                         <option key={t.id} value={t.id}>{t.label}</option>
                                                                     ))}
-                                                                    {isTitle && <option value="text">Primary Text</option>}
                                                                 </select>
                                                             </td>
                                                             <td className="px-2 py-1.5 align-middle">
@@ -373,7 +412,7 @@ export default function DatabaseConfigurator() {
                                                                 </div>
                                                             </td>
                                                             <td className="w-10 px-2 py-1.5 align-middle text-right">
-                                                                {!isTitle && !isLocked && (
+                                                                {!isLocked && (
                                                                     <button
                                                                         onClick={() => { if (window.confirm(`Delete property "${prop.name}"?`)) deleteProperty(databaseId, prop.id); }}
                                                                         className="p-1.5 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all"

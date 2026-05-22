@@ -1,0 +1,446 @@
+"use client";
+
+import React, { useMemo, useState } from 'react';
+import { useDatabaseStore } from '../store';
+import { useTenant } from '@/context/TenantContext';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
+import dynamic from 'next/dynamic';
+import {
+    CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
+    CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
+    FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target
+} from 'lucide-react';
+
+const BlockEditor = dynamic(() => import('./BlockEditor'), { ssr: false });
+const FileManager = dynamic(() => import('@/components/admin/file-manager/FileManager'), { ssr: false });
+const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
+const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
+
+// ── Status configuration ──────────────────────────────────────────────
+const EXEC_STATUS_MAP: Record<string, { label: string; color: string; icon: React.ReactNode; bg: string }> = {
+    'opt-to-do':    { label: 'To Do',       color: 'text-neutral-500', icon: <Circle className="w-4 h-4" />,          bg: 'bg-neutral-500/10' },
+    'opt-in-prog':  { label: 'In Progress', color: 'text-blue-500',    icon: <Clock className="w-4 h-4" />,           bg: 'bg-blue-500/10' },
+    'opt-done':     { label: 'Done',        color: 'text-emerald-500', icon: <CheckCircle2 className="w-4 h-4" />,    bg: 'bg-emerald-500/10' },
+    'opt-hold':     { label: 'On Hold',     color: 'text-amber-500',   icon: <Pause className="w-4 h-4" />,           bg: 'bg-amber-500/10' },
+    'opt-dropped':  { label: 'Dropped',     color: 'text-neutral-400', icon: <XCircle className="w-4 h-4" />,         bg: 'bg-neutral-400/10' },
+    'opt-late':     { label: 'Late',        color: 'text-red-500',     icon: <AlertTriangle className="w-4 h-4" />,   bg: 'bg-red-500/10' },
+    'opt-problems': { label: 'Problems',    color: 'text-orange-500',  icon: <AlertTriangle className="w-4 h-4" />,   bg: 'bg-orange-500/10' },
+};
+
+const FINANCIAL_STATUS_MAP: Record<string, { label: string; color: string }> = {
+    'opt-quote':   { label: 'Quotation',       color: 'text-neutral-500' },
+    'opt-budget':  { label: 'Budgeted',        color: 'text-amber-500' },
+    'opt-invo':    { label: 'Invoiced',        color: 'text-blue-500' },
+    'opt-partial': { label: 'Partially Paid',  color: 'text-indigo-500' },
+    'opt-paid':    { label: 'Paid',            color: 'text-emerald-500' },
+};
+
+const TASK_STATUS_MAP: Record<string, { label: string; color: string; dotColor: string }> = {
+    't-todo': { label: 'To Do', color: 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300', dotColor: 'bg-neutral-400' },
+    't-prog': { label: 'Busy',  color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',          dotColor: 'bg-blue-500' },
+    't-done': { label: 'Done',  color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400', dotColor: 'bg-emerald-500' },
+};
+
+interface ProjectDetailViewProps {
+    databaseId: string;     // resolved DB ID
+    pageId: string;
+    locale: string;
+}
+
+export default function ProjectDetailView({ databaseId, pageId, locale }: ProjectDetailViewProps) {
+    const { resolveDbId } = useTenant();
+    const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'files'>('overview');
+    const [taskFilter, setTaskFilter] = useState<string | null>(null);
+
+    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
+    const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const createPage = useDatabaseStore(state => state.createPage);
+    const allDatabases = useDatabaseStore(state => state.databases);
+
+    // Resolve Tasks DB
+    const tasksDbId = resolveDbId('db-tasks');
+    const tasksDb = allDatabases.find(d => d.id === tasksDbId);
+
+    // Get tasks linked to this project
+    const projectTasks = useMemo(() => {
+        if (!tasksDb) return [];
+        return tasksDb.pages.filter(t => {
+            const projectRelation = t.properties['prop-task-project'];
+            if (Array.isArray(projectRelation)) return projectRelation.includes(pageId);
+            return projectRelation === pageId;
+        });
+    }, [tasksDb, pageId]);
+
+    // Task statistics
+    const taskStats = useMemo(() => {
+        const total = projectTasks.length;
+        const done = projectTasks.filter(t => t.properties['prop-task-status'] === 't-done').length;
+        const busy = projectTasks.filter(t => t.properties['prop-task-status'] === 't-prog').length;
+        const todo = total - done - busy;
+        const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+        return { total, done, busy, todo, progress };
+    }, [projectTasks]);
+
+    if (!database || !page) return null;
+
+    // ── Extract project data ──────────────────────────────────────────────
+    const execStatus = String(page.properties['prop-execution-status'] || '');
+    const finStatus = String(page.properties['prop-financial-status'] || '');
+    const budget = Number(page.properties['prop-budget']) || 0;
+    const location = String(page.properties['prop-location'] || '');
+    const plannedStart = String(page.properties['prop-start-date'] || '');
+    const plannedEnd = String(page.properties['prop-end-date'] || '');
+    const actualStart = String(page.properties['prop-actual-start'] || '');
+    const actualEnd = String(page.properties['prop-actual-end'] || '');
+
+    const statusInfo = EXEC_STATUS_MAP[execStatus] || EXEC_STATUS_MAP['opt-to-do'];
+    const finInfo = FINANCIAL_STATUS_MAP[finStatus] || FINANCIAL_STATUS_MAP['opt-quote'];
+
+    // Timeline progress calculation
+    const timelineProgress = useMemo(() => {
+        if (!plannedStart || !plannedEnd) return null;
+        const start = new Date(plannedStart).getTime();
+        const end = new Date(plannedEnd).getTime();
+        const now = Date.now();
+        if (isNaN(start) || isNaN(end) || end <= start) return null;
+        const total = end - start;
+        const elapsed = now - start;
+        return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+    }, [plannedStart, plannedEnd]);
+
+    // Days remaining
+    const daysRemaining = useMemo(() => {
+        if (!plannedEnd) return null;
+        const end = new Date(plannedEnd).getTime();
+        if (isNaN(end)) return null;
+        const diff = Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
+        return diff;
+    }, [plannedEnd]);
+
+    // Add a new task
+    const handleAddTask = () => {
+        if (!tasksDb) return;
+        const title = String(page.properties['title'] || page.properties['name'] || 'Project');
+        createPage(tasksDbId, {
+            title: `New task — ${title}`,
+            'prop-task-project': [pageId],
+            'prop-task-status': 't-todo',
+            'prop-task-type': 'ty-task',
+        });
+    };
+
+    // Toggle task status
+    const handleToggleTask = (taskId: string) => {
+        if (!tasksDb) return;
+        const task = tasksDb.pages.find(t => t.id === taskId);
+        if (!task) return;
+        const current = String(task.properties['prop-task-status'] || 't-todo');
+        const next = current === 't-done' ? 't-todo' : current === 't-prog' ? 't-done' : 't-prog';
+        updatePageProperty(tasksDbId, taskId, 'prop-task-status', next);
+    };
+
+    // Filtered tasks
+    const filteredTasks = taskFilter
+        ? projectTasks.filter(t => t.properties['prop-task-status'] === taskFilter)
+        : projectTasks;
+
+    const formatDate = (d: string) => {
+        if (!d) return '—';
+        try { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        catch { return d; }
+    };
+
+    return (
+        <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#0a0a0a]">
+            <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-6 flex flex-col gap-6">
+
+                {/* ── Hero Status Bar ─────────────────────────────────────── */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {/* Execution Status */}
+                    <div className={`rounded-2xl border border-neutral-200 dark:border-white/10 p-4 ${statusInfo.bg} flex items-center gap-3 shadow-sm`}>
+                        <div className={`${statusInfo.color}`}>{statusInfo.icon}</div>
+                        <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</p>
+                            <p className={`text-sm font-bold ${statusInfo.color}`}>{statusInfo.label}</p>
+                        </div>
+                    </div>
+
+                    {/* Task Progress */}
+                    <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-2 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Tasks</p>
+                            <span className="text-xs font-black text-neutral-900 dark:text-white">{taskStats.progress}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                            <div
+                                className="h-full rounded-full transition-all duration-700 ease-out"
+                                style={{
+                                    width: `${taskStats.progress}%`,
+                                    background: taskStats.progress === 100
+                                        ? 'linear-gradient(90deg, #10b981, #059669)'
+                                        : 'linear-gradient(90deg, var(--brand-color, #d35400), color-mix(in srgb, var(--brand-color, #d35400) 70%, #f59e0b))'
+                                }}
+                            />
+                        </div>
+                        <p className="text-[10px] text-neutral-400">{taskStats.done}/{taskStats.total} completed</p>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-1 shadow-sm">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Timeline</p>
+                        {daysRemaining !== null ? (
+                            <>
+                                <p className={`text-lg font-black ${daysRemaining < 0 ? 'text-red-500' : daysRemaining < 7 ? 'text-amber-500' : 'text-neutral-900 dark:text-white'}`}>
+                                    {daysRemaining < 0 ? `${Math.abs(daysRemaining)}d overdue` : `${daysRemaining}d left`}
+                                </p>
+                                {timelineProgress !== null && (
+                                    <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden mt-0.5">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${timelineProgress > 100 ? 'bg-red-500' : 'bg-blue-500'}`}
+                                            style={{ width: `${Math.min(timelineProgress, 100)}%` }}
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <p className="text-sm text-neutral-400 italic">No dates set</p>
+                        )}
+                    </div>
+
+                    {/* Budget */}
+                    <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-1 shadow-sm">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Budget</p>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${finInfo.color} bg-neutral-100 dark:bg-white/5`}>
+                                {finInfo.label}
+                            </span>
+                        </div>
+                        <p className="text-lg font-black text-neutral-900 dark:text-white tabular-nums">
+                            {budget > 0 ? `€${budget.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
+                        </p>
+                    </div>
+                </div>
+
+                {/* ── Tab Bar ─────────────────────────────────────────────── */}
+                <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-white/10">
+                    {[
+                        { id: 'overview' as const, label: 'Overview', icon: <FolderKanban className="w-3.5 h-3.5" /> },
+                        { id: 'journal'  as const, label: 'Journal',  icon: <PenLine className="w-3.5 h-3.5" /> },
+                        { id: 'files'    as const, label: 'Files',    icon: <FileText className="w-3.5 h-3.5" /> },
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 -mb-px transition-colors ${
+                                activeTab === tab.id
+                                    ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
+                                    : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
+                            }`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── Tab Content ─────────────────────────────────────────── */}
+                {activeTab === 'overview' && (
+                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        {/* Task Board — spans 2 columns */}
+                        <div className="xl:col-span-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                            <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <ListTodo className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
+                                    Tasks
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 ml-1">{taskStats.total}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {/* Filter pills */}
+                                    {Object.entries(TASK_STATUS_MAP).map(([key, val]) => {
+                                        const count = projectTasks.filter(t => t.properties['prop-task-status'] === key).length;
+                                        return (
+                                            <button
+                                                key={key}
+                                                onClick={() => setTaskFilter(taskFilter === key ? null : key)}
+                                                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                                                    taskFilter === key
+                                                        ? val.color + ' ring-1 ring-neutral-300 dark:ring-white/20'
+                                                        : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+                                                }`}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${val.dotColor}`} />
+                                                {val.label}
+                                                <span className="text-neutral-400">{count}</span>
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        onClick={handleAddTask}
+                                        className="ml-2 flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                                        style={{ color: 'var(--brand-color, #d35400)' }}
+                                    >
+                                        <Plus className="w-3.5 h-3.5" /> Add
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Task List */}
+                            <div className="divide-y divide-neutral-100 dark:divide-white/5 max-h-[500px] overflow-y-auto">
+                                {filteredTasks.length > 0 ? filteredTasks.map(task => {
+                                    const status = String(task.properties['prop-task-status'] || 't-todo');
+                                    const statusInfo = TASK_STATUS_MAP[status] || TASK_STATUS_MAP['t-todo'];
+                                    const isDone = status === 't-done';
+                                    const taskTitle = String(task.properties['title'] || 'Untitled');
+
+                                    return (
+                                        <div
+                                            key={task.id}
+                                            className="flex items-center gap-3 px-5 py-3 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors group"
+                                        >
+                                            {/* Status toggle */}
+                                            <button
+                                                onClick={() => handleToggleTask(task.id)}
+                                                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                                                    isDone
+                                                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                        : status === 't-prog'
+                                                        ? 'border-blue-500 text-blue-500'
+                                                        : 'border-neutral-300 dark:border-neutral-600 text-transparent hover:border-neutral-400'
+                                                }`}
+                                            >
+                                                {isDone && <CheckCircle2 className="w-3 h-3" />}
+                                                {status === 't-prog' && <Clock className="w-3 h-3" />}
+                                            </button>
+
+                                            {/* Task name */}
+                                            <span className={`flex-1 text-sm font-medium truncate ${isDone ? 'line-through text-neutral-400' : 'text-neutral-800 dark:text-neutral-200'}`}>
+                                                {taskTitle}
+                                            </span>
+
+                                            {/* Status badge */}
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusInfo.color}`}>
+                                                {statusInfo.label}
+                                            </span>
+
+                                            {/* Link to task detail */}
+                                            <a
+                                                href={`/${locale}/admin/database/${tasksDbId}/${task.id}`}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-100 dark:hover:bg-white/5"
+                                                title="Open task detail"
+                                            >
+                                                <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400" />
+                                            </a>
+                                        </div>
+                                    );
+                                }) : (
+                                    <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
+                                        <Target className="w-8 h-8 opacity-20 mb-3" />
+                                        <p className="text-xs font-medium">
+                                            {taskFilter ? 'No tasks with this status' : 'No tasks yet'}
+                                        </p>
+                                        <button
+                                            onClick={handleAddTask}
+                                            className="mt-3 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                                            style={{ color: 'var(--brand-color, #d35400)' }}
+                                        >
+                                            Create first task
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Right sidebar — Project Info */}
+                        <div className="flex flex-col gap-4">
+                            {/* Date Range Card */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <CalendarDays className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Schedule
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Planned Start</p>
+                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedStart)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Planned End</p>
+                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedEnd)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Actual Start</p>
+                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualStart)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Actual End</p>
+                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualEnd)}</p>
+                                        </div>
+                                    </div>
+
+                                    {location && (
+                                        <div className="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-white/5">
+                                            <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                                            <span className="text-xs text-neutral-600 dark:text-neutral-300 truncate">{location}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Connected Records */}
+                            <ErrorBoundary componentName="LinkedRecords">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm relative">
+                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                        <Layers className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Connected
+                                    </div>
+                                    <div className="p-4 max-h-[300px] overflow-y-auto">
+                                        <LinkedRecords databaseId={databaseId} pageId={pageId} />
+                                    </div>
+                                </div>
+                            </ErrorBoundary>
+
+                            {/* Budget Card */}
+                            <ErrorBoundary componentName="PageFinancialAnalysis">
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                        <TrendingUp className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Financials
+                                    </div>
+                                    <div className="p-4">
+                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} />
+                                    </div>
+                                </div>
+                            </ErrorBoundary>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'journal' && (
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm min-h-[500px]">
+                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                            <PenLine className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Journal
+                        </div>
+                        <div className="p-5">
+                            <ErrorBoundary componentName="BlockEditor">
+                                <BlockEditor databaseId={databaseId} pageId={pageId} />
+                            </ErrorBoundary>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'files' && (
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm min-h-[500px]">
+                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                            <FileText className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Files
+                        </div>
+                        <div className="flex-1 overflow-hidden relative min-h-[400px]">
+                            <ErrorBoundary componentName="FileManager">
+                                <FileManager contextType="global" contextId={pageId} />
+                            </ErrorBoundary>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        </div>
+    );
+}

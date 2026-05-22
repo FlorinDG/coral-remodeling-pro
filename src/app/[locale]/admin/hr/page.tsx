@@ -32,6 +32,22 @@ interface RecentEvent {
 }
 
 // ── Server Data Fetching ──────────────────────────────────────────
+// Roles that count as "employees" in HR context — must match /api/tenant/employees
+const HR_EMPLOYEE_ROLES = [
+    'APP_MANAGER',
+    'TENANT_PRO_OWNER',
+    'TENANT_PRO_EMPLOYEE',
+    'TENANT_ENTERPRISE_OWNER',
+    'TENANT_ENTERPRISE_MANAGER',
+    'TENANT_ENTERPRISE_EMPLOYEE',
+    'TENANT_ENTERPRISE_WORKFORCE',
+    'BOOKKEEPING',
+    'TEAMLEAD',
+    'PROJECT_MANAGER',
+    'HR_OFFICER',
+    'OFFERTES',
+];
+
 async function getHRData(tenantId: string) {
     const now = new Date();
     const startOfWeek = new Date(now);
@@ -57,9 +73,11 @@ async function getHRData(tenantId: string) {
         recentLeaveRequests,
         recentHires,
     ] = await Promise.all([
-        prisma.employee.count({ where: { tenantId, status: 'ACTIVE' } }),
-        prisma.employee.count({ where: { tenantId, status: 'ON_LEAVE' } }),
-        prisma.employee.count({ where: { tenantId, status: 'INACTIVE' } }),
+        // Count from User table (unified source of truth — matches /api/tenant/employees)
+        // Null employeeStatus = ACTIVE (legacy users created before field existed)
+        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, OR: [{ employeeStatus: 'ACTIVE' }, { employeeStatus: null }] } }),
+        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'ON_LEAVE' } }),
+        prisma.user.count({ where: { tenantId, role: { in: HR_EMPLOYEE_ROLES }, employeeStatus: 'INACTIVE' } }),
         prisma.timeOffRequest.count({ where: { tenantId, status: 'pending' } }),
         prisma.timeOffRequest.count({ where: { tenantId, status: 'approved' } }),
         prisma.scheduledShift.count({
@@ -77,11 +95,11 @@ async function getHRData(tenantId: string) {
             take: 5,
             select: { id: true, userId: true, status: true, startDate: true, endDate: true, createdAt: true, requestType: true },
         }),
-        prisma.employee.findMany({
-            where: { tenantId },
+        prisma.user.findMany({
+            where: { tenantId, role: { in: HR_EMPLOYEE_ROLES } },
             orderBy: { createdAt: 'desc' },
             take: 3,
-            select: { id: true, firstName: true, lastName: true, role: true, createdAt: true },
+            select: { id: true, name: true, role: true, createdAt: true },
         }),
     ]);
 
@@ -296,7 +314,7 @@ export default async function HRPage() {
         events.push({
             id: hire.id,
             type: 'hire',
-            description: `${hire.firstName} ${hire.lastName} added as ${hire.role}`,
+            description: `${hire.name || 'New Employee'} added as ${hire.role}`,
             time: new Date(hire.createdAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
             icon: <UserPlus className="w-4 h-4 text-emerald-600" />,
             color: 'bg-emerald-100 dark:bg-emerald-900/30',

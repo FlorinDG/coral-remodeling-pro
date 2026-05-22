@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getOAuth2Client } from '../auth/route';
+import { getOAuth2Client } from '@/lib/google-drive-oauth';
 
 export async function GET(request: Request) {
     try {

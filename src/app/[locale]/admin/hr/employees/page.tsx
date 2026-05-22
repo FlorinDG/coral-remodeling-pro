@@ -6,9 +6,12 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import {
     Users, Plus, Mail, Phone, Briefcase, X, Loader2, Pencil, Trash2, Search, Euro,
-    Calendar, MapPin, Clock, Award, ChevronRight, FileText, Building2,
+    CalendarIcon, MapPin, Clock, Award, ChevronRight, FileText, Building2,
     Shield, Heart, GraduationCap, MoreHorizontal, ArrowLeft, Save, User
 } from "lucide-react";
+import { Calendar } from '@/components/time-tracker/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/time-tracker/components/ui/popover';
+import { format } from 'date-fns';
 
 interface Employee {
     id: string;
@@ -34,12 +37,31 @@ interface EmployeeProfile extends Employee {
     notes?: string;
 }
 
-const ROLES = ["Foreman", "Carpenter", "Electrician", "Plumber", "Painter", "Laborer", "Project Manager", "Architect", "Admin", "Other"];
+// Map display roles → system roles
+const ROLE_OPTIONS = [
+    { label: 'Employee', value: 'TENANT_ENTERPRISE_EMPLOYEE' },
+    { label: 'Workforce', value: 'TENANT_ENTERPRISE_WORKFORCE' },
+    { label: 'Manager', value: 'TENANT_ENTERPRISE_MANAGER' },
+    { label: 'Project Manager', value: 'PROJECT_MANAGER' },
+    { label: 'Foreman', value: 'TEAMLEAD' },
+    { label: 'HR Officer', value: 'HR_OFFICER' },
+    { label: 'Bookkeeping', value: 'BOOKKEEPING' },
+    { label: 'Offertes', value: 'OFFERTES' },
+    { label: 'Admin', value: 'APP_MANAGER' },
+] as const;
+
+// Reverse map for display
+const ROLE_LABEL_MAP: Record<string, string> = Object.fromEntries(
+    ROLE_OPTIONS.map(r => [r.value, r.label])
+);
+function getRoleLabel(systemRole: string) {
+    return ROLE_LABEL_MAP[systemRole] || systemRole;
+}
 const DEPARTMENTS = ["Operations", "Construction", "Design", "Administration", "Finance", "HR", "Sales", "Marketing"];
 const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contractor", "Intern", "Temporary"];
 
 const emptyForm = {
-    firstName: "", lastName: "", email: "", phone: "", role: "Laborer", status: "ACTIVE",
+    firstName: "", lastName: "", email: "", phone: "", role: "TENANT_ENTERPRISE_EMPLOYEE", status: "ACTIVE",
     hourlyCost: "", hireDate: "", department: "", employmentType: "Full-time",
     emergencyContact: "", emergencyPhone: "", address: "", birthDate: "", notes: ""
 };
@@ -192,7 +214,7 @@ export default function EmployeesPage() {
                                     {emp.firstName} {emp.lastName}
                                 </h1>
                                 <div className="flex items-center gap-3 mt-1.5">
-                                    <span className="text-sm font-medium text-neutral-500">{emp.role}</span>
+                                    <span className="text-sm font-medium text-neutral-500">{getRoleLabel(emp.role)}</span>
                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
                                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dot}`} />
                                         {emp.status}
@@ -229,9 +251,9 @@ export default function EmployeesPage() {
                                     <Briefcase className="w-3.5 h-3.5" /> Employment Details
                                 </h3>
                                 <div className="space-y-3">
-                                    <DetailRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={emp.role} />
+                                    <DetailRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={getRoleLabel(emp.role)} />
                                     <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value="Operations" />
-                                    <DetailRow icon={<Calendar className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
+                                    <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
                                     {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label="Tenure" value={tenure} />}
                                 </div>
                             </div>
@@ -406,7 +428,7 @@ export default function EmployeesPage() {
                                         {/* Name & Role */}
                                         <h3 className="text-sm font-bold text-neutral-900 dark:text-white truncate">{emp.firstName} {emp.lastName}</h3>
                                         <p className="text-xs text-neutral-500 font-medium mt-0.5 flex items-center gap-1.5">
-                                            <Briefcase className="w-3 h-3" /> {emp.role}
+                                            <Briefcase className="w-3 h-3" /> {getRoleLabel(emp.role)}
                                         </p>
 
                                         {/* Meta */}
@@ -471,7 +493,7 @@ export default function EmployeesPage() {
                                     <div>
                                         <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Role *</label>
                                         <SearchableSelect
-                                            options={ROLES.map(r => ({ value: r, label: r }))}
+                                            options={ROLE_OPTIONS.map(r => ({ value: r.value, label: r.label }))}
                                             value={form.role}
                                             onChange={v => setForm(f => ({ ...f, role: v }))}
                                             placeholder="Select role..."
@@ -493,7 +515,29 @@ export default function EmployeesPage() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-4">
                                     <Field label="Hourly Cost (€)" type="number" value={form.hourlyCost} onChange={v => setForm(f => ({ ...f, hourlyCost: v }))} placeholder="0.00" />
-                                    <Field label="Hire Date" type="date" value={form.hireDate} onChange={v => setForm(f => ({ ...f, hireDate: v }))} />
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Hire Date</label>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <button
+                                                    type="button"
+                                                    className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-sm font-medium outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 text-left ${
+                                                        form.hireDate ? 'text-neutral-900 dark:text-white' : 'text-neutral-400'
+                                                    }`}
+                                                >
+                                                    <CalendarIcon className="w-4 h-4 text-neutral-400 shrink-0" />
+                                                    {form.hireDate ? format(new Date(form.hireDate), 'dd/MM/yyyy') : 'Select date...'}
+                                                </button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl" align="start">
+                                                <Calendar
+                                                    mode="single"
+                                                    selected={form.hireDate ? new Date(form.hireDate) : undefined}
+                                                    onSelect={(date) => setForm(f => ({ ...f, hireDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                                                />
+                                            </PopoverContent>
+                                        </Popover>
+                                    </div>
                                 </div>
                             </div>
 

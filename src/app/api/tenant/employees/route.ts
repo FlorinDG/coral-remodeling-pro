@@ -13,10 +13,13 @@ import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
+    'APP_MANAGER',
+    'TENANT_PRO_OWNER',
     'TENANT_PRO_EMPLOYEE',
+    'TENANT_ENTERPRISE_OWNER',
+    'TENANT_ENTERPRISE_MANAGER',
     'TENANT_ENTERPRISE_EMPLOYEE',
     'TENANT_ENTERPRISE_WORKFORCE',
-    'TENANT_ENTERPRISE_MANAGER',
     'BOOKKEEPING',
     'TEAMLEAD',
     'PROJECT_MANAGER',
@@ -45,17 +48,20 @@ export async function GET() {
         });
 
         // Return in legacy Employee shape
-        const employees = users.map(u => ({
-            id: u.id,
-            firstName: u.name?.split(' ')[0] || '',
-            lastName: u.name?.split(' ').slice(1).join(' ') || '',
-            email: u.email,
-            phone: u.phone,
-            role: u.role,
-            status: u.employeeStatus || 'ACTIVE',
-            hourlyCost: u.hourlyCost,
-            hireDate: u.hireDate,
-        }));
+        const employees = users.map(u => {
+            const parts = u.name?.replace(/\s+/g, ' ').trim().split(' ') || [];
+            return {
+                id: u.id,
+                firstName: parts[0] || '',
+                lastName: parts.slice(1).join(' ') || '',
+                email: u.email,
+                phone: u.phone,
+                role: u.role,
+                status: u.employeeStatus || 'ACTIVE',
+                hourlyCost: u.hourlyCost,
+                hireDate: u.hireDate,
+            };
+        });
 
         return NextResponse.json({ employees });
     } catch (error: unknown) {

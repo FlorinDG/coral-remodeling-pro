@@ -45,6 +45,8 @@ interface ExtractedItem {
     minimumOrder?: number;
     group?: string;
     calculationType?: string;
+    vatRate?: number;
+    totalPrice?: number;
 }
 
 interface PDFImportModalProps {
@@ -121,6 +123,8 @@ export default function PDFImportModal({
                 brand: item.brand || item.Brand || '',
                 group: item.group || item.Section || '',
                 calculationType: item.calculationType || undefined,
+                vatRate: item.vatRate || item.VatRate || undefined,
+                totalPrice: item.totalPrice || item.TotalPrice || undefined,
             }));
 
             // Run dedup detection (PRO+ only)
@@ -156,9 +160,7 @@ export default function PDFImportModal({
         const generatedBlocks: Block[] = itemsToImport.map(item => {
             const bruto = item.brutoPrice || 0;
             const discount = item.discountPercent || 0;
-            const defaultMarge = 20;
-            const costAfterDiscount = bruto * (1 - discount / 100);
-            const computedVerkoop = costAfterDiscount * (1 + defaultMarge / 100);
+            const nettoPrice = bruto * (1 - discount / 100);
 
             return {
                 id: crypto.randomUUID(),
@@ -166,8 +168,8 @@ export default function PDFImportModal({
                 content: item.title || 'Unknown Item',
                 brutoPrice: bruto,
                 discountPercent: discount,
-                margePercent: defaultMarge,
-                verkoopPrice: computedVerkoop,
+                margePercent: 0,
+                verkoopPrice: nettoPrice,
                 quantity: item.quantity || 1,
                 unit: item.unit || 'stk',
                 calculationType: (item.calculationType as Block['calculationType']) || 'materieel',
@@ -202,7 +204,7 @@ export default function PDFImportModal({
 
         const itemsToInject = extractedItems.filter((_, i) => selected[i]);
         const pagesToCreate = itemsToInject.map(item => {
-            const props: Record<string, unknown> = {};
+            const props: Record<string, any> = {};
             props[map.title] = item.title || 'Unknown Item';
             if (map.bruto)    props[map.bruto]    = item.brutoPrice    || 0;
             if (map.discount) props[map.discount] = item.discountPercent || 0;
@@ -393,6 +395,8 @@ export default function PDFImportModal({
                                             <th className="px-3 py-2 text-right">Qty</th>
                                             <th className="px-3 py-2">Unit</th>
                                             <th className="px-3 py-2 text-right">Unit Price</th>
+                                            <th className="px-3 py-2 text-right">VAT %</th>
+                                            <th className="px-3 py-2 text-right">Line Total</th>
                                             {canDedup && <th className="px-3 py-2 text-center w-24">Status</th>}
                                         </tr>
                                     </thead>
@@ -426,6 +430,8 @@ export default function PDFImportModal({
                                                     <td className="px-3 py-2 text-right">{item.quantity ?? 1}</td>
                                                     <td className="px-3 py-2 text-neutral-500">{item.unit ?? '—'}</td>
                                                     <td className="px-3 py-2 text-right">€{(item.brutoPrice || 0).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-right text-neutral-500">{item.vatRate != null ? `${item.vatRate}%` : '—'}</td>
+                                                    <td className="px-3 py-2 text-right font-medium">€{(item.totalPrice ?? ((item.brutoPrice || 0) * (item.quantity || 1))).toFixed(2)}</td>
                                                     {canDedup && (
                                                         <td className="px-3 py-2 text-center">
                                                             {dupe ? (

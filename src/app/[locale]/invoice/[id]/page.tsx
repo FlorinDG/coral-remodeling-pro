@@ -7,12 +7,13 @@ import { Block, VariantsConfig } from '@/components/admin/database/types';
 async function enrichBlocks(blocks: Block[], articlesDbId: string): Promise<Block[]> {
     const articlesDb = await prisma.globalDatabase.findUnique({
         where: { id: articlesDbId },
-        include: { pages: true, properties: true }
+        include: { pages: true }
     });
 
     if (!articlesDb) return blocks;
 
-    const variantsProp = articlesDb.properties.find(p => p.type === 'variants');
+    const properties = (articlesDb.properties as any) || [];
+    const variantsProp = properties.find((p: any) => p.type === 'variants');
     if (!variantsProp) return blocks;
 
     const enrich = (nodes: Block[]): Block[] => {
@@ -22,7 +23,8 @@ async function enrichBlocks(blocks: Block[], articlesDbId: string): Promise<Bloc
             if (block.articleId && block.selectedVariants) {
                 const articlePage = articlesDb.pages.find(p => p.id === block.articleId);
                 if (articlePage) {
-                    const variantsConfig = articlePage.properties[variantsProp.id] as VariantsConfig;
+                    const props = (articlePage.properties as Record<string, any>) ?? {};
+                    const variantsConfig = props[variantsProp.id] as VariantsConfig;
                     if (Array.isArray(variantsConfig)) {
                         let delta = 0;
                         Object.entries(block.selectedVariants).forEach(([axisId, optId]) => {

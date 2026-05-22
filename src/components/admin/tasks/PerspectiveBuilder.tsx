@@ -156,7 +156,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
                                                 <div className="flex-1 min-w-[120px]">
                                                     {propDef?.type === 'select' && (
                                                         <select
-                                                            value={rule.value}
+                                                            value={String(rule.value ?? '')}
                                                             onChange={e => handleRuleChange(idx, { value: e.target.value })}
                                                             className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
                                                         >
@@ -171,7 +171,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
 
                                                     {propDef?.type === 'checkbox' && (
                                                         <select
-                                                            value={rule.value}
+                                                            value={String(rule.value ?? '')}
                                                             onChange={e => handleRuleChange(idx, { value: e.target.value })}
                                                             className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
                                                         >
@@ -183,7 +183,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
                                                     {propDef?.type === 'date' && (
                                                         <input
                                                             type="date"
-                                                            value={rule.value}
+                                                            value={String(rule.value ?? '')}
                                                             onChange={e => handleRuleChange(idx, { value: e.target.value })}
                                                             className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
                                                         />
@@ -192,7 +192,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
                                                     {propDef?.type !== 'select' && propDef?.type !== 'checkbox' && propDef?.type !== 'date' && (
                                                         <input
                                                             type="text"
-                                                            value={rule.value}
+                                                            value={String(rule.value ?? '')}
                                                             onChange={e => handleRuleChange(idx, { value: e.target.value })}
                                                             placeholder="Value..."
                                                             className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"

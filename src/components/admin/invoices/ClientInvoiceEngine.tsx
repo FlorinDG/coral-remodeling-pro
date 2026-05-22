@@ -1062,6 +1062,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 isOpen={isImportModalOpen}
                 onClose={() => setIsImportModalOpen(false)}
                 onImportComplete={handleImportComplete}
+                onMetadataExtracted={(meta) => {
+                    // Auto-fill invoice page properties from extracted document metadata
+                    if (meta.documentRef) handleUpdateProperty('title', meta.documentRef);
+                    if (meta.documentDate) handleUpdateProperty('invoiceDate', meta.documentDate);
+                    if (meta.grandTotalExcl != null) handleUpdateProperty('totalExVat', meta.grandTotalExcl);
+                    if (meta.vatAmount != null) handleUpdateProperty('totalVat', meta.vatAmount);
+                    if (meta.grandTotalIncl != null) handleUpdateProperty('totalIncVat', meta.grandTotalIncl);
+                    if (meta.customerName) {
+                        // Try to match a client by name
+                        const match = clients.find(c => 
+                            `${c.firstName} ${c.lastName}`.toLowerCase().trim().includes(meta.customerName!.toLowerCase().trim()) ||
+                            meta.customerName!.toLowerCase().trim().includes(`${c.firstName} ${c.lastName}`.toLowerCase().trim())
+                        );
+                        if (match) handleUpdateProperty('client', match.id);
+                    }
+                }}
             />
 
             <InlineDialog

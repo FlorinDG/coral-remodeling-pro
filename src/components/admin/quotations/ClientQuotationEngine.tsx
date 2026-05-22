@@ -7,7 +7,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2 } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
-import { Page, Block } from '@/components/admin/database/types';
+import { Page, Block, PropertyValue } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
@@ -415,7 +415,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageBlocks(quotationsDbId, id, [...blocks, ...newBlocks]);
     };
 
-    const handleUpdateProperty = (key: string, value: unknown) => {
+    const handleUpdateProperty = (key: string, value: PropertyValue) => {
         if (!quotation) return;
         updatePageProperty(quotationsDbId, quotation.id, key, value);
     };
@@ -864,7 +864,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         {/* Mathematical Blocks */}
                         <DragDropContext onDragStart={() => setIsDraggingGlobal(true)} onDragEnd={handleDragEnd}>
-                            <Droppable droppableId="root" type="block">
+                            <Droppable droppableId="root" type="root">
                                 {(provided) => (
                                     <div
                                         {...provided.droppableProps}

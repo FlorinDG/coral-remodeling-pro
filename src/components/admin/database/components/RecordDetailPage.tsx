@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useTenant } from '@/context/TenantContext';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import {
@@ -13,11 +14,13 @@ import {
 
 import { Link } from '@/i18n/routing';
 import { Lock } from 'lucide-react';
+import { getBaseDbId } from '@/lib/systemDatabases';
 
 const BlockEditor       = dynamic(() => import('@/components/admin/database/components/BlockEditor'),       { ssr: false });
 const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('@/components/admin/database/components/PageFinancialAnalysis'), { ssr: false });
 const LinkedRecords     = dynamic(() => import('@/components/admin/database/components/LinkedRecords'),     { ssr: false });
+const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
 
 
 
@@ -88,6 +91,8 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     }
 
     const title = String(page.properties['title'] || page.properties['name'] || '');
+    const baseDbId = getBaseDbId(databaseId);
+    const isProjectDb = baseDbId === 'db-1';
 
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white overflow-hidden">
@@ -138,6 +143,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 </div>
 
                 {/* Right: Dashboard Content */}
+                {isProjectDb ? (
+                    <ProjectDetailView databaseId={resolvedDbId} pageId={pageId} locale={locale} />
+                ) : (
                 <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-neutral-50 dark:bg-[#0a0a0a]">
                     <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
                         
@@ -149,7 +157,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                                     <BarChart2 className="w-4 h-4 text-orange-500" /> Stats
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
+                                    <ErrorBoundary componentName="PageFinancialAnalysis">
+                                        <PageFinancialAnalysis databaseId={resolvedDbId} pageId={pageId} />
+                                    </ErrorBoundary>
                                 </div>
                             </div>
 
@@ -159,7 +169,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                                     <ExternalLink className="w-4 h-4 text-orange-500" /> Connected Properties
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <LinkedRecords databaseId={databaseId} pageId={pageId} />
+                                    <ErrorBoundary componentName="LinkedRecords">
+                                        <LinkedRecords databaseId={databaseId} pageId={pageId} />
+                                    </ErrorBoundary>
                                 </div>
                             </div>
                         </div>
@@ -172,7 +184,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                                     <PenLine className="w-4 h-4 text-orange-500" /> Journal
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
-                                    <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
+                                    <ErrorBoundary componentName="BlockEditor">
+                                        <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
+                                    </ErrorBoundary>
                                 </div>
                             </div>
 
@@ -182,13 +196,16 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                                     <FileText className="w-4 h-4 text-orange-500" /> Files
                                 </div>
                                 <div className="flex-1 overflow-hidden relative">
-                                    <FileManager contextType="global" contextId={pageId} />
+                                    <ErrorBoundary componentName="FileManager">
+                                        <FileManager contextType="global" contextId={pageId} />
+                                    </ErrorBoundary>
                                 </div>
                             </div>
                         </div>
 
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );

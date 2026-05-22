@@ -1,15 +1,19 @@
 "use client";
 
 import React, { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
+import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
 import {
     CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
-    FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target
+    FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target, ClipboardCheck
 } from 'lucide-react';
+import { Block } from '../types';
 
 const BlockEditor = dynamic(() => import('./BlockEditor'), { ssr: false });
 const FileManager = dynamic(() => import('@/components/admin/file-manager/FileManager'), { ssr: false });
@@ -49,13 +53,17 @@ interface ProjectDetailViewProps {
 
 export default function ProjectDetailView({ databaseId, pageId, locale }: ProjectDetailViewProps) {
     const { resolveDbId } = useTenant();
-    const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'files'>('overview');
+    const router = useRouter();
+    const [activeTab, setActiveTab] = useState<'overview' | 'journal' | 'files' | 'vorderingen'>('overview');
     const [taskFilter, setTaskFilter] = useState<string | null>(null);
+    const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>({});
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
     const createPage = useDatabaseStore(state => state.createPage);
+    const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const allDatabases = useDatabaseStore(state => state.databases);
 
     // Resolve Tasks DB
@@ -83,6 +91,22 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
     }, [projectTasks]);
 
     if (!database || !page) return null;
+
+    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
+    const boundDriveId = page.driveFolderId || (page.properties['driveFolderId'] as string) || undefined;
+
+    React.useEffect(() => {
+        const createDriveFolder = async () => {
+            if (!boundDriveId && page.properties['title']) {
+                const folderName = String(page.properties['title'] || page.properties['name'] || `Project ${pageId}`);
+                const driveId = await initializeContextFolder(folderName, 'project', page.id);
+                if (driveId) {
+                    updatePageDriveId(databaseId, page.id, driveId);
+                }
+            }
+        };
+        createDriveFolder();
+    }, [page.id, boundDriveId, databaseId, initializeContextFolder, updatePageDriveId]);
 
     // ── Extract project data ──────────────────────────────────────────────
     const execStatus = String(page.properties['prop-execution-status'] || '');
@@ -149,6 +173,71 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         if (!d) return '—';
         try { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
         catch { return d; }
+    };
+
+    // Vorderingenstaten logic
+    const vorderingenstaten = useMemo(() => {
+        if (!page?.properties) return [];
+        return (page.properties['vorderingenstaten'] as any[]) || [];
+    }, [page?.properties]);
+
+    const handleCreateInvoiceFromVS = (vs: any) => {
+        const invoiceDbId = resolveDbId('db-invoices');
+        const today = new Date().toISOString().split('T')[0];
+
+        // 1. Resolve client
+        const rawClient = page.properties['client'] || page.properties['prop-client'] || [];
+        const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+
+        // 2. Create the invoice
+        const newInvoice = createPage(invoiceDbId, {
+            client: clientId ? [clientId] : [],
+            betreft: `Vorderingstaat ${vs.number} — ${page.properties['title'] || page.properties['name'] || 'Project'}`,
+            status: 'opt-draft',
+            invoiceDate: today,
+            deliveryDate: today,
+            totalExVat: vs.totalExVat,
+            totalVat: vs.vatAmount,
+            totalIncVat: vs.totalIncVat,
+        });
+
+        if (!newInvoice) {
+            toast.error('Factuur aanmaken mislukt.');
+            return;
+        }
+
+        // 3. Clone line items as blocks
+        const invoiceBlocks: Block[] = vs.items.map((item: any) => ({
+            id: crypto.randomUUID(),
+            type: 'line',
+            content: `${item.content} (Cumulatieve vordering: ${item.previousProgress + item.currentProgress}%)`,
+            quantity: 1,
+            unit: 'st',
+            verkoopPrice: item.amount,
+            brutoPrice: item.amount,
+            margePercent: 0,
+            vatRate: '21',
+        }));
+
+        updatePageBlocks(invoiceDbId, newInvoice.id, invoiceBlocks);
+
+        // 4. Update the vorderingenstaten array in this project
+        const updatedStates = vorderingenstaten.map((state: any) => {
+            if (state.id === vs.id) {
+                return {
+                    ...state,
+                    status: 'invoiced',
+                    invoiceId: newInvoice.id,
+                    invoicedAt: new Date().toISOString()
+                };
+            }
+            return state;
+        });
+
+        updatePageProperty(databaseId, pageId, 'vorderingenstaten', updatedStates);
+
+        toast.success(`Factuur aangemaakt voor Vorderingstaat ${vs.number}!`);
+        router.push(`/${locale}/admin/invoices/${newInvoice.id}`);
     };
 
     return (
@@ -226,6 +315,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                 <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-white/10">
                     {[
                         { id: 'overview' as const, label: 'Overview', icon: <FolderKanban className="w-3.5 h-3.5" /> },
+                        { id: 'vorderingen' as const, label: 'Vorderingenstaten', icon: <ClipboardCheck className="w-3.5 h-3.5" /> },
                         { id: 'journal'  as const, label: 'Journal',  icon: <PenLine className="w-3.5 h-3.5" /> },
                         { id: 'files'    as const, label: 'Files',    icon: <FileText className="w-3.5 h-3.5" /> },
                     ].map(tab => (
@@ -414,6 +504,182 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                     </div>
                 )}
 
+                {activeTab === 'vorderingen' && (
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm min-h-[500px] flex flex-col">
+                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center justify-between">
+                            <div className="flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                <ClipboardCheck className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Vorderingenstaten
+                            </div>
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">
+                                {vorderingenstaten.length} vorderingen
+                            </span>
+                        </div>
+                        
+                        <div className="p-6 flex-1 flex flex-col gap-6">
+                            {/* Summary Metrics */}
+                            {vorderingenstaten.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 flex flex-col gap-1">
+                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Aantal Vorderingen</p>
+                                        <p className="text-xl font-black text-neutral-800 dark:text-neutral-100">{vorderingenstaten.length}</p>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200/40 dark:border-emerald-500/10 flex flex-col gap-1">
+                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Gefactureerd (ex. BTW)</p>
+                                        <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                            €{vorderingenstaten
+                                                .filter(vs => vs.status === 'invoiced')
+                                                .reduce((sum, vs) => sum + (Number(vs.totalExVat) || 0), 0)
+                                                .toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 rounded-xl bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-500/10 flex flex-col gap-1">
+                                        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Concept (ex. BTW)</p>
+                                        <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                                            €{vorderingenstaten
+                                                .filter(vs => vs.status === 'draft')
+                                                .reduce((sum, vs) => sum + (Number(vs.totalExVat) || 0), 0)
+                                                .toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Main List */}
+                            {vorderingenstaten.length > 0 ? (
+                                <div className="space-y-4">
+                                    {vorderingenstaten.map((vs: any) => {
+                                        const isExpanded = !!expandedStates[vs.id];
+                                        const isDraft = vs.status === 'draft';
+                                        return (
+                                            <div 
+                                                key={vs.id} 
+                                                className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-white dark:bg-neutral-900 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300"
+                                            >
+                                                {/* Card Header */}
+                                                <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-neutral-50/50 dark:bg-white/[0.02]">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                                            <ClipboardCheck className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                                                                    {vs.number}
+                                                                </h3>
+                                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                                                    isDraft 
+                                                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-400' 
+                                                                        : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                                }`}>
+                                                                    {isDraft ? 'Concept' : 'Gefactureerd'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-neutral-400 mt-0.5">
+                                                                Aangemaakt op: {formatDate(vs.date || vs.createdAt)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-6 self-end sm:self-center">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] text-neutral-400 font-medium">Totaal Bedrag</p>
+                                                            <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200 font-mono">
+                                                                €{(Number(vs.totalExVat) || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                            </p>
+                                                            <p className="text-[9px] text-neutral-400 font-mono">
+                                                                Incl. BTW: €{(Number(vs.totalIncVat) || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() => setExpandedStates(prev => ({ ...prev, [vs.id]: !isExpanded }))}
+                                                                className="px-3 py-1.5 border border-neutral-200 dark:border-white/10 rounded-lg text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                                            >
+                                                                {isExpanded ? 'Verberg details' : 'Toon details'}
+                                                            </button>
+
+                                                            {isDraft ? (
+                                                                <button
+                                                                    onClick={() => handleCreateInvoiceFromVS(vs)}
+                                                                    className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                                                                    id={`vs-invoice-btn-${vs.id}`}
+                                                                >
+                                                                    <Plus className="w-3.5 h-3.5" /> Factuur Aanmaken
+                                                                </button>
+                                                            ) : (
+                                                                <a
+                                                                    href={`/${locale}/admin/invoices/${vs.invoiceId}`}
+                                                                    className="px-3.5 py-1.5 border border-emerald-500 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                                                                >
+                                                                    <ArrowUpRight className="w-3.5 h-3.5" /> Bekijk Factuur
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Expanded Details */}
+                                                {isExpanded && (
+                                                    <div className="p-4 border-t border-neutral-105 dark:border-white/5 bg-neutral-50/30 dark:bg-white/[0.01]">
+                                                        <table className="w-full text-left text-xs border-collapse">
+                                                            <thead>
+                                                                <tr className="border-b border-neutral-200 dark:border-white/15 text-neutral-400 font-bold uppercase tracking-wider text-[10px]">
+                                                                    <th className="py-2 px-2">Beschrijving</th>
+                                                                    <th className="py-2 px-2 text-right">Originele Waarde</th>
+                                                                    <th className="py-2 px-2 text-right">Vorige Voortgang</th>
+                                                                    <th className="py-2 px-2 text-right">Huidige Voortgang</th>
+                                                                    <th className="py-2 px-2 text-right">Bedrag Periode</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {vs.items?.map((item: any) => {
+                                                                    const originalTotal = (item.quantity || 1) * (item.verkoopPrice || 0);
+                                                                    return (
+                                                                        <tr key={item.id} className="border-b border-neutral-100 dark:border-white/5 last:border-0 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/[0.01]">
+                                                                            <td className="py-3 px-2 font-medium">
+                                                                                {item.content}
+                                                                            </td>
+                                                                            <td className="py-3 px-2 text-right tabular-nums font-mono">
+                                                                                €{originalTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                                            </td>
+                                                                            <td className="py-3 px-2 text-right">
+                                                                                {item.previousProgress}%
+                                                                            </td>
+                                                                            <td className="py-3 px-2 text-right text-indigo-650 dark:text-indigo-400 font-bold">
+                                                                                +{item.currentProgress}%
+                                                                            </td>
+                                                                            <td className="py-3 px-2 text-right font-bold text-neutral-900 dark:text-white tabular-nums font-mono">
+                                                                                €{Number(item.amount).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                                            </td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center py-20 text-neutral-400 dark:text-neutral-500 bg-neutral-50/50 dark:bg-white/[0.01] rounded-xl border border-dashed border-neutral-200 dark:border-white/10">
+                                    <div className="p-4 rounded-full bg-neutral-100 dark:bg-neutral-850 text-neutral-350 dark:text-neutral-750 mb-4">
+                                        <ClipboardCheck className="w-12 h-12 opacity-80" />
+                                    </div>
+                                    <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-350 mb-1">
+                                        Geen vorderingenstaten
+                                    </h3>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm text-center leading-relaxed">
+                                        Er zijn nog geen vorderingenstaten gegenereerd voor dit project. Ga naar de gekoppelde offerte in de offertemodule om uw eerste vorderingstaat aan te maken.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'journal' && (
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm min-h-[500px]">
                         <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
@@ -434,7 +700,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                         </div>
                         <div className="flex-1 overflow-hidden relative min-h-[400px]">
                             <ErrorBoundary componentName="FileManager">
-                                <FileManager contextType="global" contextId={pageId} />
+                                <FileManager contextType="project" contextId={pageId} driveFolderId={boundDriveId} />
                             </ErrorBoundary>
                         </div>
                     </div>

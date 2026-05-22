@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2 } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
@@ -14,6 +14,7 @@ import { generatePdfBlob } from '@/lib/generate-pdf';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import CreateVorderingstaatModal from './CreateVorderingstaatModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
@@ -58,6 +59,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     const [isHydrated, setIsHydrated] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isVorderingModalOpen, setIsVorderingModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -279,6 +281,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
     const rawProject = quotation.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
+    const project = useMemo(() => {
+        return projects.find(p => p.id === projectId) || null;
+    }, [projects, projectId]);
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
@@ -991,6 +996,22 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             ) : null;
                         })()}
 
+                        {/* Create Vorderingstaat — only when a project is linked */}
+                        {projectId && project && (
+                            <button
+                                onClick={() => setIsVorderingModalOpen(true)}
+                                className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
+                                style={{
+                                    backgroundColor: 'color-mix(in srgb, #6366f1 10%, white)',
+                                    borderColor: 'color-mix(in srgb, #6366f1 25%, transparent)',
+                                    color: '#6366f1',
+                                }}
+                                id="create-vorderingstaat-btn"
+                            >
+                                <ClipboardCheck className="w-3.5 h-3.5" /> Create Vorderingstaat
+                            </button>
+                        )}
+
                         {/* Addendum */}
                         <button
                             onClick={handleCreateAddendum}
@@ -1152,6 +1173,21 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 existingBlocks={blocks}
                 canDedup={canDedup}
             />
+
+            {projectId && project && (
+                <CreateVorderingstaatModal
+                    isOpen={isVorderingModalOpen}
+                    onClose={() => setIsVorderingModalOpen(false)}
+                    blocks={blocks}
+                    projectId={String(projectId)}
+                    project={project}
+                    updatePageProperty={updatePageProperty}
+                    projectDbId={projectDbId}
+                    quotationId={id}
+                    quotationTitle={String(quotationTitle)}
+                    locale={locale}
+                />
+            )}
         </div>
         </ErrorBoundary>
     );

@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useTenant } from '@/context/TenantContext';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
@@ -44,6 +45,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         state.databases.find(db => db.id === resolvedDbId)?.pages.find(p => p.id === pageId)
     );
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
 
     // ── FREE tier gate — record detail view is PRO+ only ──
     if (planType === 'FREE') {
@@ -90,9 +92,44 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         );
     }
 
-    const title = String(page.properties['title'] || page.properties['name'] || '');
+    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
+    const boundDriveId = page.driveFolderId || (page.properties['driveFolderId'] as string) || undefined;
+
+    // Map database to contextType
     const baseDbId = getBaseDbId(databaseId);
+    let fileContextType: 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' = 'project';
+    if (baseDbId === 'db-crm') {
+        fileContextType = 'client';
+    } else if (baseDbId === 'db-tasks') {
+        fileContextType = 'task';
+    } else if (baseDbId === 'db-quotations') {
+        fileContextType = 'quotation';
+    } else if (baseDbId === 'db-invoices') {
+        fileContextType = 'invoice';
+    }
+
+    React.useEffect(() => {
+        const createDriveFolder = async () => {
+            if (!boundDriveId && page.properties['title']) {
+                const folderName = String(page.properties['title'] || page.properties['name'] || `Record ${pageId}`);
+                const driveId = await initializeContextFolder(folderName, fileContextType, page.id);
+                if (driveId) {
+                    updatePageDriveId(resolvedDbId, page.id, driveId);
+                }
+            }
+        };
+        createDriveFolder();
+    }, [page.id, boundDriveId, resolvedDbId, fileContextType, initializeContextFolder, updatePageDriveId]);
+
+    const title = String(page.properties['title'] || page.properties['name'] || '');
     const isProjectDb = baseDbId === 'db-1';
+
+    let displayName = database.name;
+    if (baseDbId === 'db-bobex') {
+        displayName = 'Bobex Pipeline';
+    } else if (baseDbId === 'db-crm') {
+        displayName = 'Main Pipeline';
+    }
 
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-neutral-950 text-neutral-900 dark:text-white overflow-hidden">
@@ -110,7 +147,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 min-w-0">
                     <span className="font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500 text-[10px]">
-                        {database.name}
+                        {displayName}
                     </span>
                     <ChevronRight className="w-3 h-3 flex-shrink-0" />
                     <input
@@ -197,7 +234,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                                 </div>
                                 <div className="flex-1 overflow-hidden relative">
                                     <ErrorBoundary componentName="FileManager">
-                                        <FileManager contextType="global" contextId={pageId} />
+                                        <FileManager contextType={fileContextType} contextId={pageId} driveFolderId={boundDriveId} />
                                     </ErrorBoundary>
                                 </div>
                             </div>

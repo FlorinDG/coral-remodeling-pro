@@ -934,7 +934,13 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                 // Automated Google Drive Folder generation when a title is first defined
                                 if (propertyId === 'title' && typeof value === 'string' && value.trim() !== '' && !page.driveFolderId) {
-                                if (isBaseDb(databaseId, 'db-clients') || ['db-1', 'db-portals'].includes(databaseId)) {
+                                    if (
+                                        isBaseDb(databaseId, 'db-clients') ||
+                                        isBaseDb(databaseId, 'db-1') ||
+                                        isBaseDb(databaseId, 'db-portals') ||
+                                        isBaseDb(databaseId, 'db-hr') ||
+                                        isBaseDb(databaseId, 'db-documents')
+                                    ) {
                                         fetch('/api/drive/init', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },

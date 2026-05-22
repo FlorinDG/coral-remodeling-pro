@@ -448,6 +448,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     };
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const page = database?.pages.find(p => p.id === pageId);
@@ -468,21 +469,25 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     // Auto-create a Google Drive folder if this page doesn't have one yet
     React.useEffect(() => {
         const createDriveFolder = async () => {
-            if (page && !page.properties['driveFolderId'] && page.properties['title']) {
-                const folderName = String(page.properties['title']);
+            if (page) {
+                const boundDriveId = page.driveFolderId || (page.properties['driveFolderId'] as string) || undefined;
+                if (!boundDriveId && page.properties['title']) {
+                    const folderName = String(page.properties['title']);
 
-                // We use 'project' arbitrarily here, but ideally we'd pass a more specific contextType if needed
-                const driveId = await initializeContextFolder(folderName, 'project', page.id);
+                    // We use 'project' arbitrarily here, but ideally we'd pass a more specific contextType if needed
+                    const driveId = await initializeContextFolder(folderName, 'project', page.id);
 
-                if (driveId) {
-                    // Save the new folder ID back into the Database Page record properly
-                    updatePageProperty(databaseId, page.id, 'driveFolderId', driveId);
+                    if (driveId) {
+                        // Save the new folder ID back into the Database Page record properly
+                        updatePageDriveId(databaseId, page.id, driveId);
+                        updatePageProperty(databaseId, page.id, 'driveFolderId', driveId);
+                    }
                 }
             }
         };
 
         createDriveFolder();
-    }, [page?.id, page?.properties, databaseId, initializeContextFolder, updatePageProperty]);
+    }, [page?.id, page?.driveFolderId, page?.properties, databaseId, initializeContextFolder, updatePageDriveId, updatePageProperty]);
 
     // Garbage collection script to prune the mass-cloned Google Drive folders created by the previous infinite loop bug
     const { nodes, deleteNode } = useFileManagerStore();

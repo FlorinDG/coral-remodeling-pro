@@ -1,15 +1,15 @@
 ### This is where we will keep track of issues.
 
 
-1. Connected Properties card: backlinking should be bi-directional 
-2 Expenses > approval: Add "Reject" button alongside approve 
-3. Expenses > approval: In "Reject" mode, the field for adding a comment should be enabled. 
-4. three levels of settings Superadmin environment - in here ALL available/existing settings have to appear., ERP configuration e.g. database schema, tenant configuration - settings that control the ERP app itself to which users are locked out of, specific to the tenant/user environment, where users manage their own business settings.
-5. When on mobile, the app should have a more streamlined design, with a bottom navigation bar for the main modules. The current design is too desktop-focused and not optimized for mobile use.
-6. HR module - Employee profiles should have a more developed, comprehensive design. 
+1. [FIXED] Connected Properties card: backlinking should be bi-directional (implemented cross-database bidirectional backlink discovery).
+2. [FIXED] Expenses > approval: Add "Reject" button alongside approve.
+3. [FIXED] Expenses > approval: In "Reject" mode, the field for adding a comment should be enabled.
+4. [BUILT] Three levels of settings: Superadmin environment (all settings), ERP configuration (schema/modules, user-locked), and Workspace Settings (business preferences).
+5. [BUILT] Mobile-friendly bottom navigation: Bottom nav bar for mobile main modules (Home/Tasks/Projects/Calendar/Settings).
+6. [BUILT] HR Module: Rich, comprehensive Employee Profiles with contact details, employment history, compensation rates, emergency contacts, skills/certs, and quick stats.
+7. [BUILT] Standalone Mobile Work Hub: Custom Homepage optimised for workforce mobile access.
+8. [BUILT] Independent /workhub PWA Webapp: Fully decoupled workforce frontend shell with custom service worker, offline support, invite workflow, and role-based routing.
 
-7. Workforce app - the Work Hub tab in the HR module should be the homepage of the mobile app. needs to be highly optimised for mobile. 
-8. the entire HR module needs serious work - it has to be accessible on it's own, standalone webapp. every other required connection should be properly setup, tasks, file storage, projects, approvals, etc. 
 
 ### Session 2026-05-22 — Codebase Combing Results
 

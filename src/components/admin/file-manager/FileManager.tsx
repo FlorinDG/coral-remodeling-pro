@@ -172,7 +172,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
     const [viewingFile, setViewingFile] = useState<FileNode | null>(null);
     const [tagFilter, setTagFilter] = useState<string | null>(null);
 
-    const isGlobalMode = !contextType;
+    const isGlobalMode = !contextType || contextType === 'global';
 
     useEffect(() => {
         // Trigger live fetch from Google Drive API on mount and context change

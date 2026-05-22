@@ -10,8 +10,8 @@ export default function PageFinancialAnalysis({ databaseId, pageId }: { database
 
     if (!page) return null;
 
-    const budget = Number(page.properties['prop-budget']) || 0;
-    const costs = Number(page.properties['prop-actual-costs']) || 0;
+    const budget = Number(page.properties?.['prop-budget']) || 0;
+    const costs = Number(page.properties?.['prop-actual-costs']) || 0;
 
     // If there is absolutely no financial data configured yet, hide the chart zone completely
     if (budget === 0 && costs === 0) return null;

@@ -42,10 +42,12 @@ export async function POST(req: Request) {
             console.log(`[Partitioning] Successfully generated Root Vault for Tenant ${tenantId} at ${tenantRootDriveId}`);
         }
 
+        const isBase = (id: string, base: string) => id === base || id.startsWith(base + '-');
+
         let driveFolderId = null;
 
         // Generate Master Client Folder Template inside the Tenant's Vault
-        if (databaseId === 'db-clients') {
+        if (isBase(databaseId, 'db-clients')) {
             const { masterId } = await generateClientFolderTemplate(title.trim(), tenantRootDriveId);
             driveFolderId = masterId;
         }
@@ -56,15 +58,40 @@ export async function POST(req: Request) {
         // we will generate this securely at the root, and let manual reorganization handle grouping optionally later OR we can fetch it.
         // For Phase 1 strict automation: we generate it under a generic "Orphaned Databases" folder or root, unless client relationship is provided.
         // In the future: we can check if `page.properties['client-relation']` exists.
-        else if (databaseId === 'db-1') {
+        else if (isBase(databaseId, 'db-1')) {
             // Generating Project hierarchy inside Tenant's Root for safety isolation!
             const { projectId } = await generateProjectFolderTemplate(title.trim(), tenantRootDriveId);
             driveFolderId = projectId;
         }
 
-        else if (databaseId === 'db-portals') {
+        else if (isBase(databaseId, 'db-portals')) {
             const newPortalId = await createFolder(title.trim(), tenantRootDriveId);
             driveFolderId = newPortalId;
+        }
+
+        else if (isBase(databaseId, 'db-hr')) {
+            // Automatically build an "HR Module" folder under the tenant vault, generating subdirectory structures: "ID & Photo's", "Contracts & Payroll", and "Required Documents".
+            const hrModuleFolderId = await findOrCreateFolder('HR Module', tenantRootDriveId);
+            const employeeFolderId = await createFolder(title.trim(), hrModuleFolderId);
+            await createFolder("ID & Photo's", employeeFolderId);
+            await createFolder("Contracts & Payroll", employeeFolderId);
+            await createFolder("Required Documents", employeeFolderId);
+            driveFolderId = employeeFolderId;
+        }
+
+        else if (isBase(databaseId, 'db-documents')) {
+            // Automatically build a "Business Documents" vault directory with folders: "Contracts", "Disputes & Legal", "Insurance & Certs", and "General Support".
+            const bizDocsFolderId = await findOrCreateFolder('Business Documents', tenantRootDriveId);
+            
+            // Build the main category subfolders inside "Business Documents" so they always exist
+            await findOrCreateFolder('Contracts', bizDocsFolderId);
+            await findOrCreateFolder('Disputes & Legal', bizDocsFolderId);
+            await findOrCreateFolder('Insurance & Certs', bizDocsFolderId);
+            await findOrCreateFolder('General Support', bizDocsFolderId);
+            
+            // Create a specific folder for this document record (using its title) inside "Business Documents"
+            const docFolderId = await createFolder(title.trim(), bizDocsFolderId);
+            driveFolderId = docFolderId;
         }
 
         if (!driveFolderId) {

@@ -826,5 +826,65 @@ export const mockDatabases: Database[] = [
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         ownerId: 'system'
+    },
+    {
+        id: 'db-documents',
+        name: 'Business Documents',
+        description: 'Secure vault for storing contracts, legal templates, insurance, and company disputes.',
+        icon: '🗄️',
+        properties: [
+            { id: 'title', name: 'Document Title', type: 'text' },
+            {
+                id: 'prop-doc-category',
+                name: 'Category',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-contract', name: 'Contracts', color: 'blue' },
+                        { id: 'opt-dispute', name: 'Disputes & Legal', color: 'red' },
+                        { id: 'opt-insurance', name: 'Insurance & Certs', color: 'green' },
+                        { id: 'opt-support', name: 'General Support', color: 'gray' }
+                    ]
+                }
+            },
+            {
+                id: 'prop-doc-status',
+                name: 'Status',
+                type: 'select',
+                config: {
+                    options: [
+                        { id: 'opt-draft', name: 'Draft', color: 'gray' },
+                        { id: 'opt-review', name: 'Under Review', color: 'orange' },
+                        { id: 'opt-active', name: 'Active', color: 'green' },
+                        { id: 'opt-expired', name: 'Expired', color: 'red' }
+                    ]
+                }
+            },
+            {
+                id: 'prop-doc-project',
+                name: 'Project',
+                type: 'relation',
+                config: { relationDatabaseId: 'db-1' }
+            },
+            {
+                id: 'prop-doc-client',
+                name: 'Client',
+                type: 'relation',
+                config: { relationDatabaseId: 'db-clients' }
+            },
+            {
+                id: 'prop-doc-employee',
+                name: 'Employee',
+                type: 'relation',
+                config: { relationDatabaseId: 'db-hr' }
+            }
+        ],
+        pages: [],
+        activeFilters: [],
+        views: [{ id: 'view-doc-table', name: 'All Documents', type: 'table' }],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        ownerId: 'system'
     }
 ];
+

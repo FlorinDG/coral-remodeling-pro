@@ -72,7 +72,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const resolvedTargetDbId = resolveDbId(targetDbId);
         const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
         
-        const clientName = String(page.properties['title'] || page.properties['name'] || 'Item');
+        const clientName = String(page.properties?.['title'] || page.properties?.['name'] || 'Item');
         
         // Prepare initial properties for the new page
         const initialProps: Record<string, PropertyValue> = {
@@ -91,7 +91,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const newPage = createPage(resolvedTargetDbId, initialProps);
 
         // Link it to the current page
-        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        const currentRelations = (page.properties?.[prop.id] as string[]) || [];
         updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
         // Navigate to the new page
@@ -108,7 +108,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
 
         // 1. Update current page's relation to include the targetPageId
-        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        const currentRelations = (page.properties?.[prop.id] as string[]) || [];
         if (!currentRelations.includes(targetPageId)) {
             updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, targetPageId]);
         }
@@ -120,7 +120,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         if (targetRelationToCurrent) {
             const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
             if (targetPage) {
-                const targetRelations = (targetPage.properties[targetRelationToCurrent.id] as string[]) || [];
+                const targetRelations = (targetPage.properties?.[targetRelationToCurrent.id] as string[]) || [];
                 if (!targetRelations.includes(pageId)) {
                     updatePageProperty(resolvedTargetDbId, targetPageId, targetRelationToCurrent.id, [...targetRelations, pageId]);
                 }
@@ -138,7 +138,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
 
         // 1. Remove targetPageId from current page's relations
-        const currentRelations = (page.properties[prop.id] as string[]) || [];
+        const currentRelations = (page.properties?.[prop.id] as string[]) || [];
         updatePageProperty(databaseId, pageId, prop.id, currentRelations.filter(id => id !== targetPageId));
 
         // 2. Remove pageId from the target page's relations (backlink)
@@ -148,7 +148,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         if (targetRelationToCurrent) {
             const targetPage = targetDb?.pages.find(p => p.id === targetPageId);
             if (targetPage) {
-                const targetRelations = (targetPage.properties[targetRelationToCurrent.id] as string[]) || [];
+                const targetRelations = (targetPage.properties?.[targetRelationToCurrent.id] as string[]) || [];
                 updatePageProperty(resolvedTargetDbId, targetPageId, targetRelationToCurrent.id, targetRelations.filter(id => id !== pageId));
             }
         }
@@ -164,13 +164,13 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const targetDb = allDatabases.find(d => d.id === resolvedTargetDbId);
         if (!targetDb) return [];
 
-        const currentRelations = (page.properties[selectedProp.id] as string[]) || [];
+        const currentRelations = (page.properties?.[selectedProp.id] as string[]) || [];
 
         return targetDb.pages
             .filter(p => !currentRelations.includes(p.id)) // exclude already connected ones
             .filter(p => {
                 if (!search.trim()) return true;
-                const title = String(p.properties['title'] || p.properties['name'] || 'Untitled').toLowerCase();
+                const title = String(p.properties?.['title'] || p.properties?.['name'] || 'Untitled').toLowerCase();
                 return title.includes(search.toLowerCase());
             });
     };
@@ -185,7 +185,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         const otherRelProps = otherDb.properties.filter(p => p.type === 'relation');
         for (const relProp of otherRelProps) {
             for (const otherPage of otherDb.pages) {
-                const val = otherPage.properties[relProp.id];
+                const val = otherPage.properties?.[relProp.id];
                 const ids = Array.isArray(val) ? val : (typeof val === 'string' && val ? [val] : []);
                 if (ids.includes(pageId)) {
                     // Avoid duplicates (a page might reference us through multiple props)
@@ -204,7 +204,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const universalOptions = selectedUniversalDb
         ? selectedUniversalDb.pages.filter(p => {
             if (!search.trim()) return true;
-            const title = String(p.properties['title'] || p.properties['name'] || 'Untitled').toLowerCase();
+            const title = String(p.properties?.['title'] || p.properties?.['name'] || 'Untitled').toLowerCase();
             return title.includes(search.toLowerCase());
         })
         : [];
@@ -227,7 +227,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         }
 
         // Link using the existing handler logic
-        const currentRelations = (page!.properties[relProp.id] as string[]) || [];
+        const currentRelations = (page?.properties?.[relProp.id] as string[]) || [];
         if (!currentRelations.includes(targetPageId)) {
             updatePageProperty(databaseId, pageId, relProp.id, [...currentRelations, targetPageId]);
         }
@@ -239,7 +239,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         if (targetRelationToCurrent) {
             const targetPage = selectedUniversalDb.pages.find(p => p.id === targetPageId);
             if (targetPage) {
-                const targetRelations = (targetPage.properties[targetRelationToCurrent.id] as string[]) || [];
+                const targetRelations = (targetPage.properties?.[targetRelationToCurrent.id] as string[]) || [];
                 if (!targetRelations.includes(pageId)) {
                     updatePageProperty(selectedUniversalDb.id, targetPageId, targetRelationToCurrent.id, [...targetRelations, pageId]);
                 }
@@ -353,7 +353,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                                             onClick={() => handleLinkExisting(selectedProp, opt.id)}
                                                             className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-all text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 group"
                                                         >
-                                                            <span className="truncate pr-2">{String(opt.properties['title'] || opt.properties['name'] || 'Untitled')}</span>
+                                                            <span className="truncate pr-2">{String(opt.properties?.['title'] || opt.properties?.['name'] || 'Untitled')}</span>
                                                             <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">Link</span>
                                                         </button>
                                                     ))
@@ -407,7 +407,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                                     onClick={() => handleUniversalLink(opt.id)}
                                                     className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-xl transition-all text-left text-xs font-semibold text-neutral-700 dark:text-neutral-300 group"
                                                 >
-                                                    <span className="truncate pr-2">{String(opt.properties['title'] || opt.properties['name'] || 'Untitled')}</span>
+                                                    <span className="truncate pr-2">{String(opt.properties?.['title'] || opt.properties?.['name'] || 'Untitled')}</span>
                                                     <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">Link</span>
                                                 </button>
                                             ))
@@ -435,7 +435,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             {/* Compact Cardless List Layout */}
             <div className="flex flex-col gap-4">
                 {relationProps.map(prop => {
-                    const rawVal = page.properties[prop.id];
+                    const rawVal = page.properties?.[prop.id];
                     const ids: string[] = Array.isArray(rawVal)
                         ? rawVal
                         : (typeof rawVal === 'string' && rawVal ? [rawVal] : []);
@@ -477,7 +477,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                                 className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                             >
                                                 <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
-                                                    {String(lp.page.properties['title'] || lp.page.properties['name'] || 'Untitled')}
+                                                    {String(lp.page.properties?.['title'] || lp.page.properties?.['name'] || 'Untitled')}
                                                 </span>
                                                 <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-neutral-100 dark:bg-white/5 text-neutral-500 rounded uppercase tracking-wider shrink-0">
                                                     {lp.db.name}
@@ -532,7 +532,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                 >
                                     <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
-                                        {String(bl.page.properties['title'] || bl.page.properties['name'] || 'Untitled')}
+                                        {String(bl.page.properties?.['title'] || bl.page.properties?.['name'] || 'Untitled')}
                                     </span>
                                     <span className="text-[9px] font-extrabold px-1.5 py-0.5 bg-orange-50 dark:bg-orange-950/20 text-orange-500 rounded uppercase tracking-wider shrink-0">
                                         {bl.db.name}

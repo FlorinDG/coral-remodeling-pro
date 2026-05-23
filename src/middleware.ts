@@ -184,7 +184,7 @@ export default async function middleware(req: NextRequest) {
         const role       = token?.role;
 
         const isLoginPage  = pathname.includes('/login');
-        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite');
+        const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite') || pathname.includes('/reset-password');
 
         // Virtualise path for auth checks
         const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin') && !pathname.startsWith('/workhub')

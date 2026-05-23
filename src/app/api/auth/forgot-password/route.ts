@@ -17,8 +17,8 @@ export async function POST(req: Request) {
             where: { email: normalizedEmail },
         });
 
-        // No user, or Google-only user (no password) → silent success
-        if (!user || !user.password) return successResponse;
+        // No user → silent success
+        if (!user) return successResponse;
 
         // Generate a random token (raw) and store a hashed version
         const rawToken = crypto.randomUUID();

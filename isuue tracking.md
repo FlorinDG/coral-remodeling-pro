@@ -37,6 +37,6 @@
 
 20. [FIXED] Deleted old `/api/extract-pdf/route.ts` endpoint — superseded by `/api/integrations/parse-pdf`.
 
-21. HR module - documents - id, photo's, contracts, and other required documents, need a database to hold them all, and the folder in the storage 
-22. create a module for documents - contracts, disputes, everything that is in support of business, from which any module can connect. create storage folder for module
-23. advancement state document in project managemen, that can be turned into invoice. add functionality to quotation - button in the bottom row "Create Vorderingstaat" - this opens a pop-up window where user can select the items from the quotation and create a vorderingstaat from them. This should appear in the projects module, in the project's detail view, in a tab called "Vorderingenstaten", also with a button to invoice them.
+21. [BUILT] HR module - documents: Setup partitioned database support and automated Google Drive subfolder scaffolding for IDs, photos, contracts, and required files.
+22. [BUILT] Standalone Business Documents module: Centralized documents system supporting contracts, disputes, insurance, and certs, connectable from any module with automatic Drive folder generation.
+23. [BUILT] Advancement state document (Vorderingstaat) in project management: Added "Create Vorderingstaat" in the quotation bottom row allowing progress-based item generation. Integrates a dedicated "Vorderingenstaten" project detail tab with cumulative tracking and draft-to-invoice conversion.

@@ -322,11 +322,11 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     const isBlankState = sumInvoiced === 0 && (!tenant?.companyName || !tenant?.vatNumber) && stats.every(s => s.value === 0);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-end justify-between mb-2">
+            <div className="flex items-end justify-between mb-1.5">
                 <div>
-                    <h2 className="text-[9px] font-black uppercase tracking-[0.3em] mb-1" style={{ color: 'var(--brand-color, #d35400)' }}>
+                    <h2 className="text-[9px] font-black uppercase tracking-[0.3em] mb-0.5" style={{ color: 'var(--brand-color, #d35400)' }}>
                         {t('dashboard.administrative')}
                     </h2>
                     <h1 className="text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
@@ -371,12 +371,12 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
             {/* KPI Grid */}
             {stats.length > 0 && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {stats.map((stat) => (
                         <Link
                             key={stat.label}
                             href={stat.href}
-                            className="bg-white dark:bg-white/[0.02] p-4 rounded-2xl border border-neutral-200 dark:border-white/5 transition-all shadow-sm flex items-center justify-between hover:border-[var(--brand-color,#d35400)]/30 group"
+                            className="bg-white dark:bg-white/[0.02] p-3.5 rounded-2xl border border-neutral-200 dark:border-white/5 transition-all shadow-sm flex items-center justify-between hover:border-[var(--brand-color,#d35400)]/30 group"
                         >
                             <div>
                                 <p className="text-neutral-500 text-[9px] font-bold uppercase tracking-widest">{stat.label}</p>
@@ -391,11 +391,11 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
             )}
 
             {/* Main Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
 
                 {/* Area Chart — 6-month financials */}
-                <div className={`bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-6 ${hasInvoicing ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
-                    <div className="flex justify-between items-center mb-4">
+                <div className={`bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-4 ${hasInvoicing ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+                    <div className="flex justify-between items-center mb-3">
                         <div>
                             <h3 className="text-sm font-bold flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} />
@@ -415,8 +415,8 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
                 {/* Invoice Status Bar Chart */}
                 {hasInvoicing && (
-                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-6 flex flex-col">
-                        <div className="mb-4">
+                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-4 flex flex-col">
+                        <div className="mb-3">
                             <h3 className="text-sm font-bold flex items-center gap-2">
                                 <TrendingUp className="w-4 h-4 text-purple-500" />
                                 Invoice Status
@@ -431,18 +431,18 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
             </div>
 
             {/* Lower Grid: Quick Actions + Recent Invoice Activity */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
                 {/* Quick Actions */}
-                <div className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {quickActions.map((action) => (
                             <Link
                                 key={action.label}
                                 href={action.href}
-                                className="flex flex-col items-center justify-center gap-3 p-4 bg-white dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-2xl hover:border-[var(--brand-color,#d35400)]/30 transition-all group shadow-sm text-center"
+                                className="flex flex-col items-center justify-center gap-3 p-3 bg-white dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-2xl hover:border-[var(--brand-color,#d35400)]/30 transition-all group shadow-sm text-center"
                             >
-                                <div className="p-3 rounded-2xl bg-neutral-100 dark:bg-white/5 group-hover:scale-110 transition-transform">
+                                <div className="p-2.5 rounded-2xl bg-neutral-100 dark:bg-white/5 group-hover:scale-110 transition-transform">
                                     <action.icon className={`w-5 h-5 ${action.color}`} />
                                 </div>
                                 <span className="text-[10px] font-bold uppercase tracking-wider">{action.label}</span>
@@ -452,8 +452,8 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
                     {/* Summary totals pill */}
                     {hasInvoicing && (
-                        <div className="bg-white dark:bg-white/[0.02] rounded-2xl border border-neutral-200 dark:border-white/5 p-4 shadow-sm">
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500 mb-3">6-Month Summary</p>
+                        <div className="bg-white dark:bg-white/[0.02] rounded-2xl border border-neutral-200 dark:border-white/5 p-3.5 shadow-sm">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500 mb-2">6-Month Summary</p>
                             <div className="flex flex-col gap-2">
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-neutral-600 dark:text-neutral-400">Total Invoiced</span>
@@ -483,7 +483,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                 {hasInvoicing && (
                     <div className="xl:col-span-2">
                         <div className="bg-white dark:bg-white/[0.02] rounded-3xl border border-neutral-200 dark:border-white/5 overflow-hidden shadow-sm h-full flex flex-col">
-                            <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between bg-neutral-50/50 dark:bg-white/[0.01]">
+                            <div className="px-4 py-3 border-b border-neutral-200 dark:border-white/5 flex items-center justify-between bg-neutral-50/50 dark:bg-white/[0.01]">
                                 <h3 className="text-sm font-bold flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-neutral-400" />
                                     Recent Invoices
@@ -506,7 +506,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                                         : inv.status === 'opt-sent' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
                                         : 'bg-neutral-100 dark:bg-white/10 text-neutral-500';
                                     return (
-                                        <div key={inv.id} className="px-6 py-4 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
+                                        <div key={inv.id} className="px-4 py-2.5 flex items-center justify-between hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-500/10 dark:to-blue-500/20 flex items-center justify-center shrink-0">
                                                     <FileText className="w-4 h-4 text-blue-500" />

@@ -40,17 +40,29 @@ export default function NewProjectButton() {
         setStatusText("Building Google Drive context...");
 
         try {
-            const rootProjectId = await createDriveFolder(`Project: ${formData.name}`);
+            // Centralized backend directory syncer: partitions & structures in one secure API roundtrip
+            const initRes = await fetch('/api/drive/init', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    databaseId: projectDbId,
+                    pageId: 'new',
+                    title: formData.name,
+                }),
+            });
 
-            setStatusText("Scaffolding operational directories...");
-            const subfolders = ['Offertes', 'Vorderingen', 'Facturen', 'Bestellingen', 'Suppliers', 'Media'];
-            await Promise.all(subfolders.map(folderName => createDriveFolder(folderName, rootProjectId)));
+            if (!initRes.ok) {
+                throw new Error(`Drive syncer failed: ${await initRes.text()}`);
+            }
+
+            const { driveFolderId } = await initRes.json();
 
             setStatusText("Saving project record...");
             const propertiesToInject: Record<string, any> = {
                 'title': formData.name,
                 'prop-start-date': formData.startDate || '',
                 'prop-end-date': formData.targetEndDate || '',
+                'driveFolderId': driveFolderId,
             };
             if (formData.budget) {
                 propertiesToInject['prop-budget'] = parseFloat(formData.budget);
@@ -59,10 +71,10 @@ export default function NewProjectButton() {
             // Server-first: await Postgres write before closing modal
             const result = await createPageServerFirst(projectDbId, propertiesToInject);
             if (result.success) {
-                useDatabaseStore.getState().addConfirmedPage(result.page);
+                const enrichedPage = { ...result.page, driveFolderId };
+                useDatabaseStore.getState().addConfirmedPage(enrichedPage);
             } else {
                 console.error('[NewProjectButton] DB write failed:', result.error);
-                // Don't block the user — Drive scaffolding succeeded, DB will retry via syncPage
             }
 
             setIsOpen(false);

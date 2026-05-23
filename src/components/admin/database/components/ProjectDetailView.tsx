@@ -8,10 +8,13 @@ import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
+import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
+import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import {
     CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
-    FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target, ClipboardCheck
+    FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target, ClipboardCheck,
+    Coins, Hammer, Calculator
 } from 'lucide-react';
 import { Block } from '../types';
 
@@ -117,6 +120,53 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
     const plannedEnd = String(page.properties['prop-end-date'] || '');
     const actualStart = String(page.properties['prop-actual-start'] || '');
     const actualEnd = String(page.properties['prop-actual-end'] || '');
+
+    // Project-specific billing & cost rates
+    const billingRule = String(page.properties['prop-billing-rule'] || 'opt-fixed');
+    const ratePersonHour = Number(page.properties['prop-rate-person-hour']) || 0;
+    const rateEquipmentHour = Number(page.properties['prop-rate-equipment-hour']) || 0;
+    const actualEquipmentHours = Number(page.properties['prop-actual-equipment-hours']) || 0;
+
+    // Fetch employee shifts and clock entries to calculate actual hours worked
+    const { entries: clockEntries } = useClockEntries();
+    const { shifts: allShifts } = useScheduledShifts();
+
+    const projectShifts = useMemo(() => {
+        return allShifts.filter(s => s.projectId === pageId || s.project_id === pageId);
+    }, [allShifts, pageId]);
+
+    const projectClockEntries = useMemo(() => {
+        const shiftIds = new Set(projectShifts.map(s => s.id));
+        return clockEntries.filter(e => e.shiftId && shiftIds.has(e.shiftId));
+    }, [clockEntries, projectShifts]);
+
+    const actualLaborHours = useMemo(() => {
+        let total = 0;
+        projectClockEntries.forEach(entry => {
+            if (entry.clockOutTime) {
+                const start = new Date(entry.clockInTime).getTime();
+                const end = new Date(entry.clockOutTime).getTime();
+                let hours = (end - start) / (1000 * 60 * 60);
+                if (!entry.noBreak && hours > 4) {
+                    hours = Math.max(0, hours - 0.5);
+                }
+                total += hours;
+            }
+        });
+        return Math.round(total * 100) / 100;
+    }, [projectClockEntries]);
+
+    const actualLaborCost = useMemo(() => {
+        return actualLaborHours * ratePersonHour;
+    }, [actualLaborHours, ratePersonHour]);
+
+    const actualEquipmentCost = useMemo(() => {
+        return actualEquipmentHours * rateEquipmentHour;
+    }, [actualEquipmentHours, rateEquipmentHour]);
+
+    const totalActualCost = useMemo(() => {
+        return actualLaborCost + actualEquipmentCost;
+    }, [actualLaborCost, actualEquipmentCost]);
 
     const statusInfo = EXEC_STATUS_MAP[execStatus] || EXEC_STATUS_MAP['opt-to-do'];
     const finInfo = FINANCIAL_STATUS_MAP[finStatus] || FINANCIAL_STATUS_MAP['opt-quote'];
@@ -477,6 +527,82 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                 </div>
                             </div>
 
+                            {/* Billing & Cost Rates Card */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center justify-between font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <div className="flex items-center gap-2">
+                                        <Coins className="w-4 h-4 text-emerald-500" /> Billing & Rates
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-4">
+                                    {/* Billing Rule */}
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Billing Rule</label>
+                                        <select
+                                            value={billingRule}
+                                            onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-billing-rule', e.target.value)}
+                                            className="w-full text-xs font-bold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 text-neutral-800 dark:text-neutral-200 focus:border-emerald-500 outline-none transition-colors"
+                                        >
+                                            <option value="opt-fixed">Vaste prijs (Fixed Fee)</option>
+                                            <option value="opt-progress">Vorderingenstaten (Progress-based)</option>
+                                            <option value="opt-hourly">In Regie (Hourly)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Cost Rates */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Labor Rate (€/h)</label>
+                                            <input
+                                                type="number"
+                                                value={ratePersonHour || ''}
+                                                onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-rate-person-hour', parseFloat(e.target.value) || 0)}
+                                                className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Equip. Rate (€/h)</label>
+                                            <input
+                                                type="number"
+                                                value={rateEquipmentHour || ''}
+                                                onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-rate-equipment-hour', parseFloat(e.target.value) || 0)}
+                                                className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
+                                                placeholder="0.00"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Equipment Hours */}
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Actual Equipment Hours</label>
+                                        <input
+                                            type="number"
+                                            value={actualEquipmentHours || ''}
+                                            onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-actual-equipment-hours', parseFloat(e.target.value) || 0)}
+                                            className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
+                                            placeholder="0.0"
+                                        />
+                                    </div>
+
+                                    {/* Cost Breakdown Summary */}
+                                    <div className="pt-3 border-t border-neutral-100 dark:border-white/5 space-y-2">
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                            <span>Labor ({actualLaborHours}h)</span>
+                                            <span className="font-mono">€{actualLaborCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                            <span>Equipment ({actualEquipmentHours}h)</span>
+                                            <span className="font-mono">€{actualEquipmentCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs font-black text-neutral-800 dark:text-neutral-200 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800">
+                                            <span>Actual Costs</span>
+                                            <span className="font-mono text-emerald-500">€{totalActualCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Connected Records */}
                             <ErrorBoundary componentName="LinkedRecords">
                                 <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm relative">
@@ -496,7 +622,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                         <TrendingUp className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Financials
                                     </div>
                                     <div className="p-4">
-                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} />
+                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} costs={totalActualCost} />
                                     </div>
                                 </div>
                             </ErrorBoundary>

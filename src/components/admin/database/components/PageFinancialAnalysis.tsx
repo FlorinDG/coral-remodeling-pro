@@ -5,13 +5,13 @@ import { useDatabaseStore } from '../store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
-export default function PageFinancialAnalysis({ databaseId, pageId }: { databaseId: string, pageId: string }) {
+export default function PageFinancialAnalysis({ databaseId, pageId, costs: passedCosts }: { databaseId: string, pageId: string, costs?: number }) {
     const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
 
     if (!page) return null;
 
     const budget = Number(page.properties?.['prop-budget']) || 0;
-    const costs = Number(page.properties?.['prop-actual-costs']) || 0;
+    const costs = passedCosts !== undefined ? passedCosts : (Number(page.properties?.['prop-actual-costs']) || Number(page.properties?.['prop-actual-cost']) || 0);
 
     // If there is absolutely no financial data configured yet, hide the chart zone completely
     if (budget === 0 && costs === 0) return null;

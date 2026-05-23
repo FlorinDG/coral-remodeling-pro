@@ -144,10 +144,34 @@ export const useFileManagerStore = create<FileManagerState>()(
 
             initializeContextFolder: async (folderName, contextType, contextId) => {
                 try {
+                    let databaseId = '';
+                    if (contextType === 'project') databaseId = 'db-1';
+                    else if (contextType === 'client') databaseId = 'db-clients';
+                    else if (contextType === 'hr') databaseId = 'db-hr';
+                    else if (contextType === 'contract' || contextType === 'documents' || contextType === 'document') databaseId = 'db-documents';
+
+                    if (databaseId) {
+                        const initRes = await fetch('/api/drive/init', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                databaseId,
+                                pageId: contextId,
+                                title: folderName,
+                            }),
+                        });
+                        if (initRes.ok) {
+                            const initData = await initRes.json();
+                            if (initData.driveFolderId) {
+                                return initData.driveFolderId;
+                            }
+                        }
+                    }
+
+                    // Fallback to generic simple folder creation
                     const formData = new FormData();
                     formData.append('action', 'create_folder');
                     formData.append('name', folderName || `New ${contextType}`);
-                    // Omitting parentId tells the backend to place it in the Root Folder
 
                     const res = await fetch('/api/drive', {
                         method: 'POST',

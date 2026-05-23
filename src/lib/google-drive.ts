@@ -119,16 +119,22 @@ export async function generateClientFolderTemplate(clientName: string, masterPar
 export async function generateProjectFolderTemplate(projectName: string, parentProjectenId: string) {
     const projectId = await createFolder(projectName, parentProjectenId);
 
-    const supplierQuotesId = await createFolder('Supplier Quotes', projectId);
+    const offertesId = await createFolder('Offertes', projectId);
+    const vorderingenId = await createFolder('Vorderingen', projectId);
+    const facturenId = await createFolder('Facturen', projectId);
+    const bestellingenId = await createFolder('Bestellingen', projectId);
+    const suppliersId = await createFolder('Suppliers', projectId);
     const mediaId = await createFolder('Media', projectId);
-    const otherFilesId = await createFolder('Other Files', projectId);
 
     return {
         projectId,
         subfolders: {
-            supplierQuotesId,
-            mediaId,
-            otherFilesId
+            offertesId,
+            vorderingenId,
+            facturenId,
+            bestellingenId,
+            suppliersId,
+            mediaId
         }
     };
 }

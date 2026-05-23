@@ -1,6 +1,6 @@
 export type FileNodeType = 'file' | 'folder';
 
-export type FileContextType = 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract';
+export type FileContextType = 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' | 'hr' | 'documents' | 'document';
 
 export interface FileNode {
     id: string;

@@ -367,6 +367,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-actual-end',     name: 'Actual End',        type: 'date' },
       { id: 'prop-budget',        name: 'Internal Budget',   type: 'currency' },
       { id: 'prop-location',      name: 'Location',          type: 'text' },
+      { id: 'prop-billing-rule',  name: 'Billing Rule',      type: 'select', config: { options: [
+        { id: 'opt-fixed',    name: 'Vaste prijs',       color: 'blue' },
+        { id: 'opt-progress', name: 'Vorderingenstaten', color: 'purple' },
+        { id: 'opt-hourly',   name: 'In Regie',          color: 'orange' },
+      ]}},
+      { id: 'prop-rate-person-hour',    name: 'Person Hour Rate',    type: 'currency' },
+      { id: 'prop-rate-equipment-hour', name: 'Equipment Hour Rate', type: 'currency' },
+      { id: 'prop-actual-equipment-hours', name: 'Equipment Hours',  type: 'number' },
     ],
     'db-tasks': [
       { id: 'title',             name: 'Taak / Materiaal',  type: 'text' },

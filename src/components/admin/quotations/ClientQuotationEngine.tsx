@@ -621,7 +621,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 if (block.type === 'line' || block.type === 'post') {
                     createPage(tasksDbId, {
                         title: block.content || 'Uitvoerende Taak',
-                        'prop-task-status': 'opt-todo',
+                        'prop-task-status': 't-todo',
                         'prop-task-project': [newProject.id]
                     });
                 }
@@ -790,6 +790,22 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 )}
                             </div>
                         )}
+
+                        {/* Project Billing Rule Badge */}
+                        {projectId && project && (() => {
+                            const BILLING_RULES_MAP: Record<string, { label: string; color: string }> = {
+                                'opt-fixed':    { label: 'Vaste prijs',       color: 'bg-blue-500/10 text-blue-500 border-blue-500/25' },
+                                'opt-progress': { label: 'Vorderingenstaten', color: 'bg-purple-500/10 text-purple-500 border-purple-500/25' },
+                                'opt-hourly':   { label: 'In Regie',          color: 'bg-orange-500/10 text-orange-500 border-orange-500/25' },
+                            };
+                            const rule = String(project.properties?.['prop-billing-rule'] || 'opt-fixed');
+                            const cfg = BILLING_RULES_MAP[rule] || BILLING_RULES_MAP['opt-fixed'];
+                            return (
+                                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border ${cfg.color} animate-in fade-in zoom-in-95 duration-200`}>
+                                    Billing: {cfg.label}
+                                </span>
+                            );
+                        })()}
 
                         {/* Status Selector — uses shared styled dropdown for consistency with grid view */}
                         {(() => {

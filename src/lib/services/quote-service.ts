@@ -120,7 +120,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                             databaseId: tasksDbId,
                             properties: {
                                 title: block.content || 'Task',
-                                'prop-task-status': 'opt-todo',
+                                'prop-task-status': 't-todo',
                                 'prop-task-project': [projectId]
                             } as Prisma.InputJsonValue,
                             createdBy: 'system',

@@ -19,6 +19,9 @@ export interface ClockEntry {
   shiftId: string | null;
   createdAt: string;
   updatedAt: string;
+  noBreak?: boolean;
+  no_break?: boolean;
+  photos?: string[];
   // snake_case aliases for legacy components
   user_id?: string;
   clock_in_time?: string;
@@ -58,6 +61,8 @@ export function useClockEntries() {
       approved_at: e.approvedAt,
       created_at: e.createdAt,
       updated_at: e.updatedAt,
+      no_break: e.noBreak,
+      photos: e.photos,
     };
   }
 

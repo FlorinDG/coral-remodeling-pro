@@ -69,7 +69,14 @@ export default function WorkHubShell({
     const firstName = userName.split(' ')[0];
 
     const isActive = (href: string) => {
-        if (href === '/workhub') return pathname === '/workhub';
+        if (href === '/workhub') {
+            return pathname === '/workhub' || 
+                   pathname.startsWith('/workhub/team') || 
+                   pathname.startsWith('/workhub/timesheets');
+        }
+        if (href === '/workhub/files') {
+            return pathname.startsWith('/workhub/files') || pathname.startsWith('/workhub/projects');
+        }
         return pathname.startsWith(href);
     };
 

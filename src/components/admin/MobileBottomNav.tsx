@@ -31,9 +31,33 @@ export default function MobileBottomNav() {
         <nav className="fixed bottom-0 inset-x-0 z-[60] md:hidden border-t border-neutral-200 dark:border-white/10 bg-white/90 dark:bg-black/90 backdrop-blur-xl safe-area-bottom">
             <div className="flex items-center justify-around h-16 px-2">
                 {MOBILE_ITEMS.map(item => {
-                    const isActive = item.href === '/admin'
-                        ? pathname === '/admin'
-                        : pathname.startsWith(item.href);
+                    const isActive = (() => {
+                        if (item.id === 'workhub') {
+                            return pathname.startsWith('/admin/hr');
+                        }
+                        if (item.id === 'tasks') {
+                            return pathname.startsWith('/admin/tasks') || pathname.startsWith('/admin/database/db-tasks');
+                        }
+                        if (item.id === 'projects') {
+                            return pathname.startsWith('/admin/projects-management') || pathname.startsWith('/admin/database/db-1');
+                        }
+                        if (item.id === 'calendar') {
+                            return pathname.startsWith('/admin/calendar');
+                        }
+                        if (item.id === 'more') {
+                            return pathname.startsWith('/admin/settings') || 
+                                   pathname.startsWith('/admin/crm') || 
+                                   pathname.startsWith('/admin/database/db-clients') ||
+                                   pathname.startsWith('/admin/database/db-suppliers') ||
+                                   pathname.startsWith('/admin/database/db-quotations') ||
+                                   pathname.startsWith('/admin/database/db-invoices') ||
+                                   pathname.startsWith('/admin/database/db-expenses') ||
+                                   pathname.startsWith('/admin/database/db-tickets');
+                        }
+                        return item.href === '/admin'
+                            ? pathname === '/admin'
+                            : pathname.startsWith(item.href);
+                    })();
 
                     return (
                         <Link

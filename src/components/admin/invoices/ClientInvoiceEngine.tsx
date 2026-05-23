@@ -44,7 +44,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const projectDbId    = resolveDbId('db-1');
     const quotationsDbId = resolveDbId('db-quotations');
 
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return useDatabaseStore.persist?.hasHydrated() || false;
+    });
     const [hydrationAttempted, setHydrationAttempted] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
@@ -59,13 +62,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
     useEffect(() => {
-        useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
-        setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
+        const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
         // Fetch specific SaaS branding metadata dynamically
         fetch('/api/tenant/profile').then(res => res.json()).then(data => {
             if (data && !data.error) setTenantProfile(data);
         }).catch(e => console.error("Failed to fetch tenant profile", e));
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     const invoice = useDatabaseStore(state => {

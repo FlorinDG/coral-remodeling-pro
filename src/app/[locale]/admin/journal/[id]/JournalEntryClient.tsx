@@ -19,13 +19,18 @@ interface JournalEntryPageClientProps {
 
 export default function JournalEntryPageClient({ entryId, locale }: JournalEntryPageClientProps) {
     const router = useRouter();
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return useDatabaseStore.persist?.hasHydrated() || false;
+    });
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     useEffect(() => {
-        useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
-        setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
+        const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     const database = useDatabaseStore(state =>

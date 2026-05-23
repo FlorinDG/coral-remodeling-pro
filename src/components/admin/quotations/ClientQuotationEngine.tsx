@@ -57,7 +57,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const clientsDbId    = resolveDbId('db-clients');
     const projectDbId    = resolveDbId('db-1');
 
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return useDatabaseStore.persist?.hasHydrated() || false;
+    });
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isVorderingModalOpen, setIsVorderingModalOpen] = useState(false);
     const [isSending, setIsSending] = useState(false);
@@ -79,13 +82,19 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const pendingHistoryBlocksRef = useRef<Block[] | null>(null);
 
     useEffect(() => {
-        useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
-        setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
+        const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
         // Fetch specific SaaS branding metadata dynamically
         fetch('/api/tenant/profile').then(res => res.json()).then(data => {
             if (data && !data.error) setTenantProfile(data);
         }).catch(e => console.error("Failed to fetch tenant profile", e));
+
+        return () => {
+            if (unsubscribe) unsubscribe();
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
     }, []);
 
     const quotation = useDatabaseStore(state => {

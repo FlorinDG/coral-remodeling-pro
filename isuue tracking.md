@@ -40,3 +40,13 @@
 21. [BUILT] HR module - documents: Setup partitioned database support and automated Google Drive subfolder scaffolding for IDs, photos, contracts, and required files.
 22. [BUILT] Standalone Business Documents module: Centralized documents system supporting contracts, disputes, insurance, and certs, connectable from any module with automatic Drive folder generation.
 23. [BUILT] Advancement state document (Vorderingstaat) in project management: Added "Create Vorderingstaat" in the quotation bottom row allowing progress-based item generation. Integrates a dedicated "Vorderingenstaten" project detail tab with cumulative tracking and draft-to-invoice conversion.
+24. [BUILT] Provide alternative verification method for admin accounts. The only way to reset an admin password is via the `reset-password` script, which requires physical server access or direct database manipulation. 
+25. [BUILT] Add user self-service password reset for admin accounts. 
+
+26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.
+27. [TODO] Ensure project cost rates (person-hour, equipment) are properly saved to the project record and used to calculate project-level profitability (planned vs actual cost).
+28. [TODO] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component.
+29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
+30. [TODO] Fix mobile bottom-nav to persist correctly when navigating to submodules like CRM or HR (currently it disappears on many routes).
+31. [BUILT] Use less white space in dashboard to make better use of space.
+32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.

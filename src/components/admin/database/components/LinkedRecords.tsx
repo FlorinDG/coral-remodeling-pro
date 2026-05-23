@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Loader2, Plus, Link2, Search, X, Check } from 'lucide-react';
+import { ExternalLink, Loader2, Plus, Link2, Search, X } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database, Page, Property, PropertyValue } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
@@ -38,12 +38,8 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
 
     const relationProps = database ? database.properties.filter((p: Property) => p.type === 'relation') : [];
 
-    // Set default selected property if not set
-    useEffect(() => {
-        if (relationProps.length > 0 && !selectedPropId) {
-            setSelectedPropId(relationProps[0].id);
-        }
-    }, [relationProps, selectedPropId]);
+    // Fallback selection to the first relation property if selectedPropId is null/unset
+    const effectiveSelectedPropId = selectedPropId || relationProps[0]?.id || null;
 
     // Handle clicking outside the dropdown popover
     useEffect(() => {
@@ -62,7 +58,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
 
     if (!database || !page) return null;
 
-    const selectedProp = relationProps.find(p => p.id === selectedPropId);
+    const selectedProp = relationProps.find(p => p.id === effectiveSelectedPropId);
 
     const handleCreateAndLink = async (prop: Property) => {
         const targetDbId = prop.config?.relationDatabaseId;
@@ -302,7 +298,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                                         key={p.id}
                                                         onClick={() => { setSelectedPropId(p.id); setSearch(''); }}
                                                         className={`px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
-                                                            selectedPropId === p.id
+                                                            effectiveSelectedPropId === p.id
                                                                 ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
                                                                 : 'bg-neutral-50 dark:bg-white/5 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/10'
                                                         }`}

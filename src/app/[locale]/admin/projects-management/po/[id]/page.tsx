@@ -11,11 +11,16 @@ export default function PurchaseOrderPage() {
     const router = useRouter();
     const id = params?.id as string;
 
-    const [isHydrated, setIsHydrated] = useState(false);
+    const [isHydrated, setIsHydrated] = useState(() => {
+        if (typeof window === "undefined") return false;
+        return useDatabaseStore.persist?.hasHydrated() || false;
+    });
 
     useEffect(() => {
-        useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
-        setIsHydrated(useDatabaseStore.persist?.hasHydrated() || false);
+        const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     const { resolveDbId } = useTenant();

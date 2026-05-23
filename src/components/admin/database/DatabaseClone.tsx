@@ -388,8 +388,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'ty-task', name: 'Taak',      color: 'blue'   },
         { id: 'ty-mat',  name: 'Materiaal', color: 'orange' },
       ]}},
-      { id: 'prop-task-qty',      name: 'Quantity',          type: 'text' },
-      { id: 'prop-task-price',    name: 'Unit Price',        type: 'currency' },
     ],
     'db-articles': [
       { id: 'title',              name: 'Naam',              type: 'text' },

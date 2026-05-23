@@ -43,19 +43,11 @@
 24. [BUILT] Provide alternative verification method for admin accounts. The only way to reset an admin password is via the `reset-password` script, which requires physical server access or direct database manipulation. 
 25. [BUILT] Add user self-service password reset for admin accounts. 
 
-26. [BUILT] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.
-27. [BUILT] Ensure project cost rates (person-hour, equipment) are properly saved to the project record and used to calculate project-level profitability (planned vs actual cost).
-28. [FIXED] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component.
-29. [BUILT] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
-30. [FIXED] Fix mobile bottom-nav to persist correctly when navigating to submodules like CRM or HR (currently it disappears on many routes).
+26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.
+27. [TODO] Ensure project cost rates (person-hour, equipment) are properly saved to the project record and used to calculate project-level profitability (planned vs actual cost).
+28. [TODO] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component.
+29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
+30. [TODO] Fix mobile bottom-nav to persist correctly when navigating to submodules like CRM or HR (currently it disappears on many routes).
 31. [BUILT] Use less white space in dashboard to make better use of space.
 32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.
-33. [FIXED] Locked task manager page wrapper height to the screen viewport (`overflow-hidden`) to prevent infinite scrolling, allowing correct internal scrolling for task columns and the right detail drawer.
-34. [BUILT] Integrated a "Full Page View" routing callback in the task detail panel, redirecting users to the dedicated database editor page view at `/${locale}/admin/database/db-tasks/${pageId}`.
-35. [BUILT] Built a premium custom Calendar popover DatePicker component starting on Monday with clean localized headers, navigation, and clear actions, replacing native browser date pickers.
-36. [BUILT] Implemented a green pulsing "✓ Saved" auto-save confirmation badge inside the task detail drawer header to show real-time persistence.
-37. [FIXED] Refactored the detail panel drawer's footer layout into a dual-column layout containing a primary "Save & Close" button and a compact red Lucide `Trash2` deletion icon button.
-38. [BUILT] Built highly polished custom animated checkmark components for React Data Sheet Grid, replacing native checkboxes in the Bobex pipeline table with green Lucide checks.
-39. [BUILT] Developed premium searchable dropdown select popovers (`SearchableSelectDropdown`) for relation and multi-select database properties, integrating a top search bar to filter linked items.
-40. [FIXED] Upgraded "Add to My Day" to a premium orange Lucide `Sun` icon and added a hover-trigger red Lucide `Trash2` deletion button inside individual task list rows.
-41. [FIXED] Filtered Kanban board columns dynamically based on the active perspective (such as "My Day" smart filter), aligning list and board views.
+33. [TODO]I asked to replace the system select elements with custom built, with a searchbar integrated to it

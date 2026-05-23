@@ -51,3 +51,4 @@
 31. [BUILT] Use less white space in dashboard to make better use of space.
 32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.
 33. [TODO]I asked to replace the system select elements with custom built, with a searchbar integrated to it
+34. [TODO] In the projects overview, the tasks. make title of the task editable and add a bar under the title with action elements. status select, priority, dates, attachments icon, and so on.

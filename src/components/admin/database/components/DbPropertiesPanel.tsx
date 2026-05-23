@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useDatabaseStore } from '../store';
 import { Property, PropertyValue, SelectOption } from '../types';
@@ -90,6 +90,96 @@ function RelationValue({ ids }: { ids: string[] }) {
                     <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover/rel:opacity-100 transition-opacity ml-0.5" />
                 </button>
             ))}
+        </div>
+    );
+}
+
+interface SearchableSelectDropdownProps<T> {
+    options: T[];
+    onSelect: (option: T) => void;
+    getLabel: (option: T) => string;
+    getId: (option: T) => string;
+    placeholder?: string;
+}
+
+function SearchableSelectDropdown<T>({
+    options,
+    onSelect,
+    getLabel,
+    getId,
+    placeholder = "+ add..."
+}: SearchableSelectDropdownProps<T>) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const clickAway = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', clickAway);
+        return () => document.removeEventListener('mousedown', clickAway);
+    }, [open]);
+
+    const filtered = options.filter(opt =>
+        getLabel(opt).toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+        <div ref={ref} className="relative w-full">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full text-left text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 text-xs font-semibold border border-neutral-200 dark:border-white/10 rounded px-2 py-1 bg-white dark:bg-neutral-900 transition-colors flex items-center justify-between shadow-sm"
+            >
+                <span>{placeholder}</span>
+                <ChevronDown className="w-3 h-3 opacity-55" />
+            </button>
+            {open && (
+                <div
+                    className="absolute top-full left-0 z-[100] mt-1 bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-white/15 rounded-xl shadow-2xl p-2 flex flex-col gap-2 w-64 max-h-60 overflow-hidden"
+                >
+                    <div className="flex items-center gap-1.5 px-2 py-1 bg-neutral-105 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/5 flex-shrink-0">
+                        <Search className="w-3.5 h-3.5 text-neutral-400" />
+                        <input
+                            type="text"
+                            autoFocus
+                            placeholder="Search..."
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            className="bg-transparent border-none text-xs outline-none w-full text-neutral-900 dark:text-white placeholder:text-neutral-400 font-semibold"
+                        />
+                        {search && (
+                            <button type="button" onClick={() => setSearch('')} className="text-neutral-400 hover:text-neutral-600">
+                                <X className="w-3 h-3" />
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex-1 overflow-y-auto divide-y divide-neutral-100 dark:divide-white/5 max-h-[160px] pr-0.5">
+                        {filtered.length === 0 ? (
+                            <p className="text-[11px] text-neutral-400 italic text-center py-4">No records found</p>
+                        ) : (
+                            filtered.map(opt => (
+                                <button
+                                    key={getId(opt)}
+                                    type="button"
+                                    onClick={() => {
+                                        onSelect(opt);
+                                        setSearch('');
+                                        setOpen(false);
+                                    }}
+                                    className="w-full text-left px-2 py-1.5 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg text-xs font-semibold text-neutral-850 dark:text-neutral-200 transition-colors"
+                                >
+                                    {getLabel(opt)}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -200,14 +290,13 @@ function PropertyRow({
                     })}
                 </div>
                 {!isReadOnly && unselected.length > 0 && (
-                    <select
-                        value=""
-                        onChange={e => { if (e.target.value) onChange(property.id, [...selectedIds, e.target.value]); }}
-                        className={`${inputBase} text-neutral-400 cursor-pointer`}
-                    >
-                        <option value="">+ add…</option>
-                        {unselected.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-                    </select>
+                    <SearchableSelectDropdown
+                        options={unselected}
+                        getId={(o) => o.id}
+                        getLabel={(o) => o.name}
+                        onSelect={(o) => onChange(property.id, [...selectedIds, o.id])}
+                        placeholder="+ add..."
+                    />
                 )}
             </div>
         );
@@ -242,17 +331,13 @@ function PropertyRow({
                     })}
                 </div>
                 {!isReadOnly && unselected.length > 0 && (
-                    <select
-                        value=""
-                        onChange={e => { if (e.target.value) onChange(property.id, [...ids, e.target.value]); }}
-                        className={`${inputBase} text-neutral-400 cursor-pointer border border-neutral-200 dark:border-white/10 rounded px-1 py-0.5 mt-0.5`}
-                    >
-                        <option value="">+ link record…</option>
-                        {unselected.map(p => {
-                            const pTitle = String(p.properties['title'] || p.properties['name'] || p.id.slice(0, 8));
-                            return <option key={p.id} value={p.id}>{pTitle}</option>;
-                        })}
-                    </select>
+                    <SearchableSelectDropdown
+                        options={unselected}
+                        getId={(p) => p.id}
+                        getLabel={(p) => String(p.properties['title'] || p.properties['name'] || p.id.slice(0, 8))}
+                        onSelect={(p) => onChange(property.id, [...ids, p.id])}
+                        placeholder="+ link record..."
+                    />
                 )}
                 {ids.length === 0 && isReadOnly && <span className="text-neutral-400 text-xs italic">—</span>}
             </div>

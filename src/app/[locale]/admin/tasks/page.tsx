@@ -18,7 +18,7 @@ export default function TasksPage() {
 
     return (
         <div className="flex flex-col w-full h-full">
-            <div className="w-full h-full p-4 lg:p-6 pb-10 flex flex-col hide-scrollbar overflow-y-auto">
+            <div className="w-full h-full p-4 lg:p-6 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-[var(--brand-color,#d35400)]/10 text-[var(--brand-color,#d35400)] rounded-xl flex items-center justify-center">

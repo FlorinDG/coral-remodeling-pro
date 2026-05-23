@@ -4,13 +4,268 @@ import { useState, useEffect, useRef } from 'react';
 import {
     X, ExternalLink, ChevronDown, Calendar, AlertTriangle,
     Circle, CircleDot, Eye, CheckCircle2, XCircle,
-    Paperclip, UploadCloud, Trash2, Image, FileText
+    Paperclip, UploadCloud, Trash2, Image, FileText,
+    ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { Page } from '@/components/admin/database/types';
 import { StatusIcon, STATUS_CONFIG, PRIORITY_CONFIG } from './TaskRow';
 import { parseRecurrenceRule } from './RecurrenceEngine';
 import { todayStr } from './hooks/useTaskFilter';
 import { RecurrenceSelector } from './RecurrenceSelector';
+
+interface TaskDetailPanelProps {
+    page: Page;
+    onClose: () => void;
+    onUpdate: (pageId: string, props: Partial<Record<string, unknown>>) => void;
+    onDelete: (pageId: string) => void;
+    onOpenFullPage?: (pageId: string) => void;
+}
+
+interface CustomDatePickerProps {
+    value: string;
+    onChange: (val: string) => void;
+    min?: string;
+    placeholder?: string;
+    clearable?: boolean;
+}
+
+function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', clearable = true }: CustomDatePickerProps) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    const parsedDate = value ? new Date(value) : null;
+    const initialYear = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate.getFullYear() : new Date().getFullYear();
+    const initialMonth = parsedDate && !isNaN(parsedDate.getTime()) ? parsedDate.getMonth() : new Date().getMonth();
+
+    const [currentYear, setCurrentYear] = useState(initialYear);
+    const [currentMonth, setCurrentMonth] = useState(initialMonth);
+
+    useEffect(() => {
+        if (value) {
+            const d = new Date(value);
+            if (!isNaN(d.getTime())) {
+                setCurrentYear(d.getFullYear());
+                setCurrentMonth(d.getMonth());
+            }
+        }
+    }, [value]);
+
+    useEffect(() => {
+        const clickAway = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        if (open) {
+            document.addEventListener('mousedown', clickAway);
+        }
+        return () => document.removeEventListener('mousedown', clickAway);
+    }, [open]);
+
+    const handlePrevMonth = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentMonth === 0) {
+            setCurrentMonth(11);
+            setCurrentYear(prev => prev - 1);
+        } else {
+            setCurrentMonth(prev => prev - 1);
+        }
+    };
+
+    const handleNextMonth = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (currentMonth === 11) {
+            setCurrentMonth(0);
+            setCurrentYear(prev => prev + 1);
+        } else {
+            setCurrentMonth(prev => prev + 1);
+        }
+    };
+
+    const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const getFirstDayOfMonth = (y: number, m: number) => new Date(y, m, 1).getDay();
+
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDayIndex = (getFirstDayOfMonth(currentYear, currentMonth) + 6) % 7;
+
+    const days: {
+        day: number;
+        month: number;
+        year: number;
+        isCurrentMonth: boolean;
+    }[] = [];
+    const prevMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const prevYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const daysInPrevMonth = getDaysInMonth(prevYear, prevMonth);
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+        days.push({
+            day: daysInPrevMonth - i,
+            month: prevMonth,
+            year: prevYear,
+            isCurrentMonth: false
+        });
+    }
+
+    for (let i = 1; i <= daysInMonth; i++) {
+        days.push({
+            day: i,
+            month: currentMonth,
+            year: currentYear,
+            isCurrentMonth: true
+        });
+    }
+
+    const remaining = 42 - days.length;
+    const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+    for (let i = 1; i <= remaining; i++) {
+        days.push({
+            day: i,
+            month: nextMonth,
+            year: nextYear,
+            isCurrentMonth: false
+        });
+    }
+
+    const MONTH_NAMES = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const weekDays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+    const handleSelectDay = (dayObj: typeof days[0], e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const dateStr = `${dayObj.year}-${String(dayObj.month + 1).padStart(2, '0')}-${String(dayObj.day).padStart(2, '0')}`;
+        if (min && dateStr < min) return;
+        onChange(dateStr);
+        setOpen(false);
+    };
+
+    const handleClear = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onChange('');
+        setOpen(false);
+    };
+
+    const formatDateDisplay = (dateStr: string) => {
+        if (!dateStr) return placeholder;
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+        const y = parseInt(parts[0]);
+        const m = parseInt(parts[1]) - 1;
+        const d = parseInt(parts[2]);
+        const dateObj = new Date(y, m, d);
+        if (isNaN(dateObj.getTime())) return dateStr;
+        return dateObj.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    };
+
+    const isSelected = (dayObj: typeof days[0]) => {
+        if (!value) return false;
+        const dateStr = `${dayObj.year}-${String(dayObj.month + 1).padStart(2, '0')}-${String(dayObj.day).padStart(2, '0')}`;
+        return dateStr === value;
+    };
+
+    const isDisabled = (dayObj: typeof days[0]) => {
+        if (!min) return false;
+        const dateStr = `${dayObj.year}-${String(dayObj.month + 1).padStart(2, '0')}-${String(dayObj.day).padStart(2, '0')}`;
+        return dateStr < min;
+    };
+
+    const isToday = (dayObj: typeof days[0]) => {
+        const today = new Date();
+        return dayObj.day === today.getDate() && dayObj.month === today.getMonth() && dayObj.year === today.getFullYear();
+    };
+
+    return (
+        <div ref={ref} className="relative inline-block w-full sm:w-auto">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border border-neutral-350 dark:border-white/20 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-white/5 transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 shadow-sm"
+            >
+                <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
+                    <span>{formatDateDisplay(value)}</span>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 opacity-60" />
+            </button>
+
+            {open && (
+                <div className="absolute top-full mt-1.5 left-0 z-[110] bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-white/20 rounded-xl shadow-2xl p-4 w-72 select-none">
+                    <div className="flex items-center justify-between mb-4">
+                        <button
+                            type="button"
+                            onClick={handlePrevMonth}
+                            className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-650 dark:text-neutral-350 transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <span className="text-sm font-bold text-neutral-850 dark:text-neutral-200">
+                            {MONTH_NAMES[currentMonth]} {currentYear}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleNextMonth}
+                            className="p-1 rounded-lg hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-650 dark:text-neutral-350 transition-colors"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-black text-neutral-400 uppercase mb-2">
+                        {weekDays.map(d => (
+                            <div key={d}>{d}</div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                        {days.map((d, index) => {
+                            const selected = isSelected(d);
+                            const disabled = isDisabled(d);
+                            const today = isToday(d);
+                            return (
+                                <button
+                                    key={index}
+                                    type="button"
+                                    disabled={disabled}
+                                    onClick={(e) => handleSelectDay(d, e)}
+                                    className={`
+                                        aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition-all relative
+                                        ${!d.isCurrentMonth ? 'text-neutral-350 dark:text-neutral-600 opacity-60' : 'text-neutral-800 dark:text-neutral-200'}
+                                        ${selected 
+                                            ? 'bg-[var(--brand-color,#d35400)] text-white font-extrabold shadow-sm hover:bg-[var(--brand-color,#d35400)]/90' 
+                                            : 'hover:bg-neutral-100 dark:hover:bg-white/10'
+                                        }
+                                        ${disabled ? 'opacity-25 cursor-not-allowed pointer-events-none' : ''}
+                                        ${today && !selected ? 'border border-[var(--brand-color,#d35400)]/50 text-[var(--brand-color,#d35400)]' : ''}
+                                    `}
+                                >
+                                    {d.day}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {clearable && value && (
+                        <div className="mt-4 pt-3 border-t border-neutral-200 dark:border-white/10 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={handleClear}
+                                className="text-xs font-bold text-red-650 hover:text-red-750 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                            >
+                                Clear Date
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
 
 interface TaskDetailPanelProps {
     page: Page;
@@ -109,6 +364,16 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
     const [title, setTitle]   = useState((props['title'] as string) || '');
     const [notes, setNotes]   = useState((props['prop-task-notes'] as string) || '');
     const [dirty, setDirty]   = useState(false);
+    const [showSaved, setShowSaved] = useState(false);
+    const savedTimeout = useRef<NodeJS.Timeout | null>(null);
+
+    const triggerSavedIndicator = () => {
+        setShowSaved(true);
+        if (savedTimeout.current) clearTimeout(savedTimeout.current);
+        savedTimeout.current = setTimeout(() => {
+            setShowSaved(false);
+        }, 2000);
+    };
 
     const [prevPageId, setPrevPageId] = useState(page.id);
     if (page.id !== prevPageId) {
@@ -116,10 +381,19 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
         setTitle((props['title'] as string) || '');
         setNotes((props['prop-task-notes'] as string) || '');
         setDirty(false);
+        setShowSaved(false);
+        if (savedTimeout.current) clearTimeout(savedTimeout.current);
     }
+
+    useEffect(() => {
+        return () => {
+            if (savedTimeout.current) clearTimeout(savedTimeout.current);
+        };
+    }, []);
 
     const update = (key: string, value: unknown) => {
         onUpdate(page.id, { [key]: value });
+        triggerSavedIndicator();
     };
 
     const saveTitle = () => {
@@ -191,7 +465,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
         <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border-l border-neutral-300 dark:border-white/20 shadow-xl">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-300 dark:border-white/20 bg-neutral-50 dark:bg-neutral-950">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                     <button
                         className="text-xs font-bold text-neutral-850 hover:text-neutral-950 dark:text-neutral-300 dark:hover:text-white flex items-center gap-1 transition-colors bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 px-2 py-1 rounded shadow-sm"
                         onClick={() => onOpenFullPage?.(page.id)}
@@ -200,6 +474,13 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                         <ExternalLink className="w-3.5 h-3.5" />
                         Full Page View
                     </button>
+
+                    {showSaved && (
+                        <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-green-500/10 border border-green-500/25 text-[10px] font-black text-green-600 dark:text-green-400 tracking-wider uppercase transition-all duration-300 select-none animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                            Saved
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={onClose}
@@ -266,31 +547,21 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                     </PropRow>
 
                     <PropRow label="Due Date">
-                        <input
-                            type="date"
+                        <CustomDatePicker
                             value={due}
                             min={todayStr()}
-                            onChange={e => update('prop-task-due', e.target.value)}
-                            className="text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-semibold outline-none border border-neutral-300 dark:border-white/20 rounded-lg px-2.5 py-1.5 cursor-pointer shadow-sm focus:ring-1 focus:ring-orange-500/50"
+                            onChange={v => update('prop-task-due', v)}
+                            placeholder="Set due date"
                         />
                     </PropRow>
 
                     <PropRow label="Defer Until">
-                        <div className="flex items-center gap-1">
-                            <input
-                                type="date"
-                                value={defer}
-                                min={todayStr()}
-                                onChange={e => update('prop-task-defer', e.target.value)}
-                                className="text-sm bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white font-semibold outline-none border border-neutral-300 dark:border-white/20 rounded-lg px-2.5 py-1.5 cursor-pointer shadow-sm focus:ring-1 focus:ring-orange-500/50"
-                            />
-                            {defer && (
-                                <button
-                                    onClick={() => update('prop-task-defer', '')}
-                                    className="ml-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 border border-neutral-300 dark:border-white/10 text-xs transition-colors shadow-sm"
-                                >✕</button>
-                            )}
-                        </div>
+                        <CustomDatePicker
+                            value={defer}
+                            min={todayStr()}
+                            onChange={v => update('prop-task-defer', v)}
+                            placeholder="Set defer date"
+                        />
                     </PropRow>
 
                     <PropRow label="Estimate">
@@ -444,13 +715,24 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                 )}
             </div>
 
-            {/* Footer — danger zone */}
-            <div className="px-4 py-3 border-t border-neutral-300 dark:border-white/20 bg-neutral-50 dark:bg-neutral-950">
+            {/* Footer — Save & Close + Delete */}
+            <div className="px-4 py-3 border-t border-neutral-300 dark:border-white/20 bg-neutral-50 dark:bg-neutral-950 flex items-center gap-2">
+                <button
+                    onClick={() => {
+                        saveTitle();
+                        saveNotes();
+                        onClose();
+                    }}
+                    className="flex-1 py-2 text-xs font-bold text-white bg-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/90 rounded-lg transition-all shadow-md active:scale-98 text-center animate-fade-in"
+                >
+                    Save & Close
+                </button>
                 <button
                     onClick={() => onDelete(page.id)}
-                    className="w-full py-2 text-xs font-black text-red-700 hover:text-white hover:bg-red-600 dark:text-red-400 dark:hover:bg-red-950/40 border border-red-300 dark:border-red-900/50 rounded-lg transition-all shadow-sm"
+                    className="w-9 h-9 flex flex-shrink-0 items-center justify-center rounded-lg hover:bg-red-500 hover:text-white dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 border border-neutral-300 dark:border-white/10 transition-colors shadow-sm"
+                    title="Delete Task"
                 >
-                    Delete Task
+                    <Trash2 className="w-4 h-4" />
                 </button>
             </div>
         </div>

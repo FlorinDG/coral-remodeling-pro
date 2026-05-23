@@ -19,8 +19,10 @@ import { useMyDayReset } from './hooks/useMyDayReset';
 import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
 import { Layers, Kanban, Eye, Network, Plus } from 'lucide-react';
+import { useRouter } from '@/i18n/routing';
 
 export default function TaskModuleShell() {
+    const router = useRouter();
     const { data: session } = useSession();
     const userId = session?.user?.id || 'admin';
     const { isEnterprise } = useTenant();
@@ -109,7 +111,7 @@ export default function TaskModuleShell() {
         }));
 
     // ── Task Filter & Groups ──────────────────────────────────────────────────
-    const { groups } = useTaskFilter({
+    const { groups, flat: filteredPages } = useTaskFilter({
         pages,
         perspective,
         userId,
@@ -318,12 +320,12 @@ export default function TaskModuleShell() {
                             e.preventDefault();
                             setContextMenu({ page, x: e.clientX, y: e.clientY });
                         }}
+                        onDelete={p => handleDelete(p.id)}
                     />
                 )}
-
                 {activeView === 'board' && (
                     <TaskBoardView
-                        pages={pages}
+                        pages={filteredPages}
                         onUpdateStatus={(pageId, status) => updatePageProperty('db-tasks', pageId, 'prop-task-status', status)}
                         onPageClick={p => setSelectedPageId(p.id)}
                     />
@@ -397,6 +399,9 @@ export default function TaskModuleShell() {
                             onClose={() => setSelectedPageId(undefined)}
                             onUpdate={handleUpdate}
                             onDelete={handleDelete}
+                            onOpenFullPage={(pageId) => {
+                                router.push(`/admin/database/${db.id}/${pageId}`);
+                            }}
                         />
                     </div>
                 </>

@@ -30,6 +30,7 @@ import { formulaColumn } from './columns/FormulaColumn';
 import { currencyColumn } from './columns/CurrencyColumn';
 import { variantsColumn } from './columns/VariantsColumn';
 import { metaDateColumn } from './columns/MetaDateColumn';
+import { checkboxColumnCustom } from './columns/CheckboxColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
@@ -357,7 +358,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 let baseColumn = textColumn;
 
                 if (prop.type === 'checkbox') {
-                    baseColumn = checkboxColumn as any;
+                    baseColumn = checkboxColumnCustom({
+                        propId: prop.id,
+                        onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value)
+                    }) as any;
                 } else if (prop.type === 'select' || prop.type === 'multi_select') {
                     // Full-row column — no keyColumn wrapping needed.
                     // onCommit calls updatePageProperty directly, bypassing the

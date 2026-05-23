@@ -3,7 +3,7 @@
 import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
-import { Circle, CircleDot, Eye, CheckCircle2, XCircle } from 'lucide-react';
+import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2 } from 'lucide-react';
 
 // ── StatusIcon component ──────────────────────────────────────────────────────
 
@@ -63,10 +63,11 @@ interface TaskRowProps {
     onToggleMyDay: (page: Page) => void;
     onToggleFlag: (page: Page) => void;
     onContextMenu?: (e: React.MouseEvent, page: Page) => void;
+    onDelete?: (page: Page) => void;
 }
 
 export function TaskRow({
-    page, selected, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu
+    page, selected, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete
 }: TaskRowProps) {
     const props = page.properties;
     const status  = (props['prop-task-status']   as string) || 'opt-todo';
@@ -159,14 +160,13 @@ export function TaskRow({
 
             {/* My Day toggle */}
             <button
-                className={`flex-shrink-0 w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110
-                    ${myDay ? '!opacity-100' : ''}
+                className={`flex-shrink-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110
+                    ${myDay ? '!opacity-100 text-orange-500' : 'text-neutral-450 dark:text-neutral-500 hover:text-orange-500'}
                 `}
-                style={{ color: myDay ? '#ea580c' : '#4b5563' }}
                 onClick={e => { e.stopPropagation(); onToggleMyDay(page); }}
                 title={myDay ? 'Remove from My Day' : 'Add to My Day'}
             >
-                ☀
+                <Sun className={`w-3.5 h-3.5 ${myDay ? 'fill-current' : ''}`} />
             </button>
 
             {/* Flag */}
@@ -179,6 +179,15 @@ export function TaskRow({
                 title={flagged ? 'Unflag' : 'Flag'}
             >
                 🚩
+            </button>
+
+            {/* Delete Task */}
+            <button
+                className="flex-shrink-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 text-neutral-450 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
+                onClick={e => { e.stopPropagation(); if (window.confirm('Delete this task?')) onDelete?.(page); }}
+                title="Delete Task"
+            >
+                <Trash2 className="w-3.5 h-3.5" />
             </button>
         </div>
     );

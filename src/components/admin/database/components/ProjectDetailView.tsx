@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Block, PropertyValue } from '../types';
 
-const BlockEditor = dynamic(() => import('./BlockEditor'), { ssr: false });
+const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 const FileManager = dynamic(() => import('@/components/admin/file-manager/FileManager'), { ssr: false });
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
@@ -983,16 +983,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                 )}
 
                 {activeTab === 'journal' && (
-                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm min-h-[500px]">
-                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                            <PenLine className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Journal
-                        </div>
-                        <div className="p-5">
-                            <ErrorBoundary componentName="BlockEditor">
-                                <BlockEditor databaseId={databaseId} pageId={pageId} />
-                            </ErrorBoundary>
-                        </div>
-                    </div>
+                    <JournalCard databaseId={databaseId} pageId={pageId} minHeight="500px" />
                 )}
 
                 {activeTab === 'files' && (

@@ -94,6 +94,17 @@ No unhandled exceptions in tenant-facing code. Ever.
 A broken build deployed to Vercel serves the last good build silently.
 That is the most dangerous failure mode: you think you fixed it, but you didn't.
 
+### Rule 7 — Structure Before Feature
+> Before adding a feature to a UI pattern, verify the target is a proper component.
+> If it is hardcoded inline and duplicated across views, extract it into a reusable component first — then implement the feature once.
+
+Two-step gate:
+1. **Structural audit** — "Is the target a component or inline duplication?"
+2. **Structural fix before feature work** — "Extract first, feature second."
+
+Never bolt features onto one copy of duplicated inline code.
+The silent failure mode: feature lands in View A, View B stays stale, and the divergence is invisible until a user reports it.
+
 ---
 
 ## The Three Domains Are the Same Problem

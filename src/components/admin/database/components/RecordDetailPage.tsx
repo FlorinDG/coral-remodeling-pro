@@ -9,7 +9,7 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useTenant } from '@/context/TenantContext';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import {
-    ArrowLeft, FileText, PenLine, BarChart2,
+    ArrowLeft, FileText, BarChart2,
     ChevronRight, ExternalLink
 } from 'lucide-react';
 
@@ -17,7 +17,7 @@ import { Link } from '@/i18n/routing';
 import { Lock } from 'lucide-react';
 import { getBaseDbId } from '@/lib/systemDatabases';
 
-const BlockEditor       = dynamic(() => import('@/components/admin/database/components/BlockEditor'),       { ssr: false });
+const JournalCard       = dynamic(() => import('@/components/admin/database/components/JournalCard'),       { ssr: false });
 const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('@/components/admin/database/components/PageFinancialAnalysis'), { ssr: false });
 const LinkedRecords     = dynamic(() => import('@/components/admin/database/components/LinkedRecords'),     { ssr: false });
@@ -216,16 +216,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                         {/* Row 2: Journal + Files (side by side on wide, stacked on narrow) */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {/* Journal */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[360px]">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <PenLine className="w-4 h-4 text-orange-500" /> Journal
-                                </div>
-                                <div className="flex-1 overflow-y-auto p-5">
-                                    <ErrorBoundary componentName="BlockEditor">
-                                        <BlockEditor databaseId={resolvedDbId} pageId={pageId} />
-                                    </ErrorBoundary>
-                                </div>
-                            </div>
+                            <JournalCard databaseId={resolvedDbId} pageId={pageId} />
 
                             {/* Files */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[360px]">

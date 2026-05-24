@@ -46,6 +46,36 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     );
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
+    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
+
+    // Map database to contextType
+    const baseDbId = getBaseDbId(databaseId);
+    let fileContextType: 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' = 'project';
+    if (baseDbId === 'db-crm') {
+        fileContextType = 'client';
+    } else if (baseDbId === 'db-tasks') {
+        fileContextType = 'task';
+    } else if (baseDbId === 'db-quotations') {
+        fileContextType = 'quotation';
+    } else if (baseDbId === 'db-invoices') {
+        fileContextType = 'invoice';
+    }
+
+    const boundDriveId = page?.driveFolderId || (page?.properties['driveFolderId'] as string) || undefined;
+
+    React.useEffect(() => {
+        if (!page) return;
+        const createDriveFolder = async () => {
+            if (!boundDriveId && page.properties['title']) {
+                const folderName = String(page.properties['title'] || page.properties['name'] || `Record ${pageId}`);
+                const driveId = await initializeContextFolder(folderName, fileContextType, page.id);
+                if (driveId) {
+                    updatePageDriveId(resolvedDbId, page.id, driveId);
+                }
+            }
+        };
+        createDriveFolder();
+    }, [page?.id, boundDriveId, resolvedDbId, fileContextType, initializeContextFolder, updatePageDriveId]);
 
     // ── FREE tier gate — record detail view is PRO+ only ──
     if (planType === 'FREE') {
@@ -91,35 +121,6 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
             </div>
         );
     }
-
-    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
-    const boundDriveId = page.driveFolderId || (page.properties['driveFolderId'] as string) || undefined;
-
-    // Map database to contextType
-    const baseDbId = getBaseDbId(databaseId);
-    let fileContextType: 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' = 'project';
-    if (baseDbId === 'db-crm') {
-        fileContextType = 'client';
-    } else if (baseDbId === 'db-tasks') {
-        fileContextType = 'task';
-    } else if (baseDbId === 'db-quotations') {
-        fileContextType = 'quotation';
-    } else if (baseDbId === 'db-invoices') {
-        fileContextType = 'invoice';
-    }
-
-    React.useEffect(() => {
-        const createDriveFolder = async () => {
-            if (!boundDriveId && page.properties['title']) {
-                const folderName = String(page.properties['title'] || page.properties['name'] || `Record ${pageId}`);
-                const driveId = await initializeContextFolder(folderName, fileContextType, page.id);
-                if (driveId) {
-                    updatePageDriveId(resolvedDbId, page.id, driveId);
-                }
-            }
-        };
-        createDriveFolder();
-    }, [page.id, boundDriveId, resolvedDbId, fileContextType, initializeContextFolder, updatePageDriveId]);
 
     const title = String(page.properties['title'] || page.properties['name'] || '');
     const isProjectDb = baseDbId === 'db-1';

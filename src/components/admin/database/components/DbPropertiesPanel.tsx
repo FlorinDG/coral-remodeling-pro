@@ -301,7 +301,7 @@ function PropertyRow({
             </div>
         );
     } else if (property.type === 'relation') {
-        const ids: string[] = Array.isArray(value) ? (value as string[]) : [];
+    const ids: string[] = Array.isArray(value) ? (value as any[]).map(v => String(v ?? '')) : [];
         const relationDatabaseId = property.config?.relationDatabaseId;
         const targetDb = useDatabaseStore.getState().databases.find(db => db.id === relationDatabaseId);
         const unselected = targetDb 
@@ -311,7 +311,8 @@ function PropertyRow({
             <div className="flex flex-col gap-1.5 w-full">
                 <div className="flex flex-wrap gap-1">
                     {ids.map(sid => {
-                        let title = sid.slice(0, 8) + '…';
+                        const safeSid = String(sid || '');
+                        let title = safeSid.slice(0, 8) + '…';
                         if (targetDb) {
                             const page = targetDb.pages.find(p => p.id === sid);
                             if (page) {

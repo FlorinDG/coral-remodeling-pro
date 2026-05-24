@@ -5,6 +5,7 @@ import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
 import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -493,15 +494,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 {!isInvoiceMode && (
                                     <div>
                                         <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment</label>
-                                        <select
+                                        <SearchableSelect
+                                            options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
                                             value={form.paymentMethod}
-                                            onChange={e => updateForm('paymentMethod', e.target.value)}
-                                            className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all"
-                                        >
-                                            {PAYMENT_METHODS.map(pm => (
-                                                <option key={pm.id} value={pm.id}>{pm.label}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(v) => updateForm('paymentMethod', v)}
+                                            placeholder="Method"
+                                        />
                                     </div>
                                 )}
                             </div>

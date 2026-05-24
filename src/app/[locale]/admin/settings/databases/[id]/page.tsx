@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import FormulaEditorModal from '@/components/admin/database/components/FormulaEditorModal';
 import { isSystemDatabase } from '@/lib/systemDatabases';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
 
 const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
@@ -263,16 +264,13 @@ export default function DatabaseConfigurator() {
                                                                 </div>
                                                             </td>
                                                             <td className="px-2 py-1.5 align-middle w-[180px]">
-                                                                <select
+                                                                <SearchableSelect
+                                                                    options={PROPERTY_TYPES.map(t => ({ value: t.id, label: t.label }))}
                                                                     value={prop.type}
+                                                                    onChange={(v) => updateProperty(databaseId, prop.id, { type: v as PropertyType })}
+                                                                    placeholder="Type"
                                                                     disabled={isLocked}
-                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { type: e.target.value as PropertyType })}
-                                                                    className={`w-full bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs font-medium outline-none focus:bg-white dark:focus:bg-black transition-all ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
-                                                                >
-                                                                    {PROPERTY_TYPES.map(t => (
-                                                                        <option key={t.id} value={t.id}>{t.label}</option>
-                                                                    ))}
-                                                                </select>
+                                                                />
                                                             </td>
                                                             <td className="px-2 py-1.5 align-middle">
                                                                 <div className="flex items-center gap-2">
@@ -307,39 +305,40 @@ export default function DatabaseConfigurator() {
                                                                     )}
 
                                                                     {prop.type === 'currency' && (
-                                                                        <select
+                                                                        <SearchableSelect
+                                                                            options={[
+                                                                                { value: 'euro', label: 'Euro (€)' },
+                                                                                { value: 'dollar', label: 'Dollar ($)' },
+                                                                            ]}
                                                                             value={prop.config?.format || 'euro'}
-                                                                            onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, format: e.target.value as 'euro' | 'dollar' } })}
-                                                                            className="bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                        >
-                                                                            <option value="euro">Euro (€)</option>
-                                                                            <option value="dollar">Dollar ($)</option>
-                                                                        </select>
+                                                                            onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, format: v as 'euro' | 'dollar' } })}
+                                                                            placeholder="Currency"
+                                                                        />
                                                                     )}
 
                                                                     {prop.type === 'relation' && (
                                                                         <div className="flex gap-1 items-center w-full max-w-[400px]">
-                                                                            <select
+                                                                            <SearchableSelect
+                                                                                options={[
+                                                                                    { value: '', label: '-- Database --' },
+                                                                                    ...allDatabases.filter(d => d.id !== databaseId).map(d => ({ value: d.id, label: d.name })),
+                                                                                ]}
                                                                                 value={prop.config?.relationDatabaseId || ''}
-                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDatabaseId: e.target.value, relationDisplayPropertyId: '' } })}
-                                                                                className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                            >
-                                                                                <option value="">-- Database --</option>
-                                                                                {allDatabases.filter(d => d.id !== databaseId).map(d => (
-                                                                                    <option key={d.id} value={d.id}>{d.name}</option>
-                                                                                ))}
-                                                                            </select>
+                                                                                onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDatabaseId: v, relationDisplayPropertyId: '' } })}
+                                                                                placeholder="-- Database --"
+                                                                                searchPlaceholder="Search databases..."
+                                                                            />
                                                                             {prop.config?.relationDatabaseId && (
-                                                                                <select
+                                                                                <SearchableSelect
+                                                                                    options={[
+                                                                                        { value: '', label: '-- Default (Title) --' },
+                                                                                        ...(allDatabases.find(d => d.id === prop.config!.relationDatabaseId)?.properties.map(p => ({ value: p.id, label: p.name })) || []),
+                                                                                    ]}
                                                                                     value={prop.config.relationDisplayPropertyId || ''}
-                                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDisplayPropertyId: e.target.value } })}
-                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                                >
-                                                                                    <option value="">-- Default (Title) --</option>
-                                                                                    {allDatabases.find(d => d.id === prop.config!.relationDatabaseId)?.properties.map(p => (
-                                                                                        <option key={p.id} value={p.id}>{p.name}</option>
-                                                                                    ))}
-                                                                                </select>
+                                                                                    onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, relationDisplayPropertyId: v } })}
+                                                                                    placeholder="-- Default (Title) --"
+                                                                                    searchPlaceholder="Search properties..."
+                                                                                />
                                                                             )}
                                                                         </div>
                                                                     )}
@@ -363,47 +362,46 @@ export default function DatabaseConfigurator() {
 
                                                                     {prop.type === 'rollup' && (
                                                                         <div className="flex gap-1 items-center w-full flex-wrap xl:flex-nowrap">
-                                                                            <select
+                                                                            <SearchableSelect
+                                                                                options={[
+                                                                                    { value: '', label: '-- Relation --' },
+                                                                                    ...database.properties.filter(p => p.type === 'relation').map(p => ({ value: p.id, label: p.name })),
+                                                                                ]}
                                                                                 value={prop.config?.rollupPropertyId || ''}
-                                                                                onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupPropertyId: e.target.value, rollupTargetPropertyId: '', rollupAggregation: 'show_original' } })}
-                                                                                className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                            >
-                                                                                <option value="">-- Relation --</option>
-                                                                                {database.properties.filter(p => p.type === 'relation').map(p => (
-                                                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                                                ))}
-                                                                            </select>
+                                                                                onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupPropertyId: v, rollupTargetPropertyId: '', rollupAggregation: 'show_original' } })}
+                                                                                placeholder="-- Relation --"
+                                                                            />
                                                                             {prop.config?.rollupPropertyId && (
-                                                                                <select
+                                                                                <SearchableSelect
+                                                                                    options={[
+                                                                                        { value: '', label: '-- Property --' },
+                                                                                        ...(() => {
+                                                                                            const relationProp = database.properties.find(p => p.id === prop.config!.rollupPropertyId);
+                                                                                            const targetDbId = relationProp?.config?.relationDatabaseId;
+                                                                                            const targetDb = allDatabases.find(d => d.id === targetDbId);
+                                                                                            return targetDb?.properties.map(p => ({ value: p.id, label: p.name })) || [];
+                                                                                        })(),
+                                                                                    ]}
                                                                                     value={prop.config.rollupTargetPropertyId || ''}
-                                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupTargetPropertyId: e.target.value } })}
-                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                                >
-                                                                                    <option value="">-- Property --</option>
-                                                                                    {(() => {
-                                                                                        const relationProp = database.properties.find(p => p.id === prop.config!.rollupPropertyId);
-                                                                                        const targetDbId = relationProp?.config?.relationDatabaseId;
-                                                                                        const targetDb = allDatabases.find(d => d.id === targetDbId);
-                                                                                        if (!targetDb) return null;
-                                                                                        return targetDb.properties.map(p => (
-                                                                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                                                                        ));
-                                                                                    })()}
-                                                                                </select>
+                                                                                    onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupTargetPropertyId: v } })}
+                                                                                    placeholder="-- Property --"
+                                                                                    searchPlaceholder="Search properties..."
+                                                                                />
                                                                             )}
 
                                                                             {prop.config?.rollupTargetPropertyId && (
-                                                                                <select
+                                                                                <SearchableSelect
+                                                                                    options={[
+                                                                                        { value: 'show_original', label: 'Original' },
+                                                                                        { value: 'extract_numbers', label: 'Numbers' },
+                                                                                        { value: 'sum', label: 'Sum' },
+                                                                                        { value: 'average', label: 'Avg' },
+                                                                                        { value: 'count', label: 'Count' },
+                                                                                    ]}
                                                                                     value={prop.config.rollupAggregation || 'show_original'}
-                                                                                    onChange={(e) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupAggregation: e.target.value as any } })}
-                                                                                    className="flex-1 bg-neutral-100/50 dark:bg-white/5 border border-transparent hover:border-neutral-300 dark:hover:border-white/20 rounded-md px-2 py-1 text-xs outline-none transition-all"
-                                                                                >
-                                                                                    <option value="show_original">Original</option>
-                                                                                    <option value="extract_numbers">Numbers</option>
-                                                                                    <option value="sum">Sum</option>
-                                                                                    <option value="average">Avg</option>
-                                                                                    <option value="count">Count</option>
-                                                                                </select>
+                                                                                    onChange={(v) => updateProperty(databaseId, prop.id, { config: { ...prop.config, rollupAggregation: v as any } })}
+                                                                                    placeholder="Aggregation"
+                                                                                />
                                                                             )}
                                                                         </div>
                                                                     )}

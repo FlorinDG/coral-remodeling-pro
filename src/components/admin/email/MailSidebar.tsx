@@ -5,6 +5,7 @@ import { useEmailStore, EmailFolder } from "./store";
 import { cn } from "@/components/time-tracker/lib/utils";
 import { Inbox, Send, FileText, Star, Archive, Trash, Tag, Plus } from "lucide-react";
 import { AccountSettingsModal } from "./AccountSettingsModal";
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface SidebarItem {
     id: EmailFolder;
@@ -52,17 +53,15 @@ export function MailSidebar() {
                         <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
                             Active Account
                         </label>
-                        <select
+                        <SearchableSelect
                             value={activeAccount || ''}
-                            onChange={(e) => setActiveAccount(e.target.value)}
-                            className="w-full bg-muted/50 border border-border rounded-md px-2 py-1.5 text-xs font-medium focus:outline-none focus:ring-1 focus:ring-primary truncate"
-                        >
-                            {accounts.map((acc) => (
-                                <option key={acc.id} value={acc.email}>
-                                    {acc.email}
-                                </option>
-                            ))}
-                        </select>
+                            onChange={(val) => setActiveAccount(val)}
+                            options={accounts.map((acc) => ({
+                                value: acc.email,
+                                label: acc.email,
+                            }))}
+                            placeholder="Select account"
+                        />
                     </div>
                 )}
             </div>

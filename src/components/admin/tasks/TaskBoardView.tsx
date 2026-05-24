@@ -3,12 +3,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG, getDueDateDisplay } from './TaskRow';
+import { CalendarDays, Paperclip } from 'lucide-react';
 
 interface TaskBoardViewProps {
     pages: Page[];
     onUpdateStatus: (pageId: string, status: string) => void;
     onPageClick: (page: Page) => void;
     onUpdateTitle?: (pageId: string, title: string) => void;
+    onUpdatePriority?: (pageId: string, priority: string) => void;
+    onUpdateDue?: (pageId: string, due: string) => void;
 }
 
 // ── Inline Editable Title ─────────────────────────────────────────────────────
@@ -67,7 +70,10 @@ function EditableTitle({ value, onSave }: { value: string; onSave: (v: string) =
     );
 }
 
-export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitle }: TaskBoardViewProps) {
+// ── Priority Cycle Order ──────────────────────────────────────────────────────
+const PRIORITY_CYCLE = ['opt-p4', 'opt-p3', 'opt-p2', 'opt-p1'];
+
+export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitle, onUpdatePriority, onUpdateDue }: TaskBoardViewProps) {
     const activeTasks = pages.filter(p => {
         const s = p.properties['prop-task-status'] as string;
         return s !== 'opt-dropped';
@@ -160,25 +166,73 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitl
                                             </h4>
                                         )}
 
-                                        {/* Card Footer */}
-                                        <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-250 dark:border-white/10">
-                                            {/* Priority */}
-                                            {priorityCfg ? (
-                                                <span
-                                                    className="font-black px-2 py-0.5 rounded border border-current shadow-sm"
-                                                    style={{ color: priorityCfg.color, backgroundColor: priorityCfg.bg }}
+                                        {/* ── Action Bar ── */}
+                                        <div className="flex items-center gap-1.5 mb-2.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                                            {/* Priority pill — click to cycle */}
+                                            {onUpdatePriority && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const currentIdx = PRIORITY_CYCLE.indexOf(priority || 'opt-p4');
+                                                        const nextIdx = (currentIdx + 1) % PRIORITY_CYCLE.length;
+                                                        onUpdatePriority(page.id, PRIORITY_CYCLE[nextIdx]);
+                                                    }}
+                                                    className="text-[10px] font-black px-2 py-0.5 rounded border border-current transition-all hover:scale-105 active:scale-95"
+                                                    style={{
+                                                        color: priorityCfg?.color || '#9ca3af',
+                                                        backgroundColor: priorityCfg?.bg || '#f9fafb',
+                                                    }}
+                                                    title="Click to change priority"
                                                 >
-                                                    {priorityCfg.label}
-                                                </span>
-                                            ) : (
-                                                <span />
+                                                    {priorityCfg?.label || 'Low'}
+                                                </button>
                                             )}
 
-                                            {/* Due Date */}
+                                            {/* Due date — compact date input */}
+                                            {onUpdateDue && (
+                                                <label className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 cursor-pointer hover:border-orange-300 dark:hover:border-orange-700 transition-colors" style={{ color: dueCfg.color || '#6b7280' }}>
+                                                    <CalendarDays className="w-3 h-3" />
+                                                    <span>{dueCfg.label || 'Set date'}</span>
+                                                    <input
+                                                        type="date"
+                                                        value={due || ''}
+                                                        onChange={(e) => {
+                                                            e.stopPropagation();
+                                                            onUpdateDue(page.id, e.target.value);
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                                                    />
+                                                </label>
+                                            )}
+
+                                            {/* Attachment indicator */}
+                                            {(page.blocks?.length ?? 0) > 0 && (
+                                                <span className="flex items-center gap-0.5 text-[10px] text-neutral-400 font-bold" title={`${page.blocks?.length} block(s)`}>
+                                                    <Paperclip className="w-3 h-3" />
+                                                    {page.blocks?.length}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Card Footer */}
+                                        <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-250 dark:border-white/10">
+                                            {/* Due Date (keep in footer as secondary indicator) */}
                                             {dueCfg.label && (
                                                 <span className="font-bold bg-neutral-100/50 dark:bg-white/5 px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/5 shadow-sm" style={{ color: dueCfg.color }}>
                                                     {dueCfg.label}
                                                 </span>
+                                            )}
+                                            {!dueCfg.label && <span />}
+                                            {/* Tags in footer */}
+                                            {tags.length > 0 && (
+                                                <div className="flex items-center gap-0.5">
+                                                    {tags.slice(0, 2).map(t => (
+                                                        <span key={t} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">
+                                                            {t.replace('tag-', '#')}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
                                     </div>

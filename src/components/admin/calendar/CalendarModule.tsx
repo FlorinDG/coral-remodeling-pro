@@ -16,6 +16,7 @@ import { useDatabaseStore } from '../database/store';
 import { enGB } from 'date-fns/locale';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { useTenant } from '@/context/TenantContext';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 interface EventData {
     id: string;
     title: string;
@@ -553,11 +554,9 @@ export default function CalendarModule() {
                                 {/* Calendar Selection */}
                                 <div className="flex items-center gap-4 text-sm text-neutral-700 dark:text-neutral-300">
                                     <CalendarIcon className="w-5 h-5 text-neutral-400" />
-                                    <select
-                                        className="flex-1 px-3 py-1.5 bg-transparent border border-neutral-200 dark:border-neutral-700 focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-md outline-none transition-colors"
+                                    <SearchableSelect
                                         value={newEvent.calendarId === 'local' ? 'local' : `${newEvent.accountId}|${newEvent.calendarId}`}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
+                                        onChange={(val) => {
                                             if (val === 'local') {
                                                 setNewEvent({ ...newEvent, calendarId: 'local', accountId: '', isGoogle: false });
                                             } else {
@@ -565,16 +564,18 @@ export default function CalendarModule() {
                                                 setNewEvent({ ...newEvent, calendarId: calId, accountId: accId, isGoogle: true });
                                             }
                                         }}
-                                    >
-                                        <option value="local">Local Admin Calendar</option>
-                                        {accounts.map(acc => (
-                                            <optgroup key={acc.accountId} label={acc.email}>
-                                                {acc.calendars?.map((cal: any) => (
-                                                    <option key={cal.id} value={`${acc.accountId}|${cal.id}`}>{cal.summary}</option>
-                                                ))}
-                                            </optgroup>
-                                        ))}
-                                    </select>
+                                        options={[
+                                            { value: 'local', label: 'Local Admin Calendar' },
+                                            ...accounts.flatMap(acc =>
+                                                (acc.calendars || []).map((cal: any) => ({
+                                                    value: `${acc.accountId}|${cal.id}`,
+                                                    label: `${cal.summary} (${acc.email})`,
+                                                }))
+                                            ),
+                                        ]}
+                                        placeholder="Select calendar"
+                                        className="flex-1"
+                                    />
                                 </div>
 
                                 {/* Location */}
@@ -613,16 +614,19 @@ export default function CalendarModule() {
                                     {newEvent.createTask && (
                                         <div className="mt-3 ml-7 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
                                             <Briefcase className="w-4 h-4 text-neutral-400" />
-                                            <select
-                                                className="flex-1 px-3 py-2 text-sm bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md outline-none focus:border-[var(--brand-color,var(--brand-color, #d35400))]"
+                                            <SearchableSelect
                                                 value={newEvent.portalId}
-                                                onChange={(e) => setNewEvent({ ...newEvent, portalId: e.target.value })}
-                                            >
-                                                <option value="">No Client Portal (Admin Task Only)</option>
-                                                {portals.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.clientName} {p.projectTitle ? `(${p.projectTitle})` : ''}</option>
-                                                ))}
-                                            </select>
+                                                onChange={(val) => setNewEvent({ ...newEvent, portalId: val })}
+                                                options={[
+                                                    { value: '', label: 'No Client Portal (Admin Task Only)' },
+                                                    ...portals.map(p => ({
+                                                        value: p.id,
+                                                        label: `${p.clientName}${p.projectTitle ? ` (${p.projectTitle})` : ''}`,
+                                                    })),
+                                                ]}
+                                                placeholder="Select portal"
+                                                className="flex-1"
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -697,15 +701,16 @@ export default function CalendarModule() {
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     <label className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Priority</label>
-                                    <select
-                                        className="w-full px-3 py-2 bg-neutral-50 dark:bg-neutral-800 border-2 border-transparent focus:bg-white focus:border-[var(--brand-color,var(--brand-color, #d35400))] rounded-lg outline-none text-sm transition-colors"
+                                    <SearchableSelect
                                         value={taskData.priority}
-                                        onChange={(e) => setTaskData({ ...taskData, priority: e.target.value })}
-                                    >
-                                        <option value="opt-high">High</option>
-                                        <option value="opt-med">Medium</option>
-                                        <option value="opt-low">Low</option>
-                                    </select>
+                                        onChange={(val) => setTaskData({ ...taskData, priority: val })}
+                                        options={[
+                                            { value: 'opt-high', label: 'High' },
+                                            { value: 'opt-med', label: 'Medium' },
+                                            { value: 'opt-low', label: 'Low' },
+                                        ]}
+                                        placeholder="Select priority"
+                                    />
                                 </div>
                             </div>
                         </div>

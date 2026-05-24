@@ -60,16 +60,14 @@ export default function DatabaseConfigurator() {
     // We detect them by checking if they appear before any custom property was added.
     // For simplicity: if the DB is system & ungated, all properties known to DEFAULT_PROPERTIES_MAP
     // in DatabaseClone are "canonical". We approximate by storing canonical IDs at first access.
-    const canonicalPropertyIds = useDatabaseStore(state => {
-        if (!isSchemaLocked || !isUngated) return new Set<string>();
+    const canonicalPropertyIds = React.useMemo(() => {
+        if (!isSchemaLocked || !isUngated || !database) return new Set<string>();
         // All property IDs that are NOT uuid-formatted (user-generated via addProperty) are canonical
         // This works because addProperty generates uuid v4 IDs, while system properties use
         // readable IDs like 'title', 'status', 'prop-inv-amount', etc.
         const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        const db = state.databases.find(d => d.id === databaseId);
-        if (!db) return new Set<string>();
-        return new Set(db.properties.filter(p => !uuidPattern.test(p.id)).map(p => p.id));
-    });
+        return new Set(database.properties.filter(p => !uuidPattern.test(p.id)).map(p => p.id));
+    }, [isSchemaLocked, isUngated, database]);
 
     if (!database) {
         return (

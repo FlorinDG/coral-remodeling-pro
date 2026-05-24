@@ -78,13 +78,15 @@ export default function SearchableSelect({
                 </span>
                 <div className="flex items-center gap-1">
                     {value && !disabled && (
-                        <button
-                            type="button"
+                        <span
+                            role="button"
+                            tabIndex={0}
                             onClick={(e) => { e.stopPropagation(); onChange(''); setIsOpen(false); }}
-                            className="p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onChange(''); setIsOpen(false); } }}
+                            className="p-0.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors cursor-pointer"
                         >
                             <X className="w-3 h-3" />
-                        </button>
+                        </span>
                     )}
                     <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </div>

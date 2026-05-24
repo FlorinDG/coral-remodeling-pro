@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useDatabaseStore } from '../store';
 import { Block } from '../types';
-import { PenLine, Plus, Clock, User, ChevronDown } from 'lucide-react';
+import { PenLine, Plus, Clock, User, ChevronDown, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface JournalCardProps {
@@ -16,7 +16,7 @@ interface JournalCardProps {
 /**
  * JournalCard — reusable journal component used in RecordDetailPage and ProjectDetailView.
  * Shows a header with "+ New Entry" button and a chronological list of journal entries.
- * Full document editing belongs in the standalone journal page (/admin/journal/[id]).
+ * Entries are editable inline: click to edit, blur/Enter to save, Escape to cancel.
  */
 export default function JournalCard({ databaseId, pageId, minHeight = '360px' }: JournalCardProps) {
     const page = useDatabaseStore(state =>
@@ -27,6 +27,8 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     const [showQuickEntry, setShowQuickEntry] = useState(false);
     const [quickContent, setQuickContent] = useState('');
     const [showEntries, setShowEntries] = useState(true);
+    const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+    const [editDraft, setEditDraft] = useState('');
 
     const blocks = page?.blocks || [];
 
@@ -53,6 +55,39 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         setQuickContent('');
         setShowQuickEntry(false);
     }, [quickContent, page?.blocks, databaseId, pageId, updatePageBlocks]);
+
+    // ── Inline edit handlers ──
+    const startEditing = (block: Block) => {
+        setEditingBlockId(block.id);
+        setEditDraft(block.content || '');
+    };
+
+    const saveEdit = useCallback(() => {
+        if (!editingBlockId || !page) return;
+        const trimmed = editDraft.trim();
+        if (!trimmed) {
+            // Empty content → delete the block
+            const updatedBlocks = blocks.filter(b => b.id !== editingBlockId);
+            updatePageBlocks(databaseId, pageId, updatedBlocks);
+        } else {
+            const updatedBlocks = blocks.map(b =>
+                b.id === editingBlockId ? { ...b, content: trimmed } : b
+            );
+            updatePageBlocks(databaseId, pageId, updatedBlocks);
+        }
+        setEditingBlockId(null);
+        setEditDraft('');
+    }, [editingBlockId, editDraft, blocks, databaseId, pageId, updatePageBlocks, page]);
+
+    const cancelEdit = () => {
+        setEditingBlockId(null);
+        setEditDraft('');
+    };
+
+    const deleteBlock = useCallback((blockId: string) => {
+        const updatedBlocks = blocks.filter(b => b.id !== blockId);
+        updatePageBlocks(databaseId, pageId, updatedBlocks);
+    }, [blocks, databaseId, pageId, updatePageBlocks]);
 
     // Format created timestamp
     const formatEntryDate = (block: Block) => {
@@ -135,14 +170,34 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                             {contentBlocks.map(block => {
                                 const dateStr = formatEntryDate(block);
                                 const author = block.properties?.author as string | undefined;
+                                const isEditing = editingBlockId === block.id;
 
                                 return (
-                                    <div key={block.id} className="px-5 py-2.5 flex gap-3 text-sm hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors">
+                                    <div key={block.id} className="group px-5 py-2.5 flex gap-3 text-sm hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors">
                                         <div className="w-1 rounded-full bg-orange-400/40 flex-shrink-0" />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-neutral-700 dark:text-neutral-300 text-xs leading-relaxed line-clamp-2">
-                                                {block.content}
-                                            </p>
+                                            {isEditing ? (
+                                                <textarea
+                                                    autoFocus
+                                                    value={editDraft}
+                                                    onChange={(e) => setEditDraft(e.target.value)}
+                                                    onBlur={saveEdit}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveEdit(); }
+                                                        if (e.key === 'Escape') cancelEdit();
+                                                    }}
+                                                    className="w-full bg-white dark:bg-neutral-800 border border-orange-300 dark:border-orange-700 rounded-lg px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-orange-500/20 resize-none"
+                                                    rows={3}
+                                                />
+                                            ) : (
+                                                <p
+                                                    className="text-neutral-700 dark:text-neutral-300 text-xs leading-relaxed cursor-pointer hover:text-neutral-900 dark:hover:text-white transition-colors"
+                                                    onClick={() => startEditing(block)}
+                                                    title="Click to edit"
+                                                >
+                                                    {block.content}
+                                                </p>
+                                            )}
                                             <div className="flex items-center gap-3 mt-1">
                                                 {dateStr && (
                                                     <span className="flex items-center gap-1 text-[10px] text-neutral-400">
@@ -156,6 +211,19 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                                                 )}
                                             </div>
                                         </div>
+                                        {/* Delete button — visible on hover */}
+                                        {!isEditing && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (window.confirm('Delete this journal entry?')) deleteBlock(block.id);
+                                                }}
+                                                className="flex-shrink-0 opacity-0 group-hover:opacity-100 p-1 text-neutral-300 hover:text-red-500 transition-all"
+                                                title="Delete entry"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })}

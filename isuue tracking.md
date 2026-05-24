@@ -60,6 +60,7 @@
 40. [FIXED] Drive fetch console noise: `Failed to fetch` on `/api/drive` is expected when Google Drive OAuth isn't configured. Downgraded from `console.error` to silent catch (Rule 5 soft failure). Error state still set for UI display.
 41. [FIXED] Button-in-button hydration error in SearchableSelect: The clear "X" was a `<button>` nested inside the trigger `<button>`, which is invalid HTML. Fix: changed to `<span role="button">` with keyboard support.
 42. [FIXED] Infinite render loop in DatabaseConfigurator: `useDatabaseStore` selector at line 63 created a new `Set()` on every render — Zustand's `Object.is` equality sees each new Set as "changed", triggering re-render → infinite loop. Fix: replaced with `React.useMemo` keyed on `database` reference.
+43. [FIXED] Journal entries not editable: `JournalCard` (used in RecordDetailPage and ProjectDetailView) showed entries as read-only `<p>` tags. Clicking a title in the journal feed navigated to the parent record, not an editor. Fix: made JournalCard entries editable inline — click text to edit in a textarea, ⌘+Enter/blur to save, Escape to cancel. Added hover delete button (trash icon) per entry. Clearing content on save also deletes the block. Removed `line-clamp-2` so full entry text is visible.
 ---
 
 ### Review — All Open Items Through the Lens of /pd (2026-05-24)

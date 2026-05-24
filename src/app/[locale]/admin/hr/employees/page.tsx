@@ -37,6 +37,19 @@ interface EmployeeProfile extends Employee {
     notes?: string;
 }
 
+// Local profile storage helper
+function loadProfile(empId: string): Partial<EmployeeProfile> {
+    try {
+        const raw = localStorage.getItem(`emp-profile-${empId}`);
+        return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+}
+function saveProfile(empId: string, data: Partial<EmployeeProfile>) {
+    try {
+        localStorage.setItem(`emp-profile-${empId}`, JSON.stringify(data));
+    } catch { /* empty */ }
+}
+
 // Map display roles → system roles
 const ROLE_OPTIONS = [
     { label: 'Employee', value: 'TENANT_ENTERPRISE_EMPLOYEE' },
@@ -138,12 +151,14 @@ export default function EmployeesPage() {
     const openAdd = () => { setEditing(null); setForm(emptyForm); setError(""); setShowDialog(true); };
     const openEdit = (emp: Employee) => {
         setEditing(emp);
+        const profile = loadProfile(emp.id);
         setForm({
             firstName: emp.firstName, lastName: emp.lastName, email: emp.email,
             phone: emp.phone || "", role: emp.role, status: emp.status,
             hourlyCost: emp.hourlyCost?.toString() || "", hireDate: emp.hireDate?.split("T")[0] || "",
-            department: "", employmentType: "Full-time",
-            emergencyContact: "", emergencyPhone: "", address: "", birthDate: "", notes: ""
+            department: profile.department || "", employmentType: profile.employmentType || "Full-time",
+            emergencyContact: profile.emergencyContact || "", emergencyPhone: profile.emergencyPhone || "",
+            address: profile.address || "", birthDate: profile.birthDate || "", notes: profile.notes || ""
         });
         setError("");
         setShowDialog(true);
@@ -158,8 +173,38 @@ export default function EmployeesPage() {
             const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
             const data = await res.json();
             if (!res.ok) { setError(data.error || "Something went wrong"); setSaving(false); return; }
+
+            // Save extended profile fields locally
+            const empId = editing?.id || data.employee?.id;
+            if (empId) {
+                saveProfile(empId, {
+                    department: form.department,
+                    employmentType: form.employmentType,
+                    emergencyContact: form.emergencyContact,
+                    emergencyPhone: form.emergencyPhone,
+                    address: form.address,
+                    birthDate: form.birthDate,
+                    notes: form.notes,
+                });
+            }
+
             setShowDialog(false);
-            fetchEmployees();
+            await fetchEmployees();
+
+            // Refresh selectedEmployee with updated data if viewing detail
+            if (selectedEmployee && editing) {
+                setSelectedEmployee({
+                    ...editing,
+                    firstName: form.firstName,
+                    lastName: form.lastName,
+                    email: form.email,
+                    phone: form.phone || null,
+                    role: form.role,
+                    status: form.status,
+                    hourlyCost: form.hourlyCost ? parseFloat(form.hourlyCost) : null,
+                    hireDate: form.hireDate || null,
+                });
+            }
         } catch { setError("Network error"); } finally { setSaving(false); }
     };
 
@@ -241,7 +286,7 @@ export default function EmployeesPage() {
                                 <div className="space-y-3">
                                     <DetailRow icon={<Mail className="w-4 h-4" />} label="Email" value={emp.email} />
                                     <DetailRow icon={<Phone className="w-4 h-4" />} label="Phone" value={emp.phone || '—'} />
-                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value="Not set" />
+                                    <DetailRow icon={<MapPin className="w-4 h-4" />} label="Address" value={loadProfile(emp.id).address || 'Not set'} />
                                 </div>
                             </div>
 
@@ -252,7 +297,7 @@ export default function EmployeesPage() {
                                 </h3>
                                 <div className="space-y-3">
                                     <DetailRow icon={<Briefcase className="w-4 h-4" />} label="Role" value={getRoleLabel(emp.role)} />
-                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value="Operations" />
+                                    <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value={loadProfile(emp.id).department || 'Not set'} />
                                     <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
                                     {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label="Tenure" value={tenure} />}
                                 </div>
@@ -265,7 +310,7 @@ export default function EmployeesPage() {
                                 </h3>
                                 <div className="space-y-3">
                                     <DetailRow icon={<Euro className="w-4 h-4" />} label="Hourly Rate" value={emp.hourlyCost != null ? `€${emp.hourlyCost.toFixed(2)}/h` : '—'} />
-                                    <DetailRow icon={<FileText className="w-4 h-4" />} label="Contract" value="Full-time" />
+                                    <DetailRow icon={<FileText className="w-4 h-4" />} label="Contract" value={loadProfile(emp.id).employmentType || 'Full-time'} />
                                     <DetailRow icon={<Shield className="w-4 h-4" />} label="Benefits" value="Standard Package" />
                                 </div>
                             </div>
@@ -279,8 +324,8 @@ export default function EmployeesPage() {
                                     <Heart className="w-3.5 h-3.5" /> Emergency Contact
                                 </h3>
                                 <div className="space-y-3">
-                                    <DetailRow icon={<User className="w-4 h-4 text-red-400" />} label="Name" value="Not set" />
-                                    <DetailRow icon={<Phone className="w-4 h-4 text-red-400" />} label="Phone" value="Not set" />
+                                    <DetailRow icon={<User className="w-4 h-4 text-red-400" />} label="Name" value={loadProfile(emp.id).emergencyContact || 'Not set'} />
+                                    <DetailRow icon={<Phone className="w-4 h-4 text-red-400" />} label="Phone" value={loadProfile(emp.id).emergencyPhone || 'Not set'} />
                                 </div>
                             </div>
 
@@ -538,6 +583,29 @@ export default function EmployeesPage() {
                                             </PopoverContent>
                                         </Popover>
                                     </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 mt-4">
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Department</label>
+                                        <SearchableSelect
+                                            options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+                                            value={form.department}
+                                            onChange={v => setForm(f => ({ ...f, department: v }))}
+                                            placeholder="Select department..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5 block">Employment Type</label>
+                                        <SearchableSelect
+                                            options={EMPLOYMENT_TYPES.map(t => ({ value: t, label: t }))}
+                                            value={form.employmentType}
+                                            onChange={v => setForm(f => ({ ...f, employmentType: v }))}
+                                            placeholder="Select type..."
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-4">
+                                    <Field label="Address" value={form.address} onChange={v => setForm(f => ({ ...f, address: v }))} placeholder="Street, City, ZIP" />
                                 </div>
                             </div>
 

@@ -1,8 +1,9 @@
 // @ts-nocheck
 "use client";
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/time-tracker/components/ui/button';
 import { Input } from '@/components/time-tracker/components/ui/input';
 import { Label } from '@/components/time-tracker/components/ui/label';
@@ -701,27 +702,15 @@ export function CreateShiftForm({
 
                     <div>
                       <Label>Project</Label>
-                      <Select value={projectId} onValueChange={setProjectId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select project (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projects.map(project => {
-                            const color = getNotionColor(project.color);
-                            return (
-                              <SelectItem key={project.id} value={project.id}>
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded-full"
-                                    style={{ backgroundColor: project.isErp ? 'var(--brand-color, #d35400)' : color.value }}
-                                  />
-                                  {project.name}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <SearchableSelect
+                        options={[
+                          { value: '', label: '— No project —' },
+                          ...projects.map(p => ({ value: p.id, label: p.name }))
+                        ]}
+                        value={projectId}
+                        onChange={setProjectId}
+                        placeholder="Search projects..."
+                      />
                     </div>
 
                     {scheduleType === 'single' && (
@@ -1178,27 +1167,15 @@ export function CreateShiftForm({
 
                   <div>
                     <Label>Project</Label>
-                    <Select value={projectId} onValueChange={setProjectId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select project (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {projects.map(project => {
-                          const color = getNotionColor(project.color);
-                          return (
-                            <SelectItem key={project.id} value={project.id}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: color.value }}
-                                />
-                                {project.name}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      options={[
+                        { value: '', label: '— No project —' },
+                        ...projects.map(p => ({ value: p.id, label: p.name }))
+                      ]}
+                      value={projectId}
+                      onChange={setProjectId}
+                      placeholder="Search projects..."
+                    />
                   </div>
 
                   {scheduleType === 'single' && (

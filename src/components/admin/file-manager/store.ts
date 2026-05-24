@@ -60,7 +60,10 @@ export const useFileManagerStore = create<FileManagerState>()(
                     });
 
                 } catch (err: any) {
-                    console.error('Failed to fetch Drive nodes:', err);
+                    // Soft failure (Rule 5): Drive may not be configured — don't pollute console
+                    if (err.message !== 'Failed to fetch') {
+                        console.warn('Drive fetch skipped:', err.message);
+                    }
                     set({ error: err.message, isLoading: false });
                 }
             },

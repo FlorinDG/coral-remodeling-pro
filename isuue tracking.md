@@ -44,7 +44,7 @@
 25. [BUILT] Add user self-service password reset for admin accounts. 
 
 26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.
-27. [TODO] Ensure project cost rates (person-hour, equipment) are properly saved to the project record and used to calculate project-level profitability (planned vs actual cost).
+27. [FIXED] Project cost rates now derived from linked quotation: removed manual rate inputs (equipment rate, labour rate, equipment hours), replaced with quotation-sourced profitability card showing quote total, material cost, estimated labour, actual clocked costs, and margin analysis. Budget auto-derived from quotation when not set manually.
 28. [TODO] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component.
 29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
 30. [FIXED] Mobile bottom-nav active state: The "More" tab in `MobileBottomNav.tsx` only highlighted for a few specific routes (settings, crm, db-clients, etc.), leaving routes like `/admin/contacts`, `/admin/financials`, `/admin/journal`, `/admin/library`, `/admin/quotations` with no active tab. Fix: "More" is now a catch-all that activates for any `/admin` route not claimed by the other 4 tabs (Home, Tasks, Projects, Calendar).
@@ -111,3 +111,9 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 3. **#34** — Editable task titles. Scope first.
 4. **#26+27** — Project billing. Needs implementation plan first.
 5. **#28+29** — Low priority cleanup/verification.
+
+---
+
+### Session 2026-05-24 (evening) — Financial Improvements + Footer Fix
+
+45. [FIXED] Database footer horizontal scroll: The footer summary row (with column calculations and "New" button) was positioned outside the grid's horizontal scroll container. When the viewport was narrow and columns overflowed horizontally, the footer stayed fixed while the grid scrolled. Fix: added `footerScrollRef` synced via the same `onScrollCapture` → `translateX` pattern used for the header. Footer summary cells now scroll in lockstep with the grid and header columns.

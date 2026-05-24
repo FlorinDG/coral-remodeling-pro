@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, RefObject } from 'react';
 import { Plus, ChevronDown } from 'lucide-react';
 import { useDatabaseStore } from '../store';
 import { useLocale } from 'next-intl';
@@ -17,6 +17,7 @@ interface DatabaseFooterProps {
     hideNewButton?: boolean;
     orderedVisibleProperties: Property[];
     viewStateMap: Map<string, any>;
+    scrollRef?: RefObject<HTMLDivElement | null>;
 }
 
 const SUMMARY_LABELS: Record<SummaryType, string> = {
@@ -43,6 +44,7 @@ export default function DatabaseFooter({
     hideNewButton,
     orderedVisibleProperties,
     viewStateMap,
+    scrollRef,
 }: DatabaseFooterProps) {
     const locale = useLocale();
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
@@ -149,7 +151,7 @@ export default function DatabaseFooter({
                 <div style={{ width: '123px', minWidth: '123px' }} className="flex-shrink-0 border-r border-neutral-200 dark:border-white/10" />
 
                 {/* Summary cells aligned with columns */}
-                <div className="flex min-w-max">
+                <div ref={scrollRef} className="flex min-w-max" style={{ willChange: 'transform' }}>
                     {orderedVisibleProperties.map(prop => {
                         const state = viewStateMap.get(prop.id);
                         const width = state?.width || 150;

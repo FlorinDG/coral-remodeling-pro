@@ -173,6 +173,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [hasHydrated, setHasHydrated] = useState(false);
     const isMounted = useRef(false);
     const headerScrollRef = useRef<HTMLDivElement>(null);
+    const footerScrollRef = useRef<HTMLDivElement>(null);
     const gridWrapperRef = useRef<HTMLDivElement>(null);
     const gridAreaRef = useRef<HTMLDivElement>(null);
     const [gridHeight, setGridHeight] = useState(400);
@@ -1040,6 +1041,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     if (target.classList?.contains('dsg-container') && headerScrollRef.current) {
                         headerScrollRef.current.style.transform = `translateX(-${target.scrollLeft}px)`;
                     }
+                    if (target.classList?.contains('dsg-container') && footerScrollRef.current) {
+                        footerScrollRef.current.style.transform = `translateX(-${target.scrollLeft}px)`;
+                    }
                 }}
                 onDragOver={(e) => {
                     // Automatically scroll the inner grid body if dragging near horizontal boundary edges
@@ -1449,6 +1453,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 hideNewButton={hideFooterNew}
                 orderedVisibleProperties={orderedVisibleProperties}
                 viewStateMap={viewStateMap}
+                scrollRef={footerScrollRef}
             />
 
             <style dangerouslySetInnerHTML={{

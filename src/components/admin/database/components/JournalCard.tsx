@@ -1,14 +1,10 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '../store';
 import { Block } from '../types';
-import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { PenLine, Plus, Clock, User, ChevronDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-
-const BlockEditor = dynamic(() => import('./BlockEditor'), { ssr: false });
 
 interface JournalCardProps {
     databaseId: string;
@@ -19,7 +15,8 @@ interface JournalCardProps {
 
 /**
  * JournalCard — reusable journal component used in RecordDetailPage and ProjectDetailView.
- * Shows a header with "+ New Entry" button, a list of recent journal entries, and the full BlockEditor.
+ * Shows a header with "+ New Entry" button and a chronological list of journal entries.
+ * Full document editing belongs in the standalone journal page (/admin/journal/[id]).
  */
 export default function JournalCard({ databaseId, pageId, minHeight = '360px' }: JournalCardProps) {
     const page = useDatabaseStore(state =>
@@ -122,9 +119,9 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                 </div>
             )}
 
-            {/* Entry List Summary */}
-            {contentBlocks.length > 0 && (
-                <div className="border-b border-neutral-200 dark:border-white/10">
+            {/* Entry List */}
+            {contentBlocks.length > 0 ? (
+                <div className="flex-1 overflow-hidden">
                     <button
                         onClick={() => setShowEntries(!showEntries)}
                         className="w-full flex items-center gap-2 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
@@ -134,8 +131,8 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                     </button>
 
                     {showEntries && (
-                        <div className="max-h-[200px] overflow-y-auto divide-y divide-neutral-100 dark:divide-white/5">
-                            {contentBlocks.slice(0, 10).map(block => {
+                        <div className="max-h-[300px] overflow-y-auto divide-y divide-neutral-100 dark:divide-white/5">
+                            {contentBlocks.map(block => {
                                 const dateStr = formatEntryDate(block);
                                 const author = block.properties?.author as string | undefined;
 
@@ -162,22 +159,25 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                                     </div>
                                 );
                             })}
-                            {contentBlocks.length > 10 && (
-                                <div className="px-5 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                                    + {contentBlocks.length - 10} more entries
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>
+            ) : (
+                <div className="flex-1 flex items-center justify-center p-8">
+                    <div className="text-center">
+                        <PenLine className="w-8 h-8 text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
+                        <p className="text-xs text-neutral-400">No entries yet</p>
+                        <button
+                            onClick={() => setShowQuickEntry(true)}
+                            className="mt-2 text-[10px] font-bold uppercase tracking-wider transition-colors hover:opacity-80"
+                            style={{ color: 'var(--brand-color, #d35400)' }}
+                        >
+                            + Add your first note
+                        </button>
+                    </div>
+                </div>
             )}
-
-            {/* Full BlockEditor */}
-            <div className="flex-1 overflow-y-auto p-5">
-                <ErrorBoundary componentName="BlockEditor">
-                    <BlockEditor databaseId={databaseId} pageId={pageId} />
-                </ErrorBoundary>
-            </div>
         </div>
     );
 }
+

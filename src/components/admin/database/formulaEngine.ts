@@ -244,6 +244,9 @@ export function evaluateFormula(expression: string, context: FormulaContext): st
         // Format Date results back to string for display
         if (result instanceof Date) return result.toLocaleDateString();
 
+        // Guard against NaN cascading through dependent formula chains
+        if (typeof result === 'number' && isNaN(result)) return 0;
+
         return result;
     } catch (e: any) {
         // Suppress to prevent Next.js dev overlay from crashing on expected user typos

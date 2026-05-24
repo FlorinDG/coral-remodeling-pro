@@ -45,14 +45,14 @@ export default function MobileBottomNav() {
                             return pathname.startsWith('/admin/calendar');
                         }
                         if (item.id === 'more') {
-                            return pathname.startsWith('/admin/settings') || 
-                                   pathname.startsWith('/admin/crm') || 
-                                   pathname.startsWith('/admin/database/db-clients') ||
-                                   pathname.startsWith('/admin/database/db-suppliers') ||
-                                   pathname.startsWith('/admin/database/db-quotations') ||
-                                   pathname.startsWith('/admin/database/db-invoices') ||
-                                   pathname.startsWith('/admin/database/db-expenses') ||
-                                   pathname.startsWith('/admin/database/db-tickets');
+                            // Catch-all: active for any /admin route not claimed by the other 4 tabs
+                            return pathname.startsWith('/admin') &&
+                                !pathname.startsWith('/admin/hr') &&
+                                !pathname.startsWith('/admin/tasks') &&
+                                !pathname.startsWith('/admin/projects-management') &&
+                                !pathname.startsWith('/admin/database/db-1') &&
+                                !pathname.startsWith('/admin/database/db-tasks') &&
+                                !pathname.startsWith('/admin/calendar');
                         }
                         return item.href === '/admin'
                             ? pathname === '/admin'

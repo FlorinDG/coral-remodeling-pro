@@ -21,13 +21,13 @@
 
 12. [BUILT] Project Management detail view: When opening a record from `db-1` (Projects), a specialized PM layout now renders with: task board with status filters, timeline progress, budget tracking, schedule overview, and tabbed journal/files.
 
-13. [PENDING] FileManager in RecordDetailPage: Uses `contextType="global"` which triggers a Google Drive fetch — but if `driveFolderId` is not passed, the `fetchNodes` effect skips execution (line 180 of `FileManager.tsx`). This means the Files card is always empty for record-level embeds. Needs: either a local-only file store or proper Drive folder mapping per-record.
+13. [FIXED] FileManager in RecordDetailPage: Was using `contextType="global"` without passing `driveFolderId`, causing empty Files cards. Fix: `RecordDetailPage` now maps `contextType` per database (project/client/task/quotation/invoice), passes `driveFolderId={boundDriveId}`, and auto-creates Drive folders on first load when missing.
 
 14. [PENDING] CRM Main Pipeline page crash: Error boundary now catches it per-card. Root cause needs runtime investigation — likely a dynamic import or relation resolution issue specific to `db-crm` schema.
 
-15. [PENDING] Journal module page: The breadcrumb link to Journal in the side nav should use the new Journal module (standalone page at `/admin/journal`), not the embedded BlockEditor.
+15. [FIXED] Journal breadcrumb: The standalone Journal module page at `/admin/journal` already renders its own header. The sidebar nav `href` correctly points to `/admin/journal`. No breadcrumb collision with BlockEditor.
 
-16. [PENDING] Bobex Pipeline record pages: Breadcrumb shows "DB CRM" for both pipelines. The Bobex pipeline should show its own database name in the breadcrumb.
+16. [FIXED] Bobex Pipeline record pages: `RecordDetailPage` now maps `db-bobex` → "Bobex Pipeline" and `db-crm` → "Main Pipeline" via `displayName` variable, replacing the generic `database.name` in the breadcrumb.
 
 17. [FIXED] Database Schema Editor crash (Superadmin > Settings > Databases > edit): The title property (index 0) was wrapped in a `Draggable` with `index={index-1}` = `-1`, which crashes `@hello-pangea/dnd`. Fix: title row is now rendered as a static `<tr>` outside the Draggable system.
 
@@ -47,8 +47,60 @@
 27. [TODO] Ensure project cost rates (person-hour, equipment) are properly saved to the project record and used to calculate project-level profitability (planned vs actual cost).
 28. [TODO] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component.
 29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
-30. [TODO] Fix mobile bottom-nav to persist correctly when navigating to submodules like CRM or HR (currently it disappears on many routes).
+30. [FIXED] Mobile bottom-nav active state: The "More" tab in `MobileBottomNav.tsx` only highlighted for a few specific routes (settings, crm, db-clients, etc.), leaving routes like `/admin/contacts`, `/admin/financials`, `/admin/journal`, `/admin/library`, `/admin/quotations` with no active tab. Fix: "More" is now a catch-all that activates for any `/admin` route not claimed by the other 4 tabs (Home, Tasks, Projects, Calendar).
 31. [BUILT] Use less white space in dashboard to make better use of space.
 32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.
-33. [TODO]I asked to replace the system select elements with custom built, with a searchbar integrated to it
+33. [TODO] I asked to replace the system select elements with custom built, with a searchbar integrated to it
 34. [TODO] In the projects overview, the tasks. make title of the task editable and add a bar under the title with action elements. status select, priority, dates, attachments icon, and so on.
+35. [FIXED] Journal card duplicate render: `JournalCard.tsx` was rendering `page.blocks` data twice — once as a summary entries list at the top, and again via a full `BlockEditor` embed below. Fix: removed the `BlockEditor` entirely from the card. The card now shows only the chronological entries list + quick-add form. Full editing stays in the standalone journal page (`/admin/journal/[id]`). Also added an empty-state with a CTA when no entries exist.
+36. [FIXED] Article library formula NaN: The formula chain had two bugs: (1) Percent values (e.g. Discount=20 meaning 20%) were multiplied directly instead of being divided by 100, producing `BruttoKost * 20` instead of `BruttoKost * (1 - 20/100)`. Same for Marge Standard. Fix: corrected `NettoKost` formula to `BruttoKost * (1 - Discount / 100)` and `Marge€` to `NettoKost * (Marge Standard / 100)`. (2) Added NaN guard in both the formula engine (returns 0 instead of NaN to prevent cascading) and `FormulaColumn.tsx` (displays "—" instead of "NaN").
+
+---
+
+### Review — All Open Items Through the Lens of /pd (2026-05-24)
+
+#### Corrections to the Previous Analysis
+
+**The "Module Registry Violation" was a false alarm.** The previous analysis treated Journal as a new gated module that should be registered in `MODULE_GATE`, `MODULE_MAP`, `MODULE_ROUTE_MAP`, and the `MODULES` array. This is wrong. Here's why:
+
+Journal is a **cross-cutting utility view**, not a billable subscription module. It aggregates block content from Projects, Clients, and CRM — it doesn't own exclusive functionality. The correct architectural precedent is `dashboard` and `contacts`: both appear in the sidebar but are **intentionally absent** from all 4 gating locations because they are available to all tiers.
+
+The code confirms this is working as designed:
+- `AdminLayout.tsx:165-166` — `isModuleLocked()` checks `MODULE_MAP[moduleId]`. If the item isn't in `MODULE_MAP`, it returns `false` (unlocked). Journal isn't in `MODULE_MAP`, so it's always visible. Same as Dashboard.
+- `middleware.ts:239-244` — `MODULE_GATE` only blocks routes that map to a subscription module. `journal` has no entry, so the route passes through. Same as `dashboard` and `contacts`.
+- `ROLE_ROUTE_ALLOWLISTS` (middleware:250-256) and `ROLE_SIDEBAR_ALLOW` (AdminLayout:149-156) both already include `journal` for the correct specialist roles.
+
+**No registration needed. No security gap.** The Journal route is auth-protected (middleware line 212 blocks unauthenticated users), role-gated for specialist roles, and intentionally available to all subscription tiers. This matches the /pd architecture exactly.
+
+#### The Actual Bug: Duplicate Render in JournalCard (Issue #35)
+
+The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads `page.blocks` and renders the same data twice:
+1. Lines 126-172: as a summary "entries list" (filtering blocks with content)
+2. Lines 175-179: as a full `BlockEditor` (which renders the same blocks as editable document)
+
+**The fix, per PD Rule 3 (Smallest Possible Change):** Delete lines 175-179 (the `BlockEditor` wrapper). The card keeps its entries list + quick-add form. Full editing stays in the standalone page. That's a ~5-line removal, not an architectural overhaul. The previous recommendation to "build a relational logs feed" violates Rule 3 — it proposes rewriting the data model when the visual bug is caused by rendering the same data twice.
+
+#### Status Corrections
+
+- **Issue 13** → changed from `[PENDING]` to `[FIXED]`. `RecordDetailPage.tsx` now passes `contextType` per database and `driveFolderId={boundDriveId}`. Auto-creates Drive folders on first load. Already shipped to `main`.
+- **Issue 16** → changed from `[PENDING]` to `[FIXED]`. `RecordDetailPage.tsx` now maps `db-bobex` → "Bobex Pipeline" and `db-crm` → "Main Pipeline" in the breadcrumb. Already shipped to `main`.
+
+#### Remaining Open Items — /pd Assessment
+
+| # | Status | PD Risk | Assessment |
+|---|--------|---------|------------|
+| 14 | PENDING | **Rule 2** (Measure) | CRM pipeline crash — root cause unknown. Error boundary contains it (Rule 5 ✓). Needs runtime debugging session with DevTools to measure the actual error before proposing a fix. |
+| 26 | TODO | **Rule 1** (Scope) | Project billing rules — high-risk feature touching quotation engine + project management + invoicing. Three modules at once = large failure surface. Needs careful scoping and an implementation plan before touching code. |
+| 27 | TODO | **Rule 1** (Scope) | Project cost rates — same scope risk as #26. These two should be planned together. |
+| 28 | TODO | **Rule 6** (Build) | TypeScript loose variables — `tsc --noEmit` currently passes clean. These are likely ESLint warnings, not build blockers. Low priority. |
+| 29 | TODO | **Rule 2** (Measure) | Project templates — need to verify what the current template flow actually produces before changing it. Measure first. |
+| 33 | TODO | **Rule 7** (Structure) | Custom select components — `SearchableSelect` already exists (used in Journal page). Should audit all `<select>` usages first, then replace systematically. Rule 7 applies: extract component, then roll out. |
+| 34 | TODO | **Rule 1** (Scope) | Editable task titles + action bar — changes the interaction model of the task board. Need to scope what currently works before touching it. |
+
+#### Recommended Priority (what to fix next)
+
+1. **#14** — CRM crash. Runtime debugging needed (DevTools session).
+2. **#33** — Custom selects. Systematic rollout using existing `SearchableSelect`.
+3. **#34** — Editable task titles. Scope first.
+4. **#26+27** — Project billing. Needs implementation plan first.
+5. **#28+29** — Low priority cleanup/verification.

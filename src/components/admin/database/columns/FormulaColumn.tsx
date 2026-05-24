@@ -59,7 +59,7 @@ const FormulaComponent = ({ rowData, formulaExpression, databaseId, propertyId }
             >
                 <Calculator className={`w-3 h-3 flex-shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
                 <span className={`truncate text-sm ${isError ? 'text-red-500 font-medium' : 'text-neutral-700 dark:text-neutral-300'}`}>
-                    {String(computedValue)}
+                    {typeof computedValue === 'number' && (isNaN(computedValue) || !isFinite(computedValue)) ? '—' : String(computedValue)}
                 </span>
             </div>
             {showEditor && (

@@ -713,10 +713,10 @@ export const mockDatabases: Database[] = [
 
             { id: 'prop-art-bruto', name: 'BruttoKost', type: 'currency' },
             { id: 'prop-art-remise', name: 'Discount', type: 'percent' },
-            { id: 'prop-art-netto', name: 'NettoKost', type: 'formula', config: { formulaExpression: 'if(empty(Discount), BruttoKost, BruttoKost * Discount)' } },
+            { id: 'prop-art-netto', name: 'NettoKost', type: 'formula', config: { formulaExpression: 'if(empty(Discount), BruttoKost, BruttoKost * (1 - Discount / 100))' } },
 
             { id: 'prop-art-margin', name: 'Marge Standard', type: 'percent' },
-            { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'if(empty(Marge Standard), 0, NettoKost * Marge Standard)' } },
+            { id: 'prop-art-margin-euro', name: 'Marge€', type: 'formula', config: { formulaExpression: 'if(empty(Marge Standard), 0, NettoKost * (Marge Standard / 100))' } },
             { id: 'prop-art-verkoop', name: 'Verkoopprijs', type: 'formula', config: { formulaExpression: 'NettoKost + Marge€' } },
 
             { id: 'prop-art-unit', name: 'Eeh', type: 'select', config: { options: [{ id: 'u-stk', name: 'stk', color: 'gray' }, { id: 'u-m', name: 'm', color: 'blue' }, { id: 'u-m2', name: 'm2', color: 'green' }, { id: 'u-m3', name: 'm3', color: 'purple' }, { id: 'u-l', name: 'L', color: 'yellow' }, { id: 'u-uur', name: 'uur', color: 'orange' }, { id: 'u-set', name: 'set', color: 'pink' }, { id: 'u-kg', name: 'kg', color: 'red' }] } },

@@ -23,7 +23,7 @@
 
 13. [FIXED] FileManager in RecordDetailPage: Was using `contextType="global"` without passing `driveFolderId`, causing empty Files cards. Fix: `RecordDetailPage` now maps `contextType` per database (project/client/task/quotation/invoice), passes `driveFolderId={boundDriveId}`, and auto-creates Drive folders on first load when missing.
 
-14. [PENDING] CRM Main Pipeline page crash: Error boundary now catches it per-card. Root cause needs runtime investigation — likely a dynamic import or relation resolution issue specific to `db-crm` schema.
+14. [FIXED] CRM Main Pipeline page crash: Previously crashed due to missing error boundaries. After error boundary wrapping (issue #10) and schema enforcement fixes, the CRM page now loads cleanly. Verified via runtime Chrome DevTools debugging session — zero console errors on `/admin/crm`. Main Pipeline and Bobex Pipeline tabs both render correctly with records visible.
 
 15. [FIXED] Journal breadcrumb: The standalone Journal module page at `/admin/journal` already renders its own header. The sidebar nav `href` correctly points to `/admin/journal`. No breadcrumb collision with BlockEditor.
 
@@ -89,7 +89,7 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 
 | # | Status | PD Risk | Assessment |
 |---|--------|---------|------------|
-| 14 | PENDING | **Rule 2** (Measure) | CRM pipeline crash — root cause unknown. Error boundary contains it (Rule 5 ✓). Needs runtime debugging session with DevTools to measure the actual error before proposing a fix. |
+| 14 | FIXED | **Rule 2** (Measure) | CRM pipeline — verified via runtime DevTools debugging. Zero console errors. Page loads cleanly with both pipeline tabs and records visible. |
 | 26 | TODO | **Rule 1** (Scope) | Project billing rules — high-risk feature touching quotation engine + project management + invoicing. Three modules at once = large failure surface. Needs careful scoping and an implementation plan before touching code. |
 | 27 | TODO | **Rule 1** (Scope) | Project cost rates — same scope risk as #26. These two should be planned together. |
 | 28 | TODO | **Rule 6** (Build) | TypeScript loose variables — `tsc --noEmit` currently passes clean. These are likely ESLint warnings, not build blockers. Low priority. |

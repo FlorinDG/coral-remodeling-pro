@@ -2,12 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Block, Page } from '@/components/admin/database/types';
+import { Block, BlockType } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
     Users, Layout, ArrowRight, Table, Plus, X,
     ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
-    CheckSquare, List, BookOpen, Globe, Notebook
+    CheckSquare, List, BookOpen, Globe, Notebook,
+    Heading1, Heading2, Heading3, Code, ListOrdered, Minus,
+    Link2, ExternalLink, Type
 } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -29,7 +31,11 @@ interface JournalEntry {
     updatedAt: Date;
     blocks: Block[];
     author?: string;
-    page: Page;
+    page: any;
+    // Cross-database link
+    linkedDatabaseId?: string;
+    linkedRecordId?: string;
+    linkedRecordTitle?: string;
 }
 
 
@@ -55,6 +61,33 @@ function groupEntriesByDate(entries: JournalEntry[]): { label: string; entries: 
 
 const GENERAL_DB_ID = 'db-journal-general';
 
+// ── Block type options for the new entry form ────────────────────────────
+const BLOCK_TYPE_OPTIONS: { type: BlockType; label: string; icon: React.ReactNode }[] = [
+    { type: 'paragraph',          label: 'Text',    icon: <AlignLeft className="w-3.5 h-3.5" /> },
+    { type: 'heading_1',          label: 'H1',      icon: <Heading1 className="w-3.5 h-3.5" /> },
+    { type: 'heading_2',          label: 'H2',      icon: <Heading2 className="w-3.5 h-3.5" /> },
+    { type: 'heading_3',          label: 'H3',      icon: <Heading3 className="w-3.5 h-3.5" /> },
+    { type: 'bulleted_list_item', label: 'Bullet',  icon: <List className="w-3.5 h-3.5" /> },
+    { type: 'numbered_list_item', label: 'Number',  icon: <ListOrdered className="w-3.5 h-3.5" /> },
+    { type: 'todo',               label: 'Todo',    icon: <CheckSquare className="w-3.5 h-3.5" /> },
+    { type: 'quote',              label: 'Quote',   icon: <Quote className="w-3.5 h-3.5" /> },
+    { type: 'callout',            label: 'Callout', icon: <AlertCircle className="w-3.5 h-3.5" /> },
+    { type: 'code',               label: 'Code',    icon: <Code className="w-3.5 h-3.5" /> },
+    { type: 'divider',            label: 'Divider', icon: <Minus className="w-3.5 h-3.5" /> },
+];
+
+// ── Linkable databases (all user-facing) ─────────────────────────────────
+const LINKABLE_DB_IDS = [
+    'db-1',           // Projects
+    'db-clients',     // Clients
+    'db-crm',         // CRM
+    'db-tasks',       // Tasks
+    'db-quotations',  // Quotations
+    'db-invoices',    // Invoices
+    'db-suppliers',   // Suppliers
+    'db-bobex',       // Bobex Pipeline
+];
+
 export default function JournalModulePage() {
     const { databases, updatePageBlocks, createPage, createDatabase } = useDatabaseStore();
     const { resolveDbId } = useTenant();
@@ -66,12 +99,13 @@ export default function JournalModulePage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Modal creation states
-    const [targetModule, setTargetModule] = useState<Exclude<ModuleType, 'all'>>('general');
-    const [selectedPageId, setSelectedPageId] = useState('');
-    const [selectedBlockType, setSelectedBlockType] = useState<Block['type']>('paragraph');
+    const [selectedBlockType, setSelectedBlockType] = useState<BlockType>('paragraph');
     const [newEntryContent, setNewEntryContent] = useState('');
     const [newEntryTitle, setNewEntryTitle] = useState('');
     const [authorName, setAuthorName] = useState('');
+    // Link states
+    const [linkDatabaseId, setLinkDatabaseId] = useState('');
+    const [linkRecordId, setLinkRecordId] = useState('');
 
     const loading = databases.length === 0;
 
@@ -86,19 +120,38 @@ export default function JournalModulePage() {
         [GENERAL_DB_ID]: 'general' as ModuleType,
     }), [resolveDbId]);
 
-    // Reverse map module to dbId
-    const getDbIdFromModule = (mod: Exclude<ModuleType, 'all'>) => {
-        if (mod === 'projects') return resolveDbId('db-1') || 'db-1';
-        if (mod === 'clients') return resolveDbId('db-clients') || 'db-clients';
-        if (mod === 'crm') return resolveDbId('db-crm') || 'db-crm';
-        return GENERAL_DB_ID;
-    };
+    // Resolve linkable DBs for the modal
+    const linkableDatabases = useMemo(() => {
+        return LINKABLE_DB_IDS.map(baseId => {
+            const resolved = resolveDbId(baseId) || baseId;
+            const db = databases.find(d => d.id === resolved);
+            if (!db) return null;
+            return { id: resolved, name: db.name };
+        }).filter(Boolean) as { id: string; name: string }[];
+    }, [databases, resolveDbId]);
 
-    // Extract all entries chronologically (Computed dynamically to satisfy React Compiler)
+    // Records for the selected link database
+    const linkableRecords = useMemo(() => {
+        if (!linkDatabaseId) return [];
+        const db = databases.find(d => d.id === linkDatabaseId);
+        if (!db) return [];
+        return db.pages.map(p => {
+            const props = p.properties as Record<string, unknown>;
+            return {
+                id: p.id,
+                title: String(props?.title || props?.name || 'Untitled Record')
+            };
+        });
+    }, [databases, linkDatabaseId]);
+
+    // Extract all entries — from module DBs (block-based) AND journal DB (standalone)
     const allEntries: JournalEntry[] = [];
+    
+    // 1. Entries from module DBs (legacy: blocks embedded in pages)
     databases.forEach(db => {
         const modType = moduleMap[db.id];
         if (!modType) return;
+        if (db.id === GENERAL_DB_ID) return; // Handle journal DB separately below
 
         db.pages.forEach(page => {
             if (page.blocks && page.blocks.length > 0) {
@@ -117,20 +170,49 @@ export default function JournalModulePage() {
             }
         });
     });
-    allEntries.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-    // Available target pages for creation dropdown (only for non-general modules)
-    const targetDbId = getDbIdFromModule(targetModule);
-    const targetDb = databases.find(d => d.id === targetDbId);
-    const availablePages = (targetModule !== 'general' && targetDb)
-        ? targetDb.pages.map(p => {
-            const props = p.properties as Record<string, unknown>;
-            return {
-                id: p.id,
-                title: String(props?.title || props?.name || 'Untitled Record')
-            };
-        })
-        : [];
+    // 2. Entries from journal DB (standalone journal pages — may have cross-refs)
+    if (generalDb) {
+        generalDb.pages.forEach(page => {
+            const props = page.properties as Record<string, unknown>;
+            const linkedDbId = props?.linkedDatabaseId as string | undefined;
+            const linkedRecId = props?.linkedRecordId as string | undefined;
+            let linkedRecTitle = props?.linkedRecordTitle as string | undefined;
+            let resolvedModule: ModuleType = 'general';
+
+            // Resolve module from linked database
+            if (linkedDbId && moduleMap[linkedDbId]) {
+                resolvedModule = moduleMap[linkedDbId];
+            }
+
+            // Resolve linked record title if missing
+            if (linkedDbId && linkedRecId && !linkedRecTitle) {
+                const targetDb = databases.find(d => d.id === linkedDbId);
+                const targetPage = targetDb?.pages.find(p => p.id === linkedRecId);
+                if (targetPage) {
+                    const targetProps = targetPage.properties as Record<string, unknown>;
+                    linkedRecTitle = String(targetProps?.title || targetProps?.name || 'Untitled');
+                }
+            }
+
+            allEntries.push({
+                id: page.id,
+                title: String(props?.title || props?.name || 'Untitled Note'),
+                databaseId: GENERAL_DB_ID,
+                databaseName: 'General Journal',
+                module: resolvedModule,
+                updatedAt: new Date(page.updatedAt),
+                blocks: page.blocks || [],
+                author: String(props?.author || 'System'),
+                page: page,
+                linkedDatabaseId: linkedDbId,
+                linkedRecordId: linkedRecId,
+                linkedRecordTitle: linkedRecTitle,
+            });
+        });
+    }
+
+    allEntries.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
     // Filtered entries
     const filteredEntries = allEntries.filter(entry => {
@@ -145,15 +227,15 @@ export default function JournalModulePage() {
 
     const dateGroupedEntries = groupEntriesByDate(filteredEntries);
 
-    // Handle saving new journal entry block
+    // Handle saving new journal entry — always creates in journal DB with optional link
     const handleSaveNewEntry = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newEntryContent.trim()) return;
+        if (selectedBlockType !== 'divider' && !newEntryContent.trim()) return;
 
         const newBlock: Block = {
             id: uuidv4(),
             type: selectedBlockType,
-            content: newEntryContent,
+            content: selectedBlockType === 'divider' ? '' : newEntryContent,
             properties: {
                 createdAt: new Date().toISOString(),
                 author: authorName || 'System',
@@ -162,34 +244,40 @@ export default function JournalModulePage() {
             }
         };
 
-        if (targetModule === 'general') {
-            // Create a standalone journal page in the general journal DB
-            let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
-            if (!db) {
-                db = createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
-                    { id: 'title', name: 'Title', type: 'text' },
-                    { id: 'author', name: 'Author', type: 'text' },
-                    { id: 'created', name: 'Created', type: 'created_time' },
-                ]);
-            }
-            createPage(GENERAL_DB_ID, {
-                title: newEntryTitle || `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
-                author: authorName || 'System',
-            }, undefined, [newBlock]);
-        } else {
-            // Append block to an existing record
-            const activeDbId = getDbIdFromModule(targetModule);
-            const activeDb = databases.find(d => d.id === activeDbId);
-            const targetPage = activeDb?.pages.find(p => p.id === selectedPageId);
-            if (!targetPage) return;
-
-            const existingBlocks = targetPage.blocks || [];
-            updatePageBlocks(activeDbId, selectedPageId, [...existingBlocks, newBlock]);
+        // Ensure journal DB exists
+        let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
+        if (!db) {
+            db = createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
+                { id: 'title', name: 'Title', type: 'text' },
+                { id: 'author', name: 'Author', type: 'text' },
+                { id: 'created', name: 'Created', type: 'created_time' },
+            ]);
         }
+
+        // Build page properties
+        const pageProps: Record<string, any> = {
+            title: newEntryTitle || `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
+            author: authorName || 'System',
+        };
+
+        // Add cross-reference if a record was selected
+        if (linkDatabaseId && linkRecordId) {
+            const linkedDb = databases.find(d => d.id === linkDatabaseId);
+            const linkedPage = linkedDb?.pages.find(p => p.id === linkRecordId);
+            const linkedProps = linkedPage?.properties as Record<string, unknown> | undefined;
+            pageProps.linkedDatabaseId = linkDatabaseId;
+            pageProps.linkedRecordId = linkRecordId;
+            pageProps.linkedRecordTitle = String(linkedProps?.title || linkedProps?.name || 'Untitled');
+        }
+
+        createPage(GENERAL_DB_ID, pageProps, undefined, [newBlock]);
 
         // Reset & Close Modal
         setNewEntryContent('');
         setNewEntryTitle('');
+        setSelectedBlockType('paragraph');
+        setLinkDatabaseId('');
+        setLinkRecordId('');
         setIsAddModalOpen(false);
     };
 
@@ -269,8 +357,8 @@ export default function JournalModulePage() {
                         <Button 
                             onClick={() => {
                                 setIsAddModalOpen(true);
-                                setTargetModule('general');
-                                setSelectedPageId('');
+                                setLinkDatabaseId('');
+                                setLinkRecordId('');
                             }}
                             className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all"
                         >
@@ -372,84 +460,65 @@ export default function JournalModulePage() {
                         {/* Modal Body */}
                         <div className="overflow-y-auto flex-1">
                             <form onSubmit={handleSaveNewEntry} className="p-6 space-y-5">
-                                {/* Target Module Selector */}
+                                {/* Title */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">Context</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {(['general', 'projects', 'clients', 'crm'] as const).map(mod => (
-                                            <button
-                                                key={mod}
-                                                type="button"
-                                                onClick={() => {
-                                                    setTargetModule(mod);
-                                                    const activeDbId = getDbIdFromModule(mod);
-                                                    const db = databases.find(d => d.id === activeDbId);
-                                                    setSelectedPageId(db?.pages?.[0]?.id || '');
-                                                }}
-                                                className={`py-2 px-2 text-[10px] font-black uppercase tracking-wider rounded-xl border transition-all flex flex-col items-center gap-1 ${
-                                                    targetModule === mod 
-                                                        ? 'bg-orange-500/10 border-orange-500 text-orange-500' 
-                                                        : 'border-neutral-200 dark:border-white/10 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                                }`}
-                                            >
-                                                {mod === 'general' ? <Notebook className="w-3.5 h-3.5" /> : 
-                                                 mod === 'projects' ? <Briefcase className="w-3.5 h-3.5" /> :
-                                                 mod === 'clients' ? <Users className="w-3.5 h-3.5" /> :
-                                                 <Globe className="w-3.5 h-3.5" />}
-                                                {mod}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Title</label>
+                                    <input
+                                        type="text"
+                                        value={newEntryTitle}
+                                        onChange={(e) => setNewEntryTitle(e.target.value)}
+                                        placeholder={`Note — ${format(new Date(), 'dd MMM yyyy')}`}
+                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+                                    />
                                 </div>
 
-                                {/* General journal: allow a custom title */}
-                                {targetModule === 'general' && (
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Title (optional)</label>
-                                        <input
-                                            type="text"
-                                            value={newEntryTitle}
-                                            onChange={(e) => setNewEntryTitle(e.target.value)}
-                                            placeholder={`Note — ${format(new Date(), 'dd MMM yyyy')}`}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Target Record (only for non-general) */}
-                                {targetModule !== 'general' && (
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
-                                            Target Record <span className="text-neutral-300 normal-case font-normal">(optional)</span>
-                                        </label>
+                                {/* ── Link to Record (optional) ── */}
+                                <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-xl p-4 space-y-3">
+                                    <label className="flex items-center gap-2 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                                        <Link2 className="w-3.5 h-3.5" /> Link to Record <span className="text-neutral-300 normal-case font-normal">(optional)</span>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
                                         <SearchableSelect
                                             options={[
-                                                { value: '', label: 'No specific record' },
-                                                ...availablePages.map(p => ({ value: p.id, label: p.title }))
+                                                { value: '', label: 'No database' },
+                                                ...linkableDatabases.map(db => ({ value: db.id, label: db.name }))
                                             ]}
-                                            value={selectedPageId}
-                                            onChange={setSelectedPageId}
-                                            placeholder="Select a record..."
-                                            searchPlaceholder="Search records..."
+                                            value={linkDatabaseId}
+                                            onChange={(v) => { setLinkDatabaseId(v); setLinkRecordId(''); }}
+                                            placeholder="Select database..."
+                                            searchPlaceholder="Search databases..."
                                         />
+                                        {linkDatabaseId && (
+                                            <SearchableSelect
+                                                options={[
+                                                    { value: '', label: 'No record' },
+                                                    ...linkableRecords.map(r => ({ value: r.id, label: r.title }))
+                                                ]}
+                                                value={linkRecordId}
+                                                onChange={setLinkRecordId}
+                                                placeholder="Select record..."
+                                                searchPlaceholder="Search records..."
+                                            />
+                                        )}
                                     </div>
-                                )}
+                                    {linkDatabaseId && linkRecordId && (
+                                        <div className="flex items-center gap-2 text-xs text-emerald-600 dark:text-emerald-400">
+                                            <Link2 className="w-3 h-3" />
+                                            <span>Will be linked to: <strong>{linkableRecords.find(r => r.id === linkRecordId)?.title}</strong></span>
+                                        </div>
+                                    )}
+                                </div>
 
                                 {/* Entry Style Selector */}
                                 <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Style</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {[
-                                            { type: 'paragraph',          label: 'Plain',   icon: <AlignLeft className="w-3.5 h-3.5" /> },
-                                            { type: 'quote',              label: 'Quote',   icon: <Quote className="w-3.5 h-3.5" /> },
-                                            { type: 'callout',            label: 'Callout', icon: <AlertCircle className="w-3.5 h-3.5" /> },
-                                            { type: 'bulleted_list_item', label: 'Bullet',  icon: <List className="w-3.5 h-3.5" /> },
-                                        ].map(style => (
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Block Type</label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {BLOCK_TYPE_OPTIONS.map(style => (
                                             <button
                                                 key={style.type}
                                                 type="button"
-                                                onClick={() => setSelectedBlockType(style.type as Block['type'])}
-                                                className={`py-2 px-1 text-[10px] font-black uppercase tracking-wider rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                                                onClick={() => setSelectedBlockType(style.type)}
+                                                className={`py-1.5 px-2.5 text-[9px] font-black uppercase tracking-wider rounded-lg border flex items-center gap-1 transition-all ${
                                                     selectedBlockType === style.type
                                                         ? 'bg-orange-500/10 border-orange-500 text-orange-500'
                                                         : 'border-neutral-200 dark:border-white/10 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'
@@ -475,23 +544,25 @@ export default function JournalModulePage() {
                                 </div>
 
                                 {/* Content */}
-                                <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Note</label>
-                                    <textarea
-                                        value={newEntryContent}
-                                        onChange={(e) => setNewEntryContent(e.target.value)}
-                                        rows={6}
-                                        className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none font-serif leading-relaxed"
-                                        placeholder="Write your note or progress update..."
-                                        required
-                                    />
-                                </div>
+                                {selectedBlockType !== 'divider' && (
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Note</label>
+                                        <textarea
+                                            value={newEntryContent}
+                                            onChange={(e) => setNewEntryContent(e.target.value)}
+                                            rows={6}
+                                            className={`w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none leading-relaxed ${selectedBlockType === 'code' ? 'font-mono text-xs' : 'font-serif'}`}
+                                            placeholder={selectedBlockType === 'quote' ? 'Write a quote...' : selectedBlockType === 'code' ? 'Write code...' : 'Write your note or progress update...'}
+                                            required={selectedBlockType !== 'divider'}
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="flex items-center gap-3 pt-2">
                                     <Button 
                                         type="submit" 
                                         className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 uppercase tracking-wider text-xs rounded-xl"
-                                        disabled={!newEntryContent.trim()}
+                                        disabled={selectedBlockType !== 'divider' && !newEntryContent.trim()}
                                     >
                                         Publish Entry
                                     </Button>
@@ -530,12 +601,15 @@ function JournalFeedCard({ entry }: JournalFeedCardProps) {
 
     const mc = moduleColors[entry.module] || moduleColors.general;
 
-    // Determine the correct href: general journal entries go to /journal/[id], others go to database record
+    // Determine the correct href: journal entries go to /journal/[id], others go to database record
     const entryHref = entry.databaseId === GENERAL_DB_ID
         ? `/admin/journal/${entry.id}` as `/${string}`
         : `/admin/database/${entry.databaseId}/${entry.id}` as `/${string}`;
     
-
+    // Linked record href
+    const linkedHref = entry.linkedDatabaseId && entry.linkedRecordId
+        ? `/admin/database/${entry.linkedDatabaseId}/${entry.linkedRecordId}` as `/${string}`
+        : null;
 
     return (
         <div 
@@ -568,10 +642,21 @@ function JournalFeedCard({ entry }: JournalFeedCardProps) {
 
                 {/* Title — clickable to open */}
                 <Link href={entryHref}>
-                    <h2 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white uppercase mb-3 hover:text-orange-500 transition-colors cursor-pointer">
+                    <h2 className="text-sm font-black tracking-tight text-neutral-900 dark:text-white uppercase mb-2 hover:text-orange-500 transition-colors cursor-pointer">
                         {entry.title}
                     </h2>
                 </Link>
+
+                {/* Linked record chip */}
+                {linkedHref && entry.linkedRecordTitle && (
+                    <Link href={linkedHref}>
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-3 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer">
+                            <Link2 className="w-3 h-3" />
+                            Linked to: {entry.linkedRecordTitle}
+                            <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                        </div>
+                    </Link>
+                )}
 
                 {/* Collapsible Properties */}
                 <div className="mb-3 border-t border-b border-neutral-100 dark:border-white/5 py-1.5">
@@ -607,6 +692,15 @@ function JournalFeedCard({ entry }: JournalFeedCardProps) {
                 {/* Rich Feed Content */}
                 <div className="space-y-2.5 text-sm leading-relaxed mb-4 text-neutral-700 dark:text-neutral-300">
                     {entry.blocks.map((block) => {
+                        if (block.type === 'heading_1') {
+                            return <h2 key={block.id} className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">{block.content}</h2>;
+                        }
+                        if (block.type === 'heading_2') {
+                            return <h3 key={block.id} className="text-base font-bold text-neutral-800 dark:text-neutral-100">{block.content}</h3>;
+                        }
+                        if (block.type === 'heading_3') {
+                            return <h4 key={block.id} className="text-sm font-bold text-neutral-700 dark:text-neutral-200">{block.content}</h4>;
+                        }
                         if (block.type === 'paragraph') {
                             return <p key={block.id} className="pl-2 border-l-2 border-neutral-100 dark:border-white/10 font-serif italic">{block.content}</p>;
                         }
@@ -633,13 +727,31 @@ function JournalFeedCard({ entry }: JournalFeedCardProps) {
                                 </div>
                             );
                         }
+                        if (block.type === 'numbered_list_item') {
+                            return (
+                                <div key={block.id} className="flex items-start gap-2 pl-3">
+                                    <span className="text-neutral-400 font-mono text-xs mt-0.5">#</span>
+                                    <span>{block.content}</span>
+                                </div>
+                            );
+                        }
                         if (block.type === 'todo') {
                             return (
                                 <div key={block.id} className="flex items-center gap-2 pl-3">
                                     <CheckSquare className="w-4 h-4 text-orange-500 flex-shrink-0" />
-                                    <span className="line-through text-neutral-400">{block.content}</span>
+                                    <span className={block.properties?.checked ? 'line-through text-neutral-400' : ''}>{block.content}</span>
                                 </div>
                             );
+                        }
+                        if (block.type === 'code') {
+                            return (
+                                <pre key={block.id} className="bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-3 text-xs font-mono text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre-wrap">
+                                    {block.content}
+                                </pre>
+                            );
+                        }
+                        if (block.type === 'divider') {
+                            return <hr key={block.id} className="border-neutral-200 dark:border-white/10" />;
                         }
                         // Render any other known block types as plain text
                         if (block.content) {
@@ -664,7 +776,7 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
                         <tr className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
                             <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Title</th>
                             <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Module</th>
-                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Source DB</th>
+                            <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Linked To</th>
                             <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Author</th>
                             <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400">Last Updated</th>
                             <th className="px-5 py-3.5 text-[10px] font-extrabold uppercase tracking-wider text-neutral-400 text-right">Action</th>
@@ -680,7 +792,16 @@ function JournalDatabaseView({ entries }: { entries: JournalEntry[] }) {
                                     <span className="text-[9px] px-2 py-0.5 bg-neutral-100 dark:bg-white/5 font-extrabold rounded-full text-neutral-400 uppercase tracking-wider">{entry.module}</span>
                                 </td>
                                 <td className="px-5 py-3.5">
-                                    <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">{entry.databaseName}</span>
+                                    {entry.linkedRecordTitle ? (
+                                        <Link href={`/admin/database/${entry.linkedDatabaseId}/${entry.linkedRecordId}` as `/${string}`}>
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors cursor-pointer">
+                                                <Link2 className="w-3 h-3" />
+                                                {entry.linkedRecordTitle}
+                                            </span>
+                                        </Link>
+                                    ) : (
+                                        <span className="text-[10px] text-neutral-300">—</span>
+                                    )}
                                 </td>
                                 <td className="px-5 py-3.5">
                                     <span className="text-xs text-neutral-500 font-bold">{entry.author || 'System'}</span>

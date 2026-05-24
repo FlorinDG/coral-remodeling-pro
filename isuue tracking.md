@@ -101,8 +101,8 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 | 27 | TODO | **Rule 1** (Scope) | Project cost rates — same scope risk as #26. These two should be planned together. |
 | 28 | TODO | **Rule 6** (Build) | TypeScript loose variables — `tsc --noEmit` currently passes clean. These are likely ESLint warnings, not build blockers. Low priority. |
 | 29 | TODO | **Rule 2** (Measure) | Project templates — need to verify what the current template flow actually produces before changing it. Measure first. |
-| 33 | PARTIAL | **Rule 7** (Structure) | Custom selects — `SearchableSelect` rolled out to 3 settings pages (team, company-info, UI). 8 native selects replaced. Remaining pages: financial engines, calendar, filter/sort toolbars, database schema editor. |
-| 34 | PARTIAL | **Rule 3** (Smallest) | Editable task titles — `EditableTitle` component added to board view. Users click title to edit inline. Action bar under title (status/priority/dates) deferred — needs design input. |
+| 33 | PARTIAL | **Rule 7** (Structure) | Custom selects — `SearchableSelect` rolled out to settings pages + task components + LinkedRecords + FilterBar. 18 native selects replaced total across 2 batches. 34 remain (mostly financial engine selects in invoices/quotations + database schema editor — lower priority). |
+| 34 | DONE | **Rule 3** (Smallest) | Editable task titles — `EditableTitle` component in board view. Action bar with status (SearchableSelect), priority (click-to-cycle), due date (date picker). Fully functional. |
 
 #### Recommended Priority (what to fix next)
 

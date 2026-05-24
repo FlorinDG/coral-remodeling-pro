@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Settings, Save, Lock, Euro } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface PortalSettingsProps {
     portal: {
@@ -96,16 +97,18 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
 
                 <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1">Status</label>
-                    <select
+                    <SearchableSelect
+                        options={[
+                            { value: 'ACTIVE', label: 'ACTIVE' },
+                            { value: 'COMPLETED', label: 'COMPLETED' },
+                            { value: 'ON_HOLD', label: 'ON HOLD' },
+                            { value: 'ARCHIVED', label: 'ARCHIVED' },
+                        ]}
                         value={formData.status}
-                        onChange={e => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors"
-                    >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="COMPLETED">COMPLETED</option>
-                        <option value="ON_HOLD">ON HOLD</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                    </select>
+                        onChange={(v) => setFormData({ ...formData, status: v })}
+                        placeholder="Select status..."
+                        className="w-full"
+                    />
                 </div>
 
                 <button

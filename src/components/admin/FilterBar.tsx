@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface FilterBarProps {
     onSearch: (query: string) => void;
@@ -11,6 +13,7 @@ interface FilterBarProps {
 export default function FilterBar({ onSearch, onFilterChange, statuses, placeholder }: FilterBarProps) {
     const t = useTranslations('Admin.filter');
     const ts = useTranslations('Admin.status');
+    const [statusValue, setStatusValue] = useState('ALL');
 
     return (
         <div className="flex gap-4 mb-6">
@@ -23,15 +26,18 @@ export default function FilterBar({ onSearch, onFilterChange, statuses, placehol
                     onChange={(e) => onSearch(e.target.value)}
                 />
             </div>
-            <select
-                className="bg-white dark:bg-black/20 border border-neutral-200 dark:border-white/5 rounded-xl px-4 py-2 text-sm outline-none focus:border-[var(--brand-color,#d35400)] cursor-pointer appearance-none text-neutral-900 dark:text-white"
-                onChange={(e) => onFilterChange(e.target.value)}
-            >
-                <option value="ALL">{t('all')}</option>
-                {statuses.map(status => (
-                    <option key={status} value={status}>{ts(status)}</option>
-                ))}
-            </select>
+            <div className="min-w-[160px]">
+                <SearchableSelect
+                    options={[
+                        { value: 'ALL', label: t('all') },
+                        ...statuses.map(status => ({ value: status, label: ts(status) })),
+                    ]}
+                    value={statusValue}
+                    onChange={(v) => { setStatusValue(v); onFilterChange(v); }}
+                    placeholder={t('all')}
+                    searchPlaceholder="Filter..."
+                />
+            </div>
         </div>
     );
 }

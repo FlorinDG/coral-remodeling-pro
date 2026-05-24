@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Database, FilterRule, Property } from '@/components/admin/database/types';
 import { X, Plus, Trash2, Layers } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface PerspectiveBuilderProps {
     database: Database;
@@ -126,58 +127,54 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
                                             className="flex items-center gap-2 bg-neutral-50 dark:bg-neutral-900/50 p-2 border border-neutral-200 dark:border-white/5 rounded-xl"
                                         >
                                             {/* Property Select */}
-                                            <select
+                                            <SearchableSelect
+                                                options={filterableProperties.map(p => ({ value: p.id, label: p.name }))}
                                                 value={rule.propertyId}
-                                                onChange={e => handleRuleChange(idx, { propertyId: e.target.value })}
-                                                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
-                                            >
-                                                {filterableProperties.map(p => (
-                                                    <option key={p.id} value={p.id}>
-                                                        {p.name}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                                onChange={(v) => handleRuleChange(idx, { propertyId: v })}
+                                                placeholder="Property"
+                                                searchPlaceholder="Search properties..."
+                                            />
 
                                             {/* Operator Select */}
-                                            <select
+                                            <SearchableSelect
+                                                options={[
+                                                    { value: 'equals', label: 'equals' },
+                                                    { value: 'does_not_equal', label: 'does not equal' },
+                                                    ...(propDef?.type === 'text' ? [{ value: 'contains', label: 'contains' }] : []),
+                                                    { value: 'is_empty', label: 'is empty' },
+                                                    { value: 'is_not_empty', label: 'is not empty' },
+                                                ]}
                                                 value={rule.operator}
-                                                onChange={e => handleRuleChange(idx, { operator: e.target.value as any })}
-                                                className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
-                                            >
-                                                <option value="equals">equals</option>
-                                                <option value="does_not_equal">does not equal</option>
-                                                {propDef?.type === 'text' && <option value="contains">contains</option>}
-                                                <option value="is_empty">is empty</option>
-                                                <option value="is_not_empty">is not empty</option>
-                                            </select>
+                                                onChange={(v) => handleRuleChange(idx, { operator: v as any })}
+                                                placeholder="Operator"
+                                            />
 
                                             {/* Value inputs based on type */}
                                             {rule.operator !== 'is_empty' && rule.operator !== 'is_not_empty' && (
                                                 <div className="flex-1 min-w-[120px]">
                                                     {propDef?.type === 'select' && (
-                                                        <select
+                                                        <SearchableSelect
+                                                            options={[
+                                                                { value: '', label: 'Select option...' },
+                                                                ...(propDef.config?.options?.map(o => ({ value: o.id, label: o.name })) || []),
+                                                            ]}
                                                             value={String(rule.value ?? '')}
-                                                            onChange={e => handleRuleChange(idx, { value: e.target.value })}
-                                                            className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
-                                                        >
-                                                            <option value="">Select option...</option>
-                                                            {propDef.config?.options?.map(o => (
-                                                                <option key={o.id} value={o.id}>
-                                                                    {o.name}
-                                                                </option>
-                                                            ))}
-                                                        </select>
+                                                            onChange={(v) => handleRuleChange(idx, { value: v })}
+                                                            placeholder="Select option..."
+                                                            searchPlaceholder="Search options..."
+                                                        />
                                                     )}
 
                                                     {propDef?.type === 'checkbox' && (
-                                                        <select
+                                                        <SearchableSelect
+                                                            options={[
+                                                                { value: 'true', label: 'Checked (True)' },
+                                                                { value: 'false', label: 'Unchecked (False)' },
+                                                            ]}
                                                             value={String(rule.value ?? '')}
-                                                            onChange={e => handleRuleChange(idx, { value: e.target.value })}
-                                                            className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-neutral-800 dark:text-neutral-200 outline-none"
-                                                        >
-                                                            <option value="true">Checked (True)</option>
-                                                            <option value="false">Unchecked (False)</option>
-                                                        </select>
+                                                            onChange={(v) => handleRuleChange(idx, { value: v })}
+                                                            placeholder="Value"
+                                                        />
                                                     )}
 
                                                     {propDef?.type === 'date' && (

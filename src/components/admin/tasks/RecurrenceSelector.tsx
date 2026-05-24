@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 // Helper functions for Advanced Recurrence
 export function parseRecurrenceString(recurStr: string) {
@@ -130,19 +131,20 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
                 <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} right-0 lg:left-0 z-[100] bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/20 rounded-xl shadow-xl p-3.5 min-w-[280px] space-y-3 max-h-[300px] overflow-y-auto`}>
                     <div>
                         <label className="block text-[10px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-1">Repeat Pattern</label>
-                        <select
+                        <SearchableSelect
+                            options={[
+                                { value: 'none', label: 'None' },
+                                { value: 'daily', label: 'Daily' },
+                                { value: 'weekdays', label: 'Weekdays' },
+                                { value: 'weekly', label: 'Weekly' },
+                                { value: 'monthly', label: 'Monthly' },
+                                { value: 'yearly', label: 'Yearly' },
+                                { value: 'custom', label: 'Custom…' },
+                            ]}
                             value={pattern}
-                            onChange={e => handleSelectPattern(e.target.value)}
-                            className="w-full text-xs font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-white/10 rounded-lg px-2.5 py-1.5 outline-none text-neutral-850 dark:text-neutral-200"
-                        >
-                            <option value="none">None</option>
-                            <option value="daily">Daily</option>
-                            <option value="weekdays">Weekdays</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                            <option value="yearly">Yearly</option>
-                            <option value="custom">Custom…</option>
-                        </select>
+                            onChange={(v) => handleSelectPattern(v)}
+                            placeholder="Select pattern..."
+                        />
                     </div>
 
                     {pattern === 'weekly' && (
@@ -178,15 +180,16 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
                                     onChange={e => handleCustomIntervalChange(Math.max(1, +e.target.value))}
                                     className="w-14 text-xs font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-white/10 rounded-lg px-2 py-1.5 outline-none text-neutral-850 dark:text-neutral-255"
                                 />
-                                <select
+                                <SearchableSelect
+                                    options={[
+                                        { value: 'days', label: 'Days' },
+                                        { value: 'weeks', label: 'Weeks' },
+                                        { value: 'months', label: 'Months' },
+                                    ]}
                                     value={customUnit}
-                                    onChange={e => handleCustomUnitChange(e.target.value)}
-                                    className="flex-1 text-xs font-bold bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-white/10 rounded-lg px-2 py-1.5 outline-none text-neutral-850 dark:text-neutral-255"
-                                >
-                                    <option value="days">Days</option>
-                                    <option value="weeks">Weeks</option>
-                                    <option value="months">Months</option>
-                                </select>
+                                    onChange={(v) => handleCustomUnitChange(v)}
+                                    placeholder="Unit"
+                                />
                             </div>
                         </div>
                     )}

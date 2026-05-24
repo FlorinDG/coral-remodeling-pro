@@ -6,6 +6,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database, Page, Property, PropertyValue } from '@/components/admin/database/types';
 import { useTenant } from '@/context/TenantContext';
 import { useRouter, useParams } from 'next/navigation';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface LinkedRecordsProps {
     databaseId: string;
@@ -373,15 +374,13 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 <>
                                     <div className="flex flex-col gap-1 border-b border-neutral-100 dark:border-white/5 pb-2">
                                         <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">Target Database</span>
-                                        <select
+                                        <SearchableSelect
+                                            options={universalDbs.map(d => ({ value: d.id, label: d.name }))}
                                             value={selectedUniversalDbId || ''}
-                                            onChange={e => { setSelectedUniversalDbId(e.target.value); setSearch(''); }}
-                                            className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-xs font-bold rounded-xl px-3 py-2 outline-none text-neutral-800 dark:text-neutral-200"
-                                        >
-                                            {universalDbs.map(d => (
-                                                <option key={d.id} value={d.id}>{d.name}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(v) => { setSelectedUniversalDbId(v); setSearch(''); }}
+                                            placeholder="Select database..."
+                                            searchPlaceholder="Search databases..."
+                                        />
                                     </div>
 
                                     <div className="relative">

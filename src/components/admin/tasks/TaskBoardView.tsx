@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG, getDueDateDisplay, StatusIcon } from './TaskRow';
-import { CalendarDays, Paperclip, ChevronDown } from 'lucide-react';
+import { CalendarDays, Paperclip } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface TaskBoardViewProps {
     pages: Page[];
@@ -171,23 +172,14 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitl
                                         {/* ── Action Bar ── */}
                                         <div className="flex items-center gap-1.5 mb-2.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
                                             {/* Status select */}
-                                            <div className="relative">
-                                                <select
+                                            <div className="min-w-[100px]" onClick={(e) => e.stopPropagation()}>
+                                                <SearchableSelect
+                                                    options={Object.entries(STATUS_CONFIG).map(([id, cfg]) => ({ value: id, label: cfg.label }))}
                                                     value={status}
-                                                    onChange={(e) => {
-                                                        e.stopPropagation();
-                                                        onUpdateStatus(page.id, e.target.value);
-                                                    }}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="appearance-none text-[10px] font-black pl-5 pr-5 py-0.5 rounded border border-current bg-transparent cursor-pointer outline-none transition-all hover:scale-105"
-                                                    style={{ color: statusCfg.color }}
-                                                >
-                                                    {Object.entries(STATUS_CONFIG).map(([id, cfg]) => (
-                                                        <option key={id} value={id}>{cfg.label}</option>
-                                                    ))}
-                                                </select>
-                                                <StatusIcon status={status} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none" />
-                                                <ChevronDown className="absolute right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 pointer-events-none opacity-50" />
+                                                    onChange={(v) => onUpdateStatus(page.id, v)}
+                                                    placeholder="Status"
+                                                    className="text-[10px]"
+                                                />
                                             </div>
                                             {/* Priority pill — click to cycle */}
                                             {onUpdatePriority && (

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG, getDueDateDisplay } from './TaskRow';
 
@@ -7,9 +8,66 @@ interface TaskBoardViewProps {
     pages: Page[];
     onUpdateStatus: (pageId: string, status: string) => void;
     onPageClick: (page: Page) => void;
+    onUpdateTitle?: (pageId: string, title: string) => void;
 }
 
-export function TaskBoardView({ pages, onUpdateStatus, onPageClick }: TaskBoardViewProps) {
+// ── Inline Editable Title ─────────────────────────────────────────────────────
+function EditableTitle({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(value);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (editing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [editing]);
+
+    const commit = () => {
+        const trimmed = draft.trim();
+        if (trimmed && trimmed !== value) {
+            onSave(trimmed);
+        } else {
+            setDraft(value);
+        }
+        setEditing(false);
+    };
+
+    if (!editing) {
+        return (
+            <h4
+                className="text-sm font-bold text-neutral-950 dark:text-neutral-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 mb-2.5 cursor-text"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setEditing(true);
+                }}
+                title="Click to edit title"
+            >
+                {value || 'Untitled'}
+            </h4>
+        );
+    }
+
+    return (
+        <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commit(); }
+                if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full text-sm font-bold text-neutral-950 dark:text-neutral-100 bg-transparent border-b-2 border-orange-400 dark:border-orange-500 outline-none mb-2.5 py-0.5 placeholder:text-neutral-400"
+            placeholder="Task name"
+        />
+    );
+}
+
+export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitle }: TaskBoardViewProps) {
     const activeTasks = pages.filter(p => {
         const s = p.properties['prop-task-status'] as string;
         return s !== 'opt-dropped';
@@ -90,10 +148,17 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick }: TaskBoardV
                                             </div>
                                         )}
 
-                                        {/* Title */}
-                                        <h4 className="text-sm font-bold text-neutral-950 dark:text-neutral-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 mb-2.5">
-                                            {(props['title'] as string) || 'Untitled'}
-                                        </h4>
+                                        {/* Title — inline editable */}
+                                        {onUpdateTitle ? (
+                                            <EditableTitle
+                                                value={(props['title'] as string) || 'Untitled'}
+                                                onSave={(v) => onUpdateTitle(page.id, v)}
+                                            />
+                                        ) : (
+                                            <h4 className="text-sm font-bold text-neutral-950 dark:text-neutral-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors line-clamp-2 mb-2.5">
+                                                {(props['title'] as string) || 'Untitled'}
+                                            </h4>
+                                        )}
 
                                         {/* Card Footer */}
                                         <div className="flex items-center justify-between text-[11px] text-neutral-500 pt-2 border-t border-neutral-250 dark:border-white/10">

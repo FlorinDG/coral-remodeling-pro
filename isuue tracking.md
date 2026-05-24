@@ -50,8 +50,8 @@
 30. [FIXED] Mobile bottom-nav active state: The "More" tab in `MobileBottomNav.tsx` only highlighted for a few specific routes (settings, crm, db-clients, etc.), leaving routes like `/admin/contacts`, `/admin/financials`, `/admin/journal`, `/admin/library`, `/admin/quotations` with no active tab. Fix: "More" is now a catch-all that activates for any `/admin` route not claimed by the other 4 tabs (Home, Tasks, Projects, Calendar).
 31. [BUILT] Use less white space in dashboard to make better use of space.
 32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.
-33. [TODO] I asked to replace the system select elements with custom built, with a searchbar integrated to it
-34. [TODO] In the projects overview, the tasks. make title of the task editable and add a bar under the title with action elements. status select, priority, dates, attachments icon, and so on.
+33. [PARTIAL] Custom selects: Rolled out `SearchableSelect` replacement in Team Settings (access level), Company Info (interface language, document language, connector, date format, number width), and UI Settings (module selector). Remaining: financial engines, calendar, filter/sort toolbars, database schema editor, and other low-traffic pages.
+34. [PARTIAL] Task board editable titles: Added `EditableTitle` component to `TaskBoardView.tsx`. Users can now click a task card title to edit inline — Enter/blur saves, Escape cancels. Wired via `onUpdateTitle` callback through `TaskModuleShell`. Remaining: action bar under title with status/priority/date controls.
 35. [FIXED] Journal card duplicate render: `JournalCard.tsx` was rendering `page.blocks` data twice — once as a summary entries list at the top, and again via a full `BlockEditor` embed below. Fix: removed the `BlockEditor` entirely from the card. The card now shows only the chronological entries list + quick-add form. Full editing stays in the standalone journal page (`/admin/journal/[id]`). Also added an empty-state with a CTA when no entries exist.
 36. [FIXED] Article library formula NaN: The formula chain had two bugs: (1) Percent values (e.g. Discount=20 meaning 20%) were multiplied directly instead of being divided by 100, producing `BruttoKost * 20` instead of `BruttoKost * (1 - 20/100)`. Same for Marge Standard. Fix: corrected `NettoKost` formula to `BruttoKost * (1 - Discount / 100)` and `Marge€` to `NettoKost * (Marge Standard / 100)`. (2) Added NaN guard in both the formula engine (returns 0 instead of NaN to prevent cascading) and `FormulaColumn.tsx` (displays "—" instead of "NaN").
 
@@ -94,8 +94,8 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 | 27 | TODO | **Rule 1** (Scope) | Project cost rates — same scope risk as #26. These two should be planned together. |
 | 28 | TODO | **Rule 6** (Build) | TypeScript loose variables — `tsc --noEmit` currently passes clean. These are likely ESLint warnings, not build blockers. Low priority. |
 | 29 | TODO | **Rule 2** (Measure) | Project templates — need to verify what the current template flow actually produces before changing it. Measure first. |
-| 33 | TODO | **Rule 7** (Structure) | Custom select components — `SearchableSelect` already exists (used in Journal page). Should audit all `<select>` usages first, then replace systematically. Rule 7 applies: extract component, then roll out. |
-| 34 | TODO | **Rule 1** (Scope) | Editable task titles + action bar — changes the interaction model of the task board. Need to scope what currently works before touching it. |
+| 33 | PARTIAL | **Rule 7** (Structure) | Custom selects — `SearchableSelect` rolled out to 3 settings pages (team, company-info, UI). 8 native selects replaced. Remaining pages: financial engines, calendar, filter/sort toolbars, database schema editor. |
+| 34 | PARTIAL | **Rule 3** (Smallest) | Editable task titles — `EditableTitle` component added to board view. Users click title to edit inline. Action bar under title (status/priority/dates) deferred — needs design input. |
 
 #### Recommended Priority (what to fix next)
 

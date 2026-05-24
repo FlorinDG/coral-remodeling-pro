@@ -328,6 +328,7 @@ export default function TaskModuleShell() {
                         pages={filteredPages}
                         onUpdateStatus={(pageId, status) => updatePageProperty('db-tasks', pageId, 'prop-task-status', status)}
                         onPageClick={p => setSelectedPageId(p.id)}
+                        onUpdateTitle={(pageId, title) => updatePageProperty('db-tasks', pageId, 'title', title)}
                     />
                 )}
 

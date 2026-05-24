@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from "@/config/tabs";
 import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette, CheckCircle2, Wifi } from "lucide-react";
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Button } from "@/components/time-tracker/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
@@ -559,10 +560,9 @@ export default function CompanyInfoSettings() {
                             <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">
                                 Interface Language
                             </label>
-                            <select
+                            <SearchableSelect
                                 value={session?.user?.environmentLanguage ?? currentLocale}
-                                onChange={async (e) => {
-                                    const lang = e.target.value;
+                                onChange={async (lang) => {
                                     const supported = ['en', 'fr', 'nl', 'ro', 'ru'];
                                     if (!supported.includes(lang)) return;
                                     await updateSession({ environmentLanguage: lang });
@@ -573,14 +573,15 @@ export default function CompanyInfoSettings() {
                                         : `/${lang}${currentPath}`;
                                     window.location.href = newPath;
                                 }}
-                                className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
-                            >
-                                <option value="nl">Nederlands</option>
-                                <option value="fr">Français</option>
-                                <option value="en">English</option>
-                                <option value="ro">Română</option>
-                                <option value="ru">Русский</option>
-                            </select>
+                                options={[
+                                    { value: 'nl', label: 'Nederlands' },
+                                    { value: 'fr', label: 'Français' },
+                                    { value: 'en', label: 'English' },
+                                    { value: 'ro', label: 'Română' },
+                                    { value: 'ru', label: 'Русский' },
+                                ]}
+                                placeholder="Select language"
+                            />
                             <p className="text-xs text-neutral-500 mt-2">
                                 Changes the language of the admin interface immediately. Applies only to this workspace.
                             </p>
@@ -589,18 +590,19 @@ export default function CompanyInfoSettings() {
                         {/* Document Language — controls PDF/email output language */}
                         <div>
                             <label className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('nav.settings.documentLanguage')}</label>
-                            <select
+                            <SearchableSelect
                                 value={profile.documentLanguage}
-                                onChange={e => setProfile({ ...profile, documentLanguage: e.target.value })}
-                                className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
-                            >
-                                <option value="">{t('nav.settings.fallbackOption')}</option>
-                                <option value="en">English</option>
-                                <option value="fr">Français</option>
-                                <option value="nl">Nederlands</option>
-                                <option value="ro">Română</option>
-                                <option value="ru">Русский</option>
-                            </select>
+                                onChange={(val) => setProfile({ ...profile, documentLanguage: val })}
+                                options={[
+                                    { value: '', label: t('nav.settings.fallbackOption') },
+                                    { value: 'en', label: 'English' },
+                                    { value: 'fr', label: 'Français' },
+                                    { value: 'nl', label: 'Nederlands' },
+                                    { value: 'ro', label: 'Română' },
+                                    { value: 'ru', label: 'Русский' },
+                                ]}
+                                placeholder={t('nav.settings.fallbackOption')}
+                            />
                             <p className="text-xs text-neutral-500 mt-2">{t('nav.settings.documentLanguageDesc')}</p>
                         </div>
 
@@ -670,52 +672,55 @@ export default function CompanyInfoSettings() {
                                     {/* Connector */}
                                     <div>
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.connector')}</label>
-                                        <select
+                                        <SearchableSelect
                                             value={connector}
-                                            onChange={e => setProfile({ ...profile, [`${docType}Connector`]: e.target.value })}
-                                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-[var(--brand-color)] transition-colors"
-                                        >
-                                        <option value="none">None</option>
-                                            <option value="-">Hyphen ( - )</option>
-                                            <option value=".">Dot ( . )</option>
-                                            <option value=" ">Space ( )</option>
-                                        </select>
+                                            onChange={(val) => setProfile({ ...profile, [`${docType}Connector`]: val })}
+                                            options={[
+                                                { value: 'none', label: 'None' },
+                                                { value: '-', label: 'Hyphen ( - )' },
+                                                { value: '.', label: 'Dot ( . )' },
+                                                { value: ' ', label: 'Space ( )' },
+                                            ]}
+                                            placeholder="Connector"
+                                        />
                                     </div>
 
                                     {/* Date Format */}
                                     <div>
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.dateFormat')}</label>
-                                        <select
+                                        <SearchableSelect
                                             value={dateFormat}
-                                            onChange={e => setProfile({ ...profile, [`${docType}DateFormat`]: e.target.value })}
-                                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:border-[var(--brand-color)] transition-colors"
-                                        >
-                                            <option value="none">None</option>
-                                            <option value="YYYY">YYYY (2026)</option>
-                                            <option value="YY">YY (26)</option>
-                                            <option value="YYMM">YYMM (2604)</option>
-                                            <option value="YYYYMM">YYYYMM (202604)</option>
-                                            <option value="YYYYMMDD">YYYYMMDD (20260405)</option>
-                                            <option value="DDMMYYYY">DDMMYYYY (05042026)</option>
-                                            <option value="MMYYYY">MMYYYY (042026)</option>
-                                        </select>
+                                            onChange={(val) => setProfile({ ...profile, [`${docType}DateFormat`]: val })}
+                                            options={[
+                                                { value: 'none', label: 'None' },
+                                                { value: 'YYYY', label: 'YYYY (2026)' },
+                                                { value: 'YY', label: 'YY (26)' },
+                                                { value: 'YYMM', label: 'YYMM (2604)' },
+                                                { value: 'YYYYMM', label: 'YYYYMM (202604)' },
+                                                { value: 'YYYYMMDD', label: 'YYYYMMDD (20260405)' },
+                                                { value: 'DDMMYYYY', label: 'DDMMYYYY (05042026)' },
+                                                { value: 'MMYYYY', label: 'MMYYYY (042026)' },
+                                            ]}
+                                            placeholder="Date format"
+                                        />
                                     </div>
 
                                     {/* Number Width */}
                                     <div>
                                         <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1 block">{t('nav.settings.numberWidth')}</label>
-                                        <select
-                                            value={numberWidth}
-                                            onChange={e => setProfile({ ...profile, [`${docType}NumberWidth`]: parseInt(e.target.value) })}
-                                            className="w-full bg-white dark:bg-black border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-[var(--brand-color)] transition-colors"
-                                        >
-                                            <option value={0}>— (no padding)</option>
-                                            <option value={1}>x (1)</option>
-                                            <option value={2}>xx (01)</option>
-                                            <option value={3}>xxx (001)</option>
-                                            <option value={4}>xxxx (0001)</option>
-                                            <option value={5}>xxxxx (00001)</option>
-                                        </select>
+                                        <SearchableSelect
+                                            value={String(numberWidth)}
+                                            onChange={(val) => setProfile({ ...profile, [`${docType}NumberWidth`]: parseInt(val) })}
+                                            options={[
+                                                { value: '0', label: '— (no padding)' },
+                                                { value: '1', label: 'x (1)' },
+                                                { value: '2', label: 'xx (01)' },
+                                                { value: '3', label: 'xxx (001)' },
+                                                { value: '4', label: 'xxxx (0001)' },
+                                                { value: '5', label: 'xxxxx (00001)' },
+                                            ]}
+                                            placeholder="Width"
+                                        />
                                     </div>
 
                                     {/* Next Number */}

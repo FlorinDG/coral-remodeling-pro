@@ -12,6 +12,7 @@ import {
     Check, X, Loader2, Mail, Crown, Briefcase, HardHat,
     ChevronDown, KeyRound, Calculator, Phone,
 } from 'lucide-react';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 // Roles that can manage team (must match WORKSPACE_OWNER_ROLES in src/lib/roles.ts)
 const OWNER_ROLES = WORKSPACE_OWNER_ROLES;
@@ -558,18 +559,13 @@ function AccessEditor({
                             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300 min-w-[100px]">
                                 {MODULE_LABELS[mod] || mod}
                             </span>
-                            <div className="relative">
-                                <select
-                                    value={current}
-                                    onChange={e => setAccess(mod, e.target.value as AccessLevel)}
-                                    className="appearance-none text-xs font-bold px-3 py-1.5 pr-7 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
-                                >
-                                    {Object.entries(ACCESS_LABELS).map(([val, { label }]) => (
-                                        <option key={val} value={val}>{label}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
-                            </div>
+                            <SearchableSelect
+                                value={current}
+                                onChange={(val) => setAccess(mod, val as AccessLevel)}
+                                options={Object.entries(ACCESS_LABELS).map(([val, { label }]) => ({ value: val, label }))}
+                                placeholder="Select access"
+                                className="w-44"
+                            />
                         </div>
                     );
                 })}

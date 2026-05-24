@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useTabStore } from "@/store/useTabStore";
 import { DraggableTabItem } from "@/components/admin/settings/DraggableTabItem";
 import { useTenant } from "@/context/TenantContext";
+import SearchableSelect from '@/components/ui/SearchableSelect';
 
 import { getFilteredSettingsTabs } from "@/config/tabs";
 
@@ -244,15 +245,16 @@ export default function SidebarOrderSettings() {
                         <div className="flex items-center gap-6">
                             <div className="flex items-center gap-3">
                                 <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Select Module:</label>
-                                <select
-                                    className="bg-white dark:bg-black border border-neutral-200 dark:border-white/10 text-sm rounded-lg px-3 py-2 outline-none focus:border-[var(--brand-color)] transition-colors"
+                                <SearchableSelect
                                     value={selectedGroupId}
-                                    onChange={(e) => setSelectedGroupId(e.target.value)}
-                                >
-                                    {allGroups.map((group: { groupId: string, label: string }) => (
-                                        <option key={group.groupId} value={group.groupId}>{group.label}</option>
-                                    ))}
-                                </select>
+                                    onChange={(val) => setSelectedGroupId(val)}
+                                    options={allGroups.map((group: { groupId: string, label: string }) => ({
+                                        value: group.groupId,
+                                        label: group.label,
+                                    }))}
+                                    placeholder="Select module"
+                                    className="w-48"
+                                />
                             </div>
 
                             <div className="flex gap-3 border-l border-neutral-200 dark:border-white/10 pl-6">

@@ -14,7 +14,8 @@ import {
     CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
     FolderKanban, Layers, PenLine, FileText, ArrowUpRight, Target, ClipboardCheck,
-    Coins, Hammer, Calculator, Paperclip, Calendar, ChevronDown, Flag
+    Hammer, Calculator, Paperclip, Calendar, ChevronDown, Flag,
+    BarChart3, Receipt, ExternalLink
 } from 'lucide-react';
 import { Block, PropertyValue } from '../types';
 
@@ -187,13 +188,71 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
     const actualStart = String(page.properties['prop-actual-start'] || '');
     const actualEnd = String(page.properties['prop-actual-end'] || '');
 
-    // Project-specific billing & cost rates
+    // Project-specific billing rule
     const billingRule = String(page.properties['prop-billing-rule'] || 'opt-fixed');
-    const ratePersonHour = Number(page.properties['prop-rate-person-hour']) || 0;
-    const rateEquipmentHour = Number(page.properties['prop-rate-equipment-hour']) || 0;
-    const actualEquipmentHours = Number(page.properties['prop-actual-equipment-hours']) || 0;
 
-    // Fetch employee shifts and clock entries to calculate actual hours worked
+    // ── Quotation Data Resolution ─────────────────────────────────────────
+    const quotationsDbId = resolveDbId('db-quotations');
+    const linkedQuoteIds = useMemo(() => {
+        const raw = page.properties['prop-project-quote'];
+        if (Array.isArray(raw)) return raw as string[];
+        if (typeof raw === 'string' && raw) return [raw];
+        return [];
+    }, [page.properties]);
+
+    const linkedQuotation = useMemo(() => {
+        if (linkedQuoteIds.length === 0) return null;
+        // Search across all quotation databases (tenant-prefixed)
+        return allDatabases
+            .filter(d => d.id === quotationsDbId || d.id.startsWith('db-quotations'))
+            .flatMap(d => d.pages)
+            .find(p => linkedQuoteIds.includes(p.id)) || null;
+    }, [allDatabases, linkedQuoteIds, quotationsDbId]);
+
+    const quotationFinancials = useMemo(() => {
+        if (!linkedQuotation) return { total: 0, materialCost: 0, labourHours: 0, avgLabourRate: 0, lineCount: 0 };
+
+        let total = 0;
+        let materialCost = 0;
+        let labourHours = 0;
+        let labourCostWeighted = 0;
+        let lineCount = 0;
+
+        const traverse = (blocks: Block[]) => {
+            blocks.forEach(block => {
+                if ((block.type === 'line' || block.type === 'post') && !block.isOptional) {
+                    const qty = block.quantity || 1;
+                    const verkoop = block.verkoopPrice || 0;
+                    const bruto = block.brutoPrice || 0;
+                    total += qty * verkoop;
+                    materialCost += qty * bruto;
+                    lineCount++;
+
+                    // Infer labour from bestek-linked posts
+                    if (block.labourHours) {
+                        const lh = qty * block.labourHours;
+                        const lr = block.labourRate || 35; // Default general rate
+                        labourHours += lh;
+                        labourCostWeighted += lh * lr;
+                    }
+                }
+                if (block.children) traverse(block.children);
+            });
+        };
+        traverse(linkedQuotation.blocks || []);
+
+        const avgLabourRate = labourHours > 0 ? Math.round((labourCostWeighted / labourHours) * 100) / 100 : 35;
+
+        return {
+            total: Math.round(total * 100) / 100,
+            materialCost: Math.round(materialCost * 100) / 100,
+            labourHours: Math.round(labourHours * 100) / 100,
+            avgLabourRate,
+            lineCount,
+        };
+    }, [linkedQuotation]);
+
+    // ── Actual Labour from Clock Entries ──────────────────────────────────
     const { entries: clockEntries } = useClockEntries();
     const { shifts: allShifts } = useScheduledShifts();
 
@@ -223,16 +282,39 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
     }, [projectClockEntries]);
 
     const actualLaborCost = useMemo(() => {
-        return actualLaborHours * ratePersonHour;
-    }, [actualLaborHours, ratePersonHour]);
+        return actualLaborHours * quotationFinancials.avgLabourRate;
+    }, [actualLaborHours, quotationFinancials.avgLabourRate]);
 
-    const actualEquipmentCost = useMemo(() => {
-        return actualEquipmentHours * rateEquipmentHour;
-    }, [actualEquipmentHours, rateEquipmentHour]);
+    const totalActualCost = actualLaborCost;
 
-    const totalActualCost = useMemo(() => {
-        return actualLaborCost + actualEquipmentCost;
-    }, [actualLaborCost, actualEquipmentCost]);
+    // ── Vorderingenstaten data (needed for financial computations below) ──
+    const vorderingenstaten = useMemo(() => {
+        if (!page?.properties) return [];
+        return (page.properties['vorderingenstaten'] as any[]) || [];
+    }, [page?.properties]);
+
+    // ── Vorderingenstaten totals ──────────────────────────────────────────
+    const invoicedTotal = useMemo(() => {
+        return vorderingenstaten
+            .filter((vs: any) => vs.status === 'invoiced')
+            .reduce((sum: number, vs: any) => sum + (Number(vs.totalExVat) || 0), 0);
+    }, [vorderingenstaten]);
+
+    const draftTotal = useMemo(() => {
+        return vorderingenstaten
+            .filter((vs: any) => vs.status === 'draft')
+            .reduce((sum: number, vs: any) => sum + (Number(vs.totalExVat) || 0), 0);
+    }, [vorderingenstaten]);
+
+    // Effective budget: use prop-budget, or fall back to quotation total
+    const effectiveBudget = budget > 0 ? budget : quotationFinancials.total;
+    const budgetIsFromQuote = budget === 0 && quotationFinancials.total > 0;
+    const remainingToInvoice = quotationFinancials.total > 0
+        ? quotationFinancials.total - invoicedTotal - draftTotal
+        : 0;
+    const invoicedPercent = quotationFinancials.total > 0
+        ? Math.round(((invoicedTotal + draftTotal) / quotationFinancials.total) * 100)
+        : 0;
 
     const statusInfo = EXEC_STATUS_MAP[execStatus] || EXEC_STATUS_MAP['opt-to-do'];
     const finInfo = FINANCIAL_STATUS_MAP[finStatus] || FINANCIAL_STATUS_MAP['opt-quote'];
@@ -318,11 +400,6 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         catch { return d; }
     };
 
-    // Vorderingenstaten logic
-    const vorderingenstaten = useMemo(() => {
-        if (!page?.properties) return [];
-        return (page.properties['vorderingenstaten'] as any[]) || [];
-    }, [page?.properties]);
 
     const handleCreateInvoiceFromVS = (vs: any) => {
         const invoiceDbId = resolveDbId('db-invoices');
@@ -449,8 +526,24 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                             </span>
                         </div>
                         <p className="text-lg font-black text-neutral-900 dark:text-white tabular-nums">
-                            {budget > 0 ? `€${budget.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
+                            {effectiveBudget > 0 ? `€${effectiveBudget.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
                         </p>
+                        {budgetIsFromQuote && (
+                            <p className="text-[9px] font-semibold text-indigo-500 dark:text-indigo-400 flex items-center gap-1">
+                                <Receipt className="w-3 h-3" /> from quotation
+                            </p>
+                        )}
+                        {invoicedPercent > 0 && (
+                            <div className="mt-1">
+                                <div className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full rounded-full transition-all duration-700 ease-out bg-emerald-500"
+                                        style={{ width: `${Math.min(invoicedPercent, 100)}%` }}
+                                    />
+                                </div>
+                                <p className="text-[9px] text-neutral-400 mt-0.5">{invoicedPercent}% invoiced</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -707,12 +800,21 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                 </div>
                             </div>
 
-                            {/* Billing & Cost Rates Card */}
+                            {/* Project Profitability Card */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
                                 <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center justify-between font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
                                     <div className="flex items-center gap-2">
-                                        <Coins className="w-4 h-4 text-emerald-500" /> Billing & Rates
+                                        <BarChart3 className="w-4 h-4 text-emerald-500" /> Project Profitability
                                     </div>
+                                    {linkedQuotation && (
+                                        <a
+                                            href={`/${locale}/admin/quotations`}
+                                            className="text-[10px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 normal-case tracking-normal transition-colors"
+                                        >
+                                            <ExternalLink className="w-3 h-3" />
+                                            {String(linkedQuotation.properties?.['title'] || 'View Quote')}
+                                        </a>
+                                    )}
                                 </div>
                                 <div className="p-4 space-y-4">
                                     {/* Billing Rule */}
@@ -725,57 +827,95 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                         />
                                     </div>
 
-                                    {/* Cost Rates */}
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Labor Rate (€/h)</label>
-                                            <input
-                                                type="number"
-                                                value={ratePersonHour || ''}
-                                                onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-rate-person-hour', parseFloat(e.target.value) || 0)}
-                                                className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Equip. Rate (€/h)</label>
-                                            <input
-                                                type="number"
-                                                value={rateEquipmentHour || ''}
-                                                onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-rate-equipment-hour', parseFloat(e.target.value) || 0)}
-                                                className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
-                                                placeholder="0.00"
-                                            />
-                                        </div>
-                                    </div>
+                                    {linkedQuotation ? (
+                                        <>
+                                            {/* From Quotation */}
+                                            <div className="pt-3 border-t border-neutral-100 dark:border-white/5">
+                                                <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-2 flex items-center gap-1">
+                                                    <Receipt className="w-3 h-3" /> From Quotation
+                                                </p>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                                        <span>Quote Total (ex. VAT)</span>
+                                                        <span className="font-mono text-neutral-800 dark:text-neutral-200">€{quotationFinancials.total.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                    {quotationFinancials.materialCost > 0 && (
+                                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                                            <span>Material Cost</span>
+                                                            <span className="font-mono">€{quotationFinancials.materialCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                                        </div>
+                                                    )}
+                                                    {quotationFinancials.labourHours > 0 && (
+                                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                                            <span>Labour (est.)</span>
+                                                            <span className="font-mono">{quotationFinancials.labourHours}h × €{quotationFinancials.avgLabourRate}/h</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                    {/* Equipment Hours */}
-                                    <div className="space-y-1">
-                                        <label className="text-[10px] font-black uppercase tracking-wider text-neutral-400">Actual Equipment Hours</label>
-                                        <input
-                                            type="number"
-                                            value={actualEquipmentHours || ''}
-                                            onChange={(e) => updatePageProperty(databaseId, pageId, 'prop-actual-equipment-hours', parseFloat(e.target.value) || 0)}
-                                            className="w-full text-xs font-semibold bg-neutral-50 dark:bg-black border border-neutral-200 dark:border-white/10 rounded-xl px-3 py-2 outline-none focus:border-emerald-500"
-                                            placeholder="0.0"
-                                        />
-                                    </div>
+                                            {/* Actual Costs */}
+                                            <div className="pt-3 border-t border-neutral-100 dark:border-white/5">
+                                                <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 dark:text-amber-400 mb-2 flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" /> Actual Costs
+                                                </p>
+                                                <div className="space-y-1.5">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                                        <span>Labour (clocked)</span>
+                                                        <span className="font-mono">{actualLaborHours}h — €{actualLaborCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center text-xs font-black text-neutral-800 dark:text-neutral-200 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800">
+                                                        <span>Total Costs</span>
+                                                        <span className="font-mono text-amber-500">€{totalActualCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                                    {/* Cost Breakdown Summary */}
-                                    <div className="pt-3 border-t border-neutral-100 dark:border-white/5 space-y-2">
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                            <span>Labor ({actualLaborHours}h)</span>
-                                            <span className="font-mono">€{actualLaborCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                            {/* Margin Analysis */}
+                                            {quotationFinancials.total > 0 && (
+                                                <div className="pt-3 border-t border-neutral-100 dark:border-white/5">
+                                                    <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                                                        <TrendingUp className="w-3 h-3" /> Margin Analysis
+                                                    </p>
+                                                    {(() => {
+                                                        const margin = quotationFinancials.total - totalActualCost;
+                                                        const marginPercent = Math.round((margin / quotationFinancials.total) * 100);
+                                                        const isHealthy = margin >= 0;
+                                                        const usedPercent = Math.min(100, Math.round((totalActualCost / quotationFinancials.total) * 100));
+                                                        return (
+                                                            <div className="space-y-2">
+                                                                <div className="w-full h-3 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden relative">
+                                                                    <div
+                                                                        className={`h-full rounded-full transition-all duration-700 ease-out ${isHealthy ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-red-500'}`}
+                                                                        style={{ width: `${usedPercent}%` }}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex justify-between items-center">
+                                                                    <span className={`text-[10px] font-bold flex items-center gap-1 ${isHealthy ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {isHealthy ? '✅' : '⚠️'} {isHealthy ? `${marginPercent}% remaining` : `${Math.abs(marginPercent)}% over budget`}
+                                                                    </span>
+                                                                    <span className={`text-xs font-black font-mono ${isHealthy ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                                        {isHealthy ? '' : '-'}€{Math.abs(margin).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        /* No Quotation Linked */
+                                        <div className="py-6 flex flex-col items-center text-center gap-2">
+                                            <div className="p-3 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-400">
+                                                <Receipt className="w-5 h-5" />
+                                            </div>
+                                            <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">No quotation linked</p>
+                                            <p className="text-[10px] text-neutral-400 leading-relaxed max-w-[200px]">
+                                                Link a quotation to this project to automatically track profitability and costs.
+                                            </p>
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                            <span>Equipment ({actualEquipmentHours}h)</span>
-                                            <span className="font-mono">€{actualEquipmentCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-xs font-black text-neutral-800 dark:text-neutral-200 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800">
-                                            <span>Actual Costs</span>
-                                            <span className="font-mono text-emerald-500">€{totalActualCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -798,7 +938,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                         <TrendingUp className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Financials
                                     </div>
                                     <div className="p-4">
-                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} costs={totalActualCost} />
+                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} costs={totalActualCost} quotationTotal={quotationFinancials.total} invoicedTotal={invoicedTotal + draftTotal} />
                                     </div>
                                 </div>
                             </ErrorBoundary>
@@ -820,29 +960,78 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                         <div className="p-6 flex-1 flex flex-col gap-6">
                             {/* Summary Metrics */}
                             {vorderingenstaten.length > 0 && (
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 flex flex-col gap-1">
-                                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Aantal Vorderingen</p>
-                                        <p className="text-xl font-black text-neutral-800 dark:text-neutral-100">{vorderingenstaten.length}</p>
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    {/* Cumulative Progress Bar */}
+                                    {quotationFinancials.total > 0 && (
+                                        <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50/50 to-emerald-50/50 dark:from-indigo-950/10 dark:to-emerald-950/10 border border-indigo-200/30 dark:border-indigo-500/10">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Cumulative Progress</p>
+                                                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{invoicedPercent}%</span>
+                                            </div>
+                                            <div className="w-full h-3 bg-white/60 dark:bg-black/20 rounded-full overflow-hidden">
+                                                <div className="h-full rounded-full flex overflow-hidden">
+                                                    <div
+                                                        className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 ease-out"
+                                                        style={{ width: `${Math.min(100, Math.round((invoicedTotal / quotationFinancials.total) * 100))}%` }}
+                                                    />
+                                                    {draftTotal > 0 && (
+                                                        <div
+                                                            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
+                                                            style={{ width: `${Math.min(100 - Math.round((invoicedTotal / quotationFinancials.total) * 100), Math.round((draftTotal / quotationFinancials.total) * 100))}%` }}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4 mt-2 text-[9px] font-semibold text-neutral-500">
+                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Gefactureerd</span>
+                                                {draftTotal > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Concept</span>}
+                                                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-600" /> Resterend</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Stat Cards */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                                        <div className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200 dark:border-white/5 flex flex-col gap-1">
+                                            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Aantal Vorderingen</p>
+                                            <p className="text-xl font-black text-neutral-800 dark:text-neutral-100">{vorderingenstaten.length}</p>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200/40 dark:border-emerald-500/10 flex flex-col gap-1">
+                                            <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Gefactureerd (ex. BTW)</p>
+                                            <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                                                €{invoicedTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        <div className="p-4 rounded-xl bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-500/10 flex flex-col gap-1">
+                                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Concept (ex. BTW)</p>
+                                            <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
+                                                €{draftTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                            </p>
+                                        </div>
+                                        {quotationFinancials.total > 0 && (
+                                            <div className="p-4 rounded-xl bg-blue-50/30 dark:bg-blue-950/10 border border-blue-200/40 dark:border-blue-500/10 flex flex-col gap-1">
+                                                <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Nog te factureren</p>
+                                                <p className={`text-xl font-black font-mono ${remainingToInvoice > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                                                    €{Math.max(0, remainingToInvoice).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="p-4 rounded-xl bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-200/40 dark:border-emerald-500/10 flex flex-col gap-1">
-                                        <p className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Gefactureerd (ex. BTW)</p>
-                                        <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                                            €{vorderingenstaten
-                                                .filter(vs => vs.status === 'invoiced')
-                                                .reduce((sum, vs) => sum + (Number(vs.totalExVat) || 0), 0)
-                                                .toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
-                                    <div className="p-4 rounded-xl bg-amber-50/30 dark:bg-amber-950/10 border border-amber-200/40 dark:border-amber-500/10 flex flex-col gap-1">
-                                        <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Concept (ex. BTW)</p>
-                                        <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono">
-                                            €{vorderingenstaten
-                                                .filter(vs => vs.status === 'draft')
-                                                .reduce((sum, vs) => sum + (Number(vs.totalExVat) || 0), 0)
-                                                .toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
+
+                                    {/* Linked Quotation Reference */}
+                                    {linkedQuotation && (
+                                        <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-200/30 dark:border-indigo-500/10 rounded-lg">
+                                            <Receipt className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                                            <span className="text-[10px] text-neutral-500 font-semibold">Gebaseerd op offerte:</span>
+                                            <a
+                                                href={`/${locale}/admin/quotations`}
+                                                className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                                            >
+                                                {String(linkedQuotation.properties?.['title'] || 'Offerte')}
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

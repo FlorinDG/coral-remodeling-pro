@@ -955,7 +955,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
-                                // Project -> Client inference from Quotation
+                                // Project -> Client + Budget inference from Quotation
                                 if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-project-quote') {
                                     const quoteIds = Array.isArray(value) ? value : (value ? [value] : []);
                                     if (quoteIds.length > 0) {
@@ -966,8 +966,35 @@ export const useDatabaseStore = create<DatabaseState>()(
                                             .flatMap(d => d.pages)
                                             .find(p => p.id === quoteId);
 
-                                        if (quotePage && quotePage.properties['client']) {
-                                            newProps['prop-client'] = quotePage.properties['client'];
+                                        if (quotePage) {
+                                            // Infer client from quotation
+                                            if (quotePage.properties['client']) {
+                                                newProps['prop-client'] = quotePage.properties['client'];
+                                            }
+
+                                            // Auto-derive budget from quotation total if budget is currently 0
+                                            const currentBudget = Number(newProps['prop-budget'] || page.properties['prop-budget']) || 0;
+                                            if (currentBudget === 0) {
+                                                const quoteAmount = Number(quotePage.properties['prop-quote-amount']) || 0;
+                                                if (quoteAmount > 0) {
+                                                    newProps['prop-budget'] = quoteAmount;
+                                                } else {
+                                                    // Try to compute from quotation blocks
+                                                    let total = 0;
+                                                    const traverse = (blocks: any[]) => {
+                                                        blocks?.forEach((block: any) => {
+                                                            if ((block.type === 'line' || block.type === 'post') && !block.isOptional) {
+                                                                total += (block.quantity || 1) * (block.verkoopPrice || 0);
+                                                            }
+                                                            if (block.children) traverse(block.children);
+                                                        });
+                                                    };
+                                                    traverse(quotePage.blocks || []);
+                                                    if (total > 0) {
+                                                        newProps['prop-budget'] = Math.round(total * 100) / 100;
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }

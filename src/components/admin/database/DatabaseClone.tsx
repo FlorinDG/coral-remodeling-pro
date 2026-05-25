@@ -559,6 +559,17 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         });
       });
     }
+
+    // Migrate: existing projects without a type default to Operations
+    if (databaseId === 'db-1') {
+      const store = useDatabaseStore.getState();
+      database.pages.forEach(page => {
+        const currentType = page.properties['prop-project-type'];
+        if (!currentType) {
+          store.updatePageProperty(resolvedId, page.id, 'prop-project-type', 'type-operations');
+        }
+      });
+    }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);
 
 

@@ -464,6 +464,38 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#0a0a0a]">
             <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-6 flex flex-col gap-6">
 
+                {/* ── Project Type Badge ────────────────────────────────────── */}
+                {(() => {
+                    const projectType = String(page.properties['prop-project-type'] || '');
+                    const TYPE_INFO: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+                        'type-operations': { label: 'Operations', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-500/20', icon: <Hammer className="w-3.5 h-3.5" /> },
+                        'type-admin': { label: 'Administration', color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-500/20', icon: <Calculator className="w-3.5 h-3.5" /> },
+                        'type-bizdev': { label: 'Business Development', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-500/20', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                    };
+                    const typeInfo = TYPE_INFO[projectType];
+                    const TYPE_OPTIONS = [
+                        { id: '', label: '— No Type' },
+                        { id: 'type-operations', label: '🔵 Operations' },
+                        { id: 'type-admin', label: '🟣 Administration' },
+                        { id: 'type-bizdev', label: '🟢 Business Development' },
+                    ];
+                    return (
+                        <div className="flex items-center gap-2">
+                            <CustomDropdown
+                                value={projectType}
+                                options={TYPE_OPTIONS}
+                                onChange={(v) => updatePageProperty(databaseId, pageId, 'prop-project-type', v || null)}
+                                className="w-56"
+                            />
+                            {typeInfo && (
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold ${typeInfo.bg} ${typeInfo.color}`}>
+                                    {typeInfo.icon} {typeInfo.label}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
+
                 {/* ── Hero Status Bar ─────────────────────────────────────── */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {/* Execution Status */}
@@ -918,6 +950,61 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                     )}
                                 </div>
                             </div>
+
+                            {/* Linked Projects (cross-type linking) */}
+                            {(() => {
+                                const linkedProjIds = (() => {
+                                    const raw = page.properties['prop-linked-projects'];
+                                    if (Array.isArray(raw)) return raw as string[];
+                                    if (typeof raw === 'string' && raw) return [raw];
+                                    return [];
+                                })();
+                                const projectsDb = allDatabases.find(d => d.id === databaseId);
+                                const linkedProjects = linkedProjIds.map(id => projectsDb?.pages.find(p => p.id === id)).filter(Boolean) as any[];
+
+                                const TYPE_BADGE_MAP: Record<string, { label: string; color: string; bg: string }> = {
+                                    'type-operations': { label: 'OPS', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+                                    'type-admin': { label: 'ADM', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+                                    'type-bizdev': { label: 'BIZ', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+                                };
+
+                                if (linkedProjects.length === 0) return null;
+
+                                return (
+                                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                            <Layers className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Linked Projects
+                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 ml-1">{linkedProjects.length}</span>
+                                        </div>
+                                        <div className="divide-y divide-neutral-100 dark:divide-white/5">
+                                            {linkedProjects.map((proj: any) => {
+                                                const projType = String(proj.properties['prop-project-type'] || '');
+                                                const badge = TYPE_BADGE_MAP[projType];
+                                                const projExecStatus = String(proj.properties['prop-execution-status'] || '');
+                                                const projStatusInfo = EXEC_STATUS_MAP[projExecStatus] || EXEC_STATUS_MAP['opt-to-do'];
+                                                return (
+                                                    <a
+                                                        key={proj.id}
+                                                        href={`/${locale}/admin/database/${databaseId}/${proj.id}`}
+                                                        className="flex items-center gap-3 px-5 py-3 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors"
+                                                    >
+                                                        <div className={`${projStatusInfo.color} flex-shrink-0`}>{projStatusInfo.icon}</div>
+                                                        <span className="flex-1 text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
+                                                            {String(proj.properties['title'] || 'Untitled')}
+                                                        </span>
+                                                        {badge && (
+                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.color}`}>
+                                                                {badge.label}
+                                                            </span>
+                                                        )}
+                                                        <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                                                    </a>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Connected Records */}
                             <ErrorBoundary componentName="LinkedRecords">

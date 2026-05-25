@@ -1454,6 +1454,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 orderedVisibleProperties={orderedVisibleProperties}
                 viewStateMap={viewStateMap}
                 scrollRef={footerScrollRef}
+                hardFilter={hardFilter}
             />
 
             <style dangerouslySetInnerHTML={{

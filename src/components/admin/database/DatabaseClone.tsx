@@ -375,6 +375,43 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-rate-person-hour',    name: 'Person Hour Rate',    type: 'currency' },
       { id: 'prop-rate-equipment-hour', name: 'Equipment Hour Rate', type: 'currency' },
       { id: 'prop-actual-equipment-hours', name: 'Equipment Hours',  type: 'number' },
+      // ── Project Classification ──
+      { id: 'prop-project-type', name: 'Project Type', type: 'select', config: { options: [
+        { id: 'type-operations', name: 'Operations', color: 'blue' },
+        { id: 'type-admin', name: 'Administration', color: 'purple' },
+        { id: 'type-bizdev', name: 'Business Development', color: 'green' },
+      ]}},
+      { id: 'prop-linked-projects', name: 'Linked Projects', type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+      // ── Administration-specific ──
+      { id: 'prop-admin-department', name: 'Department', type: 'select', config: { options: [
+        { id: 'dept-hr', name: 'HR', color: 'pink' },
+        { id: 'dept-finance', name: 'Finance', color: 'green' },
+        { id: 'dept-legal', name: 'Legal', color: 'indigo' },
+        { id: 'dept-it', name: 'IT', color: 'blue' },
+        { id: 'dept-general', name: 'General', color: 'gray' },
+      ]}},
+      { id: 'prop-admin-recurring', name: 'Recurring', type: 'checkbox' },
+      { id: 'prop-admin-compliance-date', name: 'Compliance Deadline', type: 'date' },
+      // ── Business Development-specific ──
+      { id: 'prop-bizdev-opportunity-value', name: 'Opportunity Value', type: 'currency' },
+      { id: 'prop-bizdev-win-probability', name: 'Win Probability', type: 'number' },
+      { id: 'prop-bizdev-stage', name: 'BD Stage', type: 'select', config: { options: [
+        { id: 'bd-prospect', name: 'Prospecting', color: 'gray' },
+        { id: 'bd-qualify', name: 'Qualification', color: 'blue' },
+        { id: 'bd-proposal', name: 'Proposal', color: 'purple' },
+        { id: 'bd-negotiation', name: 'Negotiation', color: 'orange' },
+        { id: 'bd-won', name: 'Won', color: 'green' },
+        { id: 'bd-lost', name: 'Lost', color: 'red' },
+      ]}},
+      { id: 'prop-bizdev-source', name: 'Lead Source', type: 'select', config: { options: [
+        { id: 'src-referral', name: 'Referral', color: 'green' },
+        { id: 'src-website', name: 'Website', color: 'blue' },
+        { id: 'src-cold', name: 'Cold Outreach', color: 'gray' },
+        { id: 'src-partner', name: 'Partner', color: 'purple' },
+        { id: 'src-event', name: 'Event/Fair', color: 'orange' },
+        { id: 'src-bobex', name: 'Bobex', color: 'yellow' },
+      ]}},
+      { id: 'prop-bizdev-crm-link', name: 'CRM Lead', type: 'relation', config: { relationDatabaseId: resolveDbId('db-crm'), relationDisplayPropertyId: 'title' } },
     ],
     'db-tasks': [
       { id: 'title',             name: 'Taak / Materiaal',  type: 'text' },
@@ -496,6 +533,25 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       const store = useDatabaseStore.getState();
       database.views.forEach(view => {
         HIDDEN_BY_DEFAULT.forEach(propId => {
+          const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
+          if (!hasState) {
+            store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true });
+          }
+        });
+      });
+    }
+
+    // Auto-hide type-specific project properties by default (users reveal via Properties dropdown or type-filtered view)
+    if (databaseId === 'db-1') {
+      const TYPE_SPECIFIC_HIDDEN = [
+        'prop-admin-department', 'prop-admin-recurring', 'prop-admin-compliance-date',
+        'prop-bizdev-opportunity-value', 'prop-bizdev-win-probability', 'prop-bizdev-stage',
+        'prop-bizdev-source', 'prop-bizdev-crm-link', 'prop-linked-projects',
+        'prop-rate-person-hour', 'prop-rate-equipment-hour', 'prop-actual-equipment-hours',
+      ];
+      const store = useDatabaseStore.getState();
+      database.views.forEach(view => {
+        TYPE_SPECIFIC_HIDDEN.forEach(propId => {
           const hasState = view.propertiesState?.some(ps => ps.propertyId === propId);
           if (!hasState) {
             store.updateViewPropertyState(resolvedId, view.id, propId, { hidden: true });

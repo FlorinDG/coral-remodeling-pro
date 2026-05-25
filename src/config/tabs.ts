@@ -43,8 +43,8 @@ export const libraryTabs = [
 ];
 
 export const projectsTabs = [
-    { label: 'PROJECTS DATABASE', href: '/admin/projects-management', id: 'database' },
-    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' }
+    { label: 'PROJECTS', href: '/admin/projects-management', id: 'database' },
+    { label: 'PLANNING TIMELINE', href: '/admin/projects-management/planning', id: 'planning' },
 ];
 
 export const portalsTabs = [

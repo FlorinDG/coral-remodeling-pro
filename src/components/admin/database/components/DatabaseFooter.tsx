@@ -18,6 +18,7 @@ interface DatabaseFooterProps {
     orderedVisibleProperties: Property[];
     viewStateMap: Map<string, any>;
     scrollRef?: RefObject<HTMLDivElement | null>;
+    hardFilter?: { propertyId: string; value: string };
 }
 
 const SUMMARY_LABELS: Record<SummaryType, string> = {
@@ -45,6 +46,7 @@ export default function DatabaseFooter({
     orderedVisibleProperties,
     viewStateMap,
     scrollRef,
+    hardFilter,
 }: DatabaseFooterProps) {
     const locale = useLocale();
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
@@ -68,7 +70,7 @@ export default function DatabaseFooter({
             }
         } else {
             // Non-financial DBs: optimistic (syncs in background via syncPage retry)
-            createPage(databaseId);
+            createPage(databaseId, hardFilter ? { [hardFilter.propertyId]: hardFilter.value } : undefined);
         }
     };
 

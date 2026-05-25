@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
+import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 
 // ── PUT — update employee (User record) ───────────────────────────────
 export async function PUT(
@@ -26,6 +26,10 @@ export async function PUT(
         const { employeeId } = await params;
         const body = await req.json();
         const { firstName, lastName, email, phone, role, status, hourlyCost, hireDate } = body;
+
+        if (role && !Object.values(ROLES).includes(role)) {
+            return NextResponse.json({ error: 'Invalid role provided' }, { status: 400 });
+        }
 
         // Verify ownership — user belongs to this tenant
         const existing = await prisma.user.findFirst({

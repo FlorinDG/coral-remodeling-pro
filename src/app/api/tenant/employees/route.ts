@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
+import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
 
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
@@ -92,6 +92,10 @@ export async function POST(req: Request) {
 
         if (!firstName || !lastName || !email) {
             return NextResponse.json({ error: 'First name, last name, and email are required' }, { status: 400 });
+        }
+
+        if (role && !Object.values(ROLES).includes(role)) {
+            return NextResponse.json({ error: 'Invalid role provided' }, { status: 400 });
         }
 
         // Check unique email

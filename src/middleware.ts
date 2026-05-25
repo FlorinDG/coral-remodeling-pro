@@ -210,8 +210,9 @@ export default async function middleware(req: NextRequest) {
         const isTimeTrackerPath = virtualPath.includes('/admin/time-tracker');
 
         if (isProtectedPath && !isLoginPage && !isPublicPage && !isTimeTrackerPath && !isLoggedIn) {
-            const url = new URL('/login', req.nextUrl.origin);
-            return NextResponse.redirect(url);
+            const loginUrl = new URL('/login', req.nextUrl.origin);
+            loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname);
+            return NextResponse.redirect(loginUrl);
         }
 
         // ── Module-based route gating ─────────────────────────────────────

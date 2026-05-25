@@ -65,8 +65,10 @@ export default function LoginPage() {
     const [forgotError, setForgotError] = useState('');
 
     const [isAppDomain, setIsAppDomain] = useState(false);
+    const [isWorkDomain, setIsWorkDomain] = useState(false);
     const searchParams = useSearchParams();
     const planParam = searchParams.get('plan');
+    const callbackUrl = searchParams.get('callbackUrl');
 
     const verifiedStatus = searchParams.get('verified');
 
@@ -98,8 +100,9 @@ export default function LoginPage() {
                     setLoginError('Invalid credentials');
                 }
             } else {
-                // Navigate to admin. Middleware syncs NEXT_LOCALE cookie from JWT on the first request.
-                window.location.href = '/admin/dashboard';
+                // Navigate to target. Middleware syncs NEXT_LOCALE cookie from JWT on the first request.
+                const defaultRedirect = isWorkDomain ? '/' : '/admin/dashboard';
+                window.location.href = callbackUrl || defaultRedirect;
             }
         } catch {
             setLoginError('System error. Please try again.');
@@ -176,12 +179,14 @@ export default function LoginPage() {
     /* ─── Google OAuth ─── */
     const handleGoogleAuth = async () => {
         setIsLoading(true);
-        await signIn('google', { callbackUrl: '/admin/dashboard' });
+        const defaultRedirect = isWorkDomain ? '/' : '/admin/dashboard';
+        await signIn('google', { callbackUrl: callbackUrl || defaultRedirect });
     };
 
     /* ─── App domain detection (client-side only) ─── */
     useEffect(() => {
-        setIsAppDomain(window.location.hostname === 'app.coral-group.be');
+        setIsAppDomain(window.location.hostname === 'app.coral-group.be' || window.location.hostname.startsWith('app.'));
+        setIsWorkDomain(window.location.hostname === 'work.coral-group.be' || window.location.hostname.startsWith('work.'));
     }, []);
 
     // Gate: direct navigation to app.coral-group.be/login without a plan → redirect to store

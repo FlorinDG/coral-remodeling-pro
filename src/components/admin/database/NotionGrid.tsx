@@ -1466,6 +1466,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             --dsg-cell-disabled-background: transparent;
             width: 100%;
             height: 100%;
+            font-size: 0.875rem; /* 14px — matches Tailwind text-sm used in custom columns */
+        }
+
+        /* Normalize all DSG native inputs to match custom column font size */
+        .database-grid-custom .dsg-cell {
+            font-size: inherit;
+        }
+        .database-grid-custom .dsg-input {
+            font-size: inherit !important;
         }
 
         /* Force DSG container to fill the available wrapper height

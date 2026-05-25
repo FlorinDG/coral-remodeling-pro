@@ -14,6 +14,8 @@ import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES } from '@/lib/roles';
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
     'APP_MANAGER',
+    'TENANT_ADMIN',                   // legacy — migrated to APP_MANAGER but may still exist in DB
+    'TENANT_FREE',
     'TENANT_PRO_OWNER',
     'TENANT_PRO_EMPLOYEE',
     'TENANT_ENTERPRISE_OWNER',

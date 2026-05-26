@@ -139,3 +139,16 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 55. [FIXED] Relation field slice crash: raw relation values slice was crash-prone when they were non-string types. Added safe stringification `String(id || '')` to relational identifiers inside both `RelationValue` and `PropertyRow` subcomponents in `DbPropertiesPanel.tsx`.
 56. [FIXED] Sidebar panels error isolation: Wrapped `<DbPropertiesPanel>` in a resilient `<ErrorBoundary>` wrapper inside `RecordDetailPage.tsx`, `ClientQuotationEngine.tsx`, and `ClientInvoiceEngine.tsx` to prevent minor database property schema issues from crashing the entire page or layout.
 
+
+### Restored Items from Session 2026-05-23 (Previously Overwritten)
+
+57. [FIXED] Locked task manager page wrapper height to the screen viewport (`overflow-hidden`) to prevent infinite scrolling, allowing correct internal scrolling for task columns and the right detail drawer.
+58. [BUILT] Integrated a "Full Page View" routing callback in the task detail panel, redirecting users to the dedicated database editor page view at `/${locale}/admin/database/db-tasks/${pageId}`.
+59. [BUILT] Built a premium custom Calendar popover DatePicker component starting on Monday with clean localized headers, navigation, and clear actions, replacing native browser date pickers.
+60. [BUILT] Implemented a green pulsing "✓ Saved" auto-save confirmation badge inside the task detail drawer header to show real-time persistence.
+61. [FIXED] Refactored the detail panel drawer's footer layout into a dual-column layout containing a primary "Save & Close" button and a compact red Lucide `Trash2` deletion icon button.
+62. [BUILT] Built highly polished custom animated checkmark components for React Data Sheet Grid, replacing native checkboxes in the Bobex pipeline table with green Lucide checks.
+63. [BUILT] Developed premium searchable dropdown select popovers (`SearchableSelectDropdown`) for relation and multi-select database properties, integrating a top search bar to filter linked items.
+64. [FIXED] Upgraded "Add to My Day" to a premium orange Lucide `Sun` icon and added a hover-trigger red Lucide `Trash2` deletion button inside individual task list rows.
+65. [FIXED] Filtered Kanban board columns dynamically based on the active perspective (such as "My Day" smart filter), aligning list and board views.
+

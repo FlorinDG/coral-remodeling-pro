@@ -105,6 +105,10 @@ Two-step gate:
 Never bolt features onto one copy of duplicated inline code.
 The silent failure mode: feature lands in View A, View B stays stale, and the divergence is invisible until a user reports it.
 
+### Rule 8 — No Localhost Development
+> No more localhost development. All in production.
+Do not rely on the local dev server. Push changes to `main` and verify them directly in the production environment.
+
 ---
 
 ## The Three Domains Are the Same Problem

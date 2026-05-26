@@ -130,6 +130,12 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 50. [TODO] - Use Stripe API to generate qr codes and integrate them in the documents
 51. [TODO] - check if developed do if not present - payments databases, incoming and outgoing and connection to projects and invoices
 52. [TODO] - dashboard upgrade - cash flow and graph view
-53. [TODO] - invoice creation engine - quoatations select - should be able to add more than one quoatation to an invoice - the calculation should be done automatically. 
-54. [TODO] - invoice creation engine - should display by "Betreft" instead of the number, when large databases
+53. [FIXED] invoice creation engine - quoatations select - should be able to add more than one quoatation to an invoice - the calculation should be done automatically (implemented custom premium searchable multi-select selector and appends all priced blocks/calculations).
+54. [FIXED] invoice creation engine - should display by "Betreft" instead of the number, when large databases (updated quotation lists/searches to format subject line followed by reference title/number).
+
+
+### Session 2026-05-26 — Relational Crash & Panel Robustness
+
+55. [FIXED] Relation field slice crash: raw relation values slice was crash-prone when they were non-string types. Added safe stringification `String(id || '')` to relational identifiers inside both `RelationValue` and `PropertyRow` subcomponents in `DbPropertiesPanel.tsx`.
+56. [FIXED] Sidebar panels error isolation: Wrapped `<DbPropertiesPanel>` in a resilient `<ErrorBoundary>` wrapper inside `RecordDetailPage.tsx`, `ClientQuotationEngine.tsx`, and `ClientInvoiceEngine.tsx` to prevent minor database property schema issues from crashing the entire page or layout.
 

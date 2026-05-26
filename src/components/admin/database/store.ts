@@ -197,6 +197,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             pendingSyncs: 0,
             undoStack: [] as UndoEntry[],
             ungatedSchemas: [] as string[],
+            _hasHydrated: false,
 
             _syncStart: () => set(s => ({ pendingSyncs: s.pendingSyncs + 1, syncStatus: 'saving' as const })),
             _syncDone: () => set(s => {
@@ -1513,9 +1514,9 @@ export const useDatabaseStore = create<DatabaseState>()(
             version: 4,
             storage: createJSONStorage(() => idbStorage),
             partialize: (state) => {
-                // Exclude transient undo stack from persistence
+                // Exclude transient runtime-only fields from persistence
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { undoStack: _undoStack, ...rest } = state;
+                const { undoStack: _undoStack, _hasHydrated: _hydrated, ...rest } = state as any;
                 return rest as any;
             },
             migrate: (persistedState: any, version: number) => {
@@ -1621,7 +1622,15 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                 return {
                     ...currentState,
-                    databases: mergedDbs
+                    databases: mergedDbs,
+                    _hasHydrated: true
+                };
+            },
+            onRehydrateStorage: () => {
+                return (state) => {
+                    if (state) {
+                        useDatabaseStore.setState({ _hasHydrated: true } as any);
+                    }
                 };
             }
         }

@@ -49,7 +49,8 @@ export interface ScheduledShift {
   updatedAt: string;
   // Resolved locally
   project?: Project | null;
-  profiles?: { full_name: string } | null;
+  profile?: { full_name: string } | null;
+  profiles?: { full_name: string } | null; // legacy alias
   // snake_case aliases for legacy component compat
   user_id?: string;
   shift_date?: string;
@@ -81,6 +82,7 @@ function addSnakeCase(s: ScheduledShift): ScheduledShift {
     updated_at: s.updatedAt,
     clock_entry_id: null,
     notion_page_id: null,
+    profile: s.profile || s.profiles || null,
   };
 }
 
@@ -124,9 +126,9 @@ export function useScheduledShifts() {
       const enriched = shiftsData.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
-        profiles: s.userId && employeeMap.has(s.userId)
+        profile: s.userId && employeeMap.has(s.userId)
           ? { full_name: employeeMap.get(s.userId)! }
-          : s.profiles || null,
+          : s.profile || s.profiles || null,
       }));
 
       setRawShifts(enriched);
@@ -159,11 +161,12 @@ export function useScheduledShifts() {
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
       setRawShifts(prev => [addSnakeCase(shift), ...prev]);
+      void fetchAll();
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
     }
-  }, []);
+  }, [fetchAll]);
 
   const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>) => {
     const normalized: Record<string, any> = { ...data };
@@ -177,11 +180,12 @@ export function useScheduledShifts() {
     try {
       const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase({ ...s, ...shift }) : s));
+      void fetchAll();
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
     }
-  }, []);
+  }, [fetchAll]);
 
   const updateShiftStatus = useCallback(async (id: string, status: string) => {
     return updateShift(id, { status });

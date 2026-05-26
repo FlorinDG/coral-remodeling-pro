@@ -326,6 +326,8 @@
         "purchaseCreditNotes": "NOTA CREDIT - ACHIZIȚIE",
         "salesCreditNotes": "NOTA CREDIT - VÂNZARE",
         "salesInvoices": "FACTURI",
+        "paymentsIn": "PLĂȚI ÎNCASATE",
+        "paymentsOut": "PLĂȚI EFECTUATE",
         "quotations": "QUOTATIONS"
       },
       "pages": {

@@ -1024,6 +1024,114 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
+                                // Automations for Incoming Payments
+                                if (isBaseDb(databaseId, 'db-payments-in') && propertyId === 'invoice' && value) {
+                                    const invoiceIds = Array.isArray(value) ? value : [value];
+                                    if (invoiceIds.length > 0) {
+                                        const invoiceId = invoiceIds[0];
+                                        const invoicesDb = state.databases.find(d => isBaseDb(d.id, 'db-invoices'));
+                                        if (invoicesDb) {
+                                            const invoicePage = invoicesDb.pages.find((p: Page) => p.id === invoiceId);
+                                            if (invoicePage) {
+                                                const clientRel = invoicePage.properties['client'];
+                                                if (clientRel) {
+                                                    newProps['client'] = clientRel;
+                                                }
+                                                const currentAmount = Number(newProps['amount'] || page.properties['amount']) || 0;
+                                                if (currentAmount === 0) {
+                                                    newProps['amount'] = Number(invoicePage.properties['totalIncVat']) || null;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (isBaseDb(databaseId, 'db-payments-in') && (propertyId === 'invoice' || propertyId === 'amount')) {
+                                    const invoiceRel = propertyId === 'invoice' ? value : page.properties['invoice'];
+                                    const invoiceIds = Array.isArray(invoiceRel) ? invoiceRel : (invoiceRel ? [invoiceRel] : []);
+                                    if (invoiceIds.length > 0) {
+                                        const invoiceId = invoiceIds[0];
+                                        const invoicesDb = state.databases.find(d => isBaseDb(d.id, 'db-invoices'));
+                                        if (invoicesDb) {
+                                            const invoicePage = invoicesDb.pages.find((p: Page) => p.id === invoiceId);
+                                            if (invoicePage) {
+                                                const paymentsDb = state.databases.find(d => isBaseDb(d.id, 'db-payments-in'));
+                                                if (paymentsDb) {
+                                                    let sum = 0;
+                                                    paymentsDb.pages.forEach((p: Page) => {
+                                                        const pInv = p.id === pageId ? invoiceRel : p.properties['invoice'];
+                                                        const pAmt = p.id === pageId ? (propertyId === 'amount' ? Number(value) : Number(p.properties['amount'])) : Number(p.properties['amount']);
+                                                        const pInvIds = Array.isArray(pInv) ? pInv : (pInv ? [pInv] : []);
+                                                        if (pInvIds.includes(invoiceId) && pAmt > 0) {
+                                                            sum += pAmt;
+                                                        }
+                                                    });
+                                                    const totalIncVat = Number(invoicePage.properties['totalIncVat']) || 0;
+                                                    if (sum >= totalIncVat && totalIncVat > 0) {
+                                                        setTimeout(() => {
+                                                            get().updatePageProperty(invoicesDb.id, invoiceId, 'status', 'opt-paid');
+                                                        }, 0);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Automations for Outgoing Payments
+                                if (isBaseDb(databaseId, 'db-payments-out') && propertyId === 'expense' && value) {
+                                    const expenseIds = Array.isArray(value) ? value : [value];
+                                    if (expenseIds.length > 0) {
+                                        const expenseId = expenseIds[0];
+                                        const expensesDb = state.databases.find(d => isBaseDb(d.id, 'db-expenses'));
+                                        if (expensesDb) {
+                                            const expensePage = expensesDb.pages.find((p: Page) => p.id === expenseId);
+                                            if (expensePage) {
+                                                const supplierRel = expensePage.properties['supplier'];
+                                                if (supplierRel) {
+                                                    newProps['supplier'] = supplierRel;
+                                                }
+                                                const currentAmount = Number(newProps['amount'] || page.properties['amount']) || 0;
+                                                if (currentAmount === 0) {
+                                                    newProps['amount'] = Number(expensePage.properties['totalIncVat']) || null;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (isBaseDb(databaseId, 'db-payments-out') && (propertyId === 'expense' || propertyId === 'amount')) {
+                                    const expenseRel = propertyId === 'expense' ? value : page.properties['expense'];
+                                    const expenseIds = Array.isArray(expenseRel) ? expenseRel : (expenseRel ? [expenseRel] : []);
+                                    if (expenseIds.length > 0) {
+                                        const expenseId = expenseIds[0];
+                                        const expensesDb = state.databases.find(d => isBaseDb(d.id, 'db-expenses'));
+                                        if (expensesDb) {
+                                            const expensePage = expensesDb.pages.find((p: Page) => p.id === expenseId);
+                                            if (expensePage) {
+                                                const paymentsDb = state.databases.find(d => isBaseDb(d.id, 'db-payments-out'));
+                                                if (paymentsDb) {
+                                                    let sum = 0;
+                                                    paymentsDb.pages.forEach((p: Page) => {
+                                                        const pExp = p.id === pageId ? expenseRel : p.properties['expense'];
+                                                        const pAmt = p.id === pageId ? (propertyId === 'amount' ? Number(value) : Number(p.properties['amount'])) : Number(p.properties['amount']);
+                                                        const pExpIds = Array.isArray(pExp) ? pExp : (pExp ? [pExp] : []);
+                                                        if (pExpIds.includes(expenseId) && pAmt > 0) {
+                                                            sum += pAmt;
+                                                        }
+                                                    });
+                                                    const totalIncVat = Number(expensePage.properties['totalIncVat']) || 0;
+                                                    if (sum >= totalIncVat && totalIncVat > 0) {
+                                                        setTimeout(() => {
+                                                            get().updatePageProperty(expensesDb.id, expenseId, 'status', 'opt-paid');
+                                                        }, 0);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
                                 // Invoice: invoiceDate set → auto-calculate dueDate
                                 if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'invoiceDate' && value) {
                                     if (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate']) {

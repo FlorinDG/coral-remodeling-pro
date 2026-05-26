@@ -25,6 +25,8 @@ export const SYSTEM_DB_PREFIXES = [
     'db-bobex',   // Bobex Pipeline
     'db-articles', // Material Articles
     'db-bestek',   // Pricebook (Bestek)
+    'db-payments-in',
+    'db-payments-out',
 ] as const;
 
 /**

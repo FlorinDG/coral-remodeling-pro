@@ -894,7 +894,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         {/* Mathematical Blocks */}
                         <DragDropContext onDragStart={() => setIsDraggingGlobal(true)} onDragEnd={handleDragEnd}>
-                            <Droppable droppableId="root" type="root">
+                            <Droppable droppableId="root" type="block">
                                 {(provided) => (
                                     <div
                                         {...provided.droppableProps}

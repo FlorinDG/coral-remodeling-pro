@@ -862,10 +862,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
         // ── Accountant export: stamp all exported records ─────────────
         if (isAccountant) {
-            const now = new Date().toISOString();
             acctDateFilteredPages.forEach(page => {
                 if (!page.properties.accountantExportedAt) {
-                    updatePageProperty(database.id, page.id, 'accountantExportedAt', now);
+                    updatePageProperty(database.id, page.id, 'accountantExportedAt', true);
                 }
             });
             toast.success(`${acctDateFilteredPages.length} records exported & flagged`);

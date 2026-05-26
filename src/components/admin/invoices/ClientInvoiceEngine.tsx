@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus } from 'lucide-react';
@@ -24,7 +24,7 @@ import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from './CreateClientModal';
 import CreateProjectModal from './CreateProjectModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { Bot, Mail, CloudUpload, Send, AlertTriangle } from 'lucide-react';
+import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 const FALLBACK_PAGES: Page[] = [];
@@ -60,6 +60,23 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+    const [isQuotationDropdownOpen, setIsQuotationDropdownOpen] = useState(false);
+    const [quotationSearch, setQuotationSearch] = useState('');
+    const [importedQuotationIds, setImportedQuotationIds] = useState<string[]>([]);
+    const quotationContainerRef = useRef<HTMLDivElement>(null);
+
+    // Close quotation dropdown on outside click
+    useEffect(() => {
+        if (!isQuotationDropdownOpen) return;
+        const handleClick = (e: MouseEvent) => {
+            if (quotationContainerRef.current && !quotationContainerRef.current.contains(e.target as Node)) {
+                setIsQuotationDropdownOpen(false);
+                setQuotationSearch('');
+            }
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [isQuotationDropdownOpen]);
 
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
@@ -115,6 +132,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }).catch(console.error);
     }, [isHydrated, invoice, hydrationAttempted, id]);
 
+    // Initialize importedQuotationIds once when the invoice is loaded
+    useEffect(() => {
+        if (invoice && importedQuotationIds.length === 0) {
+            const raw = invoice.properties?.['quotation'];
+            const initialIds = Array.isArray(raw)
+                ? raw.filter(Boolean).map(String)
+                : [String(raw)].filter(Boolean);
+            if (initialIds.length > 0) {
+                setImportedQuotationIds(initialIds);
+            }
+        }
+    }, [invoice, importedQuotationIds.length]);
+
     const projects = useDatabaseStore(state => state.databases.find(d => d.id === projectDbId)?.pages || FALLBACK_PAGES);
 
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
@@ -145,9 +175,32 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!quotationsDb) return [];
         return quotationsDb.pages.map(page => ({
             id: page.id,
-            title: String(page.properties['title'] || page.properties['betreft'] || 'Unnamed Offerte'),
-        }));
+            title: String(page.properties['title'] || 'Unnamed Offerte'),
+            betreft: String(page.properties['betreft'] || ''),
+        })).sort((a, b) => b.title.localeCompare(a.title, undefined, { numeric: true, sensitivity: 'base' }));
     }, [quotationsDb]);
+
+    // Find credit notes linked to this invoice — MUST be before early returns (Rules of Hooks)
+    const creditNotes = useMemo(() => {
+        if (!invoice) return [];
+        const db = useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId);
+        if (!db) return [];
+        const invoiceNum = String(invoice.properties?.['title'] || '');
+        if (!invoiceNum) return [];
+        return db.pages.filter(p => {
+            const parentId = p.properties['parentInvoiceId'];
+            if (parentId === id) return true; // Follow explicit link
+            const title = String(p.properties['title'] || '');
+            return title.startsWith('CN-') && title.includes(invoiceNum); // Fallback to title matching
+        });
+    }, [invoice, id]);
+
+    const creditedTotal = creditNotes.reduce((sum, cn) => sum + (Number(cn.properties['totalIncVat']) || 0), 0);
+    const creditNoteInfos = creditNotes.map(cn => ({
+        id: cn.id,
+        title: String(cn.properties['title'] || 'Credit Note'),
+        amount: Number(cn.properties['totalIncVat']) || 0,
+    }));
 
     // Sync financial summary back to database properties for the grid view
     // Must be placed before early returns to satisfy Rules of Hooks
@@ -195,27 +248,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (invoice.properties?.['totalExVat'] !== roundedEx) updatePageProperty(invoicesDbId, invoice.id, 'totalExVat', roundedEx);
         if (invoice.properties?.['totalVat'] !== roundedVat) updatePageProperty(invoicesDbId, invoice.id, 'totalVat', roundedVat);
         if (invoice.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(invoicesDbId, invoice.id, 'totalIncVat', roundedInc);
-    }, [invoice?.blocks, isHydrated]);
 
-    // Find credit notes linked to this invoice — MUST be before early returns (Rules of Hooks)
-    const creditNotes = useMemo(() => {
-        if (!invoice) return [];
-        const db = useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId);
-        if (!db) return [];
-        const invoiceNum = String(invoice.properties?.['title'] || '');
-        if (!invoiceNum) return [];
-        return db.pages.filter(p => {
-            const title = String(p.properties['title'] || '');
-            return title.startsWith('CN-') && title.includes(invoiceNum);
-        });
-    }, [invoice, id]);
+        // Status update logic for credit notes
+        const currentStatus = String(invoice.properties?.['status'] || 'opt-draft');
+        if (creditedTotal >= roundedInc && roundedInc > 0 && currentStatus !== 'opt-credited') {
+            updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-credited');
+        }
+    }, [invoice?.blocks, isHydrated, creditedTotal]);
 
-    const creditedTotal = creditNotes.reduce((sum, cn) => sum + (Number(cn.properties['totalIncVat']) || 0), 0);
-    const creditNoteInfos = creditNotes.map(cn => ({
-        id: cn.id,
-        title: String(cn.properties['title'] || 'Credit Note'),
-        amount: Number(cn.properties['totalIncVat']) || 0,
-    }));
+    const rawQuotation = invoice?.properties?.['quotation'];
+    const linkedQuotations = useMemo<string[]>(() => {
+        if (!rawQuotation) return [];
+        if (Array.isArray(rawQuotation)) {
+            return rawQuotation.filter(Boolean).map(String);
+        }
+        return [String(rawQuotation)].filter(Boolean);
+    }, [rawQuotation]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
@@ -233,9 +281,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const isDraft = invoiceStatus === 'opt-draft';
     const isLocked = Boolean(invoice.properties?.['isLocked'] || false);
     const snapshotData = (invoice.properties?.['snapshotData'] as any) || null;
-    const isCreditNote = String(invoiceTitle).startsWith('CN-');
+    const isCreditNote = String(invoice.properties?.['docType']) === 'opt-credit-note' || String(invoiceTitle).startsWith('CN-');
+    
+    // UI Link to Parent Invoice
+    const parentInvoiceId = invoice.properties?.['parentInvoiceId'] as string | undefined;
+    const parentInvoiceTitle = parentInvoiceId ? useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId)?.pages.find(p => p.id === parentInvoiceId)?.properties['title'] : null;
 
     const blocks = invoice.blocks || [];
+
+    // Deep clone blocks with fresh IDs
+    const cloneInvoiceBlocks = (sourceBlocks: Block[]): Block[] => {
+        return sourceBlocks.map(block => ({
+            ...block,
+            id: crypto.randomUUID(),
+            children: block.children ? cloneInvoiceBlocks(block.children) : undefined,
+        }));
+    };
 
     // Create Credit Nota from this invoice
     const handleCreateCreditNote = async () => {
@@ -247,12 +308,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             status: 'opt-draft',
             betreft: `Creditnota voor ${invoiceNum}`,
             parentInvoiceId: id, // Explicitly link to original
+            docType: 'opt-credit-note'
         });
         if (result.success) {
-            useDatabaseStore.getState().addConfirmedPage(result.page);
+            const clonedBlocks = cloneInvoiceBlocks(blocks);
+            const newPage = { ...result.page, blocks: clonedBlocks };
+            
+            // Add directly with the blocks populated
+            useDatabaseStore.getState().addConfirmedPage(newPage);
+            useDatabaseStore.getState().updatePageBlocks(invoicesDbId, newPage.id, clonedBlocks);
+
             // Create corresponding Prisma Invoice record
             await createPrismaInvoice(result.page.id, cnNumber, id);
-            router.push(`/admin/financials/income/invoices/${result.page.id}`);
+            router.push(`/admin/financials/income/credit-notes/${result.page.id}`);
         }
     };
 
@@ -390,30 +458,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }, 0);
     };
 
-    // Handle offerte selection — link and offer to import
-    const handleOfferteSelect = (quotationId: string) => {
-        handleUpdateProperty('quotation', quotationId);
-        if (!quotationId) return;
-
-        // Find the quotation's blocks
-        const quotationPage = quotationsDb?.pages.find(p => p.id === quotationId);
-        if (!quotationPage || !quotationPage.blocks?.length) {
-            toast.info('Offerte gekoppeld, maar bevat geen regels om te importeren.');
-            return;
-        }
-
-        const pricedBlocks = filterPricedBlocks(quotationPage.blocks);
-        const lineCount = countLines(pricedBlocks);
-
-        if (lineCount === 0) {
-            toast.info('Offerte gekoppeld. Geen regels met prijs gevonden om te importeren.');
-            return;
-        }
-
-        const quotationTitle = String(quotationPage.properties['title'] || quotationPage.properties['betreft'] || 'Offerte');
-        setOfferteImportDialog({ open: true, quotationId, quotationTitle, lineCount });
-    };
-
     // Execute the import
     const executeOfferteImport = () => {
         const quotationPage = quotationsDb?.pages.find(p => p.id === offerteImportDialog.quotationId);
@@ -422,6 +466,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const pricedBlocks = filterPricedBlocks(quotationPage.blocks || []);
         const clonedBlocks = deepCloneBlocks(pricedBlocks);
         updatePageBlocks(invoicesDbId, id, [...blocks, ...clonedBlocks]);
+        
+        // Track imported quotation to warn against duplicate imports in active session
+        setImportedQuotationIds(prev => {
+            if (prev.includes(offerteImportDialog.quotationId)) return prev;
+            return [...prev, offerteImportDialog.quotationId];
+        });
+
         toast.success(`${offerteImportDialog.lineCount} regels geïmporteerd uit "${offerteImportDialog.quotationTitle}".`);
     };
 
@@ -639,9 +690,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
     };
 
-    const rawQuotation = invoice?.properties?.['quotation'];
-    const linkedQuotation = Array.isArray(rawQuotation) ? (rawQuotation[0] || '') : (rawQuotation as string) || '';
-
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
@@ -665,8 +713,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px] disabled:opacity-70"
                         />
                             <div className="flex items-center gap-2">
-                                <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
+                                <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase flex items-center gap-2">
                                     {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
+                                    {parentInvoiceTitle && (
+                                        <>
+                                            <span>•</span>
+                                            <Link href={`/admin/financials/income/invoices/${parentInvoiceId}`} className="hover:text-neutral-600 dark:hover:text-neutral-200 underline decoration-dashed">
+                                                Link: {String(parentInvoiceTitle)}
+                                            </Link>
+                                        </>
+                                    )}
                                 </p>
                                 {/* Interactive status selector */}
                                 {isHydrated && (() => {
@@ -675,6 +731,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         'opt-sent':           { label: 'Verzonden', bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
                                         'opt-paid':           { label: 'Betaald',   bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
                                         'opt-overdue':        { label: 'Vervallen', bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
+                                        'opt-credited':       { label: 'Gecrediteerd', bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
                                         'opt-uncollectible':  { label: 'Oninbaar',  bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
                                     };
                                     const current = STATUS_MAP[invoiceStatus] || STATUS_MAP['opt-draft'];
@@ -794,22 +851,107 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         </>
                         )}
 
-                        {/* Offerte Selector */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <FileText className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={linkedQuotation}
-                                onChange={(e) => handleOfferteSelect(e.target.value)}
+                        {/* Custom Offerte Multi-Selector */}
+                        <div ref={quotationContainerRef} className="relative shrink-0">
+                            <button
+                                type="button"
                                 disabled={isLocked || !isDraft}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate disabled:opacity-60 disabled:cursor-default"
+                                onClick={() => { if (!isLocked && isDraft) setIsQuotationDropdownOpen(!isQuotationDropdownOpen); }}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all disabled:opacity-60 disabled:cursor-default cursor-pointer outline-none focus:ring-1 focus:ring-orange-500/30"
                             >
-                                <option value="">Offerte koppelen...</option>
-                                {quotations.map(q => (
-                                    <option key={q.id} value={q.id} className="text-black dark:text-neutral-900">
-                                        {q.title}
-                                    </option>
-                                ))}
-                            </select>
+                                <FileText className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                <span className="truncate max-w-[12rem]">
+                                    {linkedQuotations.length === 0
+                                        ? 'Offertes koppelen...'
+                                        : linkedQuotations.length === 1
+                                            ? (quotations.find(q => q.id === linkedQuotations[0])?.betreft || quotations.find(q => q.id === linkedQuotations[0])?.title || '1 Offerte')
+                                            : `${linkedQuotations.length} offertes gekoppeld`}
+                                </span>
+                                <ChevronDown className="w-3 h-3 text-neutral-400 shrink-0 transition-transform duration-200" style={{ transform: isQuotationDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                            </button>
+
+                            {isQuotationDropdownOpen && (
+                                <div className="absolute right-0 mt-1.5 w-80 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl z-50 p-2 flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-100 max-h-80 overflow-hidden">
+                                    {/* Search input */}
+                                    <div className="relative shrink-0">
+                                        <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-neutral-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="Zoek offerte..."
+                                            value={quotationSearch}
+                                            onChange={(e) => setQuotationSearch(e.target.value)}
+                                            className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-500 transition-colors text-neutral-900 dark:text-white"
+                                        />
+                                    </div>
+
+                                    {/* List */}
+                                    <div className="overflow-y-auto flex-1 flex flex-col gap-0.5 max-h-60 pr-0.5 no-scrollbar">
+                                        {(() => {
+                                            const filtered = quotations.filter(q => {
+                                                if (!quotationSearch.trim()) return true;
+                                                const term = quotationSearch.toLowerCase();
+                                                return q.title.toLowerCase().includes(term) || q.betreft.toLowerCase().includes(term);
+                                            });
+
+                                            if (filtered.length === 0) {
+                                                return <div className="py-4 text-center text-xs italic text-neutral-400">Geen offertes gevonden</div>;
+                                            }
+
+                                            return filtered.map(q => {
+                                                const isLinked = linkedQuotations.includes(q.id);
+                                                return (
+                                                    <button
+                                                        key={q.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (isLinked) {
+                                                                const next = linkedQuotations.filter(id => id !== q.id);
+                                                                handleUpdateProperty('quotation', next);
+                                                                toast.success('Offerte ontkoppeld.');
+                                                            } else {
+                                                                const next = [...linkedQuotations, q.id];
+                                                                handleUpdateProperty('quotation', next);
+                                                                
+                                                                // Trigger import check
+                                                                const qPage = quotationsDb?.pages.find(p => p.id === q.id);
+                                                                if (qPage && qPage.blocks?.length) {
+                                                                    const pricedBlocks = filterPricedBlocks(qPage.blocks);
+                                                                    const lineCount = countLines(pricedBlocks);
+                                                                    if (lineCount > 0) {
+                                                                        const quotationTitle = String(qPage.properties['title'] || qPage.properties['betreft'] || 'Offerte');
+                                                                        setOfferteImportDialog({ open: true, quotationId: q.id, quotationTitle, lineCount });
+                                                                    } else {
+                                                                        toast.info('Offerte gekoppeld. Geen regels met prijs gevonden.');
+                                                                    }
+                                                                } else {
+                                                                    toast.info('Offerte gekoppeld, maar bevat geen regels.');
+                                                                }
+                                                            }
+                                                        }}
+                                                        className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-all text-left text-xs group"
+                                                    >
+                                                        <div className="flex flex-col min-w-0 pr-2">
+                                                            <span className="font-bold text-neutral-800 dark:text-neutral-200 truncate">
+                                                                {q.betreft || 'Geen onderwerp'}
+                                                            </span>
+                                                            <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
+                                                                {q.title}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+                                                            isLinked
+                                                                ? 'border-orange-500 bg-orange-500 text-white'
+                                                                : 'border-neutral-300 dark:border-white/10 group-hover:border-neutral-400'
+                                                        }`}>
+                                                            {isLinked && <Check className="w-3 h-3 stroke-[3]" />}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            });
+                                        })()}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -828,6 +970,42 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         </button>
                     </div>
                 </div>
+
+                {/* Row 2: Linked Quotation Badges */}
+                {linkedQuotations.length > 0 && (
+                    <div className="flex items-center gap-2 px-4 pb-3 flex-wrap border-t border-neutral-100 dark:border-white/5 pt-2 bg-neutral-50/50 dark:bg-white/[0.01]">
+                        <span className="text-[10px] font-extrabold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1 shrink-0">
+                            <FileText className="w-3.5 h-3.5 text-orange-500" /> Gekoppelde offertes:
+                        </span>
+                        {linkedQuotations.map(qId => {
+                            const q = quotations.find(item => item.id === qId);
+                            if (!q) return null;
+                            return (
+                                <div
+                                    key={qId}
+                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-300 rounded-full text-xs font-semibold hover:border-orange-300 dark:hover:border-orange-500/35 transition-colors"
+                                >
+                                    <span className="truncate max-w-[12rem]" title={q.betreft}>
+                                        {q.betreft ? `${q.betreft} (${q.title})` : q.title}
+                                    </span>
+                                    {isDraft && !isLocked && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const next = linkedQuotations.filter(id => id !== qId);
+                                                handleUpdateProperty('quotation', next);
+                                                toast.success('Offerte ontkoppeld.');
+                                            }}
+                                            className="hover:bg-orange-100 dark:hover:bg-orange-500/20 p-0.5 rounded-full transition-colors cursor-pointer text-orange-500 hover:text-orange-700 dark:hover:text-orange-300"
+                                        >
+                                            <XIcon className="w-3 h-3 stroke-[2.5]" />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
             {tenantProfile && (!tenantProfile.companyName || !tenantProfile.vatNumber) && (
@@ -1094,12 +1272,20 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 onConfirm={executeOfferteImport}
                 title="Regels importeren uit offerte?"
                 message={
-                    <div className="space-y-2">
+                    <div className="space-y-2 text-sm">
                         <p>
-                            De offerte <strong>"{offerteImportDialog.quotationTitle}"</strong> bevat{' '}
+                            De offerte <strong>&quot;{offerteImportDialog.quotationTitle}&quot;</strong> bevat{' '}
                             <strong>{offerteImportDialog.lineCount} regel{offerteImportDialog.lineCount !== 1 ? 's' : ''}</strong>{' '}
                             met een prijs.
                         </p>
+                        {importedQuotationIds.includes(offerteImportDialog.quotationId) && (
+                            <div className="flex items-start gap-2 p-2 rounded bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/30">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span className="text-xs">
+                                    <strong>Opgelet:</strong> De regels van deze offerte zijn mogelijk al geïmporteerd in deze factuur.
+                                </span>
+                            </div>
+                        )}
                         <p className="text-neutral-500 dark:text-neutral-500">
                             De volledige structuur (secties, subsecties) wordt behouden. Regels zonder prijs worden overgeslagen.
                         </p>

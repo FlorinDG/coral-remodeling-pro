@@ -58,7 +58,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
   const isLockedSchemaDB = isSystemDatabase(databaseId);
   const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
-  const isSuperAdmin = session?.user?.role === 'SUPERADMIN' || session?.user?.role === 'PLATFORM_ADMIN';
+  const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
   const isUngated = isStoreUngated || isSuperAdmin;
 
   const handleCloseProjectModal = () => {
@@ -228,15 +228,21 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'opt-sent',           name: 'Verzonden', color: 'blue'   },
         { id: 'opt-paid',           name: 'Betaald',   color: 'green'  },
         { id: 'opt-overdue',        name: 'Vervallen', color: 'red'    },
+        { id: 'opt-credited',       name: 'Gecrediteerd', color: 'pink' },
         { id: 'opt-uncollectible',  name: 'Oninbaar',  color: 'purple' },
       ]}},
+      { id: 'docType',     name: 'Document Type',     type: 'select', config: { options: [
+        { id: 'opt-invoice', name: 'Factuur', color: 'blue' },
+        { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
+      ]}},
+      { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'text' },
       { id: 'invoiceDate',  name: 'Factuurdatum',      type: 'date'     },
       { id: 'deliveryDate', name: 'Leveringsdatum',    type: 'date'     },
       { id: 'dueDate',      name: 'Vervaldatum',       type: 'date'     },
       { id: 'totalExVat',  name: 'Totaal excl. BTW',  type: 'currency' },
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
       { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
-      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
+      { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
     ],
     'db-expenses': [
       { id: 'title',       name: 'Factuur #',         type: 'text' },
@@ -260,7 +266,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
       { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
       { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
-      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
+      { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
     ],
     'db-tickets': [
       { id: 'title',         name: 'Handelaar / Beschrijving', type: 'text' },
@@ -290,7 +296,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
       { id: 'notes',      name: 'Notities', type: 'text' },
       { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
-      { id: 'accountantExportedAt', name: 'Geëxporteerd (boekhouder)', type: 'date' },
+      { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
     ],
     'db-crm': [
       { id: 'title',                                     name: 'Name',              type: 'text' },
@@ -472,6 +478,35 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'prop-art-min-order', name: 'Minimum Order',     type: 'formula', config: { formulaExpression: 'prop("Eeh") === "u-m2" ? 5 : (prop("Packaging") === "opt-plaat" ? 2 : 1)' } },
       { id: 'prop-art-variants',  name: 'Product Variants',  type: 'variants' },
     ],
+    'db-payments-in': [
+      { id: 'title',       name: 'Ontvangstbewijs #',  type: 'text' },
+      { id: 'client',      name: 'Klant',             type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
+      { id: 'project',     name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+      { id: 'invoice',     name: 'Factuur',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-invoices'), relationDisplayPropertyId: 'title' } },
+      { id: 'amount',      name: 'Bedrag',            type: 'currency' },
+      { id: 'date',        name: 'Datum',             type: 'date' },
+      { id: 'method',      name: 'Betaalmethode', type: 'select', config: { options: [
+        { id: 'pm-transfer', name: 'Bankoverschrijving', color: 'purple' },
+        { id: 'pm-card',     name: 'Kaart',         color: 'blue' },
+        { id: 'pm-cash',     name: 'Cash',          color: 'green' },
+        { id: 'pm-stripe',   name: 'Stripe',        color: 'orange' },
+      ]}},
+      { id: 'notes',       name: 'Notities',          type: 'text' },
+    ],
+    'db-payments-out': [
+      { id: 'title',       name: 'Betalingsreferentie', type: 'text' },
+      { id: 'supplier',    name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
+      { id: 'project',     name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
+      { id: 'expense',     name: 'Aankoopfactuur',    type: 'relation', config: { relationDatabaseId: resolveDbId('db-expenses'), relationDisplayPropertyId: 'title' } },
+      { id: 'amount',      name: 'Bedrag',            type: 'currency' },
+      { id: 'date',        name: 'Datum',             type: 'date' },
+      { id: 'method',      name: 'Betaalmethode', type: 'select', config: { options: [
+        { id: 'pm-transfer', name: 'Bankoverschrijving', color: 'purple' },
+        { id: 'pm-card',     name: 'Kaart',         color: 'blue' },
+        { id: 'pm-cash',     name: 'Cash',          color: 'green' },
+      ]}},
+      { id: 'notes',       name: 'Notities',          type: 'text' },
+    ],
   }), [resolveDbId]);
 
   // ── Schema Enforcement: Ensure locked databases have the correct hardcoded properties ──
@@ -548,6 +583,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         }
       });
     }
+
+    // Migrate: db-invoices docType population
+    if (databaseId === 'db-invoices') {
+      const store = useDatabaseStore.getState();
+      database.pages.forEach(page => {
+        const currentDocType = page.properties['docType'];
+        if (!currentDocType) {
+          const title = String(page.properties['title'] || '');
+          const newType = title.startsWith('CN-') ? 'opt-credit-note' : 'opt-invoice';
+          store.updatePageProperty(resolvedId, page.id, 'docType', newType);
+        }
+      });
+    }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);
 
 
@@ -571,6 +619,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-suppliers') parsedName = 'Suppliers';
     if (databaseId === 'db-crm') parsedName = 'Main Pipeline';
     if (databaseId === 'db-bobex') parsedName = 'Bobex Pipeline';
+    if (databaseId === 'db-payments-in') parsedName = 'Received Payments';
+    if (databaseId === 'db-payments-out') parsedName = 'Outgoing Payments';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
     useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps); // use resolvedId

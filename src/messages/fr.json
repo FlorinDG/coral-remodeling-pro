@@ -326,6 +326,8 @@
         "purchaseCreditNotes": "NOTE DE CRÉDIT - ACHAT",
         "salesCreditNotes": "NOTE DE CRÉDIT - VENTE",
         "salesInvoices": "FACTURES",
+        "paymentsIn": "PAIEMENTS REÇUS",
+        "paymentsOut": "PAIEMENTS SORTANTS",
         "quotations": "QUOTATIONS"
       },
       "pages": {

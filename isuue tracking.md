@@ -119,3 +119,17 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 45. [FIXED] Database footer horizontal scroll: The footer summary row (with column calculations and "New" button) was positioned outside the grid's horizontal scroll container. When the viewport was narrow and columns overflowed horizontally, the footer stayed fixed while the grid scrolled. Fix: added `footerScrollRef` synced via the same `onScrollCapture` → `translateX` pattern used for the header. Footer summary cells now scroll in lockstep with the grid and header columns.
 46. [FIXED] Checkbox column not toggling on first click: DSG intercepts the first mousedown to activate the cell, so the component's `onClick` never fires on that initial click. Fix: added `useEffect` in `CheckboxColumn.tsx` that detects `active` transitioning `false→true` and toggles immediately. Subsequent clicks (when cell is already active) still work via `onClick`.
 47. [FIXED] Font-size inconsistency across database grid columns: DSG native text inputs inherited the browser default (16px) while custom column components (Currency, Date, Title, Formula, etc.) used Tailwind's `text-sm` (14px). Fix: added global `font-size: 0.875rem` on `.database-grid-custom` with `inherit` rules for `.dsg-cell` and `.dsg-input`, normalizing all columns to 14px.
+48. [FIXED] Financials module: Status auto-update logic correctly reflects credited invoices. Credit notes prepopulate with invoice blocks, and bidirectional links exist.
+48. Financials module bug fix
+    48.1 [TODO] - Status of invoices - must include credited. Add logic to Invoice engine to correctly update status of invoices - when an invoice is credited, the status should be updated to reflect the credit. 
+    48.2 [TODO] - Credit memo's need to be added to the invoice as a separate line item. This is to avoid having to go to the credit memo page and then manually apply the credit memo to the invoice.
+    48.3 [TODO] - Add links between the two - original invoice and the credit notes.
+    48.4 [TODO] - The creditnota should find it's place in the appropriate database and not be visible in the invoices tab
+
+49. [DONE] - Sent to accountant is supposed to be just a checkmark
+50. [TODO] - Use Stripe API to generate qr codes and integrate them in the documents
+51. [TODO] - check if developed do if not present - payments databases, incoming and outgoing and connection to projects and invoices
+52. [TODO] - dashboard upgrade - cash flow and graph view
+53. [TODO] - invoice creation engine - quoatations select - should be able to add more than one quoatation to an invoice - the calculation should be done automatically. 
+54. [TODO] - invoice creation engine - should display by "Betreft" instead of the number, when large databases
+

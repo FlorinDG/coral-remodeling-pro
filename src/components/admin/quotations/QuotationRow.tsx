@@ -537,73 +537,55 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         )}
 
                                         {/* Dynamic Subcomponents Rendering Block */}
-                                        {block.children && block.children.length > 0 ? (
-                                            <div className="mt-2 w-full flex flex-col relative pt-2 border-t border-neutral-100 dark:border-neutral-800/50">
+                                        <div className={`mt-2 w-full flex flex-col relative pt-2 border-t border-neutral-100 dark:border-neutral-800/50 transition-all duration-300`}>
+                                            {(block.children && block.children.length > 0) && (
                                                 <div className="text-[10px] font-bold text-orange-600 dark:text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
                                                     <Layers className="w-3 h-3" /> Subcomponents
                                                 </div>
-                                                <Droppable droppableId={block.id} type="block">
-                                                    {(provided, snapshot) => (
-                                                        <div
-                                                            ref={provided.innerRef}
-                                                            {...provided.droppableProps}
-                                                            className={`flex flex-col gap-1 rounded-lg transition-all ${
-                                                                snapshot.isDraggingOver
-                                                                    ? 'border-2 border-dashed border-orange-400/50 dark:border-orange-500/30 bg-orange-500/5 p-2 min-h-[60px]'
-                                                                    : ''
-                                                            }`}
-                                                        >
-                                                            {block.children!.map((child, idx) => child && (
-                                                                <QuotationRow
-                                                                    key={child.id}
-                                                                    block={child}
-                                                                    index={idx}
-                                                                    onUpdate={handleChildUpdate}
-                                                                    onDelete={handleChildDelete}
-                                                                    onDuplicate={handleChildDuplicate}
-                                                                    hasLibraryAccess={hasLibraryAccess}
-                                                                    vatCalcMode={vatCalcMode}
-                                                                    language={language}
-                                                                    isDraggingGlobal={isDraggingGlobal}
-                                                                />
-                                                            ))}
+                                            )}
+                                            <Droppable droppableId={block.id} type="block">
+                                                {(provided, snapshot) => (
+                                                    <div
+                                                        ref={provided.innerRef}
+                                                        {...provided.droppableProps}
+                                                        className={`flex flex-col rounded-lg transition-all group/emptyzone ${
+                                                            snapshot.isDraggingOver
+                                                                ? 'border-2 border-dashed border-orange-400/50 dark:border-orange-500/30 bg-orange-500/5 p-2 min-h-[60px] gap-1'
+                                                                : (!(block.children && block.children.length > 0) ? 'h-3 border border-transparent hover:border-dashed hover:border-orange-400/20 hover:bg-orange-500/[0.02] flex items-center justify-center text-[10px] text-orange-500/40 hover:h-12 cursor-pointer' : 'gap-1')
+                                                        }`}
+                                                    >
+                                                        {!(block.children && block.children.length > 0) && (
+                                                            snapshot.isDraggingOver ? (
+                                                                <span className="animate-pulse flex items-center gap-1.5 font-bold text-xs text-orange-600 dark:text-orange-400">
+                                                                    <Plus className="w-4 h-4 animate-bounce" /> + Drop hier om als Subcomponent in te voegen
+                                                                </span>
+                                                            ) : (
+                                                                <span className="opacity-0 group-hover/emptyzone:opacity-100 transition-opacity duration-200 pointer-events-none">
+                                                                    + Sleep hier om te nesten
+                                                                </span>
+                                                            )
+                                                        )}
+                                                        {block.children && block.children.map((child, idx) => child && (
+                                                            <QuotationRow
+                                                                key={child.id}
+                                                                block={child}
+                                                                index={idx}
+                                                                onUpdate={handleChildUpdate}
+                                                                onDelete={handleChildDelete}
+                                                                onDuplicate={handleChildDuplicate}
+                                                                hasLibraryAccess={hasLibraryAccess}
+                                                                vatCalcMode={vatCalcMode}
+                                                                language={language}
+                                                                isDraggingGlobal={isDraggingGlobal}
+                                                            />
+                                                        ))}
+                                                        <div className={!(block.children && block.children.length > 0) ? 'hidden' : ''}>
                                                             {provided.placeholder}
                                                         </div>
-                                                    )}
-                                                </Droppable>
-                                            </div>
-                                        ) : (
-                                            isDraggingGlobal && (
-                                                <div className="mt-2 w-full pt-1">
-                                                    <Droppable droppableId={block.id} type="block">
-                                                        {(provided, snapshot) => (
-                                                            <div
-                                                                ref={provided.innerRef}
-                                                                {...provided.droppableProps}
-                                                                className={`w-full rounded-lg transition-all duration-300 flex items-center justify-center font-bold text-xs text-orange-600 dark:text-orange-400
-                                                                    ${
-                                                                        snapshot.isDraggingOver
-                                                                            ? 'h-[60px] border-2 border-dashed border-orange-500 bg-orange-500/10 shadow-lg scale-[1.01]'
-                                                                            : 'h-3 border border-dashed border-orange-400/20 bg-orange-500/[0.02] hover:h-12 hover:bg-orange-500/5'
-                                                                    }
-                                                                `}
-                                                            >
-                                                                {snapshot.isDraggingOver ? (
-                                                                    <span className="animate-pulse flex items-center gap-1.5">
-                                                                        <Plus className="w-4 h-4 animate-bounce" /> + Drop hier om als Subcomponent in te voegen
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-[10px] text-orange-500/40">
-                                                                        + Drop hier om als Subcomponent in te voegen
-                                                                    </span>
-                                                                )}
-                                                                <div className="hidden">{provided.placeholder}</div>
-                                                            </div>
-                                                        )}
-                                                    </Droppable>
-                                                </div>
-                                            )
-                                        )}
+                                                    </div>
+                                                )}
+                                            </Droppable>
+                                        </div>
 
                                         {block.type === 'text' && (
                                             <div className="flex flex-col gap-2 w-full pt-2">

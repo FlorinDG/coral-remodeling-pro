@@ -77,7 +77,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         };
 
         // If the target DB has a relation back to this DB, try to auto-link it
-        const targetRelationToCurrent = targetDb?.properties.find(p => 
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
             p.type === 'relation' && p.config?.relationDatabaseId === databaseId
         );
         if (targetRelationToCurrent) {
@@ -111,7 +111,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         }
 
         // 2. Establish backlink if target database has a relation field back to this database
-        const targetRelationToCurrent = targetDb?.properties.find(p => 
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
             p.type === 'relation' && p.config?.relationDatabaseId === databaseId
         );
         if (targetRelationToCurrent) {
@@ -139,7 +139,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         updatePageProperty(databaseId, pageId, prop.id, currentRelations.filter(id => id !== targetPageId));
 
         // 2. Remove pageId from the target page's relations (backlink)
-        const targetRelationToCurrent = targetDb?.properties.find(p => 
+        const targetRelationToCurrent = (targetDb?.properties || []).find(p => 
             p.type === 'relation' && p.config?.relationDatabaseId === databaseId
         );
         if (targetRelationToCurrent) {
@@ -179,7 +179,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const backlinks: { db: Database; page: Page; propName: string }[] = [];
     for (const otherDb of allDatabases) {
         if (otherDb.id === databaseId) continue; // skip self (handled via forward relations)
-        const otherRelProps = otherDb.properties.filter(p => p.type === 'relation');
+        const otherRelProps = (otherDb.properties || []).filter(p => p.type === 'relation');
         for (const relProp of otherRelProps) {
             for (const otherPage of otherDb.pages) {
                 const val = otherPage.properties?.[relProp.id];
@@ -219,7 +219,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             addProperty(databaseId, `Related ${selectedUniversalDb.name}`, 'relation', { relationDatabaseId: selectedUniversalDb.id });
             // Re-fetch the database to get the newly created property
             const freshDb = useDatabaseStore.getState().databases.find(d => d.id === databaseId);
-            relProp = freshDb?.properties.find(p => p.type === 'relation' && p.config?.relationDatabaseId === selectedUniversalDb.id) || undefined;
+            relProp = (freshDb?.properties || []).find(p => p.type === 'relation' && p.config?.relationDatabaseId === selectedUniversalDb.id) || undefined;
             if (!relProp) return;
         }
 
@@ -230,7 +230,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         }
 
         // Backlink from target
-        const targetRelationToCurrent = selectedUniversalDb.properties.find(p =>
+        const targetRelationToCurrent = (selectedUniversalDb.properties || []).find(p =>
             p.type === 'relation' && p.config?.relationDatabaseId === databaseId
         );
         if (targetRelationToCurrent) {

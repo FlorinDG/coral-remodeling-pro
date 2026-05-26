@@ -64,7 +64,7 @@ function RelationValue({ ids }: { ids: string[] }) {
         for (const db of databases) {
             const page = db.pages.find(p => p.id === id);
             if (page) return { 
-                title: String(page.properties['title'] || page.properties['name'] || safeId.slice(0, 8)),
+                title: String(page.properties?.['title'] || page.properties?.['name'] || safeId.slice(0, 8)),
                 dbId: db.id,
                 pageId: page.id
             };
@@ -317,7 +317,7 @@ function PropertyRow({
                         if (targetDb) {
                             const page = targetDb.pages.find(p => p.id === sid);
                             if (page) {
-                                title = String(page.properties['title'] || page.properties['name'] || safeSid.slice(0, 8));
+                                title = String(page.properties?.['title'] || page.properties?.['name'] || safeSid.slice(0, 8));
                             }
                         }
                         return (
@@ -336,7 +336,7 @@ function PropertyRow({
                     <SearchableSelectDropdown
                         options={unselected}
                         getId={(p) => p.id}
-                        getLabel={(p) => String(p.properties['title'] || p.properties['name'] || String(p.id || '').slice(0, 8))}
+                        getLabel={(p) => String(p.properties?.['title'] || p.properties?.['name'] || String(p.id || '').slice(0, 8))}
                         onSelect={(p) => onChange(property.id, [...ids, p.id])}
                         placeholder="+ link record..."
                     />
@@ -588,7 +588,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
         if (result.source.droppableId !== 'editable') return;
         
         // Find index of title if it exists to offset correctly
-        const titleIndex = database.properties.findIndex(p => p.id === 'title');
+        const titleIndex = (database.properties || []).findIndex(p => p.id === 'title');
         const offset = titleIndex !== -1 ? titleIndex + 1 : 0;
         
         useDatabaseStore.getState().updatePropertyOrder(databaseId, result.source.index + offset, result.destination.index + offset);

@@ -553,7 +553,7 @@ export default function JournalModulePage() {
                                             rows={6}
                                             className={`w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none leading-relaxed ${selectedBlockType === 'code' ? 'font-mono text-xs' : 'font-serif'}`}
                                             placeholder={selectedBlockType === 'quote' ? 'Write a quote...' : selectedBlockType === 'code' ? 'Write code...' : 'Write your note or progress update...'}
-                                            required={selectedBlockType !== 'divider'}
+                                            required
                                         />
                                     </div>
                                 )}

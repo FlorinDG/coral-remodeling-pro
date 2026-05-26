@@ -80,6 +80,8 @@ export interface Block {
     costPrice?: number; // Derived: Bruto - Discount
     margePercent?: number;
     verkoopPrice?: number; // Derived: Cost + Marge
+    labourHours?: number; // Infer labour from bestek-linked posts
+    labourRate?: number;
 
     // --- Invoice Engine Fields ---
     unitPrice?: number;   // Unit price excl. VAT (invoice-specific, replaces verkoopPrice column)

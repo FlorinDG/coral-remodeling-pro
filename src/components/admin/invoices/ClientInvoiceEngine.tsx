@@ -23,7 +23,7 @@ import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from './CreateClientModal';
 import CreateProjectModal from './CreateProjectModal';
-
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Bot, Mail, CloudUpload, Send, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
@@ -716,20 +716,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto no-scrollbar">
                         {/* Client Selector */}
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={clientId}
-                                onChange={(e) => handleUpdateProperty('client', e.target.value)}
-                                disabled={!isDraft}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate disabled:opacity-60 disabled:cursor-default"
-                            >
-                                <option value="">Klant selecteren...</option>
-                                {clients.map(client => (
-                                    <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
-                                        {client.firstName} {client.lastName}
-                                    </option>
-                                ))}
-                            </select>
+                            <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                            <div className="flex-1 w-48 pl-6">
+                                <SearchableSelect
+                                    value={clientId}
+                                    onChange={(value) => handleUpdateProperty('client', value)}
+                                    disabled={!isDraft}
+                                    placeholder="Klant selecteren..."
+                                    searchPlaceholder="Zoek klant..."
+                                    emptyLabel="Geen klanten gevonden"
+                                    className="border-none bg-transparent shadow-none ring-0 h-9"
+                                    options={clients.map(client => ({
+                                        value: client.id,
+                                        label: `${client.firstName} ${client.lastName}`
+                                    }))}
+                                />
+                            </div>
                             {clientId && (
                                 <Link
                                     href={`/admin/database/${clientsDbId}/${clientId}`}

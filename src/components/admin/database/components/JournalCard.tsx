@@ -131,13 +131,16 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
 
     // ── Linked journal entries from db-journal-general ──
-    const linkedJournalEntries = useDatabaseStore(state => {
-        const journalDb = state.databases.find(db => db.id === 'db-journal-general');
-        if (!journalDb) return [];
-        return journalDb.pages.filter(p =>
+    const journalDbPages = useDatabaseStore(state =>
+        state.databases.find(db => db.id === 'db-journal-general')?.pages
+    );
+
+    const linkedJournalEntries = React.useMemo(() => {
+        if (!journalDbPages) return [];
+        return journalDbPages.filter(p =>
             p.properties?.['linkedRecordId'] === pageId && p.properties?.['linkedDatabaseId'] === databaseId
         );
-    });
+    }, [journalDbPages, pageId, databaseId]);
 
     const [showQuickEntry, setShowQuickEntry] = useState(false);
     const [quickContent, setQuickContent] = useState('');
@@ -317,7 +320,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                                 const dateStr = formatEntryDate(block);
                                 const author = block.properties?.author as string | undefined;
                                 const isEditing = editingBlockId === block.id;
-                                const isLinked = (block as any).isLinked;
+                                const isLinked = (block as Block & { isLinked?: boolean }).isLinked;
 
                                 return (
                                     <div key={block.id} className={`group px-5 py-2.5 flex gap-3 text-sm hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors ${isLinked ? 'bg-blue-50/30 dark:bg-blue-900/5' : ''}`}>

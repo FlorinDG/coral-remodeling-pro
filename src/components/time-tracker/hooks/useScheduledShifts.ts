@@ -149,12 +149,12 @@ export function useScheduledShifts() {
   const createShift = useCallback(async (data: Partial<ScheduledShift>) => {
     // Normalize snake_case input from legacy components
     const normalized: Record<string, any> = { ...data };
-    if ('user_id' in data && !data.userId) normalized.userId = data.user_id;
-    if ('shift_date' in data && !data.shiftDate) normalized.shiftDate = data.shift_date;
-    if ('shift_start' in data && !data.shiftStart) normalized.shiftStart = data.shift_start;
-    if ('shift_end' in data && !data.shiftEnd) normalized.shiftEnd = data.shift_end;
-    if ('shift_name' in data && !data.shiftName) normalized.shiftName = data.shift_name;
-    if ('project_id' in data && !data.projectId) normalized.projectId = data.project_id;
+    if ('user_id' in data) { if (!data.userId) normalized.userId = data.user_id; delete normalized.user_id; }
+    if ('shift_date' in data) { if (!data.shiftDate) normalized.shiftDate = data.shift_date; delete normalized.shift_date; }
+    if ('shift_start' in data) { if (!data.shiftStart) normalized.shiftStart = data.shift_start; delete normalized.shift_start; }
+    if ('shift_end' in data) { if (!data.shiftEnd) normalized.shiftEnd = data.shift_end; delete normalized.shift_end; }
+    if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
+    if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
@@ -166,14 +166,13 @@ export function useScheduledShifts() {
   }, []);
 
   const updateShift = useCallback(async (id: string, data: Partial<ScheduledShift>) => {
-    // Same normalization
     const normalized: Record<string, any> = { ...data };
-    if ('user_id' in data && !data.userId) normalized.userId = data.user_id;
-    if ('shift_date' in data && !data.shiftDate) normalized.shiftDate = data.shift_date;
-    if ('shift_start' in data && !data.shiftStart) normalized.shiftStart = data.shift_start;
-    if ('shift_end' in data && !data.shiftEnd) normalized.shiftEnd = data.shift_end;
-    if ('shift_name' in data && !data.shiftName) normalized.shiftName = data.shift_name;
-    if ('project_id' in data && !data.projectId) normalized.projectId = data.project_id;
+    if ('user_id' in data) { if (!data.userId) normalized.userId = data.user_id; delete normalized.user_id; }
+    if ('shift_date' in data) { if (!data.shiftDate) normalized.shiftDate = data.shift_date; delete normalized.shift_date; }
+    if ('shift_start' in data) { if (!data.shiftStart) normalized.shiftStart = data.shift_start; delete normalized.shift_start; }
+    if ('shift_end' in data) { if (!data.shiftEnd) normalized.shiftEnd = data.shift_end; delete normalized.shift_end; }
+    if ('shift_name' in data) { if (!data.shiftName) normalized.shiftName = data.shift_name; delete normalized.shift_name; }
+    if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
     try {
       const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);

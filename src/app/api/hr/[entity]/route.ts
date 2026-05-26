@@ -315,7 +315,8 @@ export async function POST(
     }
 
     // Auto-inject userId if not provided (only for entities that have userId)
-    if (!data.userId && !noTenantEntities.includes(entity)) {
+    const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules'];
+    if (!data.userId && entitiesWithUserId.includes(entity)) {
         data.userId = ctx.userId;
     }
 

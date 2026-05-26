@@ -29,7 +29,65 @@ export async function getGlobalDatabases(): Promise<Database[]> {
             orderBy: { createdAt: 'desc' }
         });
 
-        return dbs.map(db => ({
+        // Dynamically fetch users to populate db-hr
+        const HR_EMPLOYEE_ROLES = [
+            'APP_MANAGER', 'TENANT_ADMIN', 'TENANT_FREE', 'TENANT_PRO_OWNER',
+            'TENANT_PRO_EMPLOYEE', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER',
+            'TENANT_ENTERPRISE_EMPLOYEE', 'TENANT_ENTERPRISE_WORKFORCE', 'BOOKKEEPING',
+            'TEAMLEAD', 'PROJECT_MANAGER', 'HR_OFFICER', 'OFFERTES'
+        ];
+        const users = await prisma.user.findMany({
+            where: { tenantId, role: { in: HR_EMPLOYEE_ROLES } },
+            select: { id: true, name: true, email: true, phone: true, role: true, employeeStatus: true, createdAt: true, updatedAt: true }
+        });
+
+        return dbs.map(db => {
+            let mappedPages = db.pages.map(page => ({
+                id: page.id,
+                databaseId: page.databaseId,
+                coverImage: page.coverImage || null,
+                icon: page.icon || null,
+                properties: (page.properties as any) || {},
+                order: page.order ?? 0,
+                blocks: (page.blocks as unknown as Block[]) || [],
+                driveFolderId: page.driveFolderId || undefined,
+                createdBy: page.createdBy,
+                lastEditedBy: page.lastEditedBy,
+                createdAt: page.createdAt.toISOString(),
+                updatedAt: page.updatedAt.toISOString(),
+            }));
+
+            // Auto-sync employees into db-hr as virtual pages
+            if (db.id === 'db-hr') {
+                const virtualPages = users.map(u => ({
+                    id: u.id,
+                    databaseId: db.id,
+                    coverImage: null,
+                    icon: 'user',
+                    properties: {
+                        'title': u.name || 'Untitled',
+                        'prop-email': u.email,
+                        'prop-phone': u.phone || '',
+                        'prop-role': u.role,
+                        'status': u.employeeStatus === 'ON_LEAVE' ? 'opt-leave' : (u.employeeStatus === 'INACTIVE' ? 'opt-inactive' : 'opt-active')
+                    },
+                    order: 0,
+                    blocks: [],
+                    driveFolderId: undefined,
+                    createdBy: 'system',
+                    lastEditedBy: 'system',
+                    createdAt: u.createdAt.toISOString(),
+                    updatedAt: u.updatedAt.toISOString(),
+                }));
+                
+                // Combine manual pages and virtual pages, favoring virtual pages for duplicates
+                const pageMap = new Map();
+                mappedPages.forEach(p => pageMap.set(p.id, p));
+                virtualPages.forEach(p => pageMap.set(p.id, p));
+                mappedPages = Array.from(pageMap.values());
+            }
+
+            return {
             id: db.id,
             name: db.name,
             description: db.description || null,
@@ -44,21 +102,9 @@ export async function getGlobalDatabases(): Promise<Database[]> {
             ownerId: db.ownerId,
             createdAt: db.createdAt.toISOString(),
             updatedAt: db.updatedAt.toISOString(),
-            pages: db.pages.map(page => ({
-                id: page.id,
-                databaseId: page.databaseId,
-                coverImage: page.coverImage || null,
-                icon: page.icon || null,
-                properties: (page.properties as any) || {},
-                order: page.order ?? 0,
-                blocks: (page.blocks as unknown as Block[]) || [],
-                driveFolderId: page.driveFolderId || undefined,
-                createdBy: page.createdBy,
-                lastEditedBy: page.lastEditedBy,
-                createdAt: page.createdAt.toISOString(),
-                updatedAt: page.updatedAt.toISOString(),
-            }))
-        }));
+            pages: mappedPages
+        };
+    });
     } catch (e) {
         console.error("Error fetching global databases:", e);
         return [];

@@ -20,6 +20,7 @@ import SmartVATLookup from './SmartVATLookup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import LinkedRecords from './LinkedRecords';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { Checkbox } from '@/components/common/Checkbox';
 
 const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const databases = useDatabaseStore(state => state.databases);
@@ -491,8 +492,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     // Garbage collection script to prune the mass-cloned Google Drive folders created by the previous infinite loop bug
     const { nodes, deleteNode } = useFileManagerStore();
+    const swept = React.useRef(false);
+    
     React.useEffect(() => {
-        if (!database || !page) return;
+        if (!database || !page || swept.current) return;
+        swept.current = true;
 
         // Start async sweep to respect Google API rate limits
         const startGarbageCollection = async () => {
@@ -523,7 +527,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
         };
 
         startGarbageCollection();
-    }, [database, page, nodes, deleteNode]);
+    }, [database?.id, page?.id, page?.driveFolderId]);
 
     const handleVATImport = (data: { name: string; address: string; vatNumber: string }) => {
         if (data.name) updatePageProperty(databaseId, pageId, 'title', data.name);
@@ -704,11 +708,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                             />
                                                                         ) : prop.type === 'checkbox' ? (
                                                                             <label className="flex items-center gap-2 w-full h-full cursor-pointer group/label">
-                                                                                <input
-                                                                                    type="checkbox"
+                                                                                <Checkbox
                                                                                     checked={(page.properties[prop.id] as boolean) || false}
-                                                                                    onChange={(e) => updatePageProperty(databaseId, pageId, prop.id, e.target.checked)}
-                                                                                    className="w-4 h-4 cursor-pointer accent-orange-500 rounded"
+                                                                                    onChange={(checked) => updatePageProperty(databaseId, pageId, prop.id, checked)}
                                                                                 />
                                                                                 <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 select-none group-hover/label:text-neutral-900 dark:group-hover/label:text-neutral-200 transition-colors">
                                                                                     {page.properties[prop.id] ? "Done" : "Pending"}

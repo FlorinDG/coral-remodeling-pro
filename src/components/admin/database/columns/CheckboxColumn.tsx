@@ -18,29 +18,17 @@ const CheckboxComponent = ({ rowData: fullRow, setRowData, focus, active, column
         setRowData({ ...fullRow, [columnData.propId]: newValue });
     };
 
-    // DSG intercepts the first click to activate the cell, so the component's
-    // onClick never fires on that initial click. We detect activation via the
-    // `active` prop transitioning from false→true and toggle immediately.
-    useEffect(() => {
-        if (active && !prevActive.current) {
-            if (!fullRow?.id) return;
-            const newValue = !value;
-            columnData.onCommit(fullRow.id, newValue);
-            setRowData({ ...fullRow, [columnData.propId]: newValue });
-        }
-        prevActive.current = active;
-    }, [active]); // eslint-disable-line react-hooks/exhaustive-deps
-
     return (
         <div 
             className="w-full h-full flex items-center justify-center outline-none select-none"
-            onClick={(e) => {
+            onPointerDown={(e) => {
                 e.stopPropagation();
                 handleToggle();
             }}
             onKeyDown={(e) => {
                 if (e.key === ' ' || e.key === 'Enter') {
                     e.preventDefault();
+                    e.stopPropagation();
                     handleToggle();
                 }
             }}

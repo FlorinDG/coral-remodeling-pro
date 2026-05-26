@@ -23,6 +23,7 @@ import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
 import FilterToolbar from './components/FilterToolbar';
 import SortToolbar from './components/SortToolbar';
+import { Checkbox } from '@/components/common/Checkbox';
 import { titleColumn } from './columns/TitleColumn';
 import { relationColumn } from './columns/RelationColumn';
 import { rollupColumn } from './columns/RollupColumn';
@@ -385,9 +386,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 }
                 // More custom columns like Number will go here later
 
-                // Select/multi_select use keyColumn for all OTHER types:
+                // Select/multi_select/checkbox use full row access:
                 // they directly call onCommit — no keyColumn needed.
-                if (prop.type === 'select' || prop.type === 'multi_select') {
+                if (prop.type === 'select' || prop.type === 'multi_select' || prop.type === 'checkbox') {
                     return {
                         ...baseColumn,
                         title: GhostHeader,
@@ -427,11 +428,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                         onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             checked={rowData._isSelected || false}
-                            onChange={(e) => {
-                                const isChecked = e.target.checked;
+                            onChange={(checked) => {
+                                const isChecked = checked;
                                 setSelectedRowIds(prevSet => {
                                     const next = new Set(prevSet);
                                     if (isChecked) next.add(rowData.id);
@@ -1080,14 +1080,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                                 {/* Select All Checkbox header exactly 40px width */}
                                 <div style={{ width: '40px', minWidth: '40px' }} className="h-full flex items-center justify-center border-r border-[rgba(0,0,0,0.1)] dark:border-white/10">
-                                    <input
-                                        type="checkbox"
+                                    <Checkbox
                                         checked={filteredPages.length > 0 && selectedRowIds.size === filteredPages.length}
-                                        onChange={(e) => {
-                                            if (e.target.checked) setSelectedRowIds(new Set(filteredPages.map(p => p.id)));
+                                        onChange={(checked) => {
+                                            if (checked) setSelectedRowIds(new Set(filteredPages.map(p => p.id)));
                                             else setSelectedRowIds(new Set());
                                         }}
-                                        className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
                                     />
                                 </div>
 

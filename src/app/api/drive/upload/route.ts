@@ -1,12 +1,25 @@
 import { NextResponse } from 'next/server';
 import { uploadFile, findOrCreateFolder } from '@/lib/google-drive';
 
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+
 export async function POST(req: Request) {
     try {
         const formData = await req.formData();
         const file = formData.get('file') as File;
-        const parentId = formData.get('parentId') as string;
+        let parentId = formData.get('parentId') as string;
         const targetSubfolder = formData.get('targetSubfolder') as string;
+
+        if (!parentId) {
+            const session = await auth();
+            if (session?.user?.tenantId) {
+                const tenant = await prisma.tenant.findUnique({ where: { id: session.user.tenantId } });
+                if (tenant?.driveFolderId) {
+                    parentId = tenant.driveFolderId;
+                }
+            }
+        }
 
         if (!file || !parentId) {
             return NextResponse.json({ error: 'Missing file or parent drive ID' }, { status: 400 });

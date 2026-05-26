@@ -160,49 +160,20 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         return { total, done, busy, todo, progress };
     }, [projectTasks]);
 
-    if (!database || !page) return null;
-
+    // ── File Manager (must be above early return — rules of hooks) ────────
     const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
-    const boundDriveId = page.driveFolderId || (page.properties['driveFolderId'] as string) || undefined;
-
-    React.useEffect(() => {
-        const createDriveFolder = async () => {
-            if (!boundDriveId && page.properties['title']) {
-                const folderName = String(page.properties['title'] || page.properties['name'] || `Project ${pageId}`);
-                const driveId = await initializeContextFolder(folderName, 'project', page.id);
-                if (driveId) {
-                    updatePageDriveId(databaseId, page.id, driveId);
-                }
-            }
-        };
-        createDriveFolder();
-    }, [page.id, boundDriveId, databaseId, initializeContextFolder, updatePageDriveId]);
-
-    // ── Extract project data ──────────────────────────────────────────────
-    const execStatus = String(page.properties['prop-execution-status'] || '');
-    const finStatus = String(page.properties['prop-financial-status'] || '');
-    const budget = Number(page.properties['prop-budget']) || 0;
-    const location = String(page.properties['prop-location'] || '');
-    const plannedStart = String(page.properties['prop-start-date'] || '');
-    const plannedEnd = String(page.properties['prop-end-date'] || '');
-    const actualStart = String(page.properties['prop-actual-start'] || '');
-    const actualEnd = String(page.properties['prop-actual-end'] || '');
-
-    // Project-specific billing rule
-    const billingRule = String(page.properties['prop-billing-rule'] || 'opt-fixed');
 
     // ── Quotation Data Resolution ─────────────────────────────────────────
     const quotationsDbId = resolveDbId('db-quotations');
     const linkedQuoteIds = useMemo(() => {
-        const raw = page.properties['prop-project-quote'];
+        const raw = page?.properties?.['prop-project-quote'];
         if (Array.isArray(raw)) return raw as string[];
         if (typeof raw === 'string' && raw) return [raw];
         return [];
-    }, [page.properties]);
+    }, [page?.properties]);
 
     const linkedQuotation = useMemo(() => {
         if (linkedQuoteIds.length === 0) return null;
-        // Search across all quotation databases (tenant-prefixed)
         return allDatabases
             .filter(d => d.id === quotationsDbId || d.id.startsWith('db-quotations'))
             .flatMap(d => d.pages)
@@ -228,10 +199,9 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                     materialCost += qty * bruto;
                     lineCount++;
 
-                    // Infer labour from bestek-linked posts
                     if (block.labourHours) {
                         const lh = qty * block.labourHours;
-                        const lr = block.labourRate || 35; // Default general rate
+                        const lr = block.labourRate || 35;
                         labourHours += lh;
                         labourCostWeighted += lh * lr;
                     }
@@ -287,13 +257,12 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
 
     const totalActualCost = actualLaborCost;
 
-    // ── Vorderingenstaten data (needed for financial computations below) ──
+    // ── Vorderingenstaten data ──────────────────────────────────────────
     const vorderingenstaten = useMemo(() => {
         if (!page?.properties) return [];
         return (page.properties['vorderingenstaten'] as any[]) || [];
     }, [page?.properties]);
 
-    // ── Vorderingenstaten totals ──────────────────────────────────────────
     const invoicedTotal = useMemo(() => {
         return vorderingenstaten
             .filter((vs: any) => vs.status === 'invoiced')
@@ -306,7 +275,64 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
             .reduce((sum: number, vs: any) => sum + (Number(vs.totalExVat) || 0), 0);
     }, [vorderingenstaten]);
 
-    // Effective budget: use prop-budget, or fall back to quotation total
+    // Timeline progress calculation
+    const plannedStartRaw = String(page?.properties?.['prop-start-date'] || '');
+    const plannedEndRaw = String(page?.properties?.['prop-end-date'] || '');
+
+    const timelineProgress = useMemo(() => {
+        if (!plannedStartRaw || !plannedEndRaw) return null;
+        const start = new Date(plannedStartRaw).getTime();
+        const end = new Date(plannedEndRaw).getTime();
+        const now = Date.now();
+        if (isNaN(start) || isNaN(end) || end <= start) return null;
+        const total = end - start;
+        const elapsed = now - start;
+        return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
+    }, [plannedStartRaw, plannedEndRaw]);
+
+    const daysRemaining = useMemo(() => {
+        if (!plannedEndRaw) return null;
+        const end = new Date(plannedEndRaw).getTime();
+        if (isNaN(end)) return null;
+        const diff = Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
+        return diff;
+    }, [plannedEndRaw]);
+
+    // ── Drive folder auto-creation ───────────────────────────────────────
+    const boundDriveId = page?.driveFolderId || (page?.properties?.['driveFolderId'] as string) || undefined;
+
+    React.useEffect(() => {
+        if (!page || !page.properties) return;
+        const createDriveFolder = async () => {
+            try {
+                if (!boundDriveId && page.properties?.['title']) {
+                    const folderName = String(page.properties['title'] || page.properties['name'] || `Project ${pageId}`);
+                    const driveId = await initializeContextFolder(folderName, 'project', page.id);
+                    if (driveId) {
+                        updatePageDriveId(databaseId, page.id, driveId);
+                    }
+                }
+            } catch (err) {
+                console.warn('[ProjectDetailView] Drive folder init error (non-fatal):', err);
+            }
+        };
+        createDriveFolder();
+    }, [page?.id, boundDriveId, databaseId, initializeContextFolder, updatePageDriveId]);
+
+    // ══ EARLY RETURN — all hooks are above this line ═══════════════════════
+    if (!database || !page) return null;
+
+    // ── Extract project data (non-hook, safe after guard) ─────────────────
+    const execStatus = String(page.properties['prop-execution-status'] || '');
+    const finStatus = String(page.properties['prop-financial-status'] || '');
+    const budget = Number(page.properties['prop-budget']) || 0;
+    const location = String(page.properties['prop-location'] || '');
+    const plannedStart = plannedStartRaw;
+    const plannedEnd = plannedEndRaw;
+    const actualStart = String(page.properties['prop-actual-start'] || '');
+    const actualEnd = String(page.properties['prop-actual-end'] || '');
+    const billingRule = String(page.properties['prop-billing-rule'] || 'opt-fixed');
+
     const effectiveBudget = budget > 0 ? budget : quotationFinancials.total;
     const budgetIsFromQuote = budget === 0 && quotationFinancials.total > 0;
     const remainingToInvoice = quotationFinancials.total > 0
@@ -318,27 +344,6 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
 
     const statusInfo = EXEC_STATUS_MAP[execStatus] || EXEC_STATUS_MAP['opt-to-do'];
     const finInfo = FINANCIAL_STATUS_MAP[finStatus] || FINANCIAL_STATUS_MAP['opt-quote'];
-
-    // Timeline progress calculation
-    const timelineProgress = useMemo(() => {
-        if (!plannedStart || !plannedEnd) return null;
-        const start = new Date(plannedStart).getTime();
-        const end = new Date(plannedEnd).getTime();
-        const now = Date.now();
-        if (isNaN(start) || isNaN(end) || end <= start) return null;
-        const total = end - start;
-        const elapsed = now - start;
-        return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
-    }, [plannedStart, plannedEnd]);
-
-    // Days remaining
-    const daysRemaining = useMemo(() => {
-        if (!plannedEnd) return null;
-        const end = new Date(plannedEnd).getTime();
-        if (isNaN(end)) return null;
-        const diff = Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24));
-        return diff;
-    }, [plannedEnd]);
 
     // Add a new task
     const handleAddTask = () => {

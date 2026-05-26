@@ -60,15 +60,16 @@ function RelationValue({ ids }: { ids: string[] }) {
     const databases = useDatabaseStore(state => state.databases);
 
     const resolved = ids.map(id => {
+        const safeId = String(id || '');
         for (const db of databases) {
             const page = db.pages.find(p => p.id === id);
             if (page) return { 
-                title: String(page.properties['title'] || page.properties['name'] || id.slice(0, 8)),
+                title: String(page.properties['title'] || page.properties['name'] || safeId.slice(0, 8)),
                 dbId: db.id,
                 pageId: page.id
             };
         }
-        return { title: id.slice(0, 8) + '…', dbId: null, pageId: id };
+        return { title: safeId.slice(0, 8) + '…', dbId: null, pageId: id };
     });
 
     if (!resolved.length) return <span className="text-neutral-400 text-xs italic">—</span>;
@@ -301,7 +302,7 @@ function PropertyRow({
             </div>
         );
     } else if (property.type === 'relation') {
-    const ids: string[] = Array.isArray(value) ? (value as any[]).map(v => String(v ?? '')) : [];
+        const ids: string[] = Array.isArray(value) ? (value as unknown[]).map(v => String(v ?? '')) : [];
         const relationDatabaseId = property.config?.relationDatabaseId;
         const targetDb = useDatabaseStore.getState().databases.find(db => db.id === relationDatabaseId);
         const unselected = targetDb 
@@ -316,7 +317,7 @@ function PropertyRow({
                         if (targetDb) {
                             const page = targetDb.pages.find(p => p.id === sid);
                             if (page) {
-                                title = String(page.properties['title'] || page.properties['name'] || sid.slice(0, 8));
+                                title = String(page.properties['title'] || page.properties['name'] || safeSid.slice(0, 8));
                             }
                         }
                         return (
@@ -335,7 +336,7 @@ function PropertyRow({
                     <SearchableSelectDropdown
                         options={unselected}
                         getId={(p) => p.id}
-                        getLabel={(p) => String(p.properties['title'] || p.properties['name'] || p.id.slice(0, 8))}
+                        getLabel={(p) => String(p.properties['title'] || p.properties['name'] || String(p.id || '').slice(0, 8))}
                         onSelect={(p) => onChange(property.id, [...ids, p.id])}
                         placeholder="+ link record..."
                     />

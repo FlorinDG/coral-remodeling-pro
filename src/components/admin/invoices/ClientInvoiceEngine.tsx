@@ -19,6 +19,7 @@ import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
+import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from './CreateClientModal';
@@ -1110,11 +1111,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
                 {showProperties && (
                     <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
-                        <DbPropertiesPanel
-                            databaseId={invoicesDbId}
-                            pageId={id}
-                            title="Record Properties"
-                        />
+                        <ErrorBoundary componentName="DbPropertiesPanel">
+                            <DbPropertiesPanel
+                                databaseId={invoicesDbId}
+                                pageId={id}
+                                title="Record Properties"
+                            />
+                        </ErrorBoundary>
                     </aside>
                 )}
             </div>

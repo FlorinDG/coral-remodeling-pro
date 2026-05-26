@@ -173,11 +173,13 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 
                 {/* Left: Sidebar (Persistent) */}
                 <div className="w-full lg:w-[400px] flex-shrink-0 border-b lg:border-b-0 lg:border-r border-neutral-200 dark:border-white/10 h-[40vh] lg:h-full overflow-hidden bg-white dark:bg-neutral-950">
-                    <DbPropertiesPanel
-                        databaseId={resolvedDbId}
-                        pageId={pageId}
-                        title="All Properties"
-                    />
+                    <ErrorBoundary componentName="DbPropertiesPanel">
+                        <DbPropertiesPanel
+                            databaseId={resolvedDbId}
+                            pageId={pageId}
+                            title="All Properties"
+                        />
+                    </ErrorBoundary>
                 </div>
 
                 {/* Right: Dashboard Content */}

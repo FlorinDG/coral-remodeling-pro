@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
+import { useSession } from 'next-auth/react';
 import { Property } from './types';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 
@@ -43,6 +44,7 @@ interface DatabaseCloneProps {
 export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, hideFooterNew, defaultFilter }: DatabaseCloneProps) {
   // Resolve the base locked DB name to the tenant-scoped actual ID
   const { activeModules, resolveDbId } = useTenant();
+  const { data: session } = useSession();
   const resolvedId = resolveDbId(databaseId);
   const database = useDatabaseStore(state => state.getDatabase(resolvedId));
   const searchParams = useSearchParams();
@@ -55,7 +57,9 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   const isImmutableContactDB = databaseId === 'db-clients' || databaseId === 'db-suppliers';
   const isLockedSchemaDB = isSystemDatabase(databaseId);
-  const isUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
+  const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
+  const isSuperAdmin = session?.user?.role === 'SUPERADMIN' || session?.user?.role === 'PLATFORM_ADMIN';
+  const isUngated = isStoreUngated || isSuperAdmin;
 
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
@@ -470,49 +474,23 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     ],
   }), [resolveDbId]);
 
-  // ── Schema Enforcement: Always ensure locked databases have the correct hardcoded properties ──
+  // ── Schema Enforcement: Ensure locked databases have the correct hardcoded properties ──
   useEffect(() => {
     if (!hydrated || !database) return;
     const expectedProps = DEFAULT_PROPERTIES_MAP[databaseId]; // lookup by base ID
     if (!expectedProps) return;
     if (!isLockedSchemaDB) return;
 
-    const schemasMatch = expectedProps.length === database.properties.length &&
-      expectedProps.every((expected: Property) => {
-        const current = database.properties.find(p => p.id === expected.id);
-        if (!current) return false;
-        if (current.type !== expected.type) return false;
-        if (current.name !== expected.name) return false;
-        if (JSON.stringify(current.config || {}) !== JSON.stringify(expected.config || {})) return false;
-        return true;
-      });
+    // We only enforce that canonical properties EXIST. 
+    // We NEVER overwrite their name, type, or config, and we NEVER delete custom properties.
+    // This allows Superadmins to safely customize system schemas without regular users' browsers reverting them.
+    const currentIds = new Set(database.properties.map(p => p.id));
+    const missingProps = expectedProps.filter((expected: Property) => !currentIds.has(expected.id));
 
-    if (!schemasMatch) {
-      // When ungated: only ensure canonical properties EXIST; preserve any custom ones
-      if (isUngated) {
-        const currentIds = new Set(database.properties.map(p => p.id));
-        const missingProps = expectedProps.filter((expected: Property) => !currentIds.has(expected.id));
-        const propsToFix = expectedProps.filter((expected: Property) => {
-          const current = database.properties.find(p => p.id === expected.id);
-          if (!current) return false;
-          return current.type !== expected.type || current.name !== expected.name ||
-            JSON.stringify(current.config || {}) !== JSON.stringify(expected.config || {});
-        });
-
-        if (missingProps.length > 0 || propsToFix.length > 0) {
-          console.log(`[Schema Enforcement] Ungated ${resolvedId}: adding ${missingProps.length} missing, fixing ${propsToFix.length} canonical properties (preserving custom)`);
-          const updatedProperties = database.properties.map(p => {
-            const canonical = expectedProps.find((ep: Property) => ep.id === p.id);
-            return canonical ? canonical : p; // Fix canonical, keep custom
-          });
-          // Add missing canonical properties
-          missingProps.forEach((mp: Property) => updatedProperties.push(mp));
-          useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
-        }
-      } else {
-        console.log(`[Schema Enforcement] Resetting ${resolvedId} properties to canonical schema`);
-        useDatabaseStore.getState().updateDatabase(resolvedId, { properties: expectedProps });
-      }
+    if (missingProps.length > 0) {
+      console.log(`[Schema Enforcement] ${resolvedId}: adding ${missingProps.length} missing canonical properties`);
+      const updatedProperties = [...database.properties, ...missingProps];
+      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
     }
 
     if (databaseId === 'db-expenses') {

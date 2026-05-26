@@ -55,7 +55,8 @@ export default function DatabaseConfigurator() {
 
     // System database schemas are immutable for all users (core platform functionality).
     const isSchemaLocked = isSystemDatabase(databaseId);
-    const isUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
+    const isStoreUngated = useDatabaseStore(state => state.isSchemaUngated(databaseId));
+    const isUngated = isStoreUngated || isSuperadmin;
 
     // In ungated mode: system properties are those originally defined in the canonical schema.
     // We detect them by checking if they appear before any custom property was added.
@@ -121,19 +122,12 @@ export default function DatabaseConfigurator() {
                         </div>
                     )}
 
-                    {/* Superadmin ungating toggle */}
+                    {/* Superadmin badge */}
                     {isSchemaLocked && isSuperadmin && (
-                        <button
-                            onClick={() => toggleSchemaUngating(databaseId)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                                isUngated
-                                    ? 'bg-emerald-500 border-emerald-600 text-white hover:bg-emerald-600'
-                                    : 'bg-neutral-100 dark:bg-white/5 border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-300 hover:border-orange-400'
-                            }`}
-                        >
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-purple-500 border-purple-600 text-white text-xs font-bold shadow-sm">
                             <Settings2 className="w-3.5 h-3.5" />
-                            {isUngated ? 'Schema Ungated' : 'Ungate Schema'}
-                        </button>
+                            Superadmin Schema Edit
+                        </div>
                     )}
                 </div>
                 
@@ -179,7 +173,8 @@ export default function DatabaseConfigurator() {
                                         {database.properties.map((prop, index) => {
                                             const isTitle = prop.id === 'title';
                                             const isCanonical = canonicalPropertyIds.has(prop.id);
-                                            const isLocked = isSchemaLocked && !isUngated ? true : (isUngated && isCanonical);
+                                            // Superadmins can fully edit any property. Otherwise, canonical properties remain locked even when ungated.
+                                            const isLocked = isSuperadmin ? false : (isSchemaLocked && !isUngated ? true : (isUngated && isCanonical));
                                             const propType = PROPERTY_TYPES.find(t => t.id === prop.type) || PROPERTY_TYPES[0];
                                             const Icon = propType.icon;
 

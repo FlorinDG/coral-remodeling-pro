@@ -135,7 +135,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         const journalDb = state.databases.find(db => db.id === 'db-journal-general');
         if (!journalDb) return [];
         return journalDb.pages.filter(p =>
-            p.properties['linkedRecordId'] === pageId && p.properties['linkedDatabaseId'] === databaseId
+            p.properties?.['linkedRecordId'] === pageId && p.properties?.['linkedDatabaseId'] === databaseId
         );
     });
 

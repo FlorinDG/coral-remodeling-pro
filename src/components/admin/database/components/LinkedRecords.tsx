@@ -37,7 +37,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     const database = allDatabases.find((d: Database) => d.id === databaseId);
     const page = database?.pages.find((p: Page) => p.id === pageId);
 
-    const relationProps = database ? database.properties.filter((p: Property) => p.type === 'relation') : [];
+    const relationProps = database ? (database.properties || []).filter((p: Property) => p.type === 'relation') : [];
 
     // Fallback selection to the first relation property if selectedPropId is null/unset
     const effectiveSelectedPropId = selectedPropId || relationProps[0]?.id || null;

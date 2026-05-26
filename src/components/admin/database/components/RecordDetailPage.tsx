@@ -66,8 +66,8 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     React.useEffect(() => {
         if (!page) return;
         const createDriveFolder = async () => {
-            if (!boundDriveId && page.properties['title']) {
-                const folderName = String(page.properties['title'] || page.properties['name'] || `Record ${pageId}`);
+            if (!boundDriveId && page.properties?.['title']) {
+                const folderName = String(page.properties?.['title'] || page.properties?.['name'] || `Record ${pageId}`);
                 const driveId = await initializeContextFolder(folderName, fileContextType, page.id);
                 if (driveId) {
                     updatePageDriveId(resolvedDbId, page.id, driveId);
@@ -122,7 +122,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         );
     }
 
-    const title = String(page.properties['title'] || page.properties['name'] || '');
+    const title = String(page.properties?.['title'] || page.properties?.['name'] || '');
     const isProjectDb = baseDbId === 'db-1';
 
     let displayName = database.name;

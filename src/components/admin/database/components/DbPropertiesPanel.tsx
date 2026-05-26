@@ -564,7 +564,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
         );
     }
 
-    const properties = database.properties.filter(p => !skipIds.includes(p.id));
+    const properties = (database.properties || []).filter(p => !skipIds.includes(p.id));
 
     // Partition: standard editable vs computed
     const editable  = properties.filter(p => !READ_ONLY_TYPES.has(p.type));
@@ -610,7 +610,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         props={editable} 
                         collapsed={collapsed} 
                         onToggle={toggle} 
-                        pageProperties={page.properties} 
+                        pageProperties={page.properties || {}} 
                         onChange={handleChange} 
                     />
                     <Section 
@@ -619,7 +619,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         props={computed} 
                         collapsed={collapsed} 
                         onToggle={toggle} 
-                        pageProperties={page.properties} 
+                        pageProperties={page.properties || {}} 
                         onChange={handleChange} 
                     />
                 </DragDropContext>

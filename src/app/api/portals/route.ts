@@ -9,7 +9,27 @@ export async function POST(request: Request) {
         const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
-        const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password } = body;
+        const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password, createProject, linkedProjectId: providedLinkedProjectId } = body;
+
+        let finalLinkedProjectId = providedLinkedProjectId || null;
+        const finalLinkedDatabaseId = 'db-1';
+
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { lockedDbIds: true } });
+        const locked = (tenant?.lockedDbIds as Record<string, string>) || {};
+        const projectDbId = locked['projects'] || 'db-1';
+
+        if (createProject && projectTitle && !finalLinkedProjectId) {
+            const globalPage = await prisma.globalPage.create({
+                data: {
+                    databaseId: projectDbId,
+                    properties: { title: projectTitle, clientName, status: 'New', budget: budget || 0 },
+                    createdBy: session?.user?.id || 'system',
+                    lastEditedBy: session?.user?.id || 'system',
+                    assignedTo: []
+                }
+            });
+            finalLinkedProjectId = globalPage.id;
+        }
 
         const slug = nanoid(10);
         let hashedPassword = null;
@@ -28,7 +48,9 @@ export async function POST(request: Request) {
                 slug,
                 budget: budget || 0,
                 paidAmount: paidAmount || 0,
-                password: hashedPassword
+                password: hashedPassword,
+                linkedProjectId: finalLinkedProjectId,
+                linkedDatabaseId: projectDbId
             },
         });
 
@@ -56,6 +78,8 @@ export async function PATCH(request: Request) {
         if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
         const updatedData: any = { budget, paidAmount, status };
+        if (body.linkedProjectId !== undefined) updatedData.linkedProjectId = body.linkedProjectId;
+        if (body.linkedDatabaseId !== undefined) updatedData.linkedDatabaseId = body.linkedDatabaseId;
 
         if (password) {
             const bcrypt = await import('bcryptjs');

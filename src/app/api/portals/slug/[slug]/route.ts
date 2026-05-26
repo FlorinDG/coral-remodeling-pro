@@ -19,11 +19,23 @@ export async function GET(request: Request, context: any) {
 
         if (!portal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+        let linkedProjectData = null;
+        if (portal.linkedProjectId) {
+            const globalPage = await prisma.globalPage.findUnique({
+                where: { id: portal.linkedProjectId },
+                select: { properties: true } // only exposing safe properties to client
+            });
+            if (globalPage) {
+                linkedProjectData = globalPage.properties;
+            }
+        }
+
         // Don't leak the hashed password, just a flag
         const { password, ...safePortal } = portal;
         return NextResponse.json({
             ...safePortal,
-            hasPassword: !!password
+            hasPassword: !!password,
+            linkedProjectData
         });
     } catch (error) {
         return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });

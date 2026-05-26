@@ -83,30 +83,44 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                                 {t('welcome')} {portal.projectTitle || t('yourProject')}. {t('tracking')}
                             </p>
                         </div>
-                        {(portal.budget ?? 0) > 0 && (
-                            <div className="w-full md:w-80 glass-morphism p-6 rounded-[2rem] border border-neutral-200 dark:border-white/5 shadow-xl shadow-[#d75d00]/5 bg-white dark:bg-black/40">
-                                <div className="flex justify-between items-end mb-3">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Progress</span>
-                                    <span className="text-sm font-black text-[#d75d00]">{Math.round(((portal.paidAmount ?? 0) / (portal.budget ?? 1)) * 100)}%</span>
-                                </div>
-                                <div className="h-2.5 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-[#d75d00] transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(211,84,0,0.5)]"
-                                        style={{ width: `${Math.min(100, ((portal.paidAmount ?? 0) / (portal.budget ?? 1)) * 100)}%` }}
-                                    />
-                                </div>
-                                <div className="flex justify-between mt-3 px-1">
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Received</span>
-                                        <span className="text-sm font-bold text-neutral-900 dark:text-white">€{(portal.paidAmount ?? 0).toLocaleString()}</span>
-                                    </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Total Budget</span>
-                                        <span className="text-sm font-bold text-neutral-500">€{(portal.budget ?? 0).toLocaleString()}</span>
+                        <div className="flex items-center gap-4 flex-wrap justify-end">
+                            {portal.linkedProjectData && (
+                                <div className="w-full md:w-64 glass-morphism p-6 rounded-[2rem] border border-[#d75d00]/20 bg-[#d75d00]/5 dark:bg-[#d75d00]/10 shadow-xl">
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d75d00] mb-2 block">Live Project Status</span>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">
+                                            {portal.linkedProjectData.status || portal.linkedProjectData.Status || 'Active'}
+                                        </span>
+                                        <span className="text-xs font-bold text-neutral-500 dark:text-neutral-400">Linked to internal DB</span>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+
+                            {(portal.budget ?? 0) > 0 && (
+                                <div className="w-full md:w-80 glass-morphism p-6 rounded-[2rem] border border-neutral-200 dark:border-white/5 shadow-xl shadow-[#d75d00]/5 bg-white dark:bg-black/40">
+                                    <div className="flex justify-between items-end mb-3">
+                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Payment Progress</span>
+                                        <span className="text-sm font-black text-[#d75d00]">{Math.round(((portal.paidAmount ?? 0) / (portal.budget ?? 1)) * 100)}%</span>
+                                    </div>
+                                    <div className="h-2.5 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-[#d75d00] transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(211,84,0,0.5)]"
+                                            style={{ width: `${Math.min(100, ((portal.paidAmount ?? 0) / (portal.budget ?? 1)) * 100)}%` }}
+                                        />
+                                    </div>
+                                    <div className="flex justify-between mt-3 px-1">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Received</span>
+                                            <span className="text-sm font-bold text-neutral-900 dark:text-white">€{(portal.paidAmount ?? 0).toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">Total Budget</span>
+                                            <span className="text-sm font-bold text-neutral-500">€{(portal.budget ?? 0).toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

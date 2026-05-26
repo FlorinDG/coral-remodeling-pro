@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useTranslations } from 'next-intl';
 
@@ -13,13 +13,28 @@ interface CreatePortalModalProps {
 export default function CreatePortalModal({ isOpen, onClose, onSuccess }: CreatePortalModalProps) {
     const t = useTranslations('Admin.portals');
     const [loading, setLoading] = useState(false);
+    const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
+    
+    const [createProject, setCreateProject] = useState(false);
     const [formData, setFormData] = useState({
         clientName: '',
         clientEmail: '',
-        projectTitle: '',
+        projectTitle: '', // For new project
+        linkedProjectId: '', // For existing project
         budget: '',
         paidAmount: ''
     });
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch('/api/hr/erp-projects')
+                .then(r => r.json())
+                .then(data => {
+                    if (Array.isArray(data)) setProjects(data);
+                })
+                .catch(e => console.error(e));
+        }
+    }, [isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -30,6 +45,7 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     ...formData,
+                    createProject,
                     budget: formData.budget ? parseFloat(formData.budget) : 0,
                     paidAmount: formData.paidAmount ? parseFloat(formData.paidAmount) : 0
                 })
@@ -68,15 +84,44 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Project Details</label>
-                    <input
-                        type="text"
-                        placeholder="Project Title (e.g. Bathroom Renovation)"
-                        value={formData.projectTitle}
-                        onChange={e => setFormData({ ...formData, projectTitle: e.target.value })}
-                        className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"
-                    />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between px-1">
+                        <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Project Linking</label>
+                        <button 
+                            type="button" 
+                            onClick={() => setCreateProject(!createProject)}
+                            className="text-xs text-[var(--brand-color,#d35400)] font-semibold"
+                        >
+                            {createProject ? 'Attach Existing Project' : '+ Create New Project'}
+                        </button>
+                    </div>
+
+                    {createProject ? (
+                        <input
+                            type="text"
+                            placeholder="New Project Title (e.g. Bathroom Renovation)"
+                            required
+                            value={formData.projectTitle}
+                            onChange={e => setFormData({ ...formData, projectTitle: e.target.value, linkedProjectId: '' })}
+                            className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"
+                        />
+                    ) : (
+                        <select
+                            required
+                            value={formData.linkedProjectId}
+                            onChange={e => {
+                                const selected = projects.find(p => p.id === e.target.value);
+                                setFormData({ ...formData, linkedProjectId: e.target.value, projectTitle: selected ? selected.name : '' });
+                            }}
+                            className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all appearance-none"
+                        >
+                            <option value="" disabled>Select an existing project...</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 mt-2">
                         <input
                             type="number"
                             step="0.01"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from 'react';
-import { Settings, Save, Lock, Euro } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Settings, Save, Lock, Euro, Link2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 
 interface PortalSettingsProps {
@@ -10,17 +10,29 @@ interface PortalSettingsProps {
         budget: number;
         paidAmount: number;
         status: string;
+        linkedProjectId?: string | null;
     };
 }
 
 export default function PortalSettings({ portal }: PortalSettingsProps) {
     const [loading, setLoading] = useState(false);
+    const [projects, setProjects] = useState<{id: string, name: string}[]>([]);
     const [formData, setFormData] = useState({
         budget: portal.budget.toString(),
         paidAmount: portal.paidAmount.toString(),
         password: '',
-        status: portal.status
+        status: portal.status,
+        linkedProjectId: portal.linkedProjectId || ''
     });
+
+    useEffect(() => {
+        fetch('/api/hr/erp-projects')
+            .then(r => r.json())
+            .then(data => {
+                if (Array.isArray(data)) setProjects(data);
+            })
+            .catch(e => console.error(e));
+    }, []);
 
     const handleSave = async () => {
         setLoading(true);
@@ -33,7 +45,8 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
                     budget: parseFloat(formData.budget),
                     paidAmount: parseFloat(formData.paidAmount),
                     status: formData.status,
-                    password: formData.password || undefined
+                    password: formData.password || undefined,
+                    linkedProjectId: formData.linkedProjectId || null
                 })
             });
             if (!res.ok) throw new Error();
@@ -55,6 +68,22 @@ export default function PortalSettings({ portal }: PortalSettingsProps) {
             </div>
 
             <div className="space-y-4">
+                <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1 flex items-center gap-1">
+                        <Link2 className="w-3 h-3" /> Linked Project
+                    </label>
+                    <select
+                        value={formData.linkedProjectId}
+                        onChange={e => setFormData({ ...formData, linkedProjectId: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-colors appearance-none text-white"
+                    >
+                        <option value="">No Project Linked</option>
+                        {projects.map(p => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest px-1 flex items-center gap-1">

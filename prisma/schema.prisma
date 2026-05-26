@@ -204,6 +204,8 @@ model ClientPortal {
   projectTitle String?
   budget       Float?          @default(0)
   paidAmount   Float?          @default(0)
+  linkedProjectId String?
+  linkedDatabaseId String?       @default("db-1")
   serviceId    String?
   service      CMS_Service?    @relation(fields: [serviceId], references: [id])
   documents    Document[]

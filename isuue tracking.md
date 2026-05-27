@@ -166,3 +166,7 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 #### Recommended Priority (what to fix next)
 
 *(All active backlog items have been successfully built and verified! ready for next requirements)*
+
+77. Financials
+    77.1 [FIXED] Exported to accountant property should be a checkbox (already implemented — `accountantExportedAt` uses premium CheckboxColumn with toggle, record locking, and auto-stamp on accountant CSV export).
+

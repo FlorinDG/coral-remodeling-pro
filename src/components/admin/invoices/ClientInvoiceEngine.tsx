@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
@@ -283,6 +284,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const isLocked = Boolean(invoice.properties?.['isLocked'] || false);
     const snapshotData = (invoice.properties?.['snapshotData'] as any) || null;
     const isCreditNote = String(invoice.properties?.['docType']) === 'opt-credit-note' || String(invoiceTitle).startsWith('CN-');
+    const isProforma = String(invoice.properties?.['docType']) === 'opt-proforma';
     
     // UI Link to Parent Invoice
     const parentInvoiceId = invoice.properties?.['parentInvoiceId'] as string | undefined;
@@ -546,6 +548,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
+                    docType={String(invoice.properties?.['docType'] || '')}
                 />
             );
 
@@ -609,6 +612,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
+                    docType={String(invoice.properties?.['docType'] || '')}
                 />
             );
 
@@ -1128,7 +1132,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     <div className="flex items-center gap-3 max-w-[1400px] mx-auto">
                         {/* Left group: document actions */}
                         <div className="flex items-center gap-2 flex-wrap">
-                            {!isCreditNote && (
+                            {(!isCreditNote && !isProforma) && (
                                 <button
                                     onClick={handleCreateCreditNote}
                                     className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border hover:opacity-90 active:scale-[0.97]"
@@ -1167,12 +1171,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             </button>
                             <button
                                 onClick={handleSendPeppol}
-                                disabled={isSendingPeppol || !clientId || isLocked}
+                                disabled={isSendingPeppol || !clientId || isLocked || isProforma}
                                 className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
                                 style={{
-                                    backgroundColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: (clientId && !isLocked) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: (clientId && !isLocked) ? 'var(--brand-color, #d35400)' : undefined,
+                                    backgroundColor: (clientId && !isLocked && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: (clientId && !isLocked && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: (clientId && !isLocked && !isProforma) ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
                                 <Send className="w-4 h-4" /> {isSendingPeppol ? 'Sending...' : 'Peppol'}
@@ -1203,6 +1207,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                                                 deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
+                                                docType={String(invoice.properties?.['docType'] || '')}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenantProfile);

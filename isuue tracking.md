@@ -43,7 +43,7 @@
 24. [BUILT] Provide alternative verification method for admin accounts. The only way to reset an admin password is via the `reset-password` script, which requires physical server access or direct database manipulation. 
 25. [BUILT] Add user self-service password reset for admin accounts. 
 
-26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.
+26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.These are actually a section of the quotation document, with payment method.
 27. [FIXED] Project cost rates now derived from linked quotation: removed manual rate inputs (equipment rate, labour rate, equipment hours), replaced with quotation-sourced profitability card showing quote total, material cost, estimated labour, actual clocked costs, and margin analysis. Budget auto-derived from quotation when not set manually.
 28. [FIXED] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component (fully resolved all type warnings and loose variable bindings across the workspace, verified with zero compiler errors).
 29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
@@ -151,4 +151,13 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 63. [BUILT] Developed premium searchable dropdown select popovers (`SearchableSelectDropdown`) for relation and multi-select database properties, integrating a top search bar to filter linked items.
 64. [FIXED] Upgraded "Add to My Day" to a premium orange Lucide `Sun` icon and added a hover-trigger red Lucide `Trash2` deletion button inside individual task list rows.
 65. [FIXED] Filtered Kanban board columns dynamically based on the active perspective (such as "My Day" smart filter), aligning list and board views.
+66. [TODO] - add proforma to the type of financial documents. there has to be some way to mark it proforma - to exclude it from the calculations
+67. [TODO] - remove credited invoices from total calculations in the invoices database footer
+68. [TODO] - Replace black crash screen with themed screen
+
+#### Recommended Priority (what to fix next)
+
+2. **#33** — Custom selects. Systematic rollout using existing `SearchableSelect`.
+4. **#26+27** — Project billing. Needs implementation plan first.
+5. **#28+29** — Low priority cleanup/verification.
 

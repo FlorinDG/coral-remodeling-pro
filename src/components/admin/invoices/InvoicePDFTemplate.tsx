@@ -10,10 +10,27 @@ import { canAccess } from '@/lib/feature-flags';
  * Resolve the document type label. Credit notes (CN- prefix) get
  * a different title, amount label, and legal text.
  */
-function resolveDocType(invoiceTitle: string, lang: string) {
-    const isCreditNote = String(invoiceTitle).startsWith('CN-');
+function resolveDocType(invoiceTitle: string, lang: string, docType?: string) {
+    const isCreditNote = docType === 'opt-credit-note' || String(invoiceTitle).startsWith('CN-');
+    const isProforma = docType === 'opt-proforma';
+
+    if (isProforma) {
+        return {
+            isCreditNote: false,
+            isProforma: true,
+            docTitle: lang === 'nl' ? 'Proforma Factuur' : lang === 'fr' ? 'Facture Proforma' : 'Proforma Invoice',
+            amountLabel: lang === 'nl' ? 'Totaalbedrag (Proforma)' : lang === 'fr' ? 'Montant Total (Proforma)' : 'Total Amount (Proforma)',
+            legalText: lang === 'nl'
+                ? 'Deze proforma factuur is uitsluitend bedoeld ter informatie en heeft geen fiscale of boekhoudkundige waarde.'
+                : lang === 'fr'
+                    ? 'Cette facture proforma est fournie uniquement \u00e0 titre d\'information et n\'a aucune valeur fiscale ou comptable.'
+                    : 'This proforma invoice is for informational purposes only and has no fiscal or accounting value.',
+        };
+    }
+
     return {
         isCreditNote,
+        isProforma: false,
         docTitle: isCreditNote ? t('credit_note', lang) : t('invoice', lang),
         amountLabel: isCreditNote
             ? (lang === 'nl' ? 'Te vergoeden bedrag' : lang === 'fr' ? 'Montant \u00e0 rembourser' : 'Amount to Refund')
@@ -48,12 +65,13 @@ interface InvoicePDFProps {
     invoiceDate?: string;
     deliveryDate?: string;
     dueDate?: string;
+    docType?: string;
 }
 
 export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
-    invoiceDate, deliveryDate, dueDate,
+    invoiceDate, deliveryDate, dueDate, docType,
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
@@ -72,7 +90,7 @@ export const InvoicePDFTemplate = ({
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
     const accent = brandColor || '#d35400';
-    const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang);
+    const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang, docType);
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';

@@ -2,7 +2,7 @@
 "use client";
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useMemo, useState, DragEvent } from 'react';
-import { ChevronLeft, ChevronRight, GripVertical, Plus, Copy, Printer, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, GripVertical, Plus, Copy, Printer, Clock, Search } from 'lucide-react';
 import { Button } from '@/components/time-tracker/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
@@ -78,8 +78,15 @@ export function ScheduleMatrixView({
   const [draggedShiftId, setDraggedShiftId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ userId: string; date: string } | null>(null);
   const [copying, setCopying] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   const daysCount = weekCount * 7;
+
+  const filteredWorkers = useMemo(() => {
+    if (!searchQuery.trim()) return workers;
+    const q = searchQuery.toLowerCase();
+    return workers.filter(w => w.full_name?.toLowerCase().includes(q));
+  }, [workers, searchQuery]);
   
   const dates = useMemo(() => {
     const result: Date[] = [];
@@ -138,7 +145,8 @@ export function ScheduleMatrixView({
       shifts.forEach(shift => {
         const sd = shift.shiftDate || shift.shift_date || '';
         const uid = shift.userId || shift.user_id || '';
-        if (sd === dateStr) {
+        const matchesSearch = filteredWorkers.some(w => w.id === uid);
+        if (sd === dateStr && matchesSearch) {
           const ss = shift.shiftStart || shift.shift_start || '08:00';
           const se = shift.shiftEnd || shift.shift_end || '17:00';
           const hours = calculateShiftHours(ss, se);
@@ -152,7 +160,7 @@ export function ScheduleMatrixView({
     });
     
     return totals;
-  }, [dates, shifts, workerRates]);
+  }, [dates, shifts, workerRates, filteredWorkers]);
 
   // Per-employee weekly hours
   const employeeWeeklyHours = useMemo(() => {
@@ -277,6 +285,18 @@ export function ScheduleMatrixView({
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Search Input */}
+            <div className="relative print:hidden">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Search employee..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 pr-3 py-1.5 text-xs bg-muted border border-input rounded-md outline-none focus:ring-1 focus:ring-primary w-40 text-foreground"
+              />
+            </div>
+
             {/* Copy Previous Week */}
             {canManage && onCopyWeek && (
               <Button
@@ -347,16 +367,19 @@ export function ScheduleMatrixView({
             <span className="font-semibold text-foreground">€{grandTotals.cost.toFixed(0)}</span> estimated cost
           </div>
           <div>
-            <span className="font-semibold text-foreground">{workers.length}</span> employees
+            <span className="font-semibold text-foreground">{filteredWorkers.length}</span> employees
           </div>
         </div>
       </CardHeader>
       <CardContent className="print:p-0">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse min-w-[800px] text-sm">
+          <table className="w-full border-collapse text-sm" style={{ tableLayout: 'fixed', minWidth: `${185 + dates.length * 120}px` }}>
             <thead>
               <tr>
-                <th className="border border-border bg-muted/50 p-2 text-left font-semibold text-xs sticky left-0 bg-card z-10 min-w-[170px]">
+                <th 
+                  className="border border-border bg-muted/50 p-2 text-left font-semibold text-xs sticky left-0 bg-card z-10"
+                  style={{ width: '185px', minWidth: '185px' }}
+                >
                   <div className="flex items-center justify-between">
                     <span>Employee</span>
                     <span className="text-[10px] font-normal text-muted-foreground">Hrs</span>
@@ -370,10 +393,11 @@ export function ScheduleMatrixView({
                     <th
                       key={i}
                       className={cn(
-                        "border border-border p-1.5 text-center font-medium text-xs min-w-[110px]",
+                        "border border-border p-1.5 text-center font-medium text-xs",
                         today && "bg-primary/10 ring-1 ring-inset ring-primary/30",
                         weekend && !today && "bg-muted/40"
                       )}
+                      style={{ width: '120px', minWidth: '120px' }}
                     >
                       <div className={cn(
                         "text-[10px] uppercase tracking-wider",
@@ -395,7 +419,10 @@ export function ScheduleMatrixView({
 
               {/* Daily totals row */}
               <tr className="bg-muted/30">
-                <td className="border border-border p-1.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10">
+                <td 
+                  className="border border-border p-1.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10"
+                  style={{ width: '185px', minWidth: '185px' }}
+                >
                   <div className="flex items-center justify-between">
                     <span>Daily Total</span>
                   </div>
@@ -421,21 +448,23 @@ export function ScheduleMatrixView({
               </tr>
             </thead>
             <tbody>
-              {workers.length === 0 ? (
+              {filteredWorkers.length === 0 ? (
                 <tr>
                   <td colSpan={daysCount + 1} className="border border-border p-8 text-center text-muted-foreground">
                     <div className="space-y-2">
-                      <p className="font-medium">No active employees found</p>
-                      <p className="text-xs">Add employees in the HR → Employees section first.</p>
+                      <p className="font-medium">No employees found matching the search criteria</p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                workers.map(worker => {
+                filteredWorkers.map(worker => {
                   const weeklyHrs = employeeWeeklyHours[worker.id] || 0;
                   return (
                     <tr key={worker.id} className="group/row hover:bg-muted/20 transition-colors">
-                      <td className="border border-border p-2 sticky left-0 bg-card z-10">
+                      <td 
+                        className="border border-border p-2 sticky left-0 bg-card z-10 font-sans"
+                        style={{ width: '185px', minWidth: '185px' }}
+                      >
                         <div className="flex items-center justify-between gap-2">
                           <div>
                             <div className="font-medium text-sm truncate max-w-[120px]">{worker.full_name}</div>

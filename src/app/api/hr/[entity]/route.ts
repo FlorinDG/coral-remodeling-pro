@@ -13,6 +13,12 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
+import crypto from 'crypto';
+import { Resend } from 'resend';
+import React from 'react';
+import InvitationEmail from '@/emails/InvitationEmail';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
 // Map URL entity slugs → Prisma model names
 const ENTITY_MAP: Record<string, string> = {
@@ -31,6 +37,11 @@ const ENTITY_MAP: Record<string, string> = {
 
 // Roles that count as "employees" in HR context (queryable via /api/hr/employees)
 const HR_EMPLOYEE_ROLES = [
+    'SUPERADMIN',
+    'PLATFORM_ADMIN',
+    'TENANT_ADMIN',
+    'EMPLOYEE',
+    'ACCOUNTANT',
     'TENANT_PRO_EMPLOYEE',
     'TENANT_ENTERPRISE_EMPLOYEE',
     'TENANT_ENTERPRISE_WORKFORCE',
@@ -269,6 +280,9 @@ export async function POST(
             return NextResponse.json({ error: 'A user with this email already exists' }, { status: 409 });
         }
         try {
+            // Generate invite token
+            const inviteToken = crypto.randomBytes(32).toString('hex');
+
             const user = await prisma.user.create({
                 data: {
                     tenantId: ctx.tenantId,
@@ -282,8 +296,45 @@ export async function POST(
                     invitedBy: ctx.userId,
                     invitedAt: new Date(),
                     inviteAccepted: false,
+                    inviteToken,
                 },
             });
+
+            // Fetch tenant branding details
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: ctx.tenantId },
+                select: { companyName: true, commercialName: true, logoUrl: true, brandColor: true }
+            });
+
+            // Workforce users get invited to the WorkHub domain; all others to the ERP domain
+            const isWorkforceInvite = user.role === 'TENANT_ENTERPRISE_WORKFORCE';
+            const baseUrl = isWorkforceInvite
+                ? (process.env.WORKHUB_URL || 'https://work.coral-group.be')
+                : (process.env.NEXTAUTH_URL || 'https://app.coral-group.be');
+            const inviteUrl = `${baseUrl}/accept-invite?token=${inviteToken}`;
+            
+            const session = await auth();
+            const inviterName = session?.user?.name || 'A team member';
+            const brandCompany = tenant?.commercialName || tenant?.companyName || 'CoralOS';
+
+            if (email) {
+                await resend.emails.send({
+                    from: `${brandCompany} <noreply@coral-group.be>`,
+                    to: [email],
+                    subject: isWorkforceInvite
+                        ? `Join ${brandCompany} on WorkHub`
+                        : `Invitation to join ${brandCompany} on CoralOS`,
+                    react: React.createElement(InvitationEmail, {
+                        inviterName,
+                        companyName: brandCompany,
+                        logoUrl: tenant?.logoUrl || undefined,
+                        brandColor: tenant?.brandColor || '#d35400',
+                        acceptUrl: inviteUrl,
+                        isWorkforce: isWorkforceInvite,
+                    }),
+                }).catch(err => console.error(`[HR Invite Email] Failed to send to ${email}:`, err));
+            }
+
             // Return in Employee shape
             return NextResponse.json({
                 id: user.id,

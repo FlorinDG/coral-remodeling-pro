@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useMemo, useState, RefObject } from 'react';
@@ -92,6 +93,14 @@ export default function DatabaseFooter({
     const summaries = useMemo(() => {
         const result: Record<string, string> = {};
 
+        const calcPages = (databaseId === 'db-invoices' || databaseId?.startsWith('db-invoices-'))
+            ? pages.filter(p => {
+                const docType = String(p.properties['docType'] || 'opt-invoice');
+                const status = String(p.properties['status'] || 'opt-credited'); // Note: 'opt-credited' is the status for credited invoices
+                return docType !== 'opt-proforma' && status !== 'opt-credited';
+            })
+            : pages;
+
         orderedVisibleProperties.forEach(prop => {
             const type = getSummaryType(prop);
             if (type === 'none') {
@@ -99,7 +108,7 @@ export default function DatabaseFooter({
                 return;
             }
 
-            const values = pages
+            const values = calcPages
                 .map(p => p.properties[prop.id])
                 .filter(v => v !== undefined && v !== null && v !== '');
 

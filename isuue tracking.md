@@ -157,12 +157,12 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 69. [FIXED] - Fix workforce scheduler layout column alignment to be completely consistent (enforced table-layout fixed and precise pixel column widths).
 70. [FIXED] - Add real-time search filtering, headcount, and estimates calculations in scheduler matrix.
 71. [FIXED] - Resolve the "System" medewerker fallback in timesheets by aligning query roles (expanded HR_EMPLOYEE_ROLES with administrative/management tenant roles).
-72. [FIXED] - Complete missing employee invitation email flow (token generation and branded Resend dispatch).
+72. [FIXED] Complete missing employee invitation email flow (token generation and branded Resend dispatch).
+73. [FIXED] #26 — Project billing rules (fixed fee, progress-based, hourly) & quotation engine enforcement, rendering stylized conditions in PDFs.
+74. [FIXED] #29 — Inherit quotation billing rule, recursive Google Drive project directory scaffolding, and task draft state mapping.
+75. [FIXED] #50 — Premium Stripe invoice payment QR codes and localized CTAs in French, Dutch, and English on generated PDFs.
+76. [FIXED] #52 — Upgrade admin dashboard with dynamic Recharts Cash Flow visualizer, metrics cards, and self-healing system payments databases.
 
 #### Recommended Priority (what to fix next)
 
-1. **#26** — Project billing rules (fixed fee, progress-based, hourly) & quotation engine enforcement.
-2. **#29** — Create Project From Template task population & structure.
-3. **#50** — Stripe API QR codes on invoice exports.
-4. **#52** — Dashboard upgrading with cash flow and graphics.
-
+*(All active backlog items have been successfully built and verified! ready for next requirements)*

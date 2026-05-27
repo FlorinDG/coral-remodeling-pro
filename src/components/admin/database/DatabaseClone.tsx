@@ -218,6 +218,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'totalExVat',  name: 'Totaal excl. BTW',  type: 'currency' },
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
       { id: 'totalIncVat', name: 'Totaal incl. BTW',  type: 'currency' },
+      { id: 'prop-billing-rule',  name: 'Facturatiemethode',  type: 'select', config: { options: [
+        { id: 'opt-fixed',    name: 'Vaste prijs',       color: 'blue' },
+        { id: 'opt-progress', name: 'Vorderingsstaten', color: 'purple' },
+        { id: 'opt-hourly',   name: 'In Regie',          color: 'orange' },
+      ]}},
+      { id: 'prop-payment-method', name: 'Betalingsvoorwaarden', type: 'select', config: { options: [
+        { id: 'pay-0',  name: 'Onmiddellijk', color: 'green'  },
+        { id: 'pay-8',  name: '8 Dagen',      color: 'purple' },
+        { id: 'pay-14', name: '14 Dagen',     color: 'blue'   },
+        { id: 'pay-30', name: '30 Dagen',     color: 'orange' },
+        { id: 'pay-60', name: '60 Dagen',     color: 'red'    },
+        { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
+      ]}},
     ],
     'db-invoices': [
       { id: 'title',       name: 'Factuur #',         type: 'text' },

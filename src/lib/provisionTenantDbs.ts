@@ -14,7 +14,7 @@ import { LockedDbKey, LockedDbIds, BASE_TO_KEY, getLockedDbId } from '@/lib/lock
 export type { LockedDbKey, LockedDbIds };
 export { getLockedDbId };
 
-// The 6 locked databases every tenant must have
+// The 8 locked databases every tenant must have
 export const LOCKED_DB_BASES = [
     'db-invoices',
     'db-clients',
@@ -22,16 +22,20 @@ export const LOCKED_DB_BASES = [
     'db-expenses',
     'db-tickets',
     'db-quotations',
+    'db-payments-in',
+    'db-payments-out',
 ] as const;
 
 // Maps base ID → display name
 const DB_NAMES: Record<string, string> = {
-    'db-invoices':   'Sales Invoices',
-    'db-clients':    'Contacts',
-    'db-suppliers':  'Suppliers',
-    'db-expenses':   'Purchase Invoices',
-    'db-tickets':    'Expense Tickets',
-    'db-quotations': 'Quotations',
+    'db-invoices':     'Sales Invoices',
+    'db-clients':      'Contacts',
+    'db-suppliers':    'Suppliers',
+    'db-expenses':     'Purchase Invoices',
+    'db-tickets':      'Expense Tickets',
+    'db-quotations':   'Quotations',
+    'db-payments-in':  'Received Payments',
+    'db-payments-out': 'Paid Payments',
 };
 
 /**

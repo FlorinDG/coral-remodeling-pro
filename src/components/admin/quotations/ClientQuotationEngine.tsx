@@ -282,17 +282,21 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
     }, [quotation, isHydrated, quotationsDbId, updatePageProperty]);
 
+    const rawProject = quotation?.properties?.['project'];
+    const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
+    const project = useMemo(() => {
+        if (!projectId) return null;
+        return projects.find(p => p.id === projectId) || null;
+    }, [projects, projectId]);
+
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
 
     const quotationTitle = quotation.properties?.['title'] || ti18n('engine_draft_quotation', locale);
     const rawClient = quotation.properties?.['client'];
+    const billingRule = (quotation.properties?.['prop-billing-rule'] as string) || 'opt-fixed';
+    const paymentTerms = (quotation.properties?.['prop-payment-method'] as string) || 'pay-30';
     const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
-    const rawProject = quotation.properties?.['project'];
-    const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
-    const project = useMemo(() => {
-        return projects.find(p => p.id === projectId) || null;
-    }, [projects, projectId]);
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
@@ -504,6 +508,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     language={docLanguage}
                     vatCalcMode={vatCalcMode}
                     vatRegime={vatRegime}
+                    billingRule={billingRule}
+                    paymentTerms={paymentTerms}
                 />
             );
 
@@ -563,6 +569,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     language={docLanguage}
                     vatCalcMode={vatCalcMode}
                     vatRegime={vatRegime}
+                    billingRule={billingRule}
+                    paymentTerms={paymentTerms}
                 />
             );
 
@@ -608,6 +616,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             'prop-budget': grandTotal,
             'prop-start-date': quotationDate || '',
             'prop-end-date': quotationDate || '',
+            'prop-billing-rule': billingRule,
         });
 
         if (!newProject) {
@@ -825,6 +834,55 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         options={statusOptions}
                                         onChange={(v) => handleUpdateProperty('status', v ?? '')}
                                         placeholder={ti18n('engine_status', locale)}
+                                        compact
+                                    />
+                                </div>
+                            );
+                        })()}
+
+                        {/* Billing Rule Selector */}
+                        {(() => {
+                            const db = getDatabase(quotationsDbId);
+                            const billingProp = db?.properties.find(p => p.id === 'prop-billing-rule');
+                            const billingOptions = billingProp?.config?.options || [
+                                { id: 'opt-fixed', name: 'Vaste prijs', color: 'blue' },
+                                { id: 'opt-progress', name: 'Vorderingsstaten', color: 'purple' },
+                                { id: 'opt-hourly', name: 'In Regie', color: 'orange' },
+                            ];
+                            return (
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                    <Receipt className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                    <SelectDropdown
+                                        value={billingRule}
+                                        options={billingOptions}
+                                        onChange={(v) => handleUpdateProperty('prop-billing-rule', v ?? 'opt-fixed')}
+                                        placeholder="Facturatiemethode"
+                                        compact
+                                    />
+                                </div>
+                            );
+                        })()}
+
+                        {/* Payment Terms Selector */}
+                        {(() => {
+                            const db = getDatabase(quotationsDbId);
+                            const paymentProp = db?.properties.find(p => p.id === 'prop-payment-method');
+                            const paymentOptions = paymentProp?.config?.options || [
+                                { id: 'pay-0',  name: 'Onmiddellijk', color: 'green'  },
+                                { id: 'pay-8',  name: '8 Dagen',      color: 'purple' },
+                                { id: 'pay-14', name: '14 Dagen',     color: 'blue'   },
+                                { id: 'pay-30', name: '30 Dagen',     color: 'orange' },
+                                { id: 'pay-60', name: '60 Dagen',     color: 'red'    },
+                                { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
+                            ];
+                            return (
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                    <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                    <SelectDropdown
+                                        value={paymentTerms}
+                                        options={paymentOptions}
+                                        onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
+                                        placeholder="Betalingsvoorwaarden"
                                         compact
                                     />
                                 </div>
@@ -1118,6 +1176,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             showSubcomponents={true}
                                             vatCalcMode={vatCalcMode}
                                             vatRegime={vatRegime}
+                                            billingRule={billingRule}
+                                            paymentTerms={paymentTerms}
                                         />
                                     );
                                     const blob = await generatePdfBlob(doc, tenantProfile);
@@ -1144,7 +1204,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             <FileText className="w-3.5 h-3.5" />
                             {ti18n('engine_export_detailed', locale)}
                         </button>
-
+ 
                         {/* Export PDF — primary action */}
                         <button
                             onClick={async () => {
@@ -1166,6 +1226,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             showSubcomponents={false}
                                             vatCalcMode={vatCalcMode}
                                             vatRegime={vatRegime}
+                                            billingRule={billingRule}
+                                            paymentTerms={paymentTerms}
                                         />
                                     );
                                     const blob = await generatePdfBlob(doc, tenantProfile);

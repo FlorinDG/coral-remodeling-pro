@@ -90,7 +90,7 @@ export const InvoicePDFTemplate = ({
     const s = getTemplateStyles(templateId, brandColor);
     const lang = language;
     const accent = brandColor || '#d35400';
-    const { isCreditNote, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang, docType);
+    const { isCreditNote, isProforma, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang, docType);
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';
@@ -310,8 +310,32 @@ export const InvoicePDFTemplate = ({
 
                         {renderBlocks(blocks)}
 
-                        <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 16 }}>
-                            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                        {/* Summary and Stripe Payment Section */}
+                        <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 16 }} wrap={false}>
+                            {/* Left Side: Stripe Payment QR Code */}
+                            {!isCreditNote && !isProforma && (
+                                <View style={{ flex: 1, marginRight: 24, padding: 8, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const, maxWidth: 260 }}>
+                                    <Image 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://checkout.stripe.com/pay/${invoiceTitle}?amount=${totalInclTax.toFixed(2)}&ref=${invoiceTitle}`)}`}
+                                        style={{ width: 60, height: 60, borderRadius: 3 }}
+                                    />
+                                    <View style={{ flex: 1, gap: 2 }}>
+                                        <Text style={{ fontSize: 8, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                            {lang === 'fr' ? 'Payer via Stripe' : lang === 'en' ? 'Pay via Stripe' : 'Betalen via Stripe'}
+                                        </Text>
+                                        <Text style={{ fontSize: 6.5, color: '#697386', lineHeight: 1.3 }}>
+                                            {lang === 'fr' ? 'Scannez le code QR ci-contre pour régler en toute sécurité.' : 
+                                             lang === 'en' ? 'Scan the QR code to securely pay this invoice.' : 
+                                             'Scan de QR-code met uw smartphonecamera om deze factuur direct online te betalen.'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                            {(!isCreditNote && isProforma) && <View style={{ flex: 1 }} />}
+                            {isCreditNote && <View style={{ flex: 1 }} />}
+
+                            {/* Right Side: Totals Summary */}
+                            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4, width: 240 }}>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
                                     <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{grandTotal.toFixed(2)}</Text>
@@ -582,9 +606,32 @@ export const InvoicePDFTemplate = ({
                 {/* Content */}
                 {renderBlocks(blocks)}
 
-                {/* Summary */}
-                <View style={{ alignItems: 'flex-end' as const, width: '100%' }}>
-                    <View style={s.summaryBox}>
+                {/* Summary and Stripe Payment Section */}
+                <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 20, marginHorizontal: isT1 || isT4 ? 32 : 8 }} wrap={false}>
+                    {/* Left Side: Stripe Payment QR Code */}
+                    {!isCreditNote && !isProforma && (
+                        <View style={{ flex: 1, marginRight: 24, padding: 10, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'row' as const, gap: 10, alignItems: 'center' as const, maxWidth: 280 }}>
+                            <Image 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://checkout.stripe.com/pay/${invoiceTitle}?amount=${totalInclTax.toFixed(2)}&ref=${invoiceTitle}`)}`}
+                                style={{ width: 68, height: 68, borderRadius: 4 }}
+                            />
+                            <View style={{ flex: 1, gap: 2 }}>
+                                <Text style={{ fontSize: 8.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                    {lang === 'fr' ? 'Payer en ligne via Stripe' : lang === 'en' ? 'Pay online via Stripe' : 'Veilig betalen via Stripe'}
+                                </Text>
+                                <Text style={{ fontSize: 7, color: '#697386', lineHeight: 1.3 }}>
+                                    {lang === 'fr' ? 'Scannez le code QR ci-contre avec votre smartphone pour régler cette facture en toute sécurité.' : 
+                                     lang === 'en' ? 'Scan the QR code with your smartphone camera to securely settle this invoice.' : 
+                                     'Scan de QR-code met uw smartphonecamera om deze factuur direct en veilig online te betalen.'}
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+                    {(!isCreditNote && isProforma) && <View style={{ flex: 1 }} />}
+                    {isCreditNote && <View style={{ flex: 1 }} />}
+
+                    {/* Right Side: Totals Summary */}
+                    <View style={{ width: isT3 ? 265 : 240 }}>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
                             <Text style={s.summaryValue}>€{grandTotal.toFixed(2)}</Text>

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/prisma";
 import {
     FileText,
@@ -239,6 +240,10 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
         for (const page of salesPages) {
             const props = page.properties as Record<string, any>;
+            const docType = String(props['docType'] || 'opt-invoice');
+            const status = String(props['status'] || 'opt-draft');
+            if (docType === 'opt-proforma' || status === 'opt-credited') continue;
+
             // Try totalIncVat first, fall back to amount
             const amount = Number(props['totalIncVat'] ?? props['total'] ?? props['amount'] ?? 0);
             if (!amount) continue;
@@ -276,7 +281,10 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
             const counts: Record<string, number> = {};
             for (const p of pages) {
                 const props = p.properties as Record<string, any>;
+                const docType = String(props['docType'] || 'opt-invoice');
                 const status = String(props['status'] || 'opt-draft');
+                if (docType === 'opt-proforma' || status === 'opt-credited') continue;
+
                 // Convert option IDs to display labels
                 const label = status === 'opt-draft' ? 'Draft'
                     : status === 'opt-sent' ? 'Sent'

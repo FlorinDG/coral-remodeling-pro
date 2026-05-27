@@ -87,12 +87,12 @@ Run the same `curl` or test after every push. Do not assume the deploy worked.
 > If this could fail at runtime (network, auth, DB), does it fail gracefully?
 No unhandled exceptions in tenant-facing code. Ever.
 
-### Rule 6 — No Build Blockers in Ship (Lint & Push)
-> Always lint your work: `npm run lint`. Zero errors. Not warnings — errors.
-> We work on production directly (`main` branch), and use the sandbox branch only if necessary.
-> Rule of thumb: Lint your latest. If zero errors, push to `main` (unless specifically recommended to sandbox first).
+### Rule 6 — Staged Release Pipeline (Never Push Directly to `main`)
+> Always verify your work compiles: `npx tsc --noEmit` and lints `npm run lint`.
+> We do NOT commit directly to `main` anymore. All feature development occurs on the `develop` branch.
+> Merges into `main` occur exclusively through verified release candidates (`release/v*`) or hotfixes.
 A broken build deployed to Vercel serves the last good build silently.
-That is the most dangerous failure mode: you think you fixed it, but you didn't.
+This is the most dangerous failure mode: you think you fixed it, but it didn't deploy.
 
 ### Rule 7 — Structure Before Feature
 > Before adding a feature to a UI pattern, verify the target is a proper component.
@@ -105,9 +105,10 @@ Two-step gate:
 Never bolt features onto one copy of duplicated inline code.
 The silent failure mode: feature lands in View A, View B stays stale, and the divergence is invisible until a user reports it.
 
-### Rule 8 — No Localhost Development
-> No more localhost development. All in production.
-Do not rely on the local dev server. Push changes to `main` and verify them directly in the production environment.
+### Rule 8 — No Untested Production Deployments
+> Develop on `develop` branch, verify in local environment or Vercel preview URLs.
+> Run staging verification in Vercel's staging environment on `release/*` branches.
+> Only merge to `main` once all tests pass.
 
 ---
 
@@ -130,9 +131,33 @@ When starting a new session on this project:
 
 - [ ] Re-read this file
 - [ ] Check `git log --oneline -5` — what was the last thing deployed?
+- [ ] Check active branch (must be `develop` for all new work)
 - [ ] `curl -D -` the affected domains — is what's live actually what we think?
 - [ ] Ask: what is the user currently relying on that must not break?
 - [ ] Only then: plan the new work
+
+---
+
+## Staged Release Workflow (Develop → Test → Release)
+
+All development and release operations must adhere to this structured flow to prevent production regressions:
+
+1. **Active Development**:
+   - All feature work, bug fixes, and refactoring occur exclusively on the `develop` branch.
+   - **Never push directly to `main`**.
+   - Pull Requests (PRs) from topic branches (e.g., `feature/*` or `bugfix/*`) must target and merge into `develop`.
+
+2. **Testing & Staging**:
+   - When a version is ready, branch a release candidate: `git checkout -b release/vX.Y.Z develop`.
+   - Vercel automatically deploys the release candidate to the Staging environment.
+   - Run full manual and automated sanity checks in Staging before final approval.
+
+3. **Release & Production**:
+   - Merge `release/vX.Y.Z` into `main` using a non-fast-forward merge: `git merge --no-ff release/vX.Y.Z`.
+   - Tag the release commit with its semver tag: `git tag -a vX.Y.Z -m "Release description"`.
+   - Push `main` and its tags: `git push origin main --tags`.
+   - Vercel automatically deploys `main` to the Production environment.
+   - Merge `main` back into `develop` to sync release tags and hotfixes: `git checkout develop && git merge main && git push`.
 
 ---
 

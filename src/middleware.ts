@@ -80,7 +80,7 @@ export default async function middleware(req: NextRequest) {
     const hostname = req.nextUrl.hostname || '';
 
     const isStoreSubdomain = hostname === 'coral-sys.coral-group.be' || hostname.startsWith('coral-sys.');
-    const isAppSubdomain   = hostname === 'app.coral-group.be'       || hostname.startsWith('app.');
+    const isAppSubdomain   = hostname === 'app.coral-group.be'       || hostname.startsWith('app.') || hostname.includes('localhost') || hostname.includes('.vercel.app');
     const isWorkSubdomain  = hostname === 'work.coral-group.be'      || hostname.startsWith('work.');
 
     // No-cache headers for all subdomain responses

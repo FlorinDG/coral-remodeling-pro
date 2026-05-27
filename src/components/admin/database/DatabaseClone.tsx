@@ -234,6 +234,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'docType',     name: 'Document Type',     type: 'select', config: { options: [
         { id: 'opt-invoice', name: 'Factuur', color: 'blue' },
         { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
+        { id: 'opt-proforma', name: 'Proforma', color: 'orange' },
       ]}},
       { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'text' },
       { id: 'invoiceDate',  name: 'Factuurdatum',      type: 'date'     },
@@ -595,6 +596,22 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           store.updatePageProperty(resolvedId, page.id, 'docType', newType);
         }
       });
+
+      // Enforce that docType options in db-invoices includes opt-proforma
+      const docTypeProp = database.properties.find(p => p.id === 'docType');
+      if (docTypeProp && docTypeProp.config?.options) {
+        const hasProforma = docTypeProp.config.options.some((opt: { id?: string }) => opt.id === 'opt-proforma');
+        if (!hasProforma) {
+          const updatedOptions = [
+            ...docTypeProp.config.options,
+            { id: 'opt-proforma', name: 'Proforma', color: 'orange' }
+          ];
+          const updatedProperties = database.properties.map(p => 
+            p.id === 'docType' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
+          );
+          store.updateDatabase(resolvedId, { properties: updatedProperties });
+        }
+      }
     }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);
 

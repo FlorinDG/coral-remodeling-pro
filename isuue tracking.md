@@ -43,10 +43,10 @@
 24. [BUILT] Provide alternative verification method for admin accounts. The only way to reset an admin password is via the `reset-password` script, which requires physical server access or direct database manipulation. 
 25. [BUILT] Add user self-service password reset for admin accounts. 
 
-26. [TODO] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine.These are actually a section of the quotation document, with payment method.
+26. [FIXED] Add project-specific billing rules (fixed fee, progress-based, hourly) and a mechanism to enforce them in the quotation engine. These are actually a section of the quotation document, with payment method. *(Completed in #73)*
 27. [FIXED] Project cost rates now derived from linked quotation: removed manual rate inputs (equipment rate, labour rate, equipment hours), replaced with quotation-sourced profitability card showing quote total, material cost, estimated labour, actual clocked costs, and margin analysis. Budget auto-derived from quotation when not set manually.
 28. [FIXED] Address "Not all variables are functions" TypeScript errors by either converting loose variables to computed getters or properly typing/scoping them within the component (fully resolved all type warnings and loose variable bindings across the workspace, verified with zero compiler errors).
-29. [TODO] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement.
+29. [FIXED] Ensure all "Create Project From Template" functionality creates correct folder structures and populates the project with template tasks in a draft state, ready for refinement. *(Completed in #74)*
 30. [FIXED] Mobile bottom-nav active state: The "More" tab in `MobileBottomNav.tsx` only highlighted for a few specific routes (settings, crm, db-clients, etc.), leaving routes like `/admin/contacts`, `/admin/financials`, `/admin/journal`, `/admin/library`, `/admin/quotations` with no active tab. Fix: "More" is now a catch-all that activates for any `/admin` route not claimed by the other 4 tabs (Home, Tasks, Projects, Calendar).
 31. [BUILT] Use less white space in dashboard to make better use of space.
 32. [FIXED] Resolved all critical `react-hooks/set-state-in-effect` errors in app pages and components (LinkedRecords, ClientInvoiceEngine, ClientQuotationEngine, JournalEntryClient, PO/Bordereau templates, HR time-tracker pages) and verified that typechecking compiles 100% cleanly.
@@ -127,9 +127,9 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
     48.4 [FIXED] - The creditnota should find it's place in the appropriate database and not be visible in the invoices tab (implemented default filter arrays in income/invoices and income/credit-notes pages).
 
 49. [DONE] - Sent to accountant is supposed to be just a checkmark
-50. [TODO] - Use Stripe API to generate qr codes and integrate them in the documents
+50. [FIXED] - Use Stripe API to generate qr codes and integrate them in the documents *(Completed in #75)*
 51. [FIXED] - check if developed do if not present - payments databases, incoming and outgoing and connection to projects and invoices (dynamic schemas for db-payments-in and db-payments-out fully developed, rendered on dedicated pages, and connected to invoices/expenses via store automation).
-52. [TODO] - dashboard upgrade - cash flow and graph view
+52. [FIXED] - dashboard upgrade - cash flow and graph view *(Completed in #76)*
 53. [FIXED] invoice creation engine - quoatations select - should be able to add more than one quoatation to an invoice - the calculation should be done automatically (implemented custom premium searchable multi-select selector and appends all priced blocks/calculations).
 54. [FIXED] invoice creation engine - should display by "Betreft" instead of the number, when large databases (updated quotation lists/searches to format subject line followed by reference title/number).
 

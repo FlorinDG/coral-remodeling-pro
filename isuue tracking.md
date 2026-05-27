@@ -151,13 +151,18 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 63. [BUILT] Developed premium searchable dropdown select popovers (`SearchableSelectDropdown`) for relation and multi-select database properties, integrating a top search bar to filter linked items.
 64. [FIXED] Upgraded "Add to My Day" to a premium orange Lucide `Sun` icon and added a hover-trigger red Lucide `Trash2` deletion button inside individual task list rows.
 65. [FIXED] Filtered Kanban board columns dynamically based on the active perspective (such as "My Day" smart filter), aligning list and board views.
-66. [TODO] - add proforma to the type of financial documents. there has to be some way to mark it proforma - to exclude it from the calculations
-67. [TODO] - remove credited invoices from total calculations in the invoices database footer
-68. [TODO] - Replace black crash screen with themed screen
+66. [FIXED] - add proforma to the type of financial documents. there has to be some way to mark it proforma - to exclude it from the calculations (added orange opt-proforma type, PDF titles/disclaimers, and locked credit/Peppol actions).
+67. [FIXED] - remove credited invoices from total calculations in the invoices database footer (excluded opt-credited status and opt-proforma docType from DatabaseFooter and dashboard statistics).
+68. [FIXED] - Replace black crash screen with themed screen (glowing glassmorphic fallback in Dutch with console traces and easy retries).
+69. [FIXED] - Fix workforce scheduler layout column alignment to be completely consistent (enforced table-layout fixed and precise pixel column widths).
+70. [FIXED] - Add real-time search filtering, headcount, and estimates calculations in scheduler matrix.
+71. [FIXED] - Resolve the "System" medewerker fallback in timesheets by aligning query roles (expanded HR_EMPLOYEE_ROLES with administrative/management tenant roles).
+72. [FIXED] - Complete missing employee invitation email flow (token generation and branded Resend dispatch).
 
 #### Recommended Priority (what to fix next)
 
-2. **#33** — Custom selects. Systematic rollout using existing `SearchableSelect`.
-4. **#26+27** — Project billing. Needs implementation plan first.
-5. **#28+29** — Low priority cleanup/verification.
+1. **#26** — Project billing rules (fixed fee, progress-based, hourly) & quotation engine enforcement.
+2. **#29** — Create Project From Template task population & structure.
+3. **#50** — Stripe API QR codes on invoice exports.
+4. **#52** — Dashboard upgrading with cash flow and graphics.
 

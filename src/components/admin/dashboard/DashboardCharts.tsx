@@ -121,3 +121,54 @@ export function StatusBarChart({ data }: ChartProps) {
         </div>
     );
 }
+
+export function CashFlowChart({ data }: ChartProps) {
+    if (!data || data.length === 0) return null;
+
+    return (
+        <div className="h-[280px] w-full mt-4">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+                <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorIncoming" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.9} />
+                            <stop offset="95%" stopColor="#059669" stopOpacity={0.9} />
+                        </linearGradient>
+                        <linearGradient id="colorOutgoing" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9} />
+                            <stop offset="95%" stopColor="#dc2626" stopOpacity={0.9} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-neutral-200, #e5e5e5)" />
+                    <XAxis
+                        dataKey="date"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: '#888888' }}
+                        dy={10}
+                    />
+                    <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fill: '#888888' }}
+                    />
+                    <Tooltip
+                        cursor={{ fill: 'rgba(0,0,0,0.02)' }}
+                        contentStyle={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            borderRadius: '12px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
+                            fontSize: '11px',
+                        }}
+                        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+                        formatter={(value: any) => [`€${Number(value).toFixed(2)}`, '']}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', paddingTop: '12px' }} />
+                    <Bar dataKey="incoming" name="Inkomsten / Incoming" fill="url(#colorIncoming)" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                    <Bar dataKey="outgoing" name="Uitgaven / Outgoing" fill="url(#colorOutgoing)" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                </BarChart>
+            </ResponsiveContainer>
+        </div>
+    );
+}

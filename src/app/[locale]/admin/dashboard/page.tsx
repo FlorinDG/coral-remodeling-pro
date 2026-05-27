@@ -15,7 +15,7 @@ import {
     Briefcase,
 } from "lucide-react";
 import { Link } from "@/i18n/routing";
-import { OverviewAreaChart, StatusBarChart } from "@/components/admin/dashboard/DashboardCharts";
+import { OverviewAreaChart, StatusBarChart, CashFlowChart } from "@/components/admin/dashboard/DashboardCharts";
 import { auth } from "@/auth";
 import { getTranslations } from 'next-intl/server';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
@@ -121,11 +121,13 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
     // Resolve tenant-scoped DB IDs (falls back to bare IDs for legacy tenants)
     const ldb = (tenant?.lockedDbIds as Record<string, string>) || {};
-    const dbInvoices   = getLockedDbId('db-invoices', ldb);
-    const dbExpenses   = getLockedDbId('db-expenses', ldb);
-    const dbClients    = getLockedDbId('db-clients', ldb);
-    const dbSuppliers  = getLockedDbId('db-suppliers', ldb);
-    const dbQuotations = getLockedDbId('db-quotations', ldb);
+    const dbInvoices    = getLockedDbId('db-invoices', ldb);
+    const dbExpenses    = getLockedDbId('db-expenses', ldb);
+    const dbClients     = getLockedDbId('db-clients', ldb);
+    const dbSuppliers   = getLockedDbId('db-suppliers', ldb);
+    const dbQuotations  = getLockedDbId('db-quotations', ldb);
+    const dbPaymentsIn  = getLockedDbId('db-payments-in', ldb);
+    const dbPaymentsOut = getLockedDbId('db-payments-out', ldb);
     // Tasks and projects are not locked DBs — use bare IDs
 
     const t = await getTranslations('Admin');
@@ -265,6 +267,85 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
     }
 
     const sumInvoiced = last6Months.reduce((sum, m) => sum + m.invoiced, 0);
+
+    // ── Cash Flow calculation from payments databases ────────────────────────
+    const cashFlowData = last6Months.map(m => ({
+        ...m,
+        incoming: 0,
+        outgoing: 0,
+    }));
+
+    let sumIncoming = 0;
+    let sumOutgoing = 0;
+    let currentMonthIncoming = 0;
+    let currentMonthOutgoing = 0;
+
+    const thisMonthNum = currentMonth.getMonth();
+    const thisYearNum = currentMonth.getFullYear();
+
+    if (hasInvoicing) {
+        const [incomingPages, outgoingPages] = await Promise.all([
+            getMonthlyFinancials(dbPaymentsIn, tenantId, sixMonthsAgo),
+            getMonthlyFinancials(dbPaymentsOut, tenantId, sixMonthsAgo),
+        ]);
+
+        for (const page of incomingPages) {
+            const props = page.properties as Record<string, any>;
+            const amount = Number(props['amount'] ?? 0);
+            if (!amount) continue;
+
+            // Prefer properties.date if filled
+            let dateObj = page.createdAt;
+            if (props['date']) {
+                const parsedDate = new Date(props['date']);
+                if (!isNaN(parsedDate.getTime())) {
+                    dateObj = parsedDate;
+                }
+            }
+
+            const m = dateObj.getMonth();
+            const y = dateObj.getFullYear();
+            const slot = cashFlowData.find(s => s.month === m && s.year === y);
+            if (slot) {
+                slot.incoming += amount;
+            }
+            sumIncoming += amount;
+
+            if (m === thisMonthNum && y === thisYearNum) {
+                currentMonthIncoming += amount;
+            }
+        }
+
+        for (const page of outgoingPages) {
+            const props = page.properties as Record<string, any>;
+            const amount = Number(props['amount'] ?? 0);
+            if (!amount) continue;
+
+            // Prefer properties.date if filled
+            let dateObj = page.createdAt;
+            if (props['date']) {
+                const parsedDate = new Date(props['date']);
+                if (!isNaN(parsedDate.getTime())) {
+                    dateObj = parsedDate;
+                }
+            }
+
+            const m = dateObj.getMonth();
+            const y = dateObj.getFullYear();
+            const slot = cashFlowData.find(s => s.month === m && s.year === y);
+            if (slot) {
+                slot.outgoing += amount;
+            }
+            sumOutgoing += amount;
+
+            if (m === thisMonthNum && y === thisYearNum) {
+                currentMonthOutgoing += amount;
+            }
+        }
+    }
+
+    const netCashFlow6Months = sumIncoming - sumOutgoing;
+    const netCurrentMonth = currentMonthIncoming - currentMonthOutgoing;
 
     // ── Invoice status distribution for bar chart ─────────────────────────────
     let statusData: { name: string; value: number }[] = [];
@@ -437,6 +518,76 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
                     </div>
                 )}
             </div>
+
+            {/* Cash Flow Section */}
+            {hasInvoicing && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+                    {/* Cash Flow Chart */}
+                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-4 lg:col-span-2">
+                        <div className="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 className="text-sm font-bold flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                    {t('dashboard.cashFlowOverview')}
+                                </h3>
+                                <p className="text-[10px] text-neutral-500 tracking-wider uppercase mt-1">{t('dashboard.incomingVsOutgoing')}</p>
+                            </div>
+                        </div>
+                        <CashFlowChart data={cashFlowData} />
+                    </div>
+
+                    {/* Cash Flow Metrics / Saldo Cards */}
+                    <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-neutral-200 dark:border-white/5 shadow-sm p-4 flex flex-col justify-between">
+                        <div>
+                            <h3 className="text-sm font-bold flex items-center gap-2 mb-1">
+                                <TrendingUp className="w-4 h-4 text-purple-500" />
+                                {t('dashboard.sixMonthSummary')}
+                            </h3>
+                            <p className="text-[10px] text-neutral-500 tracking-wider uppercase mb-4">Financial Status</p>
+
+                            <div className="space-y-3">
+                                <div className="bg-neutral-50 dark:bg-white/[0.01] p-3 rounded-2xl border border-neutral-100 dark:border-white/5">
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{t('dashboard.totalIncoming')}</p>
+                                    <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1">
+                                        €{sumIncoming.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                                <div className="bg-neutral-50 dark:bg-white/[0.01] p-3 rounded-2xl border border-neutral-100 dark:border-white/5">
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{t('dashboard.totalOutgoing')}</p>
+                                    <p className="text-xl font-black text-red-500 dark:text-red-400 mt-1">
+                                        €{sumOutgoing.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                                <div className="bg-neutral-50 dark:bg-white/[0.01] p-3 rounded-2xl border border-neutral-100 dark:border-white/5">
+                                    <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{t('dashboard.netCashFlow')}</p>
+                                    <p className={`text-xl font-black mt-1 ${netCashFlow6Months >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        €{netCashFlow6Months.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Current Month details */}
+                        <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-white/5">
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-500 mb-2">{t('dashboard.currentMonth')}</p>
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-neutral-500">{t('dashboard.incoming')}</span>
+                                <span className="font-bold text-emerald-600">€{currentMonthIncoming.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs mt-1.5">
+                                <span className="text-neutral-500">{t('dashboard.outgoing')}</span>
+                                <span className="font-bold text-red-500">€{currentMonthOutgoing.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs mt-1.5 pt-1.5 border-t border-dashed border-neutral-200 dark:border-white/5">
+                                <span className="font-bold text-neutral-700 dark:text-neutral-300">Net Saldo</span>
+                                <span className={`font-black ${netCurrentMonth >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600'}`}>
+                                    €{netCurrentMonth.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Lower Grid: Quick Actions + Recent Invoice Activity */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">

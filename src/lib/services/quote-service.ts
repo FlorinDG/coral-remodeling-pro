@@ -24,13 +24,14 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
         const clientId = Array.isArray(clientIdRaw) ? clientIdRaw[0] : clientIdRaw;
         const total = props.totalIncVat || props.totalExVat || 0;
         const title = props.betreft || props.title || 'New Project';
+        const billingRule = props['prop-billing-rule'] || 'opt-fixed';
 
         // 2. Create GlobalPage in db-1 (Projects Management)
         // We use a fixed ID for db-1 or look it up via tenant's lockedDbIds
         let projectDbId = 'db-1';
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { lockedDbIds: true }
+            select: { lockedDbIds: true, driveFolderId: true, companyName: true }
         });
         if (tenant?.lockedDbIds && typeof tenant.lockedDbIds === 'object') {
             const locked = tenant.lockedDbIds as Record<string, string>;
@@ -38,6 +39,29 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
         }
 
         const projectId = uuidv4();
+
+        // Safe Multi-Tenant Google Drive Folder Scaffolding
+        let driveFolderId = '';
+        try {
+            if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
+                const { generateProjectFolderTemplate, createFolder } = await import('@/lib/google-drive');
+                let tenantRootDriveId = tenant?.driveFolderId;
+                if (!tenantRootDriveId && tenant) {
+                    const cleanTenantName = tenant.companyName.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+                    tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`);
+                    await prisma.tenant.update({
+                        where: { id: tenantId },
+                        data: { driveFolderId: tenantRootDriveId }
+                    });
+                }
+                if (tenantRootDriveId) {
+                    const { projectId: gProjectId } = await generateProjectFolderTemplate(`[EXEC] ${title}`.trim(), tenantRootDriveId);
+                    driveFolderId = gProjectId;
+                }
+            }
+        } catch (driveErr) {
+            console.warn('[autoCreateProjectFromQuote] Google Drive scaffolding soft failure:', driveErr);
+        }
         
         // Get order for db-1
         const maxOrderRow = await prisma.globalPage.findFirst({
@@ -59,6 +83,8 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                     'prop-client': clientId ? [clientId] : [],
                     'prop-budget': total,
                     'prop-quote-link': [quoteId],
+                    'prop-billing-rule': billingRule,
+                    driveFolderId: driveFolderId || undefined,
                 } as Prisma.InputJsonValue,
                 blocks: quote.blocks || [], // Copy blocks as initial project scope
                 createdBy: 'system',

@@ -33,6 +33,18 @@ export const BASE_TO_KEY: Record<string, LockedDbKey> = {
  * Falls back to the bare base ID for legacy tenants (lockedDbIds = {}).
  */
 export function getLockedDbId(base: string, lockedDbIds: Record<string, string>): string {
+    // Idempotency check: if base is already fully resolved, return it directly
+    if (Object.values(lockedDbIds).includes(base)) return base;
+
+    const existingMappedVal = Object.values(lockedDbIds).find(val => val.includes('-'));
+    if (existingMappedVal) {
+        const parts = existingMappedVal.split('-');
+        const suffix = parts[parts.length - 1];
+        if (suffix && base.endsWith(`-${suffix}`)) {
+            return base;
+        }
+    }
+
     const key = BASE_TO_KEY[base];
     if (key && lockedDbIds[key]) return lockedDbIds[key];
     

@@ -542,6 +542,16 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
     }
 
+    // Force 'accountantExportedAt' to be a checkbox if it exists but has a different type (legacy migration)
+    const accountantProp = database.properties.find(p => p.id === 'accountantExportedAt');
+    if (accountantProp && accountantProp.type !== 'checkbox') {
+      console.log(`[Schema Enforcement] Updating ${resolvedId} property accountantExportedAt to type checkbox`);
+      const updatedProperties = database.properties.map(p => 
+        p.id === 'accountantExportedAt' ? { ...p, type: 'checkbox' as const } : p
+      );
+      useDatabaseStore.getState().updateDatabase(resolvedId, { properties: updatedProperties });
+    }
+
     if (databaseId === 'db-expenses') {
       const HIDDEN_BY_DEFAULT = ['betreft', 'source', 'peppolDocId'];
       const store = useDatabaseStore.getState();

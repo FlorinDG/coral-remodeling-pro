@@ -18,7 +18,7 @@ import { Lock } from 'lucide-react';
 import { getBaseDbId } from '@/lib/systemDatabases';
 
 const JournalCard       = dynamic(() => import('@/components/admin/database/components/JournalCard'),       { ssr: false });
-const FileManager       = dynamic(() => import('@/components/admin/file-manager/FileManager'),              { ssr: false });
+const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/FileManagerCard'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('@/components/admin/database/components/PageFinancialAnalysis'), { ssr: false });
 const LinkedRecords     = dynamic(() => import('@/components/admin/database/components/LinkedRecords'),     { ssr: false });
 const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
@@ -243,16 +243,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                             </ErrorBoundary>
 
                             {/* Files */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm min-h-[360px]">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <FileText className="w-4 h-4 text-orange-500" /> Files
-                                </div>
-                                <div className="flex-1 overflow-hidden relative">
-                                    <ErrorBoundary componentName="FileManager">
-                                        <FileManager contextType={fileContextType} contextId={pageId} driveFolderId={boundDriveId} />
-                                    </ErrorBoundary>
-                                </div>
-                            </div>
+                            <FileManagerCard contextType={fileContextType} contextId={pageId} driveFolderId={boundDriveId} minHeight="360px" />
                         </div>
 
                     </div>

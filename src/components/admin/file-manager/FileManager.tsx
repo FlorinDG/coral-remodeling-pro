@@ -212,7 +212,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
         }
 
         return [...crumbs, ...path];
-    }, [currentFolderId, isGlobalMode, nodes, searchQuery]);
+    }, [currentFolderId, isGlobalMode, nodes, searchQuery, tagFilter]);
 
     return (
         <div className="flex w-full h-full bg-background rounded-b-xl overflow-hidden">
@@ -227,14 +227,14 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
             <div className="flex-1 flex flex-col min-w-0 bg-background border-l border-border/50">
 
                 {/* Toolbar */}
-                <div className="h-14 flex items-center justify-between px-4 border-b border-border/50 bg-card/50">
+                <div className="min-h-[3.25rem] py-1.5 flex flex-wrap items-center justify-between gap-2 px-3 border-b border-border/50 bg-card/50">
 
                     {/* Breadcrumbs & Tags */}
-                    <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center text-sm">
+                    <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm">
+                        <div className="flex flex-wrap items-center gap-0.5">
                             {breadcrumbs.map((crumb, idx) => (
                                 <React.Fragment key={crumb.id || 'root'}>
-                                    {idx > 0 && <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />}
+                                    {idx > 0 && <ChevronRight className="w-3.5 h-3.5 mx-0.5 text-muted-foreground" />}
                                     <button
                                         onClick={() => {
                                             if (crumb.id === 'filter') {
@@ -246,7 +246,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                             }
                                         }}
                                         className={cn(
-                                            "hover:underline decoration-primary underline-offset-4 transition-colors",
+                                            "hover:underline decoration-primary underline-offset-4 transition-colors whitespace-nowrap",
                                             idx === breadcrumbs.length - 1 ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
                                         )}
                                     >
@@ -258,7 +258,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
 
                         {/* Topbar Tags for Global Mode */}
                         {isGlobalMode && (
-                            <div className="hidden lg:flex items-center gap-2 border-l border-border/50 pl-4 h-6">
+                            <div className="hidden lg:flex items-center gap-1.5 border-l border-border/50 pl-3 h-5">
                                 {['invoice', 'quotation', 'contract'].map(tag => (
                                     <button
                                         key={tag}
@@ -271,7 +271,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                             }
                                         }}
                                         className={cn(
-                                            "px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors border",
+                                            "px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors border whitespace-nowrap",
                                             tagFilter === tag
                                                 ? "bg-primary text-primary-foreground border-primary shadow-sm"
                                                 : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
@@ -285,44 +285,44 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 md:gap-2 flex-wrap sm:flex-nowrap">
                         <div className="relative">
-                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                             <input
                                 type="text"
                                 placeholder="Search files..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="pl-9 pr-4 py-1.5 text-sm bg-background border border-border rounded-full w-48 focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                                className="pl-8 pr-3 py-1 text-xs bg-background border border-border rounded-full w-20 focus:w-36 sm:w-28 sm:focus:w-44 lg:w-40 lg:focus:w-52 focus:outline-none focus:ring-1 focus:ring-primary transition-all duration-300"
                             />
                         </div>
 
-                        <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-md p-1">
+                        <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-md p-0.5">
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={cn("p-1.5 rounded-sm transition-colors", viewMode === 'list' ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                                className={cn("p-1 rounded-sm transition-colors", viewMode === 'list' ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
                             >
-                                <List className="w-4 h-4" />
+                                <List className="w-3.5 h-3.5" />
                             </button>
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={cn("p-1.5 rounded-sm transition-colors", viewMode === 'grid' ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
+                                className={cn("p-1 rounded-sm transition-colors", viewMode === 'grid' ? 'bg-white dark:bg-neutral-700 shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground')}
                             >
-                                <LayoutGrid className="w-4 h-4" />
+                                <LayoutGrid className="w-3.5 h-3.5" />
                             </button>
                         </div>
 
-                        <div className="h-4 w-px bg-border mx-1" />
+                        <div className="hidden sm:block h-4 w-px bg-border mx-0.5 md:mx-1" />
 
                         <button
                             onClick={async () => {
                                 const name = prompt('Enter new folder name:');
                                 if (name) await createFolder(name, currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 rounded-md transition-colors"
+                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md border border-transparent transition-colors"
                         >
                             <FolderPlus className="w-4 h-4" />
-                            <span className="hidden md:inline">Folder</span>
+                            <span className="hidden lg:inline">Folder</span>
                         </button>
 
                         <button
@@ -330,10 +330,10 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                 const name = prompt('Enter Google Doc name:');
                                 if (name) await createGoogleFile(name, 'document', currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-500 hover:bg-blue-500/10 rounded-md transition-colors"
+                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-blue-500 hover:bg-blue-500/10 rounded-md border border-transparent transition-colors"
                         >
                             <FilePlus2 className="w-4 h-4" />
-                            <span className="hidden md:inline">Doc</span>
+                            <span className="hidden lg:inline">Doc</span>
                         </button>
 
                         <button
@@ -341,15 +341,15 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                 const name = prompt('Enter Google Sheet name:');
                                 if (name) await createGoogleFile(name, 'spreadsheet', currentFolderId, contextType || 'global', contextId, driveFolderId);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-500 hover:bg-emerald-500/10 rounded-md transition-colors"
+                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-emerald-500 hover:bg-emerald-500/10 rounded-md border border-transparent transition-colors"
                         >
                             <FileSpreadsheet className="w-4 h-4" />
-                            <span className="hidden md:inline">Sheet</span>
+                            <span className="hidden lg:inline">Sheet</span>
                         </button>
 
-                        <label className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors shadow-sm cursor-pointer ml-2">
+                        <label className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md border border-transparent transition-colors shadow-sm cursor-pointer ml-1">
                             <UploadCloud className="w-4 h-4" />
-                            <span className="hidden md:inline">Upload</span>
+                            <span className="hidden lg:inline">Upload</span>
                             <input
                                 type="file"
                                 className="hidden"
@@ -372,7 +372,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                             <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
                             <p className="text-sm font-medium text-muted-foreground animate-pulse">Loading files...</p>
                         </div>
-                    ) : error && !error.includes('not configured') && !error.includes('missing') ? (
+                    ) : error && displayedNodes.length === 0 && !error.includes('not configured') && !error.includes('missing') ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center text-red-500 bg-red-50/50 p-6 z-10 text-center">
                             <p className="font-bold">Drive Sync Failed</p>
                             <p className="text-sm max-w-md">{error}</p>
@@ -386,6 +386,13 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                         viewMode={viewMode}
                     />
                 </div>
+
+                {viewingFile && (
+                    <FileViewerModal
+                        file={viewingFile}
+                        onClose={() => setViewingFile(null)}
+                    />
+                )}
 
             </div>
         </div>

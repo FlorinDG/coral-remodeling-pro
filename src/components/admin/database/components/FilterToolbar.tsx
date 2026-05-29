@@ -148,9 +148,26 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                         const needsValue = op?.needsValue ?? true;
                         return (
                             <div key={filter.id} className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 group">
-                                <span className="text-[11px] font-semibold text-neutral-400 w-[38px] text-right flex-shrink-0 uppercase tracking-wider">
-                                    {index === 0 ? 'Where' : 'And'}
-                                </span>
+                                {index === 0 ? (
+                                     <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 w-[42px] text-center flex-shrink-0 uppercase tracking-wider bg-neutral-100 dark:bg-neutral-800 py-1 rounded">
+                                         Where
+                                     </span>
+                                 ) : (
+                                     <button
+                                         onClick={() => {
+                                             const nextConjunction = (filter.conjunction || 'and') === 'or' ? 'and' : 'or';
+                                             updateFilter(databaseId, viewId, filter.id, { conjunction: nextConjunction });
+                                         }}
+                                         className={`text-[10px] font-bold w-[42px] text-center flex-shrink-0 uppercase tracking-wider py-1 rounded transition-all cursor-pointer ${
+                                             (filter.conjunction || 'and') === 'or'
+                                                 ? 'bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 border border-purple-200/50 dark:border-purple-800/30'
+                                                 : 'bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 border border-orange-200/50 dark:border-orange-800/30'
+                                         }`}
+                                         title="Click to toggle AND/OR logic"
+                                     >
+                                         {filter.conjunction || 'and'}
+                                     </button>
+                                 )}
 
                                 <div className="relative flex-shrink-0">
                                     <select

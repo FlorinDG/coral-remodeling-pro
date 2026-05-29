@@ -147,6 +147,7 @@ export interface FilterRule {
     propertyId: string;
     operator: FilterOperator;
     value?: string | number | boolean | null;
+    conjunction?: 'and' | 'or';
 }
 
 export interface FilterGroup {

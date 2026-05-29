@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FileNode, FileContextType } from './types';
+import { toast } from 'sonner';
 
 interface FileManagerState {
     nodes: FileNode[];
@@ -47,7 +48,7 @@ export const useFileManagerStore = create<FileManagerState>()(
                     const data = await res.json();
 
                     // The API returns raw Drive nodes. We tag them with the current context before tossing them in the store.
-                    const contextualNodes: FileNode[] = data.nodes.map((n: any) => ({
+                    const contextualNodes: FileNode[] = (data.nodes as FileNode[]).map((n) => ({
                         ...n,
                         contextType,
                         contextId
@@ -59,9 +60,10 @@ export const useFileManagerStore = create<FileManagerState>()(
                         return { nodes: [...otherNodes, ...contextualNodes], isLoading: false };
                     });
 
-                } catch (err: any) {
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to fetch Drive nodes:', err);
-                    set({ error: err.message, isLoading: false });
+                    set({ error: message, isLoading: false });
                 }
             },
 
@@ -97,9 +99,10 @@ export const useFileManagerStore = create<FileManagerState>()(
                     };
 
                     set((state) => ({ nodes: [...state.nodes, newNode] }));
-                } catch (err: any) {
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to create folder:', err);
-                    set({ error: err.message });
+                    toast.error(`Folder maken mislukt: ${message}`);
                 }
             },
 
@@ -136,9 +139,10 @@ export const useFileManagerStore = create<FileManagerState>()(
                     };
 
                     set((state) => ({ nodes: [...state.nodes, newNode] }));
-                } catch (err: any) {
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to create google file:', err);
-                    set({ error: err.message });
+                    toast.error(`Bestand maken mislukt: ${message}`);
                 }
             },
 
@@ -182,7 +186,7 @@ export const useFileManagerStore = create<FileManagerState>()(
                     const data = await res.json();
 
                     return data.node.id;
-                } catch (err: any) {
+                } catch (err) {
                     console.error('Failed to initialize context folder:', err);
                     return null;
                 }
@@ -190,6 +194,11 @@ export const useFileManagerStore = create<FileManagerState>()(
 
             uploadFile: async (file, parentId, contextType, contextId, driveFolderId) => {
                 try {
+                    const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2 MB safe serverless payload threshold
+                    if (file.size > MAX_FILE_SIZE) {
+                        throw new Error(`Bestand "${file.name}" is te groot. Directe uploads zijn beperkt tot 4 MB vanwege serverless payload-limieten.`);
+                    }
+
                     const driveParentId = parentId || getDriveFolderIdForContext(contextType, contextId, driveFolderId);
 
                     const formData = new FormData();
@@ -222,9 +231,11 @@ export const useFileManagerStore = create<FileManagerState>()(
                     };
 
                     set((state) => ({ nodes: [...state.nodes, newNode] }));
-                } catch (err: any) {
+                    toast.success(`Bestand "${file.name}" succesvol geüpload!`);
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to upload file:', err);
-                    set({ error: err.message });
+                    toast.error(message);
                 }
             },
 
@@ -236,9 +247,11 @@ export const useFileManagerStore = create<FileManagerState>()(
                     set((state) => ({
                         nodes: state.nodes.filter(n => n.id !== id)
                     }));
-                } catch (err: any) {
+                    toast.success('Bestand succesvol verwijderd.');
+                } catch (err) {
+                    const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to delete node:', err);
-                    set({ error: err.message });
+                    toast.error(`Verwijderen mislukt: ${message}`);
                 }
             },
 
@@ -263,6 +276,7 @@ export const useFileManagerStore = create<FileManagerState>()(
         }),
         {
             name: 'file-manager-storage-v1',
+            partialize: (state) => ({ nodes: state.nodes }),
         }
     )
 );

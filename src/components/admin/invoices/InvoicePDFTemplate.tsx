@@ -271,7 +271,7 @@ export const InvoicePDFTemplate = ({
     const totalInclTax = grandTotal + totalVAT;
     const hasMedecontractant = vatBreakdown.some(v => v.isMedecontractant);
 
-    const MEDECONTRACTANT_TEXT = 'Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992.';
+    const MEDECONTRACTANT_TEXT = t('footer_medecontractant_legal', lang);
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 
     // ── STATIONERY MODE ─────────────────────────────────────────────────────

@@ -107,20 +107,44 @@ export function useTaskFilter({
                 return Array.isArray(tags) && tags.includes(tag);
             }).filter(p => !isDone(p));
         } else if (perspective.type === 'custom' && perspective.filters?.length) {
-            // Apply each filter rule (AND logic)
-            perspective.filters.forEach(rule => {
-                filtered = filtered.filter(p => {
-                    const val = p.properties[rule.propertyId];
-                    switch (rule.operator) {
-                        case 'equals':          return String(val) === String(rule.value);
-                        case 'does_not_equal':  return String(val) !== String(rule.value);
-                        case 'contains':        return String(val).includes(String(rule.value));
-                        case 'is_empty':        return !val || val === '' || (Array.isArray(val) && val.length === 0);
-                        case 'is_not_empty':    return !!val && val !== '' && !(Array.isArray(val) && val.length === 0);
-                        default: return true;
-                    }
-                });
+            const activeFilters = perspective.filters;
+            const configuredFilters = activeFilters.filter(filter => {
+                const isTextOp = ['equals', 'does_not_equal', 'contains'].includes(filter.operator);
+                if (isTextOp && (filter.value === '' || filter.value === undefined || filter.value === null)) {
+                    return false;
+                }
+                return true;
             });
+
+            if (configuredFilters.length > 0) {
+                filtered = filtered.filter(page => {
+                    const evaluateRule = (filter: typeof activeFilters[0]) => {
+                        const val = page.properties[filter.propertyId];
+                        switch (filter.operator) {
+                            case 'equals':          return String(val) === String(filter.value);
+                            case 'does_not_equal':  return String(val) !== String(filter.value);
+                            case 'contains':        return String(val).toLowerCase().includes(String(filter.value).toLowerCase());
+                            case 'is_empty':        return !val || val === '' || (Array.isArray(val) && val.length === 0);
+                            case 'is_not_empty':    return !!val && val !== '' && !(Array.isArray(val) && val.length === 0);
+                            default: return true;
+                        }
+                    };
+
+                    let result = evaluateRule(configuredFilters[0]);
+
+                    for (let i = 1; i < configuredFilters.length; i++) {
+                        const rule = configuredFilters[i];
+                        const ruleResult = evaluateRule(rule);
+                        if (rule.conjunction === 'or') {
+                            result = result || ruleResult;
+                        } else {
+                            result = result && ruleResult;
+                        }
+                    }
+
+                    return result;
+                });
+            }
         }
 
         // 3. Sort: priority → due date → order

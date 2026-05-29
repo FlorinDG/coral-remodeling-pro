@@ -327,6 +327,7 @@
         "purchaseCreditNotes": "CREDIT NOTE - PURCHASE",
         "salesCreditNotes": "CREDIT NOTE - SALES",
         "salesInvoices": "INVOICES",
+        "proformas": "PROFORMA",
         "paymentsIn": "RECEIVED PAYMENTS",
         "paymentsOut": "OUTGOING PAYMENTS",
         "quotations": "QUOTATIONS"

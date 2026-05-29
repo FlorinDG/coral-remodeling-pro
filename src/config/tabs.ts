@@ -58,12 +58,14 @@ const FINANCIAL_TAB_KEYS: Record<string, string> = {
     'fin-cred-aankoop': 'purchaseCreditNotes',
     'fin-cred-verkoop': 'salesCreditNotes',
     'fin-facturen': 'salesInvoices',
+    'fin-proforma': 'proformas',
     'fin-payments-in': 'paymentsIn',
     'fin-payments-out': 'paymentsOut',
 };
 
 const financialTabsBase = [
     { label: 'FACTUREN', href: '/admin/financials/income/invoices', id: 'fin-facturen' },
+    { label: 'PROFORMA', href: '/admin/financials/income/proformas', id: 'fin-proforma' },
     { label: 'AANKOOPFACTUREN', href: '/admin/financials/expenses/invoices', id: 'fin-aankoop' },
     { label: 'ONKOSTENFICHES', href: '/admin/financials/expenses/tickets', id: 'fin-tickets' },
     { label: 'ONTVANGEN BETALINGEN', href: '/admin/financials/income/payments', id: 'fin-payments-in' },

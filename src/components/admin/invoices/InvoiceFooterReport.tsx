@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
 import { useRouter } from 'next/navigation';
+import { t } from '@/lib/document-i18n';
 
 interface CreditNoteInfo {
     id: string;
@@ -25,11 +26,10 @@ interface InvoiceFooterReportProps {
     creditNoteCount?: number;
     creditNotes?: CreditNoteInfo[];
     isLocked?: boolean;
+    language?: string;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
-
-const MEDECONTRACTANT_LEGAL_TEXT = `Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992. De afnemer is gehouden de verschuldigde belasting te voldoen.`;
 
 export default function InvoiceFooterReport({
     blocks,
@@ -46,6 +46,7 @@ export default function InvoiceFooterReport({
     creditNoteCount = 0,
     creditNotes = [],
     isLocked = false,
+    language = 'nl',
 }: InvoiceFooterReportProps) {
     const router = useRouter();
     const vatRegime = vatRegimeProp as VatRegime;
@@ -127,7 +128,7 @@ export default function InvoiceFooterReport({
                     }}
                 >
                     <p className="italic text-neutral-700 dark:text-neutral-300">
-                        {MEDECONTRACTANT_LEGAL_TEXT}
+                        {t('footer_medecontractant_legal', language)}
                     </p>
                 </div>
             )}

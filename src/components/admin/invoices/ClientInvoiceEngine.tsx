@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -16,6 +16,7 @@ import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
+import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
@@ -160,6 +161,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
         const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
         const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
+        const langProp = clientsDb.properties.find(p => ['taal', 'language', 'lang'].some(k => p.name.toLowerCase().includes(k)) || p.id === 'language');
         return clientsDb.pages.map(page => ({
             id: page.id,
             firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
@@ -168,6 +170,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
             vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
             address: addressProp ? String(page.properties[addressProp.id] || '') : null,
+            language: langProp ? String(page.properties[langProp.id] || '') : 'lang-nl',
         }));
     }, [clientsDb]);
 
@@ -191,7 +194,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!invoiceNum) return [];
         return db.pages.filter(p => {
             const parentId = p.properties['parentInvoiceId'];
-            if (parentId === id) return true; // Follow explicit link
+            const isMatch = Array.isArray(parentId) ? parentId.includes(id) : parentId === id;
+            if (isMatch) return true; // Follow explicit link
             const title = String(p.properties['title'] || '');
             return title.startsWith('CN-') && title.includes(invoiceNum); // Fallback to title matching
         });
@@ -267,13 +271,26 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         return [String(rawQuotation)].filter(Boolean);
     }, [rawQuotation]);
 
+    const rawClient = invoice?.properties?.['client'];
+    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+
+    const docLanguage = useMemo(() => {
+        if (!invoice) return 'nl';
+        const clientRecord = clients.find(c => c.id === clientId);
+        if (clientRecord?.language) {
+            const rawLang = clientRecord.language.toLowerCase();
+            if (rawLang.includes('fr')) return 'fr';
+            if (rawLang.includes('en')) return 'en';
+            return 'nl';
+        }
+        return tenantProfile?.documentLanguage || 'nl';
+    }, [invoice, clients, clientId, tenantProfile?.documentLanguage]);
+
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
     if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-orange-500">Go Back</button></div>;
 
     const invoiceTitle = invoice.properties?.['title'] || 'Draft Invoice';
-    const rawClient = invoice.properties?.['client'];
-    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
     const rawProject = invoice.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (invoice.properties?.['betreft'] as string) || '';
@@ -287,7 +304,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const isProforma = String(invoice.properties?.['docType']) === 'opt-proforma';
     
     // UI Link to Parent Invoice
-    const parentInvoiceId = invoice.properties?.['parentInvoiceId'] as string | undefined;
+    const parentInvoiceIdRaw = invoice.properties?.['parentInvoiceId'];
+    const parentInvoiceId = Array.isArray(parentInvoiceIdRaw) ? parentInvoiceIdRaw[0] : (parentInvoiceIdRaw as string | undefined);
     const parentInvoiceTitle = parentInvoiceId ? useDatabaseStore.getState().databases.find(d => d.id === invoicesDbId)?.pages.find(p => p.id === parentInvoiceId)?.properties['title'] : null;
 
     const blocks = invoice.blocks || [];
@@ -310,7 +328,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             client: clientId,
             status: 'opt-draft',
             betreft: `Creditnota voor ${invoiceNum}`,
-            parentInvoiceId: id, // Explicitly link to original
+            parentInvoiceId: [id], // Explicitly link to original as a relation array
             docType: 'opt-credit-note'
         });
         if (result.success) {
@@ -415,6 +433,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (key === 'client') {
             updateInvoiceContact(id, value).catch(console.error);
         }
+        if (key === 'docType') {
+            if (value === 'opt-proforma') {
+                updatePageProperty(invoicesDbId, invoice.id, 'title', 'Proforma');
+            } else if (value === 'opt-invoice' && String(invoice.properties['title']) === 'Proforma') {
+                getNextDocumentNumber('invoice').then(result => {
+                    if (result.success && result.number) {
+                        updatePageProperty(invoicesDbId, invoice.id, 'title', result.number);
+                    }
+                }).catch(console.error);
+            } else if (value === 'opt-credit-note' && String(invoice.properties['title']) === 'Proforma') {
+                updatePageProperty(invoicesDbId, invoice.id, 'title', `CN-${invoice.id.substring(0, 8).toUpperCase()}`);
+            }
+        }
     };
 
     // Deep-clone blocks with fresh IDs for import, mapping quotation verkoopPrice → invoice unitPrice
@@ -514,8 +545,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             email: clientRecord?.email || undefined,
         };
     };
-
-    const docLanguage = tenantProfile?.documentLanguage || 'nl';
 
     const handleSendEmail = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de factuur te versturen.');
@@ -719,7 +748,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         />
                             <div className="flex items-center gap-2">
                                 <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase flex items-center gap-2">
-                                    {isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
+                                    {isProforma ? 'Proforma' : isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
                                     {parentInvoiceTitle && (
                                         <>
                                             <span>•</span>
@@ -729,6 +758,50 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         </>
                                     )}
                                 </p>
+                                
+                                {/* Interactive document type selector */}
+                                {isHydrated && (() => {
+                                    const currentDocType = String(invoice.properties?.['docType'] || 'opt-invoice');
+                                    const DOCTYPE_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+                                        'opt-invoice':     { label: 'Factuur',     bg: 'bg-blue-50 dark:bg-blue-900/30',     text: 'text-blue-700 dark:text-blue-300',       dot: 'bg-blue-500' },
+                                        'opt-credit-note': { label: 'Creditnota',  bg: 'bg-pink-50 dark:bg-pink-900/30',     text: 'text-pink-700 dark:text-pink-300',       dot: 'bg-pink-500' },
+                                        'opt-proforma':    { label: 'Proforma',    bg: 'bg-amber-50 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-300',     dot: 'bg-amber-500' },
+                                    };
+                                    const current = DOCTYPE_MAP[currentDocType] || DOCTYPE_MAP['opt-invoice'];
+                                    
+                                    if (!isDraft || isLocked) {
+                                        return (
+                                            <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text}`}>
+                                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                                                {current.label}
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div className="relative group/doctype">
+                                            <button
+                                                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text} transition-all hover:ring-2 hover:ring-neutral-300 dark:hover:ring-white/20`}
+                                            >
+                                                <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
+                                                {current.label}
+                                            </button>
+                                            <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-50 opacity-0 pointer-events-none group-hover/doctype:opacity-100 group-hover/doctype:pointer-events-auto transition-all duration-150">
+                                                {Object.entries(DOCTYPE_MAP).map(([typeId, d]) => (
+                                                    <button
+                                                        key={typeId}
+                                                        onClick={() => handleUpdateProperty('docType', typeId)}
+                                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${typeId === currentDocType ? 'bg-neutral-100 dark:bg-white/10' : 'hover:bg-neutral-50 dark:hover:bg-white/5'} ${d.text}`}
+                                                    >
+                                                        <span className={`w-2 h-2 rounded-full ${d.dot}`} />
+                                                        {d.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* Interactive status selector */}
                                 {isHydrated && (() => {
                                     const STATUS_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
@@ -1013,6 +1086,42 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 )}
             </div>
 
+            {/* Relational tracing banners (Invoices <-> Credit Notes) */}
+            {isHydrated && (() => {
+                if (isCreditNote && parentInvoiceId) {
+                    return (
+                        <div className="bg-blue-50 dark:bg-blue-950/20 border-b border-blue-200 dark:border-blue-700/50 px-6 py-2.5 flex items-center justify-between shrink-0 text-xs text-blue-700 dark:text-blue-300">
+                            <div className="flex items-center gap-2">
+                                <Info className="w-4 h-4 text-blue-500 shrink-0" />
+                                <span>Deze creditnota is gekoppeld aan originele factuur <strong>{parentInvoiceTitle || 'Factuur'}</strong>.</span>
+                            </div>
+                            <Link href={`/admin/financials/income/invoices/${parentInvoiceId}`} className="font-bold underline hover:opacity-85">
+                                Open originele factuur →
+                            </Link>
+                        </div>
+                    );
+                }
+                if (!isCreditNote && !isProforma && creditNotes.length > 0) {
+                    const totalCreditedText = creditNoteInfos.map(cn => cn.title).join(', ');
+                    return (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-6 py-2.5 flex items-center justify-between shrink-0 text-xs text-amber-700 dark:text-amber-300">
+                            <div className="flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                <span>Deze factuur is gecrediteerd via creditnota(&apos;s): <strong>{totalCreditedText}</strong> (Totaal gecrediteerd: €{creditedTotal.toFixed(2)}).</span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {creditNoteInfos.map(cn => (
+                                    <Link key={cn.id} href={`/admin/financials/income/invoices/${cn.id}`} className="font-bold underline hover:opacity-85">
+                                        Open {cn.title} →
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                }
+                return null;
+            })()}
+
             {tenantProfile && (!tenantProfile.companyName || !tenantProfile.vatNumber) && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
@@ -1107,6 +1216,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         creditNoteCount={creditNotes.length}
                         creditNotes={creditNoteInfos}
                         isLocked={isLocked}
+                        language={docLanguage}
                     />
 
                 </div>

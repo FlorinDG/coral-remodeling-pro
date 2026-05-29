@@ -534,15 +534,18 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             if (!activeFilters || activeFilters.length === 0) return true;
 
-            return activeFilters.every(filter => {
-                const cellValue = page.properties[filter.propertyId];
-
-                // Skip text-match filters with empty value — treat as "not configured yet"
+            const configuredFilters = activeFilters.filter(filter => {
                 const isTextOp = ['equals', 'does_not_equal', 'contains', 'does_not_contain'].includes(filter.operator);
                 if (isTextOp && (filter.value === '' || filter.value === undefined || filter.value === null)) {
-                    return true;
+                    return false;
                 }
+                return true;
+            });
 
+            if (configuredFilters.length === 0) return true;
+
+            const evaluateRule = (filter: typeof activeFilters[0]) => {
+                const cellValue = page.properties[filter.propertyId];
                 switch (filter.operator) {
                     case 'equals': return String(cellValue) === String(filter.value);
                     case 'does_not_equal': return String(cellValue) !== String(filter.value);
@@ -552,7 +555,21 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     case 'is_not_empty': return !!cellValue && cellValue !== '';
                     default: return true;
                 }
-            });
+            };
+
+            let result = evaluateRule(configuredFilters[0]);
+
+            for (let i = 1; i < configuredFilters.length; i++) {
+                const rule = configuredFilters[i];
+                const ruleResult = evaluateRule(rule);
+                if (rule.conjunction === 'or') {
+                    result = result || ruleResult;
+                } else {
+                    result = result && ruleResult;
+                }
+            }
+
+            return result;
         });
     }, [database?.pages, activeView?.filters, database?.activeFilters, hardFilter]);
 

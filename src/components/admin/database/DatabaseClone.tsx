@@ -249,7 +249,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
         { id: 'opt-proforma', name: 'Proforma', color: 'orange' },
       ]}},
-      { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'text' },
+      { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'relation', config: { relationDatabaseId: 'db-invoices', relationDisplayPropertyId: 'title' } },
       { id: 'invoiceDate',  name: 'Factuurdatum',      type: 'date'     },
       { id: 'deliveryDate', name: 'Leveringsdatum',    type: 'date'     },
       { id: 'dueDate',      name: 'Vervaldatum',       type: 'date'     },
@@ -634,6 +634,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           );
           store.updateDatabase(resolvedId, { properties: updatedProperties });
         }
+      }
+
+      // Enforce that parentInvoiceId is a relation to db-invoices
+      const parentInvoiceProp = database.properties.find(p => p.id === 'parentInvoiceId');
+      if (parentInvoiceProp && parentInvoiceProp.type !== 'relation') {
+        const updatedProperties = database.properties.map(p => 
+          p.id === 'parentInvoiceId' ? { 
+            ...p, 
+            type: 'relation' as const, 
+            config: { relationDatabaseId: 'db-invoices', relationDisplayPropertyId: 'title' } 
+          } : p
+        );
+        store.updateDatabase(resolvedId, { properties: updatedProperties });
       }
     }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);

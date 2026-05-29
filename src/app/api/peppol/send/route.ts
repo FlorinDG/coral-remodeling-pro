@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
@@ -142,8 +143,9 @@ export async function POST(req: Request) {
 
         // 3b. Fetch original invoice for Credit Note reference if applicable
         let parentInvoiceNumber = undefined;
-        if (isCreditNote && parentInvoiceId) {
-            const parent = await prisma.invoice.findUnique({ where: { id: parentInvoiceId } });
+        const resolvedParentInvoiceId = Array.isArray(parentInvoiceId) ? parentInvoiceId[0] : parentInvoiceId;
+        if (isCreditNote && resolvedParentInvoiceId) {
+            const parent = await prisma.invoice.findUnique({ where: { id: resolvedParentInvoiceId } });
             if (parent) parentInvoiceNumber = parent.invoiceNumber;
         }
 

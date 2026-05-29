@@ -206,9 +206,9 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'footer_vat_medecontractant': { nl: 'Medecontractant (verlegde BTW)', fr: 'Autoliquidation (TVA inversée)', en: 'Reverse charge (shifted VAT)' },
     'footer_grand_total': { nl: 'Totaal incl. BTW', fr: 'Total TVAC', en: 'Total incl. VAT' },
     'footer_medecontractant_legal': {
-        nl: 'Btw verlegd — Verlegging van heffing. De btw is verschuldigd door de medecontractant overeenkomstig artikel 20 van het koninklijk besluit nr. 1 van 29 december 1992. De afnemer is gehouden de verschuldigde belasting te voldoen.',
-        fr: "TVA due par le cocontractant — Report de perception. La TVA est due par le cocontractant conformément à l'article 20 de l'arrêté royal n° 1 du 29 décembre 1992. L'acquéreur est tenu d'acquitter la taxe due.",
-        en: 'VAT shifted — Reverse charge mechanism. VAT is owed by the co-contractor in accordance with Article 20 of Royal Decree No. 1 of 29 December 1992. The purchaser is required to pay the tax due.',
+        nl: 'Verlegging van heffing. Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand na de ontvangst van de factuur, wordt de afnemer geacht te erkennen dat hij een belastingplichtige is gehouden tot de indiening van periodieke aangiften. Als die voorwaarde niet vervuld is, is de afnemer ten aanzien van die voorwaarde aansprakelijk voor de betaling van de verschuldigde belasting, interesten en geldboeten. De algemene verkoopsvoorwaarden zijn van toepassing.',
+        fr: "Autoliquidation : En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître qu'il est un assujetti tenu au dépôt de déclarations périodiques. Si cette condition n'est pas remplie, le client endossera, par rapport à cette condition, la responsabilité quant au paiement de la taxe, des intérêts et des amendes dus. Les conditions générales de vente s'appliquent.",
+        en: 'Reverse charge: In the absence of a written dispute within a period of one month from the receipt of the invoice, the customer is deemed to acknowledge that they are a taxable person liable to file periodic tax returns. If this condition is not met, the customer shall be liable, in respect of this condition, for the payment of the tax, interest, and fines due. The general terms and conditions of sale apply.',
     },
 
     // ── Profitability Summary ────────────────────────────────────────

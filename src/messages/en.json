@@ -611,5 +611,59 @@
     "cli_email": "Email",
     "banner_try_mobile": "Try our new mobile-optimized view!",
     "banner_open_app": "Open Mobile App"
+  },
+  "Tasks": {
+    "status": {
+      "toDo": "To Do",
+      "inProgress": "In Progress",
+      "inReview": "In Review",
+      "done": "Done",
+      "dropped": "Dropped"
+    },
+    "priority": {
+      "urgent": "Urgent",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "actions": {
+      "clickToEdit": "Click to edit title",
+      "untitled": "Untitled",
+      "addToMyDay": "Add to My Day",
+      "removeFromMyDay": "Remove from My Day",
+      "flag": "Flag",
+      "unflag": "Unflag",
+      "deleteTask": "Delete Task",
+      "confirmDelete": "Delete this task?",
+      "newTask": "New Task",
+      "quickAdd": "Quick Add...",
+      "taskTitle": "Task Title",
+      "save": "Save",
+      "cancel": "Cancel",
+      "addNewBelow": "Add a new task below..."
+    },
+    "sidebar": {
+      "smartLists": "Smart Lists",
+      "modulePerspectives": "Module Perspectives",
+      "tags": "Tags",
+      "perspectives": "Perspectives",
+      "newPerspective": "New Perspective",
+      "myDay": "My Day",
+      "today": "Today",
+      "planned": "Planned",
+      "flagged": "Flagged",
+      "assignedToMe": "Assigned to Me",
+      "allTasks": "All Tasks",
+      "completed": "Completed",
+      "inbox": "Inbox",
+      "projectsTasks": "Projects Tasks",
+      "workforceTasks": "Workforce Tasks",
+      "portalTasks": "Portal Tasks"
+    },
+    "taskCount": "tasks",
+    "emptyState": {
+      "title": "No tasks here",
+      "description": "All clear! You don't have any tasks in this view."
+    }
   }
 }

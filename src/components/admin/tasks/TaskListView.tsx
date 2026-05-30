@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { TaskRow } from './TaskRow';
+import { useTranslations } from 'next-intl';
 import { TaskGroup } from './hooks/useTaskFilter';
 import { ChevronDown, ChevronRight, Inbox } from 'lucide-react';
 
@@ -31,6 +32,7 @@ export function TaskListView({
     onDelete,
     onUpdateTitle,
 }: TaskListViewProps) {
+    const t = useTranslations('Tasks');
     // Keep track of collapsed section IDs
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -51,7 +53,7 @@ export function TaskListView({
                     {perspectiveName}
                 </h2>
                 <span className="text-xs text-neutral-800 dark:text-neutral-200 font-bold bg-neutral-200 dark:bg-white/15 px-2.5 py-1 rounded-full border border-neutral-300 dark:border-white/10 shadow-sm">
-                    {groups.reduce((acc, g) => acc + g.tasks.length, 0)} tasks
+                    {groups.reduce((acc, g) => acc + g.tasks.length, 0)} {t('taskCount')}
                 </span>
             </div>
 
@@ -61,9 +63,9 @@ export function TaskListView({
                     <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-white/5 flex items-center justify-center mb-3 border border-neutral-200 dark:border-white/10">
                         <Inbox className="w-6 h-6 text-neutral-600 dark:text-neutral-300" />
                     </div>
-                    <h3 className="text-base font-bold text-neutral-900 dark:text-white mb-1">No tasks here</h3>
+                    <h3 className="text-base font-bold text-neutral-900 dark:text-white mb-1">{t('emptyState.title')}</h3>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400 max-w-xs">
-                        All clear! You don&apos;t have any tasks in this view. Use the NLP quick-add bar at the bottom to create one.
+                        {t('emptyState.description')}
                     </p>
                 </div>
             ) : (

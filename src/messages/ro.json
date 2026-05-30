@@ -608,5 +608,59 @@
     "cli_empty_desc": "Adăugați primul dvs. client pentru a începe să creați facturi.",
     "cli_call": "Sună",
     "cli_email": "Trimite Email"
+  },
+  "Tasks": {
+    "status": {
+      "toDo": "De Făcut",
+      "inProgress": "În Curs",
+      "inReview": "În Revizuire",
+      "done": "Gata",
+      "dropped": "Abandonat"
+    },
+    "priority": {
+      "urgent": "Urgent",
+      "high": "Ridicat",
+      "medium": "Mediu",
+      "low": "Scăzut"
+    },
+    "actions": {
+      "clickToEdit": "Click pentru a edita titlul",
+      "untitled": "Fără titlu",
+      "addToMyDay": "Adaugă la Ziua Mea",
+      "removeFromMyDay": "Elimină din Ziua Mea",
+      "flag": "Marchează",
+      "unflag": "Demarchează",
+      "deleteTask": "Șterge Sarcina",
+      "confirmDelete": "Ștergi această sarcină?",
+      "newTask": "Sarcină Nouă",
+      "quickAdd": "Adăugare Rapidă...",
+      "taskTitle": "Titlul sarcinii",
+      "save": "Salvează",
+      "cancel": "Anulează",
+      "addNewBelow": "Adaugă o sarcină nouă mai jos..."
+    },
+    "sidebar": {
+      "smartLists": "Liste Inteligente",
+      "modulePerspectives": "Perspective Modul",
+      "tags": "Etichete",
+      "perspectives": "Perspective",
+      "newPerspective": "Perspectivă Nouă",
+      "myDay": "Ziua Mea",
+      "today": "Azi",
+      "planned": "Planificat",
+      "flagged": "Marcat",
+      "assignedToMe": "Atribuit Mie",
+      "allTasks": "Toate Sarcinile",
+      "completed": "Finalizat",
+      "inbox": "Inbox",
+      "projectsTasks": "Sarcini Proiecte",
+      "workforceTasks": "Sarcini Forță de Muncă",
+      "portalTasks": "Sarcini Portal"
+    },
+    "taskCount": "sarcini",
+    "emptyState": {
+      "title": "Nicio sarcină aici",
+      "description": "Totul este clar! Nu ai nicio sarcină în această vizualizare."
+    }
   }
 }

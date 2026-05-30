@@ -140,7 +140,12 @@ export type FilterOperator =
     | 'before'
     | 'after'
     | 'on_or_before'
-    | 'on_or_after';
+    | 'on_or_after'
+    | 'is_before'
+    | 'is_after'
+    | 'is_today'
+    | 'is_in_past'
+    | 'is_in_future';
 
 export interface FilterRule {
     id: string;

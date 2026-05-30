@@ -102,7 +102,14 @@
     "clockOut": "Отметить уход",
     "clockedIn": "Приход отмечен",
     "clockedOut": "Уход отмечен",
-    "duration": "Продолжительность"
+    "duration": "Продолжительность",
+    "processing": "Обработка...",
+    "clockInWithoutShift": "Отметить приход без смены",
+    "timeElapsed": "Прошло Времени",
+    "todaysShift": "Сегодняшняя Смена",
+    "noScheduledShift": "Нет Запланированной Смены",
+    "userInitiatedEntry": "Отметка прихода создаст пользовательскую запись",
+    "locationRecorded": "Местоположение сохранено"
   },
   "schedule": {
     "title": "Расписание",
@@ -116,7 +123,16 @@
     "startTime": "Время начала",
     "endTime": "Время окончания",
     "project": "Проект",
-    "notes": "Заметки"
+    "notes": "Заметки",
+    "today": "Сегодня",
+    "next": "Следующий",
+    "active": "Активен",
+    "unknown": "Неизвестно",
+    "tasks": "Задачи",
+    "more": "еще",
+    "allTasksCompleted": "Все задачи выполнены!",
+    "noShiftsScheduled": "Нет запланированных смен",
+    "noShiftsScheduledPeriod": "В этот период нет запланированных смен."
   },
   "timeOff": {
     "title": "Отпуск",

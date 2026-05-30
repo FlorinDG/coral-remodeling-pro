@@ -611,5 +611,59 @@
     "cli_email": "E-mailen",
     "banner_try_mobile": "Probeer onze nieuwe mobiele weergave!",
     "banner_open_app": "Open Mobiele App"
+  },
+  "Tasks": {
+    "status": {
+      "toDo": "Te Doen",
+      "inProgress": "In Uitvoering",
+      "inReview": "In Beoordeling",
+      "done": "Gereed",
+      "dropped": "Vervallen"
+    },
+    "priority": {
+      "urgent": "Dringend",
+      "high": "Hoog",
+      "medium": "Gemiddeld",
+      "low": "Laag"
+    },
+    "actions": {
+      "clickToEdit": "Klik om titel te bewerken",
+      "untitled": "Naamloos",
+      "addToMyDay": "Toevoegen aan Mijn Dag",
+      "removeFromMyDay": "Verwijderen uit Mijn Dag",
+      "flag": "Markeren",
+      "unflag": "Demarkeren",
+      "deleteTask": "Taak Verwijderen",
+      "confirmDelete": "Deze taak verwijderen?",
+      "newTask": "Nieuwe Taak",
+      "quickAdd": "Snel Toevoegen...",
+      "taskTitle": "Taak Titel",
+      "save": "Opslaan",
+      "cancel": "Annuleren",
+      "addNewBelow": "Voeg hieronder een nieuwe taak toe..."
+    },
+    "sidebar": {
+      "smartLists": "Slimme Lijsten",
+      "modulePerspectives": "Module Perspectieven",
+      "tags": "Tags",
+      "perspectives": "Perspectieven",
+      "newPerspective": "Nieuw Perspectief",
+      "myDay": "Mijn Dag",
+      "today": "Vandaag",
+      "planned": "Gepland",
+      "flagged": "Gemarkeerd",
+      "assignedToMe": "Aan mij toegewezen",
+      "allTasks": "Alle Taken",
+      "completed": "Voltooid",
+      "inbox": "Postvak IN",
+      "projectsTasks": "Projecttaken",
+      "workforceTasks": "Personeelstaken",
+      "portalTasks": "Portaaltaken"
+    },
+    "taskCount": "taken",
+    "emptyState": {
+      "title": "Geen taken hier",
+      "description": "Alles is duidelijk! Je hebt geen taken in deze weergave."
+    }
   }
 }

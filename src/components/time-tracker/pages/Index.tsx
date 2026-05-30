@@ -20,14 +20,7 @@ export default function Index({ embedded = false }: IndexProps) {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
 
-  useEffect(() => {
-    // Request notification permission natively
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      if (Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
-  }, []);
+  // Native push notifications callout removed per user request.
 
   if (loading) {
     return (

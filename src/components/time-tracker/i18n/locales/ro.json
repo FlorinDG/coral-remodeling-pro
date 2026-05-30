@@ -102,7 +102,14 @@
     "clockOut": "Pontează Ieșirea",
     "clockedIn": "Pontat la Intrare",
     "clockedOut": "Pontat la Ieșire",
-    "duration": "Durată"
+    "duration": "Durată",
+    "processing": "Se procesează...",
+    "clockInWithoutShift": "Pontare Fără Tură",
+    "timeElapsed": "Timp Scurs",
+    "todaysShift": "Tura de Azi",
+    "noScheduledShift": "Nicio Tură Programată",
+    "userInitiatedEntry": "Pontarea va crea o înregistrare inițiată de utilizator",
+    "locationRecorded": "Locație înregistrată"
   },
   "schedule": {
     "title": "Program",
@@ -116,7 +123,16 @@
     "startTime": "Ora de Început",
     "endTime": "Ora de Sfârșit",
     "project": "Proiect",
-    "notes": "Note"
+    "notes": "Note",
+    "today": "Azi",
+    "next": "Următorul",
+    "active": "Activ",
+    "unknown": "Necunoscut",
+    "tasks": "Sarcini",
+    "more": "mai mult",
+    "allTasksCompleted": "Toate sarcinile finalizate!",
+    "noShiftsScheduled": "Nicio tură programată",
+    "noShiftsScheduledPeriod": "Nicio tură programată în această perioadă."
   },
   "timeOff": {
     "title": "Concediu",

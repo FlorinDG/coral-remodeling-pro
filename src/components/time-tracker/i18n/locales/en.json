@@ -102,7 +102,14 @@
     "clockOut": "Clock Out",
     "clockedIn": "Clocked In",
     "clockedOut": "Clocked Out",
-    "duration": "Duration"
+    "duration": "Duration",
+    "processing": "Processing...",
+    "clockInWithoutShift": "Clock In Without Shift",
+    "timeElapsed": "Time Elapsed",
+    "todaysShift": "Today's Shift",
+    "noScheduledShift": "No Scheduled Shift",
+    "userInitiatedEntry": "Clocking in will create a user-initiated entry",
+    "locationRecorded": "Location recorded"
   },
   "schedule": {
     "title": "Schedule",
@@ -116,7 +123,16 @@
     "startTime": "Start Time",
     "endTime": "End Time",
     "project": "Project",
-    "notes": "Notes"
+    "notes": "Notes",
+    "today": "Today",
+    "next": "Next",
+    "active": "Active",
+    "unknown": "Unknown",
+    "tasks": "Tasks",
+    "more": "more",
+    "allTasksCompleted": "All tasks completed!",
+    "noShiftsScheduled": "No shifts scheduled",
+    "noShiftsScheduledPeriod": "No shifts scheduled in this period."
   },
   "timeOff": {
     "title": "Time Off",

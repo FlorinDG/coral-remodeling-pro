@@ -29,13 +29,16 @@ export async function GET(request: Request, context: any) {
             }
         });
 
-        const mappedTasks = rawTasks.map(p => ({
-            id: p.id,
-            title: p.properties['title'] || 'Untitled',
-            status: p.properties['prop-task-status'] === 'opt-done' ? 'DONE' : 'TODO',
-            dueDate: p.properties['prop-task-due'] || null,
-            fileUrl: p.properties['prop-task-file-url'] || null
-        }));
+        const mappedTasks = rawTasks.map(p => {
+            const props = (p.properties as any) || {};
+            return {
+                id: p.id,
+                title: props['title'] || 'Untitled',
+                status: props['prop-task-status'] === 'opt-done' ? 'DONE' : 'TODO',
+                dueDate: props['prop-task-due'] || null,
+                fileUrl: props['prop-task-file-url'] || null
+            };
+        });
 
         let linkedProjectData = null;
         if (portal.linkedProjectId) {

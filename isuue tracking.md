@@ -170,3 +170,10 @@ The previous analysis of the screenshot bug is correct. `JournalCard.tsx` reads 
 77. Financials
     77.1 [FIXED] Exported to accountant property should be a checkbox (already implemented — `accountantExportedAt` uses premium CheckboxColumn with toggle, record locking, and auto-stamp on accountant CSV export).
 
+78. [BUILT] - mobile optimisation for free tier ERP - 
+    78.1 [BUILT] - simplified UI, form based. with option in the menu to view tables if needed. create invoice opens a full screen form with option to create client on the fly - also remember to check and activate if needed the VAT check and auto population with company details from the KBO (or chamber of commerce in the relevant country)
+    78.2 [BUILT] - top 1/3 of screen with name of tenant and a basic graph of cash flow, middle 1/3 button to create invoice and add expense. 
+    n.a - remind me if free tier has ocr enabled for their documents, they should be able to scan expenses
+    78.3 [BUILT] - bottom bar tabs with Dashboard, Sales invoices, Purchase invoices that come through peppol, Expenses, Clients
+    
+    

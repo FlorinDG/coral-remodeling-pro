@@ -5,6 +5,7 @@ import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
 import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2, Pencil } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 // ── StatusIcon component ──────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ interface TaskRowProps {
 export function TaskRow({
     page, selected, compact, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle
 }: TaskRowProps) {
+    const t = useTranslations('Tasks');
     const props = page.properties;
     const status  = (props['prop-task-status']   as string) || 'opt-todo';
     const priority = props['prop-task-priority']  as string | undefined;
@@ -128,6 +130,24 @@ export function TaskRow({
     const priorityCfg = priority ? PRIORITY_CONFIG[priority] : null;
     const dueCfg = getDueDateDisplay(due);
 
+    // Helpers to get localized labels from config keys
+    const getStatusLabel = (s: string) => {
+        if (s === 'opt-todo') return t('status.toDo');
+        if (s === 'opt-doing') return t('status.inProgress');
+        if (s === 'opt-review') return t('status.inReview');
+        if (s === 'opt-done') return t('status.done');
+        if (s === 'opt-dropped') return t('status.dropped');
+        return statusCfg.label;
+    };
+
+    const getPriorityLabel = (p: string) => {
+        if (p === 'opt-p1') return t('priority.urgent');
+        if (p === 'opt-p2') return t('priority.high');
+        if (p === 'opt-p3') return t('priority.medium');
+        if (p === 'opt-p4') return t('priority.low');
+        return priorityCfg?.label || '';
+    };
+
     return (
         <div
             className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all duration-100 border
@@ -145,7 +165,7 @@ export function TaskRow({
                 className="flex-shrink-0 w-5 h-5 flex items-center justify-center hover:scale-110 transition-all duration-100"
                 style={{ color: statusCfg.color }}
                 onClick={e => { e.stopPropagation(); onComplete(page); }}
-                title={statusCfg.label}
+                title={getStatusLabel(status)}
             >
                 <StatusIcon status={status} className="w-4.5 h-4.5 stroke-[2.5]" />
             </button>
@@ -156,14 +176,14 @@ export function TaskRow({
                     <span
                         className="flex-shrink-0 w-2 h-2 rounded-[2px]"
                         style={{ backgroundColor: priorityCfg.color }}
-                        title={priorityCfg.label}
+                        title={getPriorityLabel(priority!)}
                     />
                 ) : (
                     <span
                         className="flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded border border-current"
                         style={{ color: priorityCfg.color, backgroundColor: priorityCfg.bg }}
                     >
-                        {priorityCfg.label}
+                        {getPriorityLabel(priority!)}
                     </span>
                 )
             )}
@@ -189,14 +209,14 @@ export function TaskRow({
                             setIsEditing(true);
                         }
                     }}
-                    title={done ? undefined : "Click to edit title"}
+                    title={done ? undefined : t('actions.clickToEdit')}
                 >
                     <span 
                         className={`text-sm font-semibold truncate hover:underline decoration-dashed decoration-orange-500/40 underline-offset-2
                             ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
                         `}
                     >
-                        {(props['title'] as string) || 'Untitled'}
+                        {(props['title'] as string) || t('actions.untitled')}
                     </span>
                     {!done && onUpdateTitle && (
                         <button className="opacity-0 group-hover/title:opacity-100 text-neutral-400 hover:text-orange-500 transition-opacity p-1">
@@ -255,7 +275,7 @@ export function TaskRow({
                     ${myDay ? '!opacity-100 text-orange-500' : 'text-neutral-450 dark:text-neutral-500 hover:text-orange-500'}
                 `}
                 onClick={e => { e.stopPropagation(); onToggleMyDay(page); }}
-                title={myDay ? 'Remove from My Day' : 'Add to My Day'}
+                title={myDay ? t('actions.removeFromMyDay') : t('actions.addToMyDay')}
             >
                 <Sun className={`w-3.5 h-3.5 ${myDay ? 'fill-current' : ''}`} />
             </button>
@@ -267,7 +287,7 @@ export function TaskRow({
                 `}
                 style={{ color: flagged ? '#dc2626' : '#4b5563' }}
                 onClick={e => { e.stopPropagation(); onToggleFlag(page); }}
-                title={flagged ? 'Unflag' : 'Flag'}
+                title={flagged ? t('actions.unflag') : t('actions.flag')}
             >
                 🚩
             </button>
@@ -275,8 +295,8 @@ export function TaskRow({
             {/* Delete Task */}
             <button
                 className="flex-shrink-0 w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 text-neutral-450 hover:text-red-500 dark:text-neutral-500 dark:hover:text-red-400"
-                onClick={e => { e.stopPropagation(); if (window.confirm('Delete this task?')) onDelete?.(page); }}
-                title="Delete Task"
+                onClick={e => { e.stopPropagation(); if (window.confirm(t('actions.confirmDelete'))) onDelete?.(page); }}
+                title={t('actions.deleteTask')}
             >
                 <Trash2 className="w-3.5 h-3.5" />
             </button>

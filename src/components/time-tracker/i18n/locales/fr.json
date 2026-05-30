@@ -102,7 +102,14 @@
     "clockOut": "Pointer le départ",
     "clockedIn": "Pointé à l'arrivée",
     "clockedOut": "Pointé au départ",
-    "duration": "Durée"
+    "duration": "Durée",
+    "processing": "Traitement...",
+    "clockInWithoutShift": "Pointer sans quart de travail",
+    "timeElapsed": "Temps écoulé",
+    "todaysShift": "Quart d'aujourd'hui",
+    "noScheduledShift": "Aucun quart prévu",
+    "userInitiatedEntry": "Le pointage créera une entrée initiée par l'utilisateur",
+    "locationRecorded": "Emplacement enregistré"
   },
   "schedule": {
     "title": "Planning",
@@ -116,7 +123,16 @@
     "startTime": "Heure de début",
     "endTime": "Heure de fin",
     "project": "Projet",
-    "notes": "Notes"
+    "notes": "Notes",
+    "today": "Aujourd'hui",
+    "next": "Suivant",
+    "active": "Actif",
+    "unknown": "Inconnu",
+    "tasks": "Tâches",
+    "more": "plus",
+    "allTasksCompleted": "Toutes les tâches terminées!",
+    "noShiftsScheduled": "Aucun quart prévu",
+    "noShiftsScheduledPeriod": "Aucun quart prévu pour cette période."
   },
   "timeOff": {
     "title": "Congés",

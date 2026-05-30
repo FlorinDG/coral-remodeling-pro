@@ -13,6 +13,8 @@ export async function POST(request: Request) {
         const task = await prisma.globalPage.create({
             data: {
                 databaseId: 'db-tasks',
+                createdBy: session?.user?.id || 'system',
+                lastEditedBy: session?.user?.id || 'system',
                 properties: {
                     'title': title,
                     'prop-task-status': 'opt-todo',
@@ -54,7 +56,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        const portalIds = existing.properties['prop-task-portal'] as string[] || [];
+        const props = (existing.properties as Record<string, any>) || {};
+        const portalIds = props['prop-task-portal'] as string[] || [];
         if (!portalIds.length) {
              return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }

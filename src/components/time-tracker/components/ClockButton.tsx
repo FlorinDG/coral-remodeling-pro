@@ -11,8 +11,10 @@ import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduled
 import { ClockOutForm } from './ClockOutForm';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 function ClockButtonComponent() {
+  const { t } = useTranslation();
   const [showClockOutForm, setShowClockOutForm] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -192,7 +194,7 @@ function ClockButtonComponent() {
         {isClockedIn && (
           <div className="animate-fade-in hidden md:block">
             <div className="bg-secondary/20 border border-secondary/30 rounded-2xl px-8 py-4 animate-timer-glow">
-              <p className="text-sm font-medium text-muted-foreground mb-1 text-center">Time Elapsed</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1 text-center">{t('clock.timeElapsed')}</p>
               <p className="timer-display text-4xl md:text-5xl font-bold text-primary tracking-wider">
                 {formattedTime}
               </p>
@@ -206,7 +208,7 @@ function ClockButtonComponent() {
             onClick={isClockedIn ? handleClockOut : handleClockIn}
             disabled={locationLoading || isProcessing}
             className={`
-              w-full max-w-sm h-14 md:h-20 px-8 md:px-12 text-base md:text-xl font-bold rounded-xl md:rounded-2xl transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]
+              w-full max-w-sm h-16 md:h-20 px-6 md:px-12 text-base md:text-xl font-bold rounded-xl md:rounded-2xl transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]
               ${isClockedIn 
                 ? 'btn-clock-out bg-rose-600 hover:bg-rose-500 text-white animate-pulse' 
                 : 'btn-clock-in bg-emerald-600 hover:bg-emerald-500 text-white'
@@ -214,20 +216,26 @@ function ClockButtonComponent() {
             `}
           >
             {locationLoading || isProcessing ? (
-              <Loader2 className="w-5 h-5 md:w-6 h-6 mr-3 animate-spin" />
+              <div className="flex items-center">
+                <Loader2 className="w-5 h-5 md:w-6 h-6 mr-3 animate-spin" />
+                <span>{t('clock.processing')}</span>
+              </div>
             ) : isClockedIn ? (
-              <Square className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
+              <div className="flex flex-col items-center justify-center w-full leading-tight">
+                <div className="flex items-center text-[10px] md:text-xs uppercase tracking-widest opacity-90 mb-1">
+                  <Square className="w-3 h-3 md:w-4 h-4 mr-1.5 fill-current" />
+                  {t('clock.clockOut')}
+                </div>
+                <div className="text-2xl md:text-3xl font-black tabular-nums tracking-wider font-mono">
+                  {formattedTime}
+                </div>
+              </div>
             ) : (
-              <Play className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
+              <div className="flex items-center">
+                <Play className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
+                <span>{hasScheduledShift ? t('clock.clockIn') : t('clock.clockInWithoutShift')}</span>
+              </div>
             )}
-            {locationLoading || isProcessing 
-              ? 'Processing...' 
-              : isClockedIn 
-                ? `Clock Out (${formattedTime})` 
-                : hasScheduledShift 
-                  ? 'Clock In' 
-                  : 'Clock In Without Shift'
-            }
           </Button>
         </div>
 
@@ -237,7 +245,7 @@ function ClockButtonComponent() {
             <div className="flex items-center gap-3 p-4 bg-secondary/10 rounded-xl border border-secondary/30">
               <Calendar className="w-5 h-5 text-secondary flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground">Today's Shift</p>
+                <p className="text-sm font-medium text-foreground">{t('clock.todaysShift')}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatTime(todayShift.shift_start)} - {formatTime(todayShift.shift_end)}
                 </p>
@@ -262,9 +270,9 @@ function ClockButtonComponent() {
             <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
               <AlertCircle className="w-5 h-5 text-muted-foreground flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-muted-foreground">No Scheduled Shift</p>
+                <p className="text-sm font-medium text-muted-foreground">{t('clock.noScheduledShift')}</p>
                 <p className="text-xs text-muted-foreground">
-                  Clocking in will create a user-initiated entry
+                  {t('clock.userInitiatedEntry')}
                 </p>
               </div>
             </div>
@@ -274,7 +282,7 @@ function ClockButtonComponent() {
         {isClockedIn && activeEntry?.clock_in_latitude && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground animate-fade-in">
             <MapPin className="w-4 h-4" />
-            <span>Location recorded</span>
+            <span>{t('clock.locationRecorded')}</span>
           </div>
         )}
       </div>

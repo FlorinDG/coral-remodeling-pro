@@ -610,5 +610,59 @@
     "cli_email": "Envoyer un e-mail",
     "banner_try_mobile": "Essayez notre nouvelle vue mobile optimisée !",
     "banner_open_app": "Ouvrir l'application mobile"
+  },
+  "Tasks": {
+    "status": {
+      "toDo": "À Faire",
+      "inProgress": "En Cours",
+      "inReview": "En Revue",
+      "done": "Terminé",
+      "dropped": "Abandonné"
+    },
+    "priority": {
+      "urgent": "Urgent",
+      "high": "Élevé",
+      "medium": "Moyen",
+      "low": "Bas"
+    },
+    "actions": {
+      "clickToEdit": "Cliquez pour modifier le titre",
+      "untitled": "Sans titre",
+      "addToMyDay": "Ajouter à Ma Journée",
+      "removeFromMyDay": "Retirer de Ma Journée",
+      "flag": "Marquer",
+      "unflag": "Démarquer",
+      "deleteTask": "Supprimer la tâche",
+      "confirmDelete": "Supprimer cette tâche?",
+      "newTask": "Nouvelle Tâche",
+      "quickAdd": "Ajout Rapide...",
+      "taskTitle": "Titre de la tâche",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "addNewBelow": "Ajouter une nouvelle tâche ci-dessous..."
+    },
+    "sidebar": {
+      "smartLists": "Listes Intelligentes",
+      "modulePerspectives": "Perspectives de Module",
+      "tags": "Étiquettes",
+      "perspectives": "Perspectives",
+      "newPerspective": "Nouvelle Perspective",
+      "myDay": "Ma Journée",
+      "today": "Aujourd'hui",
+      "planned": "Planifié",
+      "flagged": "Marqué",
+      "assignedToMe": "M'est assigné",
+      "allTasks": "Toutes les Tâches",
+      "completed": "Terminé",
+      "inbox": "Boîte de réception",
+      "projectsTasks": "Tâches de Projets",
+      "workforceTasks": "Tâches de Personnel",
+      "portalTasks": "Tâches de Portail"
+    },
+    "taskCount": "tâches",
+    "emptyState": {
+      "title": "Aucune tâche ici",
+      "description": "Tout est clair ! Vous n'avez aucune tâche dans cette vue."
+    }
   }
 }

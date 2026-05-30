@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Page } from '@/components/admin/database/types';
 import { SmartListId, ActivePerspective } from './hooks/useTaskFilter';
+import { useTranslations } from 'next-intl';
 
 // ── Smart list config ─────────────────────────────────────────────────────────
 
@@ -90,6 +91,7 @@ export function TaskSidebar({
     pages, userId, activePerspective, onSelectPerspective,
     savedPerspectives = [], onNewPerspective, isEnterprise, activeModules = [],
 }: TaskSidebarProps) {
+    const t = useTranslations('Tasks');
     const [tagsExpanded, setTagsExpanded] = useState(true);
     const [perspExpanded, setPerspExpanded] = useState(true);
 
@@ -123,7 +125,7 @@ export function TaskSidebar({
                     }`}
             >
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? color : undefined }} />
-                <span className="flex-1 text-left truncate">{label}</span>
+                <span className="flex-1 text-left truncate">{t(`sidebar.${label}` as 'sidebar.smartLists') || label}</span>
                 {count !== undefined && count > 0 && (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold border
                         ${active
@@ -141,26 +143,26 @@ export function TaskSidebar({
     return (
         <div className="h-full flex flex-col overflow-y-auto py-4 px-3 gap-1 bg-white dark:bg-neutral-950">
             {/* Smart Lists */}
-            <p className="px-3 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">Smart Lists</p>
+            <p className="px-3 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">{t('sidebar.smartLists')}</p>
             {SMART_LISTS.map(sl => (
                 <NavItem
                     key={sl.id}
                     perspective={{ type: 'smart-list', id: sl.id, name: sl.label }}
                     icon={sl.icon}
-                    label={sl.label}
+                    label={sl.id.replace(/-./g, x=>x[1].toUpperCase())} // maps 'my-day' to 'myDay' etc
                     color={sl.color}
                     count={countFor(pages, sl.id, userId)}
                 />
             ))}
 
             {/* Module Perspectives */}
-            <p className="px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">Module Perspectives</p>
+            <p className="px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">{t('sidebar.modulePerspectives')}</p>
             {MODULE_PERSPECTIVES.filter(mp => mp.module === 'CORE' || activeModules.includes(mp.module) || activeModules.includes('ALL')).map(mp => (
                 <NavItem
                     key={mp.id}
                     perspective={{ type: 'smart-list', id: mp.id, name: mp.label }}
                     icon={mp.icon}
-                    label={mp.label}
+                    label={mp.id.replace(/-./g, x=>x[1].toUpperCase())} // maps 'projects-tasks' to 'projectsTasks' etc
                     color={mp.color}
                     count={countFor(pages, mp.id, userId)}
                 />
@@ -174,7 +176,7 @@ export function TaskSidebar({
                         className="flex items-center gap-2 px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider w-full hover:text-neutral-900 dark:hover:text-white transition-colors"
                     >
                         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${tagsExpanded ? 'rotate-90' : ''}`} />
-                        Tags
+                        {t('sidebar.tags')}
                     </button>
                     {tagsExpanded && [...tagCounts.entries()].map(([tagId, count]) => (
                         <button
@@ -202,7 +204,7 @@ export function TaskSidebar({
                         className="flex items-center gap-2 px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider w-full hover:text-neutral-900 dark:hover:text-white transition-colors"
                     >
                         <ChevronRight className={`w-3.5 h-3.5 transition-transform ${perspExpanded ? 'rotate-90' : ''}`} />
-                        Perspectives
+                        {t('sidebar.perspectives')}
                     </button>
                     {perspExpanded && (
                         <>
@@ -220,7 +222,7 @@ export function TaskSidebar({
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-neutral-800 dark:text-neutral-200 hover:text-neutral-900 dark:hover:text-white rounded-lg hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors font-bold border border-dashed border-neutral-300 dark:border-white/10 mt-1"
                             >
                                 <Plus className="w-4 h-4" />
-                                New Perspective
+                                {t('sidebar.newPerspective')}
                             </button>
                         </>
                     )}

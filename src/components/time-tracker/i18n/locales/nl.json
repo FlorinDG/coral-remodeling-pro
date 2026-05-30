@@ -102,7 +102,14 @@
     "clockOut": "Uitklokken",
     "clockedIn": "Ingeklokt",
     "clockedOut": "Uitgeklokt",
-    "duration": "Duur"
+    "duration": "Duur",
+    "processing": "Verwerken...",
+    "clockInWithoutShift": "Inklokken zonder dienst",
+    "timeElapsed": "Verstreken Tijd",
+    "todaysShift": "Dienst van Vandaag",
+    "noScheduledShift": "Geen Dienst Gepland",
+    "userInitiatedEntry": "Inklokken creëert een door gebruiker geïnitieerde registratie",
+    "locationRecorded": "Locatie geregistreerd"
   },
   "schedule": {
     "title": "Rooster",
@@ -116,7 +123,16 @@
     "startTime": "Starttijd",
     "endTime": "Eindtijd",
     "project": "Project",
-    "notes": "Notities"
+    "notes": "Notities",
+    "today": "Vandaag",
+    "next": "Volgende",
+    "active": "Actief",
+    "unknown": "Onbekend",
+    "tasks": "Taken",
+    "more": "meer",
+    "allTasksCompleted": "Alle taken voltooid!",
+    "noShiftsScheduled": "Geen diensten gepland",
+    "noShiftsScheduledPeriod": "Geen diensten gepland in deze periode."
   },
   "timeOff": {
     "title": "Verlof",

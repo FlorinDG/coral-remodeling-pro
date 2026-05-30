@@ -181,6 +181,7 @@ All development and release operations must adhere to this structured flow to pr
 | `UserProjectAccess` table — many-to-many user↔project assignments | ✅ | 2026-05-18 Prisma `db push` |
 | `/api/tenant/project-access` GET/PUT — project assignment CRUD | ✅ | 2026-05-18 |
 | `ROLE_SIDEBAR_ALLOW` replaces `ACCOUNTANT_SIDEBAR_IDS` in AdminLayout | ✅ | 2026-05-18 — backward-compatible, ACCOUNTANT still in map |
+| FREE-tenant activeModules default restricted to INVOICING only | ✅ | 2026-05-30 code change + DB count verification |
 
 ---
 

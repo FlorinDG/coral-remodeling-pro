@@ -6,6 +6,7 @@ import prisma from "@/lib/prisma";
 import { authConfig } from "./auth.config";
 import { cookies } from "next/headers";
 import { verifyPassword } from "@/lib/password";
+import { PLAN_MODULES } from "@/lib/stripe";
 
 console.log("[DEBUG AUTH] Google Client ID loaded:", !!process.env.GOOGLE_CLIENT_ID);
 
@@ -128,7 +129,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                             // FREE tier — FOUNDER promoted manually via superadmin
                             planType:           "FREE",
                             subscriptionStatus: "ACTIVE",
-                            activeModules:      ["INVOICING"],
+                            activeModules:      PLAN_MODULES['FREE'],
                             documentLanguage:   nextLocale,
                         },
                     });

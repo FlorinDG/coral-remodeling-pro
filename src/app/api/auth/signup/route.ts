@@ -4,6 +4,7 @@ import { validatePassword, hashPassword } from '@/lib/password';
 import { randomBytes } from 'crypto';
 import { sendVerificationEmail } from '@/lib/email';
 import { startTrial } from '@/lib/trial';
+import { PLAN_MODULES } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
@@ -64,7 +65,7 @@ export async function POST(req: Request) {
                     // New signups start as FREE — trial is activated after the transaction.
                     planType: 'FREE',
                     subscriptionStatus: 'ACTIVE',
-                    activeModules: ['INVOICING'],
+                    activeModules: PLAN_MODULES['FREE'],
                     documentLanguage: userLanguage,
                 },
             });

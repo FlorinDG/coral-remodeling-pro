@@ -60,7 +60,7 @@ model Tenant {
 
   // Phase 2: SaaS Overarching Subscription Controls
   subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL
-  activeModules      String[] @default(["CRM", "PROJECTS", "INVOICING", "CALENDAR", "DATABASES"])
+  activeModules      String[] @default(["INVOICING"])
 
   // OCR Engine — superadmin-configurable per tenant
   // Supported values: GPT4O (default), MINDEE, VERYFI

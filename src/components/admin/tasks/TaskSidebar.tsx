@@ -20,10 +20,11 @@ const SMART_LISTS: { id: SmartListId; label: string; icon: React.ElementType; co
     { id: 'completed',     label: 'Completed',      icon: CheckCircle2,  color: '#22c55e' },
 ];
 
-const MODULE_PERSPECTIVES: { id: SmartListId; label: string; icon: React.ElementType; color: string }[] = [
-    { id: 'inbox',         label: 'Inbox',         icon: Inbox,         color: '#3b82f6' },
-    { id: 'projects',      label: 'Projects Tasks',icon: Briefcase,     color: '#ea580c' },
-    { id: 'hr-staff',      label: 'Workforce Tasks',icon: Users,         color: '#10b981' },
+const MODULE_PERSPECTIVES: { id: SmartListId; label: string; icon: React.ElementType; color: string; module: string }[] = [
+    { id: 'inbox',         label: 'Inbox',         icon: Inbox,         color: '#3b82f6', module: 'CORE' },
+    { id: 'projects',      label: 'Projects Tasks',icon: Briefcase,     color: '#ea580c', module: 'PROJECTS' },
+    { id: 'hr-staff',      label: 'Workforce Tasks',icon: Users,         color: '#10b981', module: 'HR' },
+    { id: 'portals',       label: 'Portal Tasks',  icon: Layers,        color: '#8b5cf6', module: 'PORTALS' },
 ];
 
 // ── Badge count helper ────────────────────────────────────────────────────────
@@ -51,6 +52,8 @@ function countFor(pages: Page[], id: SmartListId, userId: string): number {
             return pages.filter(p => !isDone(p) && Array.isArray(p.properties['prop-task-project']) && p.properties['prop-task-project'].length > 0).length;
         case 'hr-staff':
             return pages.filter(p => !isDone(p) && Array.isArray(p.properties['prop-task-assignee']) && p.properties['prop-task-assignee'].length > 0).length;
+        case 'portals':
+            return pages.filter(p => !isDone(p) && Array.isArray(p.properties['prop-task-portal']) && p.properties['prop-task-portal'].length > 0).length;
         case 'all':             return pages.filter(p => !isDone(p)).length;
         case 'completed':       return pages.filter(p => isDone(p)).length;
         default: return 0;
@@ -78,13 +81,14 @@ interface TaskSidebarProps {
     savedPerspectives?: SavedPerspective[];
     onNewPerspective?: () => void;
     isEnterprise?: boolean;
+    activeModules?: string[];
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function TaskSidebar({
     pages, userId, activePerspective, onSelectPerspective,
-    savedPerspectives = [], onNewPerspective, isEnterprise,
+    savedPerspectives = [], onNewPerspective, isEnterprise, activeModules = [],
 }: TaskSidebarProps) {
     const [tagsExpanded, setTagsExpanded] = useState(true);
     const [perspExpanded, setPerspExpanded] = useState(true);
@@ -151,7 +155,7 @@ export function TaskSidebar({
 
             {/* Module Perspectives */}
             <p className="px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">Module Perspectives</p>
-            {MODULE_PERSPECTIVES.map(mp => (
+            {MODULE_PERSPECTIVES.filter(mp => mp.module === 'CORE' || activeModules.includes(mp.module) || activeModules.includes('ALL')).map(mp => (
                 <NavItem
                     key={mp.id}
                     perspective={{ type: 'smart-list', id: mp.id, name: mp.label }}

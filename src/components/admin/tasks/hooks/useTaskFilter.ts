@@ -6,7 +6,7 @@ import { Page, FilterRule } from '@/components/admin/database/types';
 export type SmartListId =
     | 'my-day' | 'today' | 'planned' | 'flagged'
     | 'assigned-to-me' | 'all' | 'completed' | 'no-date'
-    | 'inbox' | 'projects' | 'hr-staff';
+    | 'inbox' | 'projects' | 'hr-staff' | 'portals';
 
 export interface ActivePerspective {
     type: 'smart-list' | 'tag' | 'custom';
@@ -90,6 +90,12 @@ function makeSmartFilter(id: string, userId: string): (page: Page) => boolean {
                 const assignee = p.properties['prop-task-assignee'];
                 return Array.isArray(assignee) && assignee.length > 0;
             };
+        case 'portals':
+            return p => {
+                if (isDone(p)) return false;
+                const portal = p.properties['prop-task-portal'];
+                return Array.isArray(portal) && portal.length > 0;
+            };
         case 'completed':
             return p => isDone(p);
         case 'no-date':
@@ -150,6 +156,11 @@ export function useTaskFilter({
                             case 'contains':        return String(val).toLowerCase().includes(String(filter.value).toLowerCase());
                             case 'is_empty':        return !val || val === '' || (Array.isArray(val) && val.length === 0);
                             case 'is_not_empty':    return !!val && val !== '' && !(Array.isArray(val) && val.length === 0);
+                            case 'is_before':       return val ? String(val).slice(0, 10) < String(filter.value) : false;
+                            case 'is_after':        return val ? String(val).slice(0, 10) > String(filter.value) : false;
+                            case 'is_today':        return val ? String(val).slice(0, 10) === todayStr() : false;
+                            case 'is_in_past':      return val ? String(val).slice(0, 10) < todayStr() : false;
+                            case 'is_in_future':    return val ? String(val).slice(0, 10) > todayStr() : false;
                             default: return true;
                         }
                     };

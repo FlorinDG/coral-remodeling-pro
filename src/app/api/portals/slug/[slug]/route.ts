@@ -10,7 +10,6 @@ export async function GET(request: Request, context: any) {
             where: { slug },
             include: {
                 updates: { orderBy: { createdAt: 'desc' } },
-                tasks: { orderBy: { createdAt: 'asc' } },
                 documents: { orderBy: { createdAt: 'desc' } },
                 media: { orderBy: { createdAt: 'desc' } },
                 messages: { orderBy: { createdAt: 'asc' } }
@@ -18,6 +17,25 @@ export async function GET(request: Request, context: any) {
         });
 
         if (!portal) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+        // Fetch portal tasks from the generic tasks module
+        const rawTasks = await prisma.globalPage.findMany({
+            where: {
+                databaseId: 'db-tasks',
+                properties: {
+                    path: ['prop-task-portal'],
+                    array_contains: portal.id
+                }
+            }
+        });
+
+        const mappedTasks = rawTasks.map(p => ({
+            id: p.id,
+            title: p.properties['title'] || 'Untitled',
+            status: p.properties['prop-task-status'] === 'opt-done' ? 'DONE' : 'TODO',
+            dueDate: p.properties['prop-task-due'] || null,
+            fileUrl: p.properties['prop-task-file-url'] || null
+        }));
 
         let linkedProjectData = null;
         if (portal.linkedProjectId) {
@@ -34,6 +52,7 @@ export async function GET(request: Request, context: any) {
         const { password, ...safePortal } = portal;
         return NextResponse.json({
             ...safePortal,
+            tasks: mappedTasks,
             hasPassword: !!password,
             linkedProjectData
         });

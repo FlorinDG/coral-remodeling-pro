@@ -10,17 +10,30 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { portalId, title, dueDate, fileUrl } = body;
 
-        const task = await prisma.task.create({
+        const task = await prisma.globalPage.create({
             data: {
-                portalId,
-                title,
-                status: 'TODO',
-                dueDate: dueDate ? new Date(dueDate) : null,
-                fileUrl
+                databaseId: 'db-tasks',
+                properties: {
+                    'title': title,
+                    'prop-task-status': 'opt-todo',
+                    'prop-task-due': dueDate ? new Date(dueDate).toISOString() : '',
+                    'prop-task-file-url': fileUrl || '',
+                    'prop-task-portal': [portalId], // Array of portal IDs
+                    'prop-task-priority': 'opt-p4',
+                    'prop-task-tags': []
+                }
             }
         });
 
-        return NextResponse.json(task);
+        const mappedTask = {
+            id: task.id,
+            title: title,
+            status: 'TODO',
+            dueDate: dueDate || null,
+            fileUrl: fileUrl || null
+        };
+
+        return NextResponse.json(mappedTask);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
     }
@@ -35,23 +48,49 @@ export async function PUT(request: Request) {
         const body = await request.json();
         const { id, title, status, dueDate, fileUrl } = body;
 
-        // Verify task belongs to caller's tenant via its parent portal
-        const existing = await prisma.task.findUnique({ where: { id }, include: { portal: { select: { tenantId: true } } } });
-        if (!existing || existing.portal.tenantId !== tenantId) {
+        // Verify task exists and we can access its portal
+        const existing = await prisma.globalPage.findUnique({ where: { id } });
+        if (!existing || existing.databaseId !== 'db-tasks') {
             return NextResponse.json({ error: 'Not found' }, { status: 404 });
         }
 
-        const task = await prisma.task.update({
+        const portalIds = existing.properties['prop-task-portal'] as string[] || [];
+        if (!portalIds.length) {
+             return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+        
+        // We verify the portal belongs to the tenant
+        const portal = await prisma.clientPortal.findFirst({
+            where: { id: { in: portalIds }, tenantId }
+        });
+        
+        if (!portal) {
+            return NextResponse.json({ error: 'Not found' }, { status: 404 });
+        }
+
+        const newProperties = {
+            ...((existing.properties as Record<string, any>) || {}),
+        };
+        
+        if (title !== undefined) newProperties['title'] = title;
+        if (status !== undefined) newProperties['prop-task-status'] = status === 'DONE' ? 'opt-done' : 'opt-todo';
+        if (dueDate !== undefined) newProperties['prop-task-due'] = dueDate ? new Date(dueDate).toISOString() : '';
+        if (fileUrl !== undefined) newProperties['prop-task-file-url'] = fileUrl || '';
+
+        const task = await prisma.globalPage.update({
             where: { id },
-            data: {
-                title,
-                status,
-                dueDate: dueDate ? new Date(dueDate) : undefined,
-                fileUrl
-            }
+            data: { properties: newProperties }
         });
 
-        return NextResponse.json(task);
+        const mappedTask = {
+            id: task.id,
+            title: newProperties['title'],
+            status: newProperties['prop-task-status'] === 'opt-done' ? 'DONE' : 'TODO',
+            dueDate: dueDate || null,
+            fileUrl: fileUrl || null
+        };
+
+        return NextResponse.json(mappedTask);
     } catch (error) {
         return NextResponse.json({ error: 'Failed to update task' }, { status: 500 });
     }

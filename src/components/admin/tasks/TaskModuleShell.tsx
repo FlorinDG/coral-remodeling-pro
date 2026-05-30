@@ -18,15 +18,14 @@ import { useTaskFilter, ActivePerspective } from './hooks/useTaskFilter';
 import { useMyDayReset } from './hooks/useMyDayReset';
 import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
-import { Layers, Kanban, Eye, Network, Plus } from 'lucide-react';
+import { Layers, Kanban, Eye, Network, Plus, ArrowLeft } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 export default function TaskModuleShell() {
     const router = useRouter();
     const { data: session } = useSession();
     const userId = session?.user?.id || 'admin';
-    const { isEnterprise } = useTenant();
+    const { isEnterprise, activeModules } = useTenant();
 
     // ── Database Store ────────────────────────────────────────────────────────
         const db = useDatabaseStore(state => state.getDatabase('db-tasks'));
@@ -49,34 +48,6 @@ export default function TaskModuleShell() {
     } | null>(null);
     const [activeView, setActiveView] = useState<'list' | 'board' | 'review' | 'dependencies'>('list');
     const [showPerspBuilder, setShowPerspBuilder] = useState(false);
-
-    // ── Resizable detail panel ────────────────────────────────────────────────
-    const [panelWidth, setPanelWidth] = useState(450); // default w-112 = 450px for a more prominent desktop workspace
-    const isResizing = useRef(false);
-    const panelRef = useRef<HTMLDivElement>(null);
-
-    const startResize = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        isResizing.current = true;
-        const startX = e.clientX;
-        const startWidth = panelWidth;
-
-        const onMouseMove = (ev: MouseEvent) => {
-            if (!isResizing.current) return;
-            const delta = startX - ev.clientX; // dragging left = bigger panel
-            const newWidth = Math.min(700, Math.max(280, startWidth + delta));
-            setPanelWidth(newWidth);
-        };
-
-        const onMouseUp = () => {
-            isResizing.current = false;
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-    }, [panelWidth]);
 
     const pages = db?.pages || [];
     const selectedPage = pages.find(p => p.id === selectedPageId);
@@ -235,13 +206,21 @@ export default function TaskModuleShell() {
                     activePerspective={perspective}
                     onSelectPerspective={setPerspective}
                     isEnterprise={isEnterprise}
+                    activeModules={activeModules}
                     savedPerspectives={savedPerspectives}
                     onNewPerspective={() => setShowPerspBuilder(true)}
                 />
             </div>
 
-            {/* Center Task List + Quick Add */}
-            <div className="flex-1 flex flex-col min-w-0 h-full relative">
+            {/* Main Content Area */}
+            <div className="flex-1 flex min-w-0 h-full relative">
+                
+                {/* Task List Container (Shrinks when detail is open on Desktop, hides on Mobile) */}
+                <div className={`flex flex-col h-full transition-all duration-300 ${
+                    selectedPage 
+                        ? 'hidden lg:flex lg:w-[45%] xl:w-[40%] border-r border-neutral-200 dark:border-white/10' 
+                        : 'flex-1 w-full'
+                }`}>
                 {/* View Switcher Header */}
                 <div className="px-4 py-2 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between bg-white dark:bg-neutral-950 flex-shrink-0">
                     <div className="flex items-center gap-1">
@@ -384,21 +363,20 @@ export default function TaskModuleShell() {
                 </div>
             </div>
 
-            {/* Drag-resize handle + Slide-out detail panel */}
+            {/* Split-pane Detail View */}
             {selectedPage && (
-                <>
-                    {/* Resize Handle */}
-                    <div
-                        ref={panelRef}
-                        onMouseDown={startResize}
-                        className="w-1 flex-shrink-0 cursor-col-resize bg-neutral-200 dark:bg-white/10 hover:bg-orange-400 dark:hover:bg-orange-500 transition-colors h-full hidden lg:block select-none"
-                        title="Drag to resize panel"
-                    />
-                    {/* Detail Panel */}
-                    <div
-                        className="flex-shrink-0 border-l border-neutral-200 dark:border-white/10 h-full hidden lg:block overflow-hidden bg-white dark:bg-neutral-950 shadow-2xl relative"
-                        style={{ width: panelWidth }}
-                    >
+                <div className="flex-1 flex flex-col min-w-0 h-full bg-white dark:bg-neutral-950 overflow-hidden animate-in fade-in slide-in-from-right-8 duration-300">
+                    {/* Mobile back button */}
+                    <div className="lg:hidden flex items-center p-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900/50">
+                        <button 
+                            onClick={() => setSelectedPageId(undefined)} 
+                            className="flex items-center gap-2 text-sm font-semibold text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> 
+                            Back to List
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto">
                         <TaskDetailPanel
                             page={selectedPage}
                             onClose={() => setSelectedPageId(undefined)}
@@ -409,27 +387,9 @@ export default function TaskModuleShell() {
                             }}
                         />
                     </div>
-                </>
-            )}
-
-            {/* Mobile/Tablet Sheet Drawer overlay (visible under lg viewport) */}
-            {selectedPage && (
-                <div className="lg:hidden">
-                    <Sheet open={!!selectedPage} onOpenChange={(open) => { if (!open) setSelectedPageId(undefined); }}>
-                        <SheetContent side="right" className="w-[90vw] sm:w-[500px] p-0 overflow-hidden border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-950">
-                            <TaskDetailPanel
-                                page={selectedPage}
-                                onClose={() => setSelectedPageId(undefined)}
-                                onUpdate={handleUpdate}
-                                onDelete={handleDelete}
-                                onOpenFullPage={(pageId) => {
-                                    router.push(`/admin/database/${db.id}/${pageId}`);
-                                }}
-                            />
-                        </SheetContent>
-                    </Sheet>
                 </div>
             )}
+        </div>
 
             {/* Context Menu */}
             {contextMenu && (

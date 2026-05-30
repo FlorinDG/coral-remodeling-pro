@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
-import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2 } from 'lucide-react';
+import { Circle, CircleDot, Eye, CheckCircle2, XCircle, Sun, Trash2, Pencil } from 'lucide-react';
 
 // ── StatusIcon component ──────────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ function formatDate(iso: string): string {
 interface TaskRowProps {
     page: Page;
     selected?: boolean;
+    compact?: boolean;
     onClick: () => void;
     onComplete: (page: Page) => void;
     onToggleMyDay: (page: Page) => void;
@@ -69,7 +70,7 @@ interface TaskRowProps {
 }
 
 export function TaskRow({
-    page, selected, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle
+    page, selected, compact, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle
 }: TaskRowProps) {
     const props = page.properties;
     const status  = (props['prop-task-status']   as string) || 'opt-todo';
@@ -151,12 +152,20 @@ export function TaskRow({
 
             {/* Priority tag */}
             {priorityCfg && (
-                <span
-                    className="flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded border border-current"
-                    style={{ color: priorityCfg.color, backgroundColor: priorityCfg.bg }}
-                >
-                    {priorityCfg.label}
-                </span>
+                compact ? (
+                    <span
+                        className="flex-shrink-0 w-2 h-2 rounded-[2px]"
+                        style={{ backgroundColor: priorityCfg.color }}
+                        title={priorityCfg.label}
+                    />
+                ) : (
+                    <span
+                        className="flex-shrink-0 text-[10px] font-black px-2 py-0.5 rounded border border-current"
+                        style={{ color: priorityCfg.color, backgroundColor: priorityCfg.bg }}
+                    >
+                        {priorityCfg.label}
+                    </span>
+                )
             )}
 
             {/* Title */}
@@ -172,10 +181,8 @@ export function TaskRow({
                     className="flex-1 min-w-0 text-sm font-semibold bg-neutral-150 dark:bg-white/10 outline-none border border-orange-500/50 rounded px-1.5 py-0.5 text-neutral-900 dark:text-white focus:ring-1 focus:ring-orange-500/30 font-content"
                 />
             ) : (
-                <span 
-                    className={`flex-1 min-w-0 text-sm font-semibold truncate cursor-text hover:underline decoration-dashed decoration-orange-500/40 underline-offset-2
-                        ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
-                    `}
+                <div 
+                    className="flex-1 min-w-0 flex items-center gap-1.5 cursor-text group/title"
                     onClick={e => {
                         if (onUpdateTitle && !done) {
                             e.stopPropagation(); // Prevent opening details drawer
@@ -184,8 +191,19 @@ export function TaskRow({
                     }}
                     title={done ? undefined : "Click to edit title"}
                 >
-                    {(props['title'] as string) || 'Untitled'}
-                </span>
+                    <span 
+                        className={`text-sm font-semibold truncate hover:underline decoration-dashed decoration-orange-500/40 underline-offset-2
+                            ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
+                        `}
+                    >
+                        {(props['title'] as string) || 'Untitled'}
+                    </span>
+                    {!done && onUpdateTitle && (
+                        <button className="opacity-0 group-hover/title:opacity-100 text-neutral-400 hover:text-orange-500 transition-opacity p-1">
+                            <Pencil className="w-3 h-3" />
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* Defer indicator */}
@@ -199,11 +217,15 @@ export function TaskRow({
             )}
 
             {/* Tags */}
-            <div className="flex-shrink-0 hidden group-hover:flex items-center gap-1">
+            <div className={`flex-shrink-0 ${compact ? 'flex opacity-70' : 'hidden group-hover:flex'} items-center gap-1`}>
                 {tags.slice(0, 2).map(t => (
-                    <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-white/5">
-                        {t.replace('tag-', '#')}
-                    </span>
+                    compact ? (
+                        <div key={t} className="w-2.5 h-2.5 rounded bg-purple-500/60" title={t.replace('tag-', '#')} />
+                    ) : (
+                        <span key={t} className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 border border-neutral-300 dark:border-white/5">
+                            {t.replace('tag-', '#')}
+                        </span>
+                    )
                 ))}
             </div>
 
@@ -216,9 +238,15 @@ export function TaskRow({
 
             {/* Due date */}
             {dueCfg.label && (
-                <span className="flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: dueCfg.color, backgroundColor: dueCfg.color + '15' }}>
-                    {dueCfg.label}
-                </span>
+                compact ? (
+                    <span className="flex-shrink-0 text-[10px] font-bold" style={{ color: dueCfg.color }} title={dueCfg.label}>
+                        📅
+                    </span>
+                ) : (
+                    <span className="flex-shrink-0 text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: dueCfg.color, backgroundColor: dueCfg.color + '15' }}>
+                        {dueCfg.label}
+                    </span>
+                )
             )}
 
             {/* My Day toggle */}

@@ -114,6 +114,7 @@ export function TaskListView({
                                                 key={page.id}
                                                 page={page}
                                                 selected={page.id === selectedPageId}
+                                                compact={!!selectedPageId}
                                                 onClick={() => onPageClick(page)}
                                                 onComplete={onComplete}
                                                 onToggleMyDay={onToggleMyDay}

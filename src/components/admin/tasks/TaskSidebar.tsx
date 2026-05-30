@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import {
     Sun, Calendar, CalendarDays, Flag, CheckCircle2,
-    Tag, InboxIcon, ChevronRight, Plus, Layers
+    Tag, InboxIcon, ChevronRight, Plus, Layers, Briefcase, Users, Inbox
 } from 'lucide-react';
 import { Page } from '@/components/admin/database/types';
 import { SmartListId, ActivePerspective } from './hooks/useTaskFilter';
@@ -20,6 +20,12 @@ const SMART_LISTS: { id: SmartListId; label: string; icon: React.ElementType; co
     { id: 'completed',     label: 'Completed',      icon: CheckCircle2,  color: '#22c55e' },
 ];
 
+const MODULE_PERSPECTIVES: { id: SmartListId; label: string; icon: React.ElementType; color: string }[] = [
+    { id: 'inbox',         label: 'Inbox',         icon: Inbox,         color: '#3b82f6' },
+    { id: 'projects',      label: 'Projects Tasks',icon: Briefcase,     color: '#ea580c' },
+    { id: 'hr-staff',      label: 'Workforce Tasks',icon: Users,         color: '#10b981' },
+];
+
 // ── Badge count helper ────────────────────────────────────────────────────────
 
 function countFor(pages: Page[], id: SmartListId, userId: string): number {
@@ -30,6 +36,21 @@ function countFor(pages: Page[], id: SmartListId, userId: string): number {
         case 'planned':         return pages.filter(p => !isDone(p) && !!p.properties['prop-task-due']).length;
         case 'flagged':         return pages.filter(p => p.properties['prop-task-flagged'] === true && !isDone(p)).length;
         case 'assigned-to-me':  return pages.filter(p => { const a = p.properties['prop-task-assignee'] as string[]; return Array.isArray(a) && a.includes(userId) && !isDone(p); }).length;
+        case 'inbox':
+            return pages.filter(p => {
+                if (isDone(p)) return false;
+                const project = p.properties['prop-task-project'];
+                const assignee = p.properties['prop-task-assignee'];
+                const due = p.properties['prop-task-due'];
+                const hasProject = Array.isArray(project) && project.length > 0;
+                const hasAssignee = Array.isArray(assignee) && assignee.length > 0;
+                const hasDue = !!due;
+                return !hasProject && !hasAssignee && !hasDue;
+            }).length;
+        case 'projects':
+            return pages.filter(p => !isDone(p) && Array.isArray(p.properties['prop-task-project']) && p.properties['prop-task-project'].length > 0).length;
+        case 'hr-staff':
+            return pages.filter(p => !isDone(p) && Array.isArray(p.properties['prop-task-assignee']) && p.properties['prop-task-assignee'].length > 0).length;
         case 'all':             return pages.filter(p => !isDone(p)).length;
         case 'completed':       return pages.filter(p => isDone(p)).length;
         default: return 0;
@@ -125,6 +146,19 @@ export function TaskSidebar({
                     label={sl.label}
                     color={sl.color}
                     count={countFor(pages, sl.id, userId)}
+                />
+            ))}
+
+            {/* Module Perspectives */}
+            <p className="px-3 pt-4 pb-1.5 text-[10px] font-black text-neutral-800 dark:text-neutral-300 uppercase tracking-wider">Module Perspectives</p>
+            {MODULE_PERSPECTIVES.map(mp => (
+                <NavItem
+                    key={mp.id}
+                    perspective={{ type: 'smart-list', id: mp.id, name: mp.label }}
+                    icon={mp.icon}
+                    label={mp.label}
+                    color={mp.color}
+                    count={countFor(pages, mp.id, userId)}
                 />
             ))}
 

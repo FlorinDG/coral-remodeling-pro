@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { Page } from '@/components/admin/database/types';
 import { todayStr, isDone } from './hooks/useTaskFilter';
 import { parseRecurrenceRule } from './RecurrenceEngine';
@@ -64,10 +65,11 @@ interface TaskRowProps {
     onToggleFlag: (page: Page) => void;
     onContextMenu?: (e: React.MouseEvent, page: Page) => void;
     onDelete?: (page: Page) => void;
+    onUpdateTitle?: (pageId: string, title: string) => void;
 }
 
 export function TaskRow({
-    page, selected, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete
+    page, selected, onClick, onComplete, onToggleMyDay, onToggleFlag, onContextMenu, onDelete, onUpdateTitle
 }: TaskRowProps) {
     const props = page.properties;
     const status  = (props['prop-task-status']   as string) || 'opt-todo';
@@ -81,6 +83,45 @@ export function TaskRow({
     const recur    = props['prop-task-recurrence'] as string | undefined;
     const done     = isDone(page);
     const deferred = defer && defer.slice(0, 10) > todayStr();
+
+    const titleVal = String(props['title'] || '');
+    const [isEditing, setIsEditing] = useState(false);
+    const [editTitle, setEditTitle] = useState(titleVal);
+    const [prevTitle, setPrevTitle] = useState(titleVal);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    if (titleVal !== prevTitle) {
+        setPrevTitle(titleVal);
+        setEditTitle(titleVal);
+    }
+
+    useEffect(() => {
+        if (isEditing && inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+        }
+    }, [isEditing]);
+
+    const handleSave = () => {
+        setIsEditing(false);
+        const trimmed = editTitle.trim();
+        if (trimmed && trimmed !== String(props['title'] || '')) {
+            onUpdateTitle?.(page.id, trimmed);
+        } else {
+            setEditTitle(String(props['title'] || ''));
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSave();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setIsEditing(false);
+            setEditTitle(String(props['title'] || ''));
+        }
+    };
 
     const statusCfg  = STATUS_CONFIG[status]  || STATUS_CONFIG['opt-todo'];
     const priorityCfg = priority ? PRIORITY_CONFIG[priority] : null;
@@ -119,11 +160,33 @@ export function TaskRow({
             )}
 
             {/* Title */}
-            <span className={`flex-1 min-w-0 text-sm font-semibold truncate
-                ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
-            `}>
-                {(props['title'] as string) || 'Untitled'}
-            </span>
+            {isEditing ? (
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    onBlur={handleSave}
+                    onKeyDown={handleKeyDown}
+                    onClick={e => e.stopPropagation()} // Prevent clicking row to open drawer
+                    className="flex-1 min-w-0 text-sm font-semibold bg-neutral-150 dark:bg-white/10 outline-none border border-orange-500/50 rounded px-1.5 py-0.5 text-neutral-900 dark:text-white focus:ring-1 focus:ring-orange-500/30 font-content"
+                />
+            ) : (
+                <span 
+                    className={`flex-1 min-w-0 text-sm font-semibold truncate cursor-text hover:underline decoration-dashed decoration-orange-500/40 underline-offset-2
+                        ${done ? 'line-through text-neutral-400 dark:text-neutral-500' : 'text-neutral-900 dark:text-white'}
+                    `}
+                    onClick={e => {
+                        if (onUpdateTitle && !done) {
+                            e.stopPropagation(); // Prevent opening details drawer
+                            setIsEditing(true);
+                        }
+                    }}
+                    title={done ? undefined : "Click to edit title"}
+                >
+                    {(props['title'] as string) || 'Untitled'}
+                </span>
+            )}
 
             {/* Defer indicator */}
             {deferred && (

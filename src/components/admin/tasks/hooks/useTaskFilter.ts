@@ -5,7 +5,8 @@ import { Page, FilterRule } from '@/components/admin/database/types';
 
 export type SmartListId =
     | 'my-day' | 'today' | 'planned' | 'flagged'
-    | 'assigned-to-me' | 'all' | 'completed' | 'no-date';
+    | 'assigned-to-me' | 'all' | 'completed' | 'no-date'
+    | 'inbox' | 'projects' | 'hr-staff';
 
 export interface ActivePerspective {
     type: 'smart-list' | 'tag' | 'custom';
@@ -65,6 +66,29 @@ function makeSmartFilter(id: string, userId: string): (page: Page) => boolean {
             return p => {
                 const a = p.properties['prop-task-assignee'];
                 return Array.isArray(a) && a.includes(userId);
+            };
+        case 'inbox':
+            return p => {
+                if (isDone(p)) return false;
+                const project = p.properties['prop-task-project'];
+                const assignee = p.properties['prop-task-assignee'];
+                const due = p.properties['prop-task-due'];
+                const hasProject = Array.isArray(project) && project.length > 0;
+                const hasAssignee = Array.isArray(assignee) && assignee.length > 0;
+                const hasDue = !!due;
+                return !hasProject && !hasAssignee && !hasDue;
+            };
+        case 'projects':
+            return p => {
+                if (isDone(p)) return false;
+                const project = p.properties['prop-task-project'];
+                return Array.isArray(project) && project.length > 0;
+            };
+        case 'hr-staff':
+            return p => {
+                if (isDone(p)) return false;
+                const assignee = p.properties['prop-task-assignee'];
+                return Array.isArray(assignee) && assignee.length > 0;
             };
         case 'completed':
             return p => isDone(p);

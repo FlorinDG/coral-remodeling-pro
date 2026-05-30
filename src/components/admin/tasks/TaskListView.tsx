@@ -16,6 +16,7 @@ interface TaskListViewProps {
     onToggleFlag: (page: Page) => void;
     onContextMenu: (e: React.MouseEvent, page: Page) => void;
     onDelete?: (page: Page) => void;
+    onUpdateTitle?: (pageId: string, title: string) => void;
 }
 
 export function TaskListView({
@@ -28,6 +29,7 @@ export function TaskListView({
     onToggleFlag,
     onContextMenu,
     onDelete,
+    onUpdateTitle,
 }: TaskListViewProps) {
     // Keep track of collapsed section IDs
     const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
@@ -118,6 +120,7 @@ export function TaskListView({
                                                 onToggleFlag={onToggleFlag}
                                                 onContextMenu={onContextMenu}
                                                 onDelete={onDelete}
+                                                onUpdateTitle={onUpdateTitle}
                                             />
                                         ))}
                                     </div>

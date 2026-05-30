@@ -185,7 +185,7 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border border-neutral-350 dark:border-white/20 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-white/5 transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 shadow-sm"
+                className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-white/10 text-xs font-bold hover:border-orange-400 dark:hover:border-orange-500/50 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 shadow-sm active:scale-98"
             >
                 <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -195,7 +195,7 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
             </button>
 
             {open && (
-                <div className="absolute top-full mt-1.5 left-0 z-[110] bg-white dark:bg-neutral-950 border border-neutral-300 dark:border-white/20 rounded-xl shadow-2xl p-4 w-72 select-none">
+                <div className="absolute top-full mt-1.5 left-0 z-[110] bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-72 select-none animate-in fade-in slide-in-from-top-1 duration-150">
                     <div className="flex items-center justify-between mb-4">
                         <button
                             type="button"
@@ -324,7 +324,7 @@ function Select({ value, options, onChange, renderIcon }: {
         <div ref={ref} className="relative">
             <button
                 onClick={handleToggle}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-350 dark:border-white/20 text-sm font-semibold hover:bg-neutral-100 dark:hover:bg-white/5 transition-all bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-white/10 text-xs font-bold hover:border-orange-400 dark:hover:border-orange-500/50 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-all bg-white dark:bg-neutral-900 text-neutral-850 dark:text-neutral-200 shadow-sm active:scale-98"
                 style={{ color: current?.color }}
             >
                 {renderIcon && renderIcon(value)}
@@ -332,11 +332,11 @@ function Select({ value, options, onChange, renderIcon }: {
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
             {open && (
-                <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} left-0 z-[100] bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-white/25 rounded-xl shadow-xl py-1.5 min-w-[180px] max-h-[220px] overflow-y-auto`}>
+                <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} left-0 z-[100] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-xl py-1.5 min-w-[180px] max-h-[220px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150`}>
                     {options.map(o => (
                         <button
                             key={o.id}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-left font-semibold"
+                            className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-left"
                             style={{ color: o.color }}
                             onClick={() => { onChange(o.id); setOpen(false); }}
                         >
@@ -352,9 +352,9 @@ function Select({ value, options, onChange, renderIcon }: {
 
 function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
     return (
-        <div className="flex items-start gap-3 py-2.5 border-b border-neutral-200 dark:border-white/10 last:border-0">
-            <span className="w-28 flex-shrink-0 text-xs font-black text-neutral-850 dark:text-neutral-300 pt-1.5">{label}</span>
-            <div className="flex-1">{children}</div>
+        <div className="flex items-center gap-3 py-3 border-b border-neutral-100 dark:border-white/5 last:border-0 hover:bg-neutral-50/50 dark:hover:bg-white/[0.01] -mx-3 px-3 first:rounded-t-2xl last:rounded-b-2xl transition-colors">
+            <span className="w-28 flex-shrink-0 text-xs font-bold text-neutral-500 dark:text-neutral-450">{label}</span>
+            <div className="flex-1 flex items-center">{children}</div>
         </div>
     );
 }
@@ -594,29 +594,29 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                     </PropRow>
                 </div>
 
-                {/* Notes */}
-                <div>
-                    <p className="text-xs font-black text-neutral-800 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">Notes</p>
+                               {/* Notes */}
+                <div className="rounded-2xl border border-neutral-300 dark:border-white/10 bg-neutral-50/30 dark:bg-white/[0.01] p-4 shadow-sm hover:border-neutral-350 dark:hover:border-white/20 transition-all">
+                    <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-450 mb-2.5 uppercase tracking-widest">Notes</p>
                     <textarea
                         value={notes}
                         onChange={e => setNotes(e.target.value)}
                         onBlur={saveNotes}
                         rows={4}
-                        placeholder="Add notes…"
-                        className="w-full text-sm bg-neutral-50 dark:bg-white/[0.02] text-neutral-900 dark:text-white border border-neutral-300 dark:border-white/20 rounded-xl px-3.5 py-2.5 outline-none resize-none placeholder:text-neutral-400 focus:ring-2 focus:ring-orange-500/50 shadow-md transition-all font-semibold"
+                        placeholder="Add notes or task instructions…"
+                        className="w-full text-sm bg-transparent text-neutral-900 dark:text-white outline-none resize-none placeholder:text-neutral-400 focus:ring-0 font-semibold"
                     />
                 </div>
 
                 {/* Attachments Section */}
-                <div className="pt-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-black text-neutral-850 dark:text-neutral-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <Paperclip className="w-3.5 h-3.5 text-neutral-600 dark:text-neutral-400" />
+                <div className="rounded-2xl border border-neutral-300 dark:border-white/10 bg-neutral-50/30 dark:bg-white/[0.01] p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3.5">
+                        <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-450 uppercase tracking-widest flex items-center gap-1.5">
+                            <Paperclip className="w-3.5 h-3.5 text-neutral-500" />
                             Attachments
                         </p>
-                        <label className="text-xs font-bold text-orange-950 dark:text-orange-300 hover:text-orange-900 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 px-2.5 py-1.5 rounded-lg shadow-sm cursor-pointer flex items-center gap-1 hover:scale-102 transition-transform">
+                        <label className="text-xs font-bold text-orange-650 hover:text-white dark:text-orange-400 dark:hover:text-white hover:bg-[var(--brand-color,#d35400)] dark:hover:bg-[var(--brand-color,#d35400)] border border-orange-350/60 dark:border-orange-500/30 px-3 py-1.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5 transition-all active:scale-98">
                             <UploadCloud className="w-3.5 h-3.5" />
-                            Add Attachments
+                            Upload Files
                             <input
                                 type="file"
                                 multiple
@@ -627,26 +627,26 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                     </div>
 
                     {attachments.length === 0 ? (
-                        <div className="border border-dashed border-neutral-300 dark:border-white/10 rounded-xl p-4 text-center bg-neutral-50 dark:bg-white/[0.01]">
+                        <div className="border border-dashed border-neutral-300 dark:border-white/10 rounded-xl p-4 text-center bg-neutral-50/20 dark:bg-white/[0.005]">
                             <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-450">No photos or files attached</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {/* Photos Grid */}
                             {photos.length > 0 && (
-                                <div className="space-y-1.5">
-                                    <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">Photos</h4>
-                                    <div className="grid grid-cols-3 gap-2">
+                                <div className="space-y-2">
+                                    <h4 className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Photos</h4>
+                                    <div className="grid grid-cols-3 gap-2.5">
                                         {photos.map(p => (
-                                            <div key={p.id} className="group/photo relative aspect-square border border-neutral-350 dark:border-white/20 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm">
+                                            <div key={p.id} className="group/photo relative aspect-square border border-neutral-300 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm transition-all hover:scale-[1.02]">
                                                 <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
-                                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col justify-between p-1.5">
+                                                <div className="absolute inset-0 backdrop-blur-sm bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col justify-between p-2">
                                                     <button
                                                         onClick={() => handleDeleteAttachment(p.id)}
-                                                        className="self-end w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700 transition-colors shadow"
+                                                        className="self-end w-6 h-6 rounded-full bg-red-650 text-white flex items-center justify-center hover:bg-red-750 transition-colors shadow-lg active:scale-90"
                                                         title="Delete Photo"
                                                     >
-                                                        <Trash2 className="w-3 h-3" />
+                                                        <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                     <a
                                                         href={p.url}
@@ -665,21 +665,21 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
 
                             {/* Documents List */}
                             {docFiles.length > 0 && (
-                                <div className="space-y-1.5">
-                                    <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-wider">Documents</h4>
-                                    <div className="space-y-1.5">
+                                <div className="space-y-2">
+                                    <h4 className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Documents</h4>
+                                    <div className="space-y-2">
                                         {docFiles.map(d => (
-                                            <div key={d.id} className="flex items-center justify-between p-2 rounded-xl border border-neutral-300 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.02] shadow-sm">
-                                                <a href={d.url} download={d.name} className="flex items-center gap-2 flex-1 min-w-0 hover:underline">
-                                                    <FileText className="w-4 h-4 text-neutral-500 flex-shrink-0" />
+                                            <div key={d.id} className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.01] hover:border-orange-300 dark:hover:border-orange-500/30 transition-all shadow-sm">
+                                                <a href={d.url} download={d.name} className="flex items-center gap-2.5 flex-1 min-w-0 hover:underline text-neutral-800 dark:text-neutral-200">
+                                                    <FileText className="w-4 h-4 text-neutral-550 dark:text-neutral-400 flex-shrink-0" />
                                                     <div className="min-w-0">
                                                         <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{d.name}</p>
-                                                        <p className="text-[9px] text-neutral-500 dark:text-neutral-400 font-semibold">{formatSize(d.size)}</p>
+                                                        <p className="text-[9px] text-neutral-500 dark:text-neutral-450 font-semibold">{formatSize(d.size)}</p>
                                                     </div>
                                                 </a>
                                                 <button
                                                     onClick={() => handleDeleteAttachment(d.id)}
-                                                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 border border-neutral-300 dark:border-white/10 transition-colors shadow-sm ml-2"
+                                                    className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 border border-neutral-250 dark:border-white/10 transition-colors shadow-sm ml-2 active:scale-90"
                                                     title="Delete Document"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -695,11 +695,11 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
 
                 {/* Tags */}
                 {tags.length > 0 && (
-                    <div>
-                        <p className="text-xs font-black text-neutral-850 dark:text-neutral-300 mb-1.5 uppercase tracking-wider">Tags</p>
+                    <div className="rounded-2xl border border-neutral-300 dark:border-white/10 bg-neutral-50/30 dark:bg-white/[0.01] p-4 shadow-sm">
+                        <p className="text-[10px] font-black text-neutral-550 dark:text-neutral-400 mb-2.5 uppercase tracking-widest">Tags</p>
                         <div className="flex flex-wrap gap-1.5">
                             {tags.map(t => (
-                                <span key={t} className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/30 border border-purple-300 dark:border-purple-800 text-purple-950 dark:text-purple-300 shadow-sm">
+                                <span key={t} className="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-100/50 dark:bg-purple-900/20 border border-purple-250 dark:border-purple-800/40 text-purple-950 dark:text-purple-300 shadow-sm hover:scale-102 transition-transform cursor-default">
                                     {t.replace('tag-', '#')}
                                 </span>
                             ))}

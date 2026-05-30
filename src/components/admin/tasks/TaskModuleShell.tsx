@@ -20,6 +20,7 @@ import { useRecurrence } from './hooks/useRecurrence';
 import { FilterRule } from '@/components/admin/database/types';
 import { Layers, Kanban, Eye, Network, Plus } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 export default function TaskModuleShell() {
     const router = useRouter();
@@ -50,7 +51,7 @@ export default function TaskModuleShell() {
     const [showPerspBuilder, setShowPerspBuilder] = useState(false);
 
     // ── Resizable detail panel ────────────────────────────────────────────────
-    const [panelWidth, setPanelWidth] = useState(384); // default w-96 = 384px
+    const [panelWidth, setPanelWidth] = useState(450); // default w-112 = 450px for a more prominent desktop workspace
     const isResizing = useRef(false);
     const panelRef = useRef<HTMLDivElement>(null);
 
@@ -321,6 +322,7 @@ export default function TaskModuleShell() {
                             setContextMenu({ page, x: e.clientX, y: e.clientY });
                         }}
                         onDelete={p => handleDelete(p.id)}
+                        onUpdateTitle={(pageId, title) => updatePageProperty('db-tasks', pageId, 'title', title)}
                     />
                 )}
                 {activeView === 'board' && (
@@ -394,7 +396,7 @@ export default function TaskModuleShell() {
                     />
                     {/* Detail Panel */}
                     <div
-                        className="flex-shrink-0 border-l border-neutral-200 dark:border-white/10 h-full hidden lg:block overflow-hidden"
+                        className="flex-shrink-0 border-l border-neutral-200 dark:border-white/10 h-full hidden lg:block overflow-hidden bg-white dark:bg-neutral-950 shadow-2xl relative"
                         style={{ width: panelWidth }}
                     >
                         <TaskDetailPanel
@@ -408,6 +410,25 @@ export default function TaskModuleShell() {
                         />
                     </div>
                 </>
+            )}
+
+            {/* Mobile/Tablet Sheet Drawer overlay (visible under lg viewport) */}
+            {selectedPage && (
+                <div className="lg:hidden">
+                    <Sheet open={!!selectedPage} onOpenChange={(open) => { if (!open) setSelectedPageId(undefined); }}>
+                        <SheetContent side="right" className="w-[90vw] sm:w-[500px] p-0 overflow-hidden border-neutral-200 dark:border-white/10 bg-white dark:bg-neutral-950">
+                            <TaskDetailPanel
+                                page={selectedPage}
+                                onClose={() => setSelectedPageId(undefined)}
+                                onUpdate={handleUpdate}
+                                onDelete={handleDelete}
+                                onOpenFullPage={(pageId) => {
+                                    router.push(`/admin/database/${db.id}/${pageId}`);
+                                }}
+                            />
+                        </SheetContent>
+                    </Sheet>
+                </div>
             )}
 
             {/* Context Menu */}

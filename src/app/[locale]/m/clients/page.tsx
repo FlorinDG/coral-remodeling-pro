@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Users, Plus, Building2, Phone, Mail, Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
 import { Page } from '@/components/admin/database/types';
 
 const FALLBACK_PAGES: Page[] = [];
 
 export default function MobileClientsPage() {
+    const t = useTranslations('Mobile');
     const { resolveDbId } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
     const createPage = useDatabaseStore(s => s.createPage);
@@ -46,8 +48,8 @@ export default function MobileClientsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-black tracking-tight">Clients</h1>
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Directory</p>
+                    <h1 className="text-lg font-black tracking-tight">{t('cli_title')}</h1>
+                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">{t('cli_subtitle')}</p>
                 </div>
                 <button
                     onClick={() => setShowNewClientModal(true)}
@@ -64,7 +66,7 @@ export default function MobileClientsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="Search clients..."
+                    placeholder={t('cli_search')}
                     className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:border-[var(--brand-color)] focus:ring-1 focus:ring-[var(--brand-color)] transition-all"
                 />
             </div>
@@ -76,10 +78,10 @@ export default function MobileClientsPage() {
                         <Users className="w-7 h-7 text-neutral-300 dark:text-neutral-600" />
                     </div>
                     <p className="text-sm font-semibold text-neutral-500">
-                        {searchQuery ? 'No clients found' : 'No clients yet'}
+                        {searchQuery ? t('cli_empty_search') : t('cli_empty_title')}
                     </p>
                     <p className="text-xs text-neutral-400 mt-1 max-w-[250px]">
-                        {searchQuery ? 'Try a different search term.' : 'Add your first client to start creating invoices.'}
+                        {searchQuery ? t('cli_empty_search_desc') : t('cli_empty_desc')}
                     </p>
                 </div>
             ) : (
@@ -112,13 +114,13 @@ export default function MobileClientsPage() {
                                             {client.phone && (
                                                 <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)]">
                                                     <Phone className="w-3.5 h-3.5" />
-                                                    Call
+                                                    {t('cli_call')}
                                                 </a>
                                             )}
                                             {client.email && (
                                                 <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)]">
                                                     <Mail className="w-3.5 h-3.5" />
-                                                    Email
+                                                    {t('cli_email')}
                                                 </a>
                                             )}
                                         </div>

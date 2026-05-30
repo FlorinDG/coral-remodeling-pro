@@ -3,9 +3,11 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 import { getLockedDbId } from "@/lib/lockedDbUtils";
 import { Receipt, Building2, Calendar, AlertCircle } from "lucide-react";
+import { getTranslations } from 'next-intl/server';
 
 export default async function MobilePurchasesPage({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
+    const t = await getTranslations('Mobile');
     const session = await auth();
     const tenantId = session?.user?.tenantId;
 
@@ -55,8 +57,8 @@ export default async function MobilePurchasesPage({ params }: { params: Promise<
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-black tracking-tight">Purchase Invoices</h1>
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Inbox</p>
+                    <h1 className="text-lg font-black tracking-tight">{t('pur_title')}</h1>
+                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">{t('pur_subtitle')}</p>
                 </div>
             </div>
 
@@ -64,10 +66,9 @@ export default async function MobilePurchasesPage({ params }: { params: Promise<
             <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/30 rounded-xl p-3.5 flex items-start gap-3">
                 <Receipt className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <div>
-                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Peppol Inbox is Active</p>
+                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">{t('pur_peppol_active')}</p>
                     <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-1 leading-relaxed">
-                        Invoices sent to your company number arrive here automatically. 
-                        Your {planType} plan includes {limit} received invoices per month.
+                        {t('pur_peppol_desc', { plan: planType, limit })}
                     </p>
                 </div>
             </div>
@@ -78,9 +79,9 @@ export default async function MobilePurchasesPage({ params }: { params: Promise<
                     <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center mb-4">
                         <Receipt className="w-7 h-7 text-neutral-300 dark:text-neutral-600" />
                     </div>
-                    <p className="text-sm font-semibold text-neutral-500">No purchases yet</p>
+                    <p className="text-sm font-semibold text-neutral-500">{t('pur_empty_title')}</p>
                     <p className="text-xs text-neutral-400 mt-1 max-w-[250px]">
-                        When suppliers send you Peppol e-invoices, they will appear here.
+                        {t('pur_empty_desc')}
                     </p>
                 </div>
             ) : (

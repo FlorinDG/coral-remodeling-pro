@@ -457,14 +457,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         <div className="flex items-center gap-3">
                             <span className="text-xl">📱</span>
                             <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
-                                Try our new mobile-optimized view!
+                                {t('banner_try_mobile')}
                             </p>
                         </div>
                         <Link
                             href="/m"
                             className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm"
                         >
-                            Open Mobile App
+                            {t('banner_open_app')}
                         </Link>
                     </div>
                 )}

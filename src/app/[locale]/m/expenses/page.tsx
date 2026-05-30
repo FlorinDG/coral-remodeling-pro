@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Camera, Wallet, Plus, Calendar, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import { Page } from '@/components/admin/database/types';
 
@@ -27,6 +28,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 const FALLBACK_PAGES: Page[] = [];
 
 export default function MobileExpensesPage() {
+    const t = useTranslations('Mobile');
     const { resolveDbId } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
     const ticketsDbId = resolveDbId('db-tickets');
@@ -67,8 +69,8 @@ export default function MobileExpensesPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-lg font-black tracking-tight">Expenses</h1>
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">Tickets & Receipts</p>
+                    <h1 className="text-lg font-black tracking-tight">{t('exp_title')}</h1>
+                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-0.5">{t('exp_subtitle')}</p>
                 </div>
             </div>
 
@@ -76,11 +78,11 @@ export default function MobileExpensesPage() {
             <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/30 rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <Camera className="w-4 h-4 text-orange-500" />
-                    <span className="text-xs font-bold text-orange-800 dark:text-orange-300">OCR Scans</span>
+                    <span className="text-xs font-bold text-orange-800 dark:text-orange-300">{t('exp_ocr_scans')}</span>
                 </div>
                 <div className="text-right">
                     <span className="text-xs font-black text-orange-600 dark:text-orange-400">{scansUsed} / {scanQuota}</span>
-                    <span className="text-[9px] text-orange-500 ml-1">used</span>
+                    <span className="text-[9px] text-orange-500 ml-1">{t('exp_used')}</span>
                 </div>
             </div>
 
@@ -90,7 +92,7 @@ export default function MobileExpensesPage() {
                     <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center mb-4">
                         <Wallet className="w-7 h-7 text-neutral-300 dark:text-neutral-600" />
                     </div>
-                    <p className="text-sm font-semibold text-neutral-500">No expenses yet</p>
+                    <p className="text-sm font-semibold text-neutral-500">{t('exp_empty_title')}</p>
                     <p className="text-xs text-neutral-400 mt-1 max-w-[250px]">
                         Tap the camera icon below to scan a receipt.
                     </p>

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getLockedDbId } from "@/lib/lockedDbUtils";
 import { Link } from "@/i18n/routing";
 import { FileText, Plus, Clock, CheckCircle, Send, AlertTriangle } from "lucide-react";
+import { getTranslations } from 'next-intl/server';
 
 function getStatusDisplay(status: string) {
     switch (status) {
@@ -18,6 +19,7 @@ function getStatusDisplay(status: string) {
 
 export default async function MobileInvoicesPage({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
+    const t = await getTranslations('Mobile');
     const session = await auth();
     const tenantId = session?.user?.tenantId;
 
@@ -67,14 +69,14 @@ export default async function MobileInvoicesPage({ params }: { params: Promise<{
         <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <h1 className="text-lg font-black tracking-tight">Sales Invoices</h1>
+                <h1 className="text-lg font-black tracking-tight">{t('inv_title')}</h1>
                 <Link
                     href="/m/invoices/new"
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-white text-xs font-bold shadow-sm active:scale-[0.97] transition-all"
                     style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     <Plus className="w-3.5 h-3.5" />
-                    New
+                    {t('inv_new')}
                 </Link>
             </div>
 
@@ -84,14 +86,14 @@ export default async function MobileInvoicesPage({ params }: { params: Promise<{
                     <div className="w-14 h-14 rounded-2xl bg-neutral-100 dark:bg-white/5 flex items-center justify-center mb-4">
                         <FileText className="w-7 h-7 text-neutral-300 dark:text-neutral-600" />
                     </div>
-                    <p className="text-sm font-semibold text-neutral-500">No invoices yet</p>
-                    <p className="text-xs text-neutral-400 mt-1">Create your first invoice to get started.</p>
+                    <p className="text-sm font-semibold text-neutral-500">{t('inv_empty_title')}</p>
+                    <p className="text-xs text-neutral-400 mt-1">{t('inv_empty_desc')}</p>
                     <Link
                         href="/m/invoices/new"
                         className="mt-4 px-4 py-2 rounded-xl text-white text-sm font-bold active:scale-[0.97] transition-all"
                         style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                     >
-                        Create Invoice
+                        {t('dash_create_invoice')}
                     </Link>
                 </div>
             ) : (

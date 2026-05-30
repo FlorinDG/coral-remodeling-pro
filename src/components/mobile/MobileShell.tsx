@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
+import { useTranslations } from 'next-intl';
 
 interface NavTab {
     id: string;
@@ -18,14 +19,6 @@ interface NavTab {
     href: string;
     icon: React.ReactNode;
 }
-
-const TABS: NavTab[] = [
-    { id: 'home',      label: 'Dashboard',  href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
-    { id: 'invoices',  label: 'Invoices',   href: '/m/invoices',  icon: <FileText className="w-5 h-5" /> },
-    { id: 'purchases', label: 'Purchases',  href: '/m/purchases', icon: <Receipt className="w-5 h-5" /> },
-    { id: 'expenses',  label: 'Expenses',   href: '/m/expenses',  icon: <Wallet className="w-5 h-5" /> },
-    { id: 'clients',   label: 'Clients',    href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
-];
 
 export default function MobileShell({
     children,
@@ -38,8 +31,17 @@ export default function MobileShell({
     planType: string;
     lockedDbIds: Record<string, string>;
 }) {
+    const t = useTranslations('Mobile');
     const { data: session } = useSession();
     const pathname = usePathname();
+
+    const TABS: NavTab[] = [
+        { id: 'home',      label: t('nav_dashboard'),  href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
+        { id: 'invoices',  label: t('nav_invoices'),   href: '/m/invoices',  icon: <FileText className="w-5 h-5" /> },
+        { id: 'purchases', label: t('nav_purchases'),  href: '/m/purchases', icon: <Receipt className="w-5 h-5" /> },
+        { id: 'expenses',  label: t('nav_expenses'),   href: '/m/expenses',  icon: <Wallet className="w-5 h-5" /> },
+        { id: 'clients',   label: t('nav_clients'),    href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
+    ];
     const [menuOpen, setMenuOpen] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');
     const [companyName, setCompanyName] = useState('');
@@ -106,7 +108,7 @@ export default function MobileShell({
                                 </div>
                                 <div className="min-w-0">
                                     <p className="text-sm font-bold truncate">{userName}</p>
-                                    <p className="text-[10px] text-neutral-400 uppercase tracking-wider">{planType} Plan</p>
+                                    <p className="text-[10px] text-neutral-400 uppercase tracking-wider">{planType} {t('shell_plan')}</p>
                                 </div>
                             </div>
 
@@ -117,7 +119,7 @@ export default function MobileShell({
                                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                             >
                                 <Monitor className="w-5 h-5 text-neutral-500" />
-                                Switch to Desktop View
+                                {t('shell_desktop_view')}
                             </Link>
 
                             {/* Settings */}
@@ -127,7 +129,7 @@ export default function MobileShell({
                                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                             >
                                 <Settings className="w-5 h-5 text-neutral-500" />
-                                Settings
+                                {t('shell_settings')}
                             </Link>
 
                             {/* Sign out */}
@@ -139,7 +141,7 @@ export default function MobileShell({
                                     }}
                                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                 >
-                                    <LogOut className="w-5 h-5" /> Sign Out
+                                    <LogOut className="w-5 h-5" /> {t('shell_sign_out')}
                                 </button>
                             </div>
                         </div>

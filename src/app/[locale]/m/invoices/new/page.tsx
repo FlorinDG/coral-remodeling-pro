@@ -10,6 +10,7 @@ import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { ArrowLeft, Plus, Trash2, Loader2, CheckCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/routing';
 import { Page } from '@/components/admin/database/types';
@@ -25,6 +26,7 @@ interface LineItem {
 const FALLBACK_PAGES: Page[] = [];
 
 export default function MobileCreateInvoicePage() {
+    const t = useTranslations('Mobile');
     const router = useRouter();
     const { resolveDbId } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
@@ -160,9 +162,9 @@ export default function MobileCreateInvoicePage() {
             <div className="sticky top-14 z-30 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border-b border-neutral-200/50 dark:border-white/5 px-4 py-3 flex items-center justify-between">
                 <Link href="/m/invoices" className="flex items-center gap-1 text-sm font-semibold text-neutral-500 hover:text-neutral-700">
                     <ArrowLeft className="w-4 h-4" />
-                    Back
+                    {t('inv_form_back')}
                 </Link>
-                <h1 className="text-sm font-black">New Invoice</h1>
+                <h1 className="text-sm font-black">{t('inv_form_new')}</h1>
                 <button
                     onClick={handleCreate}
                     disabled={isCreating}
@@ -170,21 +172,21 @@ export default function MobileCreateInvoicePage() {
                     style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                 >
                     {isCreating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                    Create
+                    {t('inv_form_create')}
                 </button>
             </div>
 
             <div className="px-4 pt-4 space-y-5">
                 {/* ── Client Selection ── */}
                 <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Client</label>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">{t('inv_form_client')}</label>
                     <div className="flex gap-2">
                         <div className="flex-1">
                             <SearchableSelect
                                 options={clientOptions}
                                 value={selectedClientId}
                                 onChange={setSelectedClientId}
-                                placeholder="Search or select client..."
+                                placeholder={t('inv_form_search_client')}
                             />
                         </div>
                         <button
@@ -199,7 +201,7 @@ export default function MobileCreateInvoicePage() {
                 {/* ── Dates ── */}
                 <div className="grid grid-cols-2 gap-3">
                     <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Invoice Date</label>
+                        <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">{t('inv_form_date')}</label>
                         <input
                             type="date"
                             value={invoiceDate}
@@ -208,7 +210,7 @@ export default function MobileCreateInvoicePage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Due Date</label>
+                        <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">{t('inv_form_due')}</label>
                         <input
                             type="date"
                             value={dueDate}
@@ -220,7 +222,7 @@ export default function MobileCreateInvoicePage() {
 
                 {/* ── Line Items ── */}
                 <div>
-                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2">Line Items</label>
+                    <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2">{t('inv_form_lines')}</label>
                     <div className="space-y-3">
                         {lines.map((line, idx) => (
                             <div key={line.id} className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-white/5 p-3 space-y-2.5">
@@ -236,12 +238,12 @@ export default function MobileCreateInvoicePage() {
                                     type="text"
                                     value={line.description}
                                     onChange={e => updateLine(line.id, 'description', e.target.value)}
-                                    placeholder="Description"
+                                    placeholder={t('inv_form_desc')}
                                     className="w-full px-3 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-neutral-900 dark:text-white placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 transition-all"
                                 />
                                 <div className="grid grid-cols-3 gap-2">
                                     <div>
-                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">Qty</label>
+                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">{t('inv_form_qty')}</label>
                                         <input
                                             type="number"
                                             min="1"
@@ -251,7 +253,7 @@ export default function MobileCreateInvoicePage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">Unit €</label>
+                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">{t('inv_form_unit')}</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -262,7 +264,7 @@ export default function MobileCreateInvoicePage() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">VAT %</label>
+                                        <label className="text-[9px] font-semibold text-neutral-400 block mb-0.5">{t('inv_form_vat')}</label>
                                         <select
                                             value={line.vatRate}
                                             onChange={e => updateLine(line.id, 'vatRate', Number(e.target.value))}
@@ -286,23 +288,23 @@ export default function MobileCreateInvoicePage() {
                         className="mt-2 w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-dashed border-neutral-300 dark:border-white/15 text-xs font-bold text-neutral-500 hover:border-[var(--brand-color)]/50 hover:text-[var(--brand-color)] transition-all"
                     >
                         <Plus className="w-3.5 h-3.5" />
-                        Add Line
+                        {t('inv_form_add_line')}
                     </button>
                 </div>
 
                 {/* ── Totals ── */}
                 <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 p-4 space-y-2">
                     <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500">Subtotal</span>
+                        <span className="text-neutral-500">{t('inv_form_subtotal')}</span>
                         <span className="font-bold">€{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                        <span className="text-neutral-500">VAT</span>
+                        <span className="text-neutral-500">{t('inv_form_vat_total')}</span>
                         <span className="font-bold">€{totalVat.toFixed(2)}</span>
                     </div>
                     <div className="h-px bg-neutral-100 dark:bg-white/5" />
                     <div className="flex justify-between text-base">
-                        <span className="font-bold">Total</span>
+                        <span className="font-bold">{t('inv_form_total')}</span>
                         <span className="font-black" style={{ color: 'var(--brand-color, #d35400)' }}>
                             €{totalIncVat.toFixed(2)}
                         </span>

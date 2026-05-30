@@ -8,6 +8,7 @@ import {
     FileText, Plus, Camera, Receipt, TrendingUp, Clock,
     ArrowUpRight, ArrowDownRight
 } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 async function getMonthlyFinancials(databaseId: string, tenantId: string, since: Date) {
     const db = await prisma.globalDatabase.findUnique({
@@ -43,6 +44,7 @@ async function countPages(databaseId: string, tenantId: string): Promise<number>
 
 export default async function MobileDashboard({ params }: { params: Promise<{ locale: string }> }) {
     const { locale } = await params;
+    const t = await getTranslations('Mobile');
     const session = await auth();
     const tenantId = session?.user?.tenantId;
 
@@ -153,7 +155,7 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                         €{Math.abs(netCurrentMonth).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">
-                        {netCurrentMonth >= 0 ? 'Net Profit' : 'Net Loss'} this month
+                        {netCurrentMonth >= 0 ? t('dash_net_profit') : t('dash_net_loss')} {t('dash_this_month')}
                     </p>
                 </div>
             </div>
@@ -163,7 +165,7 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                 <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xs font-bold flex items-center gap-1.5">
                         <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                        Cash Flow
+                        {t('dash_cash_flow')}
                     </h2>
                     <span className={`text-xs font-black ${netCashFlow >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                         €{netCashFlow.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -184,7 +186,7 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                     <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
                         <Plus className="w-5 h-5" />
                     </div>
-                    <span className="text-sm">Create Invoice</span>
+                    <span className="text-sm">{t('dash_create_invoice')}</span>
                 </Link>
 
                 <Link
@@ -194,8 +196,8 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
                         <Camera className="w-5 h-5" />
                     </div>
-                    <span className="text-sm">Add Expense</span>
-                    <span className="text-[9px] opacity-60 font-medium">{scansUsed}/{scanQuota} scans</span>
+                    <span className="text-sm">{t('dash_add_expense')}</span>
+                    <span className="text-[9px] opacity-60 font-medium">{scansUsed}/{scanQuota} {t('dash_scans')}</span>
                 </Link>
             </div>
 
@@ -204,17 +206,17 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                 <Link href="/m/invoices" className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-neutral-200 dark:border-white/5 shadow-sm hover:border-[var(--brand-color)]/30 transition-all group">
                     <div className="flex items-center justify-between mb-2">
                         <FileText className="w-4 h-4 text-blue-500" />
-                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Invoices</span>
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">{t('nav_invoices')}</span>
                     </div>
                     <p className="text-2xl font-black">{totalInvoices}</p>
                     {draftCount > 0 && (
                         <p className="text-[10px] font-semibold text-amber-500 mt-1 flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {draftCount} draft{draftCount !== 1 ? 's' : ''}
+                            <Clock className="w-3 h-3" /> {draftCount} {t('dash_drafts')}
                         </p>
                     )}
                     {unpaidCount > 0 && (
                         <p className="text-[10px] font-semibold text-blue-500 mt-0.5">
-                            {unpaidCount} awaiting payment
+                            {unpaidCount} {t('dash_awaiting_payment')}
                         </p>
                     )}
                 </Link>
@@ -222,15 +224,15 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                 <div className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-neutral-200 dark:border-white/5 shadow-sm">
                     <div className="flex items-center justify-between mb-2">
                         <Receipt className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">This Month</span>
+                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">{t('dash_this_month')}</span>
                     </div>
                     <div className="space-y-1.5">
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-neutral-500 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-emerald-500" /> In</span>
+                            <span className="text-xs text-neutral-500 flex items-center gap-1"><ArrowUpRight className="w-3 h-3 text-emerald-500" /> {t('dash_in')}</span>
                             <span className="text-xs font-black text-emerald-600">€{currentMonthIn.toLocaleString(locale, { minimumFractionDigits: 0 })}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                            <span className="text-xs text-neutral-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> Out</span>
+                            <span className="text-xs text-neutral-500 flex items-center gap-1"><ArrowDownRight className="w-3 h-3 text-red-500" /> {t('dash_out')}</span>
                             <span className="text-xs font-black text-red-500">€{currentMonthOut.toLocaleString(locale, { minimumFractionDigits: 0 })}</span>
                         </div>
                     </div>

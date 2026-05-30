@@ -13,7 +13,7 @@ import {
   CheckSquare,
   Loader2,
 } from 'lucide-react';
-import { Link } from "@/i18n/routing";
+import { Link, usePathname } from "@/i18n/routing";
 
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
@@ -72,11 +72,27 @@ const quickLinks: QuickLink[] = [
 ];
 
 export function QuickLinks() {
+  const pathname = usePathname();
+  const isWorkhub = pathname.startsWith('/workhub');
+  
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
   const { shifts, loading: schedulesLoading } = useScheduledShifts();
 
-  const visibleLinks = quickLinks.filter(link => !link.adminOnly || isAdmin);
+  const visibleLinks = quickLinks.filter(link => {
+    if (isWorkhub) {
+      // Unclog the grid: remove wiki (moves to hamburger), performance (crashes), and profile (moves to hamburger)
+      return link.id === 'timeoff';
+    }
+    return !link.adminOnly || isAdmin;
+  });
+
+  const getLinkUrl = (linkObj) => {
+    if (isWorkhub) {
+      if (linkObj.id === 'timeoff') return '/workhub/leave';
+    }
+    return linkObj.url;
+  };
 
   // Get the next upcoming shift for the current user
   const now = new Date();
@@ -104,7 +120,7 @@ export function QuickLinks() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* My Schedule Card */}
         <Link
-          href="/admin/hr/time-tracker/schedule"
+          href={isWorkhub ? "/workhub/schedule" : "/admin/hr/time-tracker/schedule"}
           className="link-card group animate-fade-in"
         >
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-secondary-foreground mb-4 group-hover:scale-110 transition-transform duration-300">
@@ -187,7 +203,7 @@ export function QuickLinks() {
             return (
               <Link
                 key={link.id}
-                href={link.url}
+                href={getLinkUrl(link)}
                 className="link-card group animate-fade-in"
                 style={{ animationDelay: `${(index + 1) * 100}ms` }}
               >
@@ -199,7 +215,7 @@ export function QuickLinks() {
           return (
             <a
               key={link.id}
-              href={link.url}
+              href={getLinkUrl(link)}
               target={link.url.startsWith('http') ? '_blank' : undefined}
               rel={link.url.startsWith('http') ? 'noopener noreferrer' : undefined}
               className="link-card group animate-fade-in"

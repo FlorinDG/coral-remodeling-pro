@@ -7,7 +7,6 @@ import { Header } from '@/components/time-tracker/components/Header';
 import { ClockButton } from '@/components/time-tracker/components/ClockButton';
 import { QuickLinks } from '@/components/time-tracker/components/QuickLinks';
 import { DailySummary } from '@/components/time-tracker/components/DailySummary';
-import { NotificationSettings } from '@/components/time-tracker/components/NotificationSettings';
 import { Announcements } from '@/components/time-tracker/components/Announcements';
 import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
@@ -22,9 +21,13 @@ export default function Index({ embedded = false }: IndexProps) {
   const { user, profile, loading } = useAuth();
 
   useEffect(() => {
-    // We are trusting NextAuth to protect the /admin route.
-    // TimeTracker's internal Supabase auth redirect is disabled here.
-  }, [user, loading]);
+    // Request notification permission natively
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -76,11 +79,6 @@ export default function Index({ embedded = false }: IndexProps) {
           <Documents />
         </div>
 
-        {/* Notifications Section */}
-        <section className="mt-8 md:mt-12 space-y-4 md:space-y-6">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Notifications</h2>
-          <NotificationSettings />
-        </section>
       </main>
 
       {/* Footer — standalone mode only */}

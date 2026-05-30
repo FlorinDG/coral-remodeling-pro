@@ -188,9 +188,9 @@ function ClockButtonComponent() {
 
   return (
     <>
-      <div className="flex flex-col items-center gap-6">
+      <div className="w-full flex flex-col items-center gap-4 md:gap-6">
         {isClockedIn && (
-          <div className="animate-fade-in">
+          <div className="animate-fade-in hidden md:block">
             <div className="bg-secondary/20 border border-secondary/30 rounded-2xl px-8 py-4 animate-timer-glow">
               <p className="text-sm font-medium text-muted-foreground mb-1 text-center">Time Elapsed</p>
               <p className="timer-display text-4xl md:text-5xl font-bold text-primary tracking-wider">
@@ -200,34 +200,36 @@ function ClockButtonComponent() {
           </div>
         )}
 
-        <Button
-          size="lg"
-          onClick={isClockedIn ? handleClockOut : handleClockIn}
-          disabled={locationLoading || isProcessing}
-          className={`
-            h-20 px-12 text-xl font-semibold rounded-2xl transition-all duration-300
-            ${isClockedIn 
-              ? 'btn-clock-out' 
-              : 'btn-clock-in'
+        <div className="w-full sticky top-14 md:relative z-30 bg-background/95 dark:bg-black/95 backdrop-blur-md md:bg-transparent md:backdrop-blur-none py-3 md:py-0 px-4 md:px-0 border-b border-neutral-200/50 dark:border-white/5 md:border-0 flex justify-center">
+          <Button
+            size="lg"
+            onClick={isClockedIn ? handleClockOut : handleClockIn}
+            disabled={locationLoading || isProcessing}
+            className={`
+              w-full max-w-sm h-14 md:h-20 px-8 md:px-12 text-base md:text-xl font-bold rounded-xl md:rounded-2xl transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]
+              ${isClockedIn 
+                ? 'btn-clock-out bg-rose-600 hover:bg-rose-500 text-white animate-pulse' 
+                : 'btn-clock-in bg-emerald-600 hover:bg-emerald-500 text-white'
+              }
+            `}
+          >
+            {locationLoading || isProcessing ? (
+              <Loader2 className="w-5 h-5 md:w-6 h-6 mr-3 animate-spin" />
+            ) : isClockedIn ? (
+              <Square className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
+            ) : (
+              <Play className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
+            )}
+            {locationLoading || isProcessing 
+              ? 'Processing...' 
+              : isClockedIn 
+                ? `Clock Out (${formattedTime})` 
+                : hasScheduledShift 
+                  ? 'Clock In' 
+                  : 'Clock In Without Shift'
             }
-          `}
-        >
-          {locationLoading || isProcessing ? (
-            <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-          ) : isClockedIn ? (
-            <Square className="w-6 h-6 mr-3" />
-          ) : (
-            <Play className="w-6 h-6 mr-3" />
-          )}
-          {locationLoading || isProcessing 
-            ? 'Processing...' 
-            : isClockedIn 
-              ? 'Clock Out' 
-              : hasScheduledShift 
-                ? 'Clock In' 
-                : 'Clock In Without Shift'
-          }
-        </Button>
+          </Button>
+        </div>
 
         {/* Schedule Status Display */}
         <div className="w-full max-w-sm">

@@ -42,11 +42,12 @@ function getStatusColor(status: string) {
 // Mobile card view for shifts
 function ShiftCard({ shift, onClick }: { shift: ScheduledShift; onClick?: () => void }) {
   const projectColor = shift.project?.color ? getNotionColor(shift.project.color) : getNotionColor('blue');
+  const projectName = (shift.project?.name || 'No Project').replace(/^\[ERP\]\s*/i, '');
   
   return (
     <div
       onClick={onClick}
-      className="p-3 rounded-lg border cursor-pointer hover:shadow-md transition-shadow"
+      className="p-3 md:rounded-lg rounded-none border-x-0 md:border border-y border-neutral-100 dark:border-neutral-800/40 cursor-pointer hover:shadow-md transition-shadow"
       style={{ 
         borderLeftWidth: 4, 
         borderLeftColor: projectColor.value,
@@ -55,23 +56,23 @@ function ShiftCard({ shift, onClick }: { shift: ScheduledShift; onClick?: () => 
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">
-            {shift.project?.name || 'No Project'}
+          <p className="font-semibold text-sm whitespace-normal break-words">
+            {projectName}
           </p>
-          <p className="font-semibold text-sm truncate">
+          <p className="font-medium text-xs text-muted-foreground whitespace-normal break-words mt-0.5">
             {shift.profile?.full_name || 'Unassigned'}
           </p>
-          <p className="text-xs text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground/80 whitespace-normal break-words mt-0.5">
             {shift.project?.address || 'No location'}
           </p>
         </div>
-        <span className={cn('text-xs px-2 py-0.5 rounded-full whitespace-nowrap', getStatusColor(shift.status))}>
+        <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap', getStatusColor(shift.status))}>
           {shift.status}
         </span>
       </div>
       <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-        <span>{formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}</span>
-        {shift.role && <span className="text-primary">{shift.role}</span>}
+        <span className="font-medium">{formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}</span>
+        {shift.role && <span className="text-primary font-bold">{shift.role}</span>}
       </div>
     </div>
   );
@@ -114,9 +115,9 @@ function MobileWeekView({ shifts, weekStart, onShiftClick }: {
     <div className="space-y-4">
       {weekDays.map(({ date, dateStr, shifts: dayShifts, holiday }) => (
         <div key={dateStr} className={cn(
-          "rounded-lg border p-3",
-          dateStr === today && "ring-2 ring-primary",
-          holiday && "bg-destructive/5 border-destructive/20"
+          "md:rounded-lg md:border md:p-3 rounded-none border-x-0 border-t-0 border-b border-neutral-100 dark:border-neutral-800/40 p-3 px-1 bg-transparent shadow-none",
+          dateStr === today && "bg-neutral-50/50 dark:bg-white/5 border-l-4 border-l-primary md:border-l-0 md:ring-2 md:ring-primary",
+          holiday && "bg-destructive/5 md:border-destructive/20 border-b border-destructive/10"
         )}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -333,8 +334,8 @@ export function ScheduleCalendar({ shifts, onShiftClick }: ScheduleCalendarProps
   }`;
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-0 md:border shadow-none md:shadow-sm rounded-none md:rounded-xl bg-transparent md:bg-card">
+      <CardHeader className="pb-2 px-0 md:px-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -379,7 +380,7 @@ export function ScheduleCalendar({ shifts, onShiftClick }: ScheduleCalendarProps
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="px-0 md:px-6">
         {/* Mobile: Week view with stacked cards */}
         <div className="block md:hidden">
           <MobileWeekView 

@@ -451,6 +451,24 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     </div>
                 )}
 
+                {/* Mobile Redirect Banner (for FREE tier) */}
+                {planType === 'FREE' && (
+                    <div className="md:hidden flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <span className="text-xl">📱</span>
+                            <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
+                                Try our new mobile-optimized view!
+                            </p>
+                        </div>
+                        <Link
+                            href="/m"
+                            className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm"
+                        >
+                            Open Mobile App
+                        </Link>
+                    </div>
+                )}
+
                 {/* Payment Failed Banner */}
                 {subscriptionStatus === 'PAST_DUE' && (
                     <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800/30 px-6 py-2.5 flex items-center justify-between gap-4">

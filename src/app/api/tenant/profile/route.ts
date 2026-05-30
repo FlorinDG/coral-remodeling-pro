@@ -13,6 +13,8 @@ const TENANT_FIELDS = [
     // Document numbering
     'invoicePrefix', 'invoiceConnector', 'invoiceDateFormat', 'invoiceNumberWidth', 'invoiceNextNumber',
     'quotationPrefix', 'quotationConnector', 'quotationDateFormat', 'quotationNumberWidth', 'quotationNextNumber',
+    // Scan quotas
+    'scanCount', 'scanQuota',
     // Document template
     'documentTemplate',
     'documentMode',

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { auth } from '@/auth';
@@ -18,7 +19,7 @@ async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: bool
     const resetAt = new Date(tenant.scanCountResetAt);
     const needsReset = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
 
-    let currentCount = needsReset ? 0 : tenant.scanCount;
+    const currentCount = needsReset ? 0 : tenant.scanCount;
     const quota = tenant.scanQuota;
     const isUnlimited = quota === -1;
 

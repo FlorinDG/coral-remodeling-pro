@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
+import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
 import { Upload, FileSpreadsheet, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, TableProperties, FileText, Building2, CalendarDays, Hash, Coins } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -568,13 +570,13 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                                 <span>{error}</span>
                                 {(error.includes('PRO and ENTERPRISE') || error.includes('scan limit')) && (
                                     <div className="mt-2">
-                                        <a
+                                        <Link
                                             href="/admin/settings/billing"
                                             onClick={() => handleClose()}
                                             className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-xs transition-colors"
                                         >
                                             Upgrade Plan <ArrowRight className="w-3 h-3" />
-                                        </a>
+                                        </Link>
                                     </div>
                                 )}
                             </div>

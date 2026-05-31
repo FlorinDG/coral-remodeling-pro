@@ -701,12 +701,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         lastName: selectedClient.lastName,
                         email: selectedClient.email,
                         vatNumber: selectedClient.vatNumber,
-                        address: [
-                            selectedClient.address,
-                            selectedClient.postal,
-                            selectedClient.city,
-                            selectedClient.country || 'België'
-                        ].filter(Boolean).join(', '),
+                        address: selectedClient.address || '',
                     },
                 })
             });
@@ -719,7 +714,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             } else if (data.code === 'PEPPOL_SEND_LIMIT') {
                 setPeppolLimitDialog(true);
             } else {
-                toast.error(`Peppol fout: ${data.error}`);
+                toast.error(`Peppol fout: ${data.issues || data.error}`);
             }
         } catch (e: any) {
             console.error(e);

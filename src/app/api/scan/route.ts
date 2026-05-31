@@ -9,7 +9,7 @@ export const maxDuration = 60; // Increased — pdfjs page render can take longe
 
 // ─── OCR Engine Types ─────────────────────────────────────────────────────────
 
-type OcrEngine = 'GPT4O' | 'MINDEE' | 'VERYFI';
+type OcrEngine = 'GPT4O' | 'MINDEE' | 'VERYFI' | 'TESSERACT';
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
@@ -279,10 +279,12 @@ export async function POST(req: Request) {
         // ── Load tenant config (engine + quota) ───────────────────────────────
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { ocrEngine: true, scanCount: true, scanQuota: true, scanCountResetAt: true, mindeeApiKey: true, veryfiApiKey: true }
+            select: { planType: true, ocrEngine: true, scanCount: true, scanQuota: true, scanCountResetAt: true, mindeeApiKey: true, veryfiApiKey: true }
         });
 
-        const ocrEngine = (tenant?.ocrEngine ?? 'GPT4O') as OcrEngine;
+        const planType = tenant?.planType ?? 'FREE';
+        const isFree = planType === 'FREE';
+        const ocrEngine = isFree ? 'TESSERACT' : ((tenant?.ocrEngine ?? 'GPT4O') as OcrEngine);
 
         // ── Quota gate ────────────────────────────────────────────────────────
         const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
@@ -305,85 +307,100 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });
         }
 
-        const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const clientExtractedStr = formData.get('clientExtracted') as string | null;
 
-        // ── Validate engine-specific API key ──────────────────────────────────
-        if (ocrEngine === 'GPT4O' && !process.env.OPENAI_API_KEY) {
-            return NextResponse.json({
-                error: 'OCR service not configured. Please contact support.',
-                code: 'NO_API_KEY'
-            }, { status: 503 });
+        if (isFree && !clientExtractedStr) {
+            return NextResponse.json({ error: 'Free plan requires client-side Tesseract extraction.' }, { status: 400 });
         }
 
-        const openai = ocrEngine === 'GPT4O'
-            ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-            : null;
-
         // ── Extract structured data ───────────────────────────────────────────
-        let rawJson: string;
+        let extracted: Record<string, any> = {};
 
-        if (isPdf) {
-            // ── pdfjs-dist: attempt text extraction first ──────────────────
-            const { text, isScanned } = await extractPdfText(buffer).catch((err: any) => {
-                // Surface encrypted/load errors immediately
-                if (err.code === 'PDF_ENCRYPTED') {
+        if (isFree && clientExtractedStr) {
+            try {
+                extracted = JSON.parse(clientExtractedStr);
+            } catch (err) {
+                return NextResponse.json({ error: 'Invalid client-side OCR payload.' }, { status: 400 });
+            }
+        } else {
+            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const buffer = Buffer.from(await file.arrayBuffer());
+
+            // ── Validate engine-specific API key ──────────────────────────────────
+            if (ocrEngine === 'GPT4O' && !process.env.OPENAI_API_KEY) {
+                return NextResponse.json({
+                    error: 'OCR service not configured. Please contact support.',
+                    code: 'NO_API_KEY'
+                }, { status: 503 });
+            }
+
+            const openai = ocrEngine === 'GPT4O'
+                ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+                : null;
+
+            let rawJson: string;
+
+            if (isPdf) {
+                // ── pdfjs-dist: attempt text extraction first ──────────────────
+                const { text, isScanned } = await extractPdfText(buffer).catch((err: any) => {
+                    // Surface encrypted/load errors immediately
+                    if (err.code === 'PDF_ENCRYPTED') {
+                        throw Object.assign(new Error(
+                            'This PDF is password-protected. Please remove the password and try again.'
+                        ), { code: 'PDF_ENCRYPTED', status: 422 });
+                    }
                     throw Object.assign(new Error(
-                        'This PDF is password-protected. Please remove the password and try again.'
-                    ), { code: 'PDF_ENCRYPTED', status: 422 });
-                }
-                throw Object.assign(new Error(
-                    'This PDF could not be opened. It may be corrupted. Try uploading a photo instead.'
-                ), { code: 'PDF_LOAD_ERROR', status: 422 });
-            });
+                        'This PDF could not be opened. It may be corrupted. Try uploading a photo instead.'
+                    ), { code: 'PDF_LOAD_ERROR', status: 422 });
+                });
 
-            if (!isScanned && text.length > 0) {
-                // Digital PDF — text layer present → cheaper text-based extraction
+                if (!isScanned && text.length > 0) {
+                    // Digital PDF — text layer present → cheaper text-based extraction
+                    if (ocrEngine === 'GPT4O') {
+                        rawJson = await extractViaGpt4o(openai!, { type: 'text', text }, isInvoice);
+                    } else if (ocrEngine === 'MINDEE') {
+                        rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
+                    } else {
+                        rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
+                    }
+                } else {
+                    // Scanned PDF — no text layer. Try rendering page 1 to image.
+                    const pageImage = await renderPdfPageToImage(buffer);
+                    if (pageImage) {
+                        if (ocrEngine === 'GPT4O') {
+                            rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer: pageImage, mimeType: 'image/jpeg' }, isInvoice);
+                        } else if (ocrEngine === 'MINDEE') {
+                            rawJson = await extractViaMindee(pageImage, isInvoice, tenant?.mindeeApiKey || undefined);
+                        } else {
+                            rawJson = await extractViaVeryfi(pageImage, isInvoice, tenant?.veryfiApiKey || undefined);
+                        }
+                    } else {
+                        return NextResponse.json({
+                            error: 'This PDF is a scanned image with no text layer and could not be rendered. Please upload a photo of the document instead.',
+                            code: 'NO_TEXT_LAYER',
+                            remaining,
+                        }, { status: 422 });
+                    }
+                }
+            } else {
+                // Image file (JPEG, PNG, WEBP, etc.)
                 if (ocrEngine === 'GPT4O') {
-                    rawJson = await extractViaGpt4o(openai!, { type: 'text', text }, isInvoice);
+                    rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer, mimeType: file.type || 'image/jpeg' }, isInvoice);
                 } else if (ocrEngine === 'MINDEE') {
                     rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
                 } else {
                     rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
                 }
-            } else {
-                // Scanned PDF — no text layer. Try rendering page 1 to image.
-                const pageImage = await renderPdfPageToImage(buffer);
-                if (pageImage) {
-                    if (ocrEngine === 'GPT4O') {
-                        rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer: pageImage, mimeType: 'image/jpeg' }, isInvoice);
-                    } else if (ocrEngine === 'MINDEE') {
-                        rawJson = await extractViaMindee(pageImage, isInvoice, tenant?.mindeeApiKey || undefined);
-                    } else {
-                        rawJson = await extractViaVeryfi(pageImage, isInvoice, tenant?.veryfiApiKey || undefined);
-                    }
-                } else {
-                    return NextResponse.json({
-                        error: 'This PDF is a scanned image with no text layer and could not be rendered. Please upload a photo of the document instead.',
-                        code: 'NO_TEXT_LAYER',
-                        remaining,
-                    }, { status: 422 });
-                }
             }
-        } else {
-            // Image file (JPEG, PNG, WEBP, etc.)
-            if (ocrEngine === 'GPT4O') {
-                rawJson = await extractViaGpt4o(openai!, { type: 'image', buffer, mimeType: file.type || 'image/jpeg' }, isInvoice);
-            } else if (ocrEngine === 'MINDEE') {
-                rawJson = await extractViaMindee(buffer, isInvoice, tenant?.mindeeApiKey || undefined);
-            } else {
-                rawJson = await extractViaVeryfi(buffer, isInvoice, tenant?.veryfiApiKey || undefined);
-            }
-        }
 
-        // ── Parse extraction result ───────────────────────────────────────────
-        let extracted: Record<string, any> = {};
-        try {
-            // GPT-4o sometimes wraps JSON in ```json ... ``` — strip it
-            const clean = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-            extracted = JSON.parse(clean);
-        } catch {
-            console.warn('[/api/scan] OCR returned non-JSON:', rawJson.slice(0, 200));
+            // ── Parse extraction result ───────────────────────────────────────────
+            try {
+                // GPT-4o sometimes wraps JSON in ```json ... ``` — strip it
+                const clean = rawJson.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+                extracted = JSON.parse(clean);
+            } catch {
+                console.warn('[/api/scan] OCR returned non-JSON:', rawJson.slice(0, 200));
+            }
         }
 
         // ── Ensure parent DB exists ───────────────────────────────────────────

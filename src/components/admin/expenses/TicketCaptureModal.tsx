@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
 import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
@@ -47,6 +48,10 @@ const PAYMENT_METHODS = [
 ];
 
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
+    const { data: session } = useSession();
+    const planType = (session?.user as any)?.planType ?? 'FREE';
+    const isFree = planType === 'FREE';
+
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
@@ -92,9 +97,38 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
         setStep('capture'); // keep on capture to show spinner
 
+        let clientExtracted: Record<string, any> | null = null;
+        if (isFree) {
+            try {
+                const { recognizeReceipt } = await import('@/lib/ocr');
+                const ocrResult = await recognizeReceipt(file);
+
+                clientExtracted = isInvoiceMode ? {
+                    supplierName: ocrResult.extractedMerchant,
+                    issueDate: ocrResult.extractedDate,
+                    totalExVat: ocrResult.extractedAmount,
+                    totalVat: ocrResult.extractedVatAmount,
+                    lines: []
+                } : {
+                    merchant: ocrResult.extractedMerchant,
+                    date: ocrResult.extractedDate,
+                    totalAmount: ocrResult.extractedAmount,
+                    vatAmount: ocrResult.extractedVatAmount,
+                    category: null
+                };
+            } catch (err: any) {
+                console.error('[TicketCaptureModal] Client-side OCR error:', err);
+                setScanError(err?.message || 'Client-side OCR failed. Entering manual mode.');
+                return;
+            }
+        }
+
         const fd = new FormData();
         fd.append('file', file);
         fd.append('targetDb', targetDatabaseId);
+        if (clientExtracted) {
+            fd.append('clientExtracted', JSON.stringify(clientExtracted));
+        }
 
         try {
             const res = await fetch('/api/scan', { method: 'POST', body: fd });
@@ -132,7 +166,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         } catch (e: any) {
             setScanError(e?.message || 'Network error. Check your connection and try again.');
         }
-    }, [targetDatabaseId, isInvoiceMode]);
+    }, [targetDatabaseId, isInvoiceMode, isFree]);
 
     const handleFileSelected = useCallback((file: File) => {
         runScan(file);
@@ -290,7 +324,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             </h2>
                             <p className="text-xs text-neutral-500">
                                 {step === 'capture' && !isLoading && 'Upload or scan a document'}
-                                {isLoading && 'AI is reading your document…'}
+                                {isLoading && (isFree ? 'Reading your document locally…' : 'AI is reading your document…')}
                                 {step === 'review' && (scanResult ? 'Review extracted data' : 'Enter details manually')}
                                 {step === 'split-confirm' && `Multi-page PDF — ${pdfPageCount} pages`}
                                 {step === 'saving' && 'Saving to database…'}
@@ -320,8 +354,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                         <Sparkles className="w-4 h-4 text-amber-400 absolute -top-1 -right-1 animate-pulse" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Analysing with AI…</p>
-                                        <p className="text-xs text-neutral-500 mt-1">GPT-4o is reading the document</p>
+                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                                            {isFree ? 'Reading locally…' : 'Analysing with AI…'}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                            {isFree ? 'Tesseract.js is reading the document' : 'GPT-4o is reading the document'}
+                                        </p>
                                     </div>
                                     {previewUrl && (
                                         <img src={previewUrl} alt="Preview" className="w-28 h-auto rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm" />

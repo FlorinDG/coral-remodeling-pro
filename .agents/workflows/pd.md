@@ -202,6 +202,10 @@ develop  →  staging  →  main
 | /m/expenses has two in-page tabs: Scans (default, Tesseract OCR) and Peppol Inbox (lazy-fetched from /api/peppol/inbox) | ✅ | 2026-05-31 M1 expenses page rebuild |
 | /m/quotes page exists, reads from db-quotations via lockedDbIds, "New Quote" routes to full desktop engine | ✅ | 2026-05-31 M1 Part 6 |
 | Profile completeness CTA on /m home hides when companyName+vatNumber+iban+(street or city)+logoUrl all present on tenant record | ✅ | 2026-05-31 M1 home page rebuild |
+| PRO Users meter has NO hard cap (unlimited seats, Stripe-billed per extra seat); FREE hard-capped at 1 | ✅ | 2026-05-31 P8 billing UI fix |
+| Billing upgrade CTA always reads "Upgrade to X"; no trial copy shown; immediate-billing note shown under button | ✅ | 2026-05-31 P8 + P10 billing UI |
+| TRIAL_MODE_ENABLED = false in stripe.ts; checkout omits trial_period_days; cron routes early-return no-op; trial.ts + schema columns preserved for re-activation | ✅ | 2026-05-31 P10 implementation |
+| isTrialing badge in BillingPageClient soft-fails to hidden when subscriptionStatus !== 'TRIAL' — no throw risk | ✅ | 2026-05-31 P10 measurement |
 
 ---
 

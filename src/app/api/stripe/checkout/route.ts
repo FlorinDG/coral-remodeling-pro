@@ -8,7 +8,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getStripeInstance, getOrCreateStripeCustomer, getPriceId, PLAN_PRICING } from '@/lib/stripe';
+import { getStripeInstance, getOrCreateStripeCustomer, getPriceId, PLAN_PRICING, TRIAL_MODE_ENABLED } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     try {
@@ -81,7 +81,9 @@ export async function POST(req: Request) {
             mode: 'subscription',
             line_items: lineItems,
             subscription_data: {
-                trial_period_days: trialDays,
+                // PARKED 2026-05-31 — trial disabled (P10). Re-enable via TRIAL_MODE_ENABLED.
+                // When off: immediate charge on upgrade (no trial), tenant goes straight to ACTIVE.
+                ...(TRIAL_MODE_ENABLED ? { trial_period_days: trialDays } : {}),
                 metadata: { tenantId, planType, billingCycle: billingCycle || 'MONTHLY' },
             },
             success_url: successUrl,

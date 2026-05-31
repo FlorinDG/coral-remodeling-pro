@@ -402,7 +402,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 # ───────────────────────────────────────────────
 
 ## TASK P10 — Retire the calendar trial; adopt FREE-forever + caps (PARK trial code)
-**Status:** ⬜ TODO
+**Status:** 🟢 DONE (awaiting Florin verify — Stripe test-mode E2E in P14)
 **Priority:** HIGH — shapes PRO billing UX and copy. Do before P8 (seat UI) and P14 (E2E).
 
 ### 👤 LOCKED DECISION (Florin, 2026-05-30)
@@ -443,12 +443,22 @@ Florin wants the existing trial machinery **preserved for possible future hybrid
 - Deleting any trial code (explicitly forbidden).
 
 ### 🤖 AI FEEDBACK
-- measured:
-- parking method used per asset:
-- changed:
-- Stripe test-mode result (immediate charge confirmed?):
-- discovered:
-- premise updates appended to pd.md? (y/n):
+- **measured:**
+  - `checkout/route.ts` line 84 had `trial_period_days: trialDays` (=90 for PRO) unconditionally in `subscription_data`.
+  - `BillingPageClient.tsx` had `trial: "3 months free trial"` on PRO + ENT plan objects, plus `{plan.trial && <p>...trial copy...</p>}` rendering and `Start Free Trial` CTA text — ALL removed in P8.
+  - `isTrialing`: only used in `BillingPageClient.tsx` (shows a badge) and `billing/page.tsx` (compute `trialDaysLeft`). Both use `subscriptionStatus === 'TRIAL'` which will simply be `false` for new signups — badges and meters soft-fail to hidden/zero. No throw risk.
+  - Dashboard, sidebar, middleware: no `isTrialing` reads found. Safe.
+- **parking method used per asset:**
+  - `src/lib/stripe.ts` — added `TRIAL_MODE_ENABLED = false` constant with PARKED comment. Single flip-point.
+  - `checkout/route.ts` — `trial_period_days` now spread-conditional: `...(TRIAL_MODE_ENABLED ? { trial_period_days: trialDays } : {})`. Trial branch intact.
+  - `trial-check/route.ts` — early-return guard: `if (!TRIAL_MODE_ENABLED) return { skipped: true }`. File + cron intact.
+  - `trial-notifications/route.ts` — same early-return guard. File intact.
+  - `trial.ts` — unchanged (library functions remain). Called only from cron routes which are now guarded.
+  - Schema columns `trialEndsAt` / `trialGraceEndsAt` / `trialNotifiedAt` — NOT dropped.
+  - `BillingPageClient.tsx` trial copy — removed in P8 (separate change). `isTrialing` badge still renders if DB ever says TRIAL (safe soft-fail for any existing trialing tenant).
+- **Stripe test-mode result:** `[ASSUMED ✅]` — omitting `trial_period_days` makes Stripe charge at subscription creation. Will be confirmed in P14 E2E test pass.
+- **discovered:** `stripe.ts` had two pre-existing `any` lint errors (lines 244, 276) that were previously suppressed or unseen. Fixed as part of this task: proper `Record<string, {includedUsers}>` cast and `Stripe.SubscriptionUpdateParams.Item[]` type.
+- **premise updates appended to pd.md?** y
 
 ---
 
@@ -686,7 +696,7 @@ In `m/expenses/page.tsx`:
 | P8 | Seat-count UI reconcile | 2 | 🟢 DONE (awaiting Florin verify) |
 | P9 | planType depth audit | 2 | 🟢 DONE (all gates OK) |
 | M1 | FREE mobile UI = default + reshape | 2.5 | 🟢 DONE (awaiting Florin verify) |
-| P10 | Retire trial → free-forever (park code) | 3 | ⬜ TODO |
+| P10 | Retire trial → free-forever (park code) | 3 | 🟢 DONE (Stripe E2E confirm in P14) |
 | P10b | Event-triggered PRO taste at cap | 3 (fast-follow) | ⬜ TODO |
 | P11 | Quarterly toggle | 3 | ⬜ TODO |
 | P12 | Cancellation notice | 3 | ⬜ TODO |

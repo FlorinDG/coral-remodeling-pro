@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkAndExpireTrials } from '@/lib/trial';
+import { TRIAL_MODE_ENABLED } from '@/lib/stripe';
 
 /**
  * GET /api/cron/trial-notifications
@@ -19,6 +20,11 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // PARKED 2026-05-31 — trial mode disabled (P10). Re-enable via TRIAL_MODE_ENABLED in stripe.ts.
+    if (!TRIAL_MODE_ENABLED) {
+        return NextResponse.json({ skipped: true, reason: 'TRIAL_MODE_ENABLED is false' });
+    }
+
     try {
         console.log('[Cron] Starting trial notification scan...');
         const stats = await checkAndExpireTrials();
@@ -29,8 +35,8 @@ export async function GET(req: Request) {
             message: 'Trial notification scan complete',
             ...stats
         });
-    } catch (error: any) {
-        console.error('[Cron] Trial notification error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+    } catch (error: unknown) {
+        console.error('[Cron] Trial notification error:', error instanceof Error ? error.message : String(error));
+        return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
     }
 }

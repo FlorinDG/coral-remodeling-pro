@@ -10,6 +10,7 @@
 
 import { NextResponse } from 'next/server';
 import { checkAndExpireTrials } from '@/lib/trial';
+import { TRIAL_MODE_ENABLED } from '@/lib/stripe';
 
 export async function GET(req: Request) {
     // Verify cron secret to prevent unauthorized calls
@@ -18,6 +19,11 @@ export async function GET(req: Request) {
 
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // PARKED 2026-05-31 — trial mode disabled (P10). Re-enable via TRIAL_MODE_ENABLED in stripe.ts.
+    if (!TRIAL_MODE_ENABLED) {
+        return NextResponse.json({ skipped: true, reason: 'TRIAL_MODE_ENABLED is false' });
     }
 
     try {

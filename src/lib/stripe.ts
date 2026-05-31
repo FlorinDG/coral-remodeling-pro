@@ -57,6 +57,12 @@ export const QUARTERLY_FIDELITY_DISCOUNT = 0.10; // 10% after first year
 /** Peppol overage price per document (cost × ~10). */
 export const PEPPOL_OVERAGE_PRICE = 0.99;
 
+// PARKED 2026-05-31 — trial disabled in favour of free-forever+caps (P10).
+// Re-enable by setting TRIAL_MODE_ENABLED = true.
+// See pro-hardening.md P10 for full context.
+// DO NOT delete: trialMonths in PLAN_PRICING, trial.ts, or cron routes.
+export const TRIAL_MODE_ENABLED = false;
+
 // ── OCR Scan quotas per plan ─────────────────────────────────────────
 
 export const PLAN_SCAN_QUOTAS: Record<string, number> = {
@@ -235,7 +241,7 @@ export async function syncSeatQuantities(tenantId: string) {
     if (!tenant) throw new Error('Tenant not found');
 
     const planType = tenant.planType;
-    const includedUsers = (PLAN_PRICING as any)[planType]?.includedUsers ?? 0;
+    const includedUsers = (PLAN_PRICING as Record<string, { includedUsers: number }>)[planType]?.includedUsers ?? 0;
     const extraUserCount = Math.max(0, standardUserCount - includedUsers);
 
     // 3. Update DB counters first (fail-safe)
@@ -267,7 +273,7 @@ export async function syncSeatQuantities(tenantId: string) {
         const extraUserItem = subscription.items.data.find(item => item.price.id === extraUserPriceId);
         const workforceItem = subscription.items.data.find(item => item.price.id === workforcePriceId);
 
-        const itemsToUpdate: any[] = [];
+        const itemsToUpdate: Stripe.SubscriptionUpdateParams.Item[] = [];
 
         // Extra standard users item sync
         if (extraUserCount > 0) {

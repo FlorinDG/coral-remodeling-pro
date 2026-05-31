@@ -284,7 +284,7 @@ export default async function middleware(req: NextRequest) {
 
         // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
         const locale = pendingLocaleCookie || resolveLocale(req);
-        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'accept-invite', 'workhub', '_next', 'api'];
+        const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'accept-invite', 'workhub', 'm', '_next', 'api'];
         // Strip any accidental locale prefix (e.g. /fr/admin/… → /admin/…)
         // next-intl's router.replace may inject the prefix despite localePrefix:'never'
         const strippedPath = hasLocalePrefix(pathname)

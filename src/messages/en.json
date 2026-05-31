@@ -610,7 +610,19 @@
     "cli_call": "Call",
     "cli_email": "Email",
     "banner_try_mobile": "Try our new mobile-optimized view!",
-    "banner_open_app": "Open Mobile App"
+    "banner_open_app": "Open Mobile App",
+    "nav_quotes": "Quotes",
+    "dash_add_client": "Add Client",
+    "peppol_inbox": "Peppol Inbox",
+    "scans": "Scans",
+    "quotes_title": "Quotations",
+    "quotes_subtitle": "Your quotes",
+    "quotes_empty_title": "No quotations yet",
+    "quotes_empty_desc": "Create your first quote to get started.",
+    "quotes_new": "New Quote",
+    "profile_cta_title": "Complete your profile",
+    "profile_cta_desc": "Add company info, VAT, IBAN and logo to send professional invoices.",
+    "profile_cta_btn": "Complete Setup"
   },
   "Tasks": {
     "status": {

@@ -610,7 +610,19 @@
     "cli_call": "Bellen",
     "cli_email": "E-mailen",
     "banner_try_mobile": "Probeer onze nieuwe mobiele weergave!",
-    "banner_open_app": "Open Mobiele App"
+    "banner_open_app": "Open Mobiele App",
+    "nav_quotes": "Offertes",
+    "dash_add_client": "Klant Toevoegen",
+    "peppol_inbox": "Peppol Inbox",
+    "scans": "Scans",
+    "quotes_title": "Offertes",
+    "quotes_subtitle": "Uw offertes",
+    "quotes_empty_title": "Nog geen offertes",
+    "quotes_empty_desc": "Maak uw eerste offerte aan om te beginnen.",
+    "quotes_new": "Nieuwe Offerte",
+    "profile_cta_title": "Profiel aanvullen",
+    "profile_cta_desc": "Voeg bedrijfsinfo, BTW, IBAN en logo toe voor professionele facturen.",
+    "profile_cta_btn": "Instellen"
   },
   "Tasks": {
     "status": {

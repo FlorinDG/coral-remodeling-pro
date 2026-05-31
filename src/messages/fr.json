@@ -609,7 +609,19 @@
     "cli_call": "Appeler",
     "cli_email": "Envoyer un e-mail",
     "banner_try_mobile": "Essayez notre nouvelle vue mobile optimisée !",
-    "banner_open_app": "Ouvrir l'application mobile"
+    "banner_open_app": "Ouvrir l'application mobile",
+    "nav_quotes": "Devis",
+    "dash_add_client": "Ajouter client",
+    "peppol_inbox": "Boîte Peppol",
+    "scans": "Scans",
+    "quotes_title": "Devis",
+    "quotes_subtitle": "Vos devis",
+    "quotes_empty_title": "Aucun devis encore",
+    "quotes_empty_desc": "Créez votre premier devis pour commencer.",
+    "quotes_new": "Nouveau Devis",
+    "profile_cta_title": "Compléter votre profil",
+    "profile_cta_desc": "Ajoutez les infos société, TVA, IBAN et logo pour des factures professionnelles.",
+    "profile_cta_btn": "Configurer"
   },
   "Tasks": {
     "status": {

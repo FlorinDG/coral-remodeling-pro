@@ -6,8 +6,8 @@ import { Link, usePathname } from '@/i18n/routing';
 import { TenantProvider } from '@/context/TenantContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
-    LayoutDashboard, FileText, Receipt, Wallet, Users,
-    Menu, X, Monitor, LogOut, Settings
+    LayoutDashboard, FileText, Wallet, Users,
+    Menu, X, Monitor, LogOut, Settings, FileSignature
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
@@ -36,11 +36,11 @@ export default function MobileShell({
     const pathname = usePathname();
 
     const TABS: NavTab[] = [
-        { id: 'home',      label: t('nav_dashboard'),  href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
-        { id: 'invoices',  label: t('nav_invoices'),   href: '/m/invoices',  icon: <FileText className="w-5 h-5" /> },
-        { id: 'purchases', label: t('nav_purchases'),  href: '/m/purchases', icon: <Receipt className="w-5 h-5" /> },
-        { id: 'expenses',  label: t('nav_expenses'),   href: '/m/expenses',  icon: <Wallet className="w-5 h-5" /> },
-        { id: 'clients',   label: t('nav_clients'),    href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
+        { id: 'home',     label: t('nav_dashboard'), href: '/m',           icon: <LayoutDashboard className="w-5 h-5" /> },
+        { id: 'invoices', label: t('nav_invoices'),  href: '/m/invoices',  icon: <FileText className="w-5 h-5" /> },
+        { id: 'expenses', label: t('nav_expenses'),  href: '/m/expenses',  icon: <Wallet className="w-5 h-5" /> },
+        { id: 'clients',  label: t('nav_clients'),   href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
+        { id: 'quotes',   label: t('nav_quotes'),    href: '/m/quotes',    icon: <FileSignature className="w-5 h-5" /> },
     ];
     const [menuOpen, setMenuOpen] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');

@@ -242,6 +242,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'opt-paid',           name: 'Betaald',   color: 'green'  },
         { id: 'opt-overdue',        name: 'Vervallen', color: 'red'    },
         { id: 'opt-credited',       name: 'Gecrediteerd', color: 'pink' },
+        { id: 'opt-partially-credited', name: 'Gedeeltelijk gecrediteerd', color: 'pink' },
         { id: 'opt-uncollectible',  name: 'Oninbaar',  color: 'purple' },
       ]}},
       { id: 'docType',     name: 'Document Type',     type: 'select', config: { options: [
@@ -631,6 +632,28 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           ];
           const updatedProperties = database.properties.map(p => 
             p.id === 'docType' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
+          );
+          store.updateDatabase(resolvedId, { properties: updatedProperties });
+        }
+      }
+
+      // Enforce that status options in db-invoices include opt-credited and opt-partially-credited
+      const statusProp = database.properties.find(p => p.id === 'status');
+      if (statusProp && statusProp.config?.options) {
+        const options = statusProp.config.options || [];
+        const hasCredited = options.some((opt: { id?: string }) => opt.id === 'opt-credited');
+        const hasPartiallyCredited = options.some((opt: { id?: string }) => opt.id === 'opt-partially-credited');
+        
+        if (!hasCredited || !hasPartiallyCredited) {
+          const updatedOptions = [...options];
+          if (!hasCredited) {
+            updatedOptions.push({ id: 'opt-credited', name: 'Gecrediteerd', color: 'pink' });
+          }
+          if (!hasPartiallyCredited) {
+            updatedOptions.push({ id: 'opt-partially-credited', name: 'Gedeeltelijk gecrediteerd', color: 'pink' });
+          }
+          const updatedProperties = database.properties.map(p => 
+            p.id === 'status' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
           );
           store.updateDatabase(resolvedId, { properties: updatedProperties });
         }

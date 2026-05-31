@@ -278,8 +278,14 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         // Status update logic for credit notes
         const currentStatus = String(invoice.properties?.['status'] || 'opt-draft');
-        if (creditedTotal >= roundedInc && roundedInc > 0 && currentStatus !== 'opt-credited') {
-            updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-credited');
+        if (creditedTotal >= roundedInc && roundedInc > 0) {
+            if (currentStatus !== 'opt-credited') {
+                updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-credited');
+            }
+        } else if (creditedTotal > 0 && roundedInc > 0) {
+            if (currentStatus !== 'opt-partially-credited') {
+                updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-partially-credited');
+            }
         }
     }, [invoice?.blocks, isHydrated, creditedTotal]);
 
@@ -826,12 +832,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 {/* Interactive status selector */}
                                 {isHydrated && (() => {
                                     const STATUS_MAP: Record<string, { label: string; bg: string; text: string; dot: string }> = {
-                                        'opt-draft':          { label: 'Concept',   bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
-                                        'opt-sent':           { label: 'Verzonden', bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
-                                        'opt-paid':           { label: 'Betaald',   bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
-                                        'opt-overdue':        { label: 'Vervallen', bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
-                                        'opt-credited':       { label: 'Gecrediteerd', bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
-                                        'opt-uncollectible':  { label: 'Oninbaar',  bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
+                                        'opt-draft':              { label: 'Concept',   bg: 'bg-neutral-100 dark:bg-neutral-800', text: 'text-neutral-600 dark:text-neutral-300', dot: 'bg-neutral-400' },
+                                        'opt-sent':               { label: 'Verzonden', bg: 'bg-orange-50 dark:bg-orange-900/30',     text: 'text-orange-700 dark:text-orange-300',       dot: 'bg-orange-500' },
+                                        'opt-paid':               { label: 'Betaald',   bg: 'bg-green-50 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-300',     dot: 'bg-green-500' },
+                                        'opt-overdue':            { label: 'Vervallen', bg: 'bg-red-50 dark:bg-red-900/30',       text: 'text-red-700 dark:text-red-300',         dot: 'bg-red-500' },
+                                        'opt-credited':           { label: 'Gecrediteerd', bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
+                                        'opt-partially-credited': { label: 'Gedeeltelijk gecrediteerd', bg: 'bg-pink-50 dark:bg-pink-900/30', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-400' },
+                                        'opt-uncollectible':      { label: 'Oninbaar',  bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300',   dot: 'bg-purple-500' },
                                     };
                                     const current = STATUS_MAP[invoiceStatus] || STATUS_MAP['opt-draft'];
                                     return (

@@ -182,6 +182,7 @@ All development and release operations must adhere to this structured flow to pr
 | `/api/tenant/project-access` GET/PUT — project assignment CRUD | ✅ | 2026-05-18 |
 | `ROLE_SIDEBAR_ALLOW` replaces `ACCOUNTANT_SIDEBAR_IDS` in AdminLayout | ✅ | 2026-05-18 — backward-compatible, ACCOUNTANT still in map |
 | FREE-tenant activeModules default restricted to INVOICING only | ✅ | 2026-05-30 code change + DB count verification |
+| Seat-billing wired into Stripe checkout & lifecycle with automatic quantity sync | ✅ | 2026-05-31 code change & checkout session validation |
 
 ---
 

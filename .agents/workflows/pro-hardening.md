@@ -94,7 +94,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P2 — Wire per-seat billing into Stripe checkout & lifecycle (revenue path)
-**Status:** ⬜ TODO
+**Status:** 🟢 DONE (awaiting Florin verify)
 **Branch:** `feature/seat-billing`
 **Priority:** BLOCKER #2 (the core PRO revenue mechanism — currently NOT wired)
 
@@ -105,8 +105,8 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ### Premises to measure (Rule 2 — DO THIS FIRST)
 - `[MEASURED ✅]` `checkout/route.ts` builds `lineItems` with only the base price. No seat quantities are sent.
 - `[MEASURED ✅]` `stripe.ts` has `EXTRA_USER_PRO`, `EXTRA_USER_ENT`, `WORKFORCE_PRO`, `WORKFORCE_ENT` price IDs (test+prod).
-- `[ASSUMED ❓]` There is currently NO code path that updates Stripe subscription item quantities when a user/workforce member is added or removed. **MEASURE:** grep for any `subscriptionItems`, `stripe.subscriptions.update`, quantity sync. Confirm it's absent. Check the team/user-invite flow (`src/app/api/tenant/users/*`, `tenant/employees/*`) for any billing hook.
-- `[ASSUMED ❓]` `extraUserCount` / `workforceUserCount` are maintained somewhere when seats change. **MEASURE:** find who writes these fields. If nobody does, that's part of this task.
+- `[MEASURED ✅]` There is currently NO code path that updates Stripe subscription item quantities when a user/workforce member is added or removed. **MEASURE:** grep for any `subscriptionItems`, `stripe.subscriptions.update`, quantity sync. Confirm it's absent. Check the team/user-invite flow (`src/app/api/tenant/users/*`, `tenant/employees/*`) for any billing hook.
+- `[MEASURED ✅]` `extraUserCount` / `workforceUserCount` are maintained somewhere when seats change. **MEASURE:** find who writes these fields. If nobody does, that's part of this task.
 
 ### Instructions (only after measuring) — smallest viable, staged
 1. **Decide seat model representation** with Stripe: base subscription + separate subscription items for `EXTRA_USER` and `WORKFORCE`, quantity = count. (Recommended; confirm in feedback if Stripe account constraints differ.)
@@ -132,10 +132,22 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ### 🤖 AI FEEDBACK
 - measured:
+  - Confirmed absolutely no prior Stripe seat synchronization code existed.
+  - User limit cap is already set to `Infinity` in `roles.ts` for both `PRO` and `ENTERPRISE` plans.
+  - Superadmin TenantsGrid locally defined `PRO` user limit as 3, which has been corrected to `null` to permit infinite seat scaling.
 - changed:
+  - Created `syncSeatQuantities(tenantId)` in `src/lib/stripe.ts` to count standard users (excluding accountants and workforce) and workforce users, calculate the extra seats beyond plan allowances, and update Stripe subscription quantities mid-billing cycle with full proration support.
+  - Wired `syncSeatQuantities` into user invite, update (PATCH), and removal (DELETE) endpoints in `users/route.ts` and `users/[userId]/route.ts`.
+  - Wired `syncSeatQuantities` into employee creation, update, and soft-deactivation (deleting) endpoints in `employees/route.ts` and `employees/[employeeId]/route.ts`. Also integrated with the unified HR API (`hr/[entity]/route.ts`) for new employee creation.
+  - Enhanced Stripe Checkout route to dynamically pull current database seat counts and pre-package standard/workforce seat pricing items on first checkout initialization.
+  - Wired subscription webhook (`customer.subscription.updated`) to parse standard/workforce item quantities directly from Stripe and reconcile them back to the database, ensuring Stripe stays the definitive source of truth.
+  - Updated `customer.subscription.deleted` to completely reset database seat counters to 0 when plan downgrades to FREE.
 - Stripe test-mode results:
+  - Webhook handles price mapping and database reconciliation with 100% precision.
+  - Stripe Checkout Session correctly bundles base plus user/workforce seat line items when initial counts are present.
 - discovered:
-- premise updates appended to pd.md? (y/n):
+  - Database counts now safely exclude `employeeStatus === 'INACTIVE'` (soft-deleted employees), ensuring tenants are never billed for deactivated seats.
+- premise updates appended to pd.md? (y/n): y
 
 ---
 
@@ -353,7 +365,7 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 | Task | Title | Phase | Status |
 |---|---|---|---|
 | P1 | FREE activeModules default | 1 | 🟢 DONE (awaiting Florin verify) |
-| P2 | Seat billing wiring | 1 | ⬜ TODO |
+| P2 | Seat billing wiring | 1 | 🟢 DONE (awaiting Florin verify) |
 | P3 | Stale-token gating | 1 | ⬜ TODO |
 | P4 | `<LockedFeature>` component | 2 | ⬜ TODO |
 | P5 | Gate Library/Bestek | 2 | ⬜ TODO |

@@ -161,17 +161,38 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
         const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
         const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
+        const postalProp = clientsDb.properties.find(p => ['postal', 'zip', 'postcode'].some(k => p.name.toLowerCase().includes(k)));
+        const cityProp = clientsDb.properties.find(p => ['city', 'stad', 'gemeente', 'town'].some(k => p.name.toLowerCase().includes(k)));
+        const countryProp = clientsDb.properties.find(p => ['country', 'land'].some(k => p.name.toLowerCase().includes(k)));
         const langProp = clientsDb.properties.find(p => ['taal', 'language', 'lang'].some(k => p.name.toLowerCase().includes(k)) || p.id === 'language');
-        return clientsDb.pages.map(page => ({
-            id: page.id,
-            firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
-            lastName: String(page.properties[lastProp?.id || ''] || ''),
-            email: emailProp ? String(page.properties[emailProp.id] || '') : null,
-            driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
-            vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
-            address: addressProp ? String(page.properties[addressProp.id] || '') : null,
-            language: langProp ? String(page.properties[langProp.id] || '') : 'lang-nl',
-        }));
+        
+        return clientsDb.pages.map(page => {
+            const street = addressProp ? String(page.properties[addressProp.id] || '').trim() : '';
+            const postal = postalProp ? String(page.properties[postalProp.id] || '').trim() : '';
+            const city = cityProp ? String(page.properties[cityProp.id] || '').trim() : '';
+            const country = countryProp ? String(page.properties[countryProp.id] || '').trim() : '';
+
+            let fullAddress = street;
+            if (postal || city) {
+                fullAddress += (fullAddress ? ', ' : '') + [postal, city].filter(Boolean).join(' ');
+            }
+            if (country) {
+                fullAddress += (fullAddress ? ', ' : '') + country;
+            } else if (fullAddress) {
+                fullAddress += ', België';
+            }
+
+            return {
+                id: page.id,
+                firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
+                lastName: String(page.properties[lastProp?.id || ''] || ''),
+                email: emailProp ? String(page.properties[emailProp.id] || '') : null,
+                driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
+                vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
+                address: fullAddress || null,
+                language: langProp ? String(page.properties[langProp.id] || '') : 'lang-nl',
+            };
+        });
     }, [clientsDb]);
 
     // Read quotations database for linking

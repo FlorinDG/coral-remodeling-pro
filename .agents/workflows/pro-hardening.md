@@ -87,7 +87,8 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
   - Changed `prisma/schema.prisma` `activeModules` default to `["INVOICING"]` to ensure a safe default.
   - Updated both `src/app/api/auth/signup/route.ts` and `src/auth.ts` to dynamically use `PLAN_MODULES['FREE']` from `@/lib/stripe` (single source of truth).
 - discovered:
-  - There is exactly 1 over-provisioned FREE tenant in the database, representing a minor revenue leak. Set `👤 NEEDS FLORIN DECISION` for whether to backfill/correct it.
+  - There is exactly 1 over-provisioned FREE tenant in the database, representing a minor revenue leak.
+  - **Backfill Run:** Restressed and successfully gated the over-provisioned tenant `cmp2iavx50000l104clo7gv3n` to `["INVOICING"]` via direct DB backfill script per Florin's instructions ("the tenant should be gated. no exception").
 - premise updates appended to pd.md? (y/n): y
 
 ---

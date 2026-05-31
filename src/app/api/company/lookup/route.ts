@@ -50,7 +50,35 @@ export async function GET(req: NextRequest) {
             console.log('Peppol check failed (non-blocking)', err);
         }
 
-        return NextResponse.json({ ...data, peppolActive });
+        // Parse multi-line address into street, postalCode, and city fields for automatic client creation import
+        let street = '';
+        let postalCode = '';
+        let city = '';
+
+        if (data.address) {
+            const lines = data.address.split('\n').map((l: string) => l.trim()).filter(Boolean);
+            if (lines.length > 0) {
+                street = lines[0];
+            }
+            if (lines.length > 1) {
+                const secondLine = lines[1];
+                const postalMatch = secondLine.match(/^([A-Za-z0-9-]{3,10})\s+(.+)$/);
+                if (postalMatch) {
+                    postalCode = postalMatch[1];
+                    city = postalMatch[2];
+                } else {
+                    city = secondLine;
+                }
+            }
+        }
+
+        return NextResponse.json({
+            ...data,
+            street,
+            postalCode,
+            city,
+            peppolActive
+        });
     } catch (e) {
         console.error('VAT lookup error', e);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

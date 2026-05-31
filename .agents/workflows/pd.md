@@ -187,6 +187,11 @@ All development and release operations must adhere to this structured flow to pr
 | FREE ticket scanning routed to client-side Tesseract OCR to completely bypass OpenAI fees | ✅ | 2026-05-31 code change & quota validation |
 | Bestek database (db-bestek) read-only access enforced for PRO plan while allowing full editing for Enterprise | ✅ | 2026-05-31 code change & validation |
 | CRM Sales page (crm/page) limits sales pipelines to 1 (db-crm) for PRO plan while allowing multiple for Enterprise | ✅ | 2026-05-31 code change & validation |
+| FREE users on mobile viewport (<768px) are auto-redirected from AdminLayout to /m (client-side useEffect; no loop risk since /m uses MobileShell not AdminLayout) | ✅ | 2026-05-31 M1 implementation |
+| /m bottom nav = Home/Invoices/Expenses/Clients/Quotes (5 tabs); Purchases removed from bar, still reachable at /m/purchases | ✅ | 2026-05-31 M1 MobileShell update |
+| /m/expenses has two in-page tabs: Scans (default, Tesseract OCR) and Peppol Inbox (lazy-fetched from /api/peppol/inbox) | ✅ | 2026-05-31 M1 expenses page rebuild |
+| /m/quotes page exists, reads from db-quotations via lockedDbIds, "New Quote" routes to full desktop engine | ✅ | 2026-05-31 M1 Part 6 |
+| Profile completeness CTA on /m home hides when companyName+vatNumber+iban+(street or city)+logoUrl all present on tenant record | ✅ | 2026-05-31 M1 home page rebuild |
 
 ---
 

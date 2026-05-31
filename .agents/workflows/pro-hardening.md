@@ -534,7 +534,7 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 # ───────────────────────────────────────────────
 
 ## TASK M1 — Make `/m` the DEFAULT for FREE on mobile + fix the broken desktop-on-phone UI
-**Status:** ⬜ TODO
+**Status:** 🟢 DONE (branch: `feature/free-mobile-default`, commit: `304597c`)
 **Branch:** `feature/free-mobile-default`
 **Priority:** HIGH (Florin-requested; the FREE persona is mobile-first — this IS their product)
 
@@ -609,13 +609,26 @@ In `m/expenses/page.tsx`:
 - Any billing/gating change (covered elsewhere).
 
 ### 🤖 AI FEEDBACK
-- measured (routing flow in middleware Branch B; how mobile is detected):
-- Part 1 routing approach chosen + why (no-loop proof):
-- Parts 2–6 changes:
-- screenshots (home / invoices / expenses / clients / quotes):
-- build/tsc/lint green?:
-- discovered:
-- premise updates appended to pd.md? (y/n):
+- **measured (routing flow in middleware Branch B; how mobile is detected):**
+  - Branch B is complex: locale-rewrite, role gate, module gate, locale-cookie sync — all middleware-side. Adding mobile detection in middleware would have required reading the JWT planType in the edge runtime AND a User-Agent sniff. This approach was **rejected** to avoid fighting the locale-rewrite machinery (which already does a `NextResponse.rewrite`).
+  - Chosen approach: **client-side redirect in `AdminLayout`** — `window.innerWidth < 768` check inside a `useEffect`. AdminLayout is only rendered for `/admin/**`; `/m` uses `MobileShell` (a totally separate layout tree) so there is zero redirect-loop risk. PRO/ENT: `planType !== 'FREE'` guard exits immediately. Soft-fail preserved: if JS is disabled or window check is uncertain, user stays in desktop ERP.
+- **Part 1 routing approach chosen + why (no-loop proof):**
+  - `useEffect(() => { if (planType !== 'FREE') return; if (window.innerWidth < 768) router.replace('/m'); }, [planType, router])` in `AdminLayout`.
+  - `/m` uses `MobileShell` (not `AdminLayout`) so the effect never fires again at `/m`. No loop possible. Banner retired.
+- **Parts 2–6 changes:**
+  - **Part 2** — `MobileShell.tsx`: `Receipt` (purchases) removed, `FileSignature` (quotes) added. Order: Home / Invoices / Expenses / Clients / Quotes. `/m/purchases` page untouched (still reachable directly).
+  - **Part 3** — `m/page.tsx` completely rewritten: top=company+month-net+3-stat-strip+cash-in-out; middle=3 big CTAs (Create Invoice / Scan Expense / Add Client); bottom=quick-nav tiles (Invoices, Quotes) + profile CTA (hides when companyName+VAT+IBAN+address+logoUrl all present) + scan quota bar.
+  - **Part 4** — `m/expenses/page.tsx` rebuilt as client component with tab switcher. Scans tab (default) = existing Tesseract OCR list. Peppol Inbox tab = fetches `/api/peppol/inbox` lazily on first switch.
+  - **Part 5** — `m/invoices/page.tsx` and `m/clients/page.tsx` verified clean; no changes needed.
+  - **Part 6** — `m/quotes/page.tsx` created; reads from `db-quotations` via tenant `lockedDbIds`; list with status badges; "New Quote" links to `/admin/quotations` (full engine).
+  - **i18n** — Added 12 new keys to Mobile namespace across en/nl/fr/ro: `nav_quotes`, `dash_add_client`, `peppol_inbox`, `scans`, `quotes_title`, `quotes_subtitle`, `quotes_empty_title`, `quotes_empty_desc`, `quotes_new`, `profile_cta_title`, `profile_cta_desc`, `profile_cta_btn`.
+- **screenshots:** pending Florin test on mobile viewport.
+- **build/tsc/lint green:** ✅ `tsc --noEmit` 0 errors · `eslint` 0 errors 0 warnings · pushed to remote.
+- **discovered:**
+  - Profile completeness check uses `vatNumber`, `iban`, `street|city`, `logoUrl` from tenant Prisma model — all already selected by the profile API route.
+  - The Peppol inbox API path is `/api/peppol/inbox` — response shape wrapped in `{ invoices: [] }` or raw array; handled defensively.
+  - `db-quotations` key confirmed in `lockedDbUtils.ts` and `provisionTenantDbs.ts`.
+- **premise updates appended to pd.md?** y (see below)
 
 ---
 
@@ -647,7 +660,7 @@ In `m/expenses/page.tsx`:
 | P7 | Gate File Manager | 2 | ⬜ TODO |
 | P8 | Seat-count UI reconcile | 2 | ⬜ TODO |
 | P9 | planType depth audit | 2 | ⬜ TODO |
-| M1 | FREE mobile UI = default + reshape | 2.5 | ⬜ TODO |
+| M1 | FREE mobile UI = default + reshape | 2.5 | 🟢 DONE (awaiting Florin verify) |
 | P10 | Retire trial → free-forever (park code) | 3 | ⬜ TODO |
 | P10b | Event-triggered PRO taste at cap | 3 (fast-follow) | ⬜ TODO |
 | P11 | Quarterly toggle | 3 | ⬜ TODO |

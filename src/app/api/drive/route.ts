@@ -68,8 +68,8 @@ export async function GET(request: Request) {
 
         let query = `'${folderId}' in parents and trashed=false`;
         if (tag) {
-            // Search everywhere for files tagged with this specific module (still scoped to parents/appProperties)
-            query = `appProperties has { key='module' and value='${tag}' } and trashed=false`;
+            // Search everywhere for files tagged with this specific module and strictly scoped to this tenant
+            query = `appProperties has { key='module' and value='${tag}' } and appProperties has { key='tenantId' and value='${tenantId}' } and trashed=false`;
         }
 
         // List files in the specified folder (or by tag)
@@ -156,7 +156,8 @@ export async function POST(request: Request) {
             const fileMetadata = {
                 name: folderName,
                 mimeType: 'application/vnd.google-apps.folder',
-                parents: [parentId]
+                parents: [parentId],
+                appProperties: { tenantId }
             };
 
             const response = await drive.files.create({
@@ -172,8 +173,8 @@ export async function POST(request: Request) {
             const file = formData.get('file') as File;
             if (!file) return NextResponse.json({ error: 'Missing file payload' }, { status: 400 });
 
-            const moduleTag = formData.get('moduleTag') as string;
-            const appProperties = moduleTag ? { module: moduleTag } : undefined;
+            const appProperties: Record<string, string> = { tenantId };
+            if (moduleTag) appProperties.module = moduleTag;
 
             // Convert standard Web API File into a Node Buffer stream for googleapis
             const arrayBuffer = await file.arrayBuffer();
@@ -184,11 +185,11 @@ export async function POST(request: Request) {
             const bufferStream = new stream.PassThrough();
             bufferStream.end(buffer);
 
-            const fileMetadata: any = {
+            const fileMetadata = {
                 name: file.name,
-                parents: [parentId]
+                parents: [parentId],
+                appProperties
             };
-            if (appProperties) fileMetadata.appProperties = appProperties;
 
             const media = {
                 mimeType: file.type,
@@ -211,14 +212,15 @@ export async function POST(request: Request) {
             if (!fileName || !mimeType) return NextResponse.json({ error: 'Missing file name or mimeType' }, { status: 400 });
 
             const moduleTag = formData.get('moduleTag') as string;
-            const appProperties = moduleTag ? { module: moduleTag } : undefined;
+            const appProperties: Record<string, string> = { tenantId };
+            if (moduleTag) appProperties.module = moduleTag;
 
-            const fileMetadata: any = {
+            const fileMetadata = {
                 name: fileName,
                 mimeType: mimeType,
-                parents: [parentId]
+                parents: [parentId],
+                appProperties
             };
-            if (appProperties) fileMetadata.appProperties = appProperties;
 
             const response = await drive.files.create({
                 requestBody: fileMetadata,

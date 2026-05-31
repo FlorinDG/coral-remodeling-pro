@@ -14,7 +14,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { getStripeInstance, syncPlanToTenant, STRIPE_PRICE_IDS } from '@/lib/stripe';
+import { getStripeInstance, syncPlanToTenant, STRIPE_PRICE_IDS, getPriceId } from '@/lib/stripe';
 
 export async function POST(req: Request) {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -106,13 +106,36 @@ export async function POST(req: Request) {
                 const priceId = sub.items.data[0]?.price?.id;
                 const planType = sub.metadata?.planType || determinePlanFromPrice(priceId);
 
+                // Determine dynamic price IDs for extra standard users and workforce members
+                const extraUserPriceKey = planType === 'ENTERPRISE' ? 'EXTRA_USER_ENT' : 'EXTRA_USER_PRO';
+                const workforcePriceKey = planType === 'ENTERPRISE' ? 'WORKFORCE_ENT' : 'WORKFORCE_PRO';
+                
+                const extraUserPriceId = getPriceId(extraUserPriceKey);
+                const workforcePriceId = getPriceId(workforcePriceKey);
+
+                const extraUserItem = sub.items.data.find(item => item.price.id === extraUserPriceId);
+                const workforceItem = sub.items.data.find(item => item.price.id === workforcePriceId);
+
+                const extraUserCount = extraUserItem?.quantity ?? 0;
+                const workforceUserCount = workforceItem?.quantity ?? 0;
+
                 await syncPlanToTenant(tenantId, planType, {
                     stripeSubscriptionId: sub.id,
                     stripePriceId: priceId,
                     subscriptionStatus: status,
                 });
 
-                console.log(`[Stripe Webhook] Updated subscription for tenant ${tenantId}: ${status}`);
+                // Update tenant counters in database
+                const { default: prisma } = await import('@/lib/prisma');
+                await prisma.tenant.update({
+                    where: { id: tenantId },
+                    data: {
+                        extraUserCount,
+                        workforceUserCount,
+                    },
+                });
+
+                console.log(`[Stripe Webhook] Updated subscription for tenant ${tenantId}: ${status} (seats: extraUsers=${extraUserCount}, workforce=${workforceUserCount})`);
                 break;
             }
 
@@ -127,7 +150,17 @@ export async function POST(req: Request) {
                     subscriptionStatus: 'CANCELLED',
                 });
 
-                console.log(`[Stripe Webhook] Subscription deleted — tenant ${tenantId} downgraded to FREE`);
+                // Reset tenant counters in database
+                const { default: prisma } = await import('@/lib/prisma');
+                await prisma.tenant.update({
+                    where: { id: tenantId },
+                    data: {
+                        extraUserCount: 0,
+                        workforceUserCount: 0,
+                    },
+                });
+
+                console.log(`[Stripe Webhook] Subscription deleted — tenant ${tenantId} downgraded to FREE and seat counters reset to 0`);
                 break;
             }
 

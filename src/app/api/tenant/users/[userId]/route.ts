@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { WORKSPACE_OWNER_ROLES } from '@/lib/roles';
+import { syncSeatQuantities } from '@/lib/stripe';
 
 interface RouteParams {
     params: Promise<{ userId: string }>;
@@ -57,6 +58,14 @@ export async function PATCH(req: Request, { params }: RouteParams) {
         });
 
         console.log(`[Tenant Users] Updated user ${userId}: ${JSON.stringify(updateData)}`);
+
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(admin.tenantId);
+        } catch (syncErr) {
+            console.error(`[User Update Sync] Failed to sync seat quantities:`, syncErr);
+        }
+
         return NextResponse.json({ user: updated });
     } catch (error: unknown) {
         console.error('[Tenant Users] PATCH error:', error);
@@ -90,6 +99,14 @@ export async function DELETE(_req: Request, { params }: RouteParams) {
         await prisma.user.delete({ where: { id: userId } });
 
         console.log(`[Tenant Users] Removed user ${userId} from tenant ${admin.tenantId}`);
+
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(admin.tenantId);
+        } catch (syncErr) {
+            console.error(`[User Delete Sync] Failed to sync seat quantities:`, syncErr);
+        }
+
         return NextResponse.json({ success: true });
     } catch (error: unknown) {
         console.error('[Tenant Users] DELETE error:', error);

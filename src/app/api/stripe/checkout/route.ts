@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
 import { getStripeInstance, getOrCreateStripeCustomer, getPriceId, PLAN_PRICING } from '@/lib/stripe';
 
 export async function POST(req: Request) {
@@ -41,10 +42,34 @@ export async function POST(req: Request) {
         const pricing = planType === 'ENTERPRISE' ? PLAN_PRICING.ENTERPRISE : PLAN_PRICING.PRO;
         const trialDays = pricing.trialMonths * 30;
 
-        // Build line items — base plan
+        // Build line items — base plan + seats
         const lineItems: { price: string; quantity: number }[] = [
             { price: priceId, quantity: 1 },
         ];
+
+        // Fetch current tenant seat counts from database to include them in checkout
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { extraUserCount: true, workforceUserCount: true }
+        });
+
+        if (tenant) {
+            const extraUserKey = planType === 'ENTERPRISE' ? 'EXTRA_USER_ENT' : 'EXTRA_USER_PRO';
+            const workforceKey = planType === 'ENTERPRISE' ? 'WORKFORCE_ENT' : 'WORKFORCE_PRO';
+
+            if (tenant.extraUserCount > 0) {
+                lineItems.push({
+                    price: getPriceId(extraUserKey),
+                    quantity: tenant.extraUserCount
+                });
+            }
+            if (tenant.workforceUserCount > 0) {
+                lineItems.push({
+                    price: getPriceId(workforceKey),
+                    quantity: tenant.workforceUserCount
+                });
+            }
+        }
 
         // Build success/cancel URLs
         const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';

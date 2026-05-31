@@ -17,6 +17,7 @@ import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
 import InvitationEmail from '@/emails/InvitationEmail';
+import { syncSeatQuantities } from '@/lib/stripe';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -333,6 +334,13 @@ export async function POST(
                         isWorkforce: isWorkforceInvite,
                     }),
                 }).catch(err => console.error(`[HR Invite Email] Failed to send to ${email}:`, err));
+            }
+
+            // Sync seat quantities
+            try {
+                await syncSeatQuantities(ctx.tenantId);
+            } catch (syncErr) {
+                console.error(`[HR Employee Create Sync] Failed to sync seat quantities:`, syncErr);
             }
 
             // Return in Employee shape

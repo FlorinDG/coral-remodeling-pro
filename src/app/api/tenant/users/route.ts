@@ -13,6 +13,7 @@ import crypto from 'crypto';
 import { Resend } from 'resend';
 import React from 'react';
 import InvitationEmail from '@/emails/InvitationEmail';
+import { syncSeatQuantities } from '@/lib/stripe';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
 
@@ -176,6 +177,13 @@ export async function POST(req: Request) {
         }
 
         console.log(`[Tenant Users] Invited ${email} as ${role} to tenant ${inviter.tenantId}`);
+
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(inviter.tenantId);
+        } catch (syncErr) {
+            console.error(`[Invite] Failed to sync seat quantities:`, syncErr);
+        }
 
         return NextResponse.json({ user: newUser, inviteUrl }, { status: 201 });
     } catch (error: unknown) {

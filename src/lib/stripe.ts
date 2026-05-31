@@ -203,3 +203,128 @@ export async function calculatePeppolOverage(tenantId: string): Promise<number> 
     
     return Number((overageDocs * PEPPOL_OVERAGE_PRICE).toFixed(2));
 }
+
+/**
+ * Synchronise user & workforce seat counts from the database to Stripe subscription items.
+ * Updates the Stripe quantities to match, and saves extraUserCount / workforceUserCount to the Tenant.
+ */
+export async function syncSeatQuantities(tenantId: string) {
+    // 1. Count users in DB
+    const standardUserCount = await prisma.user.count({
+        where: {
+            tenantId,
+            role: { notIn: ['ACCOUNTANT', 'TENANT_ENTERPRISE_WORKFORCE'] },
+            employeeStatus: { not: 'INACTIVE' }
+        }
+    });
+
+    const workforceUserCount = await prisma.user.count({
+        where: {
+            tenantId,
+            role: 'TENANT_ENTERPRISE_WORKFORCE',
+            employeeStatus: { not: 'INACTIVE' }
+        }
+    });
+
+    // 2. Fetch tenant
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { planType: true, stripeSubscriptionId: true }
+    });
+
+    if (!tenant) throw new Error('Tenant not found');
+
+    const planType = tenant.planType;
+    const includedUsers = (PLAN_PRICING as any)[planType]?.includedUsers ?? 0;
+    const extraUserCount = Math.max(0, standardUserCount - includedUsers);
+
+    // 3. Update DB counters first (fail-safe)
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+            extraUserCount,
+            workforceUserCount
+        }
+    });
+
+    console.log(`[Seat Sync] Tenant ${tenantId} counters updated: extraUserCount=${extraUserCount}, workforceUserCount=${workforceUserCount}`);
+
+    // 4. Update Stripe if subscription exists
+    if (tenant.stripeSubscriptionId && ['PRO', 'ENTERPRISE'].includes(planType)) {
+        const stripe = getStripeInstance();
+        
+        // Fetch subscription and its items
+        const subscription = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
+        
+        // Get expected Price IDs for extra users and workforce
+        const extraUserPriceKey = planType === 'ENTERPRISE' ? 'EXTRA_USER_ENT' : 'EXTRA_USER_PRO';
+        const workforcePriceKey = planType === 'ENTERPRISE' ? 'WORKFORCE_ENT' : 'WORKFORCE_PRO';
+        
+        const extraUserPriceId = getPriceId(extraUserPriceKey);
+        const workforcePriceId = getPriceId(workforcePriceKey);
+
+        // Find existing subscription items on Stripe
+        const extraUserItem = subscription.items.data.find(item => item.price.id === extraUserPriceId);
+        const workforceItem = subscription.items.data.find(item => item.price.id === workforcePriceId);
+
+        const itemsToUpdate: any[] = [];
+
+        // Extra standard users item sync
+        if (extraUserCount > 0) {
+            if (extraUserItem) {
+                // If it already exists and quantity differs, update it
+                if (extraUserItem.quantity !== extraUserCount) {
+                    itemsToUpdate.push({
+                        id: extraUserItem.id,
+                        quantity: extraUserCount
+                    });
+                }
+            } else {
+                // Add new item
+                itemsToUpdate.push({
+                    price: extraUserPriceId,
+                    quantity: extraUserCount
+                });
+            }
+        } else if (extraUserItem) {
+            // Delete existing item since count is 0
+            itemsToUpdate.push({
+                id: extraUserItem.id,
+                deleted: true
+            });
+        }
+
+        // Workforce users item sync
+        if (workforceUserCount > 0) {
+            if (workforceItem) {
+                // If it already exists and quantity differs, update it
+                if (workforceItem.quantity !== workforceUserCount) {
+                    itemsToUpdate.push({
+                        id: workforceItem.id,
+                        quantity: workforceUserCount
+                    });
+                }
+            } else {
+                // Add new item
+                itemsToUpdate.push({
+                    price: workforcePriceId,
+                    quantity: workforceUserCount
+                });
+            }
+        } else if (workforceItem) {
+            // Delete existing item since count is 0
+            itemsToUpdate.push({
+                id: workforceItem.id,
+                deleted: true
+            });
+        }
+
+        if (itemsToUpdate.length > 0) {
+            console.log(`[Seat Sync] Syncing Stripe subscription ${tenant.stripeSubscriptionId} items:`, itemsToUpdate);
+            await stripe.subscriptions.update(tenant.stripeSubscriptionId, {
+                items: itemsToUpdate,
+                proration_behavior: 'create_prorations' // instantly invoice or credit mid-month
+            });
+        }
+    }
+}

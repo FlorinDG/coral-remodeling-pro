@@ -10,6 +10,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
+import { syncSeatQuantities } from '@/lib/stripe';
 
 // Roles that count as "employees" in HR context
 const HR_EMPLOYEE_ROLES = [
@@ -131,6 +132,13 @@ export async function POST(req: Request) {
             hourlyCost: newUser.hourlyCost,
             hireDate: newUser.hireDate,
         };
+
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(user.tenantId);
+        } catch (syncErr) {
+            console.error(`[Employee Create Sync] Failed to sync seat quantities:`, syncErr);
+        }
 
         return NextResponse.json({ employee }, { status: 201 });
     } catch (error: unknown) {

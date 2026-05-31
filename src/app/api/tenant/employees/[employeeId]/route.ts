@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { WORKSPACE_OWNER_ROLES, PLATFORM_ADMIN_ROLES, ROLES } from '@/lib/roles';
+import { syncSeatQuantities } from '@/lib/stripe';
 
 // ── PUT — update employee (User record) ───────────────────────────────
 export async function PUT(
@@ -75,6 +76,13 @@ export async function PUT(
             hireDate: updated.hireDate,
         };
 
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(user.tenantId);
+        } catch (syncErr) {
+            console.error(`[Employee Update Sync] Failed to sync seat quantities:`, syncErr);
+        }
+
         return NextResponse.json({ employee });
     } catch (error: unknown) {
         console.error('[Employees] PUT error:', error);
@@ -111,6 +119,13 @@ export async function DELETE(
             where: { id: employeeId },
             data: { employeeStatus: 'INACTIVE' },
         });
+
+        // Sync seat quantities
+        try {
+            await syncSeatQuantities(user.tenantId);
+        } catch (syncErr) {
+            console.error(`[Employee Delete Sync] Failed to sync seat quantities:`, syncErr);
+        }
 
         return NextResponse.json({ success: true });
     } catch (error: unknown) {

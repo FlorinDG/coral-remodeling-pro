@@ -35,7 +35,7 @@ const MODULES: { key: string; label: string }[] = [
 ];
 
 const PLAN_USER_LIMITS: Record<string, number | null> = {
-    FREE: 1, PRO: 3, ENTERPRISE: null, FOUNDER: null, CUSTOM: null,
+    FREE: 1, PRO: null, ENTERPRISE: null, FOUNDER: null, CUSTOM: null,
 };
 
 const PLAN_BADGE: Record<string, string> = {

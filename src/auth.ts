@@ -149,20 +149,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     token.tenantId            = dbUser.tenantId;
                     token.environmentLanguage = dbUser.environmentLanguage;
                     token.emailVerified       = dbUser.emailVerified ? true : false;
+                    token.lastRefreshed       = Date.now();
+                }
+            }
 
-                    // Fetch activeModules + planType for middleware route gating.
-                    // Stored in JWT so the edge middleware can read them without a DB call.
-                    // Refreshed on every sign-in — stale window = updateAge (30 min max).
-                    if (dbUser.tenantId) {
+            // Periodic database refresh of activeModules + planType
+            // Stored in JWT so the edge middleware can read them without a DB call on every page request.
+            // Re-read from DB once every 60 seconds to catch upgrades/downgrades without manual logout.
+            const tenantId = token.tenantId as string | undefined;
+            if (tenantId) {
+                const now = Date.now();
+                const lastRefreshed = token.lastRefreshed as number | undefined;
+                
+                if (!lastRefreshed || now - lastRefreshed > 60 * 1000 || !token.activeModules || !token.planType) {
+                    try {
                         const tenant = await prisma.tenant.findUnique({
-                            where:  { id: dbUser.tenantId },
+                            where:  { id: tenantId },
                             select: { activeModules: true, planType: true },
                         });
-                        token.activeModules = tenant?.activeModules ?? ['INVOICING'];
+                        token.activeModules = tenant?.activeModules ?? PLAN_MODULES['FREE'];
                         token.planType      = tenant?.planType ?? 'FREE';
+                        token.lastRefreshed = now;
+                        console.log(`[Auth JWT] Refreshed activeModules and planType from DB for tenant ${tenantId}`);
+                    } catch (e) {
+                        console.error('[Auth JWT] Failed to periodically refresh tenant details:', e);
                     }
                 }
             }
+
             return token;
         },
 

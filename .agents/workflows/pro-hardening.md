@@ -239,7 +239,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P0-B — 🩸 COST: FREE ticket scanning must use Tesseract, not GPT-4o
-**Status:** ⬜ TODO
+**Status:** 🟢 DONE (awaiting Florin verify)
 **Branch:** `feature/free-ocr-tesseract`
 **Priority:** BLOCKER #0 (margin leak that scales with every free signup). Do before public PRO push.
 
@@ -254,7 +254,7 @@ FREE-tier OCR (expense ticket/receipt scanning via `TicketCaptureModal` → `/ap
 - `[MEASURED ✅]` `/api/scan` sets `const ocrEngine = (tenant?.ocrEngine ?? 'GPT4O')` — **defaults to GPT-4o for ALL tenants**, no `planType` check on engine. (Quota is checked; engine is not tier-gated.)
 - `[MEASURED ✅]` `src/lib/ocr.ts` (the Tesseract utility, `nld+fra+eng`) is imported **NOWHERE** — currently dead code. The intended free path is not wired.
 - `[MEASURED ✅]` Tesseract runs client-side (browser); GPT-4o runs server-side in `/api/scan`. These are different execution locations — see design note.
-- `[ASSUMED ❓]` `ocr.ts` output (`OCRResult`) can be mapped to whatever `TicketCaptureModal` currently expects from `/api/scan`. AI: compare the two shapes before wiring.
+- `[MEASURED ✅]` `ocr.ts` output (`OCRResult`) can be mapped to whatever `TicketCaptureModal` currently expects from `/api/scan`. AI: compared and successfully mapped standard keys (`extractedMerchant`, `extractedDate`, `extractedAmount`, `extractedVatAmount`) to their respective invoice lines or expense keys.
 
 ### Design note (Planner) — pick the cleaner of two routings (AI decide, justify in feedback)
 - **Option A (preferred):** FREE does OCR fully client-side via `ocr.ts` (Tesseract) inside `TicketCaptureModal`, then posts the already-extracted fields to a lightweight save endpoint (no OpenAI). PRO+ continues to post the file to `/api/scan` (GPT-4o). Cleanest cost separation — free never touches the server OCR.
@@ -277,11 +277,16 @@ FREE-tier OCR (expense ticket/receipt scanning via `TicketCaptureModal` → `/ap
 - parse-pdf (that's P0-A). Improving Tesseract accuracy beyond "usable + user-correctable."
 
 ### 🤖 AI FEEDBACK
-- measured (engine default, ocr.ts unused, shape compatibility):
-- option chosen (A/B) + why:
+- measured (engine default, ocr.ts unused, shape compatibility): Yes. `ocrEngine` defaulted to `'GPT4O'` without tier gating. `src/lib/ocr.ts` was dead code. The `OCRResult` properties (`extractedMerchant`, `extractedDate`, `extractedAmount`, `extractedVatAmount`) map directly to our target fields.
+- option chosen (A/B) + why: **Option A (Client-side Tesseract + lightweight save).** This keeps CPU load client-side, is extremely fast, enforces absolute zero OpenAI API costs for the FREE tier, and is clean.
 - changed:
-- zero-OpenAI-on-free verified how:
-- premise updates appended to pd.md? (y/n):
+  - Added `'TESSERACT'` engine type to `/api/scan`.
+  - Refactored server route to force FREE tenants to `'TESSERACT'` and strictly require a `clientExtracted` JSON payload. If present, it parses client OCR values, completely bypasses OpenAI/Mindee/Veryfi integrations, performs target database resolution, and saves the page as a draft.
+  - Refactored `TicketCaptureModal` to read user `planType` from session. If `'FREE'`, it dynamically imports and executes `recognizeReceipt` (from `@/lib/ocr`) locally, mapping properties dynamically based on whether invoice or expense mode is selected, and posts `clientExtracted` back to `/api/scan`.
+  - Implemented quota checks that atomically increment scan limits to prevent abuse on both client and server sides.
+  - Updated all loading and modal overlay copy to state: "Reading locally..." and "Tesseract.js is reading the document" for FREE tier users, maintaining a premium look and feel.
+- zero-OpenAI-on-free verified how: Verified by verifying that `/api/scan` completely skips the OpenAI block when `clientExtractedStr` is provided. If a FREE tenant attempts to trigger the server OCR directly, they are immediately rejected with a `400` status.
+- premise updates appended to pd.md? (y/n): y
 
 ---
 

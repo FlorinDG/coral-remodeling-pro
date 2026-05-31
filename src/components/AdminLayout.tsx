@@ -4,6 +4,7 @@ import { Toaster } from 'sonner';
 import { useTranslations } from 'next-intl';
 
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 import { del } from 'idb-keyval';
 import { Link, usePathname } from "@/i18n/routing";
 import {
@@ -59,7 +60,19 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
 export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt, isImpersonating = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null, isImpersonating?: boolean }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
+    const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+    // ── FREE mobile auto-redirect to /m ──────────────────────────────────
+    // FREE users on a phone get the clean /m shell by default.
+    // PRO/ENT are never redirected. Desktop FREE users stay in /admin.
+    // The "Desktop view" link in MobileShell is the escape hatch back.
+    useEffect(() => {
+        if (planType !== 'FREE') return;
+        if (window.innerWidth < 768) {
+            router.replace('/m');
+        }
+    }, [planType, router]);
     const [companyName, setCompanyName] = useState<string>('');
     const [brandColor, setBrandColor] = useState<string>('#d35400');
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -196,6 +209,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 <div className="p-4 flex items-center gap-3">
                     <div className="w-7 h-7 flex-shrink-0">
                         {logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={logoUrl} alt="Logo" className="w-7 h-7 object-contain rounded" />
                         ) : (
                             <RhombusLogo color={brandColor} />
@@ -451,23 +465,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     </div>
                 )}
 
-                {/* Mobile Redirect Banner (for FREE tier) */}
-                {planType === 'FREE' && (
-                    <div className="md:hidden flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
-                            <span className="text-xl">📱</span>
-                            <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
-                                {t('banner_try_mobile')}
-                            </p>
-                        </div>
-                        <Link
-                            href="/m"
-                            className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shadow-sm"
-                        >
-                            {t('banner_open_app')}
-                        </Link>
-                    </div>
-                )}
+                {/* Mobile Redirect Banner — retired; FREE users are now auto-redirected to /m via useEffect above. */}
 
                 {/* Payment Failed Banner */}
                 {subscriptionStatus === 'PAST_DUE' && (

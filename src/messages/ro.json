@@ -607,7 +607,19 @@
     "cli_empty_title": "Nu există clienți încă",
     "cli_empty_desc": "Adăugați primul dvs. client pentru a începe să creați facturi.",
     "cli_call": "Sună",
-    "cli_email": "Trimite Email"
+    "cli_email": "Trimite Email",
+    "nav_quotes": "Oferte",
+    "dash_add_client": "Adaugă Client",
+    "peppol_inbox": "Inbox Peppol",
+    "scans": "Scanări",
+    "quotes_title": "Oferte",
+    "quotes_subtitle": "Ofertele dvs.",
+    "quotes_empty_title": "Nicio ofertă încă",
+    "quotes_empty_desc": "Creați prima dvs. ofertă pentru a începe.",
+    "quotes_new": "Ofertă Nouă",
+    "profile_cta_title": "Completați profilul",
+    "profile_cta_desc": "Adăugați info companie, TVA, IBAN și logo pentru facturi profesionale.",
+    "profile_cta_btn": "Configurare"
   },
   "Tasks": {
     "status": {

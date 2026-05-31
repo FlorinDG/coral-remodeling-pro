@@ -341,10 +341,15 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 
 
 ## TASK P6 — Gate SALES pipeline (PRO = 1 pipeline) / EMAIL CLIENT (ENTERPRISE only)
-**Status:** ⬜ TODO · **Branch:** `bugfix/gate-sales-email`
-- **Premise `[ASSUMED ❓]`:** matrix gaps: "Sales shown on FREE (if CRM on)" and "EMAIL sidebar shown for PRO (should be ENTERPRISE only)". **MEASURE** both — check `email/page` gate (`pd.md` component table says it's already `isEnterprise`; confirm) and sales pipeline gating.
+**Status:** 🟢 DONE (awaiting Florin verify) · **Branch:** `bugfix/gate-sales-email`
+- **Premise `[MEASURED ✅]`:** Verified that the Email client is already correctly gated at `/admin/email/page.tsx` via standard `!isEnterprise` check redirecting to the `<LockedFeature>` component, and also correctly routed and gated in middleware under the `EMAIL` module which is only allocated to `ENTERPRISE`, `FOUNDER`, and `CUSTOM` plans.
+- **Premise `[MEASURED ✅]`:** Gated multi-pipeline CRM capabilities: forced standard `PRO` plan tenants to the Main Pipeline (`db-crm`) only, completely hiding the tab switcher and preventing manual access to the Bobex Pipeline (`db-bobex`).
 - **Instructions:** Email client = ENTERPRISE only (verify, fix if not). Sales = PRO gets 1 pipeline, ENTERPRISE unlimited; enforce the 1-pipeline cap if missing.
-- 🤖 AI FEEDBACK: …
+- 🤖 AI FEEDBACK:
+  - Confirmed the Email client is already perfectly and securely gated to ENTERPRISE-only.
+  - Implemented 1-pipeline restriction on the CRM / Sales page (`/admin/crm/page.tsx`) by dynamically hiding the pipeline toggle tabs for PRO plan users and forcing `key` / `databaseId` to `'db-crm'`.
+  - Merged and validated. Passed full TypeScript and ESLint validation checks with zero issues.
+
 
 ## TASK P7 — Gate FILE MANAGER behind PROJECTS-on + PRO
 **Status:** ⬜ TODO · **Branch:** `bugfix/gate-file-manager`

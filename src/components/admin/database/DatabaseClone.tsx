@@ -12,6 +12,8 @@ import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
 import { Property } from './types';
 import { isSystemDatabase } from '@/lib/systemDatabases';
+import { t } from '@/lib/document-i18n';
+import { useLocale } from 'next-intl';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
@@ -51,6 +53,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const router = useRouter();
   const pathname = usePathname();
   const projectIdParam = searchParams.get('projectId');
+  const locale = useLocale();
 
   const hasCRM = activeModules.includes('CRM');
   const hasDatabases = activeModules.includes('DATABASES');
@@ -647,10 +650,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         if (!hasCredited || !hasPartiallyCredited) {
           const updatedOptions = [...options];
           if (!hasCredited) {
-            updatedOptions.push({ id: 'opt-credited', name: 'Gecrediteerd', color: 'pink' });
+            updatedOptions.push({ id: 'opt-credited', name: t('engine_status_credited', locale), color: 'pink' });
           }
           if (!hasPartiallyCredited) {
-            updatedOptions.push({ id: 'opt-partially-credited', name: 'Gedeeltelijk gecrediteerd', color: 'pink' });
+            updatedOptions.push({ id: 'opt-partially-credited', name: t('engine_status_partially_credited', locale), color: 'pink' });
           }
           const updatedProperties = database.properties.map(p => 
             p.id === 'status' ? { ...p, config: { ...p.config, options: updatedOptions } } : p
@@ -672,7 +675,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         store.updateDatabase(resolvedId, { properties: updatedProperties });
       }
     }
-  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP]);
+  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale]);
 
 
   useEffect(() => {

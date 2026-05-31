@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -233,13 +234,15 @@ function PropertyRow({
     value,
     onChange,
     dragHandleProps,
+    forceReadOnly = false,
 }: {
     property: Property;
     value: PropertyValue;
     onChange: (propId: string, newVal: PropertyValue) => void;
     dragHandleProps?: any;
+    forceReadOnly?: boolean;
 }) {
-    const isReadOnly = READ_ONLY_TYPES.has(property.type);
+    const isReadOnly = READ_ONLY_TYPES.has(property.type) || forceReadOnly;
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;
     const inputBase = "w-full text-xs bg-transparent outline-none focus:ring-0 text-neutral-900 dark:text-white placeholder:text-neutral-400";
 
@@ -489,7 +492,8 @@ function Section({
     collapsed, 
     onToggle, 
     pageProperties, 
-    onChange 
+    onChange,
+    forceReadOnly = false
 }: { 
     id: string; 
     label: string; 
@@ -498,6 +502,7 @@ function Section({
     onToggle: (id: string) => void; 
     pageProperties: Record<string, PropertyValue>; 
     onChange: (propId: string, newVal: PropertyValue) => void; 
+    forceReadOnly?: boolean;
 }) {
     if (!props.length) return null;
     const open = !collapsed.has(id);
@@ -516,7 +521,7 @@ function Section({
                     {(provided) => (
                         <div {...provided.droppableProps} ref={provided.innerRef}>
                             {props.map((prop, index) => (
-                                <Draggable key={prop.id} draggableId={prop.id} index={index} isDragDisabled={id === 'computed'}>
+                                <Draggable key={prop.id} draggableId={prop.id} index={index} isDragDisabled={id === 'computed' || forceReadOnly}>
                                     {(provided, snapshot) => (
                                         <div
                                             ref={provided.innerRef}
@@ -529,6 +534,7 @@ function Section({
                                                 value={pageProperties[prop.id] ?? null}
                                                 onChange={onChange}
                                                 dragHandleProps={provided.dragHandleProps}
+                                                forceReadOnly={forceReadOnly}
                                             />
                                         </div>
                                     )}
@@ -548,9 +554,10 @@ interface DbPropertiesPanelProps {
     pageId: string;
     skipIds?: string[];
     title?: string;
+    readOnly?: boolean;
 }
 
-export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], title = 'Properties' }: DbPropertiesPanelProps) {
+export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], title = 'Properties', readOnly = false }: DbPropertiesPanelProps) {
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
@@ -604,7 +611,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
 
             {/* Property list */}
             <div className="flex-1 overflow-y-auto px-4 py-0">
-                <DragDropContext onDragEnd={handleDragEnd}>
+                <DragDropContext onDragEnd={readOnly ? () => {} : handleDragEnd}>
                     <Section 
                         id="editable" 
                         label="Fields" 
@@ -613,6 +620,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         onToggle={toggle} 
                         pageProperties={page.properties || {}} 
                         onChange={handleChange} 
+                        forceReadOnly={readOnly}
                     />
                     <Section 
                         id="computed" 
@@ -622,6 +630,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         onToggle={toggle} 
                         pageProperties={page.properties || {}} 
                         onChange={handleChange} 
+                        forceReadOnly={readOnly}
                     />
                 </DragDropContext>
             </div>

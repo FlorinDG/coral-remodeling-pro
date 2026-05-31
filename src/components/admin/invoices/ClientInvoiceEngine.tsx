@@ -701,7 +701,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         lastName: selectedClient.lastName,
                         email: selectedClient.email,
                         vatNumber: selectedClient.vatNumber,
-                        address: selectedClient.address,
+                        address: [
+                            selectedClient.address,
+                            selectedClient.postal,
+                            selectedClient.city,
+                            selectedClient.country || 'België'
+                        ].filter(Boolean).join(', '),
                     },
                 })
             });

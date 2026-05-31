@@ -138,26 +138,36 @@ When starting a new session on this project:
 
 ---
 
-## Staged Release Workflow (Develop → Test → Release)
+## Branch Model (CANONICAL — never deviate without Florin's explicit instruction)
 
-All development and release operations must adhere to this structured flow to prevent production regressions:
+```
+develop  →  staging  →  main
+                ↑
+           sandbox  (scratch only, never merged)
+```
 
-1. **Active Development**:
-   - All feature work, bug fixes, and refactoring occur exclusively on the `develop` branch.
-   - **Never push directly to `main`**.
-   - Pull Requests (PRs) from topic branches (e.g., `feature/*` or `bugfix/*`) must target and merge into `develop`.
+| Branch | Who commits | Purpose | Vercel |
+|---|---|---|---|
+| `develop` | AI (coder) | All task work lands here. Test versions here. | Preview — always live |
+| `staging` | AI (coder, when cutting a version) | Final pre-release check. Cut a semver tag here. | Staging environment |
+| `sandbox` | AI (scratch only) | Risky experiments. Nothing durable. Deleted freely. | Not deployed |
+| `main` | **Florin only** | Sacred. Production. Only version promotion from staging lands here. | Production |
 
-2. **Testing & Staging**:
-   - When a version is ready, branch a release candidate: `git checkout -b release/vX.Y.Z develop`.
-   - Vercel automatically deploys the release candidate to the Staging environment.
-   - Run full manual and automated sanity checks in Staging before final approval.
+### Rules
 
-3. **Release & Production**:
-   - Merge `release/vX.Y.Z` into `main` using a non-fast-forward merge: `git merge --no-ff release/vX.Y.Z`.
-   - Tag the release commit with its semver tag: `git tag -a vX.Y.Z -m "Release description"`.
-   - Push `main` and its tags: `git push origin main --tags`.
-   - Vercel automatically deploys `main` to the Production environment.
-   - Merge `main` back into `develop` to sync release tags and hotfixes: `git checkout develop && git merge main && git push`.
+1. **All task work commits directly to `develop`.** No per-task feature branches. No `feature/*` or `bugfix/*` branches for routine hardening work. Those clutter Vercel previews and add friction with no benefit at this stage.
+
+2. **`main` is untouchable by AI.** Under no circumstances does the AI push, merge, or rebase into `main`. Not even a hotfix. Florin promotes staging → main.
+
+3. **Cutting a release:**
+   - When `develop` is stable and ready for pre-release: `git checkout -b staging && git push origin staging` (or reset the existing `staging` branch to the current `develop` HEAD).
+   - Smoke-test on the Vercel staging environment.
+   - Tag the commit: `git tag -a vX.Y.Z -m "Release description"` and push the tag.
+   - Florin merges `staging` → `main` manually.
+
+4. **`sandbox` is disposable.** Never merge sandbox work anywhere without first verifying it compiles and passes lint. Treat it as a throwaway.
+
+5. **After a production release**, sync `develop` with the new main: `git checkout develop && git merge main && git push origin develop`.
 
 ---
 

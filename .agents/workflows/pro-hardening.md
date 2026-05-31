@@ -15,6 +15,12 @@ description: PRO TIER HARDENING — execution workplan for Antigravity AI. Read 
 
 ## ⚠️ PROTOCOL — read before touching anything
 
+0. **BRANCH POLICY (overrides every per-task `Branch:` line below).** Do NOT create new branches per task — it clutters Vercel with preview branches. There are exactly FOUR branches; use only these:
+   - **`develop`** — commit ALL task work here directly. We test versions on `develop`.
+   - **`staging`** — pre-release check only. When a batch on `develop` tests good, Florin names a version and promotes `develop` → `staging` for a final check before release.
+   - **`sandbox`** — optional scratch space for risky/throwaway experiments that shouldn't touch `develop`. Nothing durable lives here.
+   - **`main`** — SACRED. Never commit or merge here except the final version promotion from `staging`. The AI must NEVER touch `main`.
+   Flow: coder → `develop` (test) → name version → `staging` (final check) → `main`. Any `Branch:` field in a task below is VOID — ignore it, work on `develop`. Per `pd.md` Rule 6/8: run `tsc --noEmit` + `lint` green before each commit to `develop`.
 1. **Turn-taking / no concurrent writes.** Only one agent writes this file at a time. If you (AI) are editing it, finish and save before any other tool touches it. This avoids the mount-lock corruption we already hit once.
 2. **Premise tags are law.** Every factual claim in a task is tagged:
    - `[MEASURED ✅]` — verified in current runtime/code. Safe to deduce from.
@@ -24,7 +30,7 @@ description: PRO TIER HARDENING — execution workplan for Antigravity AI. Read 
 4. **Do not mark `✅ VERIFIED`.** Only Florin does. You may go as far as `🟢 DONE (awaiting Florin verify)`.
 5. **Scope discipline.** Do ONLY what the task says. If you discover adjacent work, note it under `🤖 AI FEEDBACK → discovered`, do NOT do it.
 6. **After each validated change**, append a row to the premises table in `pd.md` (its existing ritual), and fill `🤖 AI FEEDBACK`.
-7. **One task = one branch = one PR into `develop`.** Branch name suggested per task.
+7. **All work → `develop` directly** (see rule 0). The `Branch:` fields in tasks are legacy and VOID — do not create per-task branches.
 
 ---
 
@@ -52,7 +58,6 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ## TASK P1 — Audit & fix the FREE-tenant `activeModules` default (revenue leak)
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `bugfix/free-tenant-module-default`
 **Priority:** BLOCKER #1 (integrity + revenue leak)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -95,7 +100,6 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ## TASK P2 — Wire per-seat billing into Stripe checkout & lifecycle (revenue path)
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `feature/seat-billing`
 **Priority:** BLOCKER #2 (the core PRO revenue mechanism — currently NOT wired)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -153,7 +157,6 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ## TASK P3 — Close the stale-token gating hole on plan/seat change
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `bugfix/stale-token-gating`
 **Priority:** BLOCKER #3 (security/correctness on upgrade & downgrade)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -196,7 +199,6 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ## TASK P0-A — 🩸 SECURITY/COST: lock down `/api/integrations/parse-pdf` (unauthenticated GPT-4o)
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `bugfix/parse-pdf-auth-gate`
 **Priority:** BLOCKER #0 (open wound — unauthenticated paid endpoint). Do FIRST, before P1.
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -240,7 +242,6 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ## TASK P0-B — 🩸 COST: FREE ticket scanning must use Tesseract, not GPT-4o
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `feature/free-ocr-tesseract`
 **Priority:** BLOCKER #0 (margin leak that scales with every free signup). Do before public PRO push.
 
 ### 👤 LOCKED DECISION (Florin, 2026-05-30)
@@ -292,7 +293,6 @@ FREE-tier OCR (expense ticket/receipt scanning via `TicketCaptureModal` → `/ap
 
 ## TASK P0-C — Tenant-isolation + quota sanity pass on the OCR/AI routes
 **Status:** 🟢 DONE (awaiting Florin verify)
-**Branch:** `chore/ocr-route-isolation`
 **Priority:** Phase 1 (follows P0-A/B; small, mostly verification)
 - **Scope:** `/api/scan` and `/api/integrations/parse-pdf` only. Don't touch unrelated routes.
 - **Premises:**
@@ -318,7 +318,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 > Build the shared `<LockedFeature label requiredPlan upgradeHref>` component FIRST (per `feature_matrix.md` code pattern) so every gate below uses one consistent locked-state UI. → **TASK P4.**
 
 ## TASK P4 — Build the shared `<LockedFeature>` component
-**Status:** 🟢 DONE (awaiting Florin verify) · **Branch:** `feature/locked-feature-component`
+**Status:** 🟢 DONE (awaiting Florin verify)
 - **Scope:** new reusable component; touches no existing gate yet.
 - **Premise `[MEASURED ✅]`:** `feature_matrix.md` specifies props `label`, `requiredPlan: 'PRO'|'ENTERPRISE'`, `upgradeHref?`; renders lock icon + plan badge + upgrade button.
 - **Premise `[MEASURED ✅]`:** `<LockedFeature>` component successfully built in `src/components/admin/LockedFeature.tsx`, fully responsive, i18n-ready, and beautifully styled.
@@ -329,7 +329,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
   - Passes complete `tsc` and `eslint` check with zero warnings.
 
 ## TASK P5 — Gate LIBRARY (Articles + Bestek) behind PRO
-**Status:** 🟢 DONE (awaiting Florin verify) · **Branch:** `bugfix/gate-library-pro`
+**Status:** 🟢 DONE (awaiting Florin verify)
 - **Premise `[MEASURED ✅]`:** Enforced `library/articles/page` and `library/bestek/page` access gates to lock out FREE tenants using `<LockedFeature>`.
 - **Premise `[MEASURED ✅]`:** Implemented read-only Bestek database isolation for standard PRO tenants: PRO has read-only lookup access while ENTERPRISE has full edit/personalization capabilities. Enforced lockouts on grid cells, rows, schema editing, duplication, bulk actions, and the record detail sidebar properties.
 - **Instructions:** if ungated, wrap with `isPro` check + `<LockedFeature requiredPlan="PRO">`. Bestek: PRO = read/apply catalog, ENTERPRISE = edit/personalize (per matrix). Smallest change.
@@ -341,7 +341,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 
 
 ## TASK P6 — Gate SALES pipeline (PRO = 1 pipeline) / EMAIL CLIENT (ENTERPRISE only)
-**Status:** 🟢 DONE (awaiting Florin verify) · **Branch:** `bugfix/gate-sales-email`
+**Status:** 🟢 DONE (awaiting Florin verify)
 - **Premise `[MEASURED ✅]`:** Verified that the Email client is already correctly gated at `/admin/email/page.tsx` via standard `!isEnterprise` check redirecting to the `<LockedFeature>` component, and also correctly routed and gated in middleware under the `EMAIL` module which is only allocated to `ENTERPRISE`, `FOUNDER`, and `CUSTOM` plans.
 - **Premise `[MEASURED ✅]`:** Gated multi-pipeline CRM capabilities: forced standard `PRO` plan tenants to the Main Pipeline (`db-crm`) only, completely hiding the tab switcher and preventing manual access to the Bobex Pipeline (`db-bobex`).
 - **Instructions:** Email client = ENTERPRISE only (verify, fix if not). Sales = PRO gets 1 pipeline, ENTERPRISE unlimited; enforce the 1-pipeline cap if missing.
@@ -352,19 +352,19 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 
 
 ## TASK P7 — Gate FILE MANAGER behind PROJECTS-on + PRO
-**Status:** ⬜ TODO · **Branch:** `bugfix/gate-file-manager`
+**Status:** ⬜ TODO
 - **Premise `[ASSUMED ❓]`:** matrix gap "File manager shown on PRO (needs PROJECTS ON)". **MEASURE** `files/page` gate. PDFs auto-generated by INVOICING must STAY accessible on all tiers — do not gate those.
 - **Instructions:** file manager requires PROJECTS module + `isPro`; auto-generated invoice/quote PDFs remain ungated.
 - 🤖 AI FEEDBACK: …
 
 ## TASK P8 — Reconcile seat-count UI + remove stale "3 users" copy
-**Status:** ⬜ TODO · **Branch:** `bugfix/seat-ui-reconcile`
+**Status:** ⬜ TODO
 - **Premise `[MEASURED ✅]`:** billing UI (`BillingPageClient.tsx`) lists "Up to 3 users" for PRO and Users meter caps at 3 — contradicts LOCKED unlimited-per-seat decision.
 - **Instructions:** update PRO card to "Unlimited users · €19/mo each" (and workforce €4.99). Fix the Users usage meter so PRO shows count without a 3-cap. Correct the stale line in `feature_matrix.md`. Surface seat costs from P2. **Depends on P10** — ensure no "trial" copy remains; CTA reads "Upgrade", with immediate-billing note.
 - 🤖 AI FEEDBACK: …
 
 ## TASK P9 — Verify `planType` depth gates across all PRO module pages
-**Status:** ⬜ TODO · **Branch:** `chore/audit-plantype-gates`
+**Status:** ⬜ TODO
 - **Premise `[ASSUMED ❓]`:** `pd.md` says planType checks are inconsistent across module pages. **MEASURE** each PRO module entry point and the component-level gates in `pd.md`'s table; produce a checklist of which are correctly gated vs not.
 - **Instructions:** this is primarily an AUDIT task — output a table in `🤖 AI FEEDBACK` of every gate's actual state. Fix only the trivial/obvious misses; anything non-trivial → new task + `👤 NEEDS FLORIN DECISION`. (Respects Rule 3.)
 - 🤖 AI FEEDBACK: …
@@ -376,7 +376,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 # ───────────────────────────────────────────────
 
 ## TASK P10 — Retire the calendar trial; adopt FREE-forever + caps (PARK trial code)
-**Status:** ⬜ TODO · **Branch:** `feature/no-trial-free-forever`
+**Status:** ⬜ TODO
 **Priority:** HIGH — shapes PRO billing UX and copy. Do before P8 (seat UI) and P14 (E2E).
 
 ### 👤 LOCKED DECISION (Florin, 2026-05-30)
@@ -427,7 +427,7 @@ Florin wants the existing trial machinery **preserved for possible future hybrid
 ---
 
 ## TASK P10b — Event-triggered PRO taste at the FREE cap (the "pull" nudge)
-**Status:** ⬜ TODO · **Branch:** `feature/cap-trigger-pro-taste`
+**Status:** ⬜ TODO
 **Priority:** FAST-FOLLOW — may ship AFTER initial PRO launch. Not a launch blocker. Florin: ship PRO with honest cap→upgrade first; add this once real cap-hit behaviour is observed.
 
 ### Concept
@@ -460,19 +460,19 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 - premise updates appended to pd.md? (y/n):
 
 ## TASK P11 — Make the quarterly billing toggle real (or hide it)
-**Status:** ⬜ TODO · **Branch:** `bugfix/quarterly-billing`
+**Status:** ⬜ TODO
 - **Premise `[MEASURED ✅]`:** UI computes a 5%/10% quarterly discount, but `checkout/route.ts` always sends the MONTHLY price ID regardless of cycle → customer sees quarterly price, charged monthly.
 - **Instructions:** EITHER wire quarterly price IDs / Stripe coupons into checkout so the cycle is honoured, OR hide the quarterly toggle until it's real. Florin to pick which in feedback if unclear; default = hide (smallest change, no mischarge risk).
 - 🤖 AI FEEDBACK: …
 
 ## TASK P12 — Enforce cancellation notice periods (1mo PRO / 2mo ENT)
-**Status:** ⬜ TODO · **Branch:** `bugfix/cancellation-notice`
+**Status:** ⬜ TODO
 - **Premise `[ASSUMED ❓]`:** UI advertises 1-month (PRO) / 2-month (ENT) notice. Stripe's native `cancel_at_period_end` does NOT model a notice period. **MEASURE** `stripe/cancel/route.ts` — does it compute the correct effective date, or just set period-end?
 - **Instructions:** if not enforced, compute the correct cancellation-effective date (period end + notice) and reflect it in `cancellationEffectiveAt`. Data preserved, modules lock at effective date, never deleted (`pd.md` Rule). 
 - 🤖 AI FEEDBACK: …
 
 ## TASK P13 — PAST_DUE eventual lockout (dunning)
-**Status:** ⬜ TODO · **Branch:** `feature/pastdue-lockout`
+**Status:** ⬜ TODO
 - **Premise `[MEASURED ✅]`:** webhook sets `subscriptionStatus = PAST_DUE` on `invoice.payment_failed` and clears it on `invoice.paid`, but PAST_DUE does not restrict access — non-payers keep full access indefinitely.
 - **Instructions:** after a grace window (Florin to set; default e.g. 14 days PAST_DUE), downgrade module access to FREE-equivalent (data preserved, fail-safe, upgrade prompt shown). Use the existing trial-check cron pattern. Soft-fail per Rule 5.
 - 👤 DECISION (grace length): 
@@ -481,7 +481,7 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 ---
 
 ## TASK P15 — Repo hygiene: quarantine the root-level hotfix/script pollution
-**Status:** ⬜ TODO · **Branch:** `chore/repo-hygiene-script-quarantine`
+**Status:** ⬜ TODO
 **Priority:** Phase 3 — NOT a launch blocker, but real risk reduction. Do when a clean window exists (not mid-feature).
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -535,7 +535,6 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 
 ## TASK M1 — Make `/m` the DEFAULT for FREE on mobile + fix the broken desktop-on-phone UI
 **Status:** 🟢 DONE (branch: `feature/free-mobile-default`, commit: `304597c`)
-**Branch:** `feature/free-mobile-default`
 **Priority:** HIGH (Florin-requested; the FREE persona is mobile-first — this IS their product)
 
 ### ⚠️ AI: READ THIS WHOLE TASK BEFORE TOUCHING ANYTHING. It is multi-part and the parts interact. Do the parts in order. Commit per part if helpful, but keep all on the one branch.
@@ -637,7 +636,7 @@ In `m/expenses/page.tsx`:
 # ───────────────────────────────────────────────
 
 ## TASK P14 — PRO end-to-end test pass in Stripe TEST mode
-**Status:** ⬜ TODO · **Branch:** `release/pro-rc` (release candidate per pd.md Rule 8)
+**Status:** ⬜ TODO (release candidate per pd.md Rule 8)
 - **Instructions (full lifecycle, test mode):** FREE→PRO upgrade (immediate charge, NO trial — confirm `ACTIVE` not `TRIAL`) · add/remove extra user · add/remove workforce seat · hit & verify Peppol/scan limits at PRO numbers · downgrade PRO→FREE (data preserved, modules lock) · cancel with notice period · payment-failure → PAST_DUE → recovery. Document each result. (P10b taste flow tested separately if shipped.)
 - **Acceptance:** every transition correct, no data loss, no tenant-facing 500/404, billing amounts match `PLAN_PRICING`. Then branch `release/vX.Y.Z` per `pd.md` staged-release workflow.
 - 🤖 AI FEEDBACK (test matrix results): …

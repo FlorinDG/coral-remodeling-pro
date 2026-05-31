@@ -564,7 +564,20 @@ export function SpreadsheetImportModal({ isOpen, onClose, databaseId }: Spreadsh
                     {error && (
                         <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg p-4 flex gap-3 text-red-700 dark:text-red-400">
                             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                            <div className="flex-1 text-sm font-medium">{error}</div>
+                            <div className="flex-1 text-sm font-medium">
+                                <span>{error}</span>
+                                {(error.includes('PRO and ENTERPRISE') || error.includes('scan limit')) && (
+                                    <div className="mt-2">
+                                        <a
+                                            href="/admin/settings/billing"
+                                            onClick={() => handleClose()}
+                                            className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-xs transition-colors"
+                                        >
+                                            Upgrade Plan <ArrowRight className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

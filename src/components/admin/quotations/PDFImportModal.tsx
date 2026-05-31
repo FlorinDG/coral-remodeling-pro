@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
+import Link from 'next/link';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
 import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, Lock, Copy, ClipboardList } from 'lucide-react';
 import { Block } from '@/components/admin/database/types';
@@ -344,13 +346,13 @@ export default function PDFImportModal({
                                 <span className="font-bold">Extraction Failed:</span> {error}
                                 {(error.includes('PRO and ENTERPRISE') || error.includes('scan limit')) && (
                                     <div className="mt-2">
-                                        <a
+                                        <Link
                                             href="/admin/settings/billing"
                                             onClick={() => onClose()}
                                             className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-xs transition-colors"
                                         >
                                             Upgrade Plan <ArrowRight className="w-3 h-3" />
-                                        </a>
+                                        </Link>
                                     </div>
                                 )}
                             </div>

@@ -194,6 +194,110 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 
 ---
 
+## TASK P0-A — 🩸 SECURITY/COST: lock down `/api/integrations/parse-pdf` (unauthenticated GPT-4o)
+**Status:** 🟢 DONE (awaiting Florin verify)
+**Branch:** `bugfix/parse-pdf-auth-gate`
+**Priority:** BLOCKER #0 (open wound — unauthenticated paid endpoint). Do FIRST, before P1.
+
+### 🔍 Scope Before Touch (Rule 1)
+- **What currently works:** `parse-pdf` powers PDF→invoice import (`invoices/PDFImportModal`), PDF→quotation import (`quotations/PDFImportModal`), and spreadsheet import (`database/SpreadsheetImportModal`). All three rely on it returning extracted line items.
+- **What this risks breaking:** adding auth/gating could break those three import flows for legitimate PRO users. Must keep them working for the entitled tiers; only block the unauthenticated / unentitled cases.
+
+### Premises measured (Planner, 2026-05-30, code-read) — AI: re-confirm before changing
+- `[MEASURED ✅]` `src/app/api/integrations/parse-pdf/route.ts` has **NO `auth()` call, NO `tenantId`, NO plan check, NO quota**. It instantiates OpenAI and calls `gpt-4o` on any request. (grep confirmed: only `OPENAI_API_KEY` guard.)
+- `[MEASURED ✅]` Callers: `invoices/PDFImportModal.tsx:94`, `quotations/PDFImportModal.tsx:113`, `database/SpreadsheetImportModal.tsx:118`.
+- `[MEASURED ✅]` `feature_matrix.md` states "Import existing PDF" is a **PRO** feature (FREE = ❌). So free users should not reach this at all.
+- `[MEASURED ✅]` The route is reachable without a session in production (no auth = yes). Verified `middleware.ts` matcher explicitly excludes `/api`, meaning all API routes must handle their own authentication.
+
+### Instructions (after re-confirming)
+1. Add `auth()` at the top of `parse-pdf` → resolve `tenantId`; return 401 if absent. (Mirror the pattern already in `/api/scan` lines 272–275.)
+2. Gate by entitlement: PDF import = PRO+ (per feature_matrix). Use `canAccess('QUOTATION_PDF_IMPORT_LIBRARY', planType)` or the appropriate flag / `PLAN_MODULES` check. FREE → 403 with an upgrade code the modal can surface.
+3. Add metering: count parse-pdf calls against a quota (reuse the scan-quota pattern or a dedicated counter) so an entitled tenant can't run it unbounded. Florin to set the number if not obvious → `👤 NEEDS FLORIN DECISION`.
+4. Update the three caller modals to handle 401/403 gracefully (show `<LockedFeature>` / upgrade prompt — depends on P4; until P4 exists, a clear inline message). Soft-fail per Rule 5 — never a raw 500.
+5. Tenant-scope anything the route reads/writes (Rule: tenant isolation).
+
+### Acceptance criteria
+- Unauthenticated request to `parse-pdf` → 401 (verify with a no-cookie request in a preview deploy).
+- FREE tenant → 403/upgrade, no GPT-4o call made.
+- PRO/ENT tenant → import works exactly as before; metering increments.
+- `tsc`+`lint` green.
+
+### Out of scope
+- Re-engine-ing the engine choice (that's P0-C). This task = auth + tier gate + meter only.
+
+### 🤖 AI FEEDBACK
+- measured (re-confirm auth absent + matcher excludes /api): Yes, confirmed both.
+- changed:
+  - Added NextAuth `auth()` session validation to resolve the `tenantId`.
+  - Added plan gating using the `QUOTATION_PDF_IMPORT_LIBRARY` feature flag via `canAccess`, returning a 403 status to `FREE` tenants.
+  - Implemented quota checking and atomic incrementing using the `scanCount` and `scanQuota` fields in the `Tenant` database model.
+  - Updated all three caller modals (`invoices/PDFImportModal`, `quotations/PDFImportModal`, and `SpreadsheetImportModal`) to handle 401/403/429 errors gracefully with a direct "Upgrade Plan" link that closes the modal and redirects to `/admin/settings/billing`.
+- preview-deploy unauth test result: `401 Unauthorized` returned successfully on unauthenticated requests.
+- 👤 quota number decision needed?: No, seamlessly integrated with the existing `scanQuota` limit (defaults to 30 for FREE and 300 for PRO, with unlimited -1 for ENTERPRISE), perfectly matching existing pricing structures.
+- premise updates appended to pd.md? (y/n): y
+
+---
+
+## TASK P0-B — 🩸 COST: FREE ticket scanning must use Tesseract, not GPT-4o
+**Status:** ⬜ TODO
+**Branch:** `feature/free-ocr-tesseract`
+**Priority:** BLOCKER #0 (margin leak that scales with every free signup). Do before public PRO push.
+
+### 👤 LOCKED DECISION (Florin, 2026-05-30)
+FREE-tier OCR (expense ticket/receipt scanning via `TicketCaptureModal` → `/api/scan`) must run on **Tesseract.js (free, client-side, zero API cost)**. **GPT-4o scanning is a PRO+ perk** ("accurate AI scanning"), giving PRO a genuine quality upgrade and removing free-tier OpenAI cost.
+
+### 🔍 Scope Before Touch (Rule 1)
+- **What currently works:** `/api/scan` extracts ticket/invoice data via GPT-4o and writes the result into the expenses/tickets DB. `TicketCaptureModal.tsx:100` is the caller. Quota (30 free / 300 pro / unlimited ent) IS enforced and increments.
+- **What this risks breaking:** the expense-capture flow is core to the FREE persona. Switching engines must keep capture working end-to-end on mobile; Tesseract is lower-accuracy and runs in-browser, so the data shape returned to the DB must stay compatible.
+
+### Premises measured (Planner, 2026-05-30) — AI: re-confirm
+- `[MEASURED ✅]` `/api/scan` sets `const ocrEngine = (tenant?.ocrEngine ?? 'GPT4O')` — **defaults to GPT-4o for ALL tenants**, no `planType` check on engine. (Quota is checked; engine is not tier-gated.)
+- `[MEASURED ✅]` `src/lib/ocr.ts` (the Tesseract utility, `nld+fra+eng`) is imported **NOWHERE** — currently dead code. The intended free path is not wired.
+- `[MEASURED ✅]` Tesseract runs client-side (browser); GPT-4o runs server-side in `/api/scan`. These are different execution locations — see design note.
+- `[ASSUMED ❓]` `ocr.ts` output (`OCRResult`) can be mapped to whatever `TicketCaptureModal` currently expects from `/api/scan`. AI: compare the two shapes before wiring.
+
+### Design note (Planner) — pick the cleaner of two routings (AI decide, justify in feedback)
+- **Option A (preferred):** FREE does OCR fully client-side via `ocr.ts` (Tesseract) inside `TicketCaptureModal`, then posts the already-extracted fields to a lightweight save endpoint (no OpenAI). PRO+ continues to post the file to `/api/scan` (GPT-4o). Cleanest cost separation — free never touches the server OCR.
+- **Option B:** keep `/api/scan` as the single entry, but make engine selection tier-aware: FREE → run Tesseract server-side (heavier on your server CPU) ; PRO+ → GPT-4o. Simpler routing, but moves Tesseract CPU cost to your server and Tesseract is really designed client-side. 
+- Decide on A unless measurement shows the save-path is costly to build.
+
+### Instructions (after measuring)
+1. Engine by PLAN, not just `tenant.ocrEngine`: FREE → Tesseract; PRO/ENT/FOUNDER/CUSTOM → GPT-4o (or tenant override). Keep `tenant.ocrEngine` as a superadmin override that can only *upgrade* a paid tenant's engine, never grant GPT-4o to FREE.
+2. Wire `ocr.ts` into the FREE capture path (Option A) — it's currently dead code.
+3. Map Tesseract `OCRResult` → the fields `TicketCaptureModal` writes (amount, VAT, date, merchant, category). Accept lower accuracy; let the user correct fields before save (already an editable form, confirm).
+4. Keep the 30/month free scan quota (it still meters Tesseract usage / abuse, even though cost is ~0).
+5. PRO+ GPT-4o path unchanged.
+
+### Acceptance criteria
+- A FREE tenant scanning a ticket triggers ZERO OpenAI calls (verify: no request to OpenAI in logs; result produced by Tesseract).
+- A PRO tenant scanning a ticket uses GPT-4o as today.
+- Captured expense lands correctly in the tickets/expenses DB for both. `tsc`+`lint` green.
+
+### Out of scope
+- parse-pdf (that's P0-A). Improving Tesseract accuracy beyond "usable + user-correctable."
+
+### 🤖 AI FEEDBACK
+- measured (engine default, ocr.ts unused, shape compatibility):
+- option chosen (A/B) + why:
+- changed:
+- zero-OpenAI-on-free verified how:
+- premise updates appended to pd.md? (y/n):
+
+---
+
+## TASK P0-C — Tenant-isolation + quota sanity pass on the OCR/AI routes
+**Status:** ⬜ TODO · **Branch:** `chore/ocr-route-isolation`
+**Priority:** Phase 1 (follows P0-A/B; small, mostly verification)
+- **Scope:** `/api/scan` and `/api/integrations/parse-pdf` only. Don't touch unrelated routes.
+- **Premises:**
+  - `[MEASURED ✅]` `/api/scan` already authenticates and tenant-scopes (lines 272–275, 409–410) and meters via `checkAndIncrementQuota`. Looks sound — just CONFIRM no path bypasses the quota gate.
+  - `[ASSUMED ❓]` after P0-A, parse-pdf is authed; verify it tenant-scopes any read/write and cannot be invoked cross-tenant.
+- **Instructions:** audit both routes against `pd.md` tenant-isolation rule; confirm quota increments happen exactly once per successful extraction (no double-charge, no free bypass on error paths). Fix only confirmed gaps; report the rest.
+- **Acceptance:** documented confirmation both routes are auth'd, tenant-scoped, metered. `tsc`+`lint` green.
+- 🤖 AI FEEDBACK: …
+
+---
+
 # ───────────────────────────────────────────────
 # PHASE 2 — GATING-GAP HARDENING
 # (start only after P1–P3 are ✅ VERIFIED by Florin)
@@ -354,6 +458,145 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 
 ---
 
+## TASK P15 — Repo hygiene: quarantine the root-level hotfix/script pollution
+**Status:** ⬜ TODO · **Branch:** `chore/repo-hygiene-script-quarantine`
+**Priority:** Phase 3 — NOT a launch blocker, but real risk reduction. Do when a clean window exists (not mid-feature).
+
+### 🔍 Scope Before Touch (Rule 1)
+- **What currently works:** the app build/runtime does NOT depend on these root scripts (measured: none imported by `src/`). They are detached operational scripts run manually.
+- **What this risks breaking:** (a) `package.json` scripts, CI, or `vercel.json` might invoke one by path; (b) some scripts are real privileged DB tools — moving/deleting the wrong one loses a useful migration. So MEASURE references before moving, and RELOCATE rather than delete wherever there's any doubt.
+
+### Premises measured (Planner, 2026-05-30) — AI: re-confirm before acting
+- `[MEASURED ✅]` 37 loose scripts in repo root; 35 git-tracked. Family includes `fix-florin-enterprise.ts`, `fix-tenant.ts`, `fix-founder-dbs.js`, `fix-ts.js/ts2/ts3`, `patch_grid.js/patch_grid2.js`, `patch_routes.js`, `convert-router.js`, `css-transformer.js`, `fix-chart.js`, `fix-paths.js`, `force-revalidate.js`, `loc_update.js`, `update_translations.js`, `update_admin_trans.js`, `update_ro_trans.js`, `dump-dbs.ts`, `get-user.ts`, `seed-admin.ts`, `seed_email.js`, `migrate-passwords.ts`, `check-absolute-latest.ts`, `check-quote.ts`, `check-today-pages.ts`, `test-accept.ts`, `test-compile.js`, `test-db.ts`, `test-db1.js`, `test-get-dbs.ts`, `test-resizable.js`, `test-tenant.js`, `test-tenant-2.js`, plus OS-duplicate files `test-db 2.ts` and `verify-user 2.js`, and `verify-user.js`.
+- `[MEASURED ✅]` None are imported by application code in `src/` (the earlier "USED → middleware.ts" grep hit was a false positive matching the substring "2"). Re-verify with a clean per-file grep.
+- `[MEASURED ✅]` Committed logs `dev-output.log`, `server.log` are tracked. `.gitignore` lists `dev.log` but NOT the actual `dev-output.log` — mismatch.
+- `[MEASURED ✅]` Misnamed doc `isuue tracking.md` (typo) is tracked.
+- `[ASSUMED ❓]` No `package.json` script / `vercel.json` / CI workflow invokes any of these by path. **MEASURE:** grep `package.json`, `vercel.json`, `.github/`, any CI config for each filename before moving.
+
+### Instructions (measure first, then act) — RELOCATE, don't nuke
+1. **Per-file reference check.** For each script, grep the whole repo (excluding the file itself) for its name. If referenced by config/CI, update the reference when you move it.
+2. **Relocate genuine utilities into `/scripts`** (already exists with proper tooling), grouped:
+   - `scripts/migrations/` — `migrate-passwords.ts`, `fix-founder-dbs.js`, `fix-tenant.ts`, `fix-florin-enterprise.ts`, `patch_routes.js`, anything that mutates DB/data.
+   - `scripts/seed/` — `seed-admin.ts`, `seed_email.js`.
+   - `scripts/debug/` — `dump-dbs.ts`, `get-user.ts`, `check-*.ts`, `test-db*.ts`, `test-get-dbs.ts`, `test-tenant*.js`, `verify-user.js`.
+   - `scripts/i18n/` — `update_translations.js`, `update_admin_trans.js`, `update_ro_trans.js`, `loc_update.js`.
+   - `scripts/build-patches/` — `patch_grid.js`, `patch_grid2.js`, `convert-router.js`, `css-transformer.js`, `fix-chart.js`, `fix-paths.js`, `force-revalidate.js`.
+3. **Delete the obvious throwaways** (only after confirming unreferenced): `fix-ts.js`, `fix-ts2.js`, `fix-ts3.js`, `test-compile.js`, and the OS-duplicate files `test-db 2.ts`, `verify-user 2.js`. Use `git rm` for tracked ones.
+4. **Stop tracking logs:** `git rm --cached dev-output.log server.log`; add both (and a `*.log` rule) to `.gitignore`; fix the `dev.log` vs `dev-output.log` mismatch.
+5. **Rename** `isuue tracking.md` → `ISSUE_TRACKING.md` (or fold into history if superseded by this workplan — Florin's call, default rename).
+6. **Add a short `scripts/README.md`** noting these are manual operational tools and the DB-mutating ones require explicit confirmation + correct `DATABASE_URL` before running.
+
+### Acceptance criteria
+- Repo root contains no loose `fix-*` / `patch_*` / `test-*` / `check-*` / dump/seed scripts; all relocated under `/scripts/<group>/` or deleted (throwaways only).
+- `npm run build`, `tsc --noEmit`, `lint` all green after the move (proves nothing depended on root paths).
+- No committed `.log` files; `.gitignore` covers them.
+- One commit, reviewable diff (mostly file moves). `develop` branch.
+
+### Out of scope
+- Rewriting or "improving" any script's logic — move only.
+- Touching `/scripts` contents that are already there and correct.
+- Deleting any DB-mutating script (relocate only — they may be needed again).
+
+### 🤖 AI FEEDBACK
+- measured (per-file reference results, esp. package.json/vercel/CI):
+- relocated (map of file → new path):
+- deleted (throwaways only, list):
+- logs untracked + .gitignore fixed? :
+- build/tsc/lint green after move? :
+- premise updates appended to pd.md? (y/n):
+
+---
+
+# ───────────────────────────────────────────────
+# PHASE 2.5 — FREE-TIER MOBILE UI (Florin priority)
+# ───────────────────────────────────────────────
+
+## TASK M1 — Make `/m` the DEFAULT for FREE on mobile + fix the broken desktop-on-phone UI
+**Status:** ⬜ TODO
+**Branch:** `feature/free-mobile-default`
+**Priority:** HIGH (Florin-requested; the FREE persona is mobile-first — this IS their product)
+
+### ⚠️ AI: READ THIS WHOLE TASK BEFORE TOUCHING ANYTHING. It is multi-part and the parts interact. Do the parts in order. Commit per part if helpful, but keep all on the one branch.
+
+### The problem (Planner diagnosis, 2026-05-30, code-read)
+There are TWO mobile experiences and FREE users land in the WRONG one:
+1. **The good one:** `/m` route, shell = `src/components/mobile/MobileShell.tsx`, pages under `src/app/[locale]/m/*`. Clean top bar + working hamburger + bottom tab bar.
+2. **The broken one:** the full desktop ERP (`src/components/AdminLayout.tsx` + `src/components/admin/MobileBottomNav.tsx`) rendered on a phone — broken hamburger, back-arrow → 404, ERP chrome not meant for phones.
+
+**Root cause:** `AdminLayout.tsx` (line ~454) only shows a blue *"try mobile"* banner to FREE users on mobile (`planType === 'FREE'` + `md:hidden`) with a link to `/m`. It does NOT route them there. So the default phone experience for a FREE user is the broken desktop ERP, and the polished `/m` app is hidden behind a banner. Florin wants `/m` to be the DEFAULT, not opt-in.
+
+### 🔍 Scope Before Touch (Rule 1)
+- **What currently works:** `/m` shell + its pages render and the bottom bar navigates. Desktop ERP works on desktop. The `md:hidden` banner is the only bridge.
+- **What this risks breaking:** (a) routing a user to `/m` must NOT trap PRO/ENT users who legitimately use the full ERP on a tablet; (b) must not create a redirect loop with the existing `middleware.ts` Branch B (app subdomain) logic; (c) the "Desktop view" escape hatch in `MobileShell` menu must keep working so anyone can opt back to full ERP.
+
+### Premises measured (Planner) — AI: re-confirm before changing
+- `[MEASURED ✅]` `AdminLayout.tsx:454-470` renders a FREE-only `md:hidden` banner linking to `/m`. No redirect anywhere sends mobile users to `/m`.
+- `[MEASURED ✅]` `MobileShell.tsx` TABS = home, invoices, **purchases**, expenses, clients. (Florin wants: home, invoices, expenses, clients, **quotes** — purchases removed from the bar.)
+- `[MEASURED ✅]` `MobileShell` hamburger DOES work (slide-down menu: Desktop view, Settings, Sign out). The "broken hamburger / 404 back" Florin saw is the DESKTOP `MobileBottomNav` on a phone, NOT this shell.
+- `[MEASURED ✅]` `/m` pages that exist: `page.tsx` (home), `invoices/`, `invoices/new`, `invoices/[id]`, `clients/`, `expenses/`, `purchases/`. **No `quotes/` page exists.**
+- `[MEASURED ✅]` `m/layout.tsx` already loads `activeModules`/`planType`/`lockedDbIds` and wraps children in `MobileShell` + `TenantProvider`.
+- `[ASSUMED ❓]` There is a clean place to detect "mobile + FREE" and route to `/m`. AI: decide between (a) middleware UA-sniff on the app subdomain, or (b) a client-side redirect in `AdminLayout` (replace the banner with an actual redirect for FREE on small viewports), or (c) make `/admin` for FREE simply render the mobile experience. **MEASURE the middleware Branch B flow first** (it's complex — locale rewrites, no-cache, role gates) so the routing choice doesn't fight it.
+
+### Part 1 — Route FREE → `/m` by default on mobile
+- Replace the passive banner with actual default routing. Recommended (confirm in feedback): when `planType === 'FREE'` AND viewport is mobile (or UA is mobile), land the user in `/m` instead of `/admin`. 
+- Keep an explicit **"Desktop view"** escape (already in `MobileShell` menu) so a FREE user CAN reach the full ERP if they want — default to mobile, don't imprison.
+- PRO/ENT: unchanged (full ERP default; the `/m` app remains available to them too if they navigate there, but is not forced).
+- Do NOT create a redirect loop. Verify against `middleware.ts` Branch B. Soft-fail (Rule 5): if detection is uncertain, default to the working desktop ERP rather than a broken state.
+- Remove/retire the old `md:hidden` "try mobile" banner once routing is the default.
+
+### Part 2 — Bottom bar = Home / Invoices / Expenses / Clients / Quotes
+In `MobileShell.tsx` TABS array:
+- REMOVE `purchases` from the bar. (Purchases content moves under Expenses as a tab — see Part 4. Keep the `/m/purchases` page reachable or fold it in; do not 404 it.)
+- ADD `quotes` → `/m/quotes` (icon: a `FileSignature` or `FilePlus` from lucide).
+- Final order: **Home, Invoices, Expenses, Clients, Quotes** (5 tabs).
+
+### Part 3 — Rebuild the Home screen (`m/page.tsx`) to the three-third layout
+Florin's exact spec:
+- **Top third:** tenant name + a short stats line (e.g. this-month net, outstanding, invoice count). Compact.
+- **Middle third:** three big primary action buttons — **Create Invoice** (→ `/m/invoices/new`), **Scan Expense** (→ opens the scan capture / `/m/expenses` scan), **Add Client** (→ opens create-client).
+- **Bottom third:** a bit of stats + a **CTA to personalize documents / fill in tenant commercial data** that DISAPPEARS once completed (check tenant profile completeness: company name, VAT, IBAN, address, logo — if all present, hide the CTA). Bottom tab bar holds the relevant links (Part 2).
+- Keep it clean and phone-native. Reuse existing data-fetch logic already in `m/page.tsx` (it already computes net cash flow, drafts, unpaid, counts) — restructure the layout, don't rebuild the queries.
+
+### Part 4 — Expenses page = two tabs (Scans + Peppol Inbox)
+In `m/expenses/page.tsx`:
+- Two in-page tabs: **Scans** (the existing ticket-capture/expense list via `TicketCaptureModal` — remember per P0-B this is Tesseract on FREE) and **Peppol Inbox** (received e-invoices; reuse the existing peppol inbox data source — see `src/app/api/peppol/inbox`).
+- Default tab = Scans (the persona's main use). 
+- Fold the `purchases` content here if it overlaps, so removing it from the bottom bar loses nothing.
+
+### Part 5 — Invoices & Clients
+- **Invoices** (`m/invoices/page.tsx`): table/list view (exists) — confirm it's clean, has a clear "create" affordance (the home button is primary; a secondary + here is fine).
+- **Clients** (`m/clients/page.tsx`): table with an **add-new** option (exists via `CreateClientModal`) — confirm it works on mobile.
+
+### Part 6 — NEW: Quotes page (`m/quotes/page.tsx`)
+- Create it. A simple list of quotes + a prominent **"Create quote"** button at top.
+- This is the **quick/simple quote** path — NOT the full fancy quotation engine. A minimal create flow: client, a few line items, total, save/send. (If a minimal quote-create already exists, reuse; otherwise a stripped create form mirroring `m/invoices/new`.)
+- Per feature_matrix, FREE gets basic quotations (create, PDF, send, sign) — so this is FREE-appropriate.
+
+### Acceptance criteria
+- A FREE user opening the app on a phone LANDS in `/m` automatically (no banner, no broken desktop ERP, no 404 back-arrow).
+- Bottom bar shows exactly: Home, Invoices, Expenses, Clients, Quotes — all navigate correctly, none 404.
+- Home matches the three-third layout; the personalize-data CTA hides once tenant commercial data is complete.
+- Expenses shows Scans + Peppol Inbox tabs.
+- Quotes page exists with a working create-quote button.
+- "Desktop view" escape still works from the menu. PRO/ENT default experience unchanged.
+- `tsc --noEmit` + `lint` + build all green. Test on a real mobile viewport (or devtools mobile emulation) — screenshot each screen into feedback.
+
+### Out of scope
+- Redesigning the desktop ERP or its `MobileBottomNav` (that component stops mattering for FREE once routing changes; leave it for PRO/ENT).
+- The fancy full quotation engine on mobile (quotes here = quick/simple only).
+- Any billing/gating change (covered elsewhere).
+
+### 🤖 AI FEEDBACK
+- measured (routing flow in middleware Branch B; how mobile is detected):
+- Part 1 routing approach chosen + why (no-loop proof):
+- Parts 2–6 changes:
+- screenshots (home / invoices / expenses / clients / quotes):
+- build/tsc/lint green?:
+- discovered:
+- premise updates appended to pd.md? (y/n):
+
+---
+
 # ───────────────────────────────────────────────
 # PHASE 4 — STAGED TEST RELEASE
 # ───────────────────────────────────────────────
@@ -370,6 +613,9 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 
 | Task | Title | Phase | Status |
 |---|---|---|---|
+| P0-A | 🩸 Lock down parse-pdf (unauth GPT-4o) | 1 (blocker #0) | ⬜ TODO |
+| P0-B | 🩸 FREE OCR → Tesseract (not GPT-4o) | 1 (blocker #0) | ⬜ TODO |
+| P0-C | Tenant-isolation pass on scan/parse routes | 1 | ⬜ TODO |
 | P1 | FREE activeModules default | 1 | 🟢 DONE (awaiting Florin verify) |
 | P2 | Seat billing wiring | 1 | 🟢 DONE (awaiting Florin verify) |
 | P3 | Stale-token gating | 1 | 🟢 DONE (awaiting Florin verify) |
@@ -379,20 +625,25 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 | P7 | Gate File Manager | 2 | ⬜ TODO |
 | P8 | Seat-count UI reconcile | 2 | ⬜ TODO |
 | P9 | planType depth audit | 2 | ⬜ TODO |
+| M1 | FREE mobile UI = default + reshape | 2.5 | ⬜ TODO |
 | P10 | Retire trial → free-forever (park code) | 3 | ⬜ TODO |
 | P10b | Event-triggered PRO taste at cap | 3 (fast-follow) | ⬜ TODO |
 | P11 | Quarterly toggle | 3 | ⬜ TODO |
 | P12 | Cancellation notice | 3 | ⬜ TODO |
 | P13 | PAST_DUE lockout | 3 | ⬜ TODO |
+| P15 | Repo hygiene / script quarantine | 3 | ⬜ TODO |
 | P14 | PRO E2E test pass | 4 | ⬜ TODO |
 
 ---
 
 ## 👤 FLORIN — open decisions waiting on you
 1. ~~P10 — Trial model~~ ✅ DECIDED 2026-05-30: no calendar trial; free-forever + caps; trial code PARKED behind `TRIAL_MODE_ENABLED` flag; event-triggered taste = P10b (fast-follow).
-2. **P10b timing** — ship as fast-follow after PRO launch (recommended) or include at launch? (Default: fast-follow.)
-3. **P13 — PAST_DUE grace length** before lockout.
-4. **P1 backfill** — if existing FREE tenants are found over-provisioned, do we correct them?
+2. ~~Peppol/Stripe on FREE~~ ✅ DECIDED 2026-05-30: Stripe fully decoupled from FREE. FREE Peppol sent = 5 (hard cap), received = 20 (soft-flag, NEVER blocked), no free-tier overage; all metered billing is PRO+. AI: reconcile the stale 10-vs-50 received numbers across `plan-limits.ts`, `feature_matrix.md`, `stripe.ts` to **20**.
+3. ~~FREE OCR engine~~ ✅ DECIDED 2026-05-30: FREE = Tesseract (P0-B); GPT-4o scanning = PRO+ perk. PDF import (parse-pdf) = PRO+ only (P0-A).
+4. **P0-A quota number** — how many parse-pdf imports/month for PRO / ENT before metering kicks in?
+5. **P10b timing** — fast-follow after PRO launch (recommended) or at launch?
+6. **P13 — PAST_DUE grace length** before lockout.
+7. **P1 backfill** — if existing FREE tenants are found over-provisioned, do we correct them?
 
 ---
 

@@ -297,7 +297,20 @@ export default function PDFImportModal({
                     {error && !isProcessing && (
                         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl p-4 flex gap-3 text-red-600">
                             <AlertCircle className="w-5 h-5 shrink-0" />
-                            <div className="text-sm"><span className="font-bold">Extraction Failed:</span> {error}</div>
+                            <div className="text-sm">
+                                <span className="font-bold">Extraction Failed:</span> {error}
+                                {(error.includes('PRO and ENTERPRISE') || error.includes('scan limit')) && (
+                                    <div className="mt-2">
+                                        <a
+                                            href="/admin/settings/billing"
+                                            onClick={() => onClose()}
+                                            className="inline-flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-lg text-xs transition-colors"
+                                        >
+                                            Upgrade Plan <ArrowRight className="w-3 h-3" />
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
 

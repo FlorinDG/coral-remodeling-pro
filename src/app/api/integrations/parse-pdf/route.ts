@@ -1,14 +1,86 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { canAccess } from '@/lib/feature-flags';
 
 export const maxDuration = 60; // Allow longer execution for LLM
 
+async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: boolean; remaining: number }> {
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { scanCount: true, scanQuota: true, scanCountResetAt: true }
+    });
+    if (!tenant) return { allowed: false, remaining: 0 };
+
+    // Auto-reset if we've rolled into a new calendar month
+    const now = new Date();
+    const resetAt = new Date(tenant.scanCountResetAt);
+    const needsReset = now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
+
+    let currentCount = needsReset ? 0 : tenant.scanCount;
+    const quota = tenant.scanQuota;
+    const isUnlimited = quota === -1;
+
+    if (!isUnlimited && currentCount >= quota) {
+        return { allowed: false, remaining: 0 };
+    }
+
+    // Increment atomically
+    await prisma.tenant.update({
+        where: { id: tenantId },
+        data: {
+            scanCount: currentCount + 1,
+            ...(needsReset ? { scanCountResetAt: now } : {}),
+        }
+    });
+
+    return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount - 1 };
+}
+
 export async function POST(req: Request) {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
+        // Fetch tenant details to verify plan level and quota settings
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { planType: true, scanQuota: true }
+        });
+
+        if (!tenant) {
+            return NextResponse.json({ success: false, error: 'Tenant not found' }, { status: 404 });
+        }
+
+        // PDF Import features are gated behind PRO+ tiers
+        if (!canAccess('QUOTATION_PDF_IMPORT_LIBRARY', tenant.planType)) {
+            return NextResponse.json({
+                success: false,
+                error: 'PDF Import is only available on PRO and ENTERPRISE plans.',
+                code: 'PLAN_GATED'
+            }, { status: 403 });
+        }
+
+        // Quota check and metering
+        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
+        if (!allowed) {
+            return NextResponse.json({
+                success: false,
+                error: `You have reached your monthly document scan limit (${tenant.scanQuota} scans). Upgrade your plan for more.`,
+                code: 'QUOTA_EXCEEDED',
+                quota: tenant.scanQuota,
+                remaining: 0,
+            }, { status: 429 });
+        }
+
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
         if (!file) {
-            return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
+            return NextResponse.json({ success: false, error: 'No file uploaded', remaining }, { status: 400 });
         }
 
         // Optional: target database property names for schema-aware extraction

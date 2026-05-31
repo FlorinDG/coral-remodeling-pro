@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
@@ -33,9 +34,11 @@ interface RecordDetailPageProps {
 
 export default function RecordDetailPage({ databaseId, pageId, locale }: RecordDetailPageProps) {
     const router = useRouter();
-    const { resolveDbId, planType } = useTenant();
+    const { resolveDbId, planType, isEnterprise } = useTenant();
 
     // Resolve tenant-scoped DB ID (handles bare 'db-x' and 'db-x-tenantSuffix')
+    const isBestek = databaseId === 'db-bestek' || databaseId.startsWith('db-bestek-');
+    const isBestekReadOnly = isBestek && !isEnterprise;
     const resolvedDbId = resolveDbId(databaseId);
 
     const database = useDatabaseStore(state =>
@@ -47,6 +50,9 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
     const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
+
+    // ── Hydration guard: store uses async IndexedDB; on first render databases is []. ──
+    const storeHasHydrated = useDatabaseStore((s) => (s as any)._hasHydrated ?? s.databases.length > 0);
 
     // Map database to contextType
     const baseDbId = getBaseDbId(databaseId);
@@ -111,10 +117,6 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         );
     }
 
-    // ── Hydration guard: store uses async IndexedDB; on first render databases is []. ──
-    // Show a loading spinner instead of "Not found" to avoid the flash-then-crash.
-    const storeHasHydrated = useDatabaseStore((s) => (s as any)._hasHydrated ?? s.databases.length > 0);
-
     if (!database || !page) {
         // If the store hasn't hydrated yet, show a loading spinner (avoids the brief "not found" flash)
         if (!storeHasHydrated) {
@@ -171,9 +173,10 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                     <input
                         type="text"
                         value={title}
+                        readOnly={isBestekReadOnly}
                         onChange={e => updatePageProperty(resolvedDbId, pageId, 'title', e.target.value)}
                         placeholder="Untitled"
-                        className="font-semibold text-sm text-neutral-900 dark:text-white bg-transparent outline-none focus:ring-0 border-b border-transparent focus:border-neutral-300 dark:focus:border-white/20 truncate max-w-sm transition-colors"
+                        className="font-semibold text-sm text-neutral-900 dark:text-white bg-transparent outline-none focus:ring-0 border-b border-transparent focus:border-neutral-300 dark:focus:border-white/20 truncate max-w-sm transition-colors read-only:cursor-default"
                     />
                 </div>
 
@@ -195,6 +198,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                             databaseId={resolvedDbId}
                             pageId={pageId}
                             title="All Properties"
+                            readOnly={isBestekReadOnly}
                         />
                     </ErrorBoundary>
                 </div>

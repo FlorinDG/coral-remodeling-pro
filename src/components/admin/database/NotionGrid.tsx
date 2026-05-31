@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/preserve-manual-memoization, react-hooks/set-state-in-effect */
 
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
@@ -169,6 +170,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const { activeModules, planType, isPro, isEnterprise } = useTenant();
     const hasCRM = activeModules.includes('CRM');
     const isFree = planType === 'FREE';
+    const isBestek = databaseId === 'db-bestek' || databaseId.startsWith('db-bestek-');
+    const isBestekReadOnly = isBestek && !isEnterprise;
 
     const [isReady, setIsReady] = useState(false);
     const [hasHydrated, setHasHydrated] = useState(false);
@@ -480,22 +483,24 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 <Maximize2 className="w-4 h-4 mr-2" />
                                 <span>Open</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                                const newProps = { ...rowData.properties };
-                                if (newProps.title) {
-                                    newProps.title = `${newProps.title} (Copy)`;
-                                }
-                                createPage(databaseIdRef, newProps, undefined, rowData.blocks);
-                            }} className="cursor-pointer">
-                                <Copy className="w-4 h-4 mr-2" />
-                                <span>Duplicate</span>
-                            </DropdownMenuItem>
+                            {!isBestekReadOnly && (
+                                <DropdownMenuItem onClick={() => {
+                                    const newProps = { ...rowData.properties };
+                                    if (newProps.title) {
+                                        newProps.title = `${newProps.title} (Copy)`;
+                                    }
+                                    createPage(databaseIdRef, newProps, undefined, rowData.blocks);
+                                }} className="cursor-pointer">
+                                    <Copy className="w-4 h-4 mr-2" />
+                                    <span>Duplicate</span>
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             {/* Delete — blocked if preventDelete says so */}
                             {(() => {
                                 const blocked = typeof preventDelete === 'function'
                                     ? preventDelete(rowData)
-                                    : !!preventDelete;
+                                    : !!preventDelete || isBestekReadOnly;
                                 if (blocked) return null;
                                 return (
                                     <DropdownMenuItem
@@ -985,7 +990,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </div>
                     )}
 
-                    {!lockedSchema && !isAccountant && (
+                    {!lockedSchema && !isAccountant && !isBestekReadOnly && (
                     <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition"
@@ -997,7 +1002,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                     {/* Bulk delete — only show if not blanket-blocked.
                         For callback-based preventDelete, filter out non-deletable rows before executing. */}
-                    {preventDelete !== true && !isAccountant && (
+                    {preventDelete !== true && !isAccountant && !isBestekReadOnly && (
                     <button
                         onClick={() => {
                             if (selectedRowIds.size > 0) {
@@ -1276,9 +1281,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 }}
                                 columns={columns}
                                 autoAddRow={false}
-                                lockRows={isAccountant}
+                                lockRows={isAccountant || isBestekReadOnly}
                                 addRowsComponent={false}
-                                disableContextMenu={isAccountant}
+                                disableContextMenu={isAccountant || isBestekReadOnly}
                                 headerRowHeight={0}
                                 height={gridHeight}
                                 rowClassName={({ rowData }: { rowData: Record<string, unknown> }) => rowData.peppol_active ? 'peppol-active-row' : ''}
@@ -1463,8 +1468,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             <DatabaseFooter
                 databaseId={database.id}
                 viewId={activeViewId}
-                lockedSchema={lockedSchema}
-                hideNewButton={hideFooterNew}
+                lockedSchema={lockedSchema || isBestekReadOnly}
+                hideNewButton={hideFooterNew || isBestekReadOnly}
                 orderedVisibleProperties={orderedVisibleProperties}
                 viewStateMap={viewStateMap}
                 scrollRef={footerScrollRef}

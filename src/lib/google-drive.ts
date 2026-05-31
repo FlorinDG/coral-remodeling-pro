@@ -46,7 +46,8 @@ export async function uploadFile(
     filename: string,
     mimeType: string,
     buffer: Buffer | Blob,
-    parentId: string
+    parentId: string,
+    tenantId?: string
 ): Promise<string> {
     // Convert Blob to Buffer if necessary
     const uploadBuffer = buffer instanceof Blob
@@ -56,6 +57,7 @@ export async function uploadFile(
     const fileMetadata = {
         name: filename,
         parents: parentId ? [parentId] : undefined,
+        appProperties: tenantId ? { tenantId } : undefined
     };
 
     const media = {
@@ -145,8 +147,8 @@ export async function isFolderOwnedByTenant(folderId: string, tenantRootId: stri
     let currentId = folderId;
     const visited = new Set<string>();
     
-    // Max depth of 5 to limit API calls and prevent loops
-    for (let i = 0; i < 5; i++) {
+    // Max depth of 10 to limit API calls and prevent loops
+    for (let i = 0; i < 10; i++) {
         if (visited.has(currentId)) return false;
         visited.add(currentId);
         

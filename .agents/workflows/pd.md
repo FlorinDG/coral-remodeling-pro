@@ -185,6 +185,7 @@ All development and release operations must adhere to this structured flow to pr
 | Seat-billing wired into Stripe checkout & lifecycle with automatic quantity sync | ✅ | 2026-05-31 code change & checkout session validation |
 | PDF Import integrations locked down under auth, plan checks, and quota metering | ✅ | 2026-05-31 parse-pdf route refactor + caller grace modals |
 | FREE ticket scanning routed to client-side Tesseract OCR to completely bypass OpenAI fees | ✅ | 2026-05-31 code change & quota validation |
+| Bestek database (db-bestek) read-only access enforced for PRO plan while allowing full editing for Enterprise | ✅ | 2026-05-31 code change & validation |
 
 ---
 

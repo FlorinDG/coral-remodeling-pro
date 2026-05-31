@@ -253,7 +253,7 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                 {/* Profile completion CTA — hides when profile complete */}
                 {!isProfileComplete && (
                     <Link
-                        href="/admin/settings/company-info"
+                        href="/m/settings?tab=company-info"
                         className="block bg-gradient-to-br from-orange-100/50 to-amber-100/50 dark:from-orange-950/40 dark:to-amber-950/40 border border-orange-300 dark:border-orange-850/50 rounded-2xl p-4 active:scale-[0.99] transition-all shadow-sm"
                     >
                         <div className="flex items-start gap-3">

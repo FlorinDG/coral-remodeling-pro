@@ -680,12 +680,15 @@ In `m/expenses/page.tsx`:
 - Not "does my file appear" — "can Tenant A reach Tenant B's files/folders by manipulating folderId/fileId, dropping the param, or replaying another tenant's id." Two real tenants, deliberate cross-access attempts on every Drive route (list/upload/delete/init) AND the OCR/parse routes.
 - **Pass = every cross-tenant attempt returns 403 and touches nothing; verified on a Vercel deploy, not local.** Any leak = STOP, not launch.
 
-## GATE-2 — ⚖️ Peppol PRODUCTION send, verified end-to-end (NEW — not previously a task)
-**Status:** ⬜ TODO
-- **Premise `[MEASURED ✅]`:** infra was on e-invoice.be **TEST** mode (`ROADMAP.md` §5). "Sends in test mode" ≠ "production-compliant." This is the user's LEGAL obligation riding on our output.
-- Flip e-invoice.be to **production** (SMP registration if required), send a REAL structured invoice, and confirm it (a) transmits over the live Peppol network and (b) is ACCEPTED/validates at a real recipient endpoint. Validate the UBL against Peppol BIS 3.0.
-- **Pass = a real invoice lands and validates at the other end.** Until then, no "Peppol-ready" claim in product or campaign (ties to PROMOTION_ROADMAP X1).
-- 👤 Florin: production e-invoice.be credentials / SMP registration is partly your action.
+## GATE-2 — ⚖️ Peppol PRODUCTION send + receive, proven with real documents
+**Status:** 🟡 PARTLY DONE — infra ready, real round-trip still to prove
+- **Premise `[MEASURED ✅ / Florin 2026-05-31]`:** e-invoice.be is on the **PRODUCTION** API and the Peppol connection reports **green** (credentials valid, SMP registration live, access-point handshake works). Infra/registration = DONE.
+- **What "green" does NOT yet prove (this is the remaining gate):** a green connection can still transmit malformed UBL that the recipient's validator rejects. Connection-up ≠ legally-compliant document delivered. So we must prove the actual documents move:
+  1. **SEND:** a real structured invoice transmits over live Peppol AND is ACCEPTED (not rejected) at a real recipient access point; UBL validates against Peppol BIS 3.0.
+  2. **RECEIVE:** a real inbound invoice is received and correctly parsed into the system (Peppol inbox flow, received-counter, structured ingest).
+  3. **Round trip** ideally with a counterparty you control (your own second Peppol-registered tenant, your accountant, or a friendly business) so a rejection costs nothing.
+- **Pass = a real invoice you sent is accepted+validated at the other end, AND a real inbound invoice is received and parsed.** Until then, no "Peppol-ready/compliant" claim in product or campaign (ties to PROMOTION_ROADMAP X1).
+- 👤 Florin action: provide/confirm the controlled counterparty for the round-trip test.
 
 ## GATE-3 — 💶 Billing math confirmed (depends on P2)
 **Status:** ⬜ TODO · blocked by P2 verify
@@ -706,7 +709,7 @@ In `m/expenses/page.tsx`:
 | Gate | What | Blocks on | Test style |
 |---|---|---|---|
 | GATE-1 | Tenant isolation | F1 | adversarial |
-| GATE-2 | Peppol production send | (new) | adversarial / legal |
+| GATE-2 | Peppol prod send+receive (infra green; round-trip TODO) | (new) | adversarial / legal |
 | GATE-3 | Billing math | P2 | careful |
 | GATE-4 | Free happy-path | M1, free tier | real-user |
 | GATE-5 | Accountant export | export flow | real-user |

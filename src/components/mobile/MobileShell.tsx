@@ -7,11 +7,13 @@ import { TenantProvider } from '@/context/TenantContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
     LayoutDashboard, FileText, Wallet, Users,
-    Menu, X, Monitor, LogOut, Settings, FileSignature
+    Menu, X, LogOut, Settings, FileSignature, ChevronDown
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
 import { useTranslations } from 'next-intl';
+import { getFilteredSettingsTabs } from '@/config/tabs';
+
 
 interface NavTab {
     id: string;
@@ -43,8 +45,10 @@ export default function MobileShell({
         { id: 'quotes',   label: t('nav_quotes'),    href: '/m/quotes',    icon: <FileSignature className="w-5 h-5" /> },
     ];
     const [menuOpen, setMenuOpen] = useState(false);
+    const [settingsExpanded, setSettingsExpanded] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');
     const [companyName, setCompanyName] = useState('');
+
 
     useEffect(() => {
         // Clear any bypass when entering/staying inside mobile shell /m
@@ -136,31 +140,36 @@ export default function MobileShell({
                                 </div>
                             </div>
 
-                            {/* Desktop view link */}
-                            <Link
-                                href="/admin/dashboard"
-                                onClick={() => {
-                                    try { localStorage.setItem('bypass-mobile-redirect', 'true'); } catch {}
-                                    setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
+                            {/* Settings (collapsible) */}
+                            <button
+                                onClick={() => setSettingsExpanded(!settingsExpanded)}
+                                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
                             >
-                                <Monitor className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
-                                {t('shell_desktop_view')}
-                            </Link>
+                                <div className="flex items-center gap-3">
+                                    <Settings className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
+                                    <span>{t('shell_settings')}</span>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 text-neutral-900 dark:text-neutral-200 transition-transform ${settingsExpanded ? 'rotate-180' : ''}`} />
+                            </button>
 
-                            {/* Settings */}
-                            <Link
-                                href="/admin/settings"
-                                onClick={() => {
-                                    try { localStorage.setItem('bypass-mobile-redirect', 'true'); } catch {}
-                                    setMenuOpen(false);
-                                }}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
-                            >
-                                <Settings className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
-                                {t('shell_settings')}
-                            </Link>
+                            {settingsExpanded && (
+                                <div className="pl-6 space-y-1 mt-1 border-l-2 border-neutral-200 dark:border-white/10 ml-6 animate-in slide-in-from-left-2 duration-150">
+                                    {getFilteredSettingsTabs(activeModules)
+                                        .filter(tab => tab.id !== 'team' && tab.id !== 'opt-databases' && tab.id !== 'databases')
+                                        .map(tab => (
+                                            <Link
+                                                key={tab.id}
+                                                href={`/m/settings?tab=${tab.id}`}
+                                                onClick={() => setMenuOpen(false)}
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-extrabold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                            >
+                                                {tab.label}
+                                            </Link>
+                                        ))
+                                    }
+                                </div>
+                            )}
+
 
                             {/* Sign out */}
                             <div className="border-t border-neutral-300 dark:border-white/10 mt-2 pt-2">

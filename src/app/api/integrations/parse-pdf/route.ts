@@ -65,22 +65,10 @@ export async function POST(req: Request) {
             }, { status: 403 });
         }
 
-        // Quota check and metering
-        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
-        if (!allowed) {
-            return NextResponse.json({
-                success: false,
-                error: `You have reached your monthly document scan limit (${tenant.scanQuota} scans). Upgrade your plan for more.`,
-                code: 'QUOTA_EXCEEDED',
-                quota: tenant.scanQuota,
-                remaining: 0,
-            }, { status: 429 });
-        }
-
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
         if (!file) {
-            return NextResponse.json({ success: false, error: 'No file uploaded', remaining }, { status: 400 });
+            return NextResponse.json({ success: false, error: 'No file uploaded' }, { status: 400 });
         }
 
         // Optional: target database property names for schema-aware extraction
@@ -103,9 +91,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: 'PDF contains no extractable text. It may be a scanned image without OCR.' }, { status: 400 });
         }
 
+        // Quota check and metering
+        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
+        if (!allowed) {
+            return NextResponse.json({
+                success: false,
+                error: `You have reached your monthly document scan limit (${tenant.scanQuota} scans). Upgrade your plan for more.`,
+                code: 'QUOTA_EXCEEDED',
+                quota: tenant.scanQuota,
+                remaining: 0,
+            }, { status: 429 });
+        }
+
         // Initialize OpenAI
         if (!process.env.OPENAI_API_KEY) {
-            return NextResponse.json({ success: false, error: 'OPENAI_API_KEY is not configured.' }, { status: 500 });
+            return NextResponse.json({ success: false, error: 'OPENAI_API_KEY is not configured.', remaining }, { status: 500 });
         }
 
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });

@@ -286,17 +286,6 @@ export async function POST(req: Request) {
         const isFree = planType === 'FREE';
         const ocrEngine = isFree ? 'TESSERACT' : ((tenant?.ocrEngine ?? 'GPT4O') as OcrEngine);
 
-        // ── Quota gate ────────────────────────────────────────────────────────
-        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
-        if (!allowed) {
-            return NextResponse.json({
-                error: `You have reached your monthly scan limit (${tenant?.scanQuota} scans). Upgrade your plan for more.`,
-                code: 'QUOTA_EXCEEDED',
-                quota: tenant?.scanQuota,
-                remaining: 0,
-            }, { status: 429 });
-        }
-
         // ── Parse form data ───────────────────────────────────────────────────
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
@@ -311,6 +300,17 @@ export async function POST(req: Request) {
 
         if (isFree && !clientExtractedStr) {
             return NextResponse.json({ error: 'Free plan requires client-side Tesseract extraction.' }, { status: 400 });
+        }
+
+        // ── Quota gate ────────────────────────────────────────────────────────
+        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
+        if (!allowed) {
+            return NextResponse.json({
+                error: `You have reached your monthly scan limit (${tenant?.scanQuota} scans). Upgrade your plan for more.`,
+                code: 'QUOTA_EXCEEDED',
+                quota: tenant?.scanQuota,
+                remaining: 0,
+            }, { status: 429 });
         }
 
         // ── Extract structured data ───────────────────────────────────────────

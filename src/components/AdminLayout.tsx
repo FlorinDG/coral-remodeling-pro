@@ -69,6 +69,10 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     // The "Desktop view" link in MobileShell is the escape hatch back.
     useEffect(() => {
         if (planType !== 'FREE') return;
+        try {
+            const bypass = localStorage.getItem('bypass-mobile-redirect') === 'true';
+            if (bypass) return;
+        } catch {}
         if (window.innerWidth < 768) {
             router.replace('/m');
         }

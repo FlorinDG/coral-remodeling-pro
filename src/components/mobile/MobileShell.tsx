@@ -47,6 +47,26 @@ export default function MobileShell({
     const [companyName, setCompanyName] = useState('');
 
     useEffect(() => {
+        // Clear any bypass when entering/staying inside mobile shell /m
+        try {
+            localStorage.removeItem('bypass-mobile-redirect');
+        } catch {}
+
+        const handleGlobalClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const anchor = target.closest('a');
+            if (anchor) {
+                const href = anchor.getAttribute('href');
+                if (href && (href.includes('/admin') || href.startsWith('admin'))) {
+                    try {
+                        localStorage.setItem('bypass-mobile-redirect', 'true');
+                    } catch {}
+                }
+            }
+        };
+
+        document.addEventListener('click', handleGlobalClick);
+
         fetch('/api/tenant/profile').then(r => r.json()).then(d => {
             if (d?.brandColor) {
                 setBrandColor(d.brandColor);
@@ -54,6 +74,10 @@ export default function MobileShell({
             }
             if (d?.companyName) setCompanyName(d.companyName);
         }).catch(() => {});
+
+        return () => {
+            document.removeEventListener('click', handleGlobalClick);
+        };
     }, []);
 
     const userName = session?.user?.name || 'User';
@@ -66,17 +90,17 @@ export default function MobileShell({
 
     return (
         <div
-            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-900 dark:text-white flex flex-col"
+            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
             {/* ── Top Bar ── */}
-            <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/10">
+            <header className="sticky top-0 z-50 bg-white/90 dark:bg-neutral-950/90 backdrop-blur-xl border-b border-neutral-300 dark:border-white/10">
                 <div className="flex items-center justify-between h-14 px-4 max-w-lg mx-auto w-full">
                     <div className="flex items-center gap-2 min-w-0">
                         <h1 className="text-sm font-black tracking-tight truncate max-w-[180px]" style={{ color: brandColor }}>
                             {companyName || 'CoralOS'}
                         </h1>
-                        <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest shrink-0">
+                        <span className="text-[9px] font-bold text-neutral-700 dark:text-neutral-300 uppercase tracking-widest shrink-0">
                             {planType}
                         </span>
                     </div>
@@ -85,7 +109,7 @@ export default function MobileShell({
                         <ThemeToggle />
                         <button
                             onClick={() => setMenuOpen(!menuOpen)}
-                            className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
+                            className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-950 dark:text-white"
                         >
                             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                         </button>
@@ -95,9 +119,9 @@ export default function MobileShell({
 
             {/* ── Slide-down menu ── */}
             {menuOpen && (
-                <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
+                <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
                     <div
-                        className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-white/10 shadow-2xl mt-14 animate-in slide-in-from-top-2 duration-200"
+                        className="bg-white dark:bg-neutral-950 border-b border-neutral-300 dark:border-white/10 shadow-2xl mt-14 animate-in slide-in-from-top-2 duration-200"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="p-4 space-y-1 max-w-lg mx-auto">
@@ -107,39 +131,45 @@ export default function MobileShell({
                                     {firstName[0]}
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="text-sm font-bold truncate">{userName}</p>
-                                    <p className="text-[10px] text-neutral-400 uppercase tracking-wider">{planType} {t('shell_plan')}</p>
+                                    <p className="text-sm font-bold truncate text-neutral-950 dark:text-white">{userName}</p>
+                                    <p className="text-[10px] text-neutral-600 dark:text-neutral-300 uppercase tracking-wider font-bold">{planType} {t('shell_plan')}</p>
                                 </div>
                             </div>
 
                             {/* Desktop view link */}
                             <Link
                                 href="/admin/dashboard"
-                                onClick={() => setMenuOpen(false)}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                onClick={() => {
+                                    try { localStorage.setItem('bypass-mobile-redirect', 'true'); } catch {}
+                                    setMenuOpen(false);
+                                }}
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
                             >
-                                <Monitor className="w-5 h-5 text-neutral-500" />
+                                <Monitor className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
                                 {t('shell_desktop_view')}
                             </Link>
 
                             {/* Settings */}
                             <Link
                                 href="/admin/settings"
-                                onClick={() => setMenuOpen(false)}
-                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                onClick={() => {
+                                    try { localStorage.setItem('bypass-mobile-redirect', 'true'); } catch {}
+                                    setMenuOpen(false);
+                                }}
+                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
                             >
-                                <Settings className="w-5 h-5 text-neutral-500" />
+                                <Settings className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
                                 {t('shell_settings')}
                             </Link>
 
                             {/* Sign out */}
-                            <div className="border-t border-neutral-200 dark:border-white/10 mt-2 pt-2">
+                            <div className="border-t border-neutral-300 dark:border-white/10 mt-2 pt-2">
                                 <button
                                     onClick={async () => {
                                         try { await del('coral-database-storage-v4'); localStorage.removeItem('coral-schema-version'); } catch {}
                                         signOut({ callbackUrl: "/" });
                                     }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                 >
                                     <LogOut className="w-5 h-5" /> {t('shell_sign_out')}
                                 </button>
@@ -157,7 +187,7 @@ export default function MobileShell({
             </main>
 
             {/* ── Bottom Tab Bar ── */}
-            <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-neutral-200/80 dark:border-white/10 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl shadow-lg">
+            <nav className="fixed bottom-0 inset-x-0 z-50 border-t border-neutral-300 dark:border-white/10 bg-white/95 dark:bg-neutral-950/95 backdrop-blur-xl shadow-lg">
                 <div className="flex items-center justify-around h-16 max-w-lg mx-auto" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
                     {TABS.map(tab => (
                         <Link
@@ -166,13 +196,13 @@ export default function MobileShell({
                             className={`flex flex-col items-center justify-center gap-0.5 py-1 px-2 rounded-xl transition-all relative ${
                                 isActive(tab.href)
                                     ? 'text-[var(--brand-color)]'
-                                    : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'
+                                    : 'text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white'
                             }`}
                         >
                             <div className={`transition-transform ${isActive(tab.href) ? 'scale-110' : ''}`}>
                                 {tab.icon}
                             </div>
-                            <span className={`text-[9px] font-bold tracking-wider ${
+                            <span className={`text-[9.5px] font-extrabold tracking-wider ${
                                 isActive(tab.href) ? 'text-[var(--brand-color)]' : ''
                             }`}>
                                 {tab.label}

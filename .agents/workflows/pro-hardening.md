@@ -57,7 +57,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P1 — Audit & fix the FREE-tenant `activeModules` default (revenue leak)
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** BLOCKER #1 (integrity + revenue leak)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -99,7 +99,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P2 — Wire per-seat billing into Stripe checkout & lifecycle (revenue path)
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** 🟢 DONE — ⏳ AWAITING FLORIN STRIPE TEST-MODE CHECK (do not ✅ until add-user/add-workforce/remove verified live)
 **Priority:** BLOCKER #2 (the core PRO revenue mechanism — currently NOT wired)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -156,7 +156,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P3 — Close the stale-token gating hole on plan/seat change
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** BLOCKER #3 (security/correctness on upgrade & downgrade)
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -198,7 +198,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P0-A — 🩸 SECURITY/COST: lock down `/api/integrations/parse-pdf` (unauthenticated GPT-4o)
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** BLOCKER #0 (open wound — unauthenticated paid endpoint). Do FIRST, before P1.
 
 ### 🔍 Scope Before Touch (Rule 1)
@@ -241,7 +241,7 @@ These three gate the PRO launch. Until all are ✅ VERIFIED, do not start Phase 
 ---
 
 ## TASK P0-B — 🩸 COST: FREE ticket scanning must use Tesseract, not GPT-4o
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** BLOCKER #0 (margin leak that scales with every free signup). Do before public PRO push.
 
 ### 👤 LOCKED DECISION (Florin, 2026-05-30)
@@ -292,7 +292,7 @@ FREE-tier OCR (expense ticket/receipt scanning via `TicketCaptureModal` → `/ap
 ---
 
 ## TASK P0-C — Tenant-isolation + quota sanity pass on the OCR/AI routes
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** Phase 1 (follows P0-A/B; small, mostly verification)
 - **Scope:** `/api/scan` and `/api/integrations/parse-pdf` only. Don't touch unrelated routes.
 - **Premises:**
@@ -318,7 +318,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 > Build the shared `<LockedFeature label requiredPlan upgradeHref>` component FIRST (per `feature_matrix.md` code pattern) so every gate below uses one consistent locked-state UI. → **TASK P4.**
 
 ## TASK P4 — Build the shared `<LockedFeature>` component
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 - **Scope:** new reusable component; touches no existing gate yet.
 - **Premise `[MEASURED ✅]`:** `feature_matrix.md` specifies props `label`, `requiredPlan: 'PRO'|'ENTERPRISE'`, `upgradeHref?`; renders lock icon + plan badge + upgrade button.
 - **Premise `[MEASURED ✅]`:** `<LockedFeature>` component successfully built in `src/components/admin/LockedFeature.tsx`, fully responsive, i18n-ready, and beautifully styled.
@@ -329,7 +329,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
   - Passes complete `tsc` and `eslint` check with zero warnings.
 
 ## TASK P5 — Gate LIBRARY (Articles + Bestek) behind PRO
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 - **Premise `[MEASURED ✅]`:** Enforced `library/articles/page` and `library/bestek/page` access gates to lock out FREE tenants using `<LockedFeature>`.
 - **Premise `[MEASURED ✅]`:** Implemented read-only Bestek database isolation for standard PRO tenants: PRO has read-only lookup access while ENTERPRISE has full edit/personalization capabilities. Enforced lockouts on grid cells, rows, schema editing, duplication, bulk actions, and the record detail sidebar properties.
 - **Instructions:** if ungated, wrap with `isPro` check + `<LockedFeature requiredPlan="PRO">`. Bestek: PRO = read/apply catalog, ENTERPRISE = edit/personalize (per matrix). Smallest change.
@@ -341,7 +341,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 
 
 ## TASK P6 — Gate SALES pipeline (PRO = 1 pipeline) / EMAIL CLIENT (ENTERPRISE only)
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 - **Premise `[MEASURED ✅]`:** Verified that the Email client is already correctly gated at `/admin/email/page.tsx` via standard `!isEnterprise` check redirecting to the `<LockedFeature>` component, and also correctly routed and gated in middleware under the `EMAIL` module which is only allocated to `ENTERPRISE`, `FOUNDER`, and `CUSTOM` plans.
 - **Premise `[MEASURED ✅]`:** Gated multi-pipeline CRM capabilities: forced standard `PRO` plan tenants to the Main Pipeline (`db-crm`) only, completely hiding the tab switcher and preventing manual access to the Bobex Pipeline (`db-bobex`).
 - **Instructions:** Email client = ENTERPRISE only (verify, fix if not). Sales = PRO gets 1 pipeline, ENTERPRISE unlimited; enforce the 1-pipeline cap if missing.
@@ -352,14 +352,14 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
 
 
 ## TASK P7 — Gate FILE MANAGER behind PROJECTS-on + PRO
-**Status:** 🟢 DONE (already gated — no code change needed)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30 — already gated, no change)
 - **Premise `[MEASURED ✅]`:** `files/page.tsx` already wraps content in `!isPro ? <LockedFeature requiredPlan="PRO"> : <FileManager />`. Middleware `PROJECTS` module gate also blocks the route at the network layer for FREE tenants. PDF auto-generation (invoices, quotations) routes are under `/api/` paths ungated by this page gate — INVOICING module keeps them accessible. Zero action required.
 - 🤖 AI FEEDBACK:
   - Measured `files/page.tsx` — gate confirmed correct. No change made.
   - Auto-generated PDFs are API-level, not file-manager-level. Safe.
 
 ## TASK P8 — Reconcile seat-count UI + remove stale "3 users" copy
-**Status:** 🟢 DONE (awaiting Florin verify)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 - **Premise `[MEASURED ✅]`:** Fixed all stale copy in `BillingPageClient.tsx`.
 - 🤖 AI FEEDBACK:
   - Removed `trial: "3 months free trial"` and `trial: "2 months free trial"` from PRO and ENTERPRISE plan definitions.
@@ -372,7 +372,7 @@ These close the feature-depth gaps already catalogued in `feature_matrix.md` →
   - `tsc --noEmit` ✅ · `eslint` 0 errors 0 warnings ✅.
 
 ## TASK P9 — Verify `planType` depth gates across all PRO module pages
-**Status:** 🟢 DONE (audit complete — all gates measured)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30 — audit clean, spreadsheet gap fixed)
 - 🤖 AI FEEDBACK:
 
 | Page / Component | Gate type | Actual state | Verdict |
@@ -570,7 +570,7 @@ When a FREE user hits a cap (e.g. the 5th sent invoice/month), instead of only "
 # ───────────────────────────────────────────────
 
 ## TASK M1 — Make `/m` the DEFAULT for FREE on mobile + fix the broken desktop-on-phone UI
-**Status:** 🟢 DONE (branch: `feature/free-mobile-default`, commit: `304597c`)
+**Status:** ✅ VERIFIED (Florin, 2026-05-30)
 **Priority:** HIGH (Florin-requested; the FREE persona is mobile-first — this IS their product)
 
 ### ⚠️ AI: READ THIS WHOLE TASK BEFORE TOUCHING ANYTHING. It is multi-part and the parts interact. Do the parts in order. Commit per part if helpful, but keep all on the one branch.
@@ -683,20 +683,21 @@ In `m/expenses/page.tsx`:
 
 | Task | Title | Phase | Status |
 |---|---|---|---|
-| P0-A | 🩸 Lock down parse-pdf (unauth GPT-4o) | 1 (blocker #0) | ⬜ TODO |
-| P0-B | 🩸 FREE OCR → Tesseract (not GPT-4o) | 1 (blocker #0) | ⬜ TODO |
-| P0-C | Tenant-isolation pass on scan/parse routes | 1 | ⬜ TODO |
-| P1 | FREE activeModules default | 1 | 🟢 DONE (awaiting Florin verify) |
-| P2 | Seat billing wiring | 1 | 🟢 DONE (awaiting Florin verify) |
-| P3 | Stale-token gating | 1 | 🟢 DONE (awaiting Florin verify) |
-| P4 | `<LockedFeature>` component | 2 | 🟢 DONE (awaiting Florin verify) |
-| P5 | Gate Library/Bestek | 2 | 🟢 DONE (awaiting Florin verify) |
-| P6 | Gate Sales/Email | 2 | 🟢 DONE (awaiting Florin verify) |
-| P7 | Gate File Manager | 2 | 🟢 DONE (already gated) |
-| P8 | Seat-count UI reconcile | 2 | 🟢 DONE (awaiting Florin verify) |
-| P9 | planType depth audit | 2 | 🟢 DONE (all gates OK) |
-| M1 | FREE mobile UI = default + reshape | 2.5 | 🟢 DONE (awaiting Florin verify) |
-| P10 | Retire trial → free-forever (park code) | 3 | 🟢 DONE (Stripe E2E confirm in P14) |
+| P0-A | 🩸 Lock down parse-pdf (unauth GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
+| P0-B | 🩸 FREE OCR → Tesseract (not GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
+| P0-C | Tenant-isolation pass on scan/parse routes | 1 | ✅ VERIFIED |
+| F1 | 🩸 Coral Drive repair + tenant isolation | 1.5 | ⬜ TODO (NEXT) |
+| P1 | FREE activeModules default | 1 | ✅ VERIFIED |
+| P2 | Seat billing wiring | 1 | 🟢 ⏳ awaiting Stripe test-mode check |
+| P3 | Stale-token gating | 1 | ✅ VERIFIED |
+| P4 | `<LockedFeature>` component | 2 | ✅ VERIFIED |
+| P5 | Gate Library/Bestek | 2 | ✅ VERIFIED |
+| P6 | Gate Sales/Email | 2 | ✅ VERIFIED |
+| P7 | Gate File Manager | 2 | ✅ VERIFIED (already gated) |
+| P8 | Seat-count UI reconcile | 2 | ✅ VERIFIED |
+| P9 | planType depth audit | 2 | ✅ VERIFIED |
+| M1 | FREE mobile UI = default + reshape | 2.5 | ✅ VERIFIED |
+| P10 | Retire trial → free-forever (park code) | 3 | 🟢 DONE (awaiting verify; Stripe E2E in P14) |
 | P10b | Event-triggered PRO taste at cap | 3 (fast-follow) | ⬜ TODO |
 | P11 | Quarterly toggle | 3 | ⬜ TODO |
 | P12 | Cancellation notice | 3 | ⬜ TODO |

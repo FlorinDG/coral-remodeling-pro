@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Link } from "@/i18n/routing";
+
 import {
     Crown, Zap, Shield, Check, X, ArrowUpRight, Clock,
     Users, FileText, TrendingUp, AlertTriangle, CreditCard,
@@ -76,7 +76,6 @@ const PLANS = [
         extraUserPrice: 19,
         workforcePrice: 4.99,
         highlight: true,
-        trial: "3 months free trial",
         features: [
             { text: "Everything in Free", included: true },
             { text: "Peppol e-invoicing (20 sent/mo)", included: true },
@@ -87,7 +86,7 @@ const PLANS = [
             { text: "Custom Databases & Formulas", included: true },
             { text: "Basic Task Management", included: true },
             { text: "Article Library & PDF Import", included: true },
-            { text: "Up to 3 users", included: true },
+            { text: "Unlimited users · €19/mo per extra seat", included: true },
             { text: "HR & Time Tracking", included: false },
             { text: "Website CMS", included: false },
             { text: "Email Integration", included: false },
@@ -102,7 +101,6 @@ const PLANS = [
         extraUserPrice: 79,
         workforcePrice: 1.99,
         highlight: false,
-        trial: "2 months free trial",
         features: [
             { text: "Everything in Pro", included: true },
             { text: "Unlimited Peppol e-invoicing", included: true },
@@ -268,7 +266,8 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                         {
                             label: "Users",
                             value: data.userCount,
-                            limit: data.planType === "ENTERPRISE" || isFounder ? null : data.planType === "PRO" ? 3 : 1,
+                            // PRO = unlimited seats (Stripe-billed per extra seat); FREE = 1 hard cap
+                            limit: data.planType === "ENTERPRISE" || data.planType === "PRO" || isFounder ? null : 1,
                             icon: Users,
                         },
                     ].map(({ label, value, limit, icon: Icon }) => {
@@ -384,7 +383,7 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                                             <span className="text-sm text-neutral-500">{plan.period}</span>
                                         </div>
                                         <p className="text-[11px] text-neutral-400 mt-1">{billing}</p>
-                                        {plan.trial && <p className="text-xs font-bold text-emerald-600 mt-1">{plan.trial}</p>}
+                                        {/* No trial copy — free-forever model, immediate billing on upgrade */}
                                     </div>
 
                                     {/* Seat pricing */}
@@ -416,13 +415,18 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                                                 Current Plan
                                             </div>
                                         ) : isUpgrade ? (
-                                            <button
-                                                onClick={() => handleUpgrade(plan.id)}
-                                                className="w-full py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all"
-                                                style={{ backgroundColor: "var(--brand-color, #d35400)" }}
-                                            >
-                                                {plan.trial ? `Start Free Trial` : `Upgrade to ${plan.name}`}
-                                            </button>
+                                            <>
+                                                <button
+                                                    onClick={() => handleUpgrade(plan.id)}
+                                                    className="w-full py-2.5 rounded-xl text-white text-sm font-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all"
+                                                    style={{ backgroundColor: "var(--brand-color, #d35400)" }}
+                                                >
+                                                    {`Upgrade to ${plan.name}`}
+                                                </button>
+                                                <p className="text-[10px] text-neutral-400 text-center mt-1.5">
+                                                    €{getPrice(plan.price).price.toFixed(0)}/mo · billed immediately, cancel anytime
+                                                </p>
+                                            </>
                                         ) : null}
                                     </div>
                                 </div>

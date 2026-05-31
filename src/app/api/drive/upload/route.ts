@@ -1,32 +1,47 @@
 import { NextResponse } from 'next/server';
-import { uploadFile, findOrCreateFolder } from '@/lib/google-drive';
-
+import { uploadFile, findOrCreateFolder, isFolderOwnedByTenant } from '@/lib/google-drive';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { driveFolderId: true }
+        });
+
+        if (!tenant?.driveFolderId) {
+            return NextResponse.json({ error: 'Drive workspace not initialized' }, { status: 403 });
+        }
+
         const formData = await req.formData();
         const file = formData.get('file') as File;
         let parentId = formData.get('parentId') as string;
         const targetSubfolder = formData.get('targetSubfolder') as string;
 
         if (!parentId) {
-            const session = await auth();
-            if (session?.user?.tenantId) {
-                const tenant = await prisma.tenant.findUnique({ where: { id: session.user.tenantId } });
-                if (tenant?.driveFolderId) {
-                    parentId = tenant.driveFolderId;
-                }
+            parentId = tenant.driveFolderId;
+        } else {
+            // Verify ownership of the parent folder to prevent cross-tenant uploads
+            const isOwned = await isFolderOwnedByTenant(parentId, tenant.driveFolderId);
+            if (!isOwned) {
+                return NextResponse.json({ error: 'Forbidden: Access denied to this folder' }, { status: 403 });
             }
         }
 
-        if (!file || !parentId) {
-            return NextResponse.json({ error: 'Missing file or parent drive ID' }, { status: 400 });
+        if (!file) {
+            return NextResponse.json({ error: 'Missing file payload' }, { status: 400 });
         }
 
         // Validate Auth Configuration
-        if (!process.env.GOOGLE_CLIENT_EMAIL || !process.env.GOOGLE_PRIVATE_KEY) {
+        if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REFRESH_TOKEN) {
             console.warn('[Google Drive] Aborting upload: Credentials missing from .env');
             return NextResponse.json({ error: 'Drive integration not configured' }, { status: 503 });
         }

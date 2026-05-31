@@ -138,3 +138,50 @@ export async function generateProjectFolderTemplate(projectName: string, parentP
         }
     };
 }
+
+export async function isFolderOwnedByTenant(folderId: string, tenantRootId: string): Promise<boolean> {
+    if (!folderId || !tenantRootId) return false;
+    if (folderId === tenantRootId) return true;
+    let currentId = folderId;
+    const visited = new Set<string>();
+    
+    // Max depth of 5 to limit API calls and prevent loops
+    for (let i = 0; i < 5; i++) {
+        if (visited.has(currentId)) return false;
+        visited.add(currentId);
+        
+        try {
+            const res = await drive.files.get({
+                fileId: currentId,
+                fields: 'parents',
+            });
+            const parents = res.data.parents;
+            if (!parents || parents.length === 0) return false;
+            if (parents.includes(tenantRootId)) return true;
+            currentId = parents[0];
+        } catch (err) {
+            console.error('[isFolderOwnedByTenant] error:', err);
+            return false;
+        }
+    }
+    return false;
+}
+
+export async function isFileOwnedByTenant(fileId: string, tenantRootId: string): Promise<boolean> {
+    if (!fileId || !tenantRootId) return false;
+    try {
+        const res = await drive.files.get({
+            fileId,
+            fields: 'parents',
+        });
+        const parents = res.data.parents;
+        if (!parents || parents.length === 0) return false;
+        for (const parentId of parents) {
+            const owned = await isFolderOwnedByTenant(parentId, tenantRootId);
+            if (owned) return true;
+        }
+    } catch (err) {
+        console.error('[isFileOwnedByTenant] error:', err);
+    }
+    return false;
+}

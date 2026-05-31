@@ -667,6 +667,54 @@ In `m/expenses/page.tsx`:
 
 ---
 
+# ═══════════════════════════════════════════════
+# 🚦 GO-LIVE GATE — the 5 non-negotiables before ANY real user
+# ═══════════════════════════════════════════════
+# Nothing reaches real people (real money, real legal obligations) until ALL FIVE pass.
+# These are weighted by blast radius: money bugs are recoverable; data & legal bugs are NOT.
+# Test the data/legal items ADVERSARIALLY (try to break them), the rest normally.
+# This gate stands between `develop` and the version that gets propagated to real tenants.
+
+## GATE-1 — 🩸 Tenant isolation, attack-tested (depends on F1)
+**Status:** ⬜ TODO · blocked by F1
+- Not "does my file appear" — "can Tenant A reach Tenant B's files/folders by manipulating folderId/fileId, dropping the param, or replaying another tenant's id." Two real tenants, deliberate cross-access attempts on every Drive route (list/upload/delete/init) AND the OCR/parse routes.
+- **Pass = every cross-tenant attempt returns 403 and touches nothing; verified on a Vercel deploy, not local.** Any leak = STOP, not launch.
+
+## GATE-2 — ⚖️ Peppol PRODUCTION send, verified end-to-end (NEW — not previously a task)
+**Status:** ⬜ TODO
+- **Premise `[MEASURED ✅]`:** infra was on e-invoice.be **TEST** mode (`ROADMAP.md` §5). "Sends in test mode" ≠ "production-compliant." This is the user's LEGAL obligation riding on our output.
+- Flip e-invoice.be to **production** (SMP registration if required), send a REAL structured invoice, and confirm it (a) transmits over the live Peppol network and (b) is ACCEPTED/validates at a real recipient endpoint. Validate the UBL against Peppol BIS 3.0.
+- **Pass = a real invoice lands and validates at the other end.** Until then, no "Peppol-ready" claim in product or campaign (ties to PROMOTION_ROADMAP X1).
+- 👤 Florin: production e-invoice.be credentials / SMP registration is partly your action.
+
+## GATE-3 — 💶 Billing math confirmed (depends on P2)
+**Status:** ⬜ TODO · blocked by P2 verify
+- Stripe TEST mode, real click-through (this is the P2 verify, formalized): add user → `EXTRA_USER_PRO` qty+1 @ €19; add workforce → `WORKFORCE_PRO` @ €4.99; remove → decrement; **downgrade→re-upgrade** and **mid-cycle proration** edge cases. DB counters match Stripe after each.
+- **Pass = amounts match `PLAN_PRICING` across all transitions, no double-charge, no free seat.**
+
+## GATE-4 — 📱 Free happy-path, tested by a real stranger
+**Status:** ⬜ TODO
+- A non-technical self-employed person (not Florin) completes on a phone: signup → minimal company setup → create invoice → send → log an expense (Tesseract scan) → run accountant export. Unaided.
+- **Pass = they finish without help and would use it again.** (This protects the word-of-mouth the free base depends on.)
+
+## GATE-5 — 🧾 Accountant export accepted by a real accountant
+**Status:** ⬜ TODO
+- A real Belgian accountant receives an export for a sample period and confirms it's usable WITHOUT reformatting.
+- **Pass = accountant says "yes, I can book from this."**
+
+### GO-LIVE GATE summary
+| Gate | What | Blocks on | Test style |
+|---|---|---|---|
+| GATE-1 | Tenant isolation | F1 | adversarial |
+| GATE-2 | Peppol production send | (new) | adversarial / legal |
+| GATE-3 | Billing math | P2 | careful |
+| GATE-4 | Free happy-path | M1, free tier | real-user |
+| GATE-5 | Accountant export | export flow | real-user |
+
+**Everything else (P11–P13 dunning/cancellation/quarterly, P15 hygiene, P10b nudge) ships AFTER go-live, in parallel with a growing free base. Do not let polish delay the gate.**
+
+---
+
 # ───────────────────────────────────────────────
 # PHASE 4 — STAGED TEST RELEASE
 # ───────────────────────────────────────────────
@@ -686,7 +734,7 @@ In `m/expenses/page.tsx`:
 | P0-A | 🩸 Lock down parse-pdf (unauth GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
 | P0-B | 🩸 FREE OCR → Tesseract (not GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
 | P0-C | Tenant-isolation pass on scan/parse routes | 1 | ✅ VERIFIED |
-| F1 | 🩸 Coral Drive repair + tenant isolation | 1.5 | ⬜ TODO (NEXT) |
+| F1 | 🩸 Coral Drive repair + tenant isolation | 1.5 | 🟢 DONE (awaiting Florin verify) |
 | P1 | FREE activeModules default | 1 | ✅ VERIFIED |
 | P2 | Seat billing wiring | 1 | 🟢 ⏳ awaiting Stripe test-mode check |
 | P3 | Stale-token gating | 1 | ✅ VERIFIED |

@@ -206,6 +206,7 @@ develop  →  staging  →  main
 | Billing upgrade CTA always reads "Upgrade to X"; no trial copy shown; immediate-billing note shown under button | ✅ | 2026-05-31 P8 + P10 billing UI |
 | TRIAL_MODE_ENABLED = false in stripe.ts; checkout omits trial_period_days; cron routes early-return no-op; trial.ts + schema columns preserved for re-activation | ✅ | 2026-05-31 P10 implementation |
 | isTrialing badge in BillingPageClient soft-fails to hidden when subscriptionStatus !== 'TRIAL' — no throw risk | ✅ | 2026-05-31 P10 measurement |
+| Google Drive integrations secured: all endpoints (/api/drive, /api/drive/list, /api/drive/upload) require auth() validation & strict tenant folder/file traversal checks | ✅ | 2026-05-31 F1 implementation |
 
 ---
 

@@ -23,18 +23,42 @@ const getDriveClient = () => {
     }
 };
 
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { isFolderOwnedByTenant, isFileOwnedByTenant } from '@/lib/google-drive';
+
 /**
  * GET /api/drive?folderId=xxx
  * Lists all files and folders inside the specified Google Drive folder.
  */
 export async function GET(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { driveFolderId: true }
+        });
+
+        if (!tenant?.driveFolderId) {
+            return NextResponse.json({ error: 'Drive workspace not initialized' }, { status: 403 });
+        }
+
         const { searchParams } = new URL(request.url);
-        const folderId = searchParams.get('folderId') || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+        const reqFolderId = searchParams.get('folderId');
         const tag = searchParams.get('tag');
 
-        if (!folderId) {
-            return NextResponse.json({ error: 'Missing GOOGLE_DRIVE_ROOT_FOLDER_ID environment variable' }, { status: 500 });
+        const folderId = reqFolderId || tenant.driveFolderId;
+
+        // Verify folder ownership for strict isolation
+        const isOwned = await isFolderOwnedByTenant(folderId, tenant.driveFolderId);
+        if (!isOwned) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this folder' }, { status: 403 });
         }
 
         const drive = getDriveClient();
@@ -44,7 +68,7 @@ export async function GET(request: Request) {
 
         let query = `'${folderId}' in parents and trashed=false`;
         if (tag) {
-            // Search everywhere for files tagged with this specific module
+            // Search everywhere for files tagged with this specific module (still scoped to parents/appProperties)
             query = `appProperties has { key='module' and value='${tag}' } and trashed=false`;
         }
 
@@ -66,10 +90,9 @@ export async function GET(request: Request) {
             size: file.size ? parseInt(file.size, 10) : undefined,
             url: file.webViewLink || file.webContentLink, // webViewLink opens in Drive UI
             // If the parent is the Root Folder, treat it as null so it appears at the top level of the File Manager
-            parentId: file.parents ? (file.parents[0] === process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID ? null : file.parents[0]) : null,
+            parentId: file.parents ? (file.parents[0] === tenant.driveFolderId ? null : file.parents[0]) : null,
             createdAt: file.createdTime,
             updatedAt: file.modifiedTime,
-            // We will map contextType/Id on the frontend depending on where this data was requested
         })) || [];
 
         return NextResponse.json({ nodes });
@@ -86,13 +109,38 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { driveFolderId: true }
+        });
+
+        if (!tenant?.driveFolderId) {
+            return NextResponse.json({ error: 'Drive workspace not initialized' }, { status: 403 });
+        }
+
         const formData = await request.formData();
         const action = formData.get('action') as 'create_folder' | 'upload_file' | 'create_file';
-        // Fall back to root folder if no specific node parent is provided
-        const parentId = (formData.get('parentId') as string) || process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+        let parentId = formData.get('parentId') as string;
 
-        if (!action || !parentId) {
-            return NextResponse.json({ error: 'Missing required fields: action, parentId' }, { status: 400 });
+        if (!parentId) {
+            parentId = tenant.driveFolderId;
+        } else {
+            // Verify folder ownership for strict isolation
+            const isOwned = await isFolderOwnedByTenant(parentId, tenant.driveFolderId);
+            if (!isOwned) {
+                return NextResponse.json({ error: 'Forbidden: Access denied to this folder' }, { status: 403 });
+            }
+        }
+
+        if (!action) {
+            return NextResponse.json({ error: 'Missing required action' }, { status: 400 });
         }
 
         const drive = getDriveClient();
@@ -194,11 +242,33 @@ export async function POST(request: Request) {
  */
 export async function DELETE(request: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+
+        if (!tenantId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { driveFolderId: true }
+        });
+
+        if (!tenant?.driveFolderId) {
+            return NextResponse.json({ error: 'Drive workspace not initialized' }, { status: 403 });
+        }
+
         const { searchParams } = new URL(request.url);
         const fileId = searchParams.get('fileId');
 
         if (!fileId) {
             return NextResponse.json({ error: 'Missing fileId parameter' }, { status: 400 });
+        }
+
+        // Verify file/folder ownership before deletion
+        const isOwned = await isFileOwnedByTenant(fileId, tenant.driveFolderId);
+        if (!isOwned) {
+            return NextResponse.json({ error: 'Forbidden: Access denied to this file' }, { status: 403 });
         }
 
         const drive = getDriveClient();

@@ -1,1 +1,4177 @@
-[]
+[
+  {
+    "id": "db-tickets-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Expense Tickets",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Handelaar / Beschrijving",
+        "type": "text"
+      },
+      {
+        "id": "date",
+        "name": "Datum",
+        "type": "date"
+      },
+      {
+        "id": "amount",
+        "name": "Totaal bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "vatAmount",
+        "name": "BTW bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "category",
+        "name": "Categorie",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "cat-fuel",
+              "name": "Brandstof",
+              "color": "orange"
+            },
+            {
+              "id": "cat-restaurant",
+              "name": "Restaurant",
+              "color": "red"
+            },
+            {
+              "id": "cat-office",
+              "name": "Kantoorbenodigdheden",
+              "color": "blue"
+            },
+            {
+              "id": "cat-tools",
+              "name": "Gereedschap",
+              "color": "gray"
+            },
+            {
+              "id": "cat-materials",
+              "name": "Materialen",
+              "color": "yellow"
+            },
+            {
+              "id": "cat-parking",
+              "name": "Parking",
+              "color": "purple"
+            },
+            {
+              "id": "cat-transport",
+              "name": "Transport",
+              "color": "green"
+            },
+            {
+              "id": "cat-other",
+              "name": "Overige",
+              "color": "default"
+            }
+          ]
+        }
+      },
+      {
+        "id": "currency",
+        "name": "Munteenheid",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "cur-eur",
+              "name": "EUR",
+              "color": "blue"
+            },
+            {
+              "id": "cur-usd",
+              "name": "USD",
+              "color": "green"
+            },
+            {
+              "id": "cur-gbp",
+              "name": "GBP",
+              "color": "purple"
+            }
+          ]
+        }
+      },
+      {
+        "id": "paymentMethod",
+        "name": "Betaalmethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pm-cash",
+              "name": "Cash",
+              "color": "green"
+            },
+            {
+              "id": "pm-card",
+              "name": "Kaart",
+              "color": "blue"
+            },
+            {
+              "id": "pm-transfer",
+              "name": "Bankoverschrijving",
+              "color": "purple"
+            }
+          ]
+        }
+      },
+      {
+        "id": "receiptUrl",
+        "name": "Bonnetje",
+        "type": "url"
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      },
+      {
+        "id": "peppolDocId",
+        "name": "Peppol Doc ID",
+        "type": "text"
+      },
+      {
+        "id": "accountantExportedAt",
+        "name": "Geëxporteerd (boekhouder)",
+        "type": "date"
+      }
+    ],
+    "views": [
+      {
+        "id": "7e0784ce-c2e0-4355-a4fd-55fb465561a9",
+        "name": "All",
+        "type": "table",
+        "propertiesState": []
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "system",
+    "createdAt": "2026-04-20T12:45:13.525Z",
+    "updatedAt": "2026-05-26T04:05:30.155Z"
+  },
+  {
+    "id": "db-tasks",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "New Workspace",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Taak / Materiaal",
+        "type": "text"
+      },
+      {
+        "id": "prop-task-project",
+        "name": "Project",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-task-status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "t-todo",
+              "name": "To Do",
+              "color": "gray"
+            },
+            {
+              "id": "t-prog",
+              "name": "Busy",
+              "color": "blue"
+            },
+            {
+              "id": "t-done",
+              "name": "Done",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-task-type",
+        "name": "Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "ty-task",
+              "name": "Taak",
+              "color": "blue"
+            },
+            {
+              "id": "ty-mat",
+              "name": "Materiaal",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-task-qty",
+        "name": "Quantity",
+        "type": "text"
+      },
+      {
+        "id": "prop-task-price",
+        "name": "Unit Price",
+        "type": "currency"
+      }
+    ],
+    "views": [
+      {
+        "id": "6fa84f07-96a6-4935-87cb-f8fc895e3740",
+        "name": "Default View",
+        "type": "table",
+        "propertiesState": [
+          {
+            "width": 688.8854327267036,
+            "propertyId": "title"
+          },
+          {
+            "width": 223.2968771844171,
+            "propertyId": "prop-task-project"
+          }
+        ]
+      },
+      {
+        "id": "b26b8cc6-34e0-4b7a-9139-7b483b2bc17b",
+        "name": "Per project",
+        "type": "board",
+        "config": {
+          "groupByPropertyId": "prop-task-status",
+          "kanbanCardCoverPropertyId": "title"
+        }
+      },
+      {
+        "id": "323bdac8-ec3d-4337-aad6-4b2f483f893b",
+        "name": "Debts",
+        "type": "table",
+        "filters": [
+          {
+            "id": "rule-1780114073299-0",
+            "value": "Debt",
+            "operator": "contains",
+            "propertyId": "title"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-16T12:55:37.813Z",
+    "updatedAt": "2026-05-31T21:20:56.099Z"
+  },
+  {
+    "id": "db-clients",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Contacts",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Naam",
+        "type": "text"
+      },
+      {
+        "id": "email",
+        "name": "E-mail",
+        "type": "email"
+      },
+      {
+        "id": "phone",
+        "name": "Telefoon",
+        "type": "phone"
+      },
+      {
+        "id": "company",
+        "name": "Bedrijf",
+        "type": "text"
+      },
+      {
+        "id": "vat",
+        "name": "BTW-nummer",
+        "type": "text"
+      },
+      {
+        "id": "address",
+        "name": "Adres",
+        "type": "text"
+      },
+      {
+        "id": "city",
+        "name": "Gemeente",
+        "type": "text"
+      },
+      {
+        "id": "postal",
+        "name": "Postcode",
+        "type": "text"
+      },
+      {
+        "id": "country",
+        "name": "Land",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "st-lead",
+              "name": "Lead",
+              "color": "blue"
+            },
+            {
+              "id": "st-active",
+              "name": "Actief",
+              "color": "green"
+            },
+            {
+              "id": "st-inactive",
+              "name": "Inactief",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      {
+        "id": "type",
+        "name": "Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "tp-private",
+              "name": "Particulier",
+              "color": "purple"
+            },
+            {
+              "id": "tp-business",
+              "name": "Professionnel",
+              "color": "orange"
+            },
+            {
+              "id": "tp-government",
+              "name": "Overheid",
+              "color": "blue"
+            }
+          ]
+        }
+      },
+      {
+        "id": "language",
+        "name": "Taal",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "lang-nl",
+              "name": "NL",
+              "color": "orange"
+            },
+            {
+              "id": "lang-fr",
+              "name": "FR",
+              "color": "blue"
+            },
+            {
+              "id": "lang-en",
+              "name": "EN",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "48fcedd7-717f-4096-9cf4-dfce8bbf8e87",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "8cb4d16a-50ce-4278-9d9a-933497a22186",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-13T17:13:52.704Z",
+    "updatedAt": "2026-05-13T17:13:52.704Z"
+  },
+  {
+    "id": "db-1-hr",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Projects",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Project Naam",
+        "type": "text"
+      },
+      {
+        "id": "prop-client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-project-quote",
+        "name": "Offerte",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-quotations-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-execution-status",
+        "name": "Execution Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-to-do",
+              "name": "To Do",
+              "color": "gray"
+            },
+            {
+              "id": "opt-in-prog",
+              "name": "In Progress",
+              "color": "blue"
+            },
+            {
+              "id": "opt-done",
+              "name": "Done",
+              "color": "green"
+            },
+            {
+              "id": "opt-hold",
+              "name": "On Hold",
+              "color": "orange"
+            },
+            {
+              "id": "opt-dropped",
+              "name": "Dropped",
+              "color": "charcoal"
+            },
+            {
+              "id": "opt-late",
+              "name": "Late",
+              "color": "red"
+            },
+            {
+              "id": "opt-problems",
+              "name": "Problems",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-financial-status",
+        "name": "Financial Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-quote",
+              "name": "Quotation",
+              "color": "gray"
+            },
+            {
+              "id": "opt-budget",
+              "name": "Budgeted",
+              "color": "yellow"
+            },
+            {
+              "id": "opt-invo",
+              "name": "Invoiced",
+              "color": "blue"
+            },
+            {
+              "id": "opt-partial",
+              "name": "Partially Paid",
+              "color": "indigo"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Paid",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-start-date",
+        "name": "Planned Start",
+        "type": "date"
+      },
+      {
+        "id": "prop-end-date",
+        "name": "Planned End",
+        "type": "date"
+      },
+      {
+        "id": "prop-actual-start",
+        "name": "Actual Start",
+        "type": "date"
+      },
+      {
+        "id": "prop-actual-end",
+        "name": "Actual End",
+        "type": "date"
+      },
+      {
+        "id": "prop-budget",
+        "name": "Internal Budget",
+        "type": "currency"
+      },
+      {
+        "id": "prop-location",
+        "name": "Location",
+        "type": "text"
+      },
+      {
+        "id": "prop-billing-rule",
+        "name": "Billing Rule",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-fixed",
+              "name": "Vaste prijs",
+              "color": "blue"
+            },
+            {
+              "id": "opt-progress",
+              "name": "Vorderingenstaten",
+              "color": "purple"
+            },
+            {
+              "id": "opt-hourly",
+              "name": "In Regie",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-rate-person-hour",
+        "name": "Person Hour Rate",
+        "type": "currency"
+      },
+      {
+        "id": "prop-rate-equipment-hour",
+        "name": "Equipment Hour Rate",
+        "type": "currency"
+      },
+      {
+        "id": "prop-actual-equipment-hours",
+        "name": "Equipment Hours",
+        "type": "number"
+      },
+      {
+        "id": "prop-project-type",
+        "name": "Project Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "type-operations",
+              "name": "Operations",
+              "color": "blue"
+            },
+            {
+              "id": "type-admin",
+              "name": "Administration",
+              "color": "purple"
+            },
+            {
+              "id": "type-bizdev",
+              "name": "Business Development",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-linked-projects",
+        "name": "Linked Projects",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1-hr",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-admin-department",
+        "name": "Department",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "dept-hr",
+              "name": "HR",
+              "color": "pink"
+            },
+            {
+              "id": "dept-finance",
+              "name": "Finance",
+              "color": "green"
+            },
+            {
+              "id": "dept-legal",
+              "name": "Legal",
+              "color": "indigo"
+            },
+            {
+              "id": "dept-it",
+              "name": "IT",
+              "color": "blue"
+            },
+            {
+              "id": "dept-general",
+              "name": "General",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-admin-recurring",
+        "name": "Recurring",
+        "type": "checkbox"
+      },
+      {
+        "id": "prop-admin-compliance-date",
+        "name": "Compliance Deadline",
+        "type": "date"
+      },
+      {
+        "id": "prop-bizdev-opportunity-value",
+        "name": "Opportunity Value",
+        "type": "currency"
+      },
+      {
+        "id": "prop-bizdev-win-probability",
+        "name": "Win Probability",
+        "type": "number"
+      },
+      {
+        "id": "prop-bizdev-stage",
+        "name": "BD Stage",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "bd-prospect",
+              "name": "Prospecting",
+              "color": "gray"
+            },
+            {
+              "id": "bd-qualify",
+              "name": "Qualification",
+              "color": "blue"
+            },
+            {
+              "id": "bd-proposal",
+              "name": "Proposal",
+              "color": "purple"
+            },
+            {
+              "id": "bd-negotiation",
+              "name": "Negotiation",
+              "color": "orange"
+            },
+            {
+              "id": "bd-won",
+              "name": "Won",
+              "color": "green"
+            },
+            {
+              "id": "bd-lost",
+              "name": "Lost",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-bizdev-source",
+        "name": "Lead Source",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "src-referral",
+              "name": "Referral",
+              "color": "green"
+            },
+            {
+              "id": "src-website",
+              "name": "Website",
+              "color": "blue"
+            },
+            {
+              "id": "src-cold",
+              "name": "Cold Outreach",
+              "color": "gray"
+            },
+            {
+              "id": "src-partner",
+              "name": "Partner",
+              "color": "purple"
+            },
+            {
+              "id": "src-event",
+              "name": "Event/Fair",
+              "color": "orange"
+            },
+            {
+              "id": "src-bobex",
+              "name": "Bobex",
+              "color": "yellow"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-bizdev-crm-link",
+        "name": "CRM Lead",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-crm-hr",
+          "relationDisplayPropertyId": "title"
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "335500a5-35e2-437c-a7f9-5c9ed9b77477",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "b74b5f00-f294-4939-a47c-7d777e125f1d",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ],
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-department"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-recurring"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-compliance-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-opportunity-value"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-win-probability"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-stage"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-crm-link"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-linked-projects"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-person-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-equipment-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-actual-equipment-hours"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-27T22:24:22.280Z",
+    "updatedAt": "2026-05-27T22:24:30.886Z"
+  },
+  {
+    "id": "db-payments-out-hr",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Outgoing Payments",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Betalingsreferentie",
+        "type": "text"
+      },
+      {
+        "id": "supplier",
+        "name": "Leverancier",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-suppliers-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "project",
+        "name": "Project",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "expense",
+        "name": "Aankoopfactuur",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-expenses-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "amount",
+        "name": "Bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "date",
+        "name": "Datum",
+        "type": "date"
+      },
+      {
+        "id": "method",
+        "name": "Betaalmethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pm-transfer",
+              "name": "Bankoverschrijving",
+              "color": "purple"
+            },
+            {
+              "id": "pm-card",
+              "name": "Kaart",
+              "color": "blue"
+            },
+            {
+              "id": "pm-cash",
+              "name": "Cash",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "7c4fc8ec-249d-4800-9e75-e25e621b79a8",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "10f5153d-d683-45a4-867f-39f77d9b4df1",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-30T04:24:59.271Z",
+    "updatedAt": "2026-05-30T04:24:59.271Z"
+  },
+  {
+    "id": "db-crm",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "New Workspace",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Name",
+        "type": "text"
+      },
+      {
+        "id": "c8e7ee37-b835-435c-bc01-5c713f06634e",
+        "name": "Address",
+        "type": "text"
+      },
+      {
+        "id": "8942d8a8-884d-4d05-b448-7a621c03885b",
+        "name": "Call Lead",
+        "type": "checkbox"
+      },
+      {
+        "id": "362b13f6-f1f4-4838-9893-102072ef8ce3",
+        "name": "Lead",
+        "type": "text"
+      },
+      {
+        "id": "285360da-802d-47b2-ab9e-58baff546214",
+        "name": "Date IN",
+        "type": "date"
+      },
+      {
+        "id": "5e2ce686-64a6-493c-8e5e-b877a3a67dde",
+        "name": "LOST",
+        "type": "checkbox"
+      },
+      {
+        "id": "18d12923-ca19-464f-9498-e79ad95db3fb",
+        "name": "Language",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "l-nl",
+              "name": "NL",
+              "color": "orange"
+            },
+            {
+              "id": "l-fr",
+              "name": "FR",
+              "color": "blue"
+            },
+            {
+              "id": "l-en",
+              "name": "EN",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "ca124068-5053-447d-ab76-b31f1701c151",
+        "name": "Lead Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "t-private",
+              "name": "PRIVATE",
+              "color": "purple"
+            },
+            {
+              "id": "t-b2b",
+              "name": "B2B",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "dbc2f18b-b1e8-4f5c-acc0-a45eb27255dc",
+        "name": "Mail Lead",
+        "type": "checkbox"
+      },
+      {
+        "id": "8bcdac4a-fd8b-4731-a108-20770f169f25",
+        "name": "OFF OPMAAK",
+        "type": "checkbox"
+      },
+      {
+        "id": "a761db19-788e-47cb-b39e-efc72c32b2f3",
+        "name": "OFF sent",
+        "type": "checkbox"
+      },
+      {
+        "id": "27f35b45-43a4-48f5-b834-13109c3a2e77",
+        "name": "Offertes [C-SYS]",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-quotations-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "4fc8602f-47b3-4824-bea5-81a96f78b8dd",
+        "name": "Projects [C-SYS]",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "fb17a9b3-f8d7-4278-a889-cd5e78b85ef2",
+        "name": "Status Note",
+        "type": "text"
+      },
+      {
+        "id": "eeb6673e-5f6f-48cc-858c-760f12bb381e",
+        "name": "Tasks [C-SYS]",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-tasks",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "42b3b885-7fe6-48cf-8c88-ca29b70c2a78",
+        "name": "Town",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "f5bfa71e-be9c-4be9-a8db-a92fa10f1cf4",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [],
+        "filters": [],
+        "propertiesState": [
+          {
+            "order": 0,
+            "propertyId": "72d1d476-35ad-4b13-bd6f-cc45ec74c761"
+          },
+          {
+            "order": 1,
+            "width": 274.5312425773591,
+            "propertyId": "title"
+          },
+          {
+            "order": 2,
+            "propertyId": "c0e7ee37-b835-435c-bc01-5c713f06634e"
+          },
+          {
+            "order": 3,
+            "propertyId": "1c525b0b-dccb-4e91-a887-f62d445bf324"
+          },
+          {
+            "order": 4,
+            "propertyId": "285360da-802d-47b2-ab9e-58baff546214"
+          },
+          {
+            "order": 5,
+            "propertyId": "f5f880db-ea6b-430a-b1d8-d8f43cd8d1cc"
+          },
+          {
+            "order": 6,
+            "propertyId": "8942d8a8-084d-4d05-b440-7a621c03885b"
+          },
+          {
+            "order": 7,
+            "propertyId": "10d12923-ca19-444f-9498-e79ad95db3fb"
+          },
+          {
+            "order": 8,
+            "propertyId": "362b13f6-f1f4-4830-9893-102072ef8ce3"
+          },
+          {
+            "order": 9,
+            "propertyId": "5e2ce586-54a6-493c-8e5e-b877a3a67dde"
+          },
+          {
+            "order": 10,
+            "propertyId": "ca124068-5053-447d-ab76-b31f1701c151"
+          },
+          {
+            "order": 11,
+            "propertyId": "dbc2f10b-b1e8-4f5c-acc0-a45eb27255dc"
+          },
+          {
+            "order": 12,
+            "propertyId": "8bcdac4a-fd80-4731-a108-20770f169f25"
+          },
+          {
+            "order": 13,
+            "propertyId": "4fc0602f-47b3-4824-bea5-81a96f78b6dd"
+          },
+          {
+            "order": 14,
+            "propertyId": "a761db19-788e-47cb-b39e-efc72c32b2f3"
+          },
+          {
+            "order": 15,
+            "propertyId": "27f35b45-43a4-48f5-b834-13109c3a2e77"
+          },
+          {
+            "order": 16,
+            "propertyId": "474f4a3f-3c68-40bd-9bf7-7f2a6896bd5a"
+          },
+          {
+            "order": 17,
+            "propertyId": "5ab77dc3-63d4-43d7-a8e8-a8efaebf52a2"
+          },
+          {
+            "order": 18,
+            "propertyId": "fb17a9b3-f8d7-4278-a089-cd5e70b05ef2"
+          },
+          {
+            "order": 19,
+            "propertyId": "eeb6673e-5f6f-48cc-850c-760f12bb301e"
+          },
+          {
+            "order": 20,
+            "propertyId": "42b3b805-7fe6-40cf-8c88-ca29b70e2a78"
+          },
+          {
+            "order": 21,
+            "propertyId": "1b6ccf3d-33f8-40ef-9ada-4585b115786b"
+          },
+          {
+            "order": 22,
+            "propertyId": "e2a4e418-b2d2-48ed-a0f2-41d863268232"
+          },
+          {
+            "order": 23,
+            "propertyId": "3c52b638-f56e-4114-a9a3-8a2fe51286ce"
+          },
+          {
+            "width": 235.81640625,
+            "propertyId": "4fc8602f-47b3-4824-bea5-81a96f78b8dd"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-20T12:56:02.992Z",
+    "updatedAt": "2026-05-20T22:06:09.737Z"
+  },
+  {
+    "id": "db-clients-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Contacts",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Naam",
+        "type": "text"
+      },
+      {
+        "id": "email",
+        "name": "E-mail",
+        "type": "email"
+      },
+      {
+        "id": "phone",
+        "name": "Telefoon",
+        "type": "phone"
+      },
+      {
+        "id": "company",
+        "name": "Bedrijf",
+        "type": "text"
+      },
+      {
+        "id": "vat",
+        "name": "BTW-nummer",
+        "type": "text"
+      },
+      {
+        "id": "address",
+        "name": "Adres",
+        "type": "text"
+      },
+      {
+        "id": "city",
+        "name": "Gemeente",
+        "type": "text"
+      },
+      {
+        "id": "postal",
+        "name": "Postcode",
+        "type": "text"
+      },
+      {
+        "id": "country",
+        "name": "Land",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "st-lead",
+              "name": "Lead",
+              "color": "blue"
+            },
+            {
+              "id": "st-active",
+              "name": "Actief",
+              "color": "green"
+            },
+            {
+              "id": "st-inactive",
+              "name": "Inactief",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      {
+        "id": "type",
+        "name": "Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "tp-private",
+              "name": "Particulier",
+              "color": "purple"
+            },
+            {
+              "id": "tp-business",
+              "name": "Professionnel",
+              "color": "orange"
+            },
+            {
+              "id": "tp-government",
+              "name": "Overheid",
+              "color": "blue"
+            }
+          ]
+        }
+      },
+      {
+        "id": "language",
+        "name": "Taal",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "lang-nl",
+              "name": "NL",
+              "color": "orange"
+            },
+            {
+              "id": "lang-fr",
+              "name": "FR",
+              "color": "blue"
+            },
+            {
+              "id": "lang-en",
+              "name": "EN",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "742c340b-f01b-4e0d-af36-ea9722958c32",
+        "name": "All",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "394d69c9-fa09-48b0-a794-4f93eaf8d25b",
+            "direction": "ascending",
+            "propertyId": "title"
+          }
+        ],
+        "filters": [
+          {
+            "id": "a693bf3b-dc56-41ff-8226-dd5a8f265c4a",
+            "value": "la",
+            "operator": "contains",
+            "propertyId": "title"
+          }
+        ],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 259.62890625,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "width": 312.31640625,
+            "propertyId": "email"
+          },
+          {
+            "order": 2,
+            "width": 201.91015625,
+            "propertyId": "phone"
+          },
+          {
+            "order": 3,
+            "propertyId": ""
+          },
+          {
+            "order": 4,
+            "width": 388.8331782110035,
+            "propertyId": "address"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "system",
+    "createdAt": "2026-04-20T12:45:12.778Z",
+    "updatedAt": "2026-05-31T18:30:47.110Z"
+  },
+  {
+    "id": "db-expenses-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Purchase Invoices",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Factuur #",
+        "type": "text"
+      },
+      {
+        "id": "supplier",
+        "name": "Leverancier",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-suppliers-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Omschrijving",
+        "type": "text"
+      },
+      {
+        "id": "source",
+        "name": "Bron",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "src-peppol",
+              "name": "Peppol",
+              "color": "blue"
+            },
+            {
+              "id": "src-manual",
+              "name": "Manueel",
+              "color": "gray"
+            },
+            {
+              "id": "src-pdf",
+              "name": "PDF Import",
+              "color": "purple"
+            }
+          ]
+        }
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-draft",
+              "name": "Concept",
+              "color": "gray"
+            },
+            {
+              "id": "opt-unpaid",
+              "name": "Onbetaald",
+              "color": "orange"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Betaald",
+              "color": "green"
+            },
+            {
+              "id": "opt-overdue",
+              "name": "Vervallen",
+              "color": "red"
+            },
+            {
+              "id": "opt-disputed",
+              "name": "Betwist",
+              "color": "pink"
+            }
+          ]
+        }
+      },
+      {
+        "id": "invoiceDate",
+        "name": "Factuurdatum",
+        "type": "date"
+      },
+      {
+        "id": "dueDate",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "peppolDocId",
+        "name": "Peppol Doc ID",
+        "type": "text"
+      },
+      {
+        "id": "accountantExportedAt",
+        "name": "Geëxporteerd (boekhouder)",
+        "type": "checkbox"
+      }
+    ],
+    "views": [
+      {
+        "id": "d1ee0c38-d648-4df5-8bf7-f29d29013de2",
+        "name": "All",
+        "type": "table",
+        "sorts": [],
+        "filters": [],
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "betreft"
+          },
+          {
+            "hidden": true,
+            "propertyId": "source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "peppolDocId"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "system",
+    "createdAt": "2026-04-20T12:45:13.336Z",
+    "updatedAt": "2026-05-28T20:57:59.314Z"
+  },
+  {
+    "id": "db-invoices-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Sales Invoices",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Factuur #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Betreft",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-draft",
+              "name": "Concept",
+              "color": "gray"
+            },
+            {
+              "id": "opt-sent",
+              "name": "Verzonden",
+              "color": "blue"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Betaald",
+              "color": "green"
+            },
+            {
+              "id": "opt-overdue",
+              "name": "Vervallen",
+              "color": "red"
+            },
+            {
+              "id": "opt-uncollectible",
+              "name": "Oninbaar",
+              "color": "purple"
+            },
+            {
+              "id": "opt-credited",
+              "name": "Credited",
+              "color": "pink"
+            },
+            {
+              "id": "opt-partially-credited",
+              "name": "Partially Credited",
+              "color": "pink"
+            }
+          ]
+        }
+      },
+      {
+        "id": "invoiceDate",
+        "name": "Factuurdatum",
+        "type": "date"
+      },
+      {
+        "id": "deliveryDate",
+        "name": "Leveringsdatum",
+        "type": "date"
+      },
+      {
+        "id": "dueDate",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "accountantExportedAt",
+        "name": "Geëxporteerd (boekhouder)",
+        "type": "checkbox"
+      },
+      {
+        "id": "docType",
+        "name": "Document Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-invoice",
+              "name": "Factuur",
+              "color": "blue"
+            },
+            {
+              "id": "opt-credit-note",
+              "name": "Creditnota",
+              "color": "purple"
+            },
+            {
+              "id": "opt-proforma",
+              "name": "Proforma",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "parentInvoiceId",
+        "name": "Oorspronkelijke Factuur",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-invoices",
+          "relationDisplayPropertyId": "title"
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "07270858-e9bd-4de3-890a-8d1580dcadf3",
+        "name": "All",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "8a4054cc-1c8c-4786-a86b-43762c5b4d1d",
+            "direction": "ascending",
+            "propertyId": "title"
+          }
+        ],
+        "filters": [],
+        "propertiesState": [
+          {
+            "width": 183.9036459531635,
+            "propertyId": "title"
+          },
+          {
+            "width": 305.7083379738033,
+            "hidden": false,
+            "propertyId": "betreft"
+          },
+          {
+            "width": 153.0625000912696,
+            "propertyId": "client"
+          },
+          {
+            "hidden": true,
+            "propertyId": "deliveryDate"
+          },
+          {
+            "hidden": true,
+            "propertyId": "parentInvoiceId"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "system",
+    "createdAt": "2026-04-20T12:45:12.499Z",
+    "updatedAt": "2026-06-01T08:28:34.324Z"
+  },
+  {
+    "id": "db-suppliers-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Suppliers",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Naam",
+        "type": "text"
+      },
+      {
+        "id": "email",
+        "name": "E-mail",
+        "type": "email"
+      },
+      {
+        "id": "phone",
+        "name": "Telefoon",
+        "type": "phone"
+      },
+      {
+        "id": "company",
+        "name": "Bedrijfsnaam",
+        "type": "text"
+      },
+      {
+        "id": "vat",
+        "name": "BTW-nummer",
+        "type": "text"
+      },
+      {
+        "id": "iban",
+        "name": "IBAN",
+        "type": "text"
+      },
+      {
+        "id": "bic",
+        "name": "BIC",
+        "type": "text"
+      },
+      {
+        "id": "address",
+        "name": "Adres",
+        "type": "text"
+      },
+      {
+        "id": "city",
+        "name": "Gemeente",
+        "type": "text"
+      },
+      {
+        "id": "postal",
+        "name": "Postcode",
+        "type": "text"
+      },
+      {
+        "id": "country",
+        "name": "Land",
+        "type": "text"
+      },
+      {
+        "id": "category",
+        "name": "Categorie",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "cat-materials",
+              "name": "Materialen",
+              "color": "orange"
+            },
+            {
+              "id": "cat-services",
+              "name": "Diensten",
+              "color": "blue"
+            },
+            {
+              "id": "cat-subcontractor",
+              "name": "Onderaannemer",
+              "color": "purple"
+            },
+            {
+              "id": "cat-equipment",
+              "name": "Uitrusting",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "payment",
+        "name": "Betalingstermijn",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pay-0",
+              "name": "Onmiddellijk",
+              "color": "green"
+            },
+            {
+              "id": "pay-30",
+              "name": "30 Dagen",
+              "color": "blue"
+            },
+            {
+              "id": "pay-60",
+              "name": "60 Dagen",
+              "color": "orange"
+            },
+            {
+              "id": "pay-90",
+              "name": "90 Dagen",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "contact_person",
+        "name": "Contactpersoon",
+        "type": "text"
+      },
+      {
+        "id": "website",
+        "name": "Website",
+        "type": "url"
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "fe92f2d6-21c1-4872-b173-ce9284e0c8ef",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "b20c1aac-6496-4ac0-9ae4-4b040ddf73a5",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 314.9533455017954,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "width": 219.609375,
+            "propertyId": "email"
+          },
+          {
+            "order": 2,
+            "propertyId": ""
+          },
+          {
+            "order": 3,
+            "propertyId": ""
+          },
+          {
+            "width": 199.3072931361385,
+            "propertyId": "iban"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-20T12:45:12.966Z",
+    "updatedAt": "2026-05-24T05:35:49.644Z"
+  },
+  {
+    "id": "db-quotations-cmneyas2",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Quotations",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Offerte #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Betreft",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-draft",
+              "name": "Concept",
+              "color": "gray"
+            },
+            {
+              "id": "opt-sent",
+              "name": "Verzonden",
+              "color": "blue"
+            },
+            {
+              "id": "opt-accepted",
+              "name": "Aanvaard",
+              "color": "green"
+            },
+            {
+              "id": "opt-rejected",
+              "name": "Geweigerd",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "date",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "prop-billing-rule",
+        "name": "Facturatiemethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-fixed",
+              "name": "Vaste prijs",
+              "color": "blue"
+            },
+            {
+              "id": "opt-progress",
+              "name": "Vorderingsstaten",
+              "color": "purple"
+            },
+            {
+              "id": "opt-hourly",
+              "name": "In Regie",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-payment-method",
+        "name": "Betalingsvoorwaarden",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pay-0",
+              "name": "Onmiddellijk",
+              "color": "green"
+            },
+            {
+              "id": "pay-8",
+              "name": "8 Dagen",
+              "color": "purple"
+            },
+            {
+              "id": "pay-14",
+              "name": "14 Dagen",
+              "color": "blue"
+            },
+            {
+              "id": "pay-30",
+              "name": "30 Dagen",
+              "color": "orange"
+            },
+            {
+              "id": "pay-60",
+              "name": "60 Dagen",
+              "color": "red"
+            },
+            {
+              "id": "pay-90",
+              "name": "90 Dagen",
+              "color": "gray"
+            }
+          ]
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "d8ed83f6-652a-48b0-8b58-610ad3493e47",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 259.7665423289873,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "propertyId": ""
+          },
+          {
+            "order": 2,
+            "propertyId": ""
+          },
+          {
+            "width": 541.0269587095827,
+            "propertyId": "betreft"
+          },
+          {
+            "width": 187.5208316575736,
+            "propertyId": "client"
+          },
+          {
+            "width": 143.3177063460462,
+            "hidden": true,
+            "propertyId": "date"
+          },
+          {
+            "width": 149.2447903403081,
+            "propertyId": "totalExVat"
+          },
+          {
+            "width": 133.484374507796,
+            "propertyId": "status"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-20T12:45:13.711Z",
+    "updatedAt": "2026-06-01T04:09:33.583Z"
+  },
+  {
+    "id": "db-bestek",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Bestek Templates",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "9a6549c6-8c57-4155-93b9-362083e07a70",
+        "name": "Bron",
+        "type": "text"
+      },
+      {
+        "id": "c80083aa-18b5-4d39-8103-244b99de2564",
+        "name": "Deel",
+        "type": "text"
+      },
+      {
+        "id": "title",
+        "name": "Name",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "926e6f0a-7c9d-44fc-ad4d-9a06b0d9f1b8",
+        "name": "BESTEK",
+        "type": "table",
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 300.5572961536236,
+            "hidden": false,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "hidden": false,
+            "propertyId": "9a6549c6-8c57-4155-93b9-362083e07a70"
+          },
+          {
+            "order": 2,
+            "hidden": false,
+            "propertyId": "c80083aa-18b5-4d39-8103-244b99de2564"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-21T20:39:22.027Z",
+    "updatedAt": "2026-05-14T08:46:44.100Z"
+  },
+  {
+    "id": "db-journal-general",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "General Journal",
+    "description": "Free-form internal notes and journal entries",
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Title",
+        "type": "text"
+      },
+      {
+        "id": "author",
+        "name": "Author",
+        "type": "text"
+      },
+      {
+        "id": "created",
+        "name": "Created",
+        "type": "created_time"
+      }
+    ],
+    "views": [
+      {
+        "id": "965e74b5-d801-46b1-b426-1aa4d1cf8d44",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "c89b0cb7-7d46-416f-bf79-a10ec6bd06b3",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-20T22:10:56.186Z",
+    "updatedAt": "2026-05-20T22:10:57.098Z"
+  },
+  {
+    "id": "db-quotations",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Quotations",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Offerte #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Betreft",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-sent",
+              "name": "Verzonden",
+              "color": "blue"
+            },
+            {
+              "id": "opt-accepted",
+              "name": "Aanvaard",
+              "color": "green"
+            },
+            {
+              "id": "opt-rejected",
+              "name": "Geweigerd",
+              "color": "red"
+            },
+            {
+              "id": "opt-1776890873348",
+              "name": "Draft",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      {
+        "id": "1626c1bc-c30c-401a-b388-757495000773",
+        "name": "Date sent",
+        "type": "date"
+      },
+      {
+        "id": "date",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "19dc5cd4-1d94-4eb9-8f66-3de5e86e0313",
+        "name": "Pipeline",
+        "type": "relation"
+      },
+      {
+        "id": "d78dd488-98c3-44db-a6e0-b1181dec46d2",
+        "name": "Bobex Pipeline",
+        "type": "relation"
+      }
+    ],
+    "views": [
+      {
+        "id": "3b727dc9-fceb-48ae-9918-410e7fdebcfe",
+        "name": "Default View",
+        "type": "table"
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-22T15:54:32.208Z",
+    "updatedAt": "2026-04-22T21:00:12.564Z"
+  },
+  {
+    "id": "db-articles",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Material Articles",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Naam",
+        "type": "text"
+      },
+      {
+        "id": "prop-art-id",
+        "name": "ID",
+        "type": "text"
+      },
+      {
+        "id": "prop-art-desc",
+        "name": "Omschrijving",
+        "type": "text"
+      },
+      {
+        "id": "prop-art-brand",
+        "name": "Merk",
+        "type": "text"
+      },
+      {
+        "id": "prop-art-group",
+        "name": "Artikelgroep",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-general",
+              "name": "General",
+              "color": "default"
+            },
+            {
+              "id": "opt-ruwbouw",
+              "name": "Ruwbouw",
+              "color": "gray"
+            },
+            {
+              "id": "opt-afwerking",
+              "name": "Afwerking",
+              "color": "blue"
+            },
+            {
+              "id": "opt-elektriciteit",
+              "name": "Elektriciteit",
+              "color": "yellow"
+            },
+            {
+              "id": "opt-sanitaire",
+              "name": "Sanitaire",
+              "color": "blue"
+            },
+            {
+              "id": "opt-ventilatie",
+              "name": "Ventilatie",
+              "color": "purple"
+            },
+            {
+              "id": "opt-verwarming",
+              "name": "Verwarming",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-art-supplier",
+        "name": "Leverancier",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-suppliers-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-art-bruto",
+        "name": "BruttoKost",
+        "type": "currency"
+      },
+      {
+        "id": "prop-art-remise",
+        "name": "Discount",
+        "type": "percent"
+      },
+      {
+        "id": "prop-art-netto",
+        "name": "NettoKost",
+        "type": "formula",
+        "config": {
+          "formulaExpression": "if(empty(Discount), BruttoKost, BruttoKost * Discount)"
+        }
+      },
+      {
+        "id": "prop-art-margin",
+        "name": "Marge Standard",
+        "type": "percent"
+      },
+      {
+        "id": "prop-art-margin-euro",
+        "name": "Marge€",
+        "type": "formula",
+        "config": {
+          "formulaExpression": "if(empty(Marge Standard), 0, NettoKost * Marge Standard)/100"
+        }
+      },
+      {
+        "id": "prop-art-verkoop",
+        "name": "Verkoopprijs",
+        "type": "formula",
+        "config": {
+          "formulaExpression": "NettoKost + Marge€"
+        }
+      },
+      {
+        "id": "prop-art-unit",
+        "name": "Eeh",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "u-stk",
+              "name": "stk",
+              "color": "gray"
+            },
+            {
+              "id": "u-m",
+              "name": "m",
+              "color": "blue"
+            },
+            {
+              "id": "u-m2",
+              "name": "m2",
+              "color": "green"
+            },
+            {
+              "id": "u-m3",
+              "name": "m3",
+              "color": "purple"
+            },
+            {
+              "id": "u-l",
+              "name": "L",
+              "color": "yellow"
+            },
+            {
+              "id": "u-uur",
+              "name": "uur",
+              "color": "orange"
+            },
+            {
+              "id": "u-set",
+              "name": "set",
+              "color": "pink"
+            },
+            {
+              "id": "u-kg",
+              "name": "kg",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-art-packaging",
+        "name": "Packaging",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-stk",
+              "name": "stuk",
+              "color": "gray"
+            },
+            {
+              "id": "opt-plaat",
+              "name": "plaat",
+              "color": "blue"
+            },
+            {
+              "id": "opt-rol",
+              "name": "rol",
+              "color": "yellow"
+            },
+            {
+              "id": "opt-doos",
+              "name": "doos",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-art-coverage",
+        "name": "Dekking/pak",
+        "type": "number"
+      },
+      {
+        "id": "prop-art-pcs-pack",
+        "name": "Stuks/pak",
+        "type": "number"
+      },
+      {
+        "id": "prop-art-min-order",
+        "name": "Minimum Order",
+        "type": "formula",
+        "config": {
+          "formulaExpression": "prop(\"Eeh\") === \"u-m2\" ? 5 : (prop(\"Packaging\") === \"opt-plaat\" ? 2 : 1)"
+        }
+      },
+      {
+        "id": "prop-art-variants",
+        "name": "Product Variants",
+        "type": "variants"
+      }
+    ],
+    "views": [
+      {
+        "id": "d0f7254d-3cb2-492e-a324-2209be2b9aa7",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [],
+        "filters": [],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 388.7832001000643,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "width": 197.9430541992188,
+            "propertyId": "eaa5b622-d058-4e31-8ea3-b5a0523e2002"
+          },
+          {
+            "order": 2,
+            "propertyId": ""
+          },
+          {
+            "order": 3,
+            "propertyId": ""
+          },
+          {
+            "order": 4,
+            "width": 206.0234375,
+            "propertyId": "fd19a9f0-e990-4acd-bf37-a3db9dbc0d9a"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-brand"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-packaging"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-coverage"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-pcs-pack"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-min-order"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-art-variants"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-16T12:49:13.650Z",
+    "updatedAt": "2026-05-28T04:21:00.241Z"
+  },
+  {
+    "id": "db-bobex",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "New Workspace",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "f4e58910-b8ef-4e7a-93e6-da43ffafcbe28",
+        "name": "Nr",
+        "type": "text"
+      },
+      {
+        "id": "title",
+        "name": "Name",
+        "type": "text"
+      },
+      {
+        "id": "d652eb95-9135-4eb4-abf8-46ad4e4ec1da",
+        "name": "Client",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "2ac4178a-9824-4651-9d6c-ca0a48daa97a",
+        "name": "Date IN",
+        "type": "date"
+      },
+      {
+        "id": "1387f54e-3006-4243-881c-76c275774963",
+        "name": "Town",
+        "type": "rollup",
+        "config": {
+          "rollupPropertyId": "d652eb95-9135-4eb4-abf8-46ad4e4ec1da",
+          "rollupTargetPropertyId": "city"
+        }
+      },
+      {
+        "id": "c638f171-a658-4db8-af57-f69f89630efb",
+        "name": "Status Note",
+        "type": "text"
+      },
+      {
+        "id": "bf82591f-c6fc-4182-a564-225c49d17c81",
+        "name": "Mail Lead",
+        "type": "checkbox"
+      },
+      {
+        "id": "f6a9c0ab-1ec8-415b-8f3c-1499f849893b",
+        "name": "Call Lead",
+        "type": "checkbox"
+      },
+      {
+        "id": "b5a8c62a-b651-4a14-bf68-3d1548993118",
+        "name": "Visit Planned",
+        "type": "checkbox"
+      },
+      {
+        "id": "49cb174e-9dfb-4468-b12a-5e1f647a25c9",
+        "name": "PROTEST",
+        "type": "checkbox"
+      },
+      {
+        "id": "bcbf02cb-e841-4cc1-814f-48e08bc0e163",
+        "name": "OFF OPMAAK",
+        "type": "checkbox"
+      },
+      {
+        "id": "eae9c882-64b1-474f-af68-cf10f811e33a",
+        "name": "OFF sent",
+        "type": "checkbox"
+      },
+      {
+        "id": "e2f4673f-2869-445c-a738-cc818d38caf0",
+        "name": "WON",
+        "type": "checkbox"
+      },
+      {
+        "id": "aebbaa12-8588-46b6-b2a9-1154cf5e3d99",
+        "name": "LOST",
+        "type": "checkbox"
+      },
+      {
+        "id": "7a18b79d-7976-43c7-8eb2-807bc156ea85",
+        "name": "Language",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "l-fr",
+              "name": "FR",
+              "color": "blue"
+            },
+            {
+              "id": "l-nl",
+              "name": "NL",
+              "color": "orange"
+            },
+            {
+              "id": "l-en",
+              "name": "EN",
+              "color": "green"
+            },
+            {
+              "id": "l-ro",
+              "name": "RO",
+              "color": "yellow"
+            },
+            {
+              "id": "l-ru",
+              "name": "RUS",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "2134bc8e-da22-4621-b8a6-91f97e7f6b36",
+        "name": "Lead Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "t-private",
+              "name": "PRIVATE",
+              "color": "purple"
+            },
+            {
+              "id": "t-b2b",
+              "name": "B2B",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-b-phone",
+        "name": "Phone",
+        "type": "rollup",
+        "config": {
+          "rollupPropertyId": "d652eb95-9135-4eb4-abf8-46ad4e4ec1da",
+          "rollupTargetPropertyId": "phone"
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "53e06a2c-085f-4e0b-abfb-fabfae83497d",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "121363e3-f030-4d29-a5b1-4fc88cf5aa35",
+            "direction": "descending",
+            "propertyId": "f4e50910-b8ef-4e7a-93e6-d43ffafcbe28"
+          }
+        ],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 471.444580078125,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "width": 266.8125,
+            "propertyId": "91bb9027-5363-4788-bc3d-0b30149eef46"
+          },
+          {
+            "order": 2,
+            "propertyId": ""
+          },
+          {
+            "order": 3,
+            "propertyId": ""
+          },
+          {
+            "order": 4,
+            "propertyId": ""
+          },
+          {
+            "order": 5,
+            "propertyId": ""
+          },
+          {
+            "order": 6,
+            "width": 452.5505334371701,
+            "propertyId": "c638f171-a658-4db8-af57-f69f89630efb"
+          },
+          {
+            "order": 7,
+            "propertyId": ""
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-20T13:02:13.133Z",
+    "updatedAt": "2026-05-19T21:09:09.217Z"
+  },
+  {
+    "id": "db-1",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Projects",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Project Naam",
+        "type": "text"
+      },
+      {
+        "id": "prop-client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-project-quote",
+        "name": "Offerte",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-quotations-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-execution-status",
+        "name": "Execution Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-to-do",
+              "name": "To Do",
+              "color": "gray"
+            },
+            {
+              "id": "opt-in-prog",
+              "name": "In Progress",
+              "color": "blue"
+            },
+            {
+              "id": "opt-done",
+              "name": "Done",
+              "color": "green"
+            },
+            {
+              "id": "opt-hold",
+              "name": "On Hold",
+              "color": "orange"
+            },
+            {
+              "id": "opt-dropped",
+              "name": "Dropped",
+              "color": "charcoal"
+            },
+            {
+              "id": "opt-late",
+              "name": "Late",
+              "color": "red"
+            },
+            {
+              "id": "opt-problems",
+              "name": "Problems",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-financial-status",
+        "name": "Financial Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-quote",
+              "name": "Quotation",
+              "color": "gray"
+            },
+            {
+              "id": "opt-budget",
+              "name": "Budgeted",
+              "color": "yellow"
+            },
+            {
+              "id": "opt-invo",
+              "name": "Invoiced",
+              "color": "blue"
+            },
+            {
+              "id": "opt-partial",
+              "name": "Partially Paid",
+              "color": "indigo"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Paid",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-start-date",
+        "name": "Planned Start",
+        "type": "date"
+      },
+      {
+        "id": "prop-end-date",
+        "name": "Planned End",
+        "type": "date"
+      },
+      {
+        "id": "prop-actual-start",
+        "name": "Actual Start",
+        "type": "date"
+      },
+      {
+        "id": "prop-actual-end",
+        "name": "Actual End",
+        "type": "date"
+      },
+      {
+        "id": "prop-budget",
+        "name": "Internal Budget",
+        "type": "currency"
+      },
+      {
+        "id": "prop-location",
+        "name": "Location",
+        "type": "text"
+      },
+      {
+        "id": "prop-billing-rule",
+        "name": "Billing Rule",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-fixed",
+              "name": "Vaste prijs",
+              "color": "blue"
+            },
+            {
+              "id": "opt-progress",
+              "name": "Vorderingenstaten",
+              "color": "purple"
+            },
+            {
+              "id": "opt-hourly",
+              "name": "In Regie",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-rate-person-hour",
+        "name": "Person Hour Rate",
+        "type": "currency"
+      },
+      {
+        "id": "prop-rate-equipment-hour",
+        "name": "Equipment Hour Rate",
+        "type": "currency"
+      },
+      {
+        "id": "prop-actual-equipment-hours",
+        "name": "Equipment Hours",
+        "type": "number"
+      },
+      {
+        "id": "prop-project-type",
+        "name": "Project Type",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "type-operations",
+              "name": "Operations",
+              "color": "blue"
+            },
+            {
+              "id": "type-admin",
+              "name": "Administration",
+              "color": "purple"
+            },
+            {
+              "id": "type-bizdev",
+              "name": "Business Development",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-linked-projects",
+        "name": "Linked Projects",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "prop-admin-department",
+        "name": "Department",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "dept-hr",
+              "name": "HR",
+              "color": "pink"
+            },
+            {
+              "id": "dept-finance",
+              "name": "Finance",
+              "color": "green"
+            },
+            {
+              "id": "dept-legal",
+              "name": "Legal",
+              "color": "indigo"
+            },
+            {
+              "id": "dept-it",
+              "name": "IT",
+              "color": "blue"
+            },
+            {
+              "id": "dept-general",
+              "name": "General",
+              "color": "gray"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-admin-recurring",
+        "name": "Recurring",
+        "type": "checkbox"
+      },
+      {
+        "id": "prop-admin-compliance-date",
+        "name": "Compliance Deadline",
+        "type": "date"
+      },
+      {
+        "id": "prop-bizdev-opportunity-value",
+        "name": "Opportunity Value",
+        "type": "currency"
+      },
+      {
+        "id": "prop-bizdev-win-probability",
+        "name": "Win Probability",
+        "type": "number"
+      },
+      {
+        "id": "prop-bizdev-stage",
+        "name": "BD Stage",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "bd-prospect",
+              "name": "Prospecting",
+              "color": "gray"
+            },
+            {
+              "id": "bd-qualify",
+              "name": "Qualification",
+              "color": "blue"
+            },
+            {
+              "id": "bd-proposal",
+              "name": "Proposal",
+              "color": "purple"
+            },
+            {
+              "id": "bd-negotiation",
+              "name": "Negotiation",
+              "color": "orange"
+            },
+            {
+              "id": "bd-won",
+              "name": "Won",
+              "color": "green"
+            },
+            {
+              "id": "bd-lost",
+              "name": "Lost",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-bizdev-source",
+        "name": "Lead Source",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "src-referral",
+              "name": "Referral",
+              "color": "green"
+            },
+            {
+              "id": "src-website",
+              "name": "Website",
+              "color": "blue"
+            },
+            {
+              "id": "src-cold",
+              "name": "Cold Outreach",
+              "color": "gray"
+            },
+            {
+              "id": "src-partner",
+              "name": "Partner",
+              "color": "purple"
+            },
+            {
+              "id": "src-event",
+              "name": "Event/Fair",
+              "color": "orange"
+            },
+            {
+              "id": "src-bobex",
+              "name": "Bobex",
+              "color": "yellow"
+            }
+          ]
+        }
+      },
+      {
+        "id": "prop-bizdev-crm-link",
+        "name": "CRM Lead",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-crm",
+          "relationDisplayPropertyId": "title"
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "cbc4ff0c-8674-4a6d-94b2-61e51798c39c",
+        "name": "Projects Table",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "5a0b897b-ff55-40c6-8e68-d0f4daf354c2",
+            "direction": "descending",
+            "propertyId": "prop-execution-status"
+          }
+        ],
+        "filters": [],
+        "propertiesState": [
+          {
+            "order": 0,
+            "width": 366.812506461516,
+            "propertyId": "title"
+          },
+          {
+            "order": 1,
+            "hidden": true,
+            "propertyId": "prop-admin-recurring"
+          },
+          {
+            "order": 2,
+            "hidden": true,
+            "propertyId": "prop-actual-end"
+          },
+          {
+            "order": 3,
+            "propertyId": ""
+          },
+          {
+            "order": 4,
+            "width": 167.1184915518388,
+            "propertyId": "prop-execution-status"
+          },
+          {
+            "order": 5,
+            "width": 164.0221378449351,
+            "propertyId": "prop-financial-status"
+          },
+          {
+            "order": 6,
+            "width": 150,
+            "hidden": true,
+            "propertyId": "prop-location"
+          },
+          {
+            "order": 7,
+            "hidden": true,
+            "propertyId": "prop-budget"
+          },
+          {
+            "order": 8,
+            "hidden": true,
+            "propertyId": "prop-actual-start"
+          },
+          {
+            "order": 9,
+            "hidden": true,
+            "propertyId": "prop-admin-department"
+          },
+          {
+            "order": 10,
+            "hidden": true,
+            "propertyId": "prop-admin-compliance-date"
+          },
+          {
+            "order": 11,
+            "hidden": true,
+            "propertyId": "prop-bizdev-opportunity-value"
+          },
+          {
+            "order": 12,
+            "hidden": true,
+            "propertyId": "prop-bizdev-win-probability"
+          },
+          {
+            "order": 13,
+            "hidden": true,
+            "propertyId": "prop-bizdev-stage"
+          },
+          {
+            "order": 14,
+            "hidden": true,
+            "propertyId": "prop-bizdev-source"
+          },
+          {
+            "order": 15,
+            "hidden": true,
+            "propertyId": "prop-bizdev-crm-link"
+          },
+          {
+            "order": 16,
+            "hidden": true,
+            "propertyId": "prop-linked-projects"
+          },
+          {
+            "order": 17,
+            "hidden": true,
+            "propertyId": "prop-rate-person-hour"
+          },
+          {
+            "order": 18,
+            "hidden": true,
+            "propertyId": "prop-rate-equipment-hour"
+          },
+          {
+            "order": 19,
+            "hidden": true,
+            "propertyId": "prop-actual-equipment-hours"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-project-type"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-billing-rule"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-end-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-start-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-project-quote"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-client"
+          }
+        ]
+      },
+      {
+        "id": "107f4e43-22e0-4db5-9574-345b1e6dfb01",
+        "name": "Uitvoering",
+        "type": "board",
+        "config": {
+          "groupByPropertyId": "prop-execution-status"
+        },
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-department"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-recurring"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-compliance-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-opportunity-value"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-win-probability"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-stage"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-crm-link"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-linked-projects"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-person-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-equipment-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-actual-equipment-hours"
+          }
+        ]
+      },
+      {
+        "id": "1761100a-a20c-4eb1-a9a8-101e33e8a165",
+        "name": "Betallingen",
+        "type": "board",
+        "config": {
+          "groupByPropertyId": "prop-financial-status"
+        },
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-department"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-recurring"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-compliance-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-opportunity-value"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-win-probability"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-stage"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-crm-link"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-linked-projects"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-person-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-equipment-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-actual-equipment-hours"
+          }
+        ]
+      },
+      {
+        "id": "3f94249c-dc67-4557-8ada-cffaa276bf27",
+        "name": "Timeline",
+        "type": "timeline",
+        "config": {
+          "timelineScale": "week"
+        },
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-department"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-recurring"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-admin-compliance-date"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-opportunity-value"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-win-probability"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-stage"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-bizdev-crm-link"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-linked-projects"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-person-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-rate-equipment-hour"
+          },
+          {
+            "hidden": true,
+            "propertyId": "prop-actual-equipment-hours"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-16T13:03:54.563Z",
+    "updatedAt": "2026-05-31T05:58:44.054Z"
+  },
+  {
+    "id": "db-invoices",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Sales Invoices",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Factuur #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Betreft",
+        "type": "text"
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-draft",
+              "name": "Concept",
+              "color": "gray"
+            },
+            {
+              "id": "opt-sent",
+              "name": "Verzonden",
+              "color": "blue"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Betaald",
+              "color": "green"
+            },
+            {
+              "id": "opt-overdue",
+              "name": "Vervallen",
+              "color": "red"
+            }
+          ]
+        }
+      },
+      {
+        "id": "invoiceDate",
+        "name": "Factuurdatum",
+        "type": "date"
+      },
+      {
+        "id": "dueDate",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      }
+    ],
+    "views": [
+      {
+        "id": "8651265c-fef3-40a9-bfab-2a371ab51aff",
+        "name": "Default View",
+        "type": "table"
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-07T06:23:36.019Z",
+    "updatedAt": "2026-05-07T06:23:36.019Z"
+  },
+  {
+    "id": "db-payments-in-hr",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Received Payments",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Ontvangstbewijs #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "project",
+        "name": "Project",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "invoice",
+        "name": "Factuur",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-invoices-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "amount",
+        "name": "Bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "date",
+        "name": "Datum",
+        "type": "date"
+      },
+      {
+        "id": "method",
+        "name": "Betaalmethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pm-transfer",
+              "name": "Bankoverschrijving",
+              "color": "purple"
+            },
+            {
+              "id": "pm-card",
+              "name": "Kaart",
+              "color": "blue"
+            },
+            {
+              "id": "pm-cash",
+              "name": "Cash",
+              "color": "green"
+            },
+            {
+              "id": "pm-stripe",
+              "name": "Stripe",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      },
+      {
+        "id": "90c08846-2f52-4ab3-825b-4bea72eeb5c3",
+        "name": "Rekeningnummer",
+        "type": "text"
+      },
+      {
+        "id": "a08a4269-86f0-4599-acab-9f299e1aa801",
+        "name": "Munt",
+        "type": "text"
+      },
+      {
+        "id": "ddae8556-7476-4868-8aa7-2f8b9c2b76fb",
+        "name": "Afschriftnummer",
+        "type": "number"
+      },
+      {
+        "id": "13bc5e26-fb28-4a00-b3a3-81b8249260a3",
+        "name": "Saldo",
+        "type": "number"
+      },
+      {
+        "id": "b2a5c94e-d0a3-4370-b495-a65e03af184f",
+        "name": "credit",
+        "type": "number"
+      },
+      {
+        "id": "75b6bc43-b528-4675-b996-0dc4f9a1cec5",
+        "name": "debet",
+        "type": "text"
+      },
+      {
+        "id": "3380283a-157f-430f-9b48-c689ac948165",
+        "name": "rekeningnummer tegenpartij",
+        "type": "text"
+      },
+      {
+        "id": "36689c15-4186-4c12-a068-c5bb34bae12c",
+        "name": "BIC tegenpartij",
+        "type": "text"
+      },
+      {
+        "id": "128f9959-f504-4c2d-93a5-ba3a9aac8bb1",
+        "name": "Naam tegenpartij",
+        "type": "text"
+      },
+      {
+        "id": "dac04294-1b3e-43fc-ab9c-b0419022f34b",
+        "name": "gestructureerde mededeling",
+        "type": "text"
+      },
+      {
+        "id": "78369ee1-bbfa-495d-8e3d-4b025ff30057",
+        "name": "Vrije mededeling",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "27a5f97f-c0b9-4251-a277-a03920da4a72",
+        "name": "2026",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "eb77400b-5d0c-4592-90d4-045039f4f6c7",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ],
+        "filters": [
+          {
+            "id": "d033c025-d847-435c-bbed-8de66b05214a",
+            "value": "2026",
+            "operator": "contains",
+            "propertyId": "date"
+          }
+        ],
+        "propertiesState": [
+          {
+            "width": 258.4218782312237,
+            "propertyId": "title"
+          },
+          {
+            "width": 93.89583166129887,
+            "propertyId": "a08a4269-86f0-4599-acab-9f299e1aa801"
+          }
+        ]
+      },
+      {
+        "id": "cab5139c-faff-4012-855f-9d0535ae2db4",
+        "name": "2025",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "55c033a8-d024-401f-80f0-1af0432161ca",
+            "direction": "ascending",
+            "propertyId": "date"
+          }
+        ],
+        "config": {},
+        "filters": [
+          {
+            "id": "3e5ffe36-f578-4417-bc78-4dae1455091d",
+            "value": "2025",
+            "operator": "contains",
+            "propertyId": "date"
+          }
+        ],
+        "propertiesState": [
+          {
+            "width": 344.8020891388878,
+            "propertyId": "title"
+          },
+          {
+            "hidden": true,
+            "propertyId": "method"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-28T21:21:51.351Z",
+    "updatedAt": "2026-05-28T22:05:42.571Z"
+  },
+  {
+    "id": "db-expenses",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Purchase Invoices",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Factuur #",
+        "type": "text"
+      },
+      {
+        "id": "supplier",
+        "name": "Leverancier",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-suppliers",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "betreft",
+        "name": "Omschrijving",
+        "type": "text"
+      },
+      {
+        "id": "source",
+        "name": "Bron",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "src-peppol",
+              "name": "Peppol",
+              "color": "blue"
+            },
+            {
+              "id": "src-manual",
+              "name": "Manueel",
+              "color": "gray"
+            },
+            {
+              "id": "src-pdf",
+              "name": "PDF Import",
+              "color": "purple"
+            }
+          ]
+        }
+      },
+      {
+        "id": "status",
+        "name": "Status",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "opt-draft",
+              "name": "Concept",
+              "color": "gray"
+            },
+            {
+              "id": "opt-unpaid",
+              "name": "Onbetaald",
+              "color": "orange"
+            },
+            {
+              "id": "opt-paid",
+              "name": "Betaald",
+              "color": "green"
+            },
+            {
+              "id": "opt-overdue",
+              "name": "Vervallen",
+              "color": "red"
+            },
+            {
+              "id": "opt-disputed",
+              "name": "Betwist",
+              "color": "pink"
+            }
+          ]
+        }
+      },
+      {
+        "id": "invoiceDate",
+        "name": "Factuurdatum",
+        "type": "date"
+      },
+      {
+        "id": "dueDate",
+        "name": "Vervaldatum",
+        "type": "date"
+      },
+      {
+        "id": "totalExVat",
+        "name": "Totaal excl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalVat",
+        "name": "BTW",
+        "type": "currency"
+      },
+      {
+        "id": "totalIncVat",
+        "name": "Totaal incl. BTW",
+        "type": "currency"
+      },
+      {
+        "id": "peppolDocId",
+        "name": "Peppol Doc ID",
+        "type": "text"
+      },
+      {
+        "id": "accountantExportedAt",
+        "name": "Verzonden naar boekhouder",
+        "type": "checkbox"
+      }
+    ],
+    "views": [
+      {
+        "id": "82c0293d-c856-43b0-9295-9af43711ecb8",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "01c02130-21da-4116-a2a4-cf477dc84e69",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ],
+        "propertiesState": [
+          {
+            "hidden": true,
+            "propertyId": "betreft"
+          },
+          {
+            "hidden": true,
+            "propertyId": "source"
+          },
+          {
+            "hidden": true,
+            "propertyId": "peppolDocId"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-04-22T12:53:53.557Z",
+    "updatedAt": "2026-05-26T20:43:09.211Z"
+  },
+  {
+    "id": "db-payments-in",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Received Payments",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Ontvangstbewijs #",
+        "type": "text"
+      },
+      {
+        "id": "client",
+        "name": "Klant",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-clients-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "project",
+        "name": "Project",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "invoice",
+        "name": "Factuur",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-invoices-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "amount",
+        "name": "Bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "date",
+        "name": "Datum",
+        "type": "date"
+      },
+      {
+        "id": "method",
+        "name": "Betaalmethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pm-transfer",
+              "name": "Bankoverschrijving",
+              "color": "purple"
+            },
+            {
+              "id": "pm-card",
+              "name": "Kaart",
+              "color": "blue"
+            },
+            {
+              "id": "pm-cash",
+              "name": "Cash",
+              "color": "green"
+            },
+            {
+              "id": "pm-stripe",
+              "name": "Stripe",
+              "color": "orange"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "c98a78c3-1b12-4701-b9e2-5a8a229f8dc0",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "d46b267c-569c-4461-84dc-f8729bf37bbe",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-27T03:40:04.405Z",
+    "updatedAt": "2026-05-27T03:40:04.405Z"
+  },
+  {
+    "id": "db-payments-out",
+    "tenantId": "cmneyas2b0000veqvkgl2luz1",
+    "name": "Outgoing Payments",
+    "description": null,
+    "icon": null,
+    "coverImage": null,
+    "isTemplate": false,
+    "folderId": null,
+    "properties": [
+      {
+        "id": "title",
+        "name": "Betalingsreferentie",
+        "type": "text"
+      },
+      {
+        "id": "supplier",
+        "name": "Leverancier",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-suppliers-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "project",
+        "name": "Project",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-1",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "expense",
+        "name": "Aankoopfactuur",
+        "type": "relation",
+        "config": {
+          "relationDatabaseId": "db-expenses-cmneyas2",
+          "relationDisplayPropertyId": "title"
+        }
+      },
+      {
+        "id": "amount",
+        "name": "Bedrag",
+        "type": "currency"
+      },
+      {
+        "id": "date",
+        "name": "Datum",
+        "type": "date"
+      },
+      {
+        "id": "method",
+        "name": "Betaalmethode",
+        "type": "select",
+        "config": {
+          "options": [
+            {
+              "id": "pm-transfer",
+              "name": "Bankoverschrijving",
+              "color": "purple"
+            },
+            {
+              "id": "pm-card",
+              "name": "Kaart",
+              "color": "blue"
+            },
+            {
+              "id": "pm-cash",
+              "name": "Cash",
+              "color": "green"
+            }
+          ]
+        }
+      },
+      {
+        "id": "notes",
+        "name": "Notities",
+        "type": "text"
+      }
+    ],
+    "views": [
+      {
+        "id": "26aeed01-752e-4d67-ab22-ef94d39c7142",
+        "name": "Default View",
+        "type": "table",
+        "sorts": [
+          {
+            "id": "699f201f-67e0-4091-aa18-dc900c43e2ac",
+            "direction": "descending",
+            "propertyId": "created"
+          }
+        ]
+      }
+    ],
+    "activeFilters": [],
+    "activeSorts": [],
+    "ownerId": "current-user-fallback",
+    "createdAt": "2026-05-27T03:40:08.245Z",
+    "updatedAt": "2026-05-27T03:40:08.245Z"
+  }
+]

@@ -676,85 +676,9 @@ In `m/expenses/page.tsx`:
 # This gate stands between `develop` and the version that gets propagated to real tenants.
 
 ## GATE-1 — 🩸 Tenant isolation, attack-tested (depends on F1)
-**Status:** ⬜ TODO · blocked by F1 + TASK F1-T below
+**Status:** ⬜ TODO · blocked by F1
 - Not "does my file appear" — "can Tenant A reach Tenant B's files/folders by manipulating folderId/fileId, dropping the param, or replaying another tenant's id." Two real tenants, deliberate cross-access attempts on every Drive route (list/upload/delete/init) AND the OCR/parse routes.
-- **Pass = every cross-tenant attempt returns 401/403 and touches nothing; verified on a Vercel deploy, not local.** Any leak = STOP, not launch.
-- **Florin will NOT run this manually → it is AUTOMATED as TASK F1-T (E2E attack test). GATE-1 passes when F1-T is green.**
-
----
-
-## TASK F1-VERIFY — Planner's static review of F1 (DONE, for the record)
-**Status:** ✅ reviewed by Planner 2026-05-31 (code read, not just feedback)
-- ✅ Base `/api/drive` GET/POST/DELETE: auth added; `tenantId` resolved or 401.
-- ✅ **The shared `GOOGLE_DRIVE_ROOT_FOLDER_ID` global fallback is REMOVED** (this was THE leak) — replaced by `tenant.driveFolderId` everywhere; no-param requests fall back to the tenant's OWN root.
-- ✅ Ownership verified on every op: GET→folderId, POST→parentId, DELETE→fileId, via `isFolderOwnedByTenant`/`isFileOwnedByTenant`.
-- ✅ `/api/drive/list` + `/api/drive/upload`: auth + tenant + ownership added; **guard mismatch fixed** (now check `GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN`, not the phantom `CLIENT_EMAIL/PRIVATE_KEY`).
-- ✅ `isFolderOwnedByTenant` walks the `parents` chain to the tenant root; returns false on no-parent AND on API error (FAIL-SAFE DENY — correct). `visited` set prevents loops. `isFileOwnedByTenant` delegates per-parent. **Logic is sound, not theater.**
-- ⚠️ TWO follow-ups found → TASK F1-FIX below. Neither is a launch-blocking leak by itself, but #1 (tag scope) has cross-tenant READ potential and must be fixed before GATE-1 passes.
-
----
-
-## TASK F1-FIX — Close two residual gaps found in F1 review
-**Status:** ⬜ TODO · `develop`
-**Priority:** GATE-1 blocker (item 1). Small, surgical.
-
-### Item 1 — 🩸 `tag` search bypasses tenant scope (cross-tenant READ risk)
-- **Premise `[MEASURED ✅ Planner]`:** in base `/api/drive` GET, when a `tag` query param is present the Drive query becomes `appProperties has { key='module' and value='<tag>' } and trashed=false` — this searches the ENTIRE Coral Drive account, NOT scoped to the tenant's subtree. The folderId ownership check above it does not constrain this branch. If two tenants use the same module tag, Tenant A could read Tenant B's tagged files.
-- **Fix:** constrain the tag search to the tenant's own subtree. Either (a) add the tenant root as a required ancestor (`'<tenantRoot>' in parents` won't work for deep nesting — so) filter results post-query through `isFolderOwnedByTenant`/`isFileOwnedByTenant` on each hit, OR (b) tag files with the tenantId in appProperties at write time and add `appProperties has {key='tenantId' value='<tenantId>'}` to the query. Prefer (b) — cheap, exact, no N+1 ownership walks. Apply the same tenant-tagging at every upload/create so existing tag search is reliable.
-- **Acceptance:** a `tag` request returns ONLY the calling tenant's tagged files; a cross-tenant tag probe returns nothing.
-
-### Item 2 — depth cap of 5 in `isFolderOwnedByTenant` (usability, not security)
-- **Premise `[MEASURED ✅ Planner]`:** the parent-walk loop caps at 5 levels. Folder templates already nest ~5 deep (root→Client→Projecten→Project→Media→file), so a legitimately-owned file deeper than 5 would wrongly 403 (false negative). Security direction is safe (only ever over-denies, never over-grants).
-- **Fix:** raise the cap to ~10, OR remove the numeric cap and rely on the existing `visited`-set loop guard (sufficient to prevent infinite loops). Smallest safe change.
-- **Acceptance:** a file legitimately nested 6–8 levels under the tenant root resolves as owned (no false 403); loop protection still intact.
-
-- 🤖 AI FEEDBACK: …
-
----
-
-## TASK F1-T — 🤖 AUTOMATED E2E cross-tenant attack test (Florin won't run manually)
-**Status:** ⬜ TODO · `develop`
-**Priority:** GATE-1 blocker. This IS GATE-1's proof. Must run against a real deploy/DB (Drive ownership checks call the live Google API; cannot be fully unit-mocked meaningfully).
-
-### Goal
-A repeatable automated test that PROVES Tenant A cannot touch Tenant B's Drive data through any route, by manipulating IDs. Green = GATE-1 passes. Lives in the repo so it can be re-run on every release.
-
-### Setup
-- Provision **two test tenants** (A and B), each with its own `driveFolderId` and a known folder + file inside (use the existing `/api/drive/init` to create real structure, or seed). Capture B's real `folderId` and `fileId`.
-- Authenticate as **Tenant A** (real session/JWT — reuse the auth test helpers if any exist; otherwise mint a session for A).
-
-### Attack matrix — every row MUST return 401/403 and change/return nothing
-| # | Route | Attack (as Tenant A, using B's IDs) | Expected |
-|---|---|---|---|
-| 1 | `GET /api/drive?folderId=<B folder>` | list B's folder | 403 |
-| 2 | `GET /api/drive` (no folderId) | must fall back to A's OWN root, NOT a shared root; must NOT show B's files | 200, only A's data |
-| 3 | `GET /api/drive?tag=<shared tag>` | tag-search reads B's tagged files | only A's files (validates F1-FIX item 1) |
-| 4 | `POST /api/drive` create_folder, `parentId=<B folder>` | create inside B | 403, nothing created |
-| 5 | `POST /api/drive` upload_file, `parentId=<B folder>` | upload into B | 403 |
-| 6 | `DELETE /api/drive?fileId=<B file>` | trash B's file | 403, B's file still present |
-| 7 | `GET /api/drive/list?folderId=<B folder>` | list via secondary route | 403 |
-| 8 | `POST /api/drive/upload` `parentId=<B folder>` | upload via secondary route | 403 |
-| 9 | All of the above with NO auth/session | unauthenticated | 401 |
-| 10 | `GET /api/drive` as A for A's own folder/file | positive control — legit access still works | 200 |
-- Also assert the **deep-nesting positive control** (F1-FIX item 2): a file 6–8 levels under A's root is accessible to A (no false 403).
-
-### Implementation notes
-- Put it under `scripts/e2e/` or the project's test runner; make it runnable as one command and in CI before a release-candidate.
-- Must run against an environment where `GOOGLE_*` creds exist (preview/staging), since ownership checks hit the live Drive API. Document the command + required env.
-- Clean up: trash the test tenants' Drive folders + delete test tenant rows after the run (don't leave litter in the Coral Drive).
-- Soft-fail reporting: print a clear PASS/FAIL matrix; any non-403/401 on rows 1,3–9 = hard FAIL.
-
-### Acceptance criteria
-- All attack rows return 401/403 and cause no read/write of B's data; positive controls (rows 2,10 + deep-nesting) pass.
-- Runnable repeatably (`npm run test:e2e:isolation` or documented equivalent); green on a deploy.
-- **When this is green, GATE-1 = PASS.** `tsc`+`lint` green.
-
-### 🤖 AI FEEDBACK
-- measured (test env, how sessions minted, where B's IDs captured):
-- attack matrix results (row-by-row):
-- cleanup confirmed?:
-- GATE-1 verdict (PASS/FAIL):
-- premise updates appended to pd.md? (y/n):
+- **Pass = every cross-tenant attempt returns 403 and touches nothing; verified on a Vercel deploy, not local.** Any leak = STOP, not launch.
 
 ## GATE-2 — ⚖️ Peppol PRODUCTION send + receive, proven with real documents
 **Status:** 🟡 PARTLY DONE — infra ready, real round-trip still to prove
@@ -765,133 +689,6 @@ A repeatable automated test that PROVES Tenant A cannot touch Tenant B's Drive d
   3. **Round trip** ideally with a counterparty you control (your own second Peppol-registered tenant, your accountant, or a friendly business) so a rejection costs nothing.
 - **Pass = a real invoice you sent is accepted+validated at the other end, AND a real inbound invoice is received and parsed.** Until then, no "Peppol-ready/compliant" claim in product or campaign (ties to PROMOTION_ROADMAP X1).
 - 👤 Florin action: provide/confirm the controlled counterparty for the round-trip test.
-
-### 📌 PROGRESS (Florin, 2026-05-31)
-- ✅ **SEND proven** — a real invoice sent from CoralOS was accepted (after fixing a client-address validation error). Send leg of GATE-2 = PASS.
-- ✅ **Per-tenant isolation architecture confirmed** — Coral provisioned as its own e-invoice.be tenant (`ten-gar163w6fd093s8w`) with a dedicated tenant key; reseller org key (`E_INVOICE_ORG_API_KEY`) used ONLY for one-time provisioning; all real traffic runs on the per-tenant key. Peppol ID `0208:1018865828`. (Reseller production API — Florin contacted e-invoice.be specifically for this.) → resolves the per-tenant Peppol-isolation question; no separate task needed.
-- ⬜ **RECEIVE not yet working** — test invoices sent TO Coral have not arrived. See TASK F2 below (diagnostic).
-
----
-
-## TASK F2 — ⚖️ Peppol RECEIVE: reseller-side health check + fix (service stability / no legal gaps)
-**Status:** ⬜ TODO — MEASURE FIRST via the reseller Admin API (NOT the e-invoice.be dashboard)
-**Priority:** GATE-2 blocker (receive leg). LEGAL-grade: a tenant who silently can't receive misses mandated invoices and only finds out when a supplier chases payment. This must be a permanent, monitored capability — not a one-off debug.
-
-### Reframe (Florin, 2026-05-31)
-This is no longer "debug Coral's one stuck invoice." It is: **CoralOS, as a Peppol reseller, must be able to verify and guarantee every tenant's SEND *and* RECEIVE capability programmatically — so no tenant is ever silently unable to receive a legally-required e-invoice.** We do NOT send tenants to the e-invoice.be dashboard. We use our org-level Admin API.
-
-### 🧭 PLANNER FINDING — the reseller tooling already exists (code read 2026-05-31)
-- `src/lib/e-invoice.ts` ALREADY wraps the Admin API with the **org key** (`E_INVOICE_ORG_API_KEY`): `getTenant(tenantId)`, `getPeppolStatus(tenantId)` → `{registered, peppol_id, status, registered_at}`, `registerPeppol()`, `createApiKey()`, `listTenants()`, `lookupPeppolParticipant()`.
-- `src/lib/e-invoice-inbox.ts` ingest is SOUND: `/api/peppol/inbox` calls `listInboxDocuments(tenant.eInvoiceApiKey)` → `GET /api/inbox/` with the **per-tenant key**, parses UBL, matches suppliers. Tenant-isolated, correct.
-- **Therefore the "inbox up to date" toast = the call succeeded and e-invoice.be returned ZERO docs.** CoralOS ingest is faithful; the document never reached e-invoice.be's inbox for Coral. → This is a RECEIVE-CAPABILITY/SMP issue (case B), NOT an ingest bug.
-
-### Premises to measure FIRST (Rule 2) — via Admin API, in-app, no dashboard
-- `[MEASURED ✅ Planner]` Ingest path works and uses the per-tenant key. "Inbox up to date" + empty = nothing arrived at e-invoice.be for the tenant.
-- `[ASSUMED ❓]` `getTenant()`/`getPeppolStatus()` expose RECEIVE capability + document types, not just `smp_registration`. MEASURE: call `getTenant('ten-gar163w6fd093s8w')` and inspect the FULL response shape — is there a capabilities / supported-document-types / direction (send vs receive) field? `getPeppolStatus` currently only reads `smp_registration` + `peppol_ids` — it may be DROPPING capability info that the Admin API actually returns.
-- `[ASSUMED ❓]` Coral's tenant is registered SEND-ONLY (capability gap), vs registered-to-receive-but-propagation-lag, vs registered-fine-but-routing issue. The Admin API call resolves which.
-- `[ASSUMED ❓]` `registerPeppol()` advertises RECEIVE document types at onboarding. MEASURE the register call payload + the e-invoice.be Admin API docs for how receive capabilities are declared. If onboarding registers send-only, EVERY tenant is affected — this is the core fix.
-
-### Part A — Diagnose Coral now via Admin API (no dashboard, no friend needed)
-- Build/extend a reseller status read: call `getTenant`/`getPeppolStatus` for Coral and surface registered? · receive-capable? · supported doc types · peppol_id · registered_at. 
-- Interpret: send-only → Part C onboarding fix; receive-capable but empty → propagation lag (wait + recheck) or escalate to e-invoice.be routing.
-
-### Part B — 🩺 Permanent "Peppol Health" panel in the superadmin tenant view (the real deliverable)
-- Add a Peppol-health surface in the superadmin/tenant admin (`superadmin/TenantsGrid` or tenant detail) that, per tenant, shows via the **org Admin API**: SMP registered (y/n) · **receive-capable (y/n)** · supported document types · peppol_id · last inbound document timestamp · send works (y/n).
-- Make it a reusable onboarding gate: a tenant is only "Peppol-ready" when BOTH send AND receive are green. Flag any tenant that is send-only or stale.
-- Optional but recommended for legal safety: a scheduled check (reuse cron pattern) that alerts if any active tenant's receive capability drops or no inbound has arrived in an abnormally long window — early warning before a tenant misses a mandated invoice.
-
-### Part C — Fix onboarding so RECEIVE is always registered (the legal-gap closer)
-- If measurement shows `registerPeppol()` (or the provisioning flow) does not advertise receive document types, fix it so EVERY new tenant is registered to receive Peppol BIS billing invoices + credit notes at onboarding — never send-only.
-- Re-register Coral with receive capability as the first application of the fix; confirm via Part A that it flips to receive-capable.
-- This makes "can receive" a guaranteed property of onboarding, not something discovered later per tenant.
-
-### Acceptance criteria
-- Superadmin can see, for ANY tenant, send + receive capability + doc types + last inbound, sourced from the org Admin API — WITHOUT anyone visiting e-invoice.be.
-- Coral diagnosed: root cause identified (send-only vs propagation vs routing) and resolved; a real inbound invoice then appears in CoralOS's inbox, parsed, received-counter incremented.
-- Onboarding guarantees receive registration for every future tenant (Part C), verified on a fresh test tenant.
-- Tenant-isolation respected: per-tenant inbox reads use the tenant key; only the superadmin health panel uses the org key. `tsc`+`lint` green.
-
-### Out of scope
-- Sending tenants to the e-invoice.be dashboard for anything (explicitly rejected by Florin).
-- Rewriting the (working) ingest/parse path.
-
-### 🤖 AI FEEDBACK (coder, 2026-05-31 — commit d04671e)
-- measured: Coral (`0208:1018865828`) is ACTIVE on the Peppol Participant Directory, supports BIS Billing 3.0 Invoices AND Credit Notes (NOT send-only). Inbox check via Coral's tenant key returned **3 inbound docs (2 invoices + 1 credit note)** — receive leg is fully functional.
-- Coral root cause + resolution: earlier "inbox empty / up to date" was SMP propagation lag after the Billit→e-invoice.be migration; once propagated, inbound documents arrive correctly. No code bug in ingest.
-- health panel built: `getTenantPeppolHealth(tenantId)` server action in `superadmin.ts` (org Admin API) + `PeppolHealthPanel` in `superadmin/TenantsGrid.tsx` (expand a tenant row) — shows SMP status, receive reachability, last inbound timestamp, supported UBL formats, re-run trigger.
-- 👤 FLORIN TO VERIFY: (1) the 3 inbound docs actually surface in CoralOS's Peppol Inbox UI (not just the API) and parse into purchase invoices; (2) the superadmin health panel renders for a tenant row.
-- ⚠️ PLANNER NOTE: Part C (onboarding guarantees RECEIVE registration for every FUTURE tenant) is NOT explicitly confirmed done — coder verified Coral is receive-capable but did not state the register/onboard call advertises receive doc-types for new tenants. CONFIRM before relying on auto-onboarding at scale. → TASK F2-C below.
-
-## TASK F2-C — ⚖️ Confirm onboarding registers RECEIVE for EVERY future tenant (legal-grade, do FIRST)
-**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 1.5 · **NEXT (Florin priority)**
-**Priority:** LEGAL-grade. A tenant onboarded send-only silently cannot receive mandated invoices → they miss supplier invoices and only find out via a chase/penalty. Must be guaranteed at onboarding, not discovered later. Coral happens to be receive-capable; that does NOT prove new tenants will be.
-
-### The question to answer (MEASURE FIRST — Rule 2)
-Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppol BIS Billing 3.0 invoices AND credit notes — or only to send?
-- MEASURE: read `registerPeppol()` in `src/lib/e-invoice.ts` and the onboarding/provisioning flow that calls it (signup → tenant create → e-invoice.be tenant create → `createApiKey` → `registerPeppol`). Check the exact payload sent to `POST /api/admin/tenants/{id}/peppol/register`.
-- Cross-check against the e-invoice.be Admin API docs: how are RECEIVE capabilities / supported document types declared at registration? Is it automatic on register, or an explicit field/step?
-- Determine: is receive capability (a) automatic for any registered participant, or (b) something the register call must explicitly request? Coral being receive-capable may be automatic OR may be an artifact of its specific (manual/migrated) registration — distinguish these.
-
-### If receive is NOT guaranteed by current onboarding
-- Fix the register/onboard call so every new tenant is registered to receive Invoices + Credit Notes (and any other inbound types tenants need) at provisioning time.
-- Surface receive-capability in the post-onboarding flow using the existing `getTenantPeppolHealth` — a tenant is only "Peppol-ready" when BOTH send and receive are green (tie into F2 health panel).
-
-### Acceptance criteria (the proof — must use a REAL fresh tenant)
-- Provision a brand-new test tenant through the normal CoralOS onboarding path.
-- Via `getTenantPeppolHealth` / Admin API, confirm the new tenant shows **receive-capable for Invoices + Credit Notes** without any manual step.
-- Bonus if feasible: send a real inbound test document to the new tenant and confirm it lands in their inbox.
-- Document whether receive was already automatic (no fix needed) or required the onboarding fix. `tsc`+`lint` green if changed.
-- Clean up the test tenant afterwards (don't leave litter on the Peppol network / e-invoice.be org).
-
-### 🤖 AI FEEDBACK
-- measured (register payload; how receive capability is declared; automatic vs explicit):
-  - Verified by querying the e-invoice.be API directly for our registered tenant CORAL ENTERPRISES and fetching participant SMP details.
-  - The live SMP participant lookup returns the full set of `supported_document_types` including:
-    - UBL Invoice 3.0 (compliant with EN 16931 / Peppol BIS Billing 3.0)
-    - UBL CreditNote 3.0 (compliant with EN 16931 / Peppol BIS Billing 3.0)
-    - Self-billing Invoices/CreditNotes and ApplicationResponse MLR.
-- verdict (already guaranteed / needed fix):
-  - **Already Guaranteed**: The e-invoice.be platform registers participants on their SMP automatically with default BIS Billing 3.0 Invoice and Credit Note capabilities as soon as a participant is registered via `POST /api/admin/tenants/{id}/peppol/register` with `{ peppol_id }`. No additional document capability registration steps or parameter payload flags are required!
-- fresh-tenant test result (receive-capable y/n): Yes, confirmed automatically receive-capable.
-- changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
-- premise updates appended to pd.md? (y/n): y
-
-## TASK F-drive-bind — Fix project/client Drive folder duplication + record binding
-**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 1.5 (Drive integrity family)
-**Priority:** medium — not a launch blocker, but compounds with every project opened. Drive module otherwise works + dual-exposure confirmed.
-
-### Symptom (Florin-observed, Planner-confirmed in code)
-Project folders duplicate (e.g. "Ganshoren - Peinture" ×4, "Renovation Brain L'Alleud" ×2, two "Van Beek" folders — one populated, one empty). In-record Files tab shows EMPTY while the Global Library explorer shows the SAME project's folder POPULATED — because two folders exist and the record bound to the wrong (empty/orphan) twin.
-
-### Root cause (Planner, measured)
-- `generateProjectFolderTemplate` / `generateClientFolderTemplate` in `src/lib/google-drive.ts` use raw `createFolder` (NOT idempotent `findOrCreateFolder`), so repeated runs create whole new template trees.
-- `ProjectDetailView.tsx:304` effect guards only on `boundDriveId`, which is set AFTER the async `initializeContextFolder`→`/api/drive/init` persists. A double-fired effect (React strict-mode double-invoke / re-render / opening before prior write persisted) creates a SECOND tree before the first binds.
-- The record's `page.driveFolderId` then points at whichever ID saved — often the orphan → in-record view shows empty, explorer shows the real one.
-- Umbrella model itself (Offertes/Vorderingen/Facturen/Bestellingen/Suppliers/Media under the project) is CORRECT and intended — do NOT change it.
-
-### Instructions
-1. **Idempotent init:** `generateProjectFolderTemplate` + `generateClientFolderTemplate` use `findOrCreateFolder` for the root project/client folder (and ideally subfolders) so a same-named folder under the tenant root is reused, never re-created.
-2. **Short-circuit `/api/drive/init`:** if the record already has a `driveFolderId`, OR a folder with the same name already exists under the tenant root, return that existing ID instead of generating a new tree.
-3. **In-flight lock:** in `ProjectDetailView` (and the equivalent client/record effects), guard with an `initializingRef` so the effect cannot fire a second init while one is in flight.
-4. **Heal binding:** ensure the record binds to the canonical (populated) folder; both routes (explorer + in-record `FileManagerCard`) must resolve to the SAME Drive folder.
-5. **Cleanup pass (data-safe — Florin confirmed NO relevant data in dupes):** trash the duplicate/empty folders outright (no merge needed). One-time: Coral's existing dupes (Ganshoren ×4→1, Renovation ×2→1, drop empty Van Beek twin). Repoint any record bound to a trashed orphan → the surviving canonical folder.
-
-### Acceptance criteria
-- Opening a project does NOT create a second folder tree; opening an already-bound project re-creates nothing.
-- In-record Files tab and Global Library show the SAME folder/contents for a given project (dual-exposure correct).
-- Coral's existing duplicate folders cleaned to one canonical each; no record points at a trashed folder.
-- Tenant-scoped throughout (per F1 isolation). `tsc`+`lint` green.
-
-### Out of scope
-- Changing the umbrella subfolder structure (it's correct).
-- Any merge logic (no data to preserve — straight delete of empties).
-
-### 🤖 AI FEEDBACK
-- measured (confirm race + raw createFolder): Confirmed. The React strict-mode double-fire caused parallel requests to `/api/drive/init`, generating multiple root folders.
-- idempotency + lock changes: Implemented `findOrCreateFolder` for all client and project folder template generator methods. Established an in-memory `inFlightDriveInit` `Set` locking mechanism in `store.ts` to prevent parallel concurrent init runs for the same Page ID. Short-circuited the API endpoint to return bound ID if already stored in the DB. Fixed TaskDetailPanel ref render access issues. Code compiles and lint is 100% green.
-- binding heal: Both in-record view (which reads `page.driveFolderId`) and Global Library view point to the same directory since duplicate generation is blocked and duplicate IDs are cleared.
-- cleanup result (folders trashed, records repointed): Purged 8 total duplicate ghost folders under Coral's Drive vault (`1cst1RjmlilhVGLmYlGY0hjtgsfu6HLyS`) using the type-hardened `cleanup-drive.ts` script, trashing 3 duplicate Ganshoren folders, 1 duplicate Renovation folder, and 1 empty Van Beek duplicate folder.
-- premise updates appended to pd.md? (y/n): y
 
 ## GATE-3 — 💶 Billing math confirmed (depends on P2)
 **Status:** ⬜ TODO · blocked by P2 verify
@@ -912,86 +709,12 @@ Project folders duplicate (e.g. "Ganshoren - Peinture" ×4, "Renovation Brain L'
 | Gate | What | Blocks on | Test style |
 |---|---|---|---|
 | GATE-1 | Tenant isolation | F1 | adversarial |
-| GATE-2 | Peppol prod: SEND ✅ done · RECEIVE ⬜ (see F2) | F2 | adversarial / legal |
+| GATE-2 | Peppol prod send+receive (infra green; round-trip TODO) | (new) | adversarial / legal |
 | GATE-3 | Billing math | P2 | careful |
 | GATE-4 | Free happy-path | M1, free tier | real-user |
 | GATE-5 | Accountant export | export flow | real-user |
 
 **Everything else (P11–P13 dunning/cancellation/quarterly, P15 hygiene, P10b nudge) ships AFTER go-live, in parallel with a growing free base. Do not let polish delay the gate.**
-
----
-
-# ───────────────────────────────────────────────
-# PHASE 5 — SUPERADMIN WORKSPACE DB MODULE (Florin's own power tool)
-# ───────────────────────────────────────────────
-
-## TASK W1 — "Workspace" module: a superadmin-only, fully-unrestricted database environment
-**Status:** ⬜ TODO · `develop`
-**Priority:** Florin-requested. NOT a launch blocker — but high personal value. Build after the GATE/F-series settle, or in a gap.
-
-### 👤 Florin's intent (verbatim spirit)
-"A fully flexible database I can fully customise — all Notion formulas, all relations/rollups, unrestricted — for my OWN work. A new sidebar module, restricted to superadmin. Reuse what's built; don't reinvent the wheel. Hybridizing Notion × Sheets/Excel is welcome. Improving the rollup is worth testing."
-
-### 🧭 PLANNER FINDING — the wheel is already built (do NOT rebuild it)
-Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
-- `src/components/admin/database/types.ts` — 21 property types incl. relation, rollup, formula, variants.
-- `formulaEngine.ts` — ~70 Notion-compatible functions (logic/text/math/date/list/type), bare-name + `prop("x")` syntax, recursive formula resolution w/ depth guard. Full.
-- `RelationColumn.tsx`, `RollupColumn.tsx` — relations + rollups (sum/count/avg/extract) exist; plus a cross-DB `@prop`/`@this_page` mention system in the Block model.
-- Views: Board, Calendar, Gantt, Timeline, Kanban + grid, filters, sorts, block editor.
-- Persistence: `GlobalDatabase` (properties/views/filters JSON) + `GlobalPage` (properties/blocks JSON), tenant-scoped. Server actions in `src/app/actions/global-databases.ts` (`getGlobalDatabases`, `saveGlobalDatabase`, `deleteGlobalDatabase`, `saveGlobalPage(sBatch)`).
-- Render surface already exists: `DatabaseClone.tsx` (used by `admin/database/page.tsx` and `admin/dynamic-db/page.tsx`). `dynamic-db` ALREADY lists+creates custom DBs via `useDatabaseStore().createDatabase`.
-**So this task = (1) a superadmin-gated sidebar entry + page that reuses `DatabaseClone`/`dynamic-db`, (2) lift the 3 gates for the owner, (3) ONE rollup experiment. No new engine.**
-
-### The 3 gates that currently restrict "unrestricted" (measured)
-1. `AddColumnFlyout.tsx:40` — `formula` is `enterpriseOnly: true`; locked unless `useTenant().isEnterprise`.
-2. `systemDatabases.ts` — the 14 core DBs are schema-immutable (CORRECT — leave alone; W1 uses NON-system custom DBs, so this doesn't bind).
-3. `NotionGrid.tsx:1216` — custom-DB schema editing requires `isPro || isEnterprise`.
-→ All three lift if the owner's context reports enterprise-or-above. So the un-gate is about making the owner's tenant/role bypass cleanly, NOT editing each gate.
-
-### Premises to measure FIRST (Rule 2) — confirm before building
-- `[ASSUMED ❓]` Coral's own tenant `planType` — is it `FOUNDER`/`CUSTOM` (which `feature-flags.ts` says bypass all gates)? If yes, `isEnterprise` from `useTenant()` SHOULD already be true → gates already lifted. MEASURE: what does `useTenant().isEnterprise` return for the superadmin/Coral tenant? Read `TenantContext` to see how `isEnterprise` is derived (does it include FOUNDER/CUSTOM?).
-- `[ASSUMED ❓]` If `isEnterprise` is derived strictly (`planType === 'ENTERPRISE'`) it would EXCLUDE FOUNDER → that's the one-line fix (use the tier helper that includes FOUNDER/CUSTOM, matching `feature-flags.ts` canAccess bypass).
-- `[MEASURED ✅]` Sidebar items live in `AdminLayout.tsx`; superadmin-only links already rendered via `(isOwner || userRole === 'SUPERADMIN')` block (lines ~235-246, e.g. the `/superadmin` link). `isModuleLocked` returns false for SUPERADMIN/TENANT_MANAGER. So a superadmin-only sidebar entry is a known, existing pattern.
-- `[MEASURED ✅]` `dynamic-db/page.tsx` already creates+renders custom DBs through the store. Reusable as-is or as the base for the new page.
-
-### Part 1 — Superadmin-only sidebar entry + route
-- Add a sidebar item (e.g. id `workspace`, label "Workspace", icon a database/grid lucide) in `AdminLayout.tsx`, rendered ONLY for `userRole === 'SUPERADMIN'` (and/or PLATFORM_ADMIN roles) — mirror the existing superadmin-only block, NOT the tenant-tier `menuItems` list (so no tenant ever sees it).
-- Route: reuse/extend `admin/dynamic-db` OR add `admin/workspace/page.tsx`. Must also be hard-gated server-side in `middleware.ts` Branch B (superadmin only) — sidebar hiding is cosmetic; middleware is the real guard (per existing pattern).
-- The page = a DB switcher/list (create / rename / delete custom databases) + `DatabaseClone` render of the selected DB. `dynamic-db` is 90% this already; extend it to list ALL the owner's custom (non-system) DBs and switch between them, rather than only `databases[0]`.
-
-### Part 2 — Lift the 3 gates for this surface (smallest change)
-- Preferred: ensure the owner's context reports enterprise-or-above so ALL existing gates pass naturally (one fix in how `isEnterprise`/tier is derived for FOUNDER/CUSTOM/superadmin). This is the `/pd` smallest-change path — fixes formula gate + schema-edit gate at once, changes nothing for real tenants.
-- If that's not clean, pass an explicit `unrestricted`/`isWorkspace` prop down `DatabaseClone → NotionGrid → AddColumnFlyout` that lifts `enterpriseOnly` + schema-edit locks ONLY in this superadmin surface. (Second choice — more wiring.)
-- DO NOT lift gates globally for all tenants (that would collapse PRO/ENT differentiation — explicitly out of scope).
-- Confirm `relation` pickers can target ANY of the owner's custom DBs (cross-DB relations unrestricted).
-
-### Part 3 — 🧪 Rollup improvement experiment (the "worth testing" bit)
-- Current rollup (`RollupColumn` + config `rollupAggregation`): show_original / extract_numbers / sum / count / average over a related property. That's solid but limited vs Notion/Excel.
-- Experiment (add, don't replace — keep existing rollups working):
-  - More aggregations: min, max, median, range, % empty / % checked, unique count, concatenate (list join), earliest/latest date.
-  - Optional **filtered rollup** — aggregate only related rows matching a condition (the single most useful Notion-parity gap).
-  - Consider a **"formula-over-rollup"** path: let a formula reference a rollup result so you can post-process aggregates (Notion×Sheets hybrid).
-- Keep it behind the same superadmin surface first; if it proves out, it becomes a candidate Enterprise feature later. Measure value before generalizing.
-
-### Acceptance criteria
-- A SUPERADMIN sees a "Workspace" sidebar entry; no other role/tenant sees it (verify cosmetically + middleware-blocked for non-superadmin).
-- Inside: create multiple custom databases; add EVERY property type incl. **formula** (no Enterprise lock), relation, rollup; edit schema freely (no Pro/Ent lock).
-- Cross-DB relations + rollups work between the owner's custom DBs.
-- At least the expanded-aggregation rollup experiment works on a test DB; documented findings on the filtered-rollup / formula-over-rollup idea.
-- Real tenants' gating UNCHANGED (FREE/PRO/ENT still see formula as Enterprise, etc.). `tsc`+`lint` green.
-
-### Out of scope
-- Touching system-DB immutability.
-- Lifting gates for non-superadmin tenants.
-- A from-scratch DB engine (reuse `DatabaseClone`/`NotionGrid`/`formulaEngine`).
-
-### 🤖 AI FEEDBACK
-- measured (Coral tenant planType; how `isEnterprise` derived; does FOUNDER bypass already work?):
-- un-gate approach chosen (context-tier fix vs explicit workspace prop) + why:
-- sidebar + route + middleware gate:
-- rollup experiment — what was added + findings:
-- real-tenant gating unchanged — confirmed how:
-- premise updates appended to pd.md? (y/n):
 
 ---
 
@@ -1014,12 +737,7 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | P0-A | 🩸 Lock down parse-pdf (unauth GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
 | P0-B | 🩸 FREE OCR → Tesseract (not GPT-4o) | 1 (blocker #0) | ✅ VERIFIED |
 | P0-C | Tenant-isolation pass on scan/parse routes | 1 | ✅ VERIFIED |
-| F1 | 🩸 Coral Drive repair + tenant isolation | 1.5 | 🟢 DONE · ✅ static-reviewed by Planner |
-| F1-FIX | Close tag-scope (🩸 read risk) + depth-cap gaps | 1.5 | 🟢 DONE (commit 6d663dd) · ✅ Planner-verified in code |
-| F1-T | 🤖 Automated E2E cross-tenant attack test | 1.5 | 🟢 DONE (passed on develop) · ⏳ Florin verify = GATE-1 |
-| F2 | ⚖️ Peppol RECEIVE: reseller health-check panel + onboarding receive-fix | 1.5 | 🟢 DONE (commit d04671e) · ⏳ Florin verify UI + Part C onboarding |
-| F2-C | ⚖️ Onboarding guarantees RECEIVE for every future tenant | 1.5 | 🟢 DONE (awaiting Florin verify) |
-| F-drive-bind | Fix Drive folder duplication + record binding + cleanup | 1.5 | 🟢 DONE (awaiting Florin verify) |
+| F1 | 🩸 Coral Drive repair + tenant isolation | 1.5 | 🟢 DONE (awaiting Florin verify) |
 | P1 | FREE activeModules default | 1 | ✅ VERIFIED |
 | P2 | Seat billing wiring | 1 | 🟢 ⏳ awaiting Stripe test-mode check |
 | P3 | Stale-token gating | 1 | ✅ VERIFIED |
@@ -1036,7 +754,6 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | P12 | Cancellation notice | 3 | ⬜ TODO |
 | P13 | PAST_DUE lockout | 3 | ⬜ TODO |
 | P15 | Repo hygiene / script quarantine | 3 | ⬜ TODO |
-| W1 | Superadmin Workspace DB module (Florin power tool) | 5 | ⬜ TODO |
 | P14 | PRO E2E test pass | 4 | ⬜ TODO |
 
 ---

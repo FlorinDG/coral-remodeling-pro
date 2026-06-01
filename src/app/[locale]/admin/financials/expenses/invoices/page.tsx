@@ -13,6 +13,8 @@ import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 
+import { Page } from '@/components/admin/database/types';
+
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
     { ssr: false, loading: () => <div className="flex h-[calc(100vh-8rem)] items-center justify-center text-neutral-500">Preparing Database...</div> }

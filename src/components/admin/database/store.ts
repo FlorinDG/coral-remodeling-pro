@@ -10,6 +10,8 @@ const syncDb = (db: Database | undefined) => {
     if (db) saveGlobalDatabase(db).catch(console.error);
 };
 
+const inFlightDriveInit = new Set<string>();
+
 /**
  * Helper to check if a database ID matches a "base" ID (e.g. 'db-invoices').
  * Handles both bare IDs and scoped IDs (e.g. 'db-invoices-abc12345').
@@ -936,12 +938,14 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 // Automated Google Drive Folder generation when a title is first defined
                                 if (propertyId === 'title' && typeof value === 'string' && value.trim() !== '' && !page.driveFolderId) {
                                     if (
-                                        isBaseDb(databaseId, 'db-clients') ||
+                                        (isBaseDb(databaseId, 'db-clients') ||
                                         isBaseDb(databaseId, 'db-1') ||
                                         isBaseDb(databaseId, 'db-portals') ||
                                         isBaseDb(databaseId, 'db-hr') ||
-                                        isBaseDb(databaseId, 'db-documents')
+                                        isBaseDb(databaseId, 'db-documents')) &&
+                                        !inFlightDriveInit.has(pageId)
                                     ) {
+                                        inFlightDriveInit.add(pageId);
                                         fetch('/api/drive/init', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
@@ -952,7 +956,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                                                 if (data.driveFolderId) {
                                                     get().updatePageDriveId(databaseId, pageId, data.driveFolderId);
                                                 }
-                                            }).catch(console.error);
+                                            })
+                                            .catch(console.error)
+                                            .finally(() => {
+                                                inFlightDriveInit.delete(pageId);
+                                            });
                                     }
                                 }
 

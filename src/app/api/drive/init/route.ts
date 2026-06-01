@@ -18,6 +18,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
+        // Short-circuit: check if page already has driveFolderId bound in Postgres
+        const existingPage = await prisma.globalPage.findUnique({
+            where: { id: pageId },
+            select: { driveFolderId: true }
+        });
+        if (existingPage?.driveFolderId) {
+            console.log(`[Drive init] Short-circuit: page ${pageId} is already bound to drive folder ${existingPage.driveFolderId}`);
+            return NextResponse.json({ success: true, driveFolderId: existingPage.driveFolderId });
+        }
+
         // Ensure we don't attempt Drive calls without proper OAuth credentials
         if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.GOOGLE_REFRESH_TOKEN) {
             console.warn('[Google Drive] Aborting: OAuth credentials missing from .env');

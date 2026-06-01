@@ -40,7 +40,10 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
     const [currentYear, setCurrentYear] = useState(initialYear);
     const [currentMonth, setCurrentMonth] = useState(initialMonth);
 
-    useEffect(() => {
+    // Keep state in sync with changes to 'value' props directly during state initialization updates
+    const [prevValue, setPrevValue] = useState(value);
+    if (value !== prevValue) {
+        setPrevValue(value);
         if (value) {
             const d = new Date(value);
             if (!isNaN(d.getTime())) {
@@ -48,7 +51,7 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
                 setCurrentMonth(d.getMonth());
             }
         }
-    }, [value]);
+    }
 
     useEffect(() => {
         const clickAway = (e: MouseEvent) => {
@@ -382,12 +385,19 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
         setNotes((props['prop-task-notes'] as string) || '');
         setDirty(false);
         setShowSaved(false);
-        if (savedTimeout.current) clearTimeout(savedTimeout.current);
     }
 
     useEffect(() => {
+        if (page.id !== prevPageId && savedTimeout.current) {
+            clearTimeout(savedTimeout.current);
+        }
+    }, [page.id, prevPageId]);
+
+    useEffect(() => {
         return () => {
-            if (savedTimeout.current) clearTimeout(savedTimeout.current);
+            if (savedTimeout.current) {
+                clearTimeout(savedTimeout.current);
+            }
         };
     }, []);
 

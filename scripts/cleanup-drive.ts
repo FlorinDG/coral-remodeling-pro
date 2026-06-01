@@ -29,7 +29,7 @@ async function purgeGhostFolders() {
         let totalPurged = 0;
 
         do {
-            const response = await drive.files.list({
+            const response: any = await drive.files.list({
                 // Query exclusively for FOLDERS inside the root directory that are NOT trashed
                 q: `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
                 fields: 'nextPageToken, files(id, name)',

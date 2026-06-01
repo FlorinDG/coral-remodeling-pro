@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredFinancialTabs } from "@/config/tabs";
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { RefreshCw, Plus, Loader2, Camera, CheckCircle2, AlertTriangle, Wifi } from 'lucide-react';
+import { RefreshCw, Plus, Loader2, Camera, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import PeppolQuotaBanner from '@/components/admin/PeppolQuotaBanner';
 import { createPageServerFirst } from '@/app/actions/pages';
@@ -89,61 +89,30 @@ export default function ExpensesInvoicesPage() {
             // Surface quota warning if FREE tenant is over received limit
             if (data.quota) setQuotaWarning(data.quota);
 
-            const existingDb = useDatabaseStore.getState().getDatabase(expensesDbId);
-            const existingPeppolIds = new Set(
-                (existingDb?.pages || [])
-                    .filter(p => p.properties.peppolDocId)
-                    .map(p => String(p.properties.peppolDocId))
-            );
-
-            let imported = 0;
-            for (const doc of (data.documents || [])) {
-                if (existingPeppolIds.has(doc.id)) continue;
-
-                const parsed = doc.parsed;
-                if (!parsed) continue;
-
-                const result = await createPageServerFirst(expensesDbId, {
-                    title: parsed.invoiceNumber || doc.invoice_number || doc.id,
-                    betreft: parsed.lines?.[0]?.description || '',
-                    source: 'src-peppol',
-                    status: 'opt-unpaid',
-                    invoiceDate: parsed.issueDate || doc.issue_date || '',
-                    dueDate: parsed.dueDate || doc.due_date || '',
-                    totalExVat: parsed.totalExVat || 0,
-                    totalVat: parsed.totalVat || 0,
-                    totalIncVat: parsed.totalIncVat || doc.total_amount || 0,
-                    peppolDocId: doc.id,
-                    invoiceLines: JSON.stringify(parsed.lines || []),
-                    supplierName: parsed.supplierName || doc.sender_name || '',
-                    supplierVat: parsed.supplierVat || doc.sender_peppol_id || '',
-                    supplier: doc.matchedSupplierId ? [doc.matchedSupplierId] : [],
+            // Add newly imported pages automatically returned from server-side sync
+            const newlyImportedPages = data.newlyImportedPages || [];
+            if (newlyImportedPages.length > 0) {
+                newlyImportedPages.forEach((page: Page) => {
+                    addConfirmedPage(page);
                 });
-
-                if (result.success) {
-                    addConfirmedPage(result.page);
-                    imported++;
-                } else {
-                    console.error('[Peppol sync] Failed to save:', result.error);
-                }
             }
 
-            // Increment the received counter by the number of ACTUALLY NEW docs imported
-            if (imported > 0) {
-                fetch('/api/peppol/inbox/count', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ count: imported }),
-                }).catch(() => {}); // fire-and-forget — don't block UI
-            }
-
-            setSyncResult({ count: imported });
-        } catch (err: any) {
-            setSyncResult({ count: 0, error: err.message || t('nav.pages.peppolSyncError') });
+            setSyncResult({ count: data.newlyImportedCount || 0 });
+        } catch (err: unknown) {
+            setSyncResult({ count: 0, error: (err as Error).message || t('nav.pages.peppolSyncError') });
         } finally {
             setSyncing(false);
         }
-    }, [addConfirmedPage, expensesDbId, t]);
+    }, [addConfirmedPage, t]);
+
+    // Automatically sync Peppol inbox in the background on mount / when Peppol is ready
+    const isPeppolReady = peppolStatus.connected && peppolStatus.peppolRegistered;
+
+    useEffect(() => {
+        if (isPeppolReady) {
+            handleSyncPeppol();
+        }
+    }, [isPeppolReady, handleSyncPeppol]);
 
     const handleNewManual = useCallback(async () => {
         if (isCreatingNew) return;
@@ -165,8 +134,6 @@ export default function ExpensesInvoicesPage() {
             setIsCreatingNew(false);
         }
     }, [isCreatingNew, addConfirmedPage, expensesDbId]);
-
-    const isPeppolReady = peppolStatus.connected && peppolStatus.peppolRegistered;
 
     return (
         <div className="flex flex-col w-full h-full">

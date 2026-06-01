@@ -173,6 +173,7 @@ export async function POST(request: Request) {
             const file = formData.get('file') as File;
             if (!file) return NextResponse.json({ error: 'Missing file payload' }, { status: 400 });
 
+            const moduleTag = formData.get('moduleTag') as string;
             const appProperties: Record<string, string> = { tenantId };
             if (moduleTag) appProperties.module = moduleTag;
 

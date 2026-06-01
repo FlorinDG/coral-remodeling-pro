@@ -35,6 +35,8 @@ export interface EInvoiceTenant {
     peppol_ids?: string[];
     smp_registration?: boolean;
     smp_registration_date?: string | null;
+    company_name?: string;
+    company_address?: string;
     created_at: string;
     updated_at: string;
     is_deleted: boolean;
@@ -175,7 +177,10 @@ export async function registerPeppol(tenantId: string, peppolId: string, company
         body: JSON.stringify(body),
     });
     if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
+        const text = await res.text();
+        console.error(`[e-invoice.be] Peppol registration raw failure status ${res.status}:`, text);
+        let err = {};
+        try { err = JSON.parse(text); } catch (_) {}
         throw new Error(`Peppol registration failed: ${JSON.stringify(err)}`);
     }
     return res.json();

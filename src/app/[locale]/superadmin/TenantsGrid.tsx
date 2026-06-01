@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import {
     Building2, Users, LayoutTemplate, Loader2, Check,
     RefreshCw, Trash2, Mail, ChevronDown, Activity,
     Zap, MoreHorizontal, FolderOpen, KeyRound, Eye, EyeOff,
+    ShieldCheck, ShieldAlert, HelpCircle,
 } from "lucide-react";
 import {
     updateTenantSubscription,
@@ -15,6 +16,7 @@ import {
     setTenantScanQuota,
     updateTenantOcrKeys,
     impersonateTenant,
+    getTenantPeppolHealth,
 } from "@/app/actions/superadmin";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -83,6 +85,152 @@ function peppolColor(val: number, cap: number | null, soft = false): string {
     if (pct >= 1) return soft ? "text-amber-600 font-bold" : "text-red-600 font-bold";
     if (pct >= 0.8) return soft ? "text-amber-600" : "text-orange-600";
     return "text-neutral-700 dark:text-neutral-300";
+}
+
+function PeppolHealthPanel({ tenantId }: { tenantId: string }) {
+    const [loading, setLoading] = useState(true);
+    const [health, setHealth] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
+
+    const checkHealth = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getTenantPeppolHealth(tenantId);
+            setHealth(data);
+        } catch (e: any) {
+            setError(e.message || "Failed to retrieve health status");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        checkHealth();
+    }, [tenantId]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center gap-2 py-4 justify-center text-xs text-neutral-400">
+                <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+                <span>Checking e-invoice.be live health...</span>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-xs text-red-500 flex flex-col gap-2">
+                <p className="font-bold flex items-center gap-1">
+                    <ShieldAlert className="w-4 h-4" /> Live Health Check Failed
+                </p>
+                <p className="text-[11px] opacity-90">{error}</p>
+                <button onClick={checkHealth} className="w-max px-2.5 py-1 rounded bg-red-500 text-white font-semibold mt-1">
+                    Retry Check
+                </button>
+            </div>
+        );
+    }
+
+    if (!health || !health.connected) {
+        return (
+            <div className="bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl p-3 text-xs flex flex-col gap-1.5">
+                <p className="font-bold text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5">
+                    <HelpCircle className="w-4 h-4 text-neutral-400" /> Peppol Connection Pending
+                </p>
+                <p className="text-[11px] text-neutral-600 dark:text-neutral-400">
+                    This tenant has not yet connected or onboarded onto the e-invoice.be platform.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-xl p-3.5 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">
+                    Peppol Reseller Live Health
+                </p>
+                <button onClick={checkHealth} className="p-1 rounded hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors" title="Reload health status">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                {/* SMP Registration */}
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">SMP Registration</span>
+                    {health.smpRegistration ? (
+                        <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                            <ShieldCheck className="w-4 h-4" /> Active on e-invoice.be
+                        </span>
+                    ) : health.isValid ? (
+                        <span className="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                            <ShieldCheck className="w-4 h-4" /> ACTIVE (External SMP)
+                        </span>
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-red-500 font-semibold">
+                            <ShieldAlert className="w-4 h-4" /> DEREGISTERED / INACTIVE
+                        </span>
+                    )}
+                </div>
+
+                {/* Reachable & Receive Capable */}
+                <div className="flex flex-col gap-1">
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Receive Capability</span>
+                    {health.isValid ? (
+                        <span className="text-emerald-600 font-semibold">
+                            ✓ Receive Enabled (SMP Valid)
+                        </span>
+                    ) : (
+                        <span className="text-red-500 font-semibold">
+                            ✗ Receive Disabled (SMP Invalid)
+                        </span>
+                    )}
+                </div>
+
+                {/* Peppol ID */}
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Peppol Participant ID</span>
+                    <span className="font-mono bg-neutral-100 dark:bg-white/5 px-2 py-0.5 rounded text-[11px] w-max select-all">
+                        {health.peppolId || "None"}
+                    </span>
+                </div>
+
+                {/* Inbound Docs */}
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Last Inbound Document</span>
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                        {health.lastInboundDoc
+                            ? new Date(health.lastInboundDoc).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                            : "No incoming documents received yet"
+                        }
+                    </span>
+                </div>
+
+                {/* Supported UBL Formats */}
+                {health.supportedDocTypes?.length > 0 && (
+                    <div className="flex flex-col gap-1 sm:col-span-2 pt-1 border-t border-neutral-200 dark:border-white/5">
+                        <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider">Supported UBL Formats</span>
+                        <div className="flex flex-col gap-0.5 mt-1 text-[11px] text-neutral-600 dark:text-neutral-400 max-h-24 overflow-y-auto pr-1">
+                            {health.supportedDocTypes.map((type: string, i: number) => {
+                                const isInvoice = type.includes("Invoice");
+                                const isCreditNote = type.includes("CreditNote");
+                                let cleanLabel = type;
+                                if (isInvoice) cleanLabel = "✓ Peppol BIS Billing 3.0 (Invoice)";
+                                else if (isCreditNote) cleanLabel = "✓ Peppol BIS Billing 3.0 (Credit Note)";
+                                return (
+                                    <span key={i} className="truncate" title={type}>
+                                        {cleanLabel}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -511,6 +659,11 @@ export default function TenantsGrid({ initialTenants }: { initialTenants: Tenant
                                                             <RefreshCw className="w-3 h-3" /> Reset counters
                                                         </button>
                                                     </div>
+
+                                                     {/* Peppol Health Check Panel */}
+                                                     <div className="sm:col-span-3 pt-4 border-t border-neutral-100 dark:border-white/5">
+                                                         <PeppolHealthPanel tenantId={t.id} />
+                                                     </div>
 
                                                     {/* OCR Settings */}
                                                     <div className="sm:col-span-3 pt-4 border-t border-neutral-100 dark:border-white/5">

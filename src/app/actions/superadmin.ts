@@ -161,3 +161,48 @@ export async function stopImpersonation() {
     revalidatePath("/");
     return { ok: true };
 }
+
+export async function getTenantPeppolHealth(tenantId: string) {
+    await verifySuperadmin();
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: { eInvoiceTenantId: true, eInvoiceApiKey: true, peppolId: true }
+    });
+
+    if (!tenant?.eInvoiceTenantId) {
+        return { connected: false };
+    }
+
+    try {
+        const { getTenant, lookupPeppolParticipant } = await import("@/lib/e-invoice");
+        const { listInboxDocuments } = await import("@/lib/e-invoice-inbox");
+
+        const liveTenant = await getTenant(tenant.eInvoiceTenantId).catch(() => null);
+        let lookupResult = null;
+        let lastInboundDoc: string | null = null;
+
+        if (tenant.peppolId && tenant.eInvoiceApiKey) {
+            lookupResult = await lookupPeppolParticipant(tenant.peppolId, tenant.eInvoiceApiKey).catch(() => null);
+            const inboxDocs = await listInboxDocuments(tenant.eInvoiceApiKey).catch(() => null);
+            if (inboxDocs?.documents && inboxDocs.documents.length > 0) {
+                lastInboundDoc = inboxDocs.documents[0].received_at;
+            }
+        }
+
+        return {
+            connected: true,
+            smpRegistration: liveTenant?.smp_registration ?? false,
+            smpRegistrationDate: liveTenant?.smp_registration_date || null,
+            peppolId: liveTenant?.peppol_ids?.[0] || tenant.peppolId,
+            isValid: lookupResult?.is_valid ?? false,
+            supportedDocTypes: lookupResult?.supported_document_types || [],
+            lastInboundDoc,
+            companyName: liveTenant?.company_name || null,
+            companyAddress: liveTenant?.company_address || null,
+        };
+    } catch (e: any) {
+        console.error(`[getTenantPeppolHealth] Failed for ${tenantId}:`, e);
+        throw new Error(e.message || "Failed to fetch Peppol health details");
+    }
+}

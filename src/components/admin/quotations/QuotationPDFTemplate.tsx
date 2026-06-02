@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
 interface ClientInfo {
     name: string;
@@ -167,8 +168,7 @@ export const QuotationPDFTemplate = ({
             } else if (block.type === 'text') {
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
-                        <Text style={{ ...colDesc, fontStyle: 'italic', color: '#777' }}>{cleanContent}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>{cleanContent}</Text>
                     </View>
                 );
             } else {
@@ -193,70 +193,15 @@ export const QuotationPDFTemplate = ({
         return rows;
     };
 
-    const calcVatAndTotal = () => {
-        let computedSubtotal = 0;
-        let totalVat = 0;
-        const vatMap = new Map<number, { base: number; vat: number }>();
-        let hasLineMedecontractant = false;
+    const totals = useMemo(() => {
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
+    }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
 
-        const accumulateVat = (nodes: Block[], multiplier = 1) => {
-            (nodes || []).forEach(b => {
-                if (b.isOptional) return;
-
-                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
-                    ? (b.quantity || 1) 
-                    : 1;
-                const nextMultiplier = multiplier * currentQty;
-                
-                if (b.children && b.children.length > 0) {
-                    accumulateVat(b.children, nextMultiplier);
-                    return;
-                }
-
-                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    const price = b.verkoopPrice || 0;
-                    const lineTotal = price * nextMultiplier;
-                    computedSubtotal += lineTotal;
-
-                    const lineVatRate = b.vatRate ?? 21;
-
-                    if (b.vatMedecontractant) {
-                        hasLineMedecontractant = true;
-                    }
-
-                    let effectiveRate: number;
-                    if (vatCalcMode === 'lines') {
-                        effectiveRate = b.vatMedecontractant ? 0 : lineVatRate;
-                    } else {
-                        effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime);
-                    }
-
-                    const existing = vatMap.get(effectiveRate) || { base: 0, vat: 0 };
-                    existing.base += lineTotal;
-                    existing.vat += lineTotal * (effectiveRate / 100);
-                    vatMap.set(effectiveRate, existing);
-                }
-            });
-        };
-
-        accumulateVat(blocks, 1);
-        
-        const vatBreakdown = Array.from(vatMap.entries())
-            .sort((a, b) => b[0] - a[0])
-            .map(([rate, data]) => ({ rate, ...data }));
-
-        totalVat = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
-
-        return {
-            subtotal: computedSubtotal,
-            taxAmount: totalVat,
-            vatBreakdown,
-            hasLineMedecontractant,
-        };
-    };
-
-    const { taxAmount, vatBreakdown, hasLineMedecontractant } = calcVatAndTotal();
-    const totalInclTax = grandTotal + taxAmount;
+    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotal;
+    const vatBreakdown = totals.vatBreakdown;
+    const taxAmount = totals.totalVAT;
+    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + taxAmount);
+    const hasLineMedecontractant = totals.hasMedecontractant;
 
     const renderVatRows = (boxWidth: number) => {
         if (vatCalcMode === 'lines') {
@@ -362,7 +307,7 @@ export const QuotationPDFTemplate = ({
                             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {grandTotal.toFixed(2)}</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {finalSubtotal.toFixed(2)}</Text>
                                 </View>
                                 {renderVatRows(240)}
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
@@ -648,7 +593,7 @@ export const QuotationPDFTemplate = ({
                     <View style={s.summaryBox}>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
-                            <Text style={s.summaryValue}>€  {grandTotal.toFixed(2)}</Text>
+                            <Text style={s.summaryValue}>€  {finalSubtotal.toFixed(2)}</Text>
                         </View>
                         {renderVatRowsDynamic()}
                         {renderGrandTotal()}

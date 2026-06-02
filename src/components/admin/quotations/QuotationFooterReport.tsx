@@ -13,6 +13,7 @@ interface QuotationFooterReportProps {
     onVatCalcModeChange: (mode: 'lines' | 'total') => void;
     onVatRegimeChange: (regime: string) => void;
     language?: string;
+    onLanguageChange?: (lang: string) => void;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -26,6 +27,7 @@ export default function QuotationFooterReport({
     onVatCalcModeChange,
     onVatRegimeChange,
     language = 'nl',
+    onLanguageChange,
 }: QuotationFooterReportProps) {
     const vatRegime = vatRegimeProp as VatRegime;
 
@@ -250,6 +252,21 @@ export default function QuotationFooterReport({
                             </div>
                             <input type="radio" name="vatCalcModeQ" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} className="sr-only" />
                         </label>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t border-neutral-200/50 dark:border-white/5">
+                        <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1.5 text-neutral-400 dark:text-neutral-500">
+                            Document Language
+                        </h4>
+                        <select
+                            value={language}
+                            onChange={(e) => onLanguageChange?.(e.target.value)}
+                            className="w-full bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded px-2 py-1 text-xs font-semibold text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-orange-500"
+                        >
+                            <option value="nl">Nederlands</option>
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
                     </div>
                 </div>
 

@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { Block } from '@/components/admin/database/types';
 import { useRouter } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
 interface CreditNoteInfo {
     id: string;
@@ -27,6 +28,7 @@ interface InvoiceFooterReportProps {
     creditNotes?: CreditNoteInfo[];
     isLocked?: boolean;
     language?: string;
+    onLanguageChange?: (lang: string) => void;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -47,60 +49,38 @@ export default function InvoiceFooterReport({
     creditNotes = [],
     isLocked = false,
     language = 'nl',
+    onLanguageChange,
 }: InvoiceFooterReportProps) {
     const router = useRouter();
     const vatRegime = vatRegimeProp as VatRegime;
 
-    const { subtotal, vatBreakdown, lineCount, hasLineMedecontractant } = useMemo(() => {
-        let subtotal = 0;
-        let lineCount = 0;
-        let hasLineMedecontractant = false;
-        const vatMap = new Map<number, { base: number; vat: number }>();
+    const totals = useMemo(() => {
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime });
+    }, [blocks, vatCalcMode, vatRegime]);
 
-        const accumulate = (nodes: Block[]) => {
+    const { subtotal, vatBreakdown, totalVAT, totalInclVAT, hasLineMedecontractant } = {
+        subtotal: totals.subtotal,
+        vatBreakdown: totals.vatBreakdown,
+        totalVAT: totals.totalVAT,
+        totalInclVAT: totals.totalInclVAT,
+        hasLineMedecontractant: totals.hasMedecontractant,
+    };
+
+    const lineCount = useMemo(() => {
+        let count = 0;
+        const walk = (nodes: Block[]) => {
             nodes.forEach(b => {
                 if (b.isOptional) return;
                 if (b.type === 'section' || b.type === 'subsection' || b.type === 'post') {
-                    accumulate(b.children || []);
+                    walk(b.children || []);
                 } else if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    const qty = b.quantity || 1;
-                    const price = b.unitPrice || b.verkoopPrice || 0;
-                    const lineTotal = price * qty;
-                    subtotal += lineTotal;
-                    lineCount++;
-
-                    const lineVatRate = b.vatRate ?? 21;
-
-                    if (b.vatMedecontractant) {
-                        hasLineMedecontractant = true;
-                    }
-
-                    let effectiveRate: number;
-                    if (vatCalcMode === 'lines') {
-                        effectiveRate = b.vatMedecontractant ? 0 : lineVatRate;
-                    } else {
-                        effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime);
-                    }
-
-                    const existing = vatMap.get(effectiveRate) || { base: 0, vat: 0 };
-                    existing.base += lineTotal;
-                    existing.vat += lineTotal * (effectiveRate / 100);
-                    vatMap.set(effectiveRate, existing);
+                    count++;
                 }
             });
         };
-
-        accumulate(blocks);
-
-        const vatBreakdown = Array.from(vatMap.entries())
-            .sort((a, b) => b[0] - a[0])
-            .map(([rate, data]) => ({ rate, ...data }));
-
-        return { subtotal, vatBreakdown, lineCount, hasLineMedecontractant };
-    }, [blocks, vatCalcMode, vatRegime]);
-
-    const totalVAT = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
-    const totalInclVAT = subtotal + totalVAT;
+        walk(blocks || []);
+        return count;
+    }, [blocks]);
 
     const showMedecontractant = vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant);
 
@@ -265,6 +245,22 @@ export default function InvoiceFooterReport({
                             </div>
                             <input type="radio" name="vatCalcMode" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} disabled={isLocked} className="sr-only" />
                         </label>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t border-neutral-200/50 dark:border-white/5">
+                        <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1.5 text-neutral-400 dark:text-neutral-500">
+                            Document Taal
+                        </h4>
+                        <select
+                            value={language}
+                            onChange={(e) => onLanguageChange?.(e.target.value)}
+                            disabled={isLocked}
+                            className="w-full bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded px-2 py-1 text-xs font-semibold text-neutral-700 dark:text-neutral-300 focus:outline-none focus:border-orange-500"
+                        >
+                            <option value="nl">Nederlands</option>
+                            <option value="fr">Français</option>
+                            <option value="en">English</option>
+                        </select>
                     </div>
                 </div>
 

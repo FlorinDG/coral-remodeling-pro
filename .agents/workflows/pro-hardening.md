@@ -856,6 +856,149 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK L6 — Scan / expense capture UX improvements
+**Status:** ⬜ TODO · `develop` · Phase 3 (UX)
+**Priority:** medium-high — scan is the FREE persona's daily action; #1 and #2 below change the experience most.
+
+### Context (Planner, measured in `src/components/admin/expenses/TicketCaptureModal.tsx`)
+The scan flow is well-built: steps capture→(split-confirm)→review→saving→done, plan-aware (Tesseract FREE / GPT-4o PRO+), drag-drop, multi-page PDF split, manual fallback. The improvements below build on it; do NOT rewrite the working flow.
+
+### Item 1 — 📷 Camera-first on mobile (highest value)
+- **Measured:** a `cameraInputRef` is declared but the UI leads with a generic upload box. The FREE persona photographs receipts ON A PHONE.
+- **Fix:** on mobile (or always), surface a prominent **"Take photo"** action using `<input capture="environment">`, front-and-centre (not behind the upload box). Snap → review → save in as few taps as possible. Keep upload/drag for desktop.
+
+### Item 2 — Flag low-confidence / must-confirm fields in review
+- **Measured:** extracted data drops into a plain form; on Tesseract (FREE) amount/VAT/date are often slightly off and the user may trust a wrong number.
+- **Fix:** in the review step, visually highlight the fields most likely wrong — at minimum amount, VAT, date — as "please confirm" (and if the OCR layer exposes a confidence score, use it). Draw the eye to what needs checking. Pairs with L2's confidence idea.
+
+### Item 3 — Decimal input consistency (comma)
+- **Measured:** form `amount`/`vatAmount` are separate from the engine inputs; must use the SAME shared decimal parser from L4 so "12,50" works here too. (This modal won't be fixed by L4 automatically — it's a different form.)
+- **Fix:** route this modal's numeric fields through the L4 shared decimal util.
+
+### Item 4 — VAT auto-derivation
+- Many till receipts show only the gross total. Offer a one-tap "21% / 6%" to back-calculate VAT from the entered gross (e.g. VAT = gross − gross/1.21). Saves manual math per ticket.
+
+### Item 5 — Batch / "scan another"
+- Tradespeople accumulate stacks. After save (`done` step), add a "Scan another" action that loops back to capture WITHOUT closing the modal, so an end-of-week dump is fast.
+
+### Item 6 — Mobile layout + richer success state
+- `max-w-lg` / `max-h-[75vh]` can cramp the image preview + form on a phone → mobile full-height layout. And the success state should confirm WHAT was saved (merchant + amount), not just "Saved."
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` items located as cited; cameraInputRef exists unused-prominently; modal is separate form from engine inputs.
+- `[ASSUMED ❓]` whether the OCR path (Tesseract client / GPT server) can surface a per-field confidence — if not, item 2 falls back to "always highlight amount/VAT/date."
+
+### Acceptance criteria
+- Mobile shows a prominent camera-capture path; photo → review → save works in minimal taps. (1)
+- Review highlights amount/VAT/date (or low-confidence fields) for confirmation. (2)
+- Amount/VAT accept comma via the L4 shared parser. (3)
+- One-tap VAT auto-calc from gross. (4)
+- "Scan another" loops without closing. (5)
+- Mobile layout not cramped; success shows merchant + amount. (6)
+- `tsc`+`lint` green.
+
+### Out of scope
+- Changing the OCR engines (L2/P0-B own those).
+
+### 🤖 AI FEEDBACK
+- per-item (1–6): measured / changed:
+- confidence available or fallback used (item 2)?:
+- premise updates appended to pd.md? (y/n):
+
+## TASK Q1 — Quotation/invoice engine: batch of authoring fixes (Florin, 2026-05-31)
+**Status:** ⬜ TODO · `develop` · Phase 3
+**Priority:** medium-high — daily authoring friction + one pricing-correctness bug (item 1). Multiple small items; group sensibly, can be >1 commit but one task.
+
+### Item 1 — 🩸 brutto=netto when marge AND discount are EMPTY (not just 0)
+- **Measured:** `FinancialRowRenderer.tsx` (quotation) derives `nettokost = bruto*(1-disc/100)`, `verkoop = nettokost*(1+marge/100)`. Inputs use `value={block.discountPercent ?? ''}` and onChange does `isNaN(parsed) ? 0 : parsed` — so an EMPTY field is coerced to 0, and the marge placeholder is "20" implying a default that isn't applied. Florin's rule: **if margin AND discount are genuinely EMPTY (untouched, not 0), the selling price = brutto (brutto IS netto).** Only apply discount/marge math when the user has actually entered a value.
+- **Fix:** distinguish empty (`undefined`/`''`) from explicit `0`. When both discount and marge are empty → `verkoopPrice = brutoPrice` (no reduction, no markup). When either is set (incl. 0) → apply the math. Make calc + display + PDF consistent with this.
+
+### Item 2 — discount/marge fields: inconsistent typing, "adds zeros"
+- **Measured:** both inputs are `type="number"` with raw `parseFloat(e.target.value)` and `isNaN ? 0`. Combined with `value={x ?? ''}`, partial entries (e.g. clearing then typing) coerce to 0 and fight the user → the "adds zeros" behavior.
+- **Fix:** same remedy as L4 — `type="text"` + `inputMode="decimal"` + shared decimal parser; allow truly-empty (don't force 0 on clear). Coordinate with L4's shared util. Empty stays empty (ties to item 1).
+
+### Item 3 — Subcomponent inserts at BOTTOM → user must scroll, new element off-screen
+- **Measured:** `QuotationRow.tsx` `handleAddChild` does `children: [...(block.children||[]), newChild]` — appends to end; long lists push the new row out of view, no focus/scroll-to.
+- **Fix (Florin's preference):** add new subcomponent at the TOP of the existing subcomponents list (or directly under the add button), AND scroll-into-view + focus the new element so the user lands on it. The point: created element must be in view & focused, not requiring a scroll-hunt. Apply same UX to invoice engine if it mirrors this.
+
+### Item 4 — Library pollution: avoid duplicate articles on Save-to-Library
+- **Measured:** `SaveToLibraryModal.tsx` — if `block.articleId` exists it overwrites that page, else `store.createPage('db-articles', ...)` ALWAYS creates new → repeated saves of the same article spawn duplicates.
+- **Fix:** before creating, check for an existing article with the same title (normalized) / same SKU in `db-articles`; if found, offer update-existing instead of blind-create (or auto-match + confirm). Dedup on save so the library doesn't fill with near-identical entries. (Pairs conceptually with the PDF-import dedup that already exists.)
+
+### Item 5 — On-the-fly language switch for the document (quote/invoice + others)
+- **Measured:** `ClientQuotationEngine` uses `docLanguage = tenantProfile?.documentLanguage || 'nl'` — language is tenant-global, not per-document, and not switchable on the open document.
+- **Fix:** add a per-document language selector (NL/FR/EN, matching `document-i18n`) on the open quote/invoice that re-renders labels + PDF in that language live, persisted on the document (e.g. `properties.documentLanguage`), defaulting to tenant default. Extend to the other document types (credit note, etc.). This is the document-language control, distinct from UI locale.
+
+### Item 6 — NEW: free rich-text / image line (not a calculation line)
+- Need a line TYPE that is a simple rich-text editor (and optional image), NOT truncated like calc lines and NOT carrying price/qty/VAT columns — for custom commentary, terms, an image, a section intro, etc.
+- **Measured:** `Block.type` union already includes `paragraph`/`callout`/`image`/`text` etc. and the block model supports it; the engine just renders everything through the financial row. Add a "text/note" block option in the add-row menu that renders as a full-width rich-text line (reuse the paste-as-plain-text from L3) with NO calc columns, and renders the same way in the PDF (full-width prose/image, no price columns). Pairs with L3 (wrap/paste/font).
+
+### Item 7 — 🐛 "Deze klant heeft nog geen Google Drive folder. Synchroniseer de database eerst." on Save-to-Drive
+- **Measured:** `ClientQuotationEngine.tsx:552` (and `ClientInvoiceEngine.tsx:651`) — `handleSaveToDrive` reads `clientRecord?.driveFolderId`; if the linked CLIENT has no Drive folder yet, it aborts with this toast. After F-drive-bind made init idempotent, the right behavior is: **auto-create the client's Drive folder on demand** instead of erroring — call the (now idempotent) init for the client, then save. The user shouldn't have to manually "sync the database first."
+- **Fix:** on Save-to-Drive, if the client folder is missing, create it via the idempotent `/api/drive/init` (db-clients template) then proceed to save the document into it. Only error if creation genuinely fails. Same for invoice engine.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` items 1–5,7 located in code as cited. Item 6 block model supports it.
+- `[ASSUMED ❓]` whether quotation + invoice engines share enough that each fix applies to both — confirm per item and apply to both where they mirror.
+
+### Acceptance criteria
+- Empty marge+discount → verkoop = brutto (not forced 0-math); explicit 0 still works. (item 1)
+- Discount/marge accept comma, allow empty, stop auto-adding zeros. (item 2)
+- New subcomponent appears in view + focused, at top of its list. (item 3)
+- Saving an already-libraried article updates/dedups instead of duplicating. (item 4)
+- Per-document language switch re-renders labels + PDF live, persists on the doc. (item 5)
+- A non-calculation rich-text/image line type exists in quote/invoice + PDF. (item 6)
+- Save-to-Drive auto-creates the client folder when missing; no "synchroniseer eerst" dead-end. (item 7)
+- `tsc`+`lint` green. Applied to invoice engine too where mirrored.
+
+### 🤖 AI FEEDBACK
+- per-item (1–7): measured / changed / both-engines?
+- premise updates appended to pd.md? (y/n):
+
+## TASK L5 — 🩸 Consolidate invoice VAT/total calculation; fix optional-line VAT bug; align rounding
+**Status:** ⬜ TODO · `develop` · Phase 3 (financial correctness)
+**Priority:** HIGH within Phase 3 — #1 below puts a WRONG total on a legal PDF. Found in Planner invoice-code audit 2026-05-31.
+
+### Findings (Planner, measured)
+1. **🩸 PDF VAT breakdown does NOT exclude optional lines, but grandTotal DOES → inconsistent invoice.**
+   - `InvoicePDFTemplate.tsx` VAT loop (~line 253) accumulates `base`/`vat` for EVERY line — NO `if (b.isOptional) return` guard.
+   - But `grandTotal` passed into the template IS computed excl-optional (`ClientInvoiceEngine.tsx` lines 242 & 544: `if (block.isOptional) return`).
+   - Result on any invoice containing an optional line: `totalInclTax = grandTotal(excl-optional) + totalVAT(incl-optional)` → VAT doesn't match the shown subtotal. **The on-screen footer (`InvoiceFooterReport`) and `InvoiceTotalCell` BOTH correctly skip optional (`if (b.isOptional) return`), so SCREEN total ≠ PDF total for such invoices.** Wrong number on the legal document.
+2. **VAT rounding inconsistent / not per-rate.** All three calculators do `existing.vat += lineTotal * (rate/100)` on UNROUNDED floats, round only at display (`toFixed(2)`). Belgian convention rounds VAT per rate-group; summing raw floats can drift a cent vs the accountant's expectation AND vs the Peppol UBL transmitted. PDF and e-invoice must agree to the cent.
+3. **Three separate copies of the VAT/total calc** (`InvoicePDFTemplate`, `InvoiceFooterReport`, `InvoiceTotalCell`) — this duplication is WHY #1 exists (one copy got the optional guard, another didn't). Root cause.
+4. **Regime fallback differs:** `InvoiceTotalCell` uses `parseFloat(vatRegime || '21')`; `InvoiceFooterReport` uses `parseFloat(vatRegime)` (no fallback) → empty regime yields NaN VAT in the footer but 21% in the cell.
+5. **Status-ID sprawl:** singletons `opt-unpaid`, `opt-paid`, `opt-overdue`, `opt-uncollectible`, `opt-to-do`, `opt-quote` coexist with the canonical set (`opt-draft/sent/credited/proforma/partially-credited`). Confirm intended vs legacy drift. (Low priority — verify, don't blindly delete.)
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` PDF VAT loop lacks the isOptional guard the other two have; grandTotal is excl-optional; three independent calc copies; regime-fallback divergence.
+- `[ASSUMED ❓]` what the Peppol UBL builder (`src/lib/peppol-ubl.ts`) uses for VAT rounding/per-rate grouping — the consolidated calc should MATCH it so PDF = e-invoice = screen. MEASURE before picking the rounding rule.
+
+### Instructions
+1. **Single shared calculator** — create `calculateInvoiceTotals(blocks, { vatCalcMode, vatRegime })` (e.g. `src/lib/invoice-totals.ts`) returning `{ subtotal, vatBreakdown[], totalVAT, totalInclVAT }`. It MUST: skip `isOptional` lines, walk section/subsection/post children, handle per-line vs total vatCalcMode + medecontractant, default regime to 21 on empty.
+2. **Use it in all three** — `InvoicePDFTemplate`, `InvoiceFooterReport`, `InvoiceTotalCell` (and anywhere else totals are computed, incl. ClientInvoiceEngine's grandTotal) call the ONE function. Removes #1, #3, #4 at once.
+3. **Rounding** — round VAT per rate-group, consistently, MATCHING the Peppol UBL builder (measure it first). Document the chosen rule. Goal: PDF total === screen total === Peppol UBL total, to the cent, including the optional-line case.
+4. **Status IDs (#5)** — audit the singletons; report which are legacy vs intended in feedback; only consolidate if clearly safe (else flag for Florin).
+5. Mirror to the QUOTATION engine if it shares the same divergence pattern (it has its own FinancialRowRenderer/footer) — note in feedback whether quote totals have the same optional-line issue.
+
+### Acceptance criteria
+- An invoice WITH an optional line shows the SAME total on screen and in the generated PDF (and that total = subtotal-excl-optional + matching VAT). **This is the headline fix.**
+- One shared totals util used by all invoice total surfaces; no divergent copies.
+- VAT rounding matches the Peppol UBL to the cent.
+- Regime fallback consistent (no NaN). Status-ID audit reported.
+- `tsc`+`lint` green.
+
+### Out of scope
+- Changing VAT rates/regime semantics; only consolidating + fixing the calc.
+
+### 🤖 AI FEEDBACK
+- measured (confirm PDF lacks optional guard; Peppol UBL rounding rule):
+- shared util created + all call sites migrated:
+- optional-line screen-vs-PDF now equal? (the headline):
+- rounding rule chosen + matches UBL:
+- status-ID audit result:
+- quotation engine same issue? :
+- premise updates appended to pd.md? (y/n):
+
 ## TASK L4 — Accept BOTH dot and comma as decimal separator in engine number inputs
 **Status:** ⬜ TODO · `develop` · Phase 3 (UX/correctness)
 **Priority:** medium — daily friction; comma entry currently fails silently and can zero a price. Small, surgical.
@@ -1245,6 +1388,11 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | L2 | Improve AI PDF→quote extraction (brutto/netto/discount + vision) | 3 | ⬜ TODO |
 | L3 | Engine row UX: text wrap + paste-plain-text + document font control | 3 | ⬜ TODO |
 | L4 | Accept dot AND comma as decimal separator in engine inputs | 3 | ⬜ TODO |
+| L5 | 🩸 Consolidate invoice VAT/totals; fix optional-line VAT bug; align rounding | 3 | ⬜ TODO |
+| Q1 | Quotation/invoice authoring batch (empty marge=netto, dedup, subcomp UX, lang switch, text line, drive-folder autocreate) | 3 | ⬜ TODO |
+| L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
+| F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
+| F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | Fix Drive folder duplication + record binding + cleanup | 1.5 | 🟢 DONE (awaiting Florin verify) |
 | P1 | FREE activeModules default | 1 | ✅ VERIFIED |
 | P2 | Seat billing wiring | 1 | 🟢 ⏳ awaiting Stripe test-mode check |

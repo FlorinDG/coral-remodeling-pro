@@ -19,6 +19,8 @@ const TENANT_FIELDS = [
     'documentTemplate',
     'documentMode',
     'stationeryUrl',
+    'documentFont',
+    'documentFontSize',
     // Module settings
     'defaultVatRate', 'vatCalcMode', 'defaultPaymentTermDays',
     'defaultEventDuration', 'defaultCalendarView',

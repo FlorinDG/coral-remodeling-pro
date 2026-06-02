@@ -9,174 +9,130 @@ datasource db {
 }
 
 model Tenant {
-  id          String   @id @default(cuid())
-  companyName String
-  vatNumber   String?
-  iban        String?
-  logoUrl     String?
-  planType    String   @default("FREE")
-  peppolId    String?
-  driveFolderId String?
-  email       String?
-  street      String?
-  postalCode  String?
-  city        String?
-  documentLanguage   String?
-  commercialName     String?
-  bic                String?
-  deliveryStreet     String?
-  deliveryPostalCode String?
-  deliveryCity       String?
-  headquartersStreet String?
-  headquartersPostalCode String?
-  headquartersCity   String?
-  directorFirstName  String?
-  directorLastName   String?
-  brandColor         String?
-
-  // Peppol / E-Invoice.be Integration
-  eInvoiceTenantId   String?   // e-invoice.be tenant ID (e.g., tenant_abc123)
-  eInvoiceApiKey     String?   // e-invoice.be tenant API key for sending documents
-  peppolRegistered   Boolean   @default(false)
-  peppolOptOut       Boolean   @default(false)
-
-  // Document Numbering Patterns
-  invoicePrefix      String?  @default("INV")
-  invoiceConnector   String?  @default("-")
-  invoiceDateFormat  String?  @default("YYYY")
-  invoiceNumberWidth Int?     @default(3)
-  invoiceNextNumber  Int?     @default(1)
-
-  quotationPrefix      String?  @default("OFF")
-  quotationConnector   String?  @default("-")
-  quotationDateFormat  String?  @default("YYYY")
-  quotationNumberWidth Int?     @default(3)
-  quotationNextNumber  Int?     @default(1)
-
-  // Document Template
-  documentTemplate   String?  @default("t1")
-  documentMode       String?  @default("dynamic")  // "dynamic" | "stationery"
-  stationeryUrl      String?  // Base64 data URL of uploaded A4 stationery image (PNG/JPG)
-
-  // Phase 2: SaaS Overarching Subscription Controls
-  subscriptionStatus String   @default("ACTIVE") // ACTIVE, INACTIVE, TRIAL
-  activeModules      String[] @default(["INVOICING"])
-
-  // OCR Engine — superadmin-configurable per tenant
-  // Supported values: GPT4O (default), MINDEE, VERYFI
-  ocrEngine          String   @default("GPT4O")
-  mindeeApiKey       String?  // Mindee API key for this tenant
-  veryfiApiKey       String?  // Veryfi API key for this tenant
-
-  // Scan quota — monthly limit, reset automatically
-  scanCount          Int      @default(0)
-  scanQuota          Int      @default(30)   // FREE tier default; PRO=300, ENTERPRISE=-1 (unlimited)
-  scanCountResetAt   DateTime @default(now())
-
-  // Per-tenant locked database IDs
-  // { invoices: 'db-invoices-<tenantId8>', clients: 'db-clients-<tenantId8>', ... }
-  // Empty {} for legacy tenants — they fall back to bare IDs ('db-invoices' etc.)
-  lockedDbIds        Json     @default("{}")
-
-  // Peppol monthly usage counters (reset on 1st of each calendar month)
-  peppolSentThisMonth      Int      @default(0)
-  peppolReceivedThisMonth  Int      @default(0)
-  peppolCounterResetAt     DateTime @default(now())
-
-  // ── Phase 2: Stripe Billing Integration ─────────────────────────────
-  stripeCustomerId         String?  @unique
-  stripeSubscriptionId     String?
-  stripePriceId            String?
-
-  // Trial management
-  trialEndsAt              DateTime?
-  trialGraceEndsAt         DateTime?  // 14-day grace period after trialEndsAt
-  trialNotifiedAt          DateTime?  // when the 7-day reminder was sent
-
-  // Cancellation
-  cancellationRequestedAt  DateTime?
+  id                       String                  @id @default(cuid())
+  companyName              String
+  vatNumber                String?
+  iban                     String?
+  logoUrl                  String?
+  planType                 String                  @default("FREE")
+  peppolId                 String?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+  driveFolderId            String?
+  activeModules            String[]                @default(["INVOICING"])
+  subscriptionStatus       String                  @default("ACTIVE")
+  city                     String?
+  email                    String?
+  postalCode               String?
+  street                   String?
+  bic                      String?
+  commercialName           String?
+  deliveryCity             String?
+  deliveryPostalCode       String?
+  deliveryStreet           String?
+  directorFirstName        String?
+  directorLastName         String?
+  headquartersCity         String?
+  headquartersPostalCode   String?
+  headquartersStreet       String?
+  documentLanguage         String?
+  brandColor               String?
+  documentTemplate         String?                 @default("t1")
+  invoiceConnector         String?                 @default("-")
+  invoiceDateFormat        String?                 @default("YYYY")
+  invoiceNextNumber        Int?                    @default(1)
+  invoiceNumberWidth       Int?                    @default(3)
+  invoicePrefix            String?                 @default("INV")
+  quotationConnector       String?                 @default("-")
+  quotationDateFormat      String?                 @default("YYYY")
+  quotationNextNumber      Int?                    @default(1)
+  quotationNumberWidth     Int?                    @default(3)
+  quotationPrefix          String?                 @default("OFF")
+  eInvoiceApiKey           String?
+  eInvoiceTenantId         String?
+  peppolRegistered         Boolean                 @default(false)
+  peppolCounterResetAt     DateTime                @default(now())
+  peppolReceivedThisMonth  Int                     @default(0)
+  peppolSentThisMonth      Int                     @default(0)
+  ocrEngine                String                  @default("GPT4O")
+  scanCount                Int                     @default(0)
+  scanCountResetAt         DateTime                @default(now())
+  scanQuota                Int                     @default(30)
+  lockedDbIds              Json                    @default("{}")
+  documentMode             String?                 @default("dynamic")
+  stationeryUrl            String?
+  billingCycle             String                  @default("MONTHLY")
+  billingStartedAt         DateTime?
   cancellationEffectiveAt  DateTime?
-  cancellationNoticeMonths Int?       // 1 for PRO, 2 for ENTERPRISE
-
-  // Per-seat billing (source of truth, synced to Stripe quantities)
-  extraUserCount           Int      @default(0)
-  workforceUserCount       Int      @default(0)
-
-  // Billing cycle preference
-  billingCycle             String   @default("MONTHLY") // MONTHLY, QUARTERLY
-  billingStartedAt         DateTime?                    // for fidelity bonus calc (10% after Y1)
-
-  // ── Module Settings ──────────────────────────────────────────────────
-  // Financials
-  defaultVatRate         Int?     @default(21)         // 21, 12, 6, 0
-  vatCalcMode            String?  @default("lines")    // "lines" | "total"
-  defaultPaymentTermDays Int?     @default(30)         // payment due days
-
-  // Calendar
-  defaultEventDuration   Int?     @default(60)         // minutes
-  defaultCalendarView    String?  @default("month")    // "month" | "week" | "day"
-
-  // HR
-  workHoursPerDay        Float?   @default(8.0)
-
-  // Projects
-  bordereauPrefix        String?  @default("BOR")
-  poPrefix               String?  @default("PO")
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  users                 User[]
-  userProjectAccesses   UserProjectAccess[]
-  leads                 Lead[]
-  bookings              Booking[]
-  clientPortals         ClientPortal[]
-  events                Event[]
-  siteContents          SiteContent[]
-  cmsServices           CMS_Service[]
-  cmsProjects           CMS_Project[]
-  promotionalBanners    PromotionalBanner[]
-  notionConnections     NotionConnection[]
-  connectedEmailAccounts ConnectedEmailAccount[]
-  contacts              Contact[]
-  invoices              Invoice[]
-  quotations            Quotation[]
-  employees             Employee[]
-  internalProjects      InternalProject[]
-  suppliers             Supplier[]
-  globalDatabases       GlobalDatabase[]
-  // HR module
-  clockEntries          ClockEntry[]
-  scheduledShifts       ScheduledShift[]
-  shiftTemplates        ShiftTemplate[]
-  hrTeams               HrTeam[]
-  timeOffRequests       TimeOffRequest[]
-  workerSchedules       WorkerSchedule[]
-  hrProjects            HrProject[]
+  cancellationNoticeMonths Int?
+  cancellationRequestedAt  DateTime?
+  extraUserCount           Int                     @default(0)
+  stripeCustomerId         String?                 @unique
+  stripePriceId            String?
+  stripeSubscriptionId     String?
+  trialEndsAt              DateTime?
+  trialNotifiedAt          DateTime?
+  workforceUserCount       Int                     @default(0)
+  bordereauPrefix          String?                 @default("BOR")
+  defaultCalendarView      String?                 @default("month")
+  defaultEventDuration     Int?                    @default(60)
+  defaultPaymentTermDays   Int?                    @default(30)
+  defaultVatRate           Int?                    @default(21)
+  poPrefix                 String?                 @default("PO")
+  vatCalcMode              String?                 @default("lines")
+  workHoursPerDay          Float?                  @default(8.0)
+  peppolOptOut             Boolean                 @default(false)
+  mindeeApiKey             String?
+  veryfiApiKey             String?
+  trialGraceEndsAt         DateTime?
+  documentFont             String?                 @default("Helvetica")
+  documentFontSize         Int?                    @default(10)
+  bookings                 Booking[]
+  cmsProjects              CMS_Project[]
+  cmsServices              CMS_Service[]
+  clientPortals            ClientPortal[]
+  clockEntries             ClockEntry[]
+  connectedEmailAccounts   ConnectedEmailAccount[]
+  contacts                 Contact[]
+  employees                Employee[]
+  events                   Event[]
+  globalDatabases          GlobalDatabase[]
+  hrProjects               HrProject[]
+  hrTeams                  HrTeam[]
+  internalProjects         InternalProject[]
+  invoices                 Invoice[]
+  leads                    Lead[]
+  notionConnections        NotionConnection[]
+  promotionalBanners       PromotionalBanner[]
+  quotations               Quotation[]
+  scheduledShifts          ScheduledShift[]
+  shiftTemplates           ShiftTemplate[]
+  siteContents             SiteContent[]
+  suppliers                Supplier[]
+  timeOffRequests          TimeOffRequest[]
+  users                    User[]
+  userProjectAccesses      UserProjectAccess[]
+  workerSchedules          WorkerSchedule[]
 }
 
 model Lead {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
-  name      String
-  email     String
-  phone     String?
-  service   String
-  message   String?
-  status    String   @default("NEW")
+  id            String   @id @default(cuid())
+  tenantId      String
+  name          String
+  email         String
+  phone         String?
+  service       String
+  message       String?
+  status        String   @default("NEW")
   driveFolderId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Booking {
   id          String   @id @default(cuid())
   tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   clientName  String
   clientEmail String
   serviceType String
@@ -186,33 +142,33 @@ model Booking {
   status      String   @default("PENDING")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model ClientPortal {
-  id           String          @id @default(cuid())
-  tenantId     String
-  tenant       Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  clientName   String
-  clientEmail  String
-  slug         String          @unique
-  password     String? // Hashed password for portal access
-  status       String          @default("ACTIVE")
-  driveFolderId String?
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  projectTitle String?
-  budget       Float?          @default(0)
-  paidAmount   Float?          @default(0)
-  linkedProjectId String?
-  linkedDatabaseId String?       @default("db-1")
-  serviceId    String?
-  service      CMS_Service?    @relation(fields: [serviceId], references: [id])
-  documents    Document[]
-  messages     Message[]
-  media        ProjectMedia[]
-  updates      ProjectUpdate[]
-  tasks        Task[]
+  id               String          @id @default(cuid())
+  tenantId         String
+  clientName       String
+  clientEmail      String
+  slug             String          @unique
+  password         String?
+  status           String          @default("ACTIVE")
+  driveFolderId    String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  projectTitle     String?
+  budget           Float?          @default(0)
+  paidAmount       Float?          @default(0)
+  serviceId        String?
+  linkedDatabaseId String?         @default("db-1")
+  linkedProjectId  String?
+  service          CMS_Service?    @relation(fields: [serviceId], references: [id])
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents        Document[]
+  messages         Message[]
+  media            ProjectMedia[]
+  updates          ProjectUpdate[]
+  tasks            Task[]
 }
 
 model ProjectUpdate {
@@ -228,36 +184,35 @@ model ProjectUpdate {
 model Task {
   id        String       @id @default(cuid())
   portalId  String
-  eventId   String? // Optional reference to a calendar event
+  eventId   String?
   title     String
   status    String       @default("TODO")
   dueDate   DateTime?
   fileUrl   String?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
+  event     Event?       @relation(fields: [eventId], references: [id])
   portal    ClientPortal @relation(fields: [portalId], references: [id], onDelete: Cascade)
-  event     Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
 }
 
 model Event {
   id               String   @id @default(cuid())
   tenantId         String
-  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   title            String
   start            DateTime
   end              DateTime
   allDay           Boolean  @default(false)
   description      String?
   location         String?
-  userId           String // Owner of the event
-  taskId           String?  @unique // Optional related task
-  googleEventId    String?  @unique // ID of corresponding Google Calendar Event
-  googleCalendarId String? // ID of the Google Calendar this belongs to
+  userId           String
+  taskId           String?  @unique
+  googleEventId    String?  @unique
+  googleCalendarId String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  tenant           Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task             Task[] 
+  task             Task[]
 }
 
 model Document {
@@ -320,47 +275,34 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  tenantId      String?
-  tenant        Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          String    @default("TENANT_ADMIN") // SUPERADMIN, TENANT_ADMIN, EMPLOYEE, ACCOUNTANT
-  environmentLanguage String? @default("en")
-  verificationToken   String?
-  verificationSentAt  DateTime?
-  passwordResetToken    String?
-  passwordResetExpires  DateTime?
-
-  // ── Per-module access control (RBAC) ─────────────────────────────────
-  // Shape: { "INVOICING": "OWN", "CRM": "ALL", "PROJECTS": "NONE", ... }
-  // Absent key defaults to "OWN". Values: ALL | OWN | ASSIGNED_AND_OWN | NONE
-  moduleAccess    Json     @default("{}")
-
-  // ── Invitation tracking ──────────────────────────────────────────────
-  invitedBy       String?       // userId of the inviter
-  invitedAt       DateTime?
-  inviteAccepted  Boolean  @default(false)
-  inviteToken     String?  @unique  // one-time accept token
-
-  // ── HR / Workforce fields ─────────────────────────────────────────────
-  // These fields unify User ↔ Employee. Every person is a User.
-  // The `role` field determines their type (employee vs workforce).
-  phone           String?
-  hourlyCost      Float?
-  hireDate        DateTime?
-  employeeStatus  String?   @default("ACTIVE")  // ACTIVE | INACTIVE | ON_LEAVE
-
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @default(now()) @updatedAt
-
-  accounts      Account[]
-  sessions      Session[]
-  events        Event[]
+  id                   String    @id @default(cuid())
+  tenantId             String?
+  name                 String?
+  email                String?   @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 String    @default("TENANT_ADMIN")
+  environmentLanguage  String?   @default("en")
+  verificationSentAt   DateTime?
+  verificationToken    String?
+  passwordResetExpires DateTime?
+  passwordResetToken   String?
+  inviteAccepted       Boolean   @default(false)
+  inviteToken          String?   @unique
+  invitedAt            DateTime?
+  invitedBy            String?
+  moduleAccess         Json      @default("{}")
+  employeeStatus       String?   @default("ACTIVE")
+  hireDate             DateTime?
+  hourlyCost           Float?
+  phone                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now()) @updatedAt
+  accounts             Account[]
+  events               Event[]
+  sessions             Session[]
+  tenant               Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -374,14 +316,13 @@ model VerificationToken {
 model SiteContent {
   id        String   @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   key       String
   valueEn   String
   valueNl   String?
   valueFr   String?
   valueRo   String?
   updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, key])
 }
@@ -389,8 +330,6 @@ model SiteContent {
 model CMS_Service {
   id                String         @id @default(cuid())
   tenantId          String
-  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   slug              String         @unique
   titleEn           String
   titleNl           String?
@@ -412,11 +351,12 @@ model CMS_Service {
   icon              String
   featuresEn        String[]
   featuresNl        String[]
-  featuresFr        String[]
   featuresRo        String[]
   order             Int            @default(0)
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
+  featuresFr        String[]
+  tenant            Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   portals           ClientPortal[]
 
   @@unique([tenantId, slug])
@@ -425,8 +365,6 @@ model CMS_Service {
 model CMS_Project {
   id         String             @id @default(cuid())
   tenantId   String
-  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   titleEn    String
   titleNl    String?
   titleFr    String?
@@ -438,6 +376,7 @@ model CMS_Project {
   order      Int                @default(0)
   createdAt  DateTime           @default(now())
   updatedAt  DateTime           @updatedAt
+  tenant     Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   images     CMS_ProjectImage[]
 }
 
@@ -457,28 +396,26 @@ model CMS_ProjectImage {
 model PromotionalBanner {
   id        String   @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   textEn    String
   textNl    String?
   textFr    String?
   textRo    String?
   isActive  Boolean  @default(false)
   updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model NotionConnection {
   id               String        @id @default(cuid())
   tenantId         String
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   name             String
   databaseId       String
-  token            String? // Optional override for global NOTION_TOKEN
+  token            String?
   hiddenProperties String[]      @default([])
   lastSynced       DateTime?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   entries          NotionEntry[]
 }
 
@@ -486,49 +423,45 @@ model NotionEntry {
   id           String           @id @default(cuid())
   notionId     String           @unique
   connectionId String
-  data         Json // Stores flattened Notion properties
+  data         Json
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   connection   NotionConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
 }
 
 model ConnectedEmailAccount {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  email     String   @unique
-  password  String? // Optional for OAuth accounts
-  accessToken String?
+  id           String    @id @default(cuid())
+  tenantId     String
+  email        String    @unique
+  password     String?
+  imapHost     String?
+  imapPort     Int?      @default(993)
+  smtpHost     String?
+  smtpPort     Int?      @default(465)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  accessToken  String?
+  expiresAt    DateTime?
   refreshToken String?
-  expiresAt   DateTime?
-  
-  imapHost  String?
-  imapPort  Int?      @default(993)
-  smtpHost  String?
-  smtpPort  Int?      @default(465)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model Contact {
-  id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  firstName String
-  lastName  String
-  email     String   
-  phone     String?
-  address   String?
-  town      String?
-  language  String?
-  tags      String[] @default([])
-  driveFolderId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id                 String             @id @default(cuid())
+  tenantId           String
+  firstName          String
+  lastName           String
+  email              String
+  phone              String?
+  address            String?
+  town               String?
+  tags               String[]           @default([])
+  driveFolderId      String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  language           String?
+  tenant             Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   platformLeads      PlatformLead[]
   salesOpportunities SalesOpportunity[]
 }
@@ -540,74 +473,57 @@ model PlatformLead {
   source          String   @default("BOBEX")
   dateIn          DateTime @default(now())
   mailReceivedUrl String?
-
-  mailLead     Boolean @default(false)
-  callLead     Boolean @default(false)
-  visitPlanned Boolean @default(false)
-
-  status     String  @default("NEW")
-  statusNote String?
-  location   String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  mailLead        Boolean  @default(false)
+  callLead        Boolean  @default(false)
+  visitPlanned    Boolean  @default(false)
+  status          String   @default("NEW")
+  statusNote      String?
+  location        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  contact         Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
 model SalesOpportunity {
-  id        String   @id @default(cuid())
-  contactId String
-  source    String   @default("WEBSITE")
-  dateIn    DateTime @default(now())
-
-  visitPlanned Boolean @default(false)
-
-  status        String  @default("NEW")
-  expectedValue Float?  @default(0)
+  id            String   @id @default(cuid())
+  contactId     String
+  source        String   @default("WEBSITE")
+  dateIn        DateTime @default(now())
+  visitPlanned  Boolean  @default(false)
+  status        String   @default("NEW")
+  expectedValue Float?   @default(0)
   statusNote    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 }
 
 model Invoice {
-  id            String   @id @default(cuid())
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  invoiceNumber String   
-  type          String 
-  status        String   @default("DRAFT")
-  issueDate     DateTime @default(now())
-  dueDate       DateTime
-
-  contactId  String? 
-  supplierId String? 
-  projectId  String? 
-
-  subtotal Float @default(0)
-  vatTotal Float @default(0)
-  total    Float @default(0)
-
-  // Fiscal Compliance & Peppol
-  isLocked         Boolean @default(false)
-  snapshotData     Json?   // Stores buyer/seller details at time of issuance
-  peppolDocumentId String?
-  peppolState      String? // e.g. "SENT", "RECEIVED", "ACCEPTED", "REJECTED"
-  
-  // For Credit Notes
+  id               String        @id @default(cuid())
+  tenantId         String
+  invoiceNumber    String
+  type             String
+  status           String        @default("DRAFT")
+  issueDate        DateTime      @default(now())
+  dueDate          DateTime
+  contactId        String?
+  supplierId       String?
+  projectId        String?
+  subtotal         Float         @default(0)
+  vatTotal         Float         @default(0)
+  total            Float         @default(0)
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  isLocked         Boolean       @default(false)
   parentInvoiceId  String?
-  parentInvoice    Invoice? @relation("CreditNotes", fields: [parentInvoiceId], references: [id])
-  creditNotes      Invoice[] @relation("CreditNotes")
-
-  notes String?
-  items InvoiceItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  peppolDocumentId String?
+  peppolState      String?
+  snapshotData     Json?
+  parentInvoice    Invoice?      @relation("CreditNotes", fields: [parentInvoiceId], references: [id])
+  creditNotes      Invoice[]     @relation("CreditNotes")
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items            InvoiceItem[]
 
   @@unique([tenantId, invoiceNumber])
 }
@@ -618,7 +534,7 @@ model InvoiceItem {
   description String
   quantity    Float
   unitPrice   Float
-  vatRate     Float 
+  vatRate     Float
   total       Float
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 }
@@ -626,8 +542,6 @@ model InvoiceItem {
 model Quotation {
   id          String          @id @default(cuid())
   tenantId    String
-  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   quoteNumber String          @unique
   status      String          @default("DRAFT")
   date        DateTime        @default(now())
@@ -637,10 +551,10 @@ model Quotation {
   vatTotal    Float           @default(0)
   total       Float           @default(0)
   notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items       QuotationItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model QuotationItem {
@@ -655,146 +569,115 @@ model QuotationItem {
 }
 
 model Employee {
-  id         String    @id @default(cuid())
-  tenantId   String
-  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  firstName  String
-  lastName   String
-  email      String    @unique
-  phone      String?
-  role       String 
-  status     String    @default("ACTIVE")
-  hourlyCost Float? 
-  hireDate   DateTime?
-
+  id          String      @id @default(cuid())
+  tenantId    String
+  firstName   String
+  lastName    String
+  email       String      @unique
+  phone       String?
+  role        String
+  status      String      @default("ACTIVE")
+  hourlyCost  Float?
+  hireDate    DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   timeEntries TimeEntry[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model TimeEntry {
-  id         String  @id @default(cuid())
-  employeeId String
-  projectId  String? 
-  taskId     String? 
-
+  id              String    @id @default(cuid())
+  employeeId      String
+  projectId       String?
+  taskId          String?
   startTime       DateTime
   endTime         DateTime?
-  durationMinutes Int? 
-
-  description String?
-  isBillable  Boolean @default(true)
-
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  durationMinutes Int?
+  description     String?
+  isBillable      Boolean   @default(true)
+  employee        Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
 
 model InternalProject {
-  id          String @id @default(cuid())
-  tenantId    String
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  projectCode String 
-  name        String
-  status      String @default("PLANNING") 
-
-  clientId      String? 
+  id            String    @id @default(cuid())
+  tenantId      String
+  projectCode   String
+  name          String
+  status        String    @default("PLANNING")
+  clientId      String?
   startDate     DateTime?
   targetEndDate DateTime?
   actualEndDate DateTime?
-
-  budget Float? @default(0)
-
-  notes String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  budget        Float?    @default(0)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, projectCode])
 }
 
 model Supplier {
-  id            String  @id @default(cuid())
+  id            String   @id @default(cuid())
   tenantId      String
-  tenant        Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
   companyName   String
-  vatNumber     String? @unique
+  vatNumber     String?  @unique
   contactPerson String?
   email         String?
   phone         String?
   address       String?
   town          String?
-  category      String? 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  category      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model GlobalDatabase {
-  id          String  @id @default(cuid())
-  tenantId    String
-  tenant      Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  name        String
-  description String?
-  icon        String?
-  coverImage  String?
-  isTemplate  Boolean @default(false)
-  folderId    String?
-
-  properties Json @default("[]")
-  views      Json @default("[]")
-
-  pages GlobalPage[]
-
-  activeFilters Json? @default("[]")
-  activeSorts   Json? @default("[]")
-
-  ownerId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String       @id @default(cuid())
+  tenantId      String
+  name          String
+  description   String?
+  icon          String?
+  coverImage    String?
+  isTemplate    Boolean      @default(false)
+  folderId      String?
+  properties    Json         @default("[]")
+  views         Json         @default("[]")
+  activeFilters Json?        @default("[]")
+  activeSorts   Json?        @default("[]")
+  ownerId       String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pages         GlobalPage[]
 
   @@index([tenantId])
 }
 
 model GlobalPage {
-  id String @id @default(cuid())
-
-  databaseId String
-  database   GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
-
-  coverImage String?
-  icon       String?
-
-  properties Json @default("{}")
-
-  order Float?
-
-  blocks Json @default("[]")
-
+  id            String         @id @default(cuid())
+  databaseId    String
+  coverImage    String?
+  icon          String?
+  properties    Json           @default("{}")
+  order         Float?
+  blocks        Json           @default("[]")
   createdBy     String
   lastEditedBy  String
-  assignedTo    String[]    // user IDs — for ASSIGNED_AND_OWN access filtering
   driveFolderId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  assignedTo    String[]
+  database      GlobalDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   @@index([databaseId])
   @@index([createdAt])
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// HR / WorkHub Models
-// Migrated from Supabase — now tenant-scoped via Prisma
-// ══════════════════════════════════════════════════════════════════════════
-
 model ClockEntry {
   id                String    @id @default(cuid())
   tenantId          String
-  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId            String
   clockInTime       DateTime  @default(now())
   clockOutTime      DateTime?
@@ -808,65 +691,66 @@ model ClockEntry {
   approvedBy        String?
   approvedAt        DateTime?
   shiftId           String?
-  photos            Json?      // URLs of photos attached during clock-out
-  noBreak           Boolean   @default(false) // Whether 30-min break was skipped
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  noBreak           Boolean   @default(false)
+  photos            Json?
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model ScheduledShift {
-  id            String    @id @default(cuid())
-  tenantId      String
-  tenant        Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId        String
-  shiftDate     String
-  shiftStart    String
-  shiftEnd      String
-  shiftName     String?
-  projectId     String?
-  role          String?
-  notes         String?
-  status        String    @default("scheduled")
-  createdBy     String?
-  lastEditedBy  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String
+  shiftDate    String
+  shiftStart   String
+  shiftEnd     String
+  shiftName    String?
+  projectId    String?
+  role         String?
+  notes        String?
+  status       String   @default("scheduled")
+  createdBy    String?
+  lastEditedBy String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model ShiftTemplate {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  shiftStart  String
-  shiftEnd    String
-  projectId   String?
-  role        String?
-  notes       String?
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  shiftStart String
+  shiftEnd   String
+  projectId  String?
+  role       String?
+  notes      String?
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model HrTeam {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   tenantId    String
-  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name        String
   description String?
   createdBy   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   members     HrTeamMember[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
 }
 
 model HrTeamMember {
   id        String   @id @default(cuid())
   teamId    String
-  team      HrTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
   userId    String
   role      String   @default("member")
   createdAt DateTime @default(now())
+  team      HrTeam   @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, userId])
 }
@@ -874,7 +758,6 @@ model HrTeamMember {
 model TimeOffRequest {
   id          String    @id @default(cuid())
   tenantId    String
-  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   userId      String
   requestType String    @default("vacation")
   startDate   String
@@ -885,53 +768,54 @@ model TimeOffRequest {
   reviewedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model WorkerSchedule {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  userId      String
-  dayOfWeek   Int
-  shiftStart  String
-  shiftEnd    String
-  isActive    Boolean  @default(true)
-  createdBy   String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  userId     String
+  dayOfWeek  Int
+  shiftStart String
+  shiftEnd   String
+  isActive   Boolean  @default(true)
+  createdBy  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model HrProject {
   id        String   @id @default(cuid())
   tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name      String
   address   String?
-  latitude  Float?   // GPS lat for geofence validation
-  longitude Float?   // GPS lng for geofence validation
   color     String   @default("#3b82f6")
   createdBy String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  latitude  Float?
+  longitude Float?
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model ShiftTask {
-  id           String    @id @default(cuid())
-  shiftId      String
-  taskId       String    // GlobalPage ID from db-tasks
+  id          String    @id @default(cuid())
+  shiftId     String
+  taskId      String
   /// Worker-reported progress status for this shift assignment.
   /// Values: pending | in_progress | done_by_worker
   /// Separate from the db-tasks page status — only management can close the actual task.
-  status       String    @default("pending")
-  completedBy  String?
-  completedAt  DateTime?
+  status      String    @default("pending")
+  completedBy String?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   /// Checklist items added by the worker for this specific shift assignment.
   /// Shape: [{ id, title, done, doneAt?, doneBy? }]
-  subtasks     Json?     @default("[]")
+  subtasks    Json?     @default("[]")
   /// Free-text notes from the worker about their progress on this shift task.
-  workerNotes  String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  workerNotes String?
 
   @@index([shiftId])
 }
@@ -948,18 +832,13 @@ model ShiftAttachment {
   @@index([shiftId])
 }
 
-// ── Workforce: per-user project access assignments ────────────────────────
-// Many-to-many: one user can be assigned to many projects.
-// projectId = GlobalPage.id from the tenant's db-projects database.
-// Used by the Team Settings matrix UI and data-layer filtering.
 model UserProjectAccess {
   id        String   @id @default(cuid())
   tenantId  String
   userId    String
-  projectId String   // GlobalPage.id from db-projects-<tenantId> database
+  projectId String
   createdAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([userId, projectId])
   @@index([tenantId])

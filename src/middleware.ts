@@ -249,6 +249,7 @@ export default async function middleware(req: NextRequest) {
         // Mirrors the sidebar allow-lists in AdminLayout — middleware is the real guard.
         // Specialist users who navigate directly to restricted routes are redirected.
         const ROLE_ROUTE_ALLOWLISTS: Partial<Record<string, string[]>> = {
+            ACCOUNTANT:      ['/admin/dashboard', '/admin/journal', '/admin/financials', '/admin/contacts', '/admin/suppliers', '/admin/quotations', '/admin/settings'],
             OFFERTES:        ['/admin/quotations', '/admin/contacts', '/admin/library', '/admin/projects-management', '/admin/settings', '/admin/dashboard', '/admin/journal'],
             BOOKKEEPING:     ['/admin/financials', '/admin/contacts', '/admin/suppliers', '/admin/library', '/admin/settings', '/admin/dashboard', '/admin/journal'],
             HR_OFFICER:      ['/admin/hr', '/admin/settings', '/admin/dashboard'],

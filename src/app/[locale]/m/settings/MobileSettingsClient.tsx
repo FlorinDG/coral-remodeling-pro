@@ -7,7 +7,8 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
     Building2, CreditCard, Save, RefreshCw, AlertCircle,
-    CheckCircle2, Wifi, ArrowLeft, Paintbrush, FileText, Check, Shield, Crown, Zap, Sparkles
+    CheckCircle2, Wifi, ArrowLeft, Paintbrush, FileText, Check, Shield, Crown, Zap, Sparkles,
+    Calculator, UserPlus, Trash2, Mail, ShieldCheck, Download, Loader2
 } from "lucide-react";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useTranslations } from "next-intl";
@@ -66,6 +67,8 @@ interface ProfileData {
     quotationNextNumber: number;
     documentTemplate: string;
     brandColor: string;
+    documentFont?: string;
+    documentFontSize?: number;
 }
 
 const PLAN_BADGE: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
@@ -192,6 +195,72 @@ export default function MobileSettingsClient({
             })
             .catch(() => setPeppolStatus(s => ({ ...s, loading: false })));
     }, []);
+
+    // Accountant management states
+    const [accountant, setAccountant] = useState<{
+        id: string;
+        name: string | null;
+        email: string | null;
+        inviteAccepted: boolean;
+        invitedAt: string | null;
+    } | null>(null);
+    const [acctEmail, setAcctEmail] = useState("");
+    const [acctName, setAcctName] = useState("");
+    const [acctSaving, setAcctSaving] = useState(false);
+    const [acctError, setAcctError] = useState("");
+    const [acctLoading, setAcctLoading] = useState(true);
+
+    const fetchAccountant = async () => {
+        try {
+            const res = await fetch("/api/tenant/accountant");
+            if (res.ok) {
+                const data = await res.json();
+                setAccountant(data.accountant || null);
+            }
+        } catch { /* silent */ }
+        finally { setAcctLoading(false); }
+    };
+
+    useEffect(() => {
+        fetchAccountant();
+    }, []);
+
+    const handleInviteAccountant = async () => {
+        if (!acctEmail) { setAcctError(t('settings_acct_error_email')); return; }
+        setAcctSaving(true);
+        setAcctError("");
+        try {
+            const res = await fetch('/api/tenant/accountant', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: acctEmail, name: acctName }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                setAcctError(data.error || t('settings_acct_error_failed'));
+                return;
+            }
+            setAccountant(data.accountant);
+            setAcctEmail('');
+            setAcctName('');
+            toast.success("Accountant invited successfully!");
+        } catch {
+            setAcctError(t('settings_acct_error_network'));
+        } finally {
+            setAcctSaving(false);
+        }
+    };
+
+    const handleRevokeAccountant = async () => {
+        if (!confirm(t('settings_acct_confirm_revoke'))) return;
+        try {
+            const res = await fetch('/api/tenant/accountant', { method: 'DELETE' });
+            if (res.ok) {
+                setAccountant(null);
+                toast.success("Accountant access revoked.");
+            }
+        } catch { /* silent */ }
+    };
 
     const handleSaveProfile = async () => {
         setSaving(true);
@@ -359,6 +428,7 @@ export default function MobileSettingsClient({
                     { id: "ui", label: t('settings_tab_branding'), icon: <Paintbrush className="w-4 h-4" /> },
                     { id: "opt-peppol", label: t('settings_tab_peppol'), icon: <Wifi className="w-4 h-4" /> },
                     { id: "opt-templates", label: t('settings_tab_stationery'), icon: <FileText className="w-4 h-4" /> },
+                    { id: "accountant", label: t('settings_tab_accountant'), icon: <Calculator className="w-4 h-4" /> },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -889,6 +959,150 @@ export default function MobileSettingsClient({
                                 </button>
                             ))}
                         </div>
+
+                        {/* Font Family Selection */}
+                        <div className="pt-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1.5 block">{t('settings_doc_font')}</label>
+                            <select
+                                value={profile.documentFont || "Helvetica"}
+                                onChange={(e) => setProfile({ ...profile, documentFont: e.target.value })}
+                                className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-black text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30 text-neutral-900 dark:text-white"
+                            >
+                                <option value="Helvetica">Helvetica (Classic Sans-Serif)</option>
+                                <option value="Times-Roman">Times Roman (Traditional Serif)</option>
+                                <option value="Courier">Courier (Technical Monospace)</option>
+                            </select>
+                        </div>
+
+                        {/* Font Size Selection */}
+                        <div className="pt-2">
+                            <div className="flex justify-between items-center mb-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">{t('settings_doc_font_size')}</label>
+                                <span className="text-xs font-black text-neutral-800 dark:text-neutral-200">{profile.documentFontSize || 10}px</span>
+                            </div>
+                            <input
+                                type="range"
+                                min="8"
+                                max="14"
+                                step="1"
+                                value={profile.documentFontSize || 10}
+                                onChange={(e) => setProfile({ ...profile, documentFontSize: parseInt(e.target.value) })}
+                                className="w-full h-1.5 bg-neutral-200 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-[var(--brand-color,#d35400)]"
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* ── 6. Accountant Access ── */}
+                {activeTab === "accountant" && (
+                    <div className="space-y-4 animate-in fade-in-50 duration-200 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center shrink-0">
+                                <Calculator className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_acct_title')}</h3>
+                                <p className="text-xs text-neutral-500">{t('settings_acct_desc')}</p>
+                            </div>
+                        </div>
+
+                        <div className="bg-orange-50 dark:bg-orange-500/5 rounded-xl p-3.5 space-y-2">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-600 dark:text-orange-400">{t('settings_acct_what_can_do')}</p>
+                            <div className="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-300">
+                                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                                <span>{t('settings_acct_can_view')}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-300">
+                                <Download className="w-3.5 h-3.5 shrink-0" />
+                                <span>{t('settings_acct_can_export')}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-orange-800 dark:text-orange-300">
+                                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                                <span>{t('settings_acct_can_filter')}</span>
+                            </div>
+                            <p className="text-[10px] text-orange-500 dark:text-orange-400/60 mt-1 leading-relaxed">
+                                {t('settings_acct_readonly_notice')}
+                            </p>
+                        </div>
+
+                        {acctLoading ? (
+                            <div className="flex items-center justify-center h-16">
+                                <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+                            </div>
+                        ) : accountant ? (
+                            <div className="flex items-center gap-3 p-3 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10">
+                                <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center text-sm font-black text-orange-600 dark:text-orange-400 shrink-0">
+                                    {(accountant.name || accountant.email || '?')[0].toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="font-black text-xs text-neutral-900 dark:text-white truncate">
+                                            {accountant.name || accountant.email}
+                                        </span>
+                                        {accountant.inviteAccepted ? (
+                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 uppercase">
+                                                {t('settings_acct_status_active')}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 uppercase">
+                                                {t('settings_acct_status_pending')}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-1 mt-0.5">
+                                        <Mail className="w-3 h-3 text-neutral-400 shrink-0" />
+                                        <span className="text-[11px] text-neutral-500 truncate">{accountant.email}</span>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleRevokeAccountant}
+                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-black text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors shrink-0"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    {t('settings_acct_revoke')}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-3 pt-2">
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1 block">{t('settings_acct_email')}</label>
+                                        <input
+                                            type="email"
+                                            value={acctEmail}
+                                            onChange={e => setAcctEmail(e.target.value)}
+                                            placeholder="accountant@firm.be"
+                                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-black text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-neutral-900 dark:text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-1 block">{t('settings_acct_name')}</label>
+                                        <input
+                                            type="text"
+                                            value={acctName}
+                                            onChange={e => setAcctName(e.target.value)}
+                                            placeholder="John Doe"
+                                            className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-black text-xs font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/30 text-neutral-900 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                {acctError && (
+                                    <p className="text-xs text-red-600 bg-red-50 dark:bg-red-500/10 px-3 py-2 rounded-lg">{acctError}</p>
+                                )}
+
+                                <button
+                                    type="button"
+                                    onClick={handleInviteAccountant}
+                                    disabled={acctSaving || !acctEmail}
+                                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-orange-600 text-white text-xs font-black shadow-md hover:bg-orange-700 disabled:opacity-50 transition-colors"
+                                >
+                                    {acctSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                                    {t('settings_acct_invite_btn')}
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
 

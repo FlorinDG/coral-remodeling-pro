@@ -54,6 +54,8 @@ export default async function MobileSettingsPage({ params }: { params: Promise<{
             
             // Branding/UI
             brandColor: true,
+            documentFont: true,
+            documentFontSize: true,
             
             // Document numbering
             invoicePrefix: true,
@@ -136,6 +138,8 @@ export default async function MobileSettingsPage({ params }: { params: Promise<{
         quotationNextNumber: tenant.quotationNextNumber ?? 1,
         documentTemplate: tenant.documentTemplate ?? 't1',
         brandColor: tenant.brandColor ?? '#d35400',
+        documentFont: tenant.documentFont || 'Helvetica',
+        documentFontSize: tenant.documentFontSize ?? 10,
     };
 
     return (

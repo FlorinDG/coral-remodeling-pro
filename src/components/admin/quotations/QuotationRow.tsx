@@ -30,6 +30,34 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
     const [tempArticleId, setTempArticleId] = useState<string | null>(null);
     const contextTriggerRef = useRef<HTMLButtonElement>(null);
+    const rowRef = useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        const handleFocusEvent = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail?.id === block.id) {
+                rowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                setTimeout(() => {
+                    const input = rowRef.current?.querySelector('input, textarea, [contenteditable="true"]') as HTMLElement;
+                    input?.focus();
+                }, 150);
+            }
+        };
+        window.addEventListener('focus-block', handleFocusEvent);
+        return () => window.removeEventListener('focus-block', handleFocusEvent);
+    }, [block.id]);
+
+    const mergeRefs = (...refs: any[]) => {
+        return (node: any) => {
+            refs.forEach(ref => {
+                if (typeof ref === 'function') {
+                    ref(node);
+                } else if (ref != null) {
+                    ref.current = node;
+                }
+            });
+        };
+    };
 
     const getTypeIcon = (type: BlockType) => {
         switch (type) {
@@ -122,9 +150,13 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     };
 
     const handleAddChild = (forcedType: BlockType = 'line') => {
-        const newChild: Block = { id: crypto.randomUUID(), type: forcedType, content: '' };
-        onUpdate(block.id, { children: [...(block.children || []), newChild] });
+        const newId = crypto.randomUUID();
+        const newChild: Block = { id: newId, type: forcedType, content: '' };
+        onUpdate(block.id, { children: [newChild, ...(block.children || [])] });
         if (!isExpanded) setIsExpanded(true); // Auto-expand when pushing new children
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('focus-block', { detail: { id: newId } }));
+        }, 50);
     };
 
     const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
@@ -227,7 +259,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
             <Draggable draggableId={block.id} index={index}>
                 {(provided, snapshot) => (
                     <div
-                        ref={provided.innerRef}
+                        ref={mergeRefs(provided.innerRef, rowRef)}
                         {...provided.draggableProps}
                         className={`group relative w-full transition-all py-1.5 rounded flex flex-col 
                         ${block.isOptional ? 'opacity-50 grayscale' : ''} 

@@ -4,6 +4,7 @@ import { Block, BlockType, VariantsConfig } from '@/components/admin/database/ty
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { t } from '@/lib/document-i18n';
+import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
 
 // ── Labor rate constants ─────────────────────────────────────────────────────
 const LABOR_RATES: Record<string, number> = {
@@ -52,6 +53,49 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
+
+    // Local text states for inputs (allows free typing with commas)
+    const [qtyText, setQtyText] = useState(() => block.quantity !== undefined && block.quantity !== null ? formatDecimal(block.quantity, 2).replace(/,00$/, '') : '');
+    const [brutoText, setBrutoText] = useState(() => block.brutoPrice !== undefined && block.brutoPrice !== null ? formatDecimal(block.brutoPrice) : '');
+    const [discountText, setDiscountText] = useState(() => block.discountPercent !== undefined && block.discountPercent !== null ? formatDecimal(block.discountPercent, 2).replace(/,00$/, '') : '');
+    const [marginText, setMarginText] = useState(() => block.margePercent !== undefined && block.margePercent !== null ? formatDecimal(block.margePercent, 2).replace(/,00$/, '') : '');
+    const [verkoopText, setVerkoopText] = useState(() => block.verkoopPrice !== undefined && block.verkoopPrice !== null ? formatDecimal(block.verkoopPrice) : '');
+
+    // Sync local text when block changes externally (e.g. article selection)
+    React.useEffect(() => {
+        setQtyText(prev => {
+            const parsed = parseDecimal(prev);
+            return parsed === (block.quantity || 0) ? prev : (block.quantity ? formatDecimal(block.quantity, 2).replace(/,00$/, '') : '');
+        });
+    }, [block.quantity]);
+
+    React.useEffect(() => {
+        setBrutoText(prev => {
+            const parsed = parseDecimal(prev);
+            return parsed === (block.brutoPrice || 0) ? prev : (block.brutoPrice ? formatDecimal(block.brutoPrice) : '');
+        });
+    }, [block.brutoPrice]);
+
+    React.useEffect(() => {
+        setDiscountText(prev => {
+            const parsed = parseDecimal(prev);
+            return parsed === (block.discountPercent || 0) ? prev : (block.discountPercent !== undefined ? formatDecimal(block.discountPercent, 2).replace(/,00$/, '') : '');
+        });
+    }, [block.discountPercent]);
+
+    React.useEffect(() => {
+        setMarginText(prev => {
+            const parsed = parseDecimal(prev);
+            return parsed === (block.margePercent || 0) ? prev : (block.margePercent !== undefined ? formatDecimal(block.margePercent, 2).replace(/,00$/, '') : '');
+        });
+    }, [block.margePercent]);
+
+    React.useEffect(() => {
+        setVerkoopText(prev => {
+            const parsed = parseDecimal(prev);
+            return parsed === (block.verkoopPrice || 0) ? prev : (block.verkoopPrice ? formatDecimal(block.verkoopPrice) : '');
+        });
+    }, [block.verkoopPrice]);
 
     // Compute active variant pricing deltas specifically for visual UI components
     const variantDeltas = useMemo(() => {
@@ -235,12 +279,24 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                 if (payload.brutoPrice !== undefined || payload.discountPercent !== undefined || payload.margePercent !== undefined) {
                     const bPrice = payload.brutoPrice !== undefined ? payload.brutoPrice : (block.brutoPrice || 0);
-                    const dPerc = payload.discountPercent !== undefined ? payload.discountPercent : (block.discountPercent || 0);
-                    const mPerc = payload.margePercent !== undefined ? payload.margePercent : (block.margePercent || 0);
+                    const hasDiscount = payload.discountPercent !== undefined 
+                        ? ((payload.discountPercent as any) !== null && (payload.discountPercent as any) !== '') 
+                        : ((block.discountPercent as any) !== undefined && (block.discountPercent as any) !== null && (block.discountPercent as any) !== '');
+                    const hasMargin = payload.margePercent !== undefined 
+                        ? ((payload.margePercent as any) !== null && (payload.margePercent as any) !== '') 
+                        : ((block.margePercent as any) !== undefined && (block.margePercent as any) !== null && (block.margePercent as any) !== '');
+
+                    const dPerc = hasDiscount ? Number(payload.discountPercent !== undefined ? payload.discountPercent : block.discountPercent) : 0;
                     const nettokost = bPrice * (1 - dPerc / 100);
-                    payload.costPrice = nettokost; // Derived Nettokost (nettokost = brutoPrice * (1 - discountPercent / 100))
-                    const margeEuro = nettokost * (mPerc / 100); // margeEuro = nettokost * (margePercent / 100)
-                    payload.verkoopPrice = Math.round((nettokost + margeEuro) * 100) / 100; // verkoopPrice = nettokost + margeEuro
+                    payload.costPrice = nettokost;
+
+                    if (!hasDiscount && !hasMargin) {
+                        payload.verkoopPrice = bPrice;
+                    } else {
+                        const mPerc = hasMargin ? Number(payload.margePercent !== undefined ? payload.margePercent : block.margePercent) : 0;
+                        const margeEuro = nettokost * (mPerc / 100);
+                        payload.verkoopPrice = Math.round((nettokost + margeEuro) * 100) / 100;
+                    }
                 } else {
                     const numVerkoop = parseNumber(rawVerkoop);
                     if (numVerkoop !== undefined) {
@@ -269,7 +325,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     };
 
     // The 5-Pillar Auto-Calculator Math Engine
-    const handleMathChange = (field: keyof Block, value: number) => {
+    const handleMathChange = (field: keyof Block, value: any) => {
         if (childrenTotal !== undefined) return; // Locked by subcomponents
 
         const payload: Partial<Block> = { [field]: value };
@@ -278,13 +334,16 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
         const b = { ...block, ...payload };
 
         const currentBruto = b.brutoPrice || 0;
-        const currentDiscount = b.discountPercent || 0;
+        const hasDiscount = (b.discountPercent as any) !== undefined && (b.discountPercent as any) !== null && (b.discountPercent as any) !== '';
+        const hasMargin = (b.margePercent as any) !== undefined && (b.margePercent as any) !== null && (b.margePercent as any) !== '';
+
+        const currentDiscount = hasDiscount ? Number(b.discountPercent) : 0;
         const nettokost = currentBruto * (1 - currentDiscount / 100);
-        payload.costPrice = nettokost; // Derived Nettokost (nettokost = brutoPrice * (1 - discountPercent / 100))
+        payload.costPrice = nettokost; // Derived Nettokost
 
         if (field === 'verkoopPrice') {
             // Backwards engineering: User explicitly overwrites Verkoop, derive Marge explicitly
-            const manualVerkoop = value;
+            const manualVerkoop = Number(value);
             if (nettokost > 0) {
                 payload.margePercent = Math.round(((manualVerkoop - nettokost) / nettokost) * 10000) / 100;
             } else {
@@ -292,10 +351,13 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             }
         } else {
             // Standard Propagation: Parent variable shifted, compute resulting Verkoop
-            const currentMarge = b.margePercent || 0;
-            const margeEuro = nettokost * (currentMarge / 100); // margeEuro = nettokost * (margePercent / 100)
-            const computedVerkoop = Math.round((nettokost + margeEuro) * 100) / 100; // verkoopPrice = nettokost + margeEuro
-            payload.verkoopPrice = computedVerkoop;
+            if (!hasDiscount && !hasMargin) {
+                payload.verkoopPrice = currentBruto;
+            } else {
+                const currentMarge = hasMargin ? Number(b.margePercent) : 0;
+                const margeEuro = nettokost * (currentMarge / 100);
+                payload.verkoopPrice = Math.round((nettokost + margeEuro) * 100) / 100;
+            }
         }
 
         onUpdate(payload);
@@ -486,16 +548,27 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 <div className="flex flex-col gap-0.5 w-[65px] shrink-0 self-start mt-0.5 relative group/input text-center">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Qty</label>
                     <input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="1"
-                        value={block.quantity ?? ''}
+                        value={qtyText}
                         onChange={(e) => {
-                            const parsed = parseFloat(e.target.value);
-                            onUpdate({ quantity: isNaN(parsed) ? 0 : parsed });
+                            const v = e.target.value;
+                            if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                setQtyText(v);
+                                const parsed = parseDecimal(v);
+                                onUpdate({ quantity: parsed });
+                            }
                         }}
-                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        onBlur={() => {
+                            const parsed = parseDecimal(qtyText);
+                            if (parsed !== 0) {
+                                setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                            } else {
+                                setQtyText('');
+                            }
+                        }}
+                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5"
                     />
                     {/* Packaging calculator info */}
                     {(() => {
@@ -550,17 +623,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Bruto</label>
                     <div className="w-full relative">
                         <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             placeholder="0.00"
-                            value={block.brutoPrice ?? ''}
+                            value={brutoText}
                             onChange={(e) => {
-                                const parsed = parseFloat(e.target.value);
-                                handleMathChange('brutoPrice', isNaN(parsed) ? 0 : parsed);
+                                const v = e.target.value;
+                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                    setBrutoText(v);
+                                    const parsed = parseDecimal(v);
+                                    handleMathChange('brutoPrice', parsed);
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsed = parseDecimal(brutoText);
+                                if (parsed !== 0) {
+                                    setBrutoText(formatDecimal(parsed));
+                                } else {
+                                    setBrutoText('');
+                                }
                             }}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>
@@ -571,17 +655,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default" title={t('col_supplier_discount_tooltip', language)}>{t('col_supplier_discount', language)}</label>
                     <div className="w-full relative">
                         <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             placeholder="0"
-                            value={block.discountPercent ?? ''}
+                            value={discountText}
                             onChange={(e) => {
-                                const parsed = parseFloat(e.target.value);
-                                handleMathChange('discountPercent', isNaN(parsed) ? 0 : parsed);
+                                const v = e.target.value;
+                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                    setDiscountText(v);
+                                    const parsed = parseDecimal(v);
+                                    handleMathChange('discountPercent', parsed);
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsed = parseDecimal(discountText);
+                                if (parsed !== 0) {
+                                    setDiscountText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                                } else {
+                                    setDiscountText('');
+                                }
                             }}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
@@ -592,17 +687,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Marge</label>
                     <div className="w-full relative">
                         <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             placeholder="20"
-                            value={block.margePercent ?? ''}
+                            value={marginText}
                             onChange={(e) => {
-                                const parsed = parseFloat(e.target.value);
-                                handleMathChange('margePercent', isNaN(parsed) ? 0 : parsed);
+                                const v = e.target.value;
+                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                    setMarginText(v);
+                                    const parsed = parseDecimal(v);
+                                    handleMathChange('margePercent', parsed);
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsed = parseDecimal(marginText);
+                                if (parsed !== 0) {
+                                    setMarginText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                                } else {
+                                    setMarginText('');
+                                }
                             }}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
                     </div>
@@ -613,17 +719,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">P.U. HT</label>
                     <div className="w-full relative">
                         <input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             placeholder="0.00"
-                            value={((block.verkoopPrice || 0) + variantDeltas).toFixed(2)}
+                            value={verkoopText}
                             onChange={(e) => {
-                                const parsed = parseFloat(e.target.value);
-                                handleMathChange('verkoopPrice', (isNaN(parsed) ? 0 : parsed) - variantDeltas);
+                                const v = e.target.value;
+                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                    setVerkoopText(v);
+                                    const parsed = parseDecimal(v);
+                                    handleMathChange('verkoopPrice', parsed - variantDeltas);
+                                }
+                            }}
+                            onBlur={() => {
+                                const parsed = parseDecimal(verkoopText);
+                                if (parsed !== 0) {
+                                    setVerkoopText(formatDecimal(parsed));
+                                } else {
+                                    setVerkoopText('');
+                                }
                             }}
                             readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none cursor-text disabled:cursor-not-allowed"
+                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
                         />
                         <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>

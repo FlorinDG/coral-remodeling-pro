@@ -19,6 +19,7 @@ import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
@@ -236,42 +237,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!invoice || !isHydrated) return;
         const blocks = invoice.blocks || [];
 
-        // Recursive totals calc with per-line VAT
-        const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
-            return nodes.reduce((acc, block) => {
-                if (block.isOptional) return acc;
-                if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                    const childTotals = calcTotals(block.children || []);
-                    return { exVat: acc.exVat + childTotals.exVat, vat: acc.vat + childTotals.vat };
-                }
-                const lineTotal = (block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1);
-                const lineVatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
-                return { exVat: acc.exVat + lineTotal, vat: acc.vat + lineTotal * (lineVatRate / 100) };
-            }, { exVat: 0, vat: 0 });
-        };
-
         const vatMode = ((invoice.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
         const vatReg = (invoice.properties?.['vatRegime'] as string) || '21';
 
-        let totalExVat = 0;
-        let totalVat = 0;
-
-        if (vatMode === 'total') {
-            // Total-based: flat rate on entire sum
-            const totals = calcTotals(blocks);
-            totalExVat = totals.exVat;
-            const rate = vatReg === 'medecontractant' ? 0 : parseFloat(vatReg) / 100;
-            totalVat = totalExVat * rate;
-        } else {
-            // Per-line: each block uses its own vatRate
-            const totals = calcTotals(blocks);
-            totalExVat = totals.exVat;
-            totalVat = totals.vat;
-        }
-
-        const roundedEx = Math.round(totalExVat * 100) / 100;
-        const roundedVat = Math.round(totalVat * 100) / 100;
-        const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
+        const totals = calculateInvoiceTotals(blocks, { vatCalcMode: vatMode, vatRegime: vatReg });
+        const roundedEx = totals.subtotal;
+        const roundedVat = totals.totalVAT;
+        const roundedInc = totals.totalInclVAT;
 
         if (invoice.properties?.['totalExVat'] !== roundedEx) updatePageProperty(invoicesDbId, invoice.id, 'totalExVat', roundedEx);
         if (invoice.properties?.['totalVat'] !== roundedVat) updatePageProperty(invoicesDbId, invoice.id, 'totalVat', roundedVat);
@@ -288,7 +260,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-partially-credited');
             }
         }
-    }, [invoice?.blocks, isHydrated, creditedTotal]);
+    }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime'], isHydrated, creditedTotal]);
 
     const rawQuotation = invoice?.properties?.['quotation'];
     const linkedQuotations = useMemo<string[]>(() => {
@@ -304,6 +276,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const docLanguage = useMemo(() => {
         if (!invoice) return 'nl';
+        const docLangProp = invoice.properties?.['docLanguage'] as string;
+        if (docLangProp) return docLangProp;
+
         const clientRecord = clients.find(c => c.id === clientId);
         if (clientRecord?.language) {
             const rawLang = clientRecord.language.toLowerCase();
@@ -538,19 +513,14 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         toast.success(`${offerteImportDialog.lineCount} regels geïmporteerd uit "${offerteImportDialog.quotationTitle}".`);
     };
 
-    // Deep recursive total calculation mapping for all mathematical block mutations
-    const calculateGrandTotal = (nodes: Block[]): number => {
-        return nodes.reduce((sum, block) => {
-            if (block.isOptional) return sum; // Phase 10: Ignore optional blocks globally
+    // Calculate totals using the shared calculator
+    const totals = useMemo(() => {
+        const vatMode = ((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
+    }, [blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime']]);
 
-            if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                return sum + calculateGrandTotal(block.children || []);
-            }
-            return sum + ((block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1));
-        }, 0);
-    };
-
-    const grandTotal = calculateGrandTotal(blocks);
+    const grandTotal = totals.subtotal;
 
     // Helper: build resolved client info for PDF templates
     const buildClientInfo = () => {
@@ -606,6 +576,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
+                    vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
+                    vatRegime={invoice?.properties?.['vatRegime'] as string}
                 />
             );
 
@@ -645,15 +617,41 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan in Google Drive.');
 
         const clientRecord = clients.find(c => c.id === clientId);
-        const parentId = clientRecord?.driveFolderId;
-
-        if (!parentId) {
-            toast.warning('Deze klant heeft nog geen Google Drive folder. Synchroniseer de database eerst.');
-            return;
-        }
+        let parentId = clientRecord?.driveFolderId;
 
         setIsSavingToDrive(true);
         try {
+            if (!parentId) {
+                // Auto-create client folder
+                const clientName = `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant';
+                const initRes = await fetch('/api/drive/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        databaseId: clientsDbId,
+                        pageId: clientId,
+                        title: clientName,
+                    }),
+                });
+                if (!initRes.ok) {
+                    throw new Error(`Auto-provisioning client Drive folder failed: ${await initRes.text()}`);
+                }
+                const initData = await initRes.json();
+                parentId = initData.driveFolderId;
+                
+                // Write back to database store so the record locally has the driveFolderId
+                if (parentId && clientsDb) {
+                    const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+                    if (driveProp) {
+                        useDatabaseStore.getState().updatePageProperty(clientsDbId, clientId, driveProp.id, parentId);
+                    }
+                }
+            }
+
+            if (!parentId) {
+                throw new Error('Geen Google Drive folder ID ontvangen.');
+            }
+
             const doc = (
                 <InvoicePDFTemplate
                     blocks={blocks}
@@ -670,6 +668,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
+                    vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
+                    vatRegime={invoice?.properties?.['vatRegime'] as string}
                 />
             );
 
@@ -1246,6 +1246,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         creditNotes={creditNoteInfos}
                         isLocked={isLocked}
                         language={docLanguage}
+                        onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
                     />
 
                 </div>

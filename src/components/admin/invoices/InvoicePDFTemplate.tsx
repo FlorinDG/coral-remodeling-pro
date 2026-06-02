@@ -5,6 +5,7 @@ import { Block } from '@/components/admin/database/types';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
 /**
  * Resolve the document type label. Credit notes (CN- prefix) get
@@ -66,12 +67,15 @@ interface InvoicePDFProps {
     deliveryDate?: string;
     dueDate?: string;
     docType?: string;
+    vatCalcMode?: 'lines' | 'total';
+    vatRegime?: string;
 }
 
 export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
+    vatCalcMode = 'lines', vatRegime = '21',
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
@@ -187,11 +191,18 @@ export const InvoicePDFTemplate = ({
                         <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
+            } else if (block.type === 'image') {
+                if (block.content && (block.content.startsWith('http') || block.content.startsWith('data:'))) {
+                    rows.push(
+                        <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, flexDirection: 'column' as const, gap: 4 }}>
+                            <Image src={block.content} style={{ width: 180, height: 120, borderRadius: 4, marginTop: 4, marginBottom: 4 }} />
+                        </View>
+                    );
+                }
             } else if (block.type === 'text') {
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
-                        <Text style={{ ...colDesc, fontStyle: 'italic', color: '#777' }}>{cleanContent}</Text>
-                        <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} /><Text style={colTotal} />
+                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>{cleanContent}</Text>
                     </View>
                 );
             } else {
@@ -215,61 +226,16 @@ export const InvoicePDFTemplate = ({
         return rows;
     };
 
-    // Calculate VAT breakdown
-    const vatBreakdown = useMemo(() => {
-        const vatMap = new Map<number, { base: number; vat: number; isMedecontractant: boolean }>();
-        
-        const accumulate = (nodes: Block[], multiplier = 1) => {
-            (nodes || []).forEach(b => {
-                if (b.isOptional) return;
-                
-                const currentQty = (b.type === 'line' || b.type === 'article' || b.type === 'bestek' || b.type === 'post') 
-                    ? (b.quantity || 1) 
-                    : 1;
-                const nextMultiplier = multiplier * currentQty;
+    // Calculate VAT breakdown and totals using the shared calculator
+    const totals = useMemo(() => {
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
+    }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
 
-                if (b.children && b.children.length > 0) {
-                    accumulate(b.children, nextMultiplier);
-                    return;
-                }
-
-                if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
-                    let variantDeltas = 0;
-                    if (b.selectedVariants && b.articleId) {
-                        const db = databaseStoreState.databases?.find((d: any) => d.id === 'db-articles');
-                        const page = db?.pages.find((p: any) => p.id === b.articleId);
-                        const vProp = db?.properties.find((p: any) => p.type === 'variants');
-                        if (page && vProp) {
-                            const vConfig = page.properties[vProp.id];
-                            if (vConfig && Array.isArray(vConfig)) {
-                                Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
-                                    const axis = vConfig.find((a: any) => a.id === axisId);
-                                    const opt = axis?.options.find((o: any) => o.id === optId);
-                                    if (opt) variantDeltas += opt.priceDelta;
-                                });
-                            }
-                        }
-                    }
-                    const lineTotal = ((b.unitPrice || b.verkoopPrice || 0) + variantDeltas) * nextMultiplier;
-                    const rate = b.vatMedecontractant ? 0 : (b.vatRate ?? 21);
-                    
-                    const existing = vatMap.get(rate) || { base: 0, vat: 0, isMedecontractant: !!b.vatMedecontractant };
-                    existing.base += lineTotal;
-                    existing.vat += lineTotal * (rate / 100);
-                    if (b.vatMedecontractant) existing.isMedecontractant = true;
-                    vatMap.set(rate, existing);
-                }
-            });
-        };
-        accumulate(blocks);
-        return Array.from(vatMap.entries())
-            .sort((a, b) => b[0] - a[0])
-            .map(([rate, data]) => ({ rate, ...data }));
-    }, [blocks, databaseStoreState]);
-
-    const totalVAT = vatBreakdown.reduce((sum, v) => sum + v.vat, 0);
-    const totalInclTax = grandTotal + totalVAT;
-    const hasMedecontractant = vatBreakdown.some(v => v.isMedecontractant);
+    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotal;
+    const vatBreakdown = totals.vatBreakdown;
+    const totalVAT = totals.totalVAT;
+    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + totalVAT);
+    const hasMedecontractant = totals.hasMedecontractant;
 
     const MEDECONTRACTANT_TEXT = t('footer_medecontractant_legal', lang);
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
@@ -338,7 +304,7 @@ export const InvoicePDFTemplate = ({
                             <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4, width: 240 }}>
                                 <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
                                     <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{grandTotal.toFixed(2)}</Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{finalSubtotal.toFixed(2)}</Text>
                                 </View>
                                 {vatBreakdown.map((v, i) => (
                                     <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
@@ -634,7 +600,7 @@ export const InvoicePDFTemplate = ({
                     <View style={{ width: isT3 ? 265 : 240 }}>
                         <View style={s.summaryRow}>
                             <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
-                            <Text style={s.summaryValue}>€{grandTotal.toFixed(2)}</Text>
+                            <Text style={s.summaryValue}>€{finalSubtotal.toFixed(2)}</Text>
                         </View>
                         {vatBreakdown.map((v, i) => (
                             <View key={i} style={s.summaryRow}>

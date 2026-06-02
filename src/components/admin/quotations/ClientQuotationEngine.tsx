@@ -20,6 +20,7 @@ import DbPropertiesPanel from '@/components/admin/database/components/DbProperti
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import { canAccess } from '@/lib/feature-flags';
 import { t as ti18n } from '@/lib/document-i18n';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -221,6 +222,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
         const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
         const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
+        const langProp = clientsDb.properties.find(p => ['taal', 'language', 'lang'].some(k => p.name.toLowerCase().includes(k)) || p.id === 'language');
         return clientsDb.pages.map(page => ({
             id: page.id,
             firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),
@@ -229,6 +231,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
             vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
             address: addressProp ? String(page.properties[addressProp.id] || '') : null,
+            language: langProp ? String(page.properties[langProp.id] || '') : 'lang-nl',
         }));
     }, [clientsDb]);
 
@@ -238,49 +241,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (!quotation || !isHydrated) return;
         const currentBlocks = quotation.blocks || [];
 
-        const calcTotals = (nodes: Block[]): { exVat: number; vat: number } => {
-            return (nodes || []).reduce((acc, block) => {
-                if (!block || block.isOptional) return acc;
-
-                if (block.children && block.children.length > 0) {
-                    const childTotals = calcTotals(block.children);
-                    const q = (block.type === 'line' || block.type === 'post') ? (block.quantity || 1) : 1;
-                    return { 
-                        exVat: acc.exVat + childTotals.exVat * q, 
-                        vat: acc.vat + childTotals.vat * q 
-                    };
-                }
-
-                const lineTotal = (block.verkoopPrice || 0) * (block.quantity || 1);
-                const lineVatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
-                return { exVat: acc.exVat + lineTotal, vat: acc.vat + lineTotal * (lineVatRate / 100) };
-            }, { exVat: 0, vat: 0 });
-        };
-
         const vatMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
         const vatReg = (quotation.properties?.['vatRegime'] as string) || '21';
 
-        let totalExVat = 0;
-        let totalVat = 0;
+        const totals = calculateInvoiceTotals(currentBlocks, { vatCalcMode: vatMode, vatRegime: vatReg });
+        const roundedEx = totals.subtotal;
+        const roundedVat = totals.totalVAT;
+        const roundedInc = totals.totalInclVAT;
 
-        if (vatMode === 'total') {
-            const totals = calcTotals(currentBlocks);
-            totalExVat = totals.exVat;
-            const rate = vatReg === 'medecontractant' ? 0 : parseFloat(vatReg) / 100;
-            totalVat = totalExVat * rate;
-        } else {
-            const totals = calcTotals(currentBlocks);
-            totalExVat = totals.exVat;
-            totalVat = totals.vat;
-        }
-
-        const roundedEx = Math.round(totalExVat * 100) / 100;
-        const roundedVat = Math.round(totalVat * 100) / 100;
-        const roundedInc = Math.round((totalExVat + totalVat) * 100) / 100;
         if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty(quotationsDbId, quotation.id, 'totalExVat', roundedEx);
         if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty(quotationsDbId, quotation.id, 'totalVat', roundedVat);
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
-    }, [quotation, isHydrated, quotationsDbId, updatePageProperty]);
+    }, [quotation?.blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime'], isHydrated, quotationsDbId, updatePageProperty]);
 
     const rawProject = quotation?.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
@@ -438,30 +410,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageProperty(quotationsDbId, quotation.id, key, value);
     };
 
-    // Deep recursive total calculation mapping for all mathematical block mutations
-    const calculateGrandTotal = (nodes: Block[]): number => {
-        return nodes.reduce((sum, block) => {
-            if (block.isOptional) return sum;
+    // Calculate totals using the shared calculator
+    const totals = useMemo(() => {
+        const vatMode = ((quotation?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
+    }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
 
-            if (block.children && block.children.length > 0) {
-                // If it's a container or a line with children, sum its children first
-                const childrenSum = calculateGrandTotal(block.children);
-                // For lines, multiply the children's sum by the parent's quantity
-                if (block.type === 'line' || block.type === 'post') {
-                    return sum + (childrenSum * (block.quantity || 1));
-                }
-                // For sections/subsections, just add the children's sum
-                return sum + childrenSum;
-            }
-            
-            // Leaf node line
-            return sum + ((block.verkoopPrice || 0) * (block.quantity || 1));
-        }, 0);
-    };
-
-    const grandTotal = calculateGrandTotal(blocks);
-    const vatAmount = grandTotal * 0.21;
-    const totalIncVat = grandTotal + vatAmount;
+    const grandTotal = totals.subtotal;
+    const vatAmount = totals.totalVAT;
+    const totalIncVat = totals.totalInclVAT;
 
 
 
@@ -476,7 +434,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         };
     };
 
-    const docLanguage = tenantProfile?.documentLanguage || 'nl';
+    const docLanguage = useMemo(() => {
+        if (!quotation) return 'nl';
+        const docLangProp = quotation.properties?.['docLanguage'] as string;
+        if (docLangProp) return docLangProp;
+
+        const clientRecord = clients.find(c => c.id === clientId);
+        if (clientRecord?.language) {
+            const rawLang = clientRecord.language.toLowerCase();
+            if (rawLang.includes('fr')) return 'fr';
+            if (rawLang.includes('en')) return 'en';
+            return 'nl';
+        }
+        return tenantProfile?.documentLanguage || 'nl';
+    }, [quotation, clients, clientId, tenantProfile?.documentLanguage]);
 
     const handleSendEmail = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
@@ -546,15 +517,40 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan in Google Drive.');
 
         const clientRecord = clients.find(c => c.id === clientId);
-        const parentId = clientRecord?.driveFolderId;
-
-        if (!parentId) {
-            toast.warning('Deze klant heeft nog geen Google Drive folder. Synchroniseer de database eerst.');
-            return;
-        }
+        let parentId = clientRecord?.driveFolderId;
 
         setIsSavingToDrive(true);
         try {
+            if (!parentId) {
+                // Auto-create client folder
+                const clientName = `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant';
+                const initRes = await fetch('/api/drive/init', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        databaseId: clientsDbId,
+                        pageId: clientId,
+                        title: clientName,
+                    }),
+                });
+                if (!initRes.ok) {
+                    throw new Error(`Auto-provisioning client Drive folder failed: ${await initRes.text()}`);
+                }
+                const initData = await initRes.json();
+                parentId = initData.driveFolderId;
+                
+                // Write back to database store so the record locally has the driveFolderId
+                if (parentId && clientsDb) {
+                    const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+                    if (driveProp) {
+                        useDatabaseStore.getState().updatePageProperty(clientsDbId, clientId, driveProp.id, parentId);
+                    }
+                }
+            }
+
+            if (!parentId) {
+                throw new Error('Geen Google Drive folder ID ontvangen.');
+            }
             const doc = (
                 <QuotationPDFTemplate
                     blocks={blocks}
@@ -1009,7 +1005,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             vatRegime={vatRegime}
                             onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
                             onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
-                            language={locale}
+                            language={docLanguage}
+                            onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
                         />
 
                     </div>

@@ -15,6 +15,7 @@ interface SaveToLibraryModalProps {
 export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSuccess }: SaveToLibraryModalProps) {
     const [db, setDb] = useState<Database | undefined>();
     const [existingArticle, setExistingArticle] = useState<any>(null);
+    const [matchedByTitle, setMatchedByTitle] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [propMap, setPropMap] = useState<Record<string, string>>({});
 
@@ -43,10 +44,23 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         if (block.articleId) {
             const page = articleDb.pages.find(p => p.id === block.articleId);
             setExistingArticle(page || null);
+            setMatchedByTitle(false);
         } else {
-            setExistingArticle(null);
+            // Check for duplicate article matching by title (case-insensitive, tag-stripped)
+            const cleanTitle = (block.content || '').replace(/<[^>]*>?/gm, '').trim().toLowerCase();
+            if (cleanTitle) {
+                const duplicate = articleDb.pages.find(p => {
+                    const titleVal = String(p.properties[map.title] || p.properties['title'] || '').replace(/<[^>]*>?/gm, '').trim().toLowerCase();
+                    return titleVal === cleanTitle;
+                });
+                setExistingArticle(duplicate || null);
+                setMatchedByTitle(!!duplicate);
+            } else {
+                setExistingArticle(null);
+                setMatchedByTitle(false);
+            }
         }
-    }, [isOpen, block.articleId]);
+    }, [isOpen, block.articleId, block.content]);
 
     const handleConfirm = async () => {
         if (!db) return;

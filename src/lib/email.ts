@@ -122,7 +122,7 @@ export async function sendVerificationEmail(params: {
                 </div>
             `,
         });
-        console.log(`[Verification] Email sent to ${params.to} — Resend ID: ${(result as any)?.data?.id ?? 'unknown'}`);
+        console.log(`[Verification] Email sent to ${params.to} — Resend ID: ${result && typeof result === 'object' && 'data' in result && result.data && typeof result.data === 'object' && 'id' in result.data ? String((result.data as any).id) : 'unknown'}`);
     } catch (error) {
         console.error('[Verification] Failed to send email:', error);
         // Log fallback URL for emergency manual verification
@@ -175,7 +175,7 @@ export async function sendPasswordResetEmail(params: {
                 </div>
             `,
         });
-        console.log(`[PasswordReset] Email sent to ${params.to} — Resend ID: ${(result as any)?.data?.id ?? 'unknown'}`);
+        console.log(`[PasswordReset] Email sent to ${params.to} — Resend ID: ${result && typeof result === 'object' && 'data' in result && result.data && typeof result.data === 'object' && 'id' in result.data ? String((result.data as any).id) : 'unknown'}`);
     } catch (error) {
         console.error('[PasswordReset] Failed to send email:', error);
         console.log(`[PasswordReset] Fallback URL for ${params.to}: ${params.resetUrl}`);

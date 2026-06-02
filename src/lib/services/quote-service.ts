@@ -12,19 +12,19 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
 
         if (!quote) return { success: false, error: 'Quote not found' };
 
-        const props = quote.properties as Record<string, any>;
+        const props = quote.properties as Record<string, unknown>;
         
         // Avoid duplicates: check if project already linked
         if (props.project) {
             console.log(`[autoCreateProject] Quote ${quoteId} already has a project linked: ${props.project}`);
-            return { success: true, projectId: props.project };
+            return { success: true, projectId: props.project as string };
         }
 
         const clientIdRaw = props.client;
         const clientId = Array.isArray(clientIdRaw) ? clientIdRaw[0] : clientIdRaw;
-        const total = props.totalIncVat || props.totalExVat || 0;
-        const title = props.betreft || props.title || 'New Project';
-        const billingRule = props['prop-billing-rule'] || 'opt-fixed';
+        const total = (props.totalIncVat as number) || (props.totalExVat as number) || 0;
+        const title = (props.betreft as string) || (props.title as string) || 'New Project';
+        const billingRule = (props['prop-billing-rule'] as string) || 'opt-fixed';
 
         // 2. Create GlobalPage in db-1 (Projects Management)
         // We use a fixed ID for db-1 or look it up via tenant's lockedDbIds
@@ -136,9 +136,10 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
             if (locked['tasks']) tasksDbId = locked['tasks'];
         }
 
-        const quoteBlocks = (quote.blocks || []) as any[];
-        const extractAndCreateTasks = async (nodes: any[]) => {
-            for (const block of nodes) {
+        const quoteBlocks = (quote.blocks || []) as unknown[];
+        const extractAndCreateTasks = async (nodes: unknown[]) => {
+            for (const item of nodes) {
+                const block = item as Record<string, any>;
                 if (block.type === 'line' || block.type === 'post') {
                     await prisma.globalPage.create({
                         data: {
@@ -154,7 +155,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                         }
                     });
                 }
-                if (block.children) await extractAndCreateTasks(block.children);
+                if (block.children) await extractAndCreateTasks(block.children as unknown[]);
             }
         };
         await extractAndCreateTasks(quoteBlocks);

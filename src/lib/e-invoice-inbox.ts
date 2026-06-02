@@ -178,7 +178,8 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
 
     // Extract line items
     const rawLines = doc.InvoiceLine || doc.CreditNoteLine || [];
-    const lines: ParsedInvoiceLine[] = (Array.isArray(rawLines) ? rawLines : [rawLines]).map((line: any) => {
+    const lines: ParsedInvoiceLine[] = (Array.isArray(rawLines) ? rawLines : [rawLines]).map((item: unknown) => {
+        const line = item as Record<string, any>;
         const quantity = parseFloat(line.InvoicedQuantity || line.CreditedQuantity || '1');
         const unitCode = line.InvoicedQuantity?.['@_unitCode'] || line.CreditedQuantity?.['@_unitCode'] || 'C62';
         const unitPrice = parseFloat(line.Price?.PriceAmount || '0');

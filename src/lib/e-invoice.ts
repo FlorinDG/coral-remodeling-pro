@@ -167,7 +167,9 @@ export async function getPeppolStatus(tenantId: string): Promise<PeppolStatus> {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function registerPeppol(tenantId: string, peppolId: string, companyName?: string): Promise<any> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const body: any = { peppol_id: peppolId };
     if (companyName) body.company_name = companyName;
 
@@ -188,6 +190,7 @@ export async function registerPeppol(tenantId: string, peppolId: string, company
 
 // ── Peppol Lookup ──
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function lookupPeppolParticipant(peppolId: string, tenantApiKey: string): Promise<any> {
     const res = await fetch(`${BASE_URL}/api/validate/peppol-id?peppol_id=${encodeURIComponent(peppolId)}`, {
         headers: {
@@ -207,6 +210,7 @@ function tenantHeaders(apiKey: string) {
     };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function validateInvoice(apiKey: string, invoiceData: Record<string, any>): Promise<{ is_valid: boolean; issues?: any[]; ubl_document?: string; message?: string }> {
     const res = await fetch(`${BASE_URL}/api/validate/json`, {
         method: 'POST',
@@ -216,6 +220,7 @@ export async function validateInvoice(apiKey: string, invoiceData: Record<string
     return res.json();
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function createDocument(apiKey: string, invoiceData: Record<string, any>): Promise<{ id: string; state: string; invoice_id: string; invoice_total?: number; total_tax?: number }> {
     const res = await fetch(`${BASE_URL}/api/documents/`, {
         method: 'POST',

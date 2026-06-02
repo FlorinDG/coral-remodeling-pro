@@ -856,6 +856,227 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK L4 — Accept BOTH dot and comma as decimal separator in engine number inputs
+**Status:** ⬜ TODO · `develop` · Phase 3 (UX/correctness)
+**Priority:** medium — daily friction; comma entry currently fails silently and can zero a price. Small, surgical.
+
+### 👤 Florin's rule (the spec)
+Engine number inputs must accept BOTH `.` and `,` as the **decimal separator**. Dot is NOT a thousands separator. So `4,39` and `4.39` both mean 4.39. (No grouping separator is expected on input — users won't type `1.250` to mean 1250.)
+
+### Premises measured (Planner, 2026-05-31)
+- `[MEASURED ✅]` In `quotations/FinancialRowRenderer.tsx` AND `invoices/FinancialRowRenderer.tsx`, the price/qty/discount/marge/verkoop inputs are `type="number"`. A native `type="number"` input REJECTS comma in most locales → `e.target.value` returns empty when the user types `,` → the decimal is silently swallowed/zeroed. **This is the core bug.**
+- `[MEASURED ✅]` The user-facing `onChange` handlers call raw `parseFloat(e.target.value)` (e.g. lines ~495, 559, 580, 601, 622) — `parseFloat("4,39")` → `4`, dropping decimals even if a comma got through.
+- `[MEASURED ✅]` A comma-aware `parseNumber` helper already exists (quotations line 141, invoices line 166) BUT is only used on the import/library path, not the live inputs. Note: its current impl `.replace(/[^0-9,-.]/g,'').replace(',', '.')` keeps BOTH separators — does NOT match Florin's "dot is not thousands" rule and would mis-handle `1.250,00`.
+
+### Instructions
+1. **Make the inputs comma-capable:** change the affected numeric inputs from `type="number"` to `type="text"` with `inputMode="decimal"` (keeps the mobile numeric keypad, allows comma). Apply to qty, brutoPrice, discountPercent, margePercent, verkoopPrice (and any other freely-typed numeric field) in BOTH `quotations/FinancialRowRenderer.tsx` and `invoices/FinancialRowRenderer.tsx`.
+2. **One shared parse function** (put in a shared util, e.g. `src/lib/parseDecimal.ts`) implementing Florin's rule EXACTLY: trim; strip currency/space; **replace comma with dot**; treat the (single) dot as decimal; `parseFloat`; return the number (or undefined/0 on empty per existing handler contract). Do NOT strip dots as thousands — dot = decimal. If both a `.` and `,` somehow appear, treat the LAST one as the decimal separator and drop the other (defensive, handles a pasted `1.250,00` → 1250.00 gracefully) — but the primary spec is "either symbol = decimal."
+3. **Use that one function** in every engine numeric `onChange` (replace the raw `parseFloat` calls) AND retire/redirect the divergent import-path `parseNumber` to the same shared util so there's a SINGLE source of truth.
+4. **Display:** keep current display formatting (`toFixed(2)`) — this task is about INPUT acceptance, not changing output format. Confirm typing `4,39` results in stored 4.39 and displays correctly.
+
+### Acceptance criteria
+- Typing `4,39` OR `4.39` in any engine price/qty/discount/marge field yields 4.39 — no swallowed decimals, no zeroing. Both quotation and invoice engines.
+- One shared decimal-parse util; raw `parseFloat(e.target.value)` calls in the engines replaced by it; import-path `parseNumber` unified to it.
+- Mobile keypad still numeric (`inputMode="decimal"`). `tsc`+`lint` green.
+
+### Out of scope
+- Changing display/grouping format of computed totals.
+- Locale-configurable separators (rule is fixed: both symbols = decimal).
+
+### 🤖 AI FEEDBACK
+- measured (confirm type=number + raw parseFloat in both engines):
+- shared util created + where used:
+- both engines updated:
+- test: 4,39 and 4.39 both → 4.39:
+- premise updates appended to pd.md? (y/n):
+
+## TASK L3 — Quote/invoice engine row UX: text wrapping, paste-as-plain-text, document font control
+**Status:** ⬜ TODO · `develop` · Phase 3 (UX/quality)
+**Priority:** medium — daily-use friction in the core authoring surface. Three related fixes, can be one PR.
+
+### Problem (Florin-observed, Planner-confirmed in code)
+Screenshot: a line-item title ("ELASTOFILLANC") wraps ONE CHARACTER PER LINE into a collapsed title column while the numeric columns keep their full width. Plus two adjacent asks: control over document font/size, and strip formatting on paste.
+
+### Premises measured (Planner, 2026-05-31)
+- `[MEASURED ✅]` `FinancialRowRenderer.tsx`: the line row is a horizontal flex of FIXED-width, `shrink-0` numeric columns — QTY `w-[75px]`, BRUTO `w-[90px]`, LEVER `w-[70px]`, MARGE `w-[70px]`, P.U. `w-[90px]`, TOTAL `w-[100px]` (+ optional). The title/description column is `flex-1 min-w-0`. Because the numeric columns never shrink, on a narrow viewport the title column collapses toward 0 width; the title is a `contentEditable` with `break-words whitespace-pre-wrap` (line ~321) → it wraps char-by-char into the sliver. THAT is the bug.
+- `[MEASURED ✅]` No `onPaste` handler exists anywhere in `quotations/*` or `invoices/*` engines; the title is `contentEditable` → pasting injects rich HTML (fonts, colors, spans) straight into the document content.
+- `[MEASURED ✅]` No document font/size setting exists anywhere (only hardcoded email styles in `email.ts`). Net-new.
+- `[ASSUMED ❓]` The same fixed-column pattern is used in BOTH quotation (`FinancialRowRenderer`) and the invoice engine (`ClientInvoiceEngine`/`InvoiceTotalCell`). CONFIRM and fix both consistently.
+
+### Part 1 — Fix the wrapping (title gets the room)
+- **Florin's preferred behavior:** when the row can't fit everything on one line, the OTHER elements (the numeric columns) wrap onto a SECOND line, giving the description text the full width — rather than the text being crushed into a sliver.
+- Implement: below a width breakpoint (or always, responsive), let the row become a two-row layout — description spans the full width on row 1, the numeric columns (qty/bruto/lever/marge/p.u./total) flow on row 2. Reuse the same inputs; only the container layout changes. Set a sensible `min-width` on the title column so it NEVER collapses below readable width even before wrapping kicks in.
+- Must work for nested rows (sections/subsections/posts indentation) and not break drag-handle / delete / optional controls.
+- Verify on a narrow viewport + the mobile width — this is also a tablet/phone authoring concern.
+
+### Part 2 — Paste as plain text (strip formatting)
+- Add an `onPaste` handler to the title/description `contentEditable` (and any other rich-editable field in the quote/invoice engines) that intercepts the paste, takes `clipboardData.getData('text/plain')`, and inserts ONLY plain text — no fonts, colors, spans, or HTML carried in from Word/web/email.
+- Apply to both quotation and invoice engines (and the block editor used inside posts if it shares the field). Smallest-change: a shared paste handler util.
+
+### Part 3 — Document font + size control (in Settings)
+- Add a setting (Settings → likely "Templates" or "UI"/"Company-info document section") for the document font family + base size used in the GENERATED PDFs (invoice/quote) — and, if feasible, the authoring engine display.
+- Persist per-tenant (new field, e.g. `documentFont` / `documentFontSize` on Tenant or in the existing document/template settings JSON). Provide a small curated font list (PDF-renderer-supported fonts — `@react-pdf` only supports a limited set; do NOT offer fonts the PDF engine can't render). 
+- Wire it into the PDF templates (`QuotationPDFTemplate`/`InvoicePDFTemplate` currently hardcode `fontFamily: 'Helvetica'`, `fontSize`). Default stays current (Helvetica / current sizes) so nothing changes unless the tenant picks otherwise.
+- 👤 FLORIN: confirm scope — PDF only, or also the on-screen engine? (Default: PDF + engine display if cheap.)
+
+### Acceptance criteria
+- A long line-item description no longer wraps char-by-char; instead the numeric columns drop to a second row and the text gets full width. Holds on narrow/mobile widths. Both quote AND invoice engines.
+- Pasting formatted text (from Word/web) into a line item inserts plain text only — no inherited fonts/colors/markup. Both engines.
+- A tenant can set document font + base size in Settings; it applies to generated PDFs (from a PDF-safe font list); default unchanged. `tsc`+`lint` green.
+
+### Out of scope
+- Restyling the whole engine; only the row-wrap layout, paste handler, and font setting.
+- Per-line font overrides (document-level only).
+
+### 🤖 AI FEEDBACK
+- measured (confirm same column pattern in invoice engine; which fields are contentEditable):
+- Part 1 wrap fix (approach, breakpoint, both engines):
+- Part 2 paste handler (where applied):
+- Part 3 font setting (where stored, PDF-safe font list, wired into templates):
+- premise updates appended to pd.md? (y/n):
+
+## TASK L2 — Improve AI PDF→quote extraction (brutto/netto/discount accuracy)
+**Status:** ⬜ TODO · `develop` · Phase 3 (quality)
+**Priority:** medium-high — PRO feature that slips today; wrong brutto/netto/discount silently corrupts quote pricing. Florin: "it misses brutto/netto/discount, suspect because docs aren't English."
+
+### 🧭 PLANNER DIAGNOSIS (code-read 2026-05-31) — language is NOT the main cause
+Read `src/app/api/integrations/parse-pdf/route.ts` (the prompt) + `src/components/admin/quotations/PDFImportModal.tsx` (the consumer). Three real causes, ranked:
+
+1. **🩸 Brutto/netto definition mismatch (biggest).** The engine's model: `brutoPrice` (supplier LIST price) − `discountPercent` (supplier discount) = netto/cost → +margin = sale. But the prompt asks GPT for `UnitPrice = "unit price EXCLUDING VAT"` — ambiguous (on a supplier quote that's the NET after discount; on a catalog it's the GROSS list). The modal then maps `UnitPrice → brutoPrice` (PDFImportModal line 121) and RE-derives netto = `bruto × (1 − discount)` (line 165). So when the PDF already shows a NET price, the discount is double-/mis-applied and brutto is wrong. **Prompt and consumer do not share a brutto-vs-netto definition** — that's why exactly these fields slip.
+2. **Discount under-specified + contradictory.** Prompt mentions Discount only as optional, with NO brutto/netto context, NO line-vs-document-level distinction, and rule 7 says treat a discount line as a "negative-price item" — which conflicts with the per-line `discountPercent` model the engine uses. Mixed signals → unreliable.
+3. **Table structure lost.** Extraction uses `pdf-parse` → flattens PDF to PLAIN TEXT → feeds text to GPT. Construction quotes/meetstaten are TABLES (qty | unit | brutto | disc% | netto | total). Flattening destroys column alignment so GPT guesses which number is which. **Likely a bigger error source than language.**
+4. Language (NL/FR) — real but minor; prompts already handle Dutch units / "Korting/Remise" / European numbers, and gpt-4o reads NL/FR well. Confirm, don't over-index on it.
+
+### Premises to measure (Rule 2) — before changing, run real failing docs
+- `[MEASURED ✅ Planner]` prompt defines `UnitPrice` ambiguously; modal maps `UnitPrice→brutoPrice` then recomputes netto applying discount again; extraction is text-only via pdf-parse.
+- `[ASSUMED ❓]` On the actual failing supplier PDFs, is the shown price gross-before-discount or net-after-discount? Get 2–3 of Florin's real failing docs and trace field-by-field where the number goes wrong. This tells you whether the fix is prompt-definition, table-structure, or both.
+- `[ASSUMED ❓]` Whether vision (page image to gpt-4o) materially beats flattened text on these tables — A/B on the same real docs.
+
+### Fix directions (validate against real docs first)
+1. **Align the data contract — THE core fix.** Make the prompt extract BOTH an explicit gross/list price AND any discount AND the resulting net price as SEPARATE, explicitly-defined fields (e.g. `grossUnitPrice`, `discountPercent`, `netUnitPrice`, `lineTotal`) — each defined unambiguously ("grossUnitPrice = list price before any discount; netUnitPrice = price after discount, before VAT; if the document shows only one price, put it in netUnitPrice and set discount 0"). Then the modal maps each to the engine's `brutoPrice`/`discountPercent`/`verkoopPrice` WITHOUT re-deriving — trust the extracted values, only compute when a field is genuinely absent. Kills the double-discount bug.
+2. **Vision-based extraction for tables.** Render the PDF page(s) to image and send to gpt-4o vision (the `/api/scan` route already does pdf→image rendering — reuse that), so the model SEES columns. Keep text as fallback / supplement. A/B which is more accurate on real docs; likely vision wins for priced tables.
+3. **Sharpen discount handling.** One model: per-line `discountPercent`. Remove the contradictory "negative-price line item" rule. Handle a document-level global discount explicitly (apply to all lines or surface separately — Florin to decide behavior).
+4. **Confidence + review surface.** Have the model flag low-confidence numeric extractions; in the import modal, show extracted gross/disc/net side by side so the user can eyeball/correct before import (already an editable preview — ensure all three price fields are visible and editable, not just title/qty).
+5. **Language:** add an explicit "documents are typically Dutch or French; interpret accordingly" line + keep European-number rules. Cheap, removes it as a variable.
+
+### Acceptance criteria
+- On Florin's real failing supplier docs, brutto/netto/discount extract correctly (gross, discount%, and net each land in the right engine field; no double-applied discount).
+- Table-structured quotes/meetstaten parse with correct per-column number mapping (vision or improved text — whichever wins the A/B, documented).
+- Import preview shows gross / discount / net / qty / total, all editable before commit.
+- No regression on the meetstaat path. `tsc`+`lint` green.
+
+### Out of scope
+- Changing the quote engine's pricing math (only feed it correct values).
+- The `/api/scan` ticket flow (separate; though its pdf→image renderer may be reused for vision here).
+
+### 🤖 AI FEEDBACK
+- measured (real-doc trace: where does the number go wrong? gross vs net in source?):
+- data-contract change (new explicit fields + modal mapping):
+- vision vs text A/B result:
+- discount handling:
+- preview/edit surface:
+- premise updates appended to pd.md? (y/n):
+
+## TASK F2-D — Peppol inbox: fetch ALL document states + onboarding history sync
+**Status:** ⬜ TODO · `develop` · Phase 1.5
+**Priority:** medium-high — onboarding trust + completeness. A new tenant whose inbox looks EMPTY (when they know invoices arrived) loses trust instantly. Also a correctness gap: currently only PENDING inbound shows.
+
+### Two linked problems (coder-observed, Planner-confirmed in code)
+1. **State gap:** `/api/peppol/inbox` calls `listInboxDocuments(apiKey)` → `GET /api/inbox/?skip=0&limit=100`, which under e-invoice.be's schema returns **only PENDING items**. Already-`accepted`/processed invoices and credit notes are NOT fetched → they silently vanish from the CoralOS view. The fix endpoints ALREADY have helpers in `src/lib/e-invoice-inbox.ts` but are UNUSED: `listInboxInvoices()` → `/api/inbox/invoices` (all invoices) and `listInboxCreditNotes()` → `/api/inbox/credit-notes` (all credit notes).
+2. **Onboarding history gap:** a newly-connected tenant sees an empty inbox even though they have prior received documents on the Peppol network → "the whole thing is missing" horror. Their history should sync on first connection.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` `listInboxInvoices` + `listInboxCreditNotes` exist in `e-invoice-inbox.ts` but nothing calls them; the route uses only `listInboxDocuments` (pending-only).
+- `[ASSUMED ❓]` `/api/inbox/invoices` + `/api/inbox/credit-notes` return ALL states (incl. accepted) and include enough fields (or `ubl_xml`) to parse. CONFIRM against the live API + the doc shape before relying on it.
+- `[ASSUMED ❓]` pagination: `skip/limit` caps at 100 — a tenant with history >100 docs needs paging. CONFIRM and page through if so.
+- `[ASSUMED ❓]` dedup: the same doc may appear across `/inbox/` (pending) and `/inbox/invoices` — ensure no double-import / double-count against the received quota (the received counter logic lives in `inbox/count`).
+
+### Part 1 — Fetch all states (correctness)
+- Update the inbox read so the tenant sees ALL received invoices + credit notes regardless of state — merge `listInboxInvoices()` + `listInboxCreditNotes()` (and pending where relevant), dedup by document id.
+- Page through results if the tenant has >100 documents (loop skip/limit until exhausted).
+- Preserve the existing parse → supplier-match → purchase-invoice mapping. Keep received-counter dedup intact (no double counting; counter only counts unique docs once).
+- Soft-fail per Rule 5 — a malformed historical doc is quarantined/flagged, never crashes the inbox.
+
+### Part 2 — Onboarding history sync (the trust fix)
+- On a tenant's FIRST Peppol connection (or first inbox open after `eInvoiceApiKey` is set), run a one-time full history pull so prior received documents populate immediately — the tenant sees their real history, not an empty box.
+- Make it idempotent (re-running doesn't duplicate); mark the tenant as history-synced so it's a one-time backfill, with a manual "re-sync" available.
+- Surface progress/empty-state honestly: "Syncing your Peppol history…" → then the list, OR a clear "No prior documents found" (never a bare empty that reads as broken).
+- Respect the FREE received soft-cap rule: historical received docs are stored/shown (received is NEVER blocked), counters handled per existing plan-limits logic — don't let a big history import wrongly hard-block anything.
+
+### Acceptance criteria
+- Inbox shows received invoices + credit notes in ALL states (pending AND accepted/processed), deduped, paged if >100.
+- A freshly-connected tenant's prior Peppol history appears on first connection (one-time backfill), idempotent, with honest syncing/empty states.
+- No double-counting against the received quota. Tenant-key scoped (per-tenant). `tsc`+`lint` green.
+
+### Out of scope
+- Changing send logic. Rewriting the UBL parser (reuse it).
+
+### 🤖 AI FEEDBACK
+- measured (do /invoices + /credit-notes return all states? fields/ubl present? pagination cap? dedup needed?):
+- Part 1 (all-states fetch + paging + dedup):
+- Part 2 (onboarding backfill — where triggered, idempotency, empty/sync UX):
+- quota double-count check:
+- premise updates appended to pd.md? (y/n):
+
+## TASK L1 — ⚖️ Consolidate VAT-regime legal mentions on documents (medecontractant 0% + reduced 6%/12%), language-matched
+**Status:** ⬜ TODO · `develop` · Phase 1.5 (legal/compliance)
+**Priority:** legal-grade for Belgian invoices/quotes. A 6%/12%/0% document WITHOUT its mandatory mention is non-compliant and can cost the tenant the reduced rate / VAT exemption on audit.
+
+### Goal
+When a document (invoice OR quotation/offer) carries a special VAT regime, the legally-required mention must appear automatically, **in the document's language** (the existing `lang` driving the PDF). Consolidate all of these so they live in ONE place and render consistently across invoice + quote PDFs (and the portal/online view if it shows totals).
+
+### What ALREADY exists (Planner, measured — do NOT rebuild)
+- `src/lib/document-i18n.ts` is the home for document text (NL/FR/EN via `t(key, lang)`).
+- **Medecontractant (0% co-contracting) is DONE:** `footer_medecontractant_legal` exists in all 3 languages and is rendered in BOTH `InvoicePDFTemplate.tsx` (uses `hasMedecontractant` → `MEDECONTRACTANT_TEXT`) and `QuotationPDFTemplate.tsx` (lines ~409, ~692, gated on `vatRegime === 'medecontractant'` or per-line medecontractant). Verify it's correct/complete; otherwise leave it.
+- VAT regime LABELS exist (`footer_vat_6` "6% — Renovatie (>10j)", `footer_vat_12` "12% — Sociaal woning", `footer_vat_0`) — but these are short labels, NOT the mandatory legal attestation sentences.
+- Per-line VAT model exists: `Block.vatRate` (21/12/6/0) + `Block.vatMedecontractant`. VAT breakdown is computed per-rate in both PDF templates.
+
+### The GAP to fill
+- **No mandatory legal mention text for the 6% (renovation, dwelling >10yr) regime, nor the 12% (social housing) regime.** Belgian law requires a specific client-attestation mention on the document when these reduced rates are applied (e.g. for 6%: the customer's declaration that the building is a private dwelling, older than the legal threshold, used for private purposes, etc.). These sentences are absent and nothing renders them.
+- Whatever reduced-rate lines appear, the matching mention must render — and if a document mixes rates, each applicable mention should appear.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` medecontractant text + rendering exist in both templates; 6%/12% have labels only, no legal mention; per-line vatRate model exists.
+- `[ASSUMED ❓]` exact, current legally-correct wording for the 6% renovation mention and 12% social-housing mention in NL + FR (EN is courtesy). **Florin must supply or approve the authoritative wording** — do NOT invent legal text. Coder: leave clearly-marked placeholders + a `👤 FLORIN: confirm legal wording` flag rather than guessing.
+- `[ASSUMED ❓]` whether the 6% mention requires a client/property attestation that should also be captured (a checkbox/field on the document), vs a static printed sentence. Default: static printed mention now; capture-field is a possible follow-up.
+
+### Instructions
+1. **Single source of truth:** add the reduced-rate legal mentions to `document-i18n.ts` as keyed entries in NL/FR/EN, alongside `footer_medecontractant_legal` — e.g. `footer_vat6_legal`, `footer_vat12_legal`. Wording = Florin-supplied/approved (placeholder + flag until then).
+2. **Render by regime, language-matched:** in BOTH `InvoicePDFTemplate.tsx` and `QuotationPDFTemplate.tsx`, when the computed VAT breakdown contains a 6% (resp. 12%) base, render the corresponding mention via `t(key, lang)` — exactly mirroring how `footer_medecontractant_legal` is already gated/rendered. Mixed-rate docs render each applicable mention.
+3. **Consolidate:** ensure invoice + quote use the SAME keys/source (no divergent hardcoded copies). If any hardcoded VAT/legal strings exist inline in the templates, replace with `t()` lookups.
+4. **Portal/online view:** if the online quote/invoice view shows VAT totals, surface the same mention there too (consistency — a client signing online sees the same legal text as the PDF).
+5. Keep it data-driven off the existing per-line `vatRate`/`vatMedecontractant` — no parallel VAT logic.
+
+### Acceptance criteria
+- An invoice/quote with a 6% line renders the 6% mandatory mention in the document's language; same for 12%; same for medecontractant 0% (already working — confirm).
+- Mixed-rate document shows each applicable mention.
+- All mentions sourced from `document-i18n.ts` (one place), language follows the document `lang`.
+- Legal wording is Florin-approved (or clearly flagged as placeholder pending approval — NOT invented and shipped as final). `tsc`+`lint` green.
+
+### Out of scope
+- Changing VAT calculation logic.
+- Inventing authoritative legal wording (Florin supplies/approves).
+
+### ✅ AUTHORITATIVE WORDING (Planner-researched 2026-05-31 — the official standardized BE mention; sources listed in task footer)
+**6% renovation (woning >10 jaar) — the standard declaration that REPLACED the old attest since 1 Jul 2022. Use VERBATIM:**
+- **NL:** "Btw-tarief: Bij gebrek aan schriftelijke betwisting binnen een termijn van één maand vanaf de ontvangst van de factuur, wordt de klant geacht te erkennen dat (1) de werken worden verricht aan een woning waarvan de eerste ingebruikneming heeft plaatsgevonden in een kalenderjaar dat ten minste tien jaar voorafgaat aan de datum van de eerste factuur met betrekking tot die werken, (2) de woning, na uitvoering van die werken, uitsluitend of hoofdzakelijk als privéwoning wordt gebruikt en (3) de werken worden verstrekt en gefactureerd aan een eindverbruiker. Wanneer minstens één van die voorwaarden niet is voldaan, zal het normale btw-tarief van 21% van toepassing zijn en is de afnemer ten aanzien van die voorwaarden aansprakelijk voor de betaling van de verschuldigde belasting, interesten en geldboeten."
+- **FR:** "Taux de TVA: En l'absence de contestation par écrit, dans un délai d'un mois à compter de la réception de la facture, le client est présumé reconnaître que (1) les travaux sont effectués à un bâtiment d'habitation dont la première occupation a eu lieu au cours d'une année civile qui précède d'au moins dix ans la date de la première facture relative à ces travaux, (2) qu'après l'exécution de ces travaux, l'habitation est utilisée, soit exclusivement, soit à titre principal comme logement privé, et (3) que ces travaux sont fournis et facturés à un consommateur final. Lorsqu'au moins une de ces conditions n'est pas remplie, le taux normal de TVA de 21% sera applicable et le client est, à l'égard de ces conditions, responsable du paiement de la taxe, des intérêts et des amendes dus."
+- **EN (courtesy, non-binding):** "VAT rate: In the absence of written objection within one month of receipt of the invoice, the customer is deemed to acknowledge that (1) the works are carried out on a dwelling first occupied in a calendar year at least ten years before the date of the first invoice relating to those works, (2) after completion the dwelling is used exclusively or principally as a private residence, and (3) the works are supplied and invoiced to an end consumer. If at least one of these conditions is not met, the standard 21% VAT rate applies and the customer is liable for the tax, interest and penalties due."
+
+**12% — DESCOPED (Florin, 2026-05-31): "I will probably never encounter it."** Do NOT build a 12% legal mention. Do NOT reuse the 6% text for 12%. If a 12% line ever appears, render NO special mention (the rate still shows in the VAT breakdown as today) — no legal text, no error, no placeholder. Only 0% (medecontractant, already done) and 6% (renovation, wording below) get mandatory mentions.
+
+### 👤 FLORIN — wording COMPLETE: medecontractant (already in code) + 6% (provided below verbatim). 12% descoped. No open legal-wording items.
+
+### 🤖 AI FEEDBACK
+- measured (confirm medecontractant done; 6/12 mention absent; hardcoded strings?):
+- keys added + where rendered (invoice/quote/portal):
+- wording status (Florin-approved vs placeholder-flagged):
+- consolidation (any inline strings replaced):
+- premise updates appended to pd.md? (y/n):
+
+### Sources (6% mention wording, verified 2026-05-31)
+- DFISC — attest 6% vervangen door standaardverklaring · Baker Tilly BE (NL+FR) · aternio · SPF Finances. The wording above is the standardized text mandated since 1 Jul 2022. Coder may normalize whitespace but must NOT alter legal substance.
+
 ## TASK F-drive-bind — Fix project/client Drive folder duplication + record binding
 **Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 1.5 (Drive integrity family)
 **Priority:** medium — not a launch blocker, but compounds with every project opened. Drive module otherwise works + dual-exposure confirmed.
@@ -1018,7 +1239,12 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | F1-FIX | Close tag-scope (🩸 read risk) + depth-cap gaps | 1.5 | 🟢 DONE (commit 6d663dd) · ✅ Planner-verified in code |
 | F1-T | 🤖 Automated E2E cross-tenant attack test | 1.5 | 🟢 DONE (passed on develop) · ⏳ Florin verify = GATE-1 |
 | F2 | ⚖️ Peppol RECEIVE: reseller health-check panel + onboarding receive-fix | 1.5 | 🟢 DONE (commit d04671e) · ⏳ Florin verify UI + Part C onboarding |
-| F2-C | ⚖️ Onboarding guarantees RECEIVE for every future tenant | 1.5 | 🟢 DONE (awaiting Florin verify) |
+| F2-C | ⚖️ Onboarding guarantees RECEIVE for every future tenant | 1.5 | 🟢 DONE (auto by provider) · ⏳ verify on real fresh tenant |
+| F2-D | Peppol inbox: all states + onboarding history sync | 1.5 | ⬜ TODO |
+| L1 | ⚖️ VAT legal mentions: 0% (done) + 6% (verbatim ready); 12% descoped | 1.5 | ⬜ TODO (no blockers) |
+| L2 | Improve AI PDF→quote extraction (brutto/netto/discount + vision) | 3 | ⬜ TODO |
+| L3 | Engine row UX: text wrap + paste-plain-text + document font control | 3 | ⬜ TODO |
+| L4 | Accept dot AND comma as decimal separator in engine inputs | 3 | ⬜ TODO |
 | F-drive-bind | Fix Drive folder duplication + record binding + cleanup | 1.5 | 🟢 DONE (awaiting Florin verify) |
 | P1 | FREE activeModules default | 1 | ✅ VERIFIED |
 | P2 | Seat billing wiring | 1 | 🟢 ⏳ awaiting Stripe test-mode check |

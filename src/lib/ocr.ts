@@ -69,7 +69,7 @@ async function renderPdfPages(file: File): Promise<string[]> {
 
         const ctx = canvas.getContext('2d')!;
         // pdfjs-dist v5: `canvas` is the primary param; `canvasContext` is legacy-supported
-        await page.render({ canvas, canvasContext: ctx as unknown, viewport } as any).promise;
+        await page.render({ canvas, canvasContext: ctx as unknown, viewport } as unknown as Parameters<typeof page.render>[0]).promise;
 
         dataUrls.push(canvas.toDataURL('image/png'));
         canvas.remove();

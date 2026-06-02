@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
+import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
 
 interface FinancialRowRendererProps {
     block: Block;
@@ -63,38 +64,22 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const [searchQuery, setSearchQuery] = useState('');
     const [showDropdown, setShowDropdown] = useState(false);
 
-    // ── European number formatting helpers ──────────────────────────
-    // Parse European input: dots are thousands separators, comma is decimal
-    const parseEU = (raw: string): number => {
-        if (!raw || raw.trim() === '') return 0;
-        // Remove dots (thousands), replace comma with dot (decimal)
-        const cleaned = raw.replace(/\./g, '').replace(',', '.');
-        const n = parseFloat(cleaned);
-        return isNaN(n) ? 0 : n;
-    };
-
-    // Format number for display in European style
-    const formatEU = (n: number | undefined | null, decimals = 2): string => {
-        if (n === undefined || n === null || n === 0) return '';
-        return n.toLocaleString('nl-BE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-    };
-
     // Local text state for Qty and Price inputs (allows free typing with commas)
-    const [qtyText, setQtyText] = useState(() => block.quantity ? formatEU(block.quantity, 2).replace(/,00$/, '') : '');
-    const [priceText, setPriceText] = useState(() => block.unitPrice ? formatEU(block.unitPrice) : '');
+    const [qtyText, setQtyText] = useState(() => block.quantity ? formatDecimal(block.quantity, 2).replace(/,00$/, '') : '');
+    const [priceText, setPriceText] = useState(() => block.unitPrice ? formatDecimal(block.unitPrice) : '');
 
     // Sync local text when block changes externally (e.g. article selection)
     React.useEffect(() => {
-        const formatted = block.quantity ? formatEU(block.quantity, 2).replace(/,00$/, '') : '';
+        const formatted = block.quantity ? formatDecimal(block.quantity, 2).replace(/,00$/, '') : '';
         setQtyText(prev => {
-            const parsed = parseEU(prev);
+            const parsed = parseDecimal(prev);
             return parsed === (block.quantity || 0) ? prev : formatted;
         });
     }, [block.quantity]);
     React.useEffect(() => {
-        const formatted = block.unitPrice ? formatEU(block.unitPrice) : '';
+        const formatted = block.unitPrice ? formatDecimal(block.unitPrice) : '';
         setPriceText(prev => {
-            const parsed = parseEU(prev);
+            const parsed = parseDecimal(prev);
             return parsed === (block.unitPrice || 0) ? prev : formatted;
         });
     }, [block.unitPrice]);
@@ -427,14 +412,14 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             // Allow digits, dots (thousands), comma (decimal), minus
                             if (/^-?[\d.,]*$/.test(v) || v === '') {
                                 setQtyText(v);
-                                const parsed = parseEU(v);
+                                const parsed = parseDecimal(v);
                                 onUpdate({ quantity: parsed });
                             }
                         }}
                         onBlur={() => {
-                            const parsed = parseEU(qtyText);
+                            const parsed = parseDecimal(qtyText);
                             if (parsed !== 0) {
-                                setQtyText(formatEU(parsed, 2).replace(/,00$/, ''));
+                                setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
                             } else {
                                 setQtyText('');
                             }
@@ -477,14 +462,14 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 const v = e.target.value;
                                 if (/^-?[\d.,]*$/.test(v) || v === '') {
                                     setPriceText(v);
-                                    const newUnitPrice = parseEU(v);
+                                    const newUnitPrice = parseDecimal(v);
                                     onUpdate({ unitPrice: newUnitPrice, verkoopPrice: newUnitPrice });
                                 }
                             }}
                             onBlur={() => {
-                                const parsed = parseEU(priceText);
+                                const parsed = parseDecimal(priceText);
                                 if (parsed !== 0) {
-                                    setPriceText(formatEU(parsed));
+                                    setPriceText(formatDecimal(parsed));
                                 } else {
                                     setPriceText('');
                                 }

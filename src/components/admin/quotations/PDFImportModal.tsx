@@ -40,6 +40,7 @@ interface ExtractedItem {
     title: string;
     brutoPrice?: number;
     discountPercent?: number;
+    netUnitPrice?: number;
     quantity?: number;
     unit?: string;
     brand?: string;
@@ -116,18 +117,26 @@ export default function PDFImportModal({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Server processing error');
 
-            const items: ExtractedItem[] = (data.articles || data.data || []).map((item: any) => ({
-                title: item.title || item.Title || '',
-                brutoPrice: item.brutoPrice || item.UnitPrice || 0,
-                discountPercent: item.discountPercent || item.Discount || 0,
-                quantity: item.quantity || item.Quantity || 1,
-                unit: item.unit || item.Unit || 'stk',
-                brand: item.brand || item.Brand || '',
-                group: item.group || item.Section || '',
-                calculationType: item.calculationType || undefined,
-                vatRate: item.vatRate || item.VatRate || undefined,
-                totalPrice: item.totalPrice || item.TotalPrice || undefined,
-            }));
+            const items: ExtractedItem[] = (data.articles || data.data || []).map((item: any) => {
+                // Map the new explicit price fields from the AI extraction
+                const grossPrice = item.GrossUnitPrice ?? item.brutoPrice ?? item.UnitPrice ?? 0;
+                const discount = item.DiscountPercent ?? item.discountPercent ?? item.Discount ?? 0;
+                const netPrice = item.NetUnitPrice ?? (grossPrice * (1 - discount / 100));
+
+                return {
+                    title: item.title || item.Title || '',
+                    brutoPrice: grossPrice,
+                    discountPercent: discount,
+                    netUnitPrice: netPrice,
+                    quantity: item.quantity || item.Quantity || 1,
+                    unit: item.unit || item.Unit || 'stk',
+                    brand: item.brand || item.Brand || '',
+                    group: item.group || item.Section || '',
+                    calculationType: item.calculationType || undefined,
+                    vatRate: item.vatRate || item.VatRate || undefined,
+                    totalPrice: item.totalPrice || item.TotalPrice || undefined,
+                };
+            });
 
             // Run dedup detection (PRO+ only)
             const existingTitles = canDedup ? collectExistingTitles(existingBlocks) : [];
@@ -162,7 +171,8 @@ export default function PDFImportModal({
         const generatedBlocks: Block[] = itemsToImport.map(item => {
             const bruto = item.brutoPrice || 0;
             const discount = item.discountPercent || 0;
-            const nettoPrice = bruto * (1 - discount / 100);
+            // Trust the extracted netUnitPrice directly; only fall back to derivation if missing
+            const nettoPrice = item.netUnitPrice ?? (bruto * (1 - discount / 100));
 
             return {
                 id: crypto.randomUUID(),
@@ -409,8 +419,9 @@ export default function PDFImportModal({
                                             <th className="px-3 py-2">Item Description</th>
                                             <th className="px-3 py-2 text-right">Qty</th>
                                             <th className="px-3 py-2">Unit</th>
-                                            <th className="px-3 py-2 text-right">Unit Price</th>
-                                            <th className="px-3 py-2 text-right">VAT %</th>
+                                            <th className="px-3 py-2 text-right">Bruto</th>
+                                            <th className="px-3 py-2 text-right">Korting</th>
+                                            <th className="px-3 py-2 text-right">Netto</th>
                                             <th className="px-3 py-2 text-right">Line Total</th>
                                             {canDedup && <th className="px-3 py-2 text-center w-24">Status</th>}
                                         </tr>
@@ -444,9 +455,10 @@ export default function PDFImportModal({
                                                     </td>
                                                     <td className="px-3 py-2 text-right">{item.quantity ?? 1}</td>
                                                     <td className="px-3 py-2 text-neutral-500">{item.unit ?? '—'}</td>
-                                                    <td className="px-3 py-2 text-right">€{(item.brutoPrice || 0).toFixed(2)}</td>
-                                                    <td className="px-3 py-2 text-right text-neutral-500">{item.vatRate != null ? `${item.vatRate}%` : '—'}</td>
-                                                    <td className="px-3 py-2 text-right font-medium">€{(item.totalPrice ?? ((item.brutoPrice || 0) * (item.quantity || 1))).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-right text-neutral-500">€{(item.brutoPrice || 0).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-right text-neutral-500">{item.discountPercent ? `${item.discountPercent}%` : '—'}</td>
+                                                    <td className="px-3 py-2 text-right font-medium">€{(item.netUnitPrice ?? item.brutoPrice ?? 0).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-right font-medium">€{(item.totalPrice ?? ((item.netUnitPrice ?? item.brutoPrice ?? 0) * (item.quantity || 1))).toFixed(2)}</td>
                                                     {canDedup && (
                                                         <td className="px-3 py-2 text-center">
                                                             {dupe ? (

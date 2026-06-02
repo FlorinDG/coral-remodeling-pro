@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import {
     Building2, CreditCard, Save, RefreshCw, AlertCircle,
-    CheckCircle2, Wifi, ArrowLeft, Paintbrush, FileText, Check, X, Shield, Crown, Zap, Sparkles
+    CheckCircle2, Wifi, ArrowLeft, Paintbrush, FileText, Check, Shield, Crown, Zap, Sparkles
 } from "lucide-react";
 import SearchableSelect from "@/components/ui/SearchableSelect";
-import { Button } from "@/components/time-tracker/components/ui/button";
+import { useTranslations } from "next-intl";
 
 interface BillingData {
     planType: string;
@@ -133,8 +133,6 @@ const PLANS = [
 
 export default function MobileSettingsClient({
     locale,
-    activeModules,
-    planType,
     billingData,
     initialProfile,
 }: {
@@ -144,10 +142,10 @@ export default function MobileSettingsClient({
     billingData: BillingData;
     initialProfile: ProfileData;
 }) {
+    const t = useTranslations('Mobile');
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, update: updateSession } = useSession();
-    const [isPending, startTransition] = useTransition();
 
     // Determine current tab from query param, default to company-info
     const initialTab = searchParams.get("tab") || "company-info";
@@ -341,7 +339,7 @@ export default function MobileSettingsClient({
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <h2 className="text-lg font-black tracking-tight text-neutral-950 dark:text-white">Settings</h2>
+                    <h2 className="text-lg font-black tracking-tight text-neutral-950 dark:text-white">{t('settings_title')}</h2>
                 </div>
                 <button
                     onClick={handleSaveProfile}
@@ -349,18 +347,18 @@ export default function MobileSettingsClient({
                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--brand-color,#d35400)] text-white text-xs font-black shadow-md hover:opacity-90 disabled:opacity-50 transition-all"
                 >
                     {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    Save
+                    {saving ? t('settings_saving') : t('settings_save')}
                 </button>
             </div>
 
             {/* Horizontal Scroll Tab Selector */}
             <div className="flex overflow-x-auto gap-1.5 px-4 py-3 border-b border-neutral-200 dark:border-white/10 scrollbar-none shrink-0 bg-white dark:bg-neutral-950">
                 {[
-                    { id: "company-info", label: "Identity", icon: <Building2 className="w-4 h-4" /> },
-                    { id: "billing", label: "Billing", icon: <CreditCard className="w-4 h-4" /> },
-                    { id: "ui", label: "Branding", icon: <Paintbrush className="w-4 h-4" /> },
-                    { id: "opt-peppol", label: "Peppol", icon: <Wifi className="w-4 h-4" /> },
-                    { id: "opt-templates", label: "Stationery", icon: <FileText className="w-4 h-4" /> },
+                    { id: "company-info", label: t('settings_tab_identity'), icon: <Building2 className="w-4 h-4" /> },
+                    { id: "billing", label: t('settings_tab_billing'), icon: <CreditCard className="w-4 h-4" /> },
+                    { id: "ui", label: t('settings_tab_branding'), icon: <Paintbrush className="w-4 h-4" /> },
+                    { id: "opt-peppol", label: t('settings_tab_peppol'), icon: <Wifi className="w-4 h-4" /> },
+                    { id: "opt-templates", label: t('settings_tab_stationery'), icon: <FileText className="w-4 h-4" /> },
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -390,12 +388,12 @@ export default function MobileSettingsClient({
                         <div className="space-y-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
                             <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 mb-2">
                                 <Building2 className="w-4 h-4" style={{ color: "var(--brand-color)" }} />
-                                Business Identity
+                                {t('settings_business_identity')}
                             </h3>
 
                             <div className="space-y-3">
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">Legal Company Name</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_legal_name')}</label>
                                     <input
                                         type="text"
                                         value={profile.companyName}
@@ -405,7 +403,7 @@ export default function MobileSettingsClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">Commercial Name</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_commercial_name')}</label>
                                     <input
                                         type="text"
                                         value={profile.commercialName}
@@ -415,7 +413,7 @@ export default function MobileSettingsClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">VAT Number (KBO)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_vat_number')}</label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
@@ -430,12 +428,12 @@ export default function MobileSettingsClient({
                                             disabled={fetchingRegistry}
                                             className="px-3.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 font-black text-xs hover:opacity-95 active:scale-95 transition-all flex items-center justify-center border border-transparent disabled:opacity-50"
                                         >
-                                            {fetchingRegistry ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Fetch"}
+                                            {fetchingRegistry ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('settings_fetch')}
                                         </button>
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">Billing Email</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_billing_email')}</label>
                                     <input
                                         type="email"
                                         value={profile.email}
@@ -446,7 +444,7 @@ export default function MobileSettingsClient({
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">Director First Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_director_first')}</label>
                                         <input
                                             type="text"
                                             value={profile.directorFirstName}
@@ -455,7 +453,7 @@ export default function MobileSettingsClient({
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">Director Last Name</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_director_last')}</label>
                                         <input
                                             type="text"
                                             value={profile.directorLastName}
@@ -465,7 +463,7 @@ export default function MobileSettingsClient({
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">IBAN</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_iban')}</label>
                                     <input
                                         type="text"
                                         value={profile.iban}
@@ -475,7 +473,7 @@ export default function MobileSettingsClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">BIC</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">{t('settings_bic')}</label>
                                     <input
                                         type="text"
                                         value={profile.bic}
@@ -489,13 +487,13 @@ export default function MobileSettingsClient({
 
                         {/* Invoicing Address */}
                         <div className="space-y-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">Invoicing Address</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_invoicing_address')}</h4>
                             <div className="space-y-3">
                                 <input
                                     type="text"
                                     value={profile.street}
                                     onChange={e => setProfile({ ...profile, street: e.target.value })}
-                                    placeholder="Street & number"
+                                    placeholder={t('settings_street')}
                                     className="w-full bg-neutral-50 dark:bg-black border border-neutral-350 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none focus:border-[var(--brand-color)]"
                                 />
                                 <div className="grid grid-cols-2 gap-3">
@@ -503,14 +501,14 @@ export default function MobileSettingsClient({
                                         type="text"
                                         value={profile.postalCode}
                                         onChange={e => setProfile({ ...profile, postalCode: e.target.value })}
-                                        placeholder="Postal code"
+                                        placeholder={t('settings_postal_code')}
                                         className="w-full bg-neutral-50 dark:bg-black border border-neutral-350 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none focus:border-[var(--brand-color)]"
                                     />
                                     <input
                                         type="text"
                                         value={profile.city}
                                         onChange={e => setProfile({ ...profile, city: e.target.value })}
-                                        placeholder="City"
+                                        placeholder={t('settings_city')}
                                         className="w-full bg-neutral-50 dark:bg-black border border-neutral-350 dark:border-white/15 rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none focus:border-[var(--brand-color)]"
                                     />
                                 </div>
@@ -519,10 +517,10 @@ export default function MobileSettingsClient({
 
                         {/* Preferences */}
                         <div className="space-y-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">Language Preferences</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_lang_preferences')}</h4>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1.5 block">Interface Language</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1.5 block">{t('settings_interface_lang')}</label>
                                     <SearchableSelect
                                         value={session?.user?.environmentLanguage ?? locale}
                                         onChange={async (lang) => {
@@ -542,12 +540,12 @@ export default function MobileSettingsClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1.5 block">Document Language (PDFs)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1.5 block">{t('settings_doc_lang')}</label>
                                     <SearchableSelect
                                         value={profile.documentLanguage}
                                         onChange={(val) => setProfile({ ...profile, documentLanguage: val })}
                                         options={[
-                                            { value: "", label: "Fallback to Client Language" },
+                                            { value: "", label: t('settings_doc_lang_fallback') },
                                             { value: "en", label: "English" },
                                             { value: "fr", label: "Français" },
                                             { value: "nl", label: "Nederlands" },
@@ -562,19 +560,21 @@ export default function MobileSettingsClient({
 
                         {/* Document Numbering */}
                         <div className="space-y-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">Document Numbering</h4>
+                            <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_doc_numbering')}</h4>
                             
                             {(["invoice", "quotation"] as const).map(type => (
                                 <div key={type} className="border-b border-neutral-100 dark:border-white/5 pb-4 last:border-b-0 last:pb-0 space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h5 className="text-xs font-black capitalize text-neutral-700 dark:text-neutral-300">{type} Numbering</h5>
+                                        <h5 className="text-xs font-black capitalize text-neutral-700 dark:text-neutral-300">
+                                            {type === 'invoice' ? t('settings_invoice_numbering') : t('settings_quotation_numbering')}
+                                        </h5>
                                         <span className="font-mono text-xs font-black px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-[var(--brand-color)] rounded border border-neutral-300 dark:border-white/10">
                                             {getNumberingPreview(type)}
                                         </span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className="text-[9px] font-black text-neutral-500 block mb-1">Prefix</label>
+                                            <label className="text-[9px] font-black text-neutral-500 block mb-1">{t('settings_prefix')}</label>
                                             <input
                                                 type="text"
                                                 value={profile[`${type}Prefix` as keyof ProfileData] as string}
@@ -583,7 +583,7 @@ export default function MobileSettingsClient({
                                             />
                                         </div>
                                         <div>
-                                            <label className="text-[9px] font-black text-neutral-500 block mb-1">Next Number</label>
+                                            <label className="text-[9px] font-black text-neutral-500 block mb-1">{t('settings_next_number')}</label>
                                             <input
                                                 type="number"
                                                 value={profile[`${type}NextNumber` as keyof ProfileData] as number}
@@ -629,7 +629,7 @@ export default function MobileSettingsClient({
                                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-neutral-350 dark:border-white/15 text-xs font-black hover:bg-neutral-150 transition-colors"
                                     >
                                         <CreditCard className="w-3.5 h-3.5" />
-                                        Manage
+                                        {t('shell_settings')}
                                     </button>
                                 )}
                             </div>
@@ -641,7 +641,9 @@ export default function MobileSettingsClient({
                                     { label: "OCR Scans", value: billingData.scanCount, limit: billingData.scanQuota === -1 ? null : billingData.scanQuota },
                                 ].map(meter => (
                                     <div key={meter.label} className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-xl p-3">
-                                        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 block mb-1">{meter.label}</span>
+                                        <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 block mb-1">
+                                            {meter.label === "Peppol Sent" ? t('settings_meter_sent') : t('settings_meter_scans')}
+                                        </span>
                                         <p className="text-lg font-black tracking-tight">
                                             {meter.value}
                                             <span className="text-xs font-normal text-neutral-450">
@@ -667,7 +669,7 @@ export default function MobileSettingsClient({
                                                     : "text-neutral-500"
                                             }`}
                                         >
-                                            {cycle}
+                                            {cycle === "MONTHLY" ? t('settings_billing_monthly') : t('settings_billing_quarterly')}
                                         </button>
                                     ))}
                                 </div>
@@ -692,15 +694,15 @@ export default function MobileSettingsClient({
                                                         <h4 className="text-sm font-black">{plan.name}</h4>
                                                         <div className="flex items-baseline gap-0.5">
                                                             <span className="text-lg font-black">€{price.toFixed(0)}</span>
-                                                            <span className="text-[10px] text-neutral-505">/mo</span>
+                                                            <span className="text-[10px] text-neutral-505">{t('settings_price_mo')}</span>
                                                         </div>
                                                     </div>
                                                     <p className="text-[9.5px] text-neutral-500">{billing}</p>
                                                     <ul className="mt-3 grid grid-cols-2 gap-y-1.5 gap-x-2 text-[11px] text-neutral-700 dark:text-neutral-300 font-medium">
                                                         {plan.features.slice(0, 4).map(f => (
                                                             <li key={f.text} className="flex items-center gap-1 truncate">
-                                                                <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                                                {f.text}
+                                                                 <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                                                 {f.text}
                                                             </li>
                                                         ))}
                                                     </ul>
@@ -709,7 +711,7 @@ export default function MobileSettingsClient({
                                                 <div className="mt-4 border-t border-neutral-100 dark:border-white/5 pt-3">
                                                     {isCurrent ? (
                                                         <div className="w-full text-center py-2.5 rounded-xl bg-neutral-100 dark:bg-white/5 text-xs font-black text-neutral-500">
-                                                            Current Plan
+                                                            {t('settings_current_plan')}
                                                         </div>
                                                     ) : (
                                                         <button
@@ -717,7 +719,7 @@ export default function MobileSettingsClient({
                                                             className="w-full py-2.5 rounded-xl text-white text-xs font-black shadow-md transition-all"
                                                             style={{ backgroundColor: "var(--brand-color)" }}
                                                         >
-                                                            {`Upgrade to ${plan.name}`}
+                                                            {t('settings_upgrade_to', { plan: plan.name })}
                                                         </button>
                                                     )}
                                                 </div>
@@ -733,8 +735,8 @@ export default function MobileSettingsClient({
                 {/* ── 3. Branding & Colors ── */}
                 {activeTab === "ui" && (
                     <div className="space-y-5 animate-in fade-in-50 duration-200 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">Brand Color</h3>
-                        <p className="text-xs text-neutral-500">Choose the signature brand accent color used throughout the platform and invoice stationery templates.</p>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_brand_color')}</h3>
+                        <p className="text-xs text-neutral-500">{t('settings_brand_desc')}</p>
                         
                         <div className="flex flex-wrap gap-3 py-2">
                             {[
@@ -762,6 +764,41 @@ export default function MobileSettingsClient({
                                 </button>
                             ))}
                         </div>
+
+                        {/* Custom Color Picker */}
+                        <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-white/10 flex items-center gap-3">
+                            <div className="relative shrink-0 w-9 h-9 rounded-xl border border-neutral-300 dark:border-white/10 cursor-pointer overflow-hidden p-0 bg-transparent flex items-center justify-center">
+                                <input
+                                    type="color"
+                                    value={profile.brandColor || "#d35400"}
+                                    onChange={e => {
+                                        const color = e.target.value;
+                                        setProfile({ ...profile, brandColor: color });
+                                        document.documentElement.style.setProperty("--brand-color", color);
+                                    }}
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+                                <div className="w-full h-full rounded-xl" style={{ backgroundColor: profile.brandColor || "#d35400" }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-300 mb-1 block">
+                                    {t('settings_custom_hex')}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={profile.brandColor || ""}
+                                    onChange={e => {
+                                        const color = e.target.value;
+                                        setProfile({ ...profile, brandColor: color });
+                                        if (/^#[0-9A-F]{6}$/i.test(color)) {
+                                            document.documentElement.style.setProperty("--brand-color", color);
+                                        }
+                                    }}
+                                    placeholder="#d35400"
+                                    className="w-full max-w-[120px] bg-neutral-50 dark:bg-black border border-neutral-350 dark:border-white/15 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-neutral-900 dark:text-white outline-none focus:border-[var(--brand-color)] focus:ring-1 focus:ring-[var(--brand-color)] transition-all"
+                                />
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -771,20 +808,20 @@ export default function MobileSettingsClient({
                         {peppolStatus.loading ? (
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 flex items-center gap-3">
                                 <RefreshCw className="w-5 h-5 animate-spin text-[var(--brand-color)]" />
-                                <span className="text-xs font-bold text-neutral-500">Checking Peppol network...</span>
+                                <span className="text-xs font-bold text-neutral-500">{t('settings_peppol_checking')}</span>
                             </div>
                         ) : peppolStatus.connected && peppolStatus.peppolRegistered ? (
                             <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-250 dark:border-emerald-900/30 rounded-2xl p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                                    <span className="text-sm font-black text-emerald-900 dark:text-emerald-300">Peppol Connected</span>
+                                    <span className="text-sm font-black text-emerald-900 dark:text-emerald-300">{t('settings_peppol_connected')}</span>
                                     <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wide bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
-                                        <Wifi className="w-2.5 h-2.5" /> Active
+                                        <Wifi className="w-2.5 h-2.5" /> {t('settings_peppol_active')}
                                     </span>
                                 </div>
                                 <div className="text-xs text-emerald-800 dark:text-emerald-400 font-bold space-y-1">
-                                    <p>Company: {peppolStatus.companyName}</p>
-                                    <p>ID: <code className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/35 font-mono text-[10px]">{peppolStatus.peppolId}</code></p>
+                                    <p>{t('settings_peppol_company')}: {peppolStatus.companyName}</p>
+                                    <p>{t('settings_peppol_id')}: <code className="px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/35 font-mono text-[10px]">{peppolStatus.peppolId}</code></p>
                                 </div>
                             </div>
                         ) : (
@@ -792,9 +829,9 @@ export default function MobileSettingsClient({
                                 <div className="flex items-start gap-2.5">
                                     <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                                     <div>
-                                        <h4 className="text-sm font-black text-amber-900 dark:text-amber-300">European e-Invoicing</h4>
+                                        <h4 className="text-sm font-black text-amber-900 dark:text-amber-300">{t('settings_peppol_title')}</h4>
                                         <p className="text-xs text-amber-800 dark:text-amber-450 font-bold leading-relaxed mt-1">
-                                            Register on the official Peppol B2B network to securely exchange digital invoices with companies and governments across the EU.
+                                            {t('settings_peppol_desc')}
                                         </p>
                                     </div>
                                 </div>
@@ -811,13 +848,13 @@ export default function MobileSettingsClient({
                                                 } else {
                                                     throw new Error("Failed to activate Peppol");
                                                 }
-                                            } catch (e) {
+                                            } catch {
                                                 toast.error("Peppol network activation failed.", { id: "peppol-onboard" });
                                             }
                                         }}
                                         className="w-full py-2.5 rounded-xl bg-amber-600 text-white text-xs font-black shadow-md hover:bg-amber-700 transition-colors"
                                     >
-                                        Register Company on Peppol
+                                        {t('settings_peppol_btn')}
                                     </button>
                                 </div>
                             </div>
@@ -828,8 +865,8 @@ export default function MobileSettingsClient({
                 {/* ── 5. Templates & Stationery ── */}
                 {activeTab === "opt-templates" && (
                     <div className="space-y-4 animate-in fade-in-50 duration-200 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-                        <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">Stationery Layout</h3>
-                        <p className="text-xs text-neutral-500">Select your default layout style template for estimates, credit notes, and generated invoice PDFs.</p>
+                        <h3 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_stationery_title')}</h3>
+                        <p className="text-xs text-neutral-500">{t('settings_stationery_desc')}</p>
                         
                         <div className="grid grid-cols-2 gap-3 pt-2">
                             {[
@@ -848,7 +885,7 @@ export default function MobileSettingsClient({
                                     }`}
                                 >
                                     <span className="text-xs font-black block text-neutral-900 dark:text-white">{tmpl.label}</span>
-                                    <span className="text-[10px] text-neutral-450 block mt-0.5">Template {tmpl.id.toUpperCase()}</span>
+                                    <span className="text-[10px] text-neutral-450 block mt-0.5">{t('settings_stationery_tmpl')} {tmpl.id.toUpperCase()}</span>
                                 </button>
                             ))}
                         </div>

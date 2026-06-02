@@ -12,7 +12,6 @@ import {
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
 import { useTranslations } from 'next-intl';
-import { getFilteredSettingsTabs } from '@/config/tabs';
 
 
 interface NavTab {
@@ -154,19 +153,22 @@ export default function MobileShell({
 
                             {settingsExpanded && (
                                 <div className="pl-6 space-y-1 mt-1 border-l-2 border-neutral-200 dark:border-white/10 ml-6 animate-in slide-in-from-left-2 duration-150">
-                                    {getFilteredSettingsTabs(activeModules)
-                                        .filter(tab => tab.id !== 'team' && tab.id !== 'opt-databases' && tab.id !== 'databases')
-                                        .map(tab => (
-                                            <Link
-                                                key={tab.id}
-                                                href={`/m/settings?tab=${tab.id}`}
-                                                onClick={() => setMenuOpen(false)}
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-extrabold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
-                                            >
-                                                {tab.label}
-                                            </Link>
-                                        ))
-                                    }
+                                    {[
+                                        { id: "company-info", label: t('settings_tab_identity') },
+                                        { id: "billing", label: t('settings_tab_billing') },
+                                        { id: "ui", label: t('settings_tab_branding') },
+                                        { id: "opt-peppol", label: t('settings_tab_peppol') },
+                                        { id: "opt-templates", label: t('settings_tab_stationery') },
+                                    ].map(tab => (
+                                        <Link
+                                            key={tab.id}
+                                            href={`/m/settings?tab=${tab.id}`}
+                                            onClick={() => setMenuOpen(false)}
+                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-extrabold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
+                                        >
+                                            {tab.label}
+                                        </Link>
+                                    ))}
                                 </div>
                             )}
 

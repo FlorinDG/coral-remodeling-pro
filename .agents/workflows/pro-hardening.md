@@ -856,6 +856,85 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK M3 — 🚦 Accountant connection on FREE tier (invite + access + mobile surface) — LAUNCH BLOCKER
+**Status:** ⬜ TODO · `develop` · Phase 2.5 · **LAUNCH BLOCKER**
+**Priority:** HIGH. Florin: the FREE persona (self-employed working like employees, phone-only, often low digital literacy) capture documents on their phone — **the ACCOUNTANT is the real second user.** If the tenant can't give their accountant access to invoices + documents, the free tier doesn't close its own loop. Must work on FREE, from a phone.
+
+### 🧭 PLANNER FINDING — backend largely EXISTS; this is wire + surface + verify, not build
+Code-read 2026-05-31:
+- `/api/tenant/accountant` route exists: GET (current) / POST (invite) / DELETE (revoke). Creates a user with role `'ACCOUNTANT'`.
+- Access allow-lists exist for an accountant: `middleware.ts:253` and `AdminLayout.tsx:168` — BUT they are keyed to role **`'BOOKKEEPING'`**, while the invite route creates role **`'ACCOUNTANT'`**.
+- Export-lock mechanism exists (`accountantExportedAt`, CheckboxColumn lock).
+- Accountant management UI lives ONLY in desktop `settings/financials/page.tsx`. No mobile surface.
+
+### The gaps to close
+1. **🐛 Role-name mismatch (likely breaks accountant access).** Invite creates `'ACCOUNTANT'`; allow-lists gate `'BOOKKEEPING'`. MEASURE: are these the same role or two different strings in `roles.ts`? If different, an invited accountant logs in and the role-gate doesn't match → locked out / wrong view. Fix: unify on ONE role string everywhere (invite route + roles.ts + middleware allow-list + AdminLayout allow-list + moduleGuard). Pick whichever is canonical in `roles.ts` and make all sites agree.
+2. **No mobile surface to invite/manage the accountant.** Add an "Accountant" section in the MOBILE settings (`/m/settings`) — invite by email, show current accountant, revoke. The phone-only FREE tenant must be able to connect their accountant without a desktop. Reuse the existing `/api/tenant/accountant` API.
+3. **Make it explicitly FREE-allowed.** The invite route currently has no plan gate (accidentally free). Make it INTENTIONALLY available on FREE (and all tiers) — add a comment/guard so a later gating pass never locks it behind PRO. Accountant access is a FREE-tier promise.
+4. **Verify the accountant's actual workflow on FREE.** It's not enough that the role "can see a page." Confirm an invited accountant can: log in, see THIS tenant's invoices + purchase invoices/expenses + Peppol inbox docs + contacts/suppliers for the period, and use the export / mark-as-exported (`accountantExportedAt`) flow. Document what they can/can't reach. Fix any FREE-tier gating that wrongly hides financial docs from the accountant (the accountant needs the docs even though the tenant is FREE).
+5. **Strict tenant-scope (security).** The accountant is an external user — every accountant-accessible read must be scoped to exactly the inviting tenant (no cross-tenant). Verify the accountant role can ONLY see its own tenant's data. (Same isolation discipline as F1.)
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` accountant API exists creating role `'ACCOUNTANT'`; allow-lists use `'BOOKKEEPING'`; management UI desktop-only; no plan gate on invite.
+- `[ASSUMED ❓]` whether `ACCOUNTANT` and `BOOKKEEPING` are the same role in `roles.ts` or a genuine mismatch — MEASURE first; this determines whether accountant login currently works at all.
+- `[ASSUMED ❓]` whether FREE-tier module/feature gates wrongly hide invoices/financials from an accountant of a FREE tenant.
+
+### Acceptance criteria
+- A FREE tenant can invite + manage their accountant FROM THE PHONE (`/m/settings`).
+- An invited accountant logs in and reliably reaches the inviting tenant's invoices, expenses/purchase invoices, Peppol inbox, contacts/suppliers, and the export/mark-exported flow — on a FREE tenant.
+- Role string unified (no ACCOUNTANT vs BOOKKEEPING mismatch); accountant login lands in the correct restricted view.
+- Accountant sees ONLY their tenant's data (cross-tenant verified denied).
+- Invite is intentionally FREE-allowed. `tsc`+`lint` green.
+
+### Out of scope
+- Multi-accountant (one accountant per tenant is fine for now — route already enforces single).
+- Accountant-side multi-client dashboard (an accountant serving many CoralOS tenants is a FUTURE feature — note it, don't build).
+
+### 🤖 AI FEEDBACK
+- measured (ACCOUNTANT vs BOOKKEEPING — same or mismatch?):
+- role unification:
+- mobile accountant settings surface:
+- accountant workflow verified on FREE (what they can reach):
+- cross-tenant isolation check:
+- premise updates appended to pd.md? (y/n):
+
+## TASK M2 — 🚦 FREE mobile app: legibility + home-screen layout fixes (LAUNCH BLOCKER)
+**Status:** ⬜ TODO · `develop` · Phase 2.5 · **LAUNCH BLOCKER (GATE-4)**
+**Priority:** HIGHEST of the mobile work. Florin did a real signup walkthrough and won't onboard his own tenant until these are fixed. The FREE mobile app IS the launch product; a squinty/inconsistent first impression poisons the word-of-mouth funnel.
+
+### Planner legibility rating: 4/10 on mobile
+Home (`src/app/[locale]/m/page.tsx`) uses `text-[9.5px]` / `text-[10px]` for stat labels + in/out figures, and `text-[11px]` for the PRIMARY action-button labels. That's far below a comfortable mobile minimum (~14px body, ~12px smallest caption). The layout crammed everything into one viewport via tiny type. **Design philosophy to flip: allow scrolling, prioritise legibility.**
+
+### Items (Florin walkthrough, all confirmed in code)
+1. **Overall font too small.** Raise the mobile type scale across the FREE app (`/m/*`), especially `m/page.tsx`. Floors: body/labels ≥ ~14px, smallest captions ≥ ~12px, primary button labels ≥ ~15–16px. Sweep the `text-[9.5px]`/`text-[10px]`/`text-[11px]` usages. Scrolling is acceptable; sub-12px is not.
+2. **Three median action buttons = tiny tap targets.** `m/page.tsx:192` `grid grid-cols-3 gap-3` — on a phone the three (Create Invoice / Scan Expense / Add Client) are too small to tap reliably. **Florin: stack them HORIZONTALLY as full-width rows** (i.e. one per row, full width, large tap target ≥ 48px height) rather than three cramped columns. [Note: "stack horizontally" per Florin = each button is a horizontal full-width bar, stacked vertically — large, easy targets.]
+3. **Remove the two redundant links** under the three buttons (`m/page.tsx:236` `grid-cols-2` → Invoices + Quotes Links). They duplicate the bottom tab bar. Delete them; reclaim that vertical space for the now-larger stacked action buttons (item 2).
+4. **🐛 Settings render in EN while tenant is FR.** When a FR tenant opens profile/settings, labels show English. Cause: `MobileSettingsClient.tsx` (and/or the profile page) isn't using the tenant's `environmentLanguage`/locale for its UI strings — it falls back to `en`. Fix: settings UI must follow the tenant's active locale (FR/NL/EN/RO). Ensure the `/m/settings` strings are translated and the locale is resolved from the session/tenant, not hardcoded/defaulted to en.
+5. **Branding: allow custom color.** `MobileSettingsClient` reads `brandColor` but provides no way to SET a custom color. Add a color picker (hex input + swatch) in the mobile branding settings so the tenant can set `brandColor` (which already drives `--brand-color` everywhere). Persist via the existing profile save.
+6. **Hamburger options inconsistent with settings tabs.** The slide-down hamburger menu (`MobileShell.tsx`) and the in-settings tab list (`getFilteredSettingsTabs`) expose different sets/labels. Reconcile so the hamburger's settings-related entries match the actual settings sections (same labels, same destinations, same gating). No orphan or mismatched entries.
+7. **OCR scan quota pill is a mis-placed tap target.** The scan quota indicator (`m/page.tsx:281`) sits where Florin instinctively tapped expecting an action. Move the scan-quota card/pill ABOVE the three action buttons (informational, top area) so it's not in the tap-flow of the buttons, and make clear it's a STATUS indicator, not a button (no button affordance / not clickable, OR make it genuinely navigate — Florin's intent: it should be info, moved out of the button zone).
+
+### Premises measured (Planner, 2026-05-31)
+- `[MEASURED ✅]` font sizes 9.5–11px throughout `m/page.tsx`; three buttons `grid-cols-3`; redundant Invoices/Quotes links `grid-cols-2` at line 236; scan pill at 281; `MobileSettingsClient` has `brandColor` field but no picker; settings language defaults toward `en`.
+- `[ASSUMED ❓]` exact mechanism of the FR→EN settings fallback — measure whether it's a missing `useTranslations` namespace, a hardcoded locale, or untranslated keys. Fix the actual cause.
+
+### Acceptance criteria
+- No interactive/label text below ~12px in the FREE mobile app; primary actions clearly legible. Florin can read every home-screen element at arm's length.
+- Three action buttons are full-width stacked bars, large tap targets (≥48px); redundant Invoices/Quotes links removed; reclaimed space used.
+- A FR (and NL/RO) tenant sees settings/profile fully in their language.
+- Branding settings include a working custom-color picker that persists and drives `--brand-color`.
+- Hamburger menu entries match settings sections (labels + destinations).
+- Scan quota indicator sits above the action buttons as info, not interfering with button taps.
+- `tsc`+`lint` green. Verify on a real mobile viewport (screenshots into feedback).
+
+### Out of scope
+- Desktop ERP layout. The PRO/ENT mobile experience (this is the FREE `/m` app).
+
+### 🤖 AI FEEDBACK
+- per-item (1–7): measured / changed / screenshot:
+- FR→EN settings root cause + fix:
+- premise updates appended to pd.md? (y/n):
+
 ## TASK L6 — Scan / expense capture UX improvements
 **Status:** ⬜ TODO · `develop` · Phase 3 (UX)
 **Priority:** medium-high — scan is the FREE persona's daily action; #1 and #2 below change the experience most.
@@ -1047,6 +1126,7 @@ Screenshot: a line-item title ("ELASTOFILLANC") wraps ONE CHARACTER PER LINE int
 - `[ASSUMED ❓]` The same fixed-column pattern is used in BOTH quotation (`FinancialRowRenderer`) and the invoice engine (`ClientInvoiceEngine`/`InvoiceTotalCell`). CONFIRM and fix both consistently.
 
 ### Part 1 — Fix the wrapping (title gets the room)
+- **⚠️ CLARIFICATION (Florin, exact intent):** "wrap onto a second line" means the **entire strip of METRIC FIELDS** — qty, unit, brutto, lever%, marge, P.U., total — reflows as a group onto a second line BELOW the description, while the **description/text field stays on line 1 at consistent full width**. It does NOT mean wrapping the rich-text formatting controls (B/I/U), and it does NOT mean the text wrapping char-by-char. The text field is the fixed anchor; the number columns are what move down.
 - **Florin's preferred behavior:** when the row can't fit everything on one line, the OTHER elements (the numeric columns) wrap onto a SECOND line, giving the description text the full width — rather than the text being crushed into a sliver.
 - Implement: below a width breakpoint (or always, responsive), let the row become a two-row layout — description spans the full width on row 1, the numeric columns (qty/bruto/lever/marge/p.u./total) flow on row 2. Reuse the same inputs; only the container layout changes. Set a sensible `min-width` on the title column so it NEVER collapses below readable width even before wrapping kicks in.
 - Must work for nested rows (sections/subsections/posts indentation) and not break drag-handle / delete / optional controls.
@@ -1391,6 +1471,8 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | L5 | 🩸 Consolidate invoice VAT/totals; fix optional-line VAT bug; align rounding | 3 | ⬜ TODO |
 | Q1 | Quotation/invoice authoring batch (empty marge=netto, dedup, subcomp UX, lang switch, text line, drive-folder autocreate) | 3 | ⬜ TODO |
 | L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
+| M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
+| M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | Fix Drive folder duplication + record binding + cleanup | 1.5 | 🟢 DONE (awaiting Florin verify) |

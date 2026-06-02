@@ -3,11 +3,12 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy, CheckCircle, AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
 import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { parseDecimal } from '@/lib/decimal-parser';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -80,8 +81,38 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         notes: '',
     });
 
+    const [lastSavedDetails, setLastSavedDetails] = useState<{ merchant: string; amount: string } | null>(null);
+
     const updateForm = (key: keyof TicketFormData, value: string) => {
         setForm(prev => ({ ...prev, [key]: value }));
+    };
+
+    const handleAutoCalcVat = (ratePercent: number) => {
+        const gross = parseDecimal(form.amount);
+        if (gross <= 0) return;
+        const net = gross / (1 + ratePercent / 100);
+        const vat = gross - net;
+        const roundedVat = Math.round(vat * 100) / 100;
+        updateForm('vatAmount', String(roundedVat));
+    };
+
+    const handleResetFlow = () => {
+        setForm({
+            merchant: '',
+            date: new Date().toISOString().split('T')[0],
+            amount: '',
+            vatAmount: '',
+            category: '',
+            currency: 'cur-eur',
+            paymentMethod: 'pm-card',
+            notes: '',
+        });
+        setPreviewUrl(null);
+        setScanResult(null);
+        setScanError('');
+        setSaveError('');
+        lastFileRef.current = null;
+        setStep('capture');
     };
 
     // ── Server-side scan ──────────────────────────────────────────────────────
@@ -194,6 +225,13 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     // ── Save (update the already-saved record with user edits) ────────────────
     const handleSave = async () => {
+        const parsedAmount = parseDecimal(form.amount);
+        const parsedVat = parseDecimal(form.vatAmount);
+        setLastSavedDetails({
+            merchant: form.merchant || (isInvoiceMode ? 'Manual Invoice' : 'Unnamed Expense'),
+            amount: form.amount
+        });
+
         if (!scanResult) {
             // Manual entry — server-first (same reliability as scanned)
             setStep('saving');
@@ -206,19 +244,17 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         status: 'opt-draft',
                         invoiceDate: form.date,
                         supplier: [],
-                        totalExVat: form.amount ? parseFloat(form.amount) : 0,
-                        totalVat: form.vatAmount ? parseFloat(form.vatAmount) : 0,
-                        totalIncVat: form.amount && form.vatAmount
-                            ? parseFloat(form.amount) + parseFloat(form.vatAmount)
-                            : form.amount ? parseFloat(form.amount) : 0,
+                        totalExVat: parsedAmount,
+                        totalVat: parsedVat,
+                        totalIncVat: parsedAmount + parsedVat,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
                     const result = await createPageServerFirst('db-tickets', {
                         title: form.merchant || 'Unnamed Expense',
                         date: form.date,
-                        amount: form.amount ? parseFloat(form.amount) : 0,
-                        vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : 0,
+                        amount: parsedAmount,
+                        vatAmount: parsedVat,
                         category: form.category || '',
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
@@ -227,7 +263,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     if (result.success) addConfirmedPage(result.page);
                 }
                 setStep('done');
-                setTimeout(() => onClose(), 1200);
             } catch (e) {
                 console.error('[TicketCaptureModal] manual save failed:', e);
                 setSaveError('Failed to save. Please try again.');
@@ -253,11 +288,9 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     title: form.merchant || currentProps.title,
                     supplierName: form.merchant || currentProps.supplierName,
                     invoiceDate: form.date,
-                    totalExVat: form.amount ? parseFloat(form.amount) : currentProps.totalExVat,
-                    totalVat: form.vatAmount ? parseFloat(form.vatAmount) : currentProps.totalVat,
-                    totalIncVat: form.amount && form.vatAmount
-                        ? parseFloat(form.amount) + parseFloat(form.vatAmount)
-                        : currentProps.totalIncVat,
+                    totalExVat: parsedAmount,
+                    totalVat: parsedVat,
+                    totalIncVat: parsedAmount + parsedVat,
                     status: 'opt-unpaid',
                 };
             } else {
@@ -265,8 +298,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     ...currentProps,
                     title: form.merchant || currentProps.title,
                     date: form.date,
-                    amount: form.amount ? parseFloat(form.amount) : currentProps.amount,
-                    vatAmount: form.vatAmount ? parseFloat(form.vatAmount) : currentProps.vatAmount,
+                    amount: parsedAmount,
+                    vatAmount: parsedVat,
                     category: form.category || currentProps.category,
                     paymentMethod: form.paymentMethod,
                     notes: form.notes,
@@ -284,9 +317,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             // Add the confirmed (possibly updated) page to the store
             addConfirmedPage(result.page);
             setStep('done');
-
-            // Auto-close after a brief success moment
-            setTimeout(onClose, 1200);
         } catch (e: any) {
             setSaveError(e?.message || 'Network error during save');
             setStep('review');
@@ -397,50 +427,57 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
                             {/* Upload area (only when not loading and no error) */}
                             {!isLoading && !scanError && (
-                                <>
+                                <div className="flex flex-col gap-4">
+                                    {/* CAMERA ACTION FIRST */}
+                                    <button
+                                        onClick={() => cameraInputRef.current?.click()}
+                                        className="w-full flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-2xl border border-orange-400 text-white shadow-lg shadow-orange-500/20 active:scale-[0.99] transition-all"
+                                    >
+                                        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
+                                            <Camera className="w-7 h-7 text-white" />
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-base font-bold tracking-wide">Take Receipt Photo</span>
+                                            <p className="text-xs text-orange-100 mt-1">Camera-first quick capture</p>
+                                        </div>
+                                    </button>
+
+                                    <div className="flex items-center gap-3 py-2">
+                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
+                                        <span className="text-xs text-neutral-400 font-medium uppercase tracking-wider">or upload files</span>
+                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
+                                    </div>
+
+                                    {/* Upload area */}
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
                                         onDragOver={handleDragOver}
                                         onDragEnter={handleDragOver}
                                         onDragLeave={handleDragLeave}
                                         onDrop={handleDrop}
-                                        className={`group cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                                        className={`group cursor-pointer border-2 border-dashed rounded-xl p-6 text-center transition-all ${
                                             isDragging
                                                 ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20 scale-[1.01]'
                                                 : 'border-neutral-300 dark:border-white/20 hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
                                         }`}
                                     >
-                                        <Upload className={`w-8 h-8 mx-auto mb-3 transition-colors ${isDragging ? 'text-orange-500' : 'text-neutral-400 group-hover:text-orange-500'}`} />
+                                        <Upload className={`w-6 h-6 mx-auto mb-2 transition-colors ${isDragging ? 'text-orange-500' : 'text-neutral-400 group-hover:text-orange-500'}`} />
                                         <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                                            {isInvoiceMode ? 'Upload Invoice' : 'Upload Receipt'}
+                                            Select existing PDF/Image
                                         </p>
-                                        <p className="text-xs text-neutral-500 mt-1">
-                                            Click or drag · JPG, PNG, PDF · AI extraction
+                                        <p className="text-xs text-neutral-500 mt-0.5">
+                                            Click or drag file here
                                         </p>
                                     </div>
-
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
-                                        <span className="text-xs text-neutral-400 font-medium uppercase tracking-wider">or</span>
-                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
-                                    </div>
-
-                                    <button
-                                        onClick={() => cameraInputRef.current?.click()}
-                                        className="w-full flex items-center justify-center gap-3 px-4 py-4 bg-neutral-100 dark:bg-white/5 rounded-xl hover:bg-orange-50 dark:hover:bg-orange-950/20 border border-neutral-200 dark:border-white/10 hover:border-orange-300 dark:hover:border-orange-600 transition-all"
-                                    >
-                                        <Camera className="w-5 h-5 text-neutral-500" />
-                                        <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Take Photo</span>
-                                    </button>
 
                                     <button
                                         onClick={handleSkipToManual}
-                                        className="w-full flex items-center justify-center gap-3 px-4 py-3 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-sm font-medium transition-colors"
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-sm font-medium transition-colors"
                                     >
                                         <FileText className="w-4 h-4" />
-                                        Enter manually without document
+                                        Enter details manually
                                     </button>
-                                </>
+                                </div>
                             )}
 
                             {/* Hidden inputs */}
@@ -493,42 +530,79 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
                             {/* Date + Amount row */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Date</label>
+                                <div className="relative">
+                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                        Date {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                    </label>
                                     <input
                                         type="date"
                                         value={form.date}
                                         onChange={e => updateForm('date', e.target.value)}
-                                        className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all"
+                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                        }`}
                                     />
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                        {isInvoiceMode ? 'Total Excl. VAT' : 'Amount'}
+                                <div className="relative">
+                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                        {isInvoiceMode ? 'Total Excl. VAT' : 'Amount'} {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
                                     </label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={form.amount}
-                                        onChange={e => updateForm('amount', e.target.value)}
+                                        onChange={e => {
+                                            const v = e.target.value;
+                                            if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                                updateForm('amount', v);
+                                            }
+                                        }}
                                         placeholder="0.00"
-                                        className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all"
+                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                        }`}
                                     />
                                 </div>
                             </div>
 
                             {/* VAT */}
                             <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">VAT Amount</label>
+                                <div className="relative">
+                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                        VAT Amount {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                    </label>
                                     <input
-                                        type="number"
-                                        step="0.01"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={form.vatAmount}
-                                        onChange={e => updateForm('vatAmount', e.target.value)}
+                                        onChange={e => {
+                                            const v = e.target.value;
+                                            if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                                updateForm('vatAmount', v);
+                                            }
+                                        }}
                                         placeholder="0.00"
-                                        className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all"
+                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                        }`}
                                     />
+                                    {/* Auto-calc quick actions */}
+                                    <div className="flex gap-1.5 mt-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutoCalcVat(21)}
+                                            className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
+                                        >
+                                            Calc 21%
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAutoCalcVat(6)}
+                                            className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
+                                        >
+                                            Calc 6%
+                                        </button>
+                                    </div>
                                 </div>
                                 {!isInvoiceMode && (
                                     <div>
@@ -613,8 +687,28 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 <CheckCircle className="w-8 h-8 text-green-600" />
                             </div>
                             <div className="text-center">
-                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saved!</p>
-                                <p className="text-xs text-neutral-500 mt-1">Record confirmed in database.</p>
+                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saved successfully!</p>
+                                {lastSavedDetails && (
+                                    <p className="text-xs text-neutral-500 mt-1 font-medium">
+                                        {lastSavedDetails.merchant} &middot; €{lastSavedDetails.amount}
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* Loop scanning buttons */}
+                            <div className="flex flex-col gap-2 w-full pt-4 max-w-[240px]">
+                                <button
+                                    onClick={handleResetFlow}
+                                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
+                                >
+                                    Scan Another
+                                </button>
+                                <button
+                                    onClick={onClose}
+                                    className="w-full py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
+                                >
+                                    Finish
+                                </button>
                             </div>
                         </div>
                     )}

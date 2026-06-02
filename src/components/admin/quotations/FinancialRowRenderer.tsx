@@ -41,6 +41,26 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
                 onChange(html);
                 if (onSearch) onSearch(e.currentTarget.textContent || '');
             }}
+            onPaste={(e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain");
+                const selection = window.getSelection();
+                if (!selection || !selection.rangeCount) return;
+                
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                
+                const textNode = document.createTextNode(text);
+                range.insertNode(textNode);
+                
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                onChange(e.currentTarget.innerHTML);
+                if (onSearch) onSearch(e.currentTarget.textContent || '');
+            }}
             className={className}
             style={{ outline: "none", cursor: "text", minHeight: "24px" }}
             data-placeholder={placeholder}
@@ -365,10 +385,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
     return (
         <div className="flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
-            <div className="flex flex-row items-start w-full pt-1 pb-0.5 px-2 gap-4">
+            <div className="flex flex-col md:flex-row items-stretch md:items-start w-full pt-1 pb-0.5 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
-                <div className="flex flex-col gap-0.5 flex-1 shrink-0 relative mt-0.5 min-w-0">
+                <div className="flex flex-col gap-0.5 flex-1 shrink relative mt-0.5 min-w-[280px] w-full">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest px-1">Item / Description</label>
                     <div className="relative w-full flex flex-col group/search">
                         <RichTextInput
@@ -527,7 +547,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 })()}
 
                 {/* 1.5 Type / Category Pill (Discrete Rectangle) */}
-                <div className="flex flex-col gap-0.5 w-[75px] shrink-0 self-start mt-0.5 text-center">
+                {/* Metric columns group that wraps on narrow screens */}
+                <div className="flex flex-row flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 md:flex-nowrap">
+                    <div className="flex flex-col gap-0.5 w-[75px] shrink-0 self-start mt-0.5 text-center">
                     <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Type</label>
                     <select
                         className="w-full bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5"
@@ -775,6 +797,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         </select>
                     </div>
                 )}
+                </div>
 
                 {/* 7. Save / Context Menu (Matched via Image context dots) - MOVED TO ACTION TOOLBAR */}
 

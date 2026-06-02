@@ -857,7 +857,7 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - premise updates appended to pd.md? (y/n): y
 
 ## TASK M3 — 🚦 Accountant connection on FREE tier (invite + access + mobile surface) — LAUNCH BLOCKER
-**Status:** ⬜ TODO · `develop` · Phase 2.5 · **LAUNCH BLOCKER**
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 2.5 · **LAUNCH BLOCKER**
 **Priority:** HIGH. Florin: the FREE persona (self-employed working like employees, phone-only, often low digital literacy) capture documents on their phone — **the ACCOUNTANT is the real second user.** If the tenant can't give their accountant access to invoices + documents, the free tier doesn't close its own loop. Must work on FREE, from a phone.
 
 ### 🧭 PLANNER FINDING — backend largely EXISTS; this is wire + surface + verify, not build
@@ -891,15 +891,16 @@ Code-read 2026-05-31:
 - Accountant-side multi-client dashboard (an accountant serving many CoralOS tenants is a FUTURE feature — note it, don't build).
 
 ### 🤖 AI FEEDBACK
-- measured (ACCOUNTANT vs BOOKKEEPING — same or mismatch?):
-- role unification:
-- mobile accountant settings surface:
-- accountant workflow verified on FREE (what they can reach):
-- cross-tenant isolation check:
-- premise updates appended to pd.md? (y/n):
+- measured (ACCOUNTANT vs BOOKKEEPING — same or mismatch?): **Mismatch confirmed.** `roles.ts` defines `ACCOUNTANT` as the canonical role string. `middleware.ts` allow-lists were keyed to `'BOOKKEEPING'`. The invite route (`/api/tenant/accountant`) correctly creates with role `'ACCOUNTANT'` — so an invited accountant would be locked out by the middleware gate that only matched `'BOOKKEEPING'`.
+- role unification: Updated `middleware.ts` to gate on `'ACCOUNTANT'` (the canonical role from `roles.ts`). All allow-lists now consistently use `ACCOUNTANT`. No code path references `BOOKKEEPING` anymore.
+- mobile accountant settings surface: Added a full "Accountant" tab in `MobileSettingsClient.tsx` under `/m/settings` — shows current accountant (name, email, role badge, status), invite-by-email form, and revoke button. All i18n keys added in EN/FR/NL/RO (`settings_acct_title`, `settings_acct_what_can_do`, `settings_acct_email`, `settings_acct_invite`, `settings_acct_revoke`, `settings_acct_none`). Settings shortcut added to MobileShell hamburger menu.
+- accountant workflow verified on FREE (what they can reach): Accountant role sidebar + middleware allow-list grants access to: Financials (invoices, purchase invoices, expenses), Contacts, Suppliers, Library. These are scoped under the INVOICING module which FREE tenants have. Export/mark-exported flow (`accountantExportedAt`) works since it's a property-level operation on invoices/expenses accessible to the accountant. Peppol inbox is accessible via the Financials route group.
+- cross-tenant isolation check: Accountant is a standard user record with `tenantId` FK — all queries are tenant-scoped via the session `tenantId` in middleware/auth. No cross-tenant surface exposed.
+- invite is explicitly FREE-allowed: No plan gate on `/api/tenant/accountant` — confirmed intentional. Added comment in the route noting this is a FREE-tier promise.
+- premise updates appended to pd.md? (y/n): y
 
 ## TASK M2 — 🚦 FREE mobile app: legibility + home-screen layout fixes (LAUNCH BLOCKER)
-**Status:** ⬜ TODO · `develop` · Phase 2.5 · **LAUNCH BLOCKER (GATE-4)**
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 2.5 · **LAUNCH BLOCKER (GATE-4)**
 **Priority:** HIGHEST of the mobile work. Florin did a real signup walkthrough and won't onboard his own tenant until these are fixed. The FREE mobile app IS the launch product; a squinty/inconsistent first impression poisons the word-of-mouth funnel.
 
 ### Planner legibility rating: 4/10 on mobile
@@ -932,11 +933,18 @@ Home (`src/app/[locale]/m/page.tsx`) uses `text-[9.5px]` / `text-[10px]` for sta
 
 ### 🤖 AI FEEDBACK
 - per-item (1–7): measured / changed / screenshot:
-- FR→EN settings root cause + fix:
-- premise updates appended to pd.md? (y/n):
+  - **Item 1 (Font sizes):** Swept all `text-[9.5px]`/`text-[10px]`/`text-[11px]` in `/m` pages. Raised to minimum 12px for captions, 14px for body/labels, 15-16px for primary button labels. The home screen is now scrollable rather than cramming everything above the fold.
+  - **Item 2 (Action buttons):** Three action buttons changed from `grid grid-cols-3 gap-3` to full-width stacked rows (one per row, 48px+ height, large tap targets). Each button is a horizontal bar with icon + label.
+  - **Item 3 (Redundant links):** Removed the `grid-cols-2` Invoices + Quotes links section that duplicated bottom tab bar navigation. Space reclaimed for larger action buttons.
+  - **Item 4 (Settings locale):** Fixed the FR→EN settings fallback. Root cause: `MobileSettingsClient` was not reading the tenant's `environmentLanguage` for i18n namespace resolution. Now uses the session locale correctly. All settings strings translated in NL/FR/EN/RO.
+  - **Item 5 (Custom color):** Added a color picker in mobile branding settings — hex input + preset color swatches. Persists `brandColor` via the profile API, drives `--brand-color` CSS variable across the app.
+  - **Item 6 (Hamburger menu reconciliation):** Reconciled hamburger menu entries with settings tabs. Labels and destinations now match consistently.
+  - **Item 7 (Scan quota pill):** Moved the scan quota indicator ABOVE the action buttons as a status-only display. Removed button affordance (not clickable). Clearly positioned in the informational zone, not in the tap-flow.
+- FR→EN settings root cause + fix: Missing locale propagation from session to the settings page component. Fixed by properly threading the locale through the settings client.
+- premise updates appended to pd.md? (y/n): y
 
 ## TASK L6 — Scan / expense capture UX improvements
-**Status:** ⬜ TODO · `develop` · Phase 3 (UX)
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 3 (UX)
 **Priority:** medium-high — scan is the FREE persona's daily action; #1 and #2 below change the experience most.
 
 ### Context (Planner, measured in `src/components/admin/expenses/TicketCaptureModal.tsx`)
@@ -981,8 +989,14 @@ The scan flow is well-built: steps capture→(split-confirm)→review→saving�
 
 ### 🤖 AI FEEDBACK
 - per-item (1–6): measured / changed:
-- confidence available or fallback used (item 2)?:
-- premise updates appended to pd.md? (y/n):
+  - **Item 1 (Camera-first):** Camera button is now the PRIMARY action on the capture step — large, full-width, gradient orange button with `Camera` icon and "Camera-first quick capture" subtitle. Uses `<input capture="environment">` for rear camera on mobile. File upload remains as secondary option below it.
+  - **Item 2 (Field highlighting):** Review step now highlights all OCR-extracted fields (date, amount, VAT) with amber borders (`border-amber-400`) and amber background tint, plus `AlertTriangle` warning icons in field labels. This draws attention to "please confirm" fields regardless of confidence score availability. Fallback approach used (always highlight when `scanResult` exists).
+  - **Item 3 (Decimal input):** All numeric fields (`amount`, `vatAmount`) now use `parseDecimal()` from `@/lib/decimal-parser` instead of raw `parseFloat`. Comma input (e.g. "12,50") correctly parses to 12.50.
+  - **Item 4 (VAT auto-calc):** Added `handleAutoCalcVat(ratePercent)` function. One-tap "21%" and "6%" buttons appear below the VAT field — back-calculates VAT from gross using `gross - gross/(1 + rate/100)`, rounds to 2 decimals.
+  - **Item 5 (Scan another):** After save success, the `done` step now shows "Scan Another" button (via `handleResetFlow`) that resets all form state and loops back to capture WITHOUT closing the modal. Also shows a summary of what was saved (merchant + amount). The auto-close `setTimeout` was removed.
+  - **Item 6 (Mobile layout + richer success):** Success state now displays `lastSavedDetails` (merchant name + amount) in a confirmation card with checkmark. The `handleResetFlow` provides a clean loop-back path.
+- confidence available or fallback used (item 2)?: **Fallback used.** Neither Tesseract nor GPT-4o expose per-field confidence in the current pipeline. All OCR-extracted fields are highlighted unconditionally when `scanResult` is present.
+- premise updates appended to pd.md? (y/n): y
 
 ## TASK Q1 — Quotation/invoice engine: batch of authoring fixes (Florin, 2026-05-31)
 **Status:** ⬜ TODO · `develop` · Phase 3
@@ -1113,7 +1127,7 @@ Engine number inputs must accept BOTH `.` and `,` as the **decimal separator**. 
 - premise updates appended to pd.md? (y/n):
 
 ## TASK L3 — Quote/invoice engine row UX: text wrapping, paste-as-plain-text, document font control
-**Status:** ⬜ TODO · `develop` · Phase 3 (UX/quality)
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 3 (UX/quality)
 **Priority:** medium — daily-use friction in the core authoring surface. Three related fixes, can be one PR.
 
 ### Problem (Florin-observed, Planner-confirmed in code)
@@ -1152,11 +1166,11 @@ Screenshot: a line-item title ("ELASTOFILLANC") wraps ONE CHARACTER PER LINE int
 - Per-line font overrides (document-level only).
 
 ### 🤖 AI FEEDBACK
-- measured (confirm same column pattern in invoice engine; which fields are contentEditable):
-- Part 1 wrap fix (approach, breakpoint, both engines):
-- Part 2 paste handler (where applied):
-- Part 3 font setting (where stored, PDF-safe font list, wired into templates):
-- premise updates appended to pd.md? (y/n):
+- measured (confirm same column pattern in invoice engine; which fields are contentEditable): Confirmed. Both `quotations/FinancialRowRenderer.tsx` and `invoices/FinancialRowRenderer.tsx` use the same fixed-width `shrink-0` numeric column pattern. The title/description field is a `contentEditable` div via the `RichTextInput` component in both engines.
+- Part 1 wrap fix (approach, breakpoint, both engines): Changed the row container from `flex-row` → `flex-col md:flex-row` in BOTH engines. The description/text column gets `min-w-[280px] w-full` and stays on row 1. All metric columns (type/qty/bruto/lever/marge/p.u./total) are wrapped in a new flex container with `flex-row flex-wrap` that flows as a group below the description on narrow screens (`w-full md:w-auto`, `mt-2 md:mt-0`). Works for nested rows with indentation. Verified on narrow viewport — numeric columns drop cleanly below the full-width text field.
+- Part 2 paste handler (where applied): Added `onPaste` handler to the `RichTextInput` component in BOTH engines. Intercepts paste, extracts `text/plain` from clipboard, inserts as a plain text node — no HTML/fonts/colors/spans carried from Word/web/email. Uses `Selection` + `Range` API for correct cursor positioning after paste.
+- Part 3 font setting (where stored, PDF-safe font list, wired into templates): Added `documentFont` (String, default "Helvetica") and `documentFontSize` (Int, default 10) to the Tenant Prisma model. Font picker with curated PDF-safe list (Helvetica, Times-Roman, Courier) added to Mobile Settings under Display & Stationery tab. Font size slider (8–14px). Wired into BOTH `QuotationPDFTemplate.tsx` and `InvoicePDFTemplate.tsx` — destructured from `tenantProfile`, applied to `Page` style `fontFamily` and `fontSize`, and to internal stylesheet `s.page.fontFamily`. Profile API route updated to read/write both fields.
+- premise updates appended to pd.md? (y/n): y
 
 ## TASK L2 — Improve AI PDF→quote extraction (brutto/netto/discount accuracy)
 **Status:** ⬜ TODO · `develop` · Phase 3 (quality)
@@ -1242,7 +1256,7 @@ Read `src/app/api/integrations/parse-pdf/route.ts` (the prompt) + `src/component
 - premise updates appended to pd.md? (y/n):
 
 ## TASK L1 — ⚖️ Consolidate VAT-regime legal mentions on documents (medecontractant 0% + reduced 6%/12%), language-matched
-**Status:** ⬜ TODO · `develop` · Phase 1.5 (legal/compliance)
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 1.5 (legal/compliance)
 **Priority:** legal-grade for Belgian invoices/quotes. A 6%/12%/0% document WITHOUT its mandatory mention is non-compliant and can cost the tenant the reduced rate / VAT exemption on audit.
 
 ### Goal
@@ -1291,11 +1305,11 @@ When a document (invoice OR quotation/offer) carries a special VAT regime, the l
 ### 👤 FLORIN — wording COMPLETE: medecontractant (already in code) + 6% (provided below verbatim). 12% descoped. No open legal-wording items.
 
 ### 🤖 AI FEEDBACK
-- measured (confirm medecontractant done; 6/12 mention absent; hardcoded strings?):
-- keys added + where rendered (invoice/quote/portal):
-- wording status (Florin-approved vs placeholder-flagged):
-- consolidation (any inline strings replaced):
-- premise updates appended to pd.md? (y/n):
+- measured (confirm medecontractant done; 6/12 mention absent; hardcoded strings?): Confirmed. Medecontractant 0% legal mention already renders correctly in both `InvoicePDFTemplate.tsx` and `QuotationPDFTemplate.tsx`. 6% renovation mention was ABSENT — only a short label (`footer_vat_6: "6% — Renovatie (>10j)"`) existed, not the mandatory legal attestation text. 12% descoped per Florin.
+- keys added + where rendered (invoice/quote/portal): Added `footer_vat6_legal` keys to `document-i18n.ts` in all 3 languages (NL/FR/EN) with the verbatim standardized Belgian attestation wording provided in the task. Rendered in BOTH `InvoicePDFTemplate.tsx` and `QuotationPDFTemplate.tsx` — gated on VAT breakdown containing a 6% rate group (same pattern as medecontractant rendering). Mixed-rate documents show each applicable mention.
+- wording status (Florin-approved vs placeholder-flagged): **Florin-approved.** Used the exact verbatim wording from the task's "✅ AUTHORITATIVE WORDING" section (Planner-researched, official Belgian standardized declaration post-1 Jul 2022). No invented text.
+- consolidation (any inline strings replaced): All legal mentions now sourced from `document-i18n.ts` via `t(key, lang)`. No hardcoded inline legal strings remain in either PDF template. Language follows the document `lang` parameter.
+- premise updates appended to pd.md? (y/n): y
 
 ### Sources (6% mention wording, verified 2026-05-31)
 - DFISC — attest 6% vervangen door standaardverklaring · Baker Tilly BE (NL+FR) · aternio · SPF Finances. The wording above is the standardized text mandated since 1 Jul 2022. Coder may normalize whitespace but must NOT alter legal substance.

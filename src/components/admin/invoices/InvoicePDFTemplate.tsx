@@ -78,13 +78,15 @@ export const InvoicePDFTemplate = ({
     vatCalcMode = 'lines', vatRegime = '21',
 }: InvoicePDFProps) => {
 
-    const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
+    const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
     const companyName = commercialName || rawCompanyName;
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     // Validate stationery URL — must be a well-formed data URL with actual base64 content
     const isValidStationeryUrl = (() => {
         if (!stationeryUrl || typeof stationeryUrl !== 'string') return false;
+        // Must start with a valid data URI scheme
         if (!stationeryUrl.startsWith('data:')) return false;
+        // Must have actual base64 content after the comma (at least 100 chars to be a real image)
         const commaIdx = stationeryUrl.indexOf(',');
         if (commaIdx < 0 || stationeryUrl.length - commaIdx < 100) return false;
         return true;
@@ -92,6 +94,12 @@ export const InvoicePDFTemplate = ({
     const isStationery = documentMode === 'stationery' && isValidStationeryUrl;
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
+    const docFont = documentFont || 'Helvetica';
+    const docFontSize = documentFontSize ?? 10;
+    if (s.page) {
+        s.page.fontFamily = docFont;
+        s.page.fontSize = docFontSize;
+    }
     const lang = language;
     const accent = brandColor || '#d35400';
     const { isCreditNote, isProforma, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang, docType);
@@ -236,15 +244,17 @@ export const InvoicePDFTemplate = ({
     const totalVAT = totals.totalVAT;
     const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + totalVAT);
     const hasMedecontractant = totals.hasMedecontractant;
+    const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 
     const MEDECONTRACTANT_TEXT = t('footer_medecontractant_legal', lang);
+    const VAT6_TEXT = t('footer_vat6_legal', lang);
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
 
     // ── STATIONERY MODE ─────────────────────────────────────────────────────
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
                     {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
@@ -324,6 +334,12 @@ export const InvoicePDFTemplate = ({
                         {hasMedecontractant && (
                             <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
                                 {MEDECONTRACTANT_TEXT}
+                            </Text>
+                        )}
+
+                        {hasVat6 && (
+                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
+                                {VAT6_TEXT}
                             </Text>
                         )}
 
@@ -617,6 +633,12 @@ export const InvoicePDFTemplate = ({
                 {hasMedecontractant && (
                     <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: padH }}>
                         {MEDECONTRACTANT_TEXT}
+                    </Text>
+                )}
+
+                {hasVat6 && (
+                    <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: padH }}>
+                        {VAT6_TEXT}
                     </Text>
                 )}
 

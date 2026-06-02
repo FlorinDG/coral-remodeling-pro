@@ -42,7 +42,7 @@ export const QuotationPDFTemplate = ({
     paymentTerms,
 }: QuotationPDFProps) => {
 
-    const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode } = tenantProfile || {};
+    const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
     const companyName = commercialName || rawCompanyName;
     const showWatermark = !canAccess('WHITELABEL', planType ?? 'FREE');
     // Validate stationery URL — must be a well-formed data URL with actual base64 content
@@ -58,6 +58,12 @@ export const QuotationPDFTemplate = ({
     const isStationery = documentMode === 'stationery' && isValidStationeryUrl;
     const isPdfStationery = isStationery && stationeryUrl?.startsWith('data:application/pdf');
     const s = getTemplateStyles(templateId, brandColor);
+    const docFont = documentFont || 'Helvetica';
+    const docFontSize = documentFontSize ?? 10;
+    if (s.page) {
+        s.page.fontFamily = docFont;
+        s.page.fontSize = docFontSize;
+    }
     const lang = language;
     const accent = brandColor || '#d35400';
 
@@ -202,6 +208,7 @@ export const QuotationPDFTemplate = ({
     const taxAmount = totals.totalVAT;
     const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + taxAmount);
     const hasLineMedecontractant = totals.hasMedecontractant;
+    const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 
     const renderVatRows = (boxWidth: number) => {
         if (vatCalcMode === 'lines') {
@@ -269,7 +276,7 @@ export const QuotationPDFTemplate = ({
     if (isStationery) {
         return (
             <Document>
-                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: '#111' }}>
+                <Page size="A4" style={{ paddingTop: 180, paddingBottom: 150, paddingHorizontal: 40, fontFamily: docFont, fontSize: docFontSize, color: '#111' }}>
                     {/* Background stationery image — only for image stationery; PDF stationery is merged by pdf-lib */}
                     {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
@@ -355,6 +362,15 @@ export const QuotationPDFTemplate = ({
                             <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
                                 <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                                     {t('footer_medecontractant_legal', lang)}
+                                </Text>
+                            </View>
+                        )}
+
+                        {/* 6% VAT Legal Notice */}
+                        {hasVat6 && (
+                            <View style={{ marginTop: 12, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                                <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                    {t('footer_vat6_legal', lang)}
                                 </Text>
                             </View>
                         )}
@@ -638,6 +654,15 @@ export const QuotationPDFTemplate = ({
                     <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }} wrap={false}>
                         <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                             {t('footer_medecontractant_legal', lang)}
+                        </Text>
+                    </View>
+                )}
+
+                {/* 6% VAT Legal Notice */}
+                {hasVat6 && (
+                    <View style={{ marginTop: 12, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }} wrap={false}>
+                        <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                            {t('footer_vat6_legal', lang)}
                         </Text>
                     </View>
                 )}

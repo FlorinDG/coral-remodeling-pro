@@ -159,6 +159,7 @@ export default function MobileShell({
                                         { id: "ui", label: t('settings_tab_branding') },
                                         { id: "opt-peppol", label: t('settings_tab_peppol') },
                                         { id: "opt-templates", label: t('settings_tab_stationery') },
+                                        { id: "accountant", label: t('settings_tab_accountant') },
                                     ].map(tab => (
                                         <Link
                                             key={tab.id}

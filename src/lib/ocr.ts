@@ -24,7 +24,9 @@ export interface OCRResult {
     pageTexts?: string[];
 }
 
-let tesseractWorker: any = null;
+import type { Worker } from 'tesseract.js';
+
+let tesseractWorker: Worker | null = null;
 
 // ─── Tesseract ───────────────────────────────────────────────────────────────
 
@@ -33,7 +35,7 @@ async function getWorker() {
     const Tesseract = await import('tesseract.js');
     tesseractWorker = await Tesseract.createWorker('nld+fra+eng', undefined, {
         logger: () => {},
-    });
+    }) as Worker;
     return tesseractWorker;
 }
 
@@ -48,7 +50,7 @@ async function renderPdfPages(file: File): Promise<string[]> {
     const pdfjsLib = await import('pdfjs-dist');
 
     // Worker script: point to the matching CDN version so we don't need a separate webpack worker
-    const version = (pdfjsLib as any).version ?? '5.0.0';
+    const version = (pdfjsLib as unknown as { version?: string }).version ?? '5.0.0';
     pdfjsLib.GlobalWorkerOptions.workerSrc =
         `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
 
@@ -67,7 +69,7 @@ async function renderPdfPages(file: File): Promise<string[]> {
 
         const ctx = canvas.getContext('2d')!;
         // pdfjs-dist v5: `canvas` is the primary param; `canvasContext` is legacy-supported
-        await page.render({ canvas, canvasContext: ctx as any, viewport } as any).promise;
+        await page.render({ canvas, canvasContext: ctx as unknown, viewport } as any).promise;
 
         dataUrls.push(canvas.toDataURL('image/png'));
         canvas.remove();

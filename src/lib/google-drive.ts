@@ -92,15 +92,15 @@ export async function listFiles(folderId: string) {
  */
 export async function generateClientFolderTemplate(clientName: string, masterParentId?: string) {
     // 1. Create root client folder
-    const masterId = await createFolder(clientName, masterParentId);
+    const masterId = await findOrCreateFolder(clientName, masterParentId!);
 
     // 2. Create foundational subdirectories
-    const offertesId = await createFolder('Offertes', masterId);
-    const facturenId = await createFolder("Facturen & Creditnota's", masterId);
-    const vorderingenId = await createFolder('Vorderingen', masterId);
-    const projectenId = await createFolder('Projecten', masterId);
-    const takenId = await createFolder('Taken', masterId);
-    const portalsId = await createFolder('Portals', masterId);
+    const offertesId = await findOrCreateFolder('Offertes', masterId);
+    const facturenId = await findOrCreateFolder("Facturen & Creditnota's", masterId);
+    const vorderingenId = await findOrCreateFolder('Vorderingen', masterId);
+    const projectenId = await findOrCreateFolder('Projecten', masterId);
+    const takenId = await findOrCreateFolder('Taken', masterId);
+    const portalsId = await findOrCreateFolder('Portals', masterId);
 
     return {
         masterId,
@@ -119,14 +119,14 @@ export async function generateClientFolderTemplate(clientName: string, masterPar
  * Generate subfolder hierarchy for a strictly governed specific Project.
  */
 export async function generateProjectFolderTemplate(projectName: string, parentProjectenId: string) {
-    const projectId = await createFolder(projectName, parentProjectenId);
+    const projectId = await findOrCreateFolder(projectName, parentProjectenId);
 
-    const offertesId = await createFolder('Offertes', projectId);
-    const vorderingenId = await createFolder('Vorderingen', projectId);
-    const facturenId = await createFolder('Facturen', projectId);
-    const bestellingenId = await createFolder('Bestellingen', projectId);
-    const suppliersId = await createFolder('Suppliers', projectId);
-    const mediaId = await createFolder('Media', projectId);
+    const offertesId = await findOrCreateFolder('Offertes', projectId);
+    const vorderingenId = await findOrCreateFolder('Vorderingen', projectId);
+    const facturenId = await findOrCreateFolder('Facturen', projectId);
+    const bestellingenId = await findOrCreateFolder('Bestellingen', projectId);
+    const suppliersId = await findOrCreateFolder('Suppliers', projectId);
+    const mediaId = await findOrCreateFolder('Media', projectId);
 
     return {
         projectId,

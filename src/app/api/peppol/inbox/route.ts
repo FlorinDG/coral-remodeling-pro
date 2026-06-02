@@ -4,9 +4,12 @@ import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import {
     listInboxDocuments,
+    listInboxInvoices,
+    listInboxCreditNotes,
     acceptInboxDocument,
     rejectInboxDocument,
     parseUBLToInvoice,
+    InboxDocument,
 } from '@/lib/e-invoice-inbox';
 import {
     maybeResetMonthlyCounters,
@@ -38,7 +41,25 @@ export async function GET() {
             }, { status: 400 });
         }
 
-        const inbox = await listInboxDocuments(tenant.eInvoiceApiKey);
+        // Query all inbox endpoints to catch pending, accepted, and credit documents
+        const [inboxPending, inboxInvoices, inboxCreditNotes] = await Promise.all([
+            listInboxDocuments(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
+            listInboxInvoices(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
+            listInboxCreditNotes(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
+        ]);
+
+        // Merge and deduplicate documents by their ID
+        const docMap = new Map<string, InboxDocument>();
+        [
+            ...(inboxPending.documents || []),
+            ...(inboxInvoices.documents || []),
+            ...(inboxCreditNotes.documents || []),
+        ].forEach((d) => {
+            if (d && d.id) docMap.set(d.id, d);
+        });
+
+        const uniqueDocuments = Array.from(docMap.values());
+        const totalCount = uniqueDocuments.length;
 
         // Reset monthly counters if needed, then check quota
         await maybeResetMonthlyCounters(tenantId);
@@ -56,7 +77,7 @@ export async function GET() {
 
         // Parse each document into our internal format
         const parsedDocs = await Promise.all(
-            (inbox.documents || []).map(async (doc) => {
+            uniqueDocuments.map(async (doc: InboxDocument) => {
                 try {
                     // If inline UBL is available, parse it
                     if (doc.ubl_xml) {
@@ -203,7 +224,7 @@ export async function GET() {
         // Return updated document list, count, and pages
         return NextResponse.json({
             documents: parsedDocs,
-            total: inbox.total,
+            total: totalCount,
             quota: quotaInfo,
             newlyImportedCount,
             newlyImportedPages,

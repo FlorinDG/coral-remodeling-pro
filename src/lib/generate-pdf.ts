@@ -10,7 +10,9 @@
 import { pdf } from '@react-pdf/renderer';
 
 export async function generatePdfBlob(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     doc: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenantProfile?: any,
 ): Promise<Blob> {
     const renderer = pdf(doc);

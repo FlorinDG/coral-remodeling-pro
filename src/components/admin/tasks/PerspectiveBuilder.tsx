@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Database, FilterRule, Property } from '@/components/admin/database/types';
+import { Database, FilterRule } from '@/components/admin/database/types';
 import { X, Plus, Trash2, Layers } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 
@@ -145,7 +145,7 @@ export function PerspectiveBuilder({ database, onClose, onSave }: PerspectiveBui
                                                     { value: 'is_not_empty', label: 'is not empty' },
                                                 ]}
                                                 value={rule.operator}
-                                                onChange={(v) => handleRuleChange(idx, { operator: v as any })}
+                                                onChange={(v) => handleRuleChange(idx, { operator: v as FilterRule['operator'] })}
                                                 placeholder="Operator"
                                             />
 

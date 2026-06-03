@@ -856,6 +856,70 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK Q2 — Project Detail overhaul: tasks→own tab; Overview = real project P&L; link any financial doc to project/quote
+**Status:** ⬜ TODO · `develop` · Phase 3 (ENTERPRISE value — projects is ENT-tier)
+**Priority:** medium-high — turns the project view from a glorified tasklist into the financial control instrument that justifies ENTERPRISE. Florin-requested.
+
+### Goal
+`ProjectDetailView.tsx` is dominated by the tasklist. Restructure:
+1. **Tasks → own "Tasks" tab** (Overview keeps only a compact task-summary card).
+2. **Vorderingenstaten brought INTO the Overview** financial picture.
+3. **Overview rebuilt as a true project P&L** — aggregate ALL cost + revenue sources; card-based; pie where it clarifies, skip where it doesn't.
+4. **Link any financial document (invoice, credit note, expense, etc.) to a project/quote — even when the document is locked (sent/finalized).**
+
+### 🧭 PLANNER FINDING — most data already computed in this component (code-read 2026-05-31)
+Already present in `ProjectDetailView.tsx`: `quotationFinancials` (quote total, material cost, labour hours, avg rate via `prop-project-quote`); `actualLaborHours`/`actualLaborCost` (REAL clock entries → project shifts → hours×rate — the "clocked time"); vorderingenstaten (`invoicedTotal`/`draftTotal`/%); `prop-budget`; tasks via `prop-task-project`. **The plumbing is mostly done; it's under-assembled and tasks hog the view.**
+
+### MISSING (the real build)
+- **Project-linked expenses / purchase invoices** — not pulled in. Need to aggregate project-tagged expenses as actual cost.
+- **Payment matching** — read db-payments-in/out to show PAID vs outstanding, not just billed.
+- **Bi-directional doc↔project/quote linking that survives the edit-lock** (item 4 below).
+
+### Part 1 — Tasks → own tab
+- New "Tasks" tab holds the full tasklist + add/toggle/edit logic. Overview shows only a compact "X/Y done" summary card linking to the tab.
+
+### Part 2 — Overview = project P&L (cards + optional pie)
+Assemble from all sources, responsive cards:
+- **Revenue:** quote/contract value · invoiced (vorderingen invoiced+draft) · invoiced % · remaining to invoice.
+- **Cost estimated vs actual:** quote material+labour estimate vs ACTUAL (clocked labour cost + project-linked expenses). Show variance.
+- **Margin:** estimated vs actual (revenue − actual cost), € and %.
+- **Cash position:** invoiced amount paid (payment-matched) vs outstanding; expenses paid vs due.
+- **Progress:** vorderingenstaten (cumulative, last, next) inside Overview.
+- **Pie (only if it clarifies):** actual cost breakdown labour vs material vs other.
+- Soft-fail empty states; never NaN/€0-as-error.
+
+### Part 3 — Wire missing inputs (expenses + payments)
+- Aggregate project-linked expenses/purchase invoices into actual cost; match payments to invoices/expenses for paid-vs-outstanding. Add minimal relation if the link doesn't exist (measure first).
+
+### Part 4 — 🔗 Link any financial document to a project/quote, INCLUDING locked/sent documents
+- **Florin's rule:** the user must be able to attach/re-attach an invoice (or any financial document) to a project or quote **even after it's sent and therefore not editable.**
+- **Key principle:** the project/quote LINK is RELATIONAL METADATA, not document content. The edit-lock (sent/finalized/`accountantExportedAt`) must lock the financial CONTENT (line items, amounts, VAT, dates) — NOT the project/quote association. Assigning a doc to a project doesn't alter the invoice itself; it's a tag.
+- **Implement:** ensure the project/quote relation field on financial docs remains editable when the doc body is locked. Provide a way to set it from the document view AND/OR from the project (add existing invoice/expense to this project). This is what feeds Part 2's actual-cost/revenue aggregation — a sent invoice from last week must be attachable so the project P&L sees it.
+- MEASURE: how the edit-lock is enforced (does it blanket-freeze the whole record, or per-field?) — fix so the relation field is exempt from the lock.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` quote financials, clocked labour, vorderingen, budget, tasks already computed.
+- `[ASSUMED ❓]` no expense→project link, no payment matching in this view — confirm + add minimal linkage.
+- `[ASSUMED ❓]` whether the sent/locked-invoice edit guard blanket-blocks ALL fields (incl. relations) or is per-field — Part 4 depends on making the project/quote relation exempt.
+
+### Acceptance criteria
+- Tasks in own tab; Overview not dominated by tasklist.
+- Overview shows coherent P&L (revenue / est-vs-actual cost incl. clocked labour + project expenses / margin / paid-vs-outstanding / vorderingen) — cards, responsive, pie where useful, graceful empties.
+- A SENT (locked) invoice can still be linked/re-linked to a project or quote; its financial content stays locked. Linking it makes it appear in that project's P&L.
+- Payments feed paid/outstanding. `tsc`+`lint` green.
+
+### Out of scope
+- Editing financial content of locked docs (only the relation is editable).
+- Cross-project portfolio dashboard (future).
+
+### 🤖 AI FEEDBACK
+- measured (expense→project link? payment matching? lock per-field or blanket?):
+- tasks-tab move:
+- overview P&L cards (list):
+- expenses + payments wired:
+- locked-doc relinking (lock exemption for relation field):
+- premise updates appended to pd.md? (y/n):
+
 ## TASK M3 — 🚦 Accountant connection on FREE tier (invite + access + mobile surface) — LAUNCH BLOCKER
 **Status:** 🟢 DONE (awaiting Florin verify) · `develop` · Phase 2.5 · **LAUNCH BLOCKER**
 **Priority:** HIGH. Florin: the FREE persona (self-employed working like employees, phone-only, often low digital literacy) capture documents on their phone — **the ACCOUNTANT is the real second user.** If the tenant can't give their accountant access to invoices + documents, the free tier doesn't close its own loop. Must work on FREE, from a phone.
@@ -1486,7 +1550,8 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | Q1 | Quotation/invoice authoring batch (empty marge=netto, dedup, subcomp UX, lang switch, text line, drive-folder autocreate) | 3 | ⬜ TODO |
 | L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
 | M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
-| M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | ⬜ TODO |
+| M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | 🟢 DONE (awaiting verify) |
+| Q2 | Project Detail → tasks tab + Overview P&L + link locked docs to project/quote | 3 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | Fix Drive folder duplication + record binding + cleanup | 1.5 | 🟢 DONE (awaiting Florin verify) |

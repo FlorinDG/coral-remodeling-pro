@@ -40,11 +40,7 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
     'grand_total_incl': { nl: 'Totaal incl. BTW', fr: 'Total TVAC', en: 'Grand Total (Incl. VAT)' },
 
     // Footer — legal
-    'invoice_legal': {
-        nl: 'Factuur is betaalbaar binnen 30 dagen na factuurdatum. Bij niet-betaling worden intresten aangerekend conform de wet van 2/8/2002.',
-        fr: 'Facture payable sous 30 jours à compter de la date de facturation. En cas de non-paiement, des intérêts seront appliqués conformément à la loi du 2/8/2002.',
-        en: 'Invoice is payable within 30 days of the invoice date. In the event of non-payment, interest will be charged in accordance with the law of 2/8/2002.',
-    },
+    'invoice_legal': { nl: '', fr: '', en: '' },
     'quote_legal': {
         nl: 'Offerte is 30 dagen geldig. De bovenstaande prijzen zijn exclusief onvoorziene werken tenzij anders vermeld.',
         fr: 'Devis valable 30 jours. Les prix ci-dessus excluent les travaux imprévus sauf mention contraire.',

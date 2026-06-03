@@ -169,6 +169,9 @@ ${text.substring(0, 120000)}`;
 
         // ── Standard prompt (supplier/other) ─────────────────────────────────
         const standardPrompt = `You are an expert document data extraction engine for Belgian construction and remodeling businesses.
+Documents are typically in DUTCH (Nederlands) or FRENCH (Français). Common terms:
+- Dutch: Prijs = Price, Korting/Remise = Discount, Hoeveelheid/Aantal = Quantity, Eenheid = Unit, BTW = VAT, Totaal = Total, Stuk = Piece, Bruto = Gross, Netto = Net
+- French: Prix = Price, Remise/Réduction = Discount, Quantité = Quantity, Unité = Unit, TVA = VAT, Total = Total, Pièce = Piece, Brut = Gross, Net = Net
 
 TASK: Extract all structured data from the document text below.
 
@@ -199,8 +202,18 @@ STEP 3 — EXTRACT ALL LINE ITEMS into "articles" array. Each item MUST have:
   • Title — article name, service description, or product name. Be descriptive.
   • Quantity — numeric, default 1 if not stated
   • Unit — measurement unit (m², m, stk, u, kg, l, set, forfait, etc.), default "stk"
-  • UnitPrice — unit price EXCLUDING VAT, as a number without currency symbol
-  • TotalPrice — line total excl. VAT (Quantity × UnitPrice), as a number
+
+  PRICING — You MUST extract ALL available price fields. These are CRITICAL:
+  • GrossUnitPrice — the bruto/brut list price per unit BEFORE any discount. This is the catalog or base price.
+  • DiscountPercent — discount percentage (korting/remise) applied to the gross price. Set to 0 if no discount.
+  • NetUnitPrice — the netto/net unit price AFTER discount (= GrossUnitPrice × (1 - DiscountPercent/100)). This is what the buyer actually pays per unit.
+  • TotalPrice — line total excl. VAT (Quantity × NetUnitPrice), as a number
+
+  PRICING DISAMBIGUATION RULES:
+  - If the document shows only ONE price column, determine if it's gross or net by checking for a separate discount column or "korting"/"remise"/"réduction" header. If no discount column exists, treat the single price as NetUnitPrice and set GrossUnitPrice = NetUnitPrice, DiscountPercent = 0.
+  - If the document shows TWO price columns (often labeled "Bruto"/"Netto", "Catalogusprijs"/"Uw prijs", "Prix de liste"/"Prix net"), map them correctly to GrossUnitPrice and NetUnitPrice.
+  - If the document shows a price and a discount column, GrossUnitPrice = the listed price, DiscountPercent = the listed discount.
+  - Always verify: NetUnitPrice ≈ GrossUnitPrice × (1 - DiscountPercent/100). If they don't match, trust the document's values over your computation.
 
   Also include when available:
   • Section — parent section/category name (e.g. "Ruwbouw", "Elektriciteit", "Afwerking")
@@ -209,7 +222,6 @@ STEP 3 — EXTRACT ALL LINE ITEMS into "articles" array. Each item MUST have:
   • Brand — manufacturer or brand name
   • VatRate — VAT % for this line if it differs from the document default
   • Notes — extra specs, dimensions, color, material, or conditions
-  • Discount — discount percentage or amount if applicable
 
 CRITICAL RULES:
   1. NEVER skip items. Extract every single priced item, even if formatting is messy.
@@ -218,7 +230,7 @@ CRITICAL RULES:
   4. If a line item description spans multiple lines in the PDF, merge them into one Title.
   5. All prices must be plain numbers without currency symbols (5.40 not €5.40).
   6. If the document uses commas as decimal separators (European format: 1.250,00), convert to dot notation (1250.00).
-  7. If you see "Korting", "Remise", or "Discount" as a separate line, apply it as a negative-price line item or note it in the Discount field of the relevant items.
+  7. If you see "Korting", "Remise", or "Discount" as a separate line, apply it as a negative-price line item or note it in the DiscountPercent field of the relevant items.
   8. Sub-totals and grand-total lines should NOT be extracted as articles.${schemaContext}
 
 Return a single JSON object: { "documentType": "...", "metadata": {...}, "articles": [...] }

@@ -716,188 +716,28 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
-                <div className="flex flex-wrap items-center gap-3 px-4 py-3">
-                    {/* Back + Title */}
+                {/* Row 1: Back + Title + Actions */}
+                <div className="flex items-center gap-3 px-4 py-2.5">
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0"
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
-                    <div className="flex flex-col min-w-0 shrink-0">
+                    <div className="flex flex-col min-w-0 flex-1">
                         <input
                             type="text"
                             value={betreft}
                             onChange={(e) => handleUpdateProperty('betreft', e.target.value)}
                             placeholder={ti18n('engine_draft_quotation', locale)}
-                            className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px]"
+                            className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-full max-w-[400px]"
                         />
                         <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase">
                             {ti18n('quotation', locale)} {quotationTitle}
                         </p>
                     </div>
 
-                    {/* Separator */}
-                    <div className="h-8 w-px bg-neutral-200 dark:bg-white/10 shrink-0" />
-
-                    {/* Selectors — scrollable, never overlaps action buttons */}
-                    <div className="flex items-center gap-2 flex-1 min-w-0 overflow-x-auto no-scrollbar">
-                        {/* Client Selector */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={clientId}
-                                onChange={(e) => handleUpdateProperty('client', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
-                            >
-                                <option value="">{ti18n('engine_select_client', locale)}</option>
-                                {clients.map(client => (
-                                    <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
-                                        {client.firstName} {client.lastName}
-                                    </option>
-                                ))}
-                            </select>
-                            {clientId && (
-                                <Link
-                                    href={`/admin/database/${clientsDbId}/${clientId}`}
-                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                                    title={ti18n('engine_open_record', locale)}
-                                >
-                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
-                                </Link>
-                            )}
-                        </div>
-
-                        {/* Project Selector */}
-                        {hasProjects && (
-                            <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                                <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                                <select
-                                    value={projectId}
-                                    onChange={(e) => handleUpdateProperty('project', e.target.value)}
-                                    className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
-                                >
-                                    <option value="">{ti18n('engine_link_project', locale)}</option>
-                                    {projects.map(project => (
-                                        <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
-                                            {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
-                                        </option>
-                                    ))}
-                                </select>
-                                {projectId && (
-                                    <Link
-                                        href={`/admin/database/${projectDbId}/${projectId}`}
-                                        className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                                        title={ti18n('engine_open_record', locale)}
-                                    >
-                                        <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
-                                    </Link>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Project Billing Rule Badge */}
-                        {projectId && project && (() => {
-                            const BILLING_RULES_MAP: Record<string, { label: string; color: string }> = {
-                                'opt-fixed':    { label: 'Vaste prijs',       color: 'bg-blue-500/10 text-blue-500 border-blue-500/25' },
-                                'opt-progress': { label: 'Vorderingenstaten', color: 'bg-purple-500/10 text-purple-500 border-purple-500/25' },
-                                'opt-hourly':   { label: 'In Regie',          color: 'bg-orange-500/10 text-orange-500 border-orange-500/25' },
-                            };
-                            const rule = String(project.properties?.['prop-billing-rule'] || 'opt-fixed');
-                            const cfg = BILLING_RULES_MAP[rule] || BILLING_RULES_MAP['opt-fixed'];
-                            return (
-                                <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border ${cfg.color} animate-in fade-in zoom-in-95 duration-200`}>
-                                    Billing: {cfg.label}
-                                </span>
-                            );
-                        })()}
-
-                        {/* Status Selector — uses shared styled dropdown for consistency with grid view */}
-                        {(() => {
-                            const db = getDatabase(quotationsDbId);
-                            const statusProp = db?.properties.find(p => p.id === 'status');
-                            const statusOptions = statusProp?.config?.options || [
-                                { id: 'opt-draft', name: ti18n('engine_status_draft', locale), color: 'gray' },
-                                { id: 'opt-sent', name: ti18n('engine_status_sent', locale), color: 'blue' },
-                                { id: 'opt-accepted', name: ti18n('engine_status_accepted', locale), color: 'green' },
-                                { id: 'opt-rejected', name: ti18n('engine_status_rejected', locale), color: 'red' },
-                            ];
-                            return (
-                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
-                                    <FileText className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
-                                    <SelectDropdown
-                                        value={quotationStatus || null}
-                                        options={statusOptions}
-                                        onChange={(v) => handleUpdateProperty('status', v ?? '')}
-                                        placeholder={ti18n('engine_status', locale)}
-                                        compact
-                                    />
-                                </div>
-                            );
-                        })()}
-
-                        {/* Billing Rule Selector */}
-                        {(() => {
-                            const db = getDatabase(quotationsDbId);
-                            const billingProp = db?.properties.find(p => p.id === 'prop-billing-rule');
-                            const billingOptions = billingProp?.config?.options || [
-                                { id: 'opt-fixed', name: 'Vaste prijs', color: 'blue' },
-                                { id: 'opt-progress', name: 'Vorderingsstaten', color: 'purple' },
-                                { id: 'opt-hourly', name: 'In Regie', color: 'orange' },
-                            ];
-                            return (
-                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
-                                    <Receipt className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
-                                    <SelectDropdown
-                                        value={billingRule}
-                                        options={billingOptions}
-                                        onChange={(v) => handleUpdateProperty('prop-billing-rule', v ?? 'opt-fixed')}
-                                        placeholder="Facturatiemethode"
-                                        compact
-                                    />
-                                </div>
-                            );
-                        })()}
-
-                        {/* Payment Terms Selector */}
-                        {(() => {
-                            const db = getDatabase(quotationsDbId);
-                            const paymentProp = db?.properties.find(p => p.id === 'prop-payment-method');
-                            const paymentOptions = paymentProp?.config?.options || [
-                                { id: 'pay-0',  name: 'Onmiddellijk', color: 'green'  },
-                                { id: 'pay-8',  name: '8 Dagen',      color: 'purple' },
-                                { id: 'pay-14', name: '14 Dagen',     color: 'blue'   },
-                                { id: 'pay-30', name: '30 Dagen',     color: 'orange' },
-                                { id: 'pay-60', name: '60 Dagen',     color: 'red'    },
-                                { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
-                            ];
-                            return (
-                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
-                                    <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
-                                    <SelectDropdown
-                                        value={paymentTerms}
-                                        options={paymentOptions}
-                                        onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
-                                        placeholder="Betalingsvoorwaarden"
-                                        compact
-                                    />
-                                </div>
-                            );
-                        })()}
-
-                        {/* Date Input */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <input
-                                type="date"
-                                value={quotationDate}
-                                onChange={(e) => handleUpdateProperty('date', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none cursor-pointer pl-7 pr-3 py-2 focus:ring-0 w-36"
-                            />
-                        </div>
-                    </div>
-
-                                  {/* Properties panel toggle — only control remaining in topbar */}
+                    {/* Right side actions */}
                     <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                         {/* Undo Button */}
                         <button
@@ -924,6 +764,163 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         >
                             <PanelRight className="w-4 h-4" />
                         </button>
+                    </div>
+                </div>
+
+                {/* Row 2: Selectors — responsive wrap */}
+                <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
+                    {/* Client Selector */}
+                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                        <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                        <select
+                            value={clientId}
+                            onChange={(e) => handleUpdateProperty('client', e.target.value)}
+                            className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
+                        >
+                            <option value="">{ti18n('engine_select_client', locale)}</option>
+                            {clients.map(client => (
+                                <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
+                                    {client.firstName} {client.lastName}
+                                </option>
+                            ))}
+                        </select>
+                        {clientId && (
+                            <Link
+                                href={`/admin/database/${clientsDbId}/${clientId}`}
+                                className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                title={ti18n('engine_open_record', locale)}
+                            >
+                                <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                            </Link>
+                        )}
+                    </div>
+
+                    {/* Project Selector */}
+                    {hasProjects && (
+                        <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                            <select
+                                value={projectId}
+                                onChange={(e) => handleUpdateProperty('project', e.target.value)}
+                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
+                            >
+                                <option value="">{ti18n('engine_link_project', locale)}</option>
+                                {projects.map(project => (
+                                    <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
+                                        {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
+                                    </option>
+                                ))}
+                            </select>
+                            {projectId && (
+                                <Link
+                                    href={`/admin/database/${projectDbId}/${projectId}`}
+                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                    title={ti18n('engine_open_record', locale)}
+                                >
+                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                                </Link>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Project Billing Rule Badge */}
+                    {projectId && project && (() => {
+                        const BILLING_RULES_MAP: Record<string, { label: string; color: string }> = {
+                            'opt-fixed':    { label: 'Vaste prijs',       color: 'bg-blue-500/10 text-blue-500 border-blue-500/25' },
+                            'opt-progress': { label: 'Vorderingenstaten', color: 'bg-purple-500/10 text-purple-500 border-purple-500/25' },
+                            'opt-hourly':   { label: 'In Regie',          color: 'bg-orange-500/10 text-orange-500 border-orange-500/25' },
+                        };
+                        const rule = String(project.properties?.['prop-billing-rule'] || 'opt-fixed');
+                        const cfg = BILLING_RULES_MAP[rule] || BILLING_RULES_MAP['opt-fixed'];
+                        return (
+                            <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-lg border ${cfg.color} animate-in fade-in zoom-in-95 duration-200`}>
+                                Billing: {cfg.label}
+                            </span>
+                        );
+                    })()}
+
+                    {/* Status Selector */}
+                    {(() => {
+                        const db = getDatabase(quotationsDbId);
+                        const statusProp = db?.properties.find(p => p.id === 'status');
+                        const statusOptions = statusProp?.config?.options || [
+                            { id: 'opt-draft', name: ti18n('engine_status_draft', locale), color: 'gray' },
+                            { id: 'opt-sent', name: ti18n('engine_status_sent', locale), color: 'blue' },
+                            { id: 'opt-accepted', name: ti18n('engine_status_accepted', locale), color: 'green' },
+                            { id: 'opt-rejected', name: ti18n('engine_status_rejected', locale), color: 'red' },
+                        ];
+                        return (
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                <FileText className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                <SelectDropdown
+                                    value={quotationStatus || null}
+                                    options={statusOptions}
+                                    onChange={(v) => handleUpdateProperty('status', v ?? '')}
+                                    placeholder={ti18n('engine_status', locale)}
+                                    compact
+                                />
+                            </div>
+                        );
+                    })()}
+
+                    {/* Billing Rule Selector */}
+                    {(() => {
+                        const db = getDatabase(quotationsDbId);
+                        const billingProp = db?.properties.find(p => p.id === 'prop-billing-rule');
+                        const billingOptions = billingProp?.config?.options || [
+                            { id: 'opt-fixed', name: 'Vaste prijs', color: 'blue' },
+                            { id: 'opt-progress', name: 'Vorderingsstaten', color: 'purple' },
+                            { id: 'opt-hourly', name: 'In Regie', color: 'orange' },
+                        ];
+                        return (
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                <Receipt className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                <SelectDropdown
+                                    value={billingRule}
+                                    options={billingOptions}
+                                    onChange={(v) => handleUpdateProperty('prop-billing-rule', v ?? 'opt-fixed')}
+                                    placeholder="Facturatiemethode"
+                                    compact
+                                />
+                            </div>
+                        );
+                    })()}
+
+                    {/* Payment Terms Selector */}
+                    {(() => {
+                        const db = getDatabase(quotationsDbId);
+                        const paymentProp = db?.properties.find(p => p.id === 'prop-payment-method');
+                        const paymentOptions = paymentProp?.config?.options || [
+                            { id: 'pay-0',  name: 'Onmiddellijk', color: 'green'  },
+                            { id: 'pay-8',  name: '8 Dagen',      color: 'purple' },
+                            { id: 'pay-14', name: '14 Dagen',     color: 'blue'   },
+                            { id: 'pay-30', name: '30 Dagen',     color: 'orange' },
+                            { id: 'pay-60', name: '60 Dagen',     color: 'red'    },
+                            { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
+                        ];
+                        return (
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                                <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                <SelectDropdown
+                                    value={paymentTerms}
+                                    options={paymentOptions}
+                                    onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
+                                    placeholder="Betalingsvoorwaarden"
+                                    compact
+                                />
+                            </div>
+                        );
+                    })()}
+
+                    {/* Date Input */}
+                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                        <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
+                        <input
+                            type="date"
+                            value={quotationDate}
+                            onChange={(e) => handleUpdateProperty('date', e.target.value)}
+                            className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none cursor-pointer pl-7 pr-3 py-2 focus:ring-0 w-36"
+                        />
                     </div>
                 </div>
             </div>
@@ -993,6 +990,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 }}
                             >
                                 <span className="text-sm leading-none">+</span> {ti18n('engine_add_line', locale)}
+                            </button>
+                            <button
+                                onClick={() => handleAddBlock('text')}
+                                className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                            >
+                                <span className="text-sm leading-none">+</span> Vrije Tekst
                             </button>
                         </div>
 

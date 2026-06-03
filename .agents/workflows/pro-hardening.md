@@ -856,8 +856,58 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
-## TASK F3-B — 🩸 Peppol inbox STILL empty after shape fix — pagination params + USE THE SDK
-**Status:** ⬜ TODO · `develop` · Phase 1.5 · **NEXT — F3 fix landed but Florin verified STILL EMPTY**
+## TASK F3-C — 🩸 Peppol receive: per-tenant key sees 0 docs, but org/admin path FOUND them — KEY/TENANT/ENDPOINT mismatch
+**Status:** ⬜ TODO · `develop` · Phase 1.5 · **NEXT — debug output proved it's NOT a parse/param bug**
+**Priority:** 🩸 GATE-2 receive blocker. This is the real root cause; F3 + F3-B framing was wrong.
+
+### What the `?debug=1` output PROVED (Florin, 2026-06-03, on deploy as Coral tenant `cmneyas2b0000veqvkgl2luz1`)
+```
+fetchErrors: null   ← all 3 inbox calls SUCCEEDED (HTTP 200)
+raw_inbox / raw_invoices / raw_creditNotes: {items:[], total:0, page:1, page_size:20, pages:0}
+```
+- **The code is CORRECT.** Response shape right (`items`), calls authorized, no errors. `skip/limit` harmlessly ignored (API defaulted page_size:20). The param/SDK fix from F3-B is NOT the cause (still nice-to-have for correctness, but secondary).
+- **e-invoice.be genuinely returns 0 docs for THIS per-tenant key** (`tenant.eInvoiceApiKey`, `api-454...`, tenant `ten-gar163w6fd093s8w`) via `/api/inbox/`.
+
+### The contradiction that locates the bug
+- Earlier (F2), the coder DID find the 3 inbound docs AND correctly named the sending company → the docs are REAL and reachable.
+- But `getTenantPeppolHealth` (superadmin.ts) uses the SAME `listInboxDocuments(tenant.eInvoiceApiKey)` on the SAME per-tenant key as the inbox route → it would ALSO show 0. So the coder's successful find did NOT come from the per-tenant `/api/inbox/` path.
+- `src/lib/e-invoice.ts` is built on the **ORG_API_KEY (admin API)** and has a `/api/documents/` call (line ~225). **The coder almost certainly found the docs via the ORG/admin API or `/api/documents/`, NOT the per-tenant `/api/inbox/`.**
+- ⇒ **The per-tenant key/tenant that CoralOS stores does not see the received docs that the org/admin path can see.** Either (a) the stored `eInvoiceApiKey` is stale/wrong for the receiving tenant, (b) the docs live under a different e-invoice tenant than `eInvoiceTenantId`, or (c) `/api/inbox/` is the wrong resource and received docs are under `/api/documents?direction=received`.
+
+### FORCED COMPARISON PROBE (do FIRST — this pinpoints it; do not fix blind)
+Extend the superadmin debug to run, for Coral, ALL of these and print results side by side:
+1. **A — per-tenant inbox (current path):** `listInboxDocuments(tenant.eInvoiceApiKey)` → expect items:0 (confirm).
+2. **B — org/admin view of this tenant:** using `ORG_API_KEY`, `getTenant(tenant.eInvoiceTenantId)` and `/api/documents/` filtered to received for this tenant → does it show the 3? 
+3. **C — key/tenant integrity:** print `tenant.eInvoiceTenantId` + last 6 of `tenant.eInvoiceApiKey`; call `getLatestApiKey(tenant.eInvoiceTenantId)` and confirm the stored key actually BELONGS to that tenant id (not a stale/rotated/foreign key).
+4. **D — endpoint test:** same per-tenant key against `/api/documents?direction=received` (or SDK `documents.list({direction:'received'})`) vs `/api/inbox/` — does `documents` show them while `inbox` doesn't?
+- Output A/B/C/D counts + the resolved IDs. THIS tells us which of (a)/(b)/(c) it is. Superadmin-only; remove after.
+
+### Fix (apply once probe confirms the cause)
+- **If (a) stale/wrong key:** re-fetch the correct per-tenant key (`getLatestApiKey`) and persist it; OR regenerate via admin API and store. Then inbox reads work.
+- **If (b) wrong tenant:** reconcile `eInvoiceTenantId` to the tenant actually registered to RECEIVE for Peppol ID `0208:1018865828` (the migration may have left Coral pointing at the wrong e-invoice tenant). This is the most likely given the Billit→e-invoice migration history.
+- **If (c) wrong endpoint:** switch inbox reads from `/api/inbox/` to the `documents` resource with received filter (use the SDK's `documents` resource). 
+- After fix: Coral's 3 real docs appear in CoralOS inbox + expenses DB, parsed, deduped, counter +3.
+- Fold in F3-B's correctness items opportunistically (use SDK; page/page_size) but they are NOT the blocker.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Florin/Planner]` per-tenant `/api/inbox/` returns clean 0; calls succeed; code/shape correct. Health check uses the same path so it'd also read 0.
+- `[ASSUMED ❓]` the docs are visible via ORG key / `/api/documents` / a different tenant — probe B/C/D confirms which. DO NOT fix before the probe names the cause.
+
+### Acceptance criteria
+- Probe output documents exactly where the 3 docs ARE vs which key/tenant/endpoint CoralOS uses.
+- Root cause named (stale key / wrong tenant / wrong endpoint).
+- Coral's 3 inbound docs land in CoralOS (inbox + expenses), parsed, deduped, counter correct.
+- Debug/probe paths removed. `tsc`+`lint` green.
+
+### 🤖 AI FEEDBACK
+- probe A/B/C/D results (counts + IDs):
+- root cause (a/b/c):
+- fix applied:
+- Coral 3 docs now visible?:
+- premise updates appended to pd.md? (y/n):
+
+## TASK F3-B — 🩸 Peppol inbox STILL empty after shape fix — pagination params + USE THE SDK (SUPERSEDED by F3-C)
+**Status:** ⬜ SUPERSEDED — debug proved it's not params/parse; see F3-C (key/tenant/endpoint mismatch)
 **Symptom:** After F3 (items-vs-documents fix, commit 204677b), Coral's 3 known inbound docs STILL do not appear. So the parsing was right but the API call returns nothing/errors. We are now debugging the CALL, not the parse.
 
 ### 🩸 ROOT CAUSE #2 (Planner, code-read 2026-06-03) — wrong pagination param names
@@ -1605,7 +1655,8 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
 | M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | 🟢 DONE (awaiting verify) |
 | F3 | 🩸 Peppol inbox empty — shape fix (items) | 1.5 | 🟢 DONE but insufficient → F3-B |
-| F3-B | 🩸 Peppol inbox STILL empty — pagination params (page/page_size) + use SDK + forced diagnostic | 1.5 | ⬜ TODO (NEXT) |
+| F3-B | 🩸 Peppol inbox — params/SDK correctness | 1.5 | ⬜ SUPERSEDED by F3-C |
+| F3-C | 🩸 Peppol receive: per-tenant key sees 0 but docs exist via org/admin — key/tenant/endpoint mismatch | 1.5 | ⬜ TODO (NEXT) |
 | Q2 | Project Detail → tasks tab + Overview P&L + link locked docs to project/quote | 3 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |

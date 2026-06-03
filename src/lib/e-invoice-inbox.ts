@@ -86,7 +86,7 @@ export interface ParsedInvoiceLine {
 // ── Inbox API ──
 
 export async function listInboxDocuments(apiKey: string): Promise<InboxListResponse> {
-    const res = await fetch(`${BASE_URL}/api/inbox/?skip=0&limit=100`, {
+    const res = await fetch(`${BASE_URL}/api/inbox/?page=1&page_size=100`, {
         headers: tenantHeaders(apiKey),
     });
     if (!res.ok) {
@@ -97,7 +97,7 @@ export async function listInboxDocuments(apiKey: string): Promise<InboxListRespo
 }
 
 export async function listInboxInvoices(apiKey: string): Promise<InboxListResponse> {
-    const res = await fetch(`${BASE_URL}/api/inbox/invoices?skip=0&limit=100`, {
+    const res = await fetch(`${BASE_URL}/api/inbox/invoices?page=1&page_size=100`, {
         headers: tenantHeaders(apiKey),
     });
     if (!res.ok) {
@@ -108,7 +108,7 @@ export async function listInboxInvoices(apiKey: string): Promise<InboxListRespon
 }
 
 export async function listInboxCreditNotes(apiKey: string): Promise<InboxListResponse> {
-    const res = await fetch(`${BASE_URL}/api/inbox/credit-notes?skip=0&limit=100`, {
+    const res = await fetch(`${BASE_URL}/api/inbox/credit-notes?page=1&page_size=100`, {
         headers: tenantHeaders(apiKey),
     });
     if (!res.ok) {

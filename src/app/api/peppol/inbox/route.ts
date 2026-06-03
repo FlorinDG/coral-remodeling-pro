@@ -64,17 +64,35 @@ export async function GET(req: Request) {
             }),
         ]);
 
-        // ── F3-B: Debug mode — ?debug=1 returns raw API responses ──
+        // ── F3-B/C: Debug mode — ?debug=1 returns raw API responses ──
         const url = new URL(req.url);
         if (url.searchParams.get('debug') === '1') {
+            const BASE_URL = process.env.E_INVOICE_BASE_URL || 'https://api.e-invoice.be';
+            const maskedKey = tenant.eInvoiceApiKey.slice(0, 8) + '…' + tenant.eInvoiceApiKey.slice(-4);
+
+            // Also fetch outbox to check if docs were sent/processed (not in inbox)
+            let raw_outbox = null;
+            try {
+                const outRes = await fetch(`${BASE_URL}/api/outbox/?page=1&page_size=100`, {
+                    headers: { 'Authorization': `Bearer ${tenant.eInvoiceApiKey}`, 'Content-Type': 'application/json' },
+                });
+                if (outRes.ok) raw_outbox = await outRes.json();
+                else raw_outbox = { _error: `${outRes.status} ${outRes.statusText}` };
+            } catch (e: any) {
+                raw_outbox = { _error: e.message };
+            }
+
             return NextResponse.json({
                 _debug: true,
                 _timestamp: new Date().toISOString(),
                 _tenantId: tenantId,
+                _baseUrl: BASE_URL,
+                _apiKey: maskedKey,
                 fetchErrors: fetchErrors.length > 0 ? fetchErrors : null,
                 raw_inbox: inboxPending,
                 raw_invoices: inboxInvoices,
                 raw_creditNotes: inboxCreditNotes,
+                raw_outbox,
             }, {
                 headers: { 'Content-Type': 'application/json; charset=utf-8' },
             });

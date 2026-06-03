@@ -856,8 +856,46 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
-## TASK F3 — 🩸 Peppol inbox empty / not refreshing — response-shape mismatch
-**Status:** 🟢 DONE (awaiting Florin verify) · `develop`
+## TASK F3-B — 🩸 Peppol inbox STILL empty after shape fix — pagination params + USE THE SDK
+**Status:** ⬜ TODO · `develop` · Phase 1.5 · **NEXT — F3 fix landed but Florin verified STILL EMPTY**
+**Symptom:** After F3 (items-vs-documents fix, commit 204677b), Coral's 3 known inbound docs STILL do not appear. So the parsing was right but the API call returns nothing/errors. We are now debugging the CALL, not the parse.
+
+### 🩸 ROOT CAUSE #2 (Planner, code-read 2026-06-03) — wrong pagination param names
+`src/lib/e-invoice-inbox.ts` calls `/api/inbox/?skip=0&limit=100` (and `/invoices`, `/credit-notes`). But the installed SDK's inbox list uses **number pagination with `page` / `page_size`** (confirmed `node_modules/e-invoice-api/src/core/pagination.ts` → `page`, `page_size`; `inbox.ts` → `getAPIList('/api/inbox/', DocumentsNumberPage, {query})`). **`skip`/`limit` are the WRONG param names** → the API ignores/rejects them → empty page → empty inbox. This is the second time the hand-rolled fetch diverged from the real API (first `documents` vs `items`, now `skip/limit` vs `page/page_size`).
+
+### THE FIX — stop hand-rolling; use the SDK (this was F3 instruction #1, not taken — take it now)
+1. **Replace the hand-rolled fetch helpers with the installed `e-invoice-api` SDK.** Instantiate the client with the per-tenant key and call `client.inbox.list()`, `client.inbox.listInvoices()`, `client.inbox.listCreditNotes()`. The SDK gets path, auth (`Bearer`), params, pagination (`page`/`page_size`), and the `DocumentResponse`/`items` types all correct by construction. This permanently ends the shape/param drift.
+   - Confirm the SDK client accepts the per-tenant API key (constructor `apiKey`), not the org key. One client per tenant key, or pass per-call.
+   - Page through ALL results (SDK pagination helper / `for await`), so >100 history docs and the F2-D backfill work.
+2. **If the SDK truly can't be used per-tenant** (measure first — it almost certainly can): fix the raw fetch to use `?page=1&page_size=100` and paginate by incrementing `page` until `page >= pages`.
+
+### FORCED DIAGNOSTIC (do this FIRST — surface the truth, don't guess)
+The route already builds a `fetchErrors[]` but only `console.error`s it. **Temporarily surface the raw API result** so we see reality on the deploy:
+- Add a temporary debug path (e.g. `/api/peppol/inbox?debug=1`, superadmin-only) that returns: the raw HTTP status of each inbox call, the raw JSON body (or first 500 chars), `fetchErrors[]`, and the resolved `items.length` per endpoint. Hit it as Coral on the DEPLOY.
+- This tells us definitively: is it 401 (auth), 422 (bad params — confirms this task), empty 200 (state filter / nothing routed), or items-present-but-not-persisting (different bug). Remove the debug path once root cause is confirmed.
+- **Bias: confirm via the diagnostic before assuming the param fix alone solves it** — there may also be a `state` filter (SDK `InboxListParams.state: DocumentState`) where received docs sit in a state the default query excludes (e.g. only RECEIVED, or needs no state filter at all).
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅ Planner]` code sends `skip/limit`; SDK uses `page/page_size`; parsing now reads `items` correctly; auth header format matches SDK.
+- `[ASSUMED ❓]` whether the empty result is (a) wrong params, (b) a state filter excluding the docs, or (c) the tenant key not actually scoped to the inbox — the debug diagnostic resolves which. Do NOT ship a blind param fix without confirming via the diagnostic.
+
+### Acceptance criteria
+- Diagnostic run on the deploy shows the real cause (status + body) — documented in feedback.
+- Coral's 3 real inbound docs (2 invoices + 1 credit note) appear in CoralOS inbox + expenses DB, parsed, deduped, counter +3.
+- Inbox read uses the SDK (or correct page/page_size params) and paginates fully.
+- Debug path removed after confirmation. `tsc`+`lint` green.
+
+### 🤖 AI FEEDBACK
+- diagnostic result (per-endpoint status + items.length + raw body snippet):
+- actual root cause (params / state filter / auth / other):
+- SDK adopted? (or param fix):
+- Coral docs now visible? (count):
+- premise updates appended to pd.md? (y/n):
+
+---
+
+## TASK F3 — 🩸 Peppol inbox empty / not refreshing — response-shape mismatch (SUPERSEDED by F3-B)
+**Status:** 🟢 DONE but INSUFFICIENT — shape fix correct, inbox STILL empty → see F3-B
 **Symptom:** e-invoice.be has 3 real inbound docs for Coral; CoralOS inbox/expenses DB stays EMPTY.
 
 ### 🩸 ROOT CAUSE
@@ -1566,7 +1604,8 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
 | M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
 | M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | 🟢 DONE (awaiting verify) |
-| F3 | 🩸 Peppol inbox empty — response-shape mismatch (items vs documents) | 1.5 | 🟢 DONE (awaiting verify) |
+| F3 | 🩸 Peppol inbox empty — shape fix (items) | 1.5 | 🟢 DONE but insufficient → F3-B |
+| F3-B | 🩸 Peppol inbox STILL empty — pagination params (page/page_size) + use SDK + forced diagnostic | 1.5 | ⬜ TODO (NEXT) |
 | Q2 | Project Detail → tasks tab + Overview P&L + link locked docs to project/quote | 3 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |

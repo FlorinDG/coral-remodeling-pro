@@ -23,7 +23,7 @@ import {
  * F3 FIX (2026-06-03): Response shape corrected — reads `.items` (not `.documents`),
  * maps real DocumentResponse fields, stops swallowing fetch errors.
  */
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const session = await auth();
         if (!session?.user?.tenantId) {
@@ -63,6 +63,22 @@ export async function GET() {
                 return { items: [], total: 0 } as const;
             }),
         ]);
+
+        // ── F3-B: Debug mode — ?debug=1 returns raw API responses ──
+        const url = new URL(req.url);
+        if (url.searchParams.get('debug') === '1') {
+            return NextResponse.json({
+                _debug: true,
+                _timestamp: new Date().toISOString(),
+                _tenantId: tenantId,
+                fetchErrors: fetchErrors.length > 0 ? fetchErrors : null,
+                raw_inbox: inboxPending,
+                raw_invoices: inboxInvoices,
+                raw_creditNotes: inboxCreditNotes,
+            }, {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+            });
+        }
 
         // ── Merge + deduplicate by document ID ──
         const docMap = new Map<string, InboxDocument>();

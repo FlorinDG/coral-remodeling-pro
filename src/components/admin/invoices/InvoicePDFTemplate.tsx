@@ -343,9 +343,11 @@ export const InvoicePDFTemplate = ({
                             </Text>
                         )}
 
+                        {legalText && (
                         <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 24, lineHeight: 1.4 }}>
                             {legalText}
                         </Text>
+                        )}
                     </View>
 
                     {showWatermark && (
@@ -642,10 +644,11 @@ export const InvoicePDFTemplate = ({
                     </Text>
                 )}
 
-                {/* Legal text */}
+                {legalText && (
                 <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 30, paddingHorizontal: padH, lineHeight: 1.4 }}>
                     {legalText}
                 </Text>
+                )}
 
                 {/* Footer */}
                 {renderFooter()}

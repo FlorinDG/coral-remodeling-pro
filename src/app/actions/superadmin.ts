@@ -185,8 +185,8 @@ export async function getTenantPeppolHealth(tenantId: string) {
         if (tenant.peppolId && tenant.eInvoiceApiKey) {
             lookupResult = await lookupPeppolParticipant(tenant.peppolId, tenant.eInvoiceApiKey).catch(() => null);
             const inboxDocs = await listInboxDocuments(tenant.eInvoiceApiKey).catch(() => null);
-            if (inboxDocs?.documents && inboxDocs.documents.length > 0) {
-                lastInboundDoc = inboxDocs.documents[0].received_at;
+            if (inboxDocs?.items && inboxDocs.items.length > 0) {
+                lastInboundDoc = inboxDocs.items[0].invoice_date || null;
             }
         }
 

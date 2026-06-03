@@ -17,26 +17,43 @@ function tenantHeaders(apiKey: string) {
     };
 }
 
-// ── Types ──
+// ── Types (aligned with e-invoice-api SDK DocumentResponse) ──
 
 export interface InboxDocument {
     id: string;
-    type: 'invoice' | 'credit_note';
-    sender_peppol_id?: string;
-    sender_name?: string;
-    invoice_number?: string;
-    issue_date?: string;
-    due_date?: string;
-    total_amount?: number;
+    document_type?: 'INVOICE' | 'CREDIT_NOTE' | 'DEBIT_NOTE';
+    direction?: 'INBOUND' | 'OUTBOUND';
+    state?: 'DRAFT' | 'TRANSIT' | 'FAILED' | 'SENT' | 'RECEIVED';
+    vendor_name?: string | null;
+    vendor_tax_id?: string | null;
+    vendor_address?: string | null;
+    customer_name?: string | null;
+    customer_tax_id?: string | null;
+    invoice_id?: string | null;
+    invoice_date?: string | null;
+    due_date?: string | null;
+    invoice_total?: string | null;
+    subtotal?: string | null;
+    total_tax?: string | null;
     currency?: string;
-    status?: string; // 'pending', 'accepted', 'rejected'
-    received_at: string;
-    ubl_xml?: string;
+    items?: Array<{
+        description?: string | null;
+        quantity?: number | string | null;
+        unit_price?: number | string | null;
+        amount?: number | string | null;
+        tax_rate?: string | null;
+        unit_code?: string | null;
+    }> | null;
+    note?: string | null;
+    // UBL XML is accessed via separate /api/documents/{id}/ubl endpoint — NOT inline
 }
 
 export interface InboxListResponse {
-    documents: InboxDocument[];
+    items: InboxDocument[];
     total: number;
+    page?: number;
+    page_size?: number;
+    pages?: number;
 }
 
 export interface ParsedPurchaseInvoice {

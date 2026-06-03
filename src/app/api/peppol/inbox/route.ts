@@ -8,7 +8,6 @@ import {
     listInboxCreditNotes,
     acceptInboxDocument,
     rejectInboxDocument,
-    parseUBLToInvoice,
     InboxDocument,
 } from '@/lib/e-invoice-inbox';
 import {
@@ -20,6 +19,9 @@ import {
  * GET /api/peppol/inbox
  * Lists all received Peppol documents for the current tenant.
  * Returns parsed data ready for the Purchase Invoices database.
+ *
+ * F3 FIX (2026-06-03): Response shape corrected — reads `.items` (not `.documents`),
+ * maps real DocumentResponse fields, stops swallowing fetch errors.
  */
 export async function GET() {
     try {
@@ -41,19 +43,33 @@ export async function GET() {
             }, { status: 400 });
         }
 
-        // Query all inbox endpoints to catch pending, accepted, and credit documents
+        // ── Fetch all inbox endpoints — LOG errors, don't swallow them ──
+        const fetchErrors: string[] = [];
+
         const [inboxPending, inboxInvoices, inboxCreditNotes] = await Promise.all([
-            listInboxDocuments(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
-            listInboxInvoices(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
-            listInboxCreditNotes(tenant.eInvoiceApiKey).catch(() => ({ documents: [], total: 0 })),
+            listInboxDocuments(tenant.eInvoiceApiKey).catch((err) => {
+                console.error('[Peppol Inbox] listInboxDocuments FAILED:', err.message || err);
+                fetchErrors.push(`inbox: ${err.message || 'unknown'}`);
+                return { items: [], total: 0 } as const;
+            }),
+            listInboxInvoices(tenant.eInvoiceApiKey).catch((err) => {
+                console.error('[Peppol Inbox] listInboxInvoices FAILED:', err.message || err);
+                fetchErrors.push(`invoices: ${err.message || 'unknown'}`);
+                return { items: [], total: 0 } as const;
+            }),
+            listInboxCreditNotes(tenant.eInvoiceApiKey).catch((err) => {
+                console.error('[Peppol Inbox] listInboxCreditNotes FAILED:', err.message || err);
+                fetchErrors.push(`credit-notes: ${err.message || 'unknown'}`);
+                return { items: [], total: 0 } as const;
+            }),
         ]);
 
-        // Merge and deduplicate documents by their ID
+        // ── Merge + deduplicate by document ID ──
         const docMap = new Map<string, InboxDocument>();
         [
-            ...(inboxPending.documents || []),
-            ...(inboxInvoices.documents || []),
-            ...(inboxCreditNotes.documents || []),
+            ...(inboxPending.items || []),
+            ...(inboxInvoices.items || []),
+            ...(inboxCreditNotes.items || []),
         ].forEach((d) => {
             if (d && d.id) docMap.set(d.id, d);
         });
@@ -75,47 +91,81 @@ export async function GET() {
             if (s.vatNumber) vatToSupplier.set(s.vatNumber.replace(/\s/g, '').toUpperCase(), s.id);
         });
 
-        // Parse each document into our internal format
-        const parsedDocs = await Promise.all(
-            uniqueDocuments.map(async (doc: InboxDocument) => {
-                try {
-                    // If inline UBL is available, parse it
-                    if (doc.ubl_xml) {
-                        const parsed = parseUBLToInvoice(doc.ubl_xml, doc.id);
-                        return {
-                            ...doc,
-                            parsed,
-                            matchedSupplierId: matchSupplier(parsed.supplierVat, vatToSupplier),
-                        };
-                    }
-                    // Otherwise return raw doc info
-                    return {
-                        ...doc,
-                        parsed: {
-                            invoiceNumber: doc.invoice_number || doc.id,
-                            issueDate: doc.issue_date || '',
-                            dueDate: doc.due_date || '',
-                            supplierName: doc.sender_name || '',
-                            supplierVat: doc.sender_peppol_id || '',
-                            supplierAddress: '',
-                            buyerName: '',
-                            buyerVat: '',
-                            currency: doc.currency || 'EUR',
-                            lines: [],
-                            totalExVat: 0,
-                            totalVat: 0,
-                            totalIncVat: doc.total_amount || 0,
-                            peppolDocId: doc.id,
-                            rawXml: '',
-                        },
-                        matchedSupplierId: matchSupplier(doc.sender_peppol_id, vatToSupplier),
-                    };
-                } catch (parseErr) {
-                    console.error(`[Peppol Inbox] Failed to parse doc ${doc.id}:`, parseErr);
-                    return { ...doc, parsed: null, parseError: String(parseErr) };
-                }
-            })
-        );
+        // ── Parse each DocumentResponse into our internal format ──
+        // F3: Use structured data from DocumentResponse directly — no inline ubl_xml exists.
+        const parsedDocs = uniqueDocuments.map((doc: InboxDocument) => {
+            try {
+                // Map real DocumentResponse fields → internal ParsedPurchaseInvoice shape
+                const docType = doc.document_type === 'CREDIT_NOTE' ? 'credit_note' : 'invoice';
+                const invoiceNumber = doc.invoice_id || doc.id;
+                const issueDate = doc.invoice_date || '';
+                const dueDate = doc.due_date || '';
+                const vendorName = doc.vendor_name || '';
+                const vendorVat = doc.vendor_tax_id || '';
+                const vendorAddr = doc.vendor_address || '';
+                const buyerName = doc.customer_name || '';
+                const buyerVat = doc.customer_tax_id || '';
+                const currency = doc.currency || 'EUR';
+                const totalIncVat = parseFloat(doc.invoice_total || '0');
+                const totalExVat = parseFloat(doc.subtotal || '0');
+                const totalVat = parseFloat(doc.total_tax || '0');
+
+                // Map line items from DocumentResponse.items[] → ParsedInvoiceLine[]
+                const lines = (doc.items || []).map((item) => ({
+                    description: item.description || '',
+                    quantity: parseFloat(String(item.quantity || '1')),
+                    unitCode: item.unit_code || 'C62',
+                    unitPrice: parseFloat(String(item.unit_price || '0')),
+                    vatRate: parseFloat(String(item.tax_rate || '0')),
+                    lineTotal: parseFloat(String(item.amount || '0')),
+                }));
+
+                const parsed = {
+                    invoiceNumber,
+                    issueDate,
+                    dueDate,
+                    supplierName: vendorName,
+                    supplierVat: vendorVat,
+                    supplierAddress: vendorAddr,
+                    buyerName,
+                    buyerVat,
+                    currency,
+                    lines,
+                    totalExVat,
+                    totalVat,
+                    totalIncVat,
+                    peppolDocId: doc.id,
+                    rawXml: '', // UBL XML is fetched separately if needed
+                };
+
+                return {
+                    id: doc.id,
+                    type: docType,
+                    state: doc.state,
+                    vendor_name: vendorName,
+                    vendor_tax_id: vendorVat,
+                    invoice_id: invoiceNumber,
+                    invoice_date: issueDate,
+                    due_date: dueDate,
+                    invoice_total: doc.invoice_total,
+                    currency,
+                    parsed,
+                    matchedSupplierId: matchSupplier(vendorVat, vatToSupplier),
+                };
+            } catch (parseErr) {
+                console.error(`[Peppol Inbox] Failed to parse doc ${doc.id}:`, parseErr);
+                return {
+                    id: doc.id,
+                    type: doc.document_type === 'CREDIT_NOTE' ? 'credit_note' : 'invoice',
+                    state: doc.state,
+                    vendor_name: doc.vendor_name,
+                    invoice_id: doc.invoice_id,
+                    parsed: null,
+                    parseError: String(parseErr),
+                    matchedSupplierId: null,
+                };
+            }
+        });
 
         // ── AUTOMATIC SERVER-SIDE DATABASE SYNC ─────────────────────────────────
         const { getLockedDbId } = await import('@/lib/lockedDbUtils');
@@ -143,7 +193,7 @@ export async function GET() {
             });
         }
 
-        // Get existing Peppol document IDs
+        // Get existing Peppol document IDs to deduplicate
         const existingPages = await prisma.globalPage.findMany({
             where: { databaseId: expensesDbId },
             select: { properties: true }
@@ -182,19 +232,19 @@ export async function GET() {
                     id: pageId,
                     databaseId: expensesDbId,
                     properties: {
-                        title: parsed.invoiceNumber || doc.invoice_number || doc.id,
+                        title: parsed.invoiceNumber || doc.id,
                         betreft: parsed.lines?.[0]?.description || '',
                         source: 'src-peppol',
                         status: 'opt-unpaid',
-                        invoiceDate: parsed.issueDate || doc.issue_date || '',
-                        dueDate: parsed.dueDate || doc.due_date || '',
+                        invoiceDate: parsed.issueDate || '',
+                        dueDate: parsed.dueDate || '',
                         totalExVat: parsed.totalExVat || 0,
                         totalVat: parsed.totalVat || 0,
-                        totalIncVat: parsed.totalIncVat || doc.total_amount || 0,
+                        totalIncVat: parsed.totalIncVat || 0,
                         peppolDocId: doc.id,
                         invoiceLines: JSON.stringify(parsed.lines || []),
-                        supplierName: parsed.supplierName || doc.sender_name || '',
-                        supplierVat: parsed.supplierVat || doc.sender_peppol_id || '',
+                        supplierName: parsed.supplierName || '',
+                        supplierVat: parsed.supplierVat || '',
                         supplier: doc.matchedSupplierId ? [doc.matchedSupplierId] : [],
                     },
                     order,
@@ -221,13 +271,15 @@ export async function GET() {
             });
         }
 
-        // Return updated document list, count, and pages
+        // Return updated document list, count, pages, AND any fetch errors
         return NextResponse.json({
             documents: parsedDocs,
             total: totalCount,
             quota: quotaInfo,
             newlyImportedCount,
             newlyImportedPages,
+            // F3: Surface fetch errors so the UI can distinguish "empty inbox" from "broken call"
+            ...(fetchErrors.length > 0 ? { fetchErrors } : {}),
         });
 
     } catch (error: any) {

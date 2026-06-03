@@ -856,6 +856,152 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK Q3 — Free-text line in financials engine (parity with quotes)
+**Status:** ⬜ TODO · `develop` · Phase 3
+- **Premise `[MEASURED ✅]`:** the `text` block type already exists in BOTH `quotations/QuotationRow.tsx` AND `invoices/InvoiceRow.tsx` (icon, label, "set type to text" menu, rich-text toolbar in QuotationRow ~625). So the invoice engine has the hook but may not fully render/output it.
+- **Goal:** the free rich-text/image line Florin added to offertes must work the same across the FINANCIALS document engines (invoices, credit notes, expenses where a document body exists) — a non-calculation line, full-width, rich text (+ optional image), rendered in the on-screen engine AND in the generated PDF, no price/qty/VAT columns.
+- **Instructions:** confirm `text` (and image) blocks render in `InvoiceRow`/invoice `FinancialRowRenderer` with the same rich-text editor + paste-as-plain-text (L3) as quotes; ensure `InvoicePDFTemplate` renders them as full-width prose/image (no calc columns); add the "add text line" affordance to the invoice/financials add-row menu if missing. Reuse the quote implementation — do not fork a second one.
+- **Acceptance:** add a text line in an invoice/credit note → shows full-width, rich, editable on screen → appears correctly in the PDF. Image line works. `tsc`+`lint` green.
+- 🤖 AI FEEDBACK: …
+
+## TASK Q4 — 🏦 Belgian structured communication (OGM) + invoice↔payment matching
+**Status:** ⬜ TODO · `develop` · Phase 3 (financial integrity — these two are ONE feature)
+**Priority:** medium-high — closes the cash-position loop (feeds Q2 P&L "paid vs outstanding" + the mobile dashboard).
+
+### Why these are one task
+OGM (gestructureerde mededeling `+++123/4567/89012+++`) is the mechanism that MAKES matching reliable: the customer pays quoting the OGM, the bank line carries it, you match payment→invoice by EXACT OGM — no fuzzy amount/name guessing. So: generate OGM → print it on invoice/PDF/Peppol → match incoming payments by it.
+
+### Premises measured (Planner, 2026-06-03)
+- `[MEASURED ✅]` `peppol-ubl.ts:270` emits `<cbc:PaymentID>{data.paymentReference}</cbc:PaymentID>` ONLY if provided — but **nothing generates/stores an OGM**: no `mod97` logic, no schema field, no UI. Effectively absent.
+- `[MEASURED ✅]` income payments page (`financials/income/payments/page.tsx`) has **NO matching logic** (grep: none). Matching is greenfield.
+- `[MEASURED ✅]` payment DBs exist (db-payments-in/out, pages render) but aren't linked to invoices by reference.
+
+### Part 1 — Generate + store OGM per invoice
+- Belgian OGM = 12 digits: 10 base + 2 check digits = base mod 97 (if remainder 0 → 97), formatted `+++DDD/DDDD/DDDDD+++`. Implement a correct `mod97` generator (standard BE algorithm — verify against a known example).
+- Generate a UNIQUE OGM per invoice (derive from invoice number/sequence so it's stable + unique), store on the invoice (schema field, e.g. `structuredComm`).
+- Show it on the invoice PDF (payment section) and pass it as `paymentReference` into the Peppol UBL `<cbc:PaymentID>` (the slot already exists). Also surface on the online/portal invoice view + the Stripe/QR payment area if present.
+
+### Part 2 — Invoice ↔ payment matching
+- When a payment (db-payments-in, or an imported bank transaction) carries an OGM, match it to the invoice with that exact OGM → mark invoice paid/partially-paid, link the payment, update `opt-paid`/`opt-partial` status.
+- Fallback matching when no OGM: suggest matches by amount + counterparty (suggest, don't auto-apply — let the user confirm). Never auto-mark paid on a fuzzy guess.
+- Partial payments: sum matched payments vs invoice total → paid / partial / overpaid states.
+- Feed the result into: invoice status, the Q2 project P&L paid-vs-outstanding, and the mobile dashboard outstanding figure.
+
+### Premises to measure (Rule 2)
+- `[ASSUMED ❓]` how payments enter the system today — manual entry only, or is there bank/CODA/CSV import? Determines whether matching runs on manual payment entry or on an import pipeline. Measure before building Part 2's trigger.
+- `[ASSUMED ❓]` invoice number→OGM derivation that guarantees uniqueness + stability (don't regenerate on edit).
+
+### Acceptance criteria
+- Every invoice gets a valid BE OGM (mod97 correct), stored, shown on PDF + portal + Peppol UBL PaymentID.
+- A payment carrying that OGM auto-matches to its invoice and updates paid/partial status + links the payment.
+- No-OGM payments produce SUGGESTED matches (amount+party), user-confirmed, never silent.
+- Paid/outstanding flows into invoice status, Q2 P&L, mobile dashboard. `tsc`+`lint` green.
+
+### Out of scope
+- Full bank-feed/CODA integration (note as future if not present); this task = OGM + matching logic on whatever payment entry exists.
+
+### 🤖 AI FEEDBACK
+- measured (how payments enter; OGM derivation):
+- OGM generator (mod97 verified against example):
+- OGM on PDF/portal/UBL:
+- matching logic (exact OGM + suggested fallback):
+- partial-payment handling:
+- premise updates appended to pd.md? (y/n):
+
+## TASK OAI-1 — 🔍 OpenAI import engine — thorough audit
+**Status:** ⬜ TODO · `develop` · Phase 3 (quality)
+**Priority:** high — the AI import pipeline is a core differentiator. If it silently breaks, mis-extracts, or leaks tokens, the entire quotation/invoice workflow suffers.
+
+### Goal
+Thorough end-to-end audit of every path that uses OpenAI (GPT-4o) for document import/extraction:
+
+### Scope — all AI-powered import paths
+1. **PDF→Quote import** (`PDFImportModal.tsx` in quotations, `parse-pdf/route.ts`)
+   - Does the GPT-4o prompt extract: line items, quantities, unit prices, VAT rates, discounts (brutto/netto), descriptions?
+   - Are extracted values mapped correctly to the engine row format?
+   - Error handling: what happens when extraction fails or returns garbage?
+   - Token usage: is there a cost guard / limit?
+
+2. **PDF→Invoice import** (`PDFImportModal.tsx` in invoices, same or different parse route?)
+   - Same pipeline or divergent? Are there field-mapping differences?
+
+3. **OCR ticket/expense scan** (`scan/route.ts`, `ocr.ts`)
+   - GPT-4o vision vs Tesseract vs Mindee/Veryfi: which engine is used per plan tier?
+   - Are results correctly parsed into the expenses database?
+   - Confidence scoring: does the system flag low-confidence extractions?
+   - VAT auto-calculation: does it derive VAT from totals correctly?
+
+4. **Spreadsheet import** (`SpreadsheetImportModal.tsx`)
+   - Does this use OpenAI or is it pure parsing?
+   - Column mapping correctness.
+
+### What to check per path
+- **Prompt quality**: Is the system prompt precise? Does it handle edge cases (multi-page, rotated, handwritten, mixed languages NL/FR/EN)?
+- **Response parsing**: Does the code handle malformed/partial JSON from GPT? Schema validation?
+- **Security**: No prompt injection risk from user-uploaded content? API key exposure?
+- **Cost**: Token usage per call. Any runaway-cost risk (large PDFs)?
+- **Tenant isolation**: Each call uses the correct tenant context?
+- **Error UX**: What does the user see when AI extraction fails?
+- **Field mapping accuracy**: Do extracted fields land in the right engine columns with correct types (number vs string, date format, decimal handling)?
+
+### Premises to measure (Rule 2)
+- `[TODO]` Which files constitute the full import pipeline (list all routes + components + lib helpers).
+- `[TODO]` GPT-4o prompt content — is it well-structured or ad-hoc?
+- `[TODO]` Response schema validation — does it exist?
+- `[TODO]` Cost/token guardrails — do they exist?
+- `[TODO]` Error handling — silent fail or user-visible?
+- `[TODO]` Tenant isolation on API key usage.
+
+### Acceptance criteria
+- Full audit report documenting each path's health.
+- Any bugs or security issues found → fixed or flagged with severity.
+- Prompt improvements implemented if extraction quality is subpar.
+- Error handling hardened where missing.
+
+### 🤖 AI FEEDBACK
+- paths audited:
+- bugs found:
+- security issues:
+- prompt improvements:
+- premise updates appended to pd.md? (y/n):
+
+## TASK U1 — Persist sidebar customization per-USER server-side (PWA ↔ browser ↔ device consistency)
+**Status:** ⬜ TODO · `develop` · Phase 3 (UX)
+**Priority:** medium — confusing inconsistency Florin hit: sidebar arranged in the PWA looks different in the browser.
+
+### Root cause (Planner, measured 2026-06-03)
+`useSidebarStore` (`src/store/useSidebarStore.ts`) uses Zustand `persist` with `name: 'admin-sidebar-storage'` → stored in **`localStorage`**. localStorage is **per storage-context**: the installed PWA has its own bucket, the browser has a separate bucket, another browser/incognito another. So sidebar layout is **device/context-local, NOT account-synced**. Same user + same account shows different sidebars in PWA vs browser because each reads its own local copy; defaults appear where there's no local copy. (Also why a store `version` bump — currently v18 — or clearing browser data resets it.) The kill-switch `sw.js` is NOT involved (it clears caches/unregisters).
+
+### Goal
+Make sidebar customization follow the USER's account, not the device — consistent across PWA, browser, phone, new machine.
+
+### Premises to measure (Rule 2)
+- `[MEASURED ✅]` sidebar state persisted only to localStorage; no server save (`grep` of the store shows no fetch/api/save).
+- `[ASSUMED ❓]` best storage location — a `sidebarConfig` JSON field on the User model (per-user) vs Tenant (per-tenant). Florin intent = follows the USER → store per-user. Confirm the User model + an existing profile/settings save path to extend.
+
+### Instructions
+1. **Server source of truth:** add a per-user `sidebarConfig` (JSON) — on the `User` model (or a user-settings record). Persist the customization (order, enabled items, any rename) there.
+2. **Save on change:** when the user reorders/customizes the sidebar, save to the server (debounced) via a small API/action — in addition to the existing localStorage (keep localStorage as a fast local cache).
+3. **Load on login/app-load:** hydrate `useSidebarStore` from the server value first (fall back to localStorage, then to default). So PWA and browser both pull the same server config.
+4. **Reconcile with the store `version`/migrate logic** so a server config still passes through migrations cleanly (don't let a v-bump silently wipe the server copy).
+5. Respect role/plan gating: the saved config is the user's PREFERENCE; actual visibility still filtered by `isModuleLocked`/role allow-lists at render (a saved item the user no longer has access to is simply hidden, not shown).
+
+### Acceptance criteria
+- A user customizes the sidebar in the PWA → opens the browser (same account) → sees the SAME sidebar. And vice-versa, and on a new device after login.
+- Customization persists server-side per user; localStorage still works as cache; defaults only when no config exists.
+- Role/plan gating still applied on top. `tsc`+`lint` green.
+
+### Out of scope
+- Per-device layouts (intent is account-consistent, one layout per user).
+- Redesigning the sidebar itself.
+
+### 🤖 AI FEEDBACK
+- measured (where stored; User vs Tenant chosen):
+- save-on-change + load-on-login wired:
+- migration/version reconciled:
+- cross-context test (PWA vs browser same):
+- premise updates appended to pd.md? (y/n):
+
 ## TASK F3-C — 🩸 Peppol receive: per-tenant key sees 0 docs, but org/admin path FOUND them — KEY/TENANT/ENDPOINT mismatch
 **Status:** ⬜ TODO · `develop` · Phase 1.5 · **NEXT — debug output proved it's NOT a parse/param bug**
 **Priority:** 🩸 GATE-2 receive blocker. This is the real root cause; F3 + F3-B framing was wrong.
@@ -1654,9 +1800,13 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
 | M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
 | M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | 🟢 DONE (awaiting verify) |
-| F3 | 🩸 Peppol inbox empty — shape fix (items) | 1.5 | 🟢 DONE but insufficient → F3-B |
-| F3-B | 🩸 Peppol inbox — params/SDK correctness | 1.5 | ⬜ SUPERSEDED by F3-C |
-| F3-C | 🩸 Peppol receive: per-tenant key sees 0 but docs exist via org/admin — key/tenant/endpoint mismatch | 1.5 | ⬜ TODO (NEXT) |
+| F3 | 🩸 Peppol inbox empty — shape fix (items→documents, field mapping, error logging) | 1.5 | ✅ DONE (code confirmed correct; inbox empty = e-invoice.be payment activation) |
+| F3-B | 🩸 Peppol inbox — debug endpoint (?debug=1) | 1.5 | ✅ DONE |
+| F3-C | 🩸 Peppol inbox — pagination params (page/page_size) + enhanced debug (outbox, key, url) | 1.5 | ✅ DONE (confirmed inbox genuinely empty; resolved via e-invoice.be payment) |
+| OAI-1 | 🔍 OpenAI import engine — thorough audit (PDF→quote, PDF→invoice, OCR scan, spreadsheet import) | 3 | ⬜ TODO |
+| U1 | Persist sidebar customization per-user server-side (PWA↔browser consistency) | 3 | ⬜ TODO |
+| Q3 | Free-text line in financials engine (parity with quotes) | 3 | ⬜ TODO |
+| Q4 | 🏦 Structured communication (OGM) + invoice↔payment matching | 3 | ⬜ TODO |
 | Q2 | Project Detail → tasks tab + Overview P&L + link locked docs to project/quote | 3 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |

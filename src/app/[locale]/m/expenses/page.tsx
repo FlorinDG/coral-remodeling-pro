@@ -68,13 +68,13 @@ export default function MobileExpensesPage() {
             const res = await fetch('/api/peppol/inbox');
             if (res.ok) {
                 const data = await res.json();
-                const items: PeppolInvoice[] = (data?.invoices ?? data ?? []).map((inv: any) => ({
-                    id: inv.id ?? inv.documentId ?? Math.random().toString(36),
-                    supplier: inv.supplierName ?? inv.sender ?? 'Unknown Supplier',
-                    amount: Number(inv.totalIncVat ?? inv.total ?? inv.amount ?? 0),
-                    date: inv.invoiceDate ?? inv.date ?? '',
-                    status: inv.status ?? 'opt-draft',
-                    title: inv.title ?? inv.invoiceNumber ?? '',
+                const items: PeppolInvoice[] = (data?.documents ?? []).map((inv: any) => ({
+                    id: inv.id ?? Math.random().toString(36),
+                    supplier: inv.parsed?.supplierName ?? inv.vendor_name ?? 'Unknown Supplier',
+                    amount: Number(inv.parsed?.totalIncVat ?? inv.invoice_total ?? 0),
+                    date: inv.parsed?.issueDate ?? inv.invoice_date ?? '',
+                    status: inv.parsed ? 'opt-unpaid' : 'opt-draft',
+                    title: inv.parsed?.invoiceNumber ?? inv.invoice_id ?? '',
                 }));
                 setPeppolInvoices(items);
             }

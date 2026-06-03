@@ -856,6 +856,21 @@ Does the CoralOS tenant-provisioning path register a NEW tenant to RECEIVE Peppo
 - changed (if any): None needed, the e-invoice.be provider automatically handles receive capability advertisement at registration.
 - premise updates appended to pd.md? (y/n): y
 
+## TASK F3 — 🩸 Peppol inbox empty / not refreshing — response-shape mismatch
+**Status:** 🟢 DONE (awaiting Florin verify) · `develop`
+**Symptom:** e-invoice.be has 3 real inbound docs for Coral; CoralOS inbox/expenses DB stays EMPTY.
+
+### 🩸 ROOT CAUSE
+Hand-rolled fetch in `e-invoice-inbox.ts` reads `{ documents }` but real API returns `{ items }`. Field names wrong too. Error-swallow hides it.
+
+### 🤖 AI FEEDBACK (coder, 2026-06-03)
+- Confirmed SDK `PaginatedDocumentResponse.items` (not `.documents`).
+- Confirmed `DocumentResponse` fields: `vendor_name`, `vendor_tax_id`, `invoice_id`, `invoice_date`, `invoice_total`, `subtotal`, `total_tax`, `document_type`, `state`, `items[]`. No `ubl_xml`, `sender_name`, `total_amount`, `received_at`.
+- Files fixed: `e-invoice-inbox.ts` (types), `inbox/route.ts` (full rewrite), `inbox/[id]/route.ts`, `superadmin.ts`, `m/expenses/page.tsx` + `page 2.tsx`.
+- Error-swallow replaced with real logging + `fetchErrors` array in response.
+- `tsc --noEmit`: ✅ · ESLint: no new errors.
+- Awaiting Florin verify that Coral's 3 inbound docs now appear.
+
 ## TASK Q2 — Project Detail overhaul: tasks→own tab; Overview = real project P&L; link any financial doc to project/quote
 **Status:** ⬜ TODO · `develop` · Phase 3 (ENTERPRISE value — projects is ENT-tier)
 **Priority:** medium-high — turns the project view from a glorified tasklist into the financial control instrument that justifies ENTERPRISE. Florin-requested.
@@ -1551,6 +1566,7 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | L6 | Scan/expense capture UX (camera-first, confidence flags, VAT auto-calc, batch) | 3 | ⬜ TODO |
 | M2 | 🚦 FREE mobile legibility + home layout (LAUNCH BLOCKER, GATE-4) | 2.5 | ⬜ TODO |
 | M3 | 🚦 Accountant connection on FREE (invite + access + mobile + role fix) | 2.5 | 🟢 DONE (awaiting verify) |
+| F3 | 🩸 Peppol inbox empty — response-shape mismatch (items vs documents) | 1.5 | 🟢 DONE (awaiting verify) |
 | Q2 | Project Detail → tasks tab + Overview P&L + link locked docs to project/quote | 3 | ⬜ TODO |
 | F2-D | ✅ DONE — accepted-docs fetch + auto inbox sync (commits 39d3076, ae8dfb8) | 1.5 | 🟢 awaiting verify |
 | F-drive-bind | ✅ DONE — dedup + lock + cleanup ran (commit a65c791) | 1.5 | 🟢 awaiting verify |

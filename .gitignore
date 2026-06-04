@@ -48,5 +48,7 @@ next-env.d.ts
 *.db
 *.db-journal
 .next.nosync/
+*.log
 dev.log
 .env*.local
+/scripts/

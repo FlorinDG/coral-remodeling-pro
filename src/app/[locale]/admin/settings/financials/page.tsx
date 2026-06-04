@@ -5,6 +5,7 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from '@/config/tabs';
 import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
+import { useRouter } from 'next/navigation';
 import { Receipt, Save, Loader2, Check, Calculator, UserPlus, Trash2, Mail, ShieldCheck, Download } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -18,8 +19,9 @@ interface AccountantUser {
 
 export default function FinancialsSettingsPage() {
     usePageTitle('Financials Settings');
-    const { activeModules } = useTenant();
+    const { tenant, activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+    const router = useRouter();
 
     const [defaultVatRate, setDefaultVatRate] = useState(21);
     const [vatCalcMode, setVatCalcMode] = useState('lines');
@@ -37,15 +39,13 @@ export default function FinancialsSettingsPage() {
     const [acctLoading, setAcctLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(r => r.json())
-            .then(data => {
-                if (data.defaultVatRate != null) setDefaultVatRate(data.defaultVatRate);
-                if (data.vatCalcMode) setVatCalcMode(data.vatCalcMode);
-                if (data.defaultPaymentTermDays != null) setDefaultPaymentTermDays(data.defaultPaymentTermDays);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (tenant) {
+            if (tenant.defaultVatRate != null) setDefaultVatRate(tenant.defaultVatRate);
+            if (tenant.vatCalcMode) setVatCalcMode(tenant.vatCalcMode);
+            if (tenant.defaultPaymentTermDays != null) setDefaultPaymentTermDays(tenant.defaultPaymentTermDays);
+            setLoading(false);
+        }
+    }, [tenant]);
 
     const fetchAccountant = useCallback(async () => {
         try {
@@ -102,6 +102,7 @@ export default function FinancialsSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };
 

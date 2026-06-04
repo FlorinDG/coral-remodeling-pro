@@ -10,6 +10,7 @@ import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplat
 import { useTranslations, useLocale } from 'next-intl';
 import { useSession } from 'next-auth/react';
 import { useTenant } from '@/context/TenantContext';
+import { useRouter } from 'next/navigation';
 
 // ── Peppol Connection Banner ──────────────────────────────────────────────────
 function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
@@ -116,6 +117,7 @@ function PeppolBanner({ onFetchRegistry, fetchingRegistry, t }: {
 export default function CompanyInfoSettings() {
     const t = useTranslations('Admin');
     const currentLocale = useLocale();
+    const router = useRouter();
     const { data: session, update: updateSession } = useSession();
 
     const [profile, setProfile] = useState({
@@ -156,47 +158,47 @@ export default function CompanyInfoSettings() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
+    const { tenant, activeModules } = useTenant();
+
     useEffect(() => {
-        fetch('/api/tenant/profile').then(res => res.json()).then(data => {
-            if (data && !data.error) {
-                setProfile({
-                    companyName: data.companyName || '',
-                    vatNumber: data.vatNumber || '',
-                    email: data.email || '',
-                    street: data.street || '',
-                    postalCode: data.postalCode || '',
-                    city: data.city || '',
-                    iban: data.iban || '',
-                    peppolId: data.peppolId || '',
-                    peppolRegistered: data.peppolRegistered || false,
-                    peppolOptOut: data.peppolOptOut || false,
-                    commercialName: data.commercialName || '',
-                    bic: data.bic || '',
-                    deliveryStreet: data.deliveryStreet || '',
-                    deliveryPostalCode: data.deliveryPostalCode || '',
-                    deliveryCity: data.deliveryCity || '',
-                    headquartersStreet: data.headquartersStreet || '',
-                    headquartersPostalCode: data.headquartersPostalCode || '',
-                    headquartersCity: data.headquartersCity || '',
-                    directorFirstName: data.directorFirstName || '',
-                    directorLastName: data.directorLastName || '',
-                    documentLanguage: data.documentLanguage || '',
-                    invoicePrefix: data.invoicePrefix ?? 'INV',
-                    invoiceConnector: data.invoiceConnector ?? '-',
-                    invoiceDateFormat: data.invoiceDateFormat ?? 'YYYY',
-                    invoiceNumberWidth: data.invoiceNumberWidth ?? 3,
-                    invoiceNextNumber: data.invoiceNextNumber ?? 1,
-                    quotationPrefix: data.quotationPrefix ?? 'OFF',
-                    quotationConnector: data.quotationConnector ?? '-',
-                    quotationDateFormat: data.quotationDateFormat ?? 'YYYY',
-                    quotationNumberWidth: data.quotationNumberWidth ?? 3,
-                    quotationNextNumber: data.quotationNextNumber ?? 1,
-                    documentTemplate: data.documentTemplate ?? 't1',
-                });
-            }
+        if (tenant) {
+            setProfile({
+                companyName: tenant.companyName || '',
+                vatNumber: tenant.vatNumber || '',
+                email: tenant.email || '',
+                street: tenant.street || '',
+                postalCode: tenant.postalCode || '',
+                city: tenant.city || '',
+                iban: tenant.iban || '',
+                peppolId: tenant.peppolId || '',
+                peppolRegistered: tenant.peppolRegistered || false,
+                peppolOptOut: tenant.peppolOptOut || false,
+                commercialName: tenant.commercialName || '',
+                bic: tenant.bic || '',
+                deliveryStreet: tenant.deliveryStreet || '',
+                deliveryPostalCode: tenant.deliveryPostalCode || '',
+                deliveryCity: tenant.deliveryCity || '',
+                headquartersStreet: tenant.headquartersStreet || '',
+                headquartersPostalCode: tenant.headquartersPostalCode || '',
+                headquartersCity: tenant.headquartersCity || '',
+                directorFirstName: tenant.directorFirstName || '',
+                directorLastName: tenant.directorLastName || '',
+                documentLanguage: tenant.documentLanguage || '',
+                invoicePrefix: tenant.invoicePrefix ?? 'INV',
+                invoiceConnector: tenant.invoiceConnector ?? '-',
+                invoiceDateFormat: tenant.invoiceDateFormat ?? 'YYYY',
+                invoiceNumberWidth: tenant.invoiceNumberWidth ?? 3,
+                invoiceNextNumber: tenant.invoiceNextNumber ?? 1,
+                quotationPrefix: tenant.quotationPrefix ?? 'OFF',
+                quotationConnector: tenant.quotationConnector ?? '-',
+                quotationDateFormat: tenant.quotationDateFormat ?? 'YYYY',
+                quotationNumberWidth: tenant.quotationNumberWidth ?? 3,
+                quotationNextNumber: tenant.quotationNextNumber ?? 1,
+                documentTemplate: tenant.documentTemplate ?? 't1',
+            });
             setLoading(false);
-        });
-    }, []);
+        }
+    }, [tenant]);
 
     const [showPeppolModal, setShowPeppolModal] = useState(false);
 
@@ -219,23 +221,7 @@ export default function CompanyInfoSettings() {
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
-
-                // Patch the JWT immediately so middleware locale correction uses the new language
-                const newLang = dataToSave.documentLanguage;
-                const supportedLocales = ['en', 'fr', 'nl', 'ro', 'ru'];
-                if (newLang && supportedLocales.includes(newLang)) {
-                    await updateSession({ environmentLanguage: newLang });
-
-                    const currentPath = window.location.pathname;
-                    const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
-                    if (localeRegex.test(currentPath)) {
-                        const newPath = currentPath.replace(localeRegex, `/${newLang}$2`);
-                        if (newPath !== currentPath) {
-                            window.location.href = newPath;
-                            return;
-                        }
-                    }
-                }
+                router.refresh();
             } else {
                 throw new Error('Failed to save');
             }
@@ -313,7 +299,6 @@ export default function CompanyInfoSettings() {
         }
     };
 
-    const { activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
 
     return (

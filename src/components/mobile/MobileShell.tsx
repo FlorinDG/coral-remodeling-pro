@@ -26,11 +26,13 @@ export default function MobileShell({
     activeModules,
     planType,
     lockedDbIds,
+    tenant,
 }: {
     children: React.ReactNode;
     activeModules: string[];
     planType: string;
     lockedDbIds: Record<string, string>;
+    tenant?: any;
 }) {
     const t = useTranslations('Mobile');
     const { data: session } = useSession();
@@ -70,18 +72,18 @@ export default function MobileShell({
 
         document.addEventListener('click', handleGlobalClick);
 
-        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
-            if (d?.brandColor) {
-                setBrandColor(d.brandColor);
-                document.documentElement.style.setProperty('--brand-color', d.brandColor);
+        if (tenant) {
+            if (tenant.brandColor) {
+                setBrandColor(tenant.brandColor);
+                document.documentElement.style.setProperty('--brand-color', tenant.brandColor);
             }
-            if (d?.companyName) setCompanyName(d.companyName);
-        }).catch(() => {});
+            if (tenant.companyName) setCompanyName(tenant.companyName);
+        }
 
         return () => {
             document.removeEventListener('click', handleGlobalClick);
         };
-    }, []);
+    }, [tenant]);
 
     const userName = session?.user?.name || 'User';
     const firstName = userName.split(' ')[0];
@@ -193,7 +195,7 @@ export default function MobileShell({
 
             {/* ── Content ── */}
             <main className="flex-1 pb-20 overflow-y-auto">
-                <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+                <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                     {children}
                 </TenantProvider>
             </main>

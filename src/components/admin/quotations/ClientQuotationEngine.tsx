@@ -42,7 +42,7 @@ interface TenantProfile {
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
-    const { activeModules, planType, resolveDbId } = useTenant();
+    const { activeModules, planType, resolveDbId, tenant } = useTenant();
     const hasProjects  = activeModules.includes('PROJECTS');
     // Library access: PRO+ feature (article search, save-to-library, PDF library import)
     const hasLibraryAccess = canAccess('QUOTATION_LIBRARY_SEARCH', planType);
@@ -85,10 +85,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
-        // Fetch specific SaaS branding metadata dynamically
-        fetch('/api/tenant/profile').then(res => res.json()).then(data => {
-            if (data && !data.error) setTenantProfile(data);
-        }).catch(e => console.error("Failed to fetch tenant profile", e));
+        if (tenant) {
+            setTenantProfile(tenant);
+        }
 
         return () => {
             if (unsubscribe) unsubscribe();
@@ -216,13 +215,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Derive client list with useMemo to avoid infinite re-render loops
     const clients = useMemo(() => {
         if (!clientsDb) return [];
-        const nameProp = clientsDb.properties.find(p => ['naam', 'name', 'voornaam', 'first', 'firstname'].some(k => p.name.toLowerCase().includes(k)));
-        const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam'].some(k => p.name.toLowerCase().includes(k)));
-        const emailProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('email'));
-        const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
-        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
-        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
-        const langProp = clientsDb.properties.find(p => ['taal', 'language', 'lang'].some(k => p.name.toLowerCase().includes(k)) || p.id === 'language');
+        const nameProp = clientsDb.properties.find(p => ['naam', 'name', 'voornaam', 'first', 'firstname', 'prénom', 'prenom'].some(k => p.name.toLowerCase().includes(k)));
+        const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam', 'nom'].some(k => p.name.toLowerCase().includes(k)));
+        const emailProp = clientsDb.properties.find(p => p.type === 'email') || clientsDb.properties.find(p => ['email', 'e-mail', 'mail', 'courriel'].some(k => p.name.toLowerCase().includes(k)));
+        const driveProp = clientsDb.properties.find(p => p.type === 'url' && p.name.toLowerCase().includes('drive')) || clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise', 'tva'].some(k => p.name.toLowerCase().includes(k)));
+        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street', 'rue'].some(k => p.name.toLowerCase().includes(k)));
+        const langProp = clientsDb.properties.find(p => p.id === 'language') || clientsDb.properties.find(p => ['taal', 'language', 'lang', 'langue'].some(k => p.name.toLowerCase().includes(k)));
         return clientsDb.pages.map(page => ({
             id: page.id,
             firstName: String(page.properties[nameProp?.id || 'title'] || page.properties['title'] || ''),

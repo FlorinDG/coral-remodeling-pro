@@ -23,6 +23,7 @@ interface InvoiceFooterReportProps {
     onVatRegimeChange: (regime: string) => void;
     onInvoiceDateChange?: (date: string) => void;
     onDueDateChange?: (date: string) => void;
+    structuredComm?: string;
     creditedAmount?: number;
     creditNoteCount?: number;
     creditNotes?: CreditNoteInfo[];
@@ -44,6 +45,7 @@ export default function InvoiceFooterReport({
     onVatRegimeChange,
     onInvoiceDateChange,
     onDueDateChange,
+    structuredComm,
     creditedAmount = 0,
     creditNoteCount = 0,
     creditNotes = [],
@@ -186,6 +188,12 @@ export default function InvoiceFooterReport({
                             <span className="text-neutral-400 dark:text-neutral-500">Regels</span>
                             <span className="font-medium text-neutral-700 dark:text-neutral-300">{lineCount}</span>
                         </div>
+                        {structuredComm && (
+                            <div className="flex items-center justify-between gap-4 pt-2 border-t border-neutral-200/50 dark:border-white/5">
+                                <span className="text-neutral-400 dark:text-neutral-500">Mededeling</span>
+                                <span className="font-bold text-neutral-800 dark:text-neutral-200 font-mono text-xs tracking-wide">{structuredComm}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 

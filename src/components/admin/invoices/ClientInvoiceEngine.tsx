@@ -29,14 +29,14 @@ import { t } from '@/lib/document-i18n';
 import CreateClientModal from './CreateClientModal';
 import CreateProjectModal from './CreateProjectModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search } from 'lucide-react';
+import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search, Type, ImageIcon } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 
 const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientInvoiceEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
-    const { activeModules, resolveDbId } = useTenant();
+    const { activeModules, resolveDbId, tenant } = useTenant();
     const hasProjects = activeModules.includes('PROJECTS');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
@@ -86,10 +86,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
-        // Fetch specific SaaS branding metadata dynamically
-        fetch('/api/tenant/profile').then(res => res.json()).then(data => {
-            if (data && !data.error) setTenantProfile(data);
-        }).catch(e => console.error("Failed to fetch tenant profile", e));
+        if (tenant) {
+            setTenantProfile(tenant);
+        }
 
         return () => {
             if (unsubscribe) unsubscribe();
@@ -157,16 +156,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     // Derive client list with useMemo to avoid infinite re-render loops
     const clients = useMemo(() => {
         if (!clientsDb) return [];
-        const nameProp = clientsDb.properties.find(p => ['naam', 'name', 'voornaam', 'first', 'firstname'].some(k => p.name.toLowerCase().includes(k)));
-        const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam'].some(k => p.name.toLowerCase().includes(k)));
-        const emailProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('email'));
-        const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
-        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise'].some(k => p.name.toLowerCase().includes(k)));
-        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street'].some(k => p.name.toLowerCase().includes(k)));
-        const postalProp = clientsDb.properties.find(p => ['postal', 'zip', 'postcode'].some(k => p.name.toLowerCase().includes(k)));
-        const cityProp = clientsDb.properties.find(p => ['city', 'stad', 'gemeente', 'town'].some(k => p.name.toLowerCase().includes(k)));
-        const countryProp = clientsDb.properties.find(p => ['country', 'land'].some(k => p.name.toLowerCase().includes(k)));
-        const langProp = clientsDb.properties.find(p => ['taal', 'language', 'lang'].some(k => p.name.toLowerCase().includes(k)) || p.id === 'language');
+        const nameProp = clientsDb.properties.find(p => ['naam', 'name', 'voornaam', 'first', 'firstname', 'prénom', 'prenom'].some(k => p.name.toLowerCase().includes(k)));
+        const lastProp = clientsDb.properties.find(p => ['achternaam', 'last', 'lastname', 'familienaam', 'nom'].some(k => p.name.toLowerCase().includes(k)));
+        const emailProp = clientsDb.properties.find(p => p.type === 'email') || clientsDb.properties.find(p => ['email', 'e-mail', 'mail', 'courriel'].some(k => p.name.toLowerCase().includes(k)));
+        const driveProp = clientsDb.properties.find(p => p.type === 'url' && p.name.toLowerCase().includes('drive')) || clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
+        const vatProp = clientsDb.properties.find(p => ['btw', 'vat', 'ondernemingsnummer', 'kbo', 'enterprise', 'tva'].some(k => p.name.toLowerCase().includes(k)));
+        const addressProp = clientsDb.properties.find(p => ['adres', 'address', 'straat', 'street', 'rue'].some(k => p.name.toLowerCase().includes(k)));
+        const postalProp = clientsDb.properties.find(p => ['postal', 'zip', 'postcode', 'code postal'].some(k => p.name.toLowerCase().includes(k)));
+        const cityProp = clientsDb.properties.find(p => ['city', 'stad', 'gemeente', 'town', 'ville'].some(k => p.name.toLowerCase().includes(k)));
+        const countryProp = clientsDb.properties.find(p => ['country', 'land', 'pays'].some(k => p.name.toLowerCase().includes(k)));
+        const langProp = clientsDb.properties.find(p => p.id === 'language') || clientsDb.properties.find(p => ['taal', 'language', 'lang', 'langue'].some(k => p.name.toLowerCase().includes(k)));
         
         return clientsDb.pages.map(page => {
             const street = addressProp ? String(page.properties[addressProp.id] || '').trim() : '';
@@ -219,8 +218,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             const parentId = p.properties['parentInvoiceId'];
             const isMatch = Array.isArray(parentId) ? parentId.includes(id) : parentId === id;
             if (isMatch) return true; // Follow explicit link
-            const title = String(p.properties['title'] || '');
-            return title.startsWith('CN-') && title.includes(invoiceNum); // Fallback to title matching
+            return false;
         });
     }, [invoice, id]);
 
@@ -288,6 +286,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
         return tenantProfile?.documentLanguage || 'nl';
     }, [invoice, clients, clientId, tenantProfile?.documentLanguage]);
+    // Calculate totals using the shared calculator
+    const totals = useMemo(() => {
+        const blks = invoice?.blocks || [];
+        const vatMode = ((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
+        return calculateInvoiceTotals(blks, { vatCalcMode: vatMode, vatRegime: vatReg });
+    }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime']]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
@@ -513,13 +518,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         toast.success(`${offerteImportDialog.lineCount} regels geïmporteerd uit "${offerteImportDialog.quotationTitle}".`);
     };
 
-    // Calculate totals using the shared calculator
-    const totals = useMemo(() => {
-        const vatMode = ((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
-        const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
-    }, [blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime']]);
-
     const grandTotal = totals.subtotal;
 
     // Helper: build resolved client info for PDF templates
@@ -578,6 +576,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
                     vatRegime={invoice?.properties?.['vatRegime'] as string}
+                    structuredComm={invoice?.properties?.['structuredComm'] as string}
                 />
             );
 
@@ -670,6 +669,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
                     vatRegime={invoice?.properties?.['vatRegime'] as string}
+                    structuredComm={invoice?.properties?.['structuredComm'] as string}
                 />
             );
 
@@ -724,6 +724,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,
                     blocks: blocks,
+                    structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     client: {
                         firstName: selectedClient.firstName,
                         lastName: selectedClient.lastName,
@@ -1215,6 +1216,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         >
                             <span className="text-sm leading-none">+</span> Add Line
                         </button>
+                        <button
+                            onClick={() => handleAddBlock('text')}
+                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                        >
+                            <Type className="w-3.5 h-3.5" /> Text
+                        </button>
+                        <button
+                            onClick={() => handleAddBlock('image')}
+                            className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                        >
+                            <ImageIcon className="w-3.5 h-3.5" /> Image
+                        </button>
                         <div className="flex-1" />
                         <button
                             onClick={() => setIsImportModalOpen(true)}
@@ -1247,6 +1260,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         isLocked={isLocked}
                         language={docLanguage}
                         onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
+                        structuredComm={invoice?.properties?.['structuredComm'] as string}
                     />
 
                 </div>
@@ -1348,6 +1362,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
+                                                structuredComm={invoice?.properties?.['structuredComm'] as string}
                                             />
                                         );
                                         const blob = await generatePdfBlob(doc, tenantProfile);

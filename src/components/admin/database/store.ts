@@ -1145,7 +1145,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'invoiceDate' && value) {
                                     if (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate']) {
                                         // Fetch tenant payment terms and calculate dueDate async
-                                        fetch('/api/tenant/profile').then(r => r.json()).then(data => {
+                                        fetch('/api/tenant/profile', { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }).then(r => r.json()).then(data => {
                                             const days = data.defaultPaymentTermDays ?? 30;
                                             const invoiceDate = new Date(value as string);
                                             invoiceDate.setDate(invoiceDate.getDate() + days);

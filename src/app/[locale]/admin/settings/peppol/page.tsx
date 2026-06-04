@@ -9,7 +9,7 @@ import { Globe, ShieldCheck, Mail, Building, Check, Loader2, AlertCircle, Extern
 
 export default function PeppolSettingsPage() {
     usePageTitle('Peppol Production Registration');
-    const { activeModules } = useTenant();
+    const { tenant, activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
 
     const [loading, setLoading] = useState(true);
@@ -27,19 +27,17 @@ export default function PeppolSettingsPage() {
     const [success, setSuccess] = useState(false);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(r => r.json())
-            .then(data => {
-                setStatus({
-                    peppolRegistered: data.peppolRegistered || false,
-                    vatNumber: data.vatNumber || '',
-                    peppolId: data.peppolId || `0190:${data.vatNumber?.replace(/[^0-9]/g, '')}`,
-                    companyName: data.companyName || '',
-                    email: data.email || '',
-                });
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (tenant) {
+            setStatus({
+                peppolRegistered: tenant.peppolRegistered || false,
+                vatNumber: tenant.vatNumber || '',
+                peppolId: tenant.peppolId || `0190:${tenant.vatNumber?.replace(/[^0-9]/g, '')}`,
+                companyName: tenant.companyName || '',
+                email: tenant.email || '',
+            });
+            setLoading(false);
+        }
+    }, [tenant]);
 
     const handleRegister = async () => {
         if (!agreed) {

@@ -69,6 +69,7 @@ interface InvoicePDFProps {
     docType?: string;
     vatCalcMode?: 'lines' | 'total';
     vatRegime?: string;
+    structuredComm?: string;
 }
 
 export const InvoicePDFTemplate = ({
@@ -76,6 +77,7 @@ export const InvoicePDFTemplate = ({
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
     vatCalcMode = 'lines', vatRegime = '21',
+    structuredComm,
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
@@ -135,6 +137,7 @@ export const InvoicePDFTemplate = ({
         (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : '',
         iban ? `IBAN: ${iban}` : '',
         email || '',
+        structuredComm ? `Mededeling: ${structuredComm}` : '',
     ].filter(Boolean);
 
     const getBlockTotalRecursive = (b: Block): number => {
@@ -517,7 +520,7 @@ export const InvoicePDFTemplate = ({
                     <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#f2f2f2', borderTop: '0.5px solid #ddd', paddingHorizontal: 16, paddingVertical: 10, gap: 10 }}>
                         <View style={{ width: 10, height: 10, backgroundColor: darkBrand }} />
                         <Text style={{ fontSize: 7.5, color: '#777777', lineHeight: 1.5 }}>
-                            {[companyName, vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '', email].filter(Boolean).join('  ·  ')}
+                            {[companyName, vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '', iban ? `IBAN: ${iban}` : '', structuredComm ? `Mededeling: ${structuredComm}` : '', email].filter(Boolean).join('  ·  ')}
                         </Text>
                     </View>
                     <View style={{ backgroundColor: accent, paddingHorizontal: 22, paddingVertical: 10, alignItems: 'center', justifyContent: 'center', minWidth: 100 }}>
@@ -532,9 +535,10 @@ export const InvoicePDFTemplate = ({
             <View style={s.footerText} fixed>
                 <Text>
                     {companyName || 'Coral Enterprises'}
-                    {vatNumber ? ` | ${t('vat', lang)}: ${vatNumber}` : ''}
-                    {iban ? ` | IBAN: ${iban}` : ''}
-                    {email ? ` | ${email}` : ''}
+                    {vatNumber ? `  ·  ${t('vat', lang)}: ${vatNumber}` : ''}
+                    {iban ? `  ·  IBAN: ${iban}` : ''}
+                    {structuredComm ? `  ·  Mededeling: ${structuredComm}` : ''}
+                    {email ? `  ·  ${email}` : ''}
                 </Text>
             </View>
         );

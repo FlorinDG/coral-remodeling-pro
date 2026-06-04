@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
-import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin } from 'lucide-react';
+import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
@@ -836,6 +836,34 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                     >
                                                                                         <ExternalLink className="w-4 h-4" />
                                                                                     </a>
+                                                                                )}
+                                                                                {prop.id === 'receiptUrl' && (
+                                                                                    <label className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" title="Upload receipt/document">
+                                                                                        <Upload className="w-4 h-4" />
+                                                                                        <input type="file" accept="image/*,application/pdf" className="hidden" onChange={async (e) => {
+                                                                                            const file = e.target.files?.[0];
+                                                                                            if (!file) return;
+                                                                                            const fd = new FormData();
+                                                                                            fd.append('file', file);
+                                                                                            fd.append('targetSubfolder', databaseId === 'db-expenses' ? 'Invoices' : 'Expenses');
+                                                                                            try {
+                                                                                                toast.loading('Uploading document...', { id: 'upload' });
+                                                                                                const res = await fetch('/api/drive/upload', { method: 'POST', body: fd });
+                                                                                                if (res.ok) {
+                                                                                                    const data = await res.json();
+                                                                                                    if (data.fileId) {
+                                                                                                        updatePageProperty(databaseId, pageId, prop.id, `https://drive.google.com/file/d/${data.fileId}/view`);
+                                                                                                        toast.success('Document uploaded and attached', { id: 'upload' });
+                                                                                                    }
+                                                                                                } else {
+                                                                                                    toast.error('Upload failed', { id: 'upload' });
+                                                                                                }
+                                                                                            } catch {
+                                                                                                toast.error('Upload network error', { id: 'upload' });
+                                                                                            }
+                                                                                            e.target.value = '';
+                                                                                        }} />
+                                                                                    </label>
                                                                                 )}
                                                                             </div>
                                                                         ) : (

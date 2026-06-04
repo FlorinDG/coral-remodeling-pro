@@ -7,10 +7,13 @@ import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { HardHat, Save, Loader2, Check } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function HRSettingsPage() {
     usePageTitle('HR Settings');
-    const { activeModules } = useTenant();
+    const { tenant, activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+    const router = useRouter();
 
     const [workHoursPerDay, setWorkHoursPerDay] = useState(8.0);
     const [saving, setSaving] = useState(false);
@@ -18,13 +21,11 @@ export default function HRSettingsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(r => r.json())
-            .then(data => {
-                if (data.workHoursPerDay != null) setWorkHoursPerDay(data.workHoursPerDay);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (tenant) {
+            if (tenant.workHoursPerDay != null) setWorkHoursPerDay(tenant.workHoursPerDay);
+            setLoading(false);
+        }
+    }, [tenant]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -35,6 +36,7 @@ export default function HRSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };
 

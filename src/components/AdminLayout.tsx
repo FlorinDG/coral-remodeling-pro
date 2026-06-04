@@ -57,7 +57,7 @@ const SIDEBAR_I18N_MAP: Record<string, string> = {
     quotations: 'sidebar.quotations',
 };
 
-export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt, isImpersonating = false }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null, isImpersonating?: boolean }) {
+export default function AdminLayout({ children, activeModules = [], planType = 'FREE', lockedDbIds = {}, isOwner = false, subscriptionStatus = 'ACTIVE', trialEndsAt, isImpersonating = false, tenant = null }: { children: React.ReactNode, activeModules?: string[], planType?: string, lockedDbIds?: Record<string, string>, isOwner?: boolean, subscriptionStatus?: string, trialEndsAt?: string | null, isImpersonating?: boolean, tenant?: any }) {
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const router = useRouter();
@@ -115,16 +115,14 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     };
 
     useEffect(() => {
-        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
-            if (d && !d.error) {
-                setCompanyName(d.commercialName || d.companyName || '');
-                if (d.brandColor) {
-                    setBrandColor(d.brandColor);
-                    document.documentElement.style.setProperty('--brand-color', d.brandColor);
-                }
-                if (d.logoUrl) setLogoUrl(d.logoUrl);
+        if (tenant) {
+            setCompanyName(tenant.commercialName || tenant.companyName || '');
+            if (tenant.brandColor) {
+                setBrandColor(tenant.brandColor);
+                document.documentElement.style.setProperty('--brand-color', tenant.brandColor);
             }
-        }).catch(() => {});
+            if (tenant.logoUrl) setLogoUrl(tenant.logoUrl);
+        }
 
         // Listen for brand color changes from DocumentTemplatesModule
         const handleBrandColorChanged = (e: Event) => {
@@ -133,7 +131,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
         };
         window.addEventListener('brandColorChanged', handleBrandColorChanged);
         return () => window.removeEventListener('brandColorChanged', handleBrandColorChanged);
-    }, []);
+    }, [tenant]);
 
     const { items: menuItems } = useSidebarStore();
     const { tabOrders } = useTabStore();
@@ -508,7 +506,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
 
                 <div className="flex-1 p-4 overflow-y-auto min-h-0 flex flex-col relative w-full">
-                    <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+                    <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                         {isBlocked ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 m-4">
                                 <div className="w-16 h-16 rounded-2xl border flex items-center justify-center mb-6" style={{ backgroundColor: `${brandColor}15`, borderColor: `${brandColor}30` }}>

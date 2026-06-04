@@ -38,6 +38,18 @@ export default function CalendarModule() {
     const [date, setDate] = useState<Date>(new Date());
     const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile) setIsSidebarOpen(false);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Global Store State
     const { accounts, portals, isLoadingAccounts, fetchAccounts, fetchPortals } = useCalendarStore();
@@ -94,6 +106,15 @@ export default function CalendarModule() {
         });
         fetchPortals();
     }, [fetchAccounts, fetchPortals]);
+
+    useEffect(() => {
+        if (isMobile && calendarRef.current) {
+            const api = calendarRef.current.getApi();
+            if (api.view.type === 'timeGridWeek') {
+                api.changeView('listWeek');
+            }
+        }
+    }, [isMobile]);
 
     const toggleCalendar = (calId: string) => {
         const next = new Set(selectedCalendars);
@@ -272,7 +293,7 @@ export default function CalendarModule() {
             <FullCalendar
                 ref={calendarRef}
                 plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-                initialView="timeGridWeek"
+                initialView={isMobile ? "listWeek" : "timeGridWeek"}
                 weekNumbers={true}
                 firstDay={1}
                 locale="en-gb"
@@ -334,9 +355,9 @@ export default function CalendarModule() {
                     }
                 }}
                 headerToolbar={{
-                    left: 'toggleSidebar prev,next today',
+                    left: isMobile ? 'prev,next today' : 'toggleSidebar prev,next today',
                     center: 'title',
-                    right: 'refreshEvents createEvent createTask dayGridMonth,timeGridWeek,timeGridDay'
+                    right: isMobile ? 'refreshEvents dayGridMonth,timeGridDay,listWeek' : 'refreshEvents createEvent createTask dayGridMonth,timeGridWeek,timeGridDay'
                 }}
                 eventSources={eventSources}
                 height="100%"
@@ -473,10 +494,39 @@ export default function CalendarModule() {
             </div>
 
             {/* Main Calendar Area */}
-            <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-black rounded-r-2xl border-l border-neutral-200 dark:border-white/10">
-                <div className="flex-1 p-6 overflow-hidden calendar-container">
+            <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-black rounded-r-2xl border-l border-neutral-200 dark:border-white/10 relative">
+                <div className="flex-1 p-3 md:p-6 overflow-hidden calendar-container">
                     {renderCalendar}
                 </div>
+                
+                {/* Mobile Floating Action Buttons */}
+                {isMobile && (
+                    <div className="absolute bottom-6 right-6 flex flex-col gap-3 z-40">
+                        <button
+                            onClick={() => {
+                                setTaskData({ title: '', dueDate: new Date().toISOString().split('T')[0], priority: 'opt-med' });
+                                setIsTaskModalOpen(true);
+                            }}
+                            className="w-12 h-12 rounded-full bg-blue-600 text-white shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors ml-auto"
+                            title="Create Task"
+                        >
+                            <Check className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                const now = new Date();
+                                setNewEvent({
+                                    id: '', title: '', start: now.toISOString(), end: new Date(now.getTime() + 60 * 60 * 1000).toISOString(), allDay: false, description: '', location: '', createTask: false, portalId: '', calendarId: 'local', accountId: '', isGoogle: false, oldCalendarId: '', oldAccountId: ''
+                                });
+                                setIsEventModalOpen(true);
+                            }}
+                            className="w-14 h-14 rounded-full bg-[var(--brand-color,#d35400)] text-white shadow-lg flex items-center justify-center hover:opacity-90 transition-opacity"
+                            title="Create Event"
+                        >
+                            <Plus className="w-6 h-6" />
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Custom Event Creation Modal */}
@@ -798,6 +848,23 @@ export default function CalendarModule() {
         border-radius: 5px;
         border-color: var(--fc-now-indicator-color);
         margin-top: -5px;
+    }
+
+    /* Mobile overrides */
+    @media (max-width: 768px) {
+        .calendar-container.fc .fc-toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .calendar-container.fc .fc-toolbar-title {
+            font-size: 1rem;
+        }
+        .calendar-container.fc .fc-button {
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+        }
     }
     .calendar-container.fc .fc-timegrid-now-indicator-line {
         border-top-width: 2px;

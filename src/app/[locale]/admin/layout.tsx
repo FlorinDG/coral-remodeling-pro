@@ -23,6 +23,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     let isOwner = false;
     let subscriptionStatus: string = 'ACTIVE';
     let trialEndsAt: string | null = null;
+    let fullTenant: any = null;
 
     let isImpersonating = false;
 
@@ -54,7 +55,6 @@ export default async function Layout({ children }: { children: React.ReactNode }
             const [tenant, fetchedDbs] = await Promise.all([
                 prisma.tenant.findUnique({
                     where:  { id: tenantId },
-                    select: { activeModules: true, planType: true, lockedDbIds: true, subscriptionStatus: true, trialEndsAt: true },
                 }),
                 getGlobalDatabases()
             ]);
@@ -73,6 +73,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
             }
 
             databases = fetchedDbs;
+            // tenant is now the full object
+            fullTenant = tenant;
         } catch (e) {
             console.error('[layout] Parallel fetch failed:', e);
             // safe defaults already set
@@ -87,7 +89,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={displayActiveModules} planType={displayPlanType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating}>
+            <AdminLayout activeModules={displayActiveModules} planType={displayPlanType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating} tenant={fullTenant}>
                 {children}
             </AdminLayout>
         </AuthProvider>

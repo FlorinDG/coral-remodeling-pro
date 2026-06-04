@@ -255,7 +255,73 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         return actualLaborHours * quotationFinancials.avgLabourRate;
     }, [actualLaborHours, quotationFinancials.avgLabourRate]);
 
-    const totalActualCost = actualLaborCost;
+    // ── Financial Data Aggregation ──────────────────────────────────────────
+    const expensesDbId = resolveDbId('db-expenses');
+    const expensesDb = allDatabases.find(d => d.id === expensesDbId);
+    
+    const projectExpenses = useMemo(() => {
+        if (!expensesDb) return [];
+        return expensesDb.pages.filter(p => {
+            const projRel = p.properties['project'];
+            return Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId;
+        });
+    }, [expensesDb, pageId]);
+
+    const actualMaterialCost = useMemo(() => {
+        return projectExpenses.reduce((sum, exp) => sum + (Number(exp.properties['totalExVat']) || 0), 0);
+    }, [projectExpenses]);
+
+    const totalActualCost = actualLaborCost + actualMaterialCost;
+
+    const invoicesDbId = resolveDbId('db-invoices');
+    const invoicesDb = allDatabases.find(d => d.id === invoicesDbId);
+
+    const projectInvoices = useMemo(() => {
+        if (!invoicesDb) return [];
+        return invoicesDb.pages.filter(p => {
+            const projRel = p.properties['project'];
+            return Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId;
+        });
+    }, [invoicesDb, pageId]);
+
+    const paymentsInDbId = resolveDbId('db-payments-in');
+    const paymentsInDb = allDatabases.find(d => d.id === paymentsInDbId);
+
+    const paymentsOutDbId = resolveDbId('db-payments-out');
+    const paymentsOutDb = allDatabases.find(d => d.id === paymentsOutDbId);
+
+    const projectPaymentsIn = useMemo(() => {
+        if (!paymentsInDb) return [];
+        const invoiceIds = new Set(projectInvoices.map(i => i.id));
+        return paymentsInDb.pages.filter(p => {
+            const projRel = p.properties['project'];
+            const invRel = p.properties['invoice'];
+            const isDirectlyLinked = Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId;
+            const isInvoiceLinked = Array.isArray(invRel) ? invRel.some(id => invoiceIds.has(String(id))) : invoiceIds.has(String(invRel));
+            return isDirectlyLinked || isInvoiceLinked;
+        });
+    }, [paymentsInDb, pageId, projectInvoices]);
+
+    const projectPaymentsOut = useMemo(() => {
+        if (!paymentsOutDb) return [];
+        const expenseIds = new Set(projectExpenses.map(e => e.id));
+        return paymentsOutDb.pages.filter(p => {
+            const projRel = p.properties['project'];
+            const expRel = p.properties['expense'];
+            const isDirectlyLinked = Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId;
+            const isExpenseLinked = Array.isArray(expRel) ? expRel.some(id => expenseIds.has(String(id))) : expenseIds.has(String(expRel));
+            return isDirectlyLinked || isExpenseLinked;
+        });
+    }, [paymentsOutDb, pageId, projectExpenses]);
+
+    const paidRevenueAmount = useMemo(() => {
+        return projectPaymentsIn.reduce((sum, p) => sum + (Number(p.properties['amount']) || 0), 0);
+    }, [projectPaymentsIn]);
+
+    const paidExpensesAmount = useMemo(() => {
+        return projectPaymentsOut.reduce((sum, p) => sum + (Number(p.properties['amount']) || 0), 0);
+    }, [projectPaymentsOut]);
+
 
     // ── Vorderingenstaten data ──────────────────────────────────────────
     const vorderingenstaten = useMemo(() => {
@@ -644,13 +710,19 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                         )}
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Draft</p>
-                                        <p className="text-lg font-black text-amber-600 dark:text-amber-400 tabular-nums font-mono">
-                                            €{draftTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-green-500">Paid</p>
+                                        <p className="text-lg font-black text-green-600 dark:text-green-400 tabular-nums font-mono">
+                                            €{paidRevenueAmount.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
                                         </p>
                                     </div>
                                     <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">Remaining</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Outstanding</p>
+                                        <p className={`text-lg font-black tabular-nums font-mono ${invoicedTotal - paidRevenueAmount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                                            €{Math.max(0, invoicedTotal - paidRevenueAmount).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-0.5">
+                                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">To Invoice</p>
                                         <p className={`text-lg font-black tabular-nums font-mono ${remainingToInvoice > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                             €{Math.max(0, remainingToInvoice).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
                                         </p>
@@ -714,12 +786,20 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                                 <Clock className="w-3 h-3" /> Actual Costs
                                             </p>
                                             <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
+                                                <span>Materials & Expenses</span>
+                                                <span className="font-mono">€{actualMaterialCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
                                                 <span>Labour (clocked)</span>
                                                 <span className="font-mono">{actualLaborHours}h — €{actualLaborCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                             <div className="flex justify-between items-center text-xs font-black text-neutral-800 dark:text-neutral-200 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800">
                                                 <span>Total Costs</span>
                                                 <span className="font-mono text-amber-500">€{totalActualCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500 pt-1">
+                                                <span>Paid Expenses</span>
+                                                <span className="font-mono text-green-600 dark:text-green-400">€{paidExpensesAmount.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -929,6 +1009,86 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                     </div>
                                 </div>
                             </ErrorBoundary>
+
+                            {/* Linked Financial Documents */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                    <Receipt className="w-4 h-4 text-orange-500" /> Linked Financial Documents
+                                </div>
+                                <div className="p-0 divide-y divide-neutral-100 dark:divide-white/5 max-h-[400px] overflow-y-auto">
+                                    {projectInvoices.length === 0 && projectExpenses.length === 0 && projectPaymentsIn.length === 0 && projectPaymentsOut.length === 0 && (
+                                        <div className="p-6 text-center text-xs text-neutral-500 italic">No financial documents linked yet.</div>
+                                    )}
+
+                                    {projectInvoices.length > 0 && (
+                                        <div className="p-4 space-y-2">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 mb-2">Sales Invoices ({projectInvoices.length})</h4>
+                                            {projectInvoices.map(doc => (
+                                                <a key={doc.id} href={`/${locale}/admin/database/${invoicesDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Untitled')}</span>
+                                                        <span className="text-[10px] text-neutral-500">{doc.properties['invoiceDate'] ? String(doc.properties['invoiceDate']) : 'No date'}</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-300">
+                                                        €{Number(doc.properties['totalIncVat'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {projectExpenses.length > 0 && (
+                                        <div className="p-4 space-y-2">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2">Purchase Invoices / Expenses ({projectExpenses.length})</h4>
+                                            {projectExpenses.map(doc => (
+                                                <a key={doc.id} href={`/${locale}/admin/database/${expensesDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Untitled')}</span>
+                                                        <span className="text-[10px] text-neutral-500">{String(doc.properties['betreft'] || 'No description')}</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-300">
+                                                        €{Number(doc.properties['totalIncVat'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {projectPaymentsIn.length > 0 && (
+                                        <div className="p-4 space-y-2">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-500 mb-2">Payments Received ({projectPaymentsIn.length})</h4>
+                                            {projectPaymentsIn.map(doc => (
+                                                <a key={doc.id} href={`/${locale}/admin/database/${paymentsInDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Payment')}</span>
+                                                        <span className="text-[10px] text-neutral-500">{doc.properties['date'] ? String(doc.properties['date']) : 'No date'}</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                                        +€{Number(doc.properties['amount'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {projectPaymentsOut.length > 0 && (
+                                        <div className="p-4 space-y-2">
+                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-pink-500 mb-2">Payments Sent ({projectPaymentsOut.length})</h4>
+                                            {projectPaymentsOut.map(doc => (
+                                                <a key={doc.id} href={`/${locale}/admin/database/${paymentsOutDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Payment')}</span>
+                                                        <span className="text-[10px] text-neutral-500">{doc.properties['date'] ? String(doc.properties['date']) : 'No date'}</span>
+                                                    </div>
+                                                    <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400">
+                                                        -€{Number(doc.properties['amount'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -48,7 +48,10 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                 let tenantRootDriveId = tenant?.driveFolderId;
                 if (!tenantRootDriveId && tenant) {
                     const cleanTenantName = tenant.companyName.replace(/[^a-zA-Z0-9 ]/g, "").trim();
-                    tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`);
+                    const parentFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+                    if (parentFolderId) {
+                        tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`, parentFolderId);
+                    }
                     await prisma.tenant.update({
                         where: { id: tenantId },
                         data: { driveFolderId: tenantRootDriveId }

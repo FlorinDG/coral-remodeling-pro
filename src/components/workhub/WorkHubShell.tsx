@@ -51,6 +51,7 @@ export default function WorkHubShell({
     activeModules: string[];
     planType: string;
     lockedDbIds: Record<string, string>;
+    tenant?: any;
 }) {
     const { data: session } = useSession();
     const pathname = usePathname();
@@ -58,13 +59,11 @@ export default function WorkHubShell({
     const [brandColor, setBrandColor] = useState('#d35400');
 
     useEffect(() => {
-        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
-            if (d?.brandColor) {
-                setBrandColor(d.brandColor);
-                document.documentElement.style.setProperty('--brand-color', d.brandColor);
-            }
-        }).catch(() => {});
-    }, []);
+        if (tenant?.brandColor) {
+            setBrandColor(tenant.brandColor);
+            document.documentElement.style.setProperty('--brand-color', tenant.brandColor);
+        }
+    }, [tenant]);
 
     const userName = session?.user?.name || 'User';
     const firstName = userName.split(' ')[0];
@@ -190,7 +189,7 @@ export default function WorkHubShell({
 
             {/* ── Content ── */}
             <main className="flex-1 pb-20 md:pb-0 overflow-y-auto">
-                <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+                <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                     {children}
                 </TenantProvider>
             </main>

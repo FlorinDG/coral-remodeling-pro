@@ -163,9 +163,7 @@ export default function MobileSettingsClient({
 
     const [profile, setProfile] = useState<ProfileData>(initialProfile);
     const [saving, setSaving] = useState(false);
-    const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "QUARTERLY">(
-        billingData.billingCycle === "QUARTERLY" ? "QUARTERLY" : "MONTHLY"
-    );
+    const [billingCycle, setBillingCycle] = useState<"MONTHLY">("MONTHLY");
 
     // Peppol onboarding states
     const [fetchingRegistry, setFetchingRegistry] = useState(false);
@@ -272,14 +270,7 @@ export default function MobileSettingsClient({
             });
             if (res.ok) {
                 toast.success("Profile changes saved successfully!");
-                
-                // If language changed, reload & update NextAuth session
-                const newLang = profile.documentLanguage;
-                const supportedLocales = ["en", "fr", "nl", "ro", "ru"];
-                if (newLang && supportedLocales.includes(newLang)) {
-                    await updateSession({ environmentLanguage: newLang });
-                    router.refresh();
-                }
+                router.refresh();
             } else {
                 throw new Error("Failed to save settings");
             }
@@ -355,10 +346,6 @@ export default function MobileSettingsClient({
     };
 
     const getPrice = (basePrice: number) => {
-        if (billingCycle === "QUARTERLY") {
-            const discounted = basePrice * (1 - billingData.quarterlyDiscount);
-            return { price: discounted, period: "/mo", billing: `€${(discounted * 3).toFixed(0)} billed quarterly` };
-        }
         return { price: basePrice, period: "/mo", billing: "billed monthly" };
     };
 
@@ -728,21 +715,6 @@ export default function MobileSettingsClient({
                         {/* Plan Toggle */}
                         {!isFounder && (
                             <div className="space-y-4">
-                                <div className="flex items-center justify-center gap-1 bg-neutral-100 dark:bg-white/5 rounded-full p-1 w-fit mx-auto border border-neutral-350 dark:border-white/5">
-                                    {(["MONTHLY", "QUARTERLY"] as const).map(cycle => (
-                                        <button
-                                            key={cycle}
-                                            onClick={() => setBillingCycle(cycle)}
-                                            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all ${
-                                                billingCycle === cycle
-                                                    ? "bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white shadow-sm"
-                                                    : "text-neutral-500"
-                                            }`}
-                                        >
-                                            {cycle === "MONTHLY" ? t('settings_billing_monthly') : t('settings_billing_quarterly')}
-                                        </button>
-                                    ))}
-                                </div>
 
                                 {/* Plan Cards */}
                                 <div className="space-y-4">

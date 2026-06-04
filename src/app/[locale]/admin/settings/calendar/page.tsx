@@ -7,10 +7,13 @@ import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { CalendarDays, Save, Loader2, Check } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function CalendarSettingsPage() {
     usePageTitle('Calendar Settings');
-    const { activeModules } = useTenant();
+    const { tenant, activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+    const router = useRouter();
 
     const [defaultEventDuration, setDefaultEventDuration] = useState(60);
     const [defaultCalendarView, setDefaultCalendarView] = useState('month');
@@ -19,14 +22,12 @@ export default function CalendarSettingsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(r => r.json())
-            .then(data => {
-                if (data.defaultEventDuration != null) setDefaultEventDuration(data.defaultEventDuration);
-                if (data.defaultCalendarView) setDefaultCalendarView(data.defaultCalendarView);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (tenant) {
+            if (tenant.defaultEventDuration != null) setDefaultEventDuration(tenant.defaultEventDuration);
+            if (tenant.defaultCalendarView) setDefaultCalendarView(tenant.defaultCalendarView);
+            setLoading(false);
+        }
+    }, [tenant]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -37,6 +38,7 @@ export default function CalendarSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };
 

@@ -232,11 +232,32 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             amount: form.amount
         });
 
-        if (!scanResult) {
-            // Manual entry — server-first (same reliability as scanned)
-            setStep('saving');
+        setStep('saving');
+        setSaveError('');
+
+        let driveUrl = '';
+        if (lastFileRef.current) {
             try {
-                // static import — dynamic import of server actions fails silently in Next.js App Router
+                const fd = new FormData();
+                fd.append('file', lastFileRef.current);
+                fd.append('targetSubfolder', isInvoiceMode ? 'Invoices' : 'Expenses');
+                const uploadRes = await fetch('/api/drive/upload', { method: 'POST', body: fd });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.fileId) {
+                        driveUrl = `https://drive.google.com/file/d/${uploadData.fileId}/view`;
+                    }
+                } else {
+                    console.warn('[TicketCaptureModal] Drive upload failed', await uploadRes.text());
+                }
+            } catch (err) {
+                console.warn('[TicketCaptureModal] Drive upload network error', err);
+            }
+        }
+
+        if (!scanResult) {
+            // Manual entry — server-first
+            try {
                 if (isInvoiceMode) {
                     const result = await createPageServerFirst('db-expenses', {
                         title: form.merchant || 'Manual Invoice',
@@ -247,6 +268,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         totalExVat: parsedAmount,
                         totalVat: parsedVat,
                         totalIncVat: parsedAmount + parsedVat,
+                        receiptUrl: driveUrl,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
@@ -259,6 +281,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
                         notes: form.notes,
+                        receiptUrl: driveUrl,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 }
@@ -272,13 +295,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         }
 
         // Scanned record: update the server-saved page with user edits
-        setStep('saving');
-        setSaveError('');
-
         try {
-            // static import — see top of file
-
-            // Build new properties from the already-saved page + user edits
             const currentProps = scanResult.page.properties as Record<string, any>;
             let updatedProps: Record<string, any>;
 
@@ -293,6 +310,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     totalIncVat: parsedAmount + parsedVat,
                     status: 'opt-unpaid',
                 };
+                if (driveUrl) updatedProps.receiptUrl = driveUrl;
             } else {
                 updatedProps = {
                     ...currentProps,
@@ -304,6 +322,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     paymentMethod: form.paymentMethod,
                     notes: form.notes,
                 };
+                if (driveUrl) updatedProps.receiptUrl = driveUrl;
             }
 
             const result = await updatePageServerFirst(scanResult.page.id, updatedProps);
@@ -314,7 +333,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 return;
             }
 
-            // Add the confirmed (possibly updated) page to the store
             addConfirmedPage(result.page);
             setStep('done');
         } catch (e: any) {

@@ -11,6 +11,7 @@ interface ExtractedItem {
     title: string;
     brutoPrice?: number;
     discountPercent?: number;
+    netUnitPrice?: number;
     quantity?: number;
     unit?: string;
     brand?: string;
@@ -97,18 +98,26 @@ export default function PDFImportModal({
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Server processing error');
 
-            const items: ExtractedItem[] = (data.articles || data.data || []).map((item: any) => ({
-                title: item.title || item.Title || '',
-                brutoPrice: item.brutoPrice || item.UnitPrice || 0,
-                discountPercent: item.discountPercent || item.Discount || 0,
-                quantity: item.quantity || item.Quantity || 1,
-                unit: item.unit || item.Unit || 'stk',
-                brand: item.brand || item.Brand || '',
-                group: item.group || item.Section || '',
-                calculationType: item.calculationType || undefined,
-                vatRate: item.vatRate || item.VatRate || undefined,
-                totalPrice: item.totalPrice || item.TotalPrice || undefined,
-            }));
+            const items: ExtractedItem[] = (data.articles || data.data || []).map((item: any) => {
+                // Map the new explicit price fields from the AI extraction
+                const grossPrice = item.GrossUnitPrice ?? item.brutoPrice ?? item.UnitPrice ?? 0;
+                const discount = item.DiscountPercent ?? item.discountPercent ?? item.Discount ?? 0;
+                const netPrice = item.NetUnitPrice ?? (grossPrice * (1 - discount / 100));
+
+                return {
+                    title: item.title || item.Title || '',
+                    brutoPrice: grossPrice,
+                    discountPercent: discount,
+                    netUnitPrice: netPrice,
+                    quantity: item.quantity || item.Quantity || 1,
+                    unit: item.unit || item.Unit || 'stk',
+                    brand: item.brand || item.Brand || '',
+                    group: item.group || item.Section || '',
+                    calculationType: item.calculationType || undefined,
+                    vatRate: item.vatRate || item.VatRate || undefined,
+                    totalPrice: item.totalPrice || item.TotalPrice || undefined,
+                };
+            });
 
             // Extract document metadata
             const meta: ExtractedMetadata = data.metadata || {};
@@ -122,17 +131,25 @@ export default function PDFImportModal({
     };
 
     const confirmImport = () => {
-        const generatedBlocks: Block[] = extractedItems.map(item => ({
-            id: crypto.randomUUID(),
-            type: 'line' as const,
-            content: item.title || 'Unknown Item',
-            brutoPrice: item.brutoPrice || 0,
-            discountPercent: item.discountPercent || 0,
-            quantity: item.quantity || 1,
-            unit: item.unit || 'stk',
-            unitPrice: item.brutoPrice || 0,
-            calculationType: (item.calculationType as Block['calculationType']) || 'materieel',
-        }));
+        const generatedBlocks: Block[] = extractedItems.map(item => {
+            const bruto = item.brutoPrice || 0;
+            const discount = item.discountPercent || 0;
+            // Trust the extracted netUnitPrice directly; only fall back to derivation if missing
+            const nettoPrice = item.netUnitPrice ?? (bruto * (1 - discount / 100));
+
+            return {
+                id: crypto.randomUUID(),
+                type: 'line' as const,
+                content: item.title || 'Unknown Item',
+                brutoPrice: bruto,
+                discountPercent: discount,
+                margePercent: 0,
+                verkoopPrice: nettoPrice,
+                quantity: item.quantity || 1,
+                unit: item.unit || 'stk',
+                calculationType: (item.calculationType as Block['calculationType']) || 'materieel',
+            };
+        });
 
         // Auto-fill invoice page properties from extracted metadata
         if (onMetadataExtracted && extractedMeta) {

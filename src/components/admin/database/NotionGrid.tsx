@@ -1252,8 +1252,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                             if (prop.type === 'rollup' || prop.type === 'formula') return;
                                             // Skip computed financial properties — they're set by the engine, not manual edits
                                             if (['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id)) return;
-                                            // Block edits on records exported to accountant
-                                            if (oldRow.properties.accountantExportedAt && prop.id !== 'accountantExportedAt') {
+                                            // Block edits on records exported to accountant (exempt relation fields)
+                                            if (oldRow.properties.accountantExportedAt && prop.id !== 'accountantExportedAt' && prop.type !== 'relation') {
                                                 return; // silently skip — UI will show lock
                                             }
 

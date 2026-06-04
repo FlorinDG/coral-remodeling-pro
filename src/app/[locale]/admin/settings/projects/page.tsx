@@ -7,10 +7,13 @@ import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { FolderKanban, Save, Loader2, Check } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function ProjectsSettingsPage() {
     usePageTitle('Projects Settings');
-    const { activeModules } = useTenant();
+    const { tenant, activeModules } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
+    const router = useRouter();
 
     const [bordereauPrefix, setBordereauPrefix] = useState('BOR');
     const [poPrefix, setPoPrefix] = useState('PO');
@@ -19,14 +22,12 @@ export default function ProjectsSettingsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(r => r.json())
-            .then(data => {
-                if (data.bordereauPrefix) setBordereauPrefix(data.bordereauPrefix);
-                if (data.poPrefix) setPoPrefix(data.poPrefix);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (tenant) {
+            if (tenant.bordereauPrefix) setBordereauPrefix(tenant.bordereauPrefix);
+            if (tenant.poPrefix) setPoPrefix(tenant.poPrefix);
+            setLoading(false);
+        }
+    }, [tenant]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -37,6 +38,7 @@ export default function ProjectsSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };
 

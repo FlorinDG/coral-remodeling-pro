@@ -20,13 +20,13 @@ export default async function MobileLayout({ children }: { children: React.React
     }
 
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
+    let fullTenant: any = null;
 
     if (tenantId) {
         try {
             const [tenant, fetchedDbs] = await Promise.all([
                 prisma.tenant.findUnique({
                     where: { id: tenantId },
-                    select: { activeModules: true, planType: true, lockedDbIds: true },
                 }),
                 getGlobalDatabases()
             ]);
@@ -42,6 +42,7 @@ export default async function MobileLayout({ children }: { children: React.React
             }
 
             databases = fetchedDbs;
+            fullTenant = tenant;
         } catch (e) {
             console.error('[m/layout] Parallel fetch failed:', e);
         }
@@ -50,7 +51,7 @@ export default async function MobileLayout({ children }: { children: React.React
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+            <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                 {children}
             </MobileShell>
         </AuthProvider>

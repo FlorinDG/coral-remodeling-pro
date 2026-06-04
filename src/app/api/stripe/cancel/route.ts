@@ -18,7 +18,7 @@ export async function POST() {
 
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { stripeSubscriptionId: true },
+            select: { stripeSubscriptionId: true, planType: true },
         });
         if (!tenant) return NextResponse.json({ error: 'Tenant not found.' }, { status: 404 });
 
@@ -45,26 +45,49 @@ export async function POST() {
         }
 
         const stripe = getStripeInstance();
+        const subscription = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
         
-        // Notify Stripe to cancel at period end
-        const subscription = (await stripe.subscriptions.update(tenant.stripeSubscriptionId, {
-            cancel_at_period_end: true,
-        })) as any;
+        let noticeMonths = 0;
+        if (tenant.planType === 'PRO') noticeMonths = 1;
+        else if (tenant.planType === 'ENTERPRISE') noticeMonths = 2;
+
+        let effectiveDate = new Date(subscription.current_period_end * 1000);
+        const noticeDate = new Date();
+        noticeDate.setMonth(noticeDate.getMonth() + noticeMonths);
+
+        // Determine cycle length in months
+        const price = subscription.items.data[0]?.price;
+        const interval = price?.recurring?.interval; // 'month' or 'year'
+        const intervalCount = price?.recurring?.interval_count || 1;
+        let cycleMonths = 1;
+        if (interval === 'year') cycleMonths = 12 * intervalCount;
+        else if (interval === 'month') cycleMonths = intervalCount;
+
+        while (effectiveDate < noticeDate) {
+            effectiveDate.setMonth(effectiveDate.getMonth() + cycleMonths);
+        }
+
+        const cancel_at = Math.floor(effectiveDate.getTime() / 1000);
+
+        // Notify Stripe to cancel at the computed effective date
+        const updatedSub = await stripe.subscriptions.update(tenant.stripeSubscriptionId, {
+            cancel_at,
+        });
 
         // Update our DB
         await prisma.tenant.update({
             where: { id: tenantId },
             data: {
                 cancellationRequestedAt: new Date(),
-                cancellationEffectiveAt: new Date(subscription.current_period_end * 1000),
+                cancellationEffectiveAt: new Date(updatedSub.cancel_at! * 1000),
             },
         });
 
-        console.log(`[Stripe] Cancellation scheduled for tenant ${tenantId} at ${new Date(subscription.current_period_end * 1000)}`);
+        console.log(`[Stripe] Cancellation scheduled for tenant ${tenantId} at ${new Date(updatedSub.cancel_at! * 1000)}`);
 
         return NextResponse.json({ 
             success: true, 
-            effectiveAt: new Date(subscription.current_period_end * 1000).toISOString() 
+            effectiveAt: new Date(updatedSub.cancel_at! * 1000).toISOString() 
         });
     } catch (error: any) {
         console.error('[Stripe Cancel Error]', error);

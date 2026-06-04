@@ -61,7 +61,7 @@ const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
 };
 
 export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoiceEngineProps) {
-    const { resolveDbId } = useTenant();
+    const { activeModules, resolveDbId, tenant } = useTenant();
     const expensesDbId = resolveDbId('db-expenses');
     const suppliersDbId = resolveDbId('db-suppliers');
 
@@ -94,13 +94,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     } | null>(null);
 
     useEffect(() => {
-        fetch('/api/tenant/profile')
-            .then(res => res.json())
-            .then(data => {
-                if (data && !data.error) setTenantProfile(data);
-            })
-            .catch(err => console.error('Failed to fetch tenant profile:', err));
-    }, []);
+        if (tenant) {
+            setTenantProfile(tenant);
+        }
+    }, [tenant]);
 
     // Editable fields for manual/draft invoices
     const [editData, setEditData] = useState({

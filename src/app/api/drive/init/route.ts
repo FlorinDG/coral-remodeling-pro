@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateClientFolderTemplate, generateProjectFolderTemplate, createFolder, findOrCreateFolder } from '@/lib/google-drive';
+import { generateClientFolderTemplate, generateProjectFolderTemplate, createFolder, findOrCreateFolder, ensureCoralDriveRoot } from '@/lib/google-drive';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
@@ -44,7 +44,12 @@ export async function POST(req: Request) {
         if (!tenantRootDriveId) {
             // First time this Tenant creates a client: initialize their master vault
             const cleanTenantName = tenantInfo.companyName.replace(/[^a-zA-Z0-9 ]/g, "").trim();
-            tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`);
+            const parentFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
+            if (!parentFolderId) {
+                console.error('[Partitioning] Missing GOOGLE_DRIVE_ROOT_FOLDER_ID in environment variables');
+                return NextResponse.json({ error: 'Server misconfiguration: Drive Parent ID missing' }, { status: 500 });
+            }
+            tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`, parentFolderId);
             await prisma.tenant.update({
                 where: { id: tenantId },
                 data: { driveFolderId: tenantRootDriveId }

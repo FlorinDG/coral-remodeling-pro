@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { useTenant } from '@/context/TenantContext';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -338,24 +340,22 @@ function RolesPermissionsPanel() {
 // ─── Tenant Setting Panels (re-use existing logic) ───────────────────────────
 
 function CompanyProfilePanel() {
+    const { tenant } = useTenant();
+    const router = useRouter();
     const [profile, setProfile] = useState({ companyName: '', vatNumber: '', iban: '', logoUrl: '', peppolId: '' });
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetch('/api/tenant/profile').then(res => res.json()).then(data => {
-            if (data && !data.error) {
-                setProfile({
-                    companyName: data.companyName || '',
-                    vatNumber: data.vatNumber || '',
-                    iban: data.iban || '',
-                    logoUrl: data.logoUrl || '',
-                    peppolId: data.peppolId || '',
-                });
-            }
-            setLoading(false);
-        });
-    }, []);
+        if (tenant) {
+            setProfile({
+                companyName: tenant.companyName || '',
+                vatNumber: tenant.vatNumber || '',
+                iban: tenant.iban || '',
+                logoUrl: tenant.logoUrl || '',
+                peppolId: tenant.peppolId || '',
+            });
+        }
+    }, [tenant]);
 
     const handleSave = async () => {
         setSaving(true);
@@ -366,16 +366,13 @@ function CompanyProfilePanel() {
                 body: JSON.stringify(profile)
             });
             toast.success('Company profile saved!');
+            router.refresh();
         } catch (e) {
             console.error('Failed to save profile', e);
         } finally {
             setSaving(false);
         }
     };
-
-    if (loading) {
-        return <div className="flex items-center justify-center p-12 text-neutral-400"><RefreshCw className="w-5 h-5 animate-spin mr-2" /> Loading identity...</div>;
-    }
 
     return (
         <SectionShell title="Company Profile" description="Configure your brand identity and billing details.">

@@ -39,7 +39,7 @@ type PeppolInvoice = {
 
 export default function MobileExpensesPage() {
     const t = useTranslations('Mobile');
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
     const ticketsDbId = resolveDbId('db-tickets');
 
@@ -54,12 +54,11 @@ export default function MobileExpensesPage() {
     const rawPages = db?.pages || FALLBACK_PAGES;
 
     useEffect(() => {
-        // Fetch tenant quota
-        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
-            if (d?.scanCount !== undefined) setScansUsed(d.scanCount);
-            if (d?.scanQuota !== undefined) setScanQuota(d.scanQuota);
-        }).catch(() => {});
-    }, []);
+        if (tenant) {
+            if (tenant.scanCount !== undefined) setScansUsed(tenant.scanCount);
+            if (tenant.scanQuota !== undefined) setScanQuota(tenant.scanQuota);
+        }
+    }, [tenant]);
 
     const fetchPeppol = useCallback(async () => {
         if (peppolInvoices.length > 0) return; // already loaded
@@ -102,6 +101,7 @@ export default function MobileExpensesPage() {
             date: String(props['date'] || new Date(p.createdAt).toISOString().split('T')[0]),
             amount: Number(props['amount'] ?? 0),
             category: String(props['category'] || 'cat-other'),
+            receiptUrl: props['receiptUrl'] as string | undefined,
         };
     });
 
@@ -180,11 +180,23 @@ export default function MobileExpensesPage() {
                                     className="p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 shadow-sm flex items-center justify-between"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 dark:bg-white/5 flex items-center justify-center text-lg border border-neutral-100 dark:border-white/5">
+                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 dark:bg-white/5 flex items-center justify-center text-lg border border-neutral-100 dark:border-white/5 relative overflow-hidden group">
+                                            {ticket.receiptUrl ? (
+                                                <a href={ticket.receiptUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10 text-white">
+                                                    <Receipt className="w-4 h-4" />
+                                                </a>
+                                            ) : null}
                                             {CATEGORY_ICONS[ticket.category] || '📦'}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold leading-tight">{ticket.merchant}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold leading-tight">{ticket.merchant}</p>
+                                                {ticket.receiptUrl && (
+                                                    <a href={ticket.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-neutral-400 hover:text-orange-500">
+                                                        <Receipt className="w-3 h-3" />
+                                                    </a>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-1">
                                                 <Calendar className="w-3 h-3" />
                                                 {ticket.date}

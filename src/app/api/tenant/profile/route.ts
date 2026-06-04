@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
+
+export const dynamic = 'force-dynamic';
 
 // All tenant profile fields that can be read and written
 const TENANT_FIELDS = [
@@ -83,26 +86,9 @@ export async function PUT(request: Request) {
             select: buildSelect()
         });
 
-        // Also sync the user's environmentLanguage when documentLanguage changes
-        const userId = session?.user?.id;
-        if (data.documentLanguage && userId) {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { environmentLanguage: data.documentLanguage }
-            });
-        }
+        revalidatePath('/', 'layout');
 
         const response = NextResponse.json(updatedTenant);
-
-        // Set the NEXT_LOCALE cookie so next-intl middleware respects the preference
-        // This ensures locale consistency across all subsequent requests
-        if (data.documentLanguage) {
-            response.cookies.set('NEXT_LOCALE', data.documentLanguage, {
-                path: '/',
-                maxAge: 365 * 24 * 60 * 60, // 1 year
-                sameSite: 'lax',
-            });
-        }
 
         return response;
     } catch (error) {

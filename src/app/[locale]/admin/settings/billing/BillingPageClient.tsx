@@ -118,18 +118,14 @@ const PLANS = [
 ];
 
 export default function BillingPageClient({ data }: { data: BillingData }) {
-    const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "QUARTERLY" | "ANNUAL">(
-        data.billingCycle === "QUARTERLY" ? "QUARTERLY" : "MONTHLY"
+    const [billingCycle, setBillingCycle] = useState<"MONTHLY" | "ANNUAL">(
+        "MONTHLY"
     );
 
     const badge = PLAN_BADGE[data.planType] || PLAN_BADGE.FREE;
     const isFounder = data.planType === "FOUNDER" || data.planType === "CUSTOM";
 
     const getPrice = (basePrice: number) => {
-        if (billingCycle === "QUARTERLY") {
-            const discounted = basePrice * (1 - data.quarterlyDiscount);
-            return { price: discounted, period: "/mo", billing: `€${(discounted * 3).toFixed(0)} billed quarterly` };
-        }
         return { price: basePrice, period: "/mo", billing: "billed monthly" };
     };
 
@@ -311,7 +307,7 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                 <>
                     {/* Billing cycle toggle */}
                     <div className="flex items-center justify-center gap-1 bg-neutral-100 dark:bg-white/5 rounded-full p-1 w-fit mx-auto">
-                        {(["MONTHLY", "QUARTERLY", "ANNUAL"] as const).map((cycle) => (
+                        {(["MONTHLY", "ANNUAL"] as const).map((cycle) => (
                             <button
                                 key={cycle}
                                 onClick={() => {
@@ -339,15 +335,6 @@ export default function BillingPageClient({ data }: { data: BillingData }) {
                             </button>
                         ))}
                     </div>
-
-                    {billingCycle === "QUARTERLY" && (
-                        <p className="text-center text-xs text-neutral-500">
-                            {data.quarterlyDiscount === 0.10
-                                ? "🎉 Fidelity bonus — 10% off quarterly billing"
-                                : "5% off quarterly billing · 10% fidelity bonus after your first year"
-                            }
-                        </p>
-                    )}
 
                     {/* Plan cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

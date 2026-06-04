@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId, structuredComm } = body;
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
@@ -201,7 +201,7 @@ export async function POST(req: Request) {
             invoicePayload.payment_details = [{
                 iban: tenant.iban.replace(/\s/g, ''),
                 ...(tenant.bic ? { swift: tenant.bic } : {}),
-                payment_reference: String(invoiceTitle || invoiceId || ''),
+                payment_reference: structuredComm || String(invoiceTitle || invoiceId || ''),
             }];
         }
 
@@ -248,7 +248,7 @@ export async function POST(req: Request) {
                 customerEmail: client.email || undefined,
                 iban: tenant.iban?.replace(/\s/g, '') || undefined,
                 bic: tenant.bic || undefined,
-                paymentReference: invoicePayload.invoice_id,
+                paymentReference: structuredComm || invoicePayload.invoice_id,
                 paymentTermNote: 'Betaling binnen 30 dagen',
                 note: betreft || undefined,
                 items: ublItems,

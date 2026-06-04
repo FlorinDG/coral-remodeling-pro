@@ -153,6 +153,22 @@ export default async function middleware(req: NextRequest) {
             return res;
         }
 
+        // ── Check if tenant is allowed on workhub (Enterprise / Workforce / HR) ──
+        if (isLoggedIn && !isLoginPage && !isPublicPage) {
+            const isSuperadmin = PLATFORM_ADMIN_ROLES.includes(token.role as any);
+            const hasAccess = isSuperadmin || token?.activeModules?.includes('HR');
+            
+            if (!hasAccess) {
+                // Not allowed in workhub -> redirect back to app. subdomain
+                // e.g. work.coral-group.be -> app.coral-group.be
+                const appHostname = hostname.replace(/^work\./, 'app.');
+                const appUrl = new URL(`/${locale}/admin`, `${req.nextUrl.protocol}//${appHostname}`);
+                const res = NextResponse.redirect(appUrl);
+                Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+                return res;
+            }
+        }
+
         // Login, help, terms, privacy — serve normally via intl middleware
         if (isLoginPage || isPublicPage) {
             const res = intlMiddleware(req);
@@ -232,6 +248,7 @@ export default async function middleware(req: NextRequest) {
             'library':             'INVOICING',
             'tasks':               'TASKS',
             'email':               'EMAIL',
+            'workhub':             'HR',
         };
 
         if (isLoggedIn && !isSuperadmin && activeModules) {

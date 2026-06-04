@@ -28,6 +28,8 @@ export async function createFolder(name: string, parentId?: string): Promise<str
     return file.data.id!;
 }
 
+
+
 export async function findOrCreateFolder(name: string, parentId: string): Promise<string> {
     const q = `'${parentId}' in parents and name = '${name.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const response = await drive.files.list({

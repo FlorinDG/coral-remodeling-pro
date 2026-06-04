@@ -235,7 +235,7 @@ async function extractViaVeryfi(buffer: Buffer, isInvoice: boolean, apiKey?: str
 
 // ─── Quota Helpers ────────────────────────────────────────────────────────────
 
-async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: boolean; remaining: number }> {
+async function checkAndIncrementQuota(tenantId: string, increment: boolean = true): Promise<{ allowed: boolean; remaining: number }> {
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
         select: { scanCount: true, scanQuota: true, scanCountResetAt: true }
@@ -255,16 +255,19 @@ async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: bool
         return { allowed: false, remaining: 0 };
     }
 
-    // Increment atomically
-    await prisma.tenant.update({
-        where: { id: tenantId },
-        data: {
-            scanCount: currentCount + 1,
-            ...(needsReset ? { scanCountResetAt: now } : {}),
-        }
-    });
+    if (increment) {
+        // Increment atomically
+        await prisma.tenant.update({
+            where: { id: tenantId },
+            data: {
+                scanCount: currentCount + 1,
+                ...(needsReset ? { scanCountResetAt: now } : {}),
+            }
+        });
+        return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount - 1 };
+    }
 
-    return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount - 1 };
+    return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount };
 }
 
 // ─── Route ────────────────────────────────────────────────────────────────────
@@ -304,7 +307,7 @@ export async function POST(req: Request) {
         }
 
         // ── Quota gate ────────────────────────────────────────────────────────
-        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
+        let { allowed, remaining } = await checkAndIncrementQuota(tenantId, false);
         if (!allowed) {
             return NextResponse.json({
                 error: `You have reached your monthly scan limit (${tenant?.scanQuota} scans). Upgrade your plan for more.`,
@@ -475,6 +478,10 @@ export async function POST(req: Request) {
                 lastEditedBy: 'scan',
             }
         });
+
+        // ── Consume Quota ─────────────────────────────────────────────────────
+        const finalQuota = await checkAndIncrementQuota(tenantId, true);
+        remaining = finalQuota.remaining;
 
         return NextResponse.json({
             success: true,

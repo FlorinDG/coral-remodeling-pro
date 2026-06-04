@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { pdf } from '@react-pdf/renderer';
 import { FileImage, Palette, LayoutTemplate, UploadCloud, CheckCircle2, Circle, Loader2, Eye, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { useTenant } from '@/context/TenantContext';
 import { QuotationPDFTemplate } from '@/components/admin/quotations/QuotationPDFTemplate';
 
 // ── Sample blocks used for template preview PDF ──────────────────────────────
@@ -168,20 +170,21 @@ export default function DocumentTemplatesModule() {
 
     const [tenantProfile, setTenantProfile] = useState<any>(null);
 
+    const { tenant } = useTenant();
+    const router = useRouter();
+
     // Load saved settings
     useEffect(() => {
-        fetch('/api/tenant/profile').then(r => r.json()).then(data => {
-            if (data && !data.error) {
-                if (data.brandColor) setPrimaryColor(data.brandColor);
-                if (data.logoUrl) { setLogoPreview(data.logoUrl); setLogoUrl(data.logoUrl); }
-                if (data.documentTemplate) setSelectedTemplate(data.documentTemplate);
-                if (data.documentLanguage) setDocumentLanguage(data.documentLanguage);
-                if (data.documentMode) setMode(data.documentMode);
-                if (data.stationeryUrl) { setStationeryUrl(data.stationeryUrl); setStationeryName('Saved stationery'); }
-                setTenantProfile(data);
-            }
-        }).catch(() => {});
-    }, []);
+        if (tenant) {
+            if (tenant.brandColor) setPrimaryColor(tenant.brandColor);
+            if (tenant.logoUrl) { setLogoPreview(tenant.logoUrl); setLogoUrl(tenant.logoUrl); }
+            if (tenant.documentTemplate) setSelectedTemplate(tenant.documentTemplate);
+            if (tenant.documentLanguage) setDocumentLanguage(tenant.documentLanguage);
+            if (tenant.documentMode) setMode(tenant.documentMode);
+            if (tenant.stationeryUrl) { setStationeryUrl(tenant.stationeryUrl); setStationeryName('Saved stationery'); }
+            setTenantProfile(tenant);
+        }
+    }, [tenant]);
 
     const handleSaveSettings = async () => {
         setIsSaving(true);
@@ -208,6 +211,7 @@ export default function DocumentTemplatesModule() {
                     stationeryUrl: mode === 'stationery' ? stationeryUrl : (p?.stationeryUrl || null),
                 }));
                 toast.success('Branding settings saved');
+                router.refresh();
             } else {
                 toast.error('Failed to save branding settings');
             }

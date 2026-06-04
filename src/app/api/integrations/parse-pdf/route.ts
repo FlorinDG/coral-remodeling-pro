@@ -7,7 +7,7 @@ import { canAccess } from '@/lib/feature-flags';
 
 export const maxDuration = 60; // Allow longer execution for LLM
 
-async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: boolean; remaining: number }> {
+async function checkAndIncrementQuota(tenantId: string, increment: boolean = true): Promise<{ allowed: boolean; remaining: number }> {
     const tenant = await prisma.tenant.findUnique({
         where: { id: tenantId },
         select: { scanCount: true, scanQuota: true, scanCountResetAt: true }
@@ -27,16 +27,19 @@ async function checkAndIncrementQuota(tenantId: string): Promise<{ allowed: bool
         return { allowed: false, remaining: 0 };
     }
 
-    // Increment atomically
-    await prisma.tenant.update({
-        where: { id: tenantId },
-        data: {
-            scanCount: currentCount + 1,
-            ...(needsReset ? { scanCountResetAt: now } : {}),
-        }
-    });
+    if (increment) {
+        // Increment atomically
+        await prisma.tenant.update({
+            where: { id: tenantId },
+            data: {
+                scanCount: currentCount + 1,
+                ...(needsReset ? { scanCountResetAt: now } : {}),
+            }
+        });
+        return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount - 1 };
+    }
 
-    return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount - 1 };
+    return { allowed: true, remaining: isUnlimited ? 9999 : quota - currentCount };
 }
 
 export async function POST(req: Request) {
@@ -93,7 +96,7 @@ export async function POST(req: Request) {
         }
 
         // Quota check and metering
-        const { allowed, remaining } = await checkAndIncrementQuota(tenantId);
+        let { allowed, remaining } = await checkAndIncrementQuota(tenantId, false);
         if (!allowed) {
             return NextResponse.json({
                 success: false,
@@ -244,6 +247,7 @@ ${text.substring(0, 120000)}`;
             model: 'gpt-4o',
             messages: [{ role: 'system', content: prompt }],
             temperature: 0,
+            max_tokens: 4096,
             response_format: { type: 'json_object' }
         });
 
@@ -265,6 +269,9 @@ ${text.substring(0, 120000)}`;
                 warning: 'No line items could be extracted from this document. It may contain only text without priced items.'
             });
         }
+
+        // Consume quota only on successful extraction
+        const finalQuota = await checkAndIncrementQuota(tenantId, true);
 
         return NextResponse.json({
             success: true,

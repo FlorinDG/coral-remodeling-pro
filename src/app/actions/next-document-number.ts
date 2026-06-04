@@ -85,16 +85,48 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
         const connector = tenant[connectorField] || '-';
         const dateFormat = tenant[dateFormatField] || 'YYYY';
         const numberWidth = tenant[numberWidthField] ?? 3;
-        const currentNumber = tenant[nextNumberField] || 1;
+        const storedNextNumber = tenant[nextNumberField] || 1;
 
-        // Generate the formatted number
-        const formattedNumber = assembleNumber(prefix, connector, dateFormat, numberWidth, currentNumber);
+        const datePart = formatDate(dateFormat);
+        const joiner = connector === 'none' ? '' : connector;
+        
+        const baseParts: string[] = [];
+        if (prefix) baseParts.push(prefix);
+        if (datePart) baseParts.push(datePart);
+        const basePrefix = baseParts.join(joiner) + (baseParts.length > 0 ? joiner : '');
 
-        // Atomically increment the counter
-        await (prisma.tenant as any).update({
-            where: { id: tenantId },
-            data: { [nextNumberField]: currentNumber + 1 }
-        });
+        let maxSeq = 0;
+
+        if (docType === 'invoice') {
+            const invoices = await (prisma.invoice as any).findMany({
+                where: { tenantId, invoiceNumber: { startsWith: basePrefix } },
+                select: { invoiceNumber: true }
+            });
+            for (const inv of invoices) {
+                if (!inv.invoiceNumber) continue;
+                const seqStr = inv.invoiceNumber.substring(basePrefix.length);
+                const seqNum = parseInt(seqStr, 10);
+                if (!isNaN(seqNum) && seqNum > maxSeq) {
+                    maxSeq = seqNum;
+                }
+            }
+        } else if (docType === 'quotation') {
+            const quotes = await (prisma.quotation as any).findMany({
+                where: { tenantId, quoteNumber: { startsWith: basePrefix } },
+                select: { quoteNumber: true }
+            });
+            for (const q of quotes) {
+                if (!q.quoteNumber) continue;
+                const seqStr = q.quoteNumber.substring(basePrefix.length);
+                const seqNum = parseInt(seqStr, 10);
+                if (!isNaN(seqNum) && seqNum > maxSeq) {
+                    maxSeq = seqNum;
+                }
+            }
+        }
+
+        const nextNumberToUse = Math.max(maxSeq + 1, storedNextNumber);
+        const formattedNumber = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
 
         return { success: true, number: formattedNumber };
     } catch (e: any) {

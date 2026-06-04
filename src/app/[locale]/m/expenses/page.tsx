@@ -39,7 +39,7 @@ type PeppolInvoice = {
 
 export default function MobileExpensesPage() {
     const t = useTranslations('Mobile');
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
     const ticketsDbId = resolveDbId('db-tickets');
 
@@ -54,12 +54,11 @@ export default function MobileExpensesPage() {
     const rawPages = db?.pages || FALLBACK_PAGES;
 
     useEffect(() => {
-        // Fetch tenant quota
-        fetch('/api/tenant/profile').then(r => r.json()).then(d => {
-            if (d?.scanCount !== undefined) setScansUsed(d.scanCount);
-            if (d?.scanQuota !== undefined) setScanQuota(d.scanQuota);
-        }).catch(() => {});
-    }, []);
+        if (tenant) {
+            if (tenant.scanCount !== undefined) setScansUsed(tenant.scanCount);
+            if (tenant.scanQuota !== undefined) setScanQuota(tenant.scanQuota);
+        }
+    }, [tenant]);
 
     const fetchPeppol = useCallback(async () => {
         if (peppolInvoices.length > 0) return; // already loaded

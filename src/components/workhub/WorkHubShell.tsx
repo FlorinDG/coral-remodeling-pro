@@ -46,6 +46,7 @@ export default function WorkHubShell({
     activeModules,
     planType,
     lockedDbIds,
+    tenant,
 }: {
     children: React.ReactNode;
     activeModules: string[];

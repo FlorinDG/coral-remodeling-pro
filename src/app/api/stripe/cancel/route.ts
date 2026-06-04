@@ -45,7 +45,7 @@ export async function POST() {
         }
 
         const stripe = getStripeInstance();
-        const subscription = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId);
+        const subscription = await stripe.subscriptions.retrieve(tenant.stripeSubscriptionId) as any;
         
         let noticeMonths = 0;
         if (tenant.planType === 'PRO') noticeMonths = 1;

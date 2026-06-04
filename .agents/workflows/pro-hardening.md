@@ -1956,7 +1956,7 @@ The scan flow is well-built: steps capture→(split-confirm)→review→saving�
 - premise updates appended to pd.md? (y/n):
 
 ## TASK L4 — Accept BOTH dot and comma as decimal separator in engine number inputs
-**Status:** ⬜ TODO · `develop` · Phase 3 (UX/correctness)
+**Status:** 🟢 DONE
 **Priority:** medium — daily friction; comma entry currently fails silently and can zero a price. Small, surgical.
 
 ### 👤 Florin's rule (the spec)

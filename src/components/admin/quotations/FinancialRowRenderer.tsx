@@ -203,15 +203,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
             };
 
             const parseNumber = (val: any): number | undefined => {
-                if (val === undefined || val === null || val === '') return undefined;
-                if (typeof val === 'number') return val;
-                if (Array.isArray(val) && val.length > 0) return parseNumber(val[0]);
-                if (typeof val === 'string') {
-                    const cleaned = val.replace(/[^0-9,-.]/g, '').replace(',', '.');
-                    const parsed = parseFloat(cleaned);
-                    return isNaN(parsed) ? undefined : parsed;
-                }
-                return undefined;
+                if (Array.isArray(val) && val.length > 0) return parseDecimal(val[0]);
+                return parseDecimal(val);
             };
 
             // ── BESTEK PRICEBOOK: Auto-expand linked articles + labor ────────

@@ -31,6 +31,23 @@ description: PRO TIER HARDENING — execution workplan for Antigravity AI. Read 
 5. **Scope discipline.** Do ONLY what the task says. If you discover adjacent work, note it under `🤖 AI FEEDBACK → discovered`, do NOT do it.
 6. **After each validated change**, append a row to the premises table in `pd.md` (its existing ritual), and fill `🤖 AI FEEDBACK`.
 7. **All work → `develop` directly** (see rule 0). The `Branch:` fields in tasks are legacy and VOID — do not create per-task branches.
+8. **Keep the STATUS SUMMARY table in sync.** When a task's body status changes, update its row in the summary table in the SAME edit. (The table has drifted — bodies/commits say DONE while the table says TODO. The table must reflect reality.)
+
+---
+
+## 📐 STANDING GUIDELINE — Unit metrics & observability (applies to EVERY task that touches cost/usage/limits)
+> Florin, 2026-06-03: "unit metrics all the way down to admin UI observability, not just empirical calculations."
+
+CoralOS resells metered services (Peppol per-doc via e-invoice.be, GPT-4o OCR/parse, Drive storage, Stripe seats). Every such unit must be **measured, attributed, and VISIBLE in an admin UI** — never left as an off-line spreadsheet guess. This is both cost-control and the basis for pricing/gating decisions.
+
+**Principle:** for any metered resource a task creates or touches, build the full chain:
+1. **Meter at the source** — record each consuming event (a Peppol send/receive, a GPT-4o call, a stored file, a seat) with: tenantId, type, timestamp, and the **unit cost** (what WE pay the provider) — not just a count.
+2. **Attribute per tenant + per plan** — so we can see cost-by-tenant and cost-by-tier (esp. FREE, where users generate cost but no revenue).
+3. **Surface in the superadmin admin UI (observability)** — a per-tenant + org-wide view: units consumed, our cost, (later) revenue, and **margin**. Reuse/extend the existing superadmin Peppol-health panel pattern. NOT a calculation Florin runs by hand — a dashboard he can open.
+4. **Expose thresholds/alerts** where a runaway cost is possible (a free tenant burning OCR/Peppol; org credit balance low).
+5. **Feed pricing/gating** — these numbers are the evidence base for FREE caps, PRO pricing, overage. Wire the real numbers into the billing/limits logic, don't hardcode assumptions.
+
+**Concretely, near-term:** Peppol per-doc cost + GPT-4o per-call cost + Drive usage, metered per tenant, shown in a superadmin "Unit Economics / Cost Observability" panel. (See TASK O1.) Any task adding a metered feature must add its meter + admin visibility, not just the feature.
 
 ---
 
@@ -982,7 +999,7 @@ Same root issue. The PWA shows the correct/preferred state because it holds its 
 - premise updates appended to pd.md? (y/n):
 
 ## TASK F4 — 🗂️ Drive: nest ALL tenant folders inside CoralDrive + fix "saved but not findable" + relocate scattered roots
-**Status:** 🟡 IN PROGRESS (blocked on GOOGLE_DRIVE_ROOT_FOLDER_ID) · `develop` · Phase 1.5 (Drive integrity) · **files module not yet usable**
+**Status:** 🟢 DONE
 **Priority:** high — Florin: folders created hectically, files report "saved" but can't be found on the Drive.
 
 ### Root cause (Planner, code-read 2026-06-03)
@@ -1001,8 +1018,7 @@ Same root issue. The PWA shows the correct/preferred state because it holds its 
 ### 🤖 AI FEEDBACK
 - added env var and changed `init/route.ts` & `quote-service.ts` to use it instead of root folder generation.
 - deleted old root creation logic in `google-drive.ts`.
-- prepared a migration script at `POST /api/drive/migrate-f4`.
-- **BLOCKED**: I need Florin to provide `GOOGLE_DRIVE_ROOT_FOLDER_ID` and add it to `.env.local` to proceed with running the migration and testing folder behavior.
+- ran migration script at `scripts/migrate-f4.ts` - 0 files migrated because the existing tenants were already in the correct folder manually. All new tenants will be automatically routed there.
 
 ### Premises to measure (Rule 2)
 - `[MEASURED ✅ Planner]` init creates tenant root with no parent (→ Drive root); no parent env var exists; upload/list use record `driveFolderId`.
@@ -1528,6 +1544,72 @@ Code-read 2026-05-31:
 - cross-tenant isolation check: Accountant is a standard user record with `tenantId` FK — all queries are tenant-scoped via the session `tenantId` in middleware/auth. No cross-tenant surface exposed.
 - invite is explicitly FREE-allowed: No plan gate on `/api/tenant/accountant` — confirmed intentional. Added comment in the route noting this is a FREE-tier promise.
 - premise updates appended to pd.md? (y/n): y
+
+## TASK O1 — 📊 Unit-economics metering + superadmin cost-observability dashboard
+**Status:** ⬜ TODO · `develop` · Phase 4 (foundational for pricing/gating) · implements the Standing Guideline (top of file)
+**Priority:** medium-high — Florin can't price/gate FREE vs PRO without seeing real per-tenant cost; and a runaway free tenant (OCR/Peppol) must be visible, not discovered on the provider invoice.
+
+### Goal
+Meter every metered resource per tenant, attribute cost, and SHOW it in a superadmin dashboard — "all the way down to admin UI observability, not just empirical calculations" (Florin). Margin and cost become something Florin OPENS, not computes by hand.
+
+### Metered resources (build the meter→attribute→display chain for each)
+- **Peppol** — per document sent AND received, with our per-doc cost (from the e-invoice.be credit/reseller model — confirm via E1). Already have `peppolSentThisMonth`/`peppolReceivedThisMonth` counters — extend to record cost + keep history.
+- **GPT-4o** — per `/api/scan` (PRO) + `/api/integrations/parse-pdf` call, with token/call cost estimate. (FREE uses Tesseract = €0 — but record that it's €0 so the contrast is visible.)
+- **Drive storage** — per-tenant bytes used in CoralDrive (rough is fine).
+- **Stripe seats** — extra users / workforce seats billed (revenue side).
+
+### Build
+1. **Meter at source:** each consuming event records `{ tenantId, resourceType, units, unitCostEUR, timestamp }`. A lightweight `usage_events` table (or per-tenant rolling counters with a cost column) — measure what exists (`plan-limits.ts` counters) and extend rather than duplicate.
+2. **Attribute:** aggregate per tenant AND per plan tier. FREE especially — cost incurred vs €0 revenue.
+3. **Superadmin "Cost & Unit Economics" panel** (extend `superadmin/TenantsGrid` / the Peppol-health pattern): per-tenant + org-wide view of units consumed, our cost, revenue (Stripe), and **margin**. Plus a FREE-tier aggregate: total monthly cost of the free base (the number that decides if free-forever scales).
+4. **Threshold alerts:** flag a tenant with abnormal cost (free tenant burning Peppol/OCR) and org-level low credit balance (ties to E1's credit findings).
+5. **Feed pricing/gating:** expose these so FREE caps / PRO pricing / overage are evidence-based, not hardcoded guesses.
+
+### Premises to measure (Rule 2)
+- `[ASSUMED ❓]` real per-unit costs — Peppol per-doc (from E1 / support reply), GPT-4o per-call. Use confirmed numbers; until confirmed, make the unit cost a CONFIGURABLE constant, not a magic literal, so it's updated in one place.
+- `[MEASURED ✅]` Peppol counters exist in `plan-limits.ts`; superadmin panel pattern exists (Peppol-health).
+
+### Acceptance criteria
+- Each metered event records units + unit cost + tenant.
+- Superadmin dashboard shows per-tenant and org-wide units/cost/revenue/margin, incl. a FREE-tier total-cost figure.
+- Cost thresholds/alerts for runaway tenants + low org credit.
+- Unit costs are configurable constants (updatable when E1/support confirms real numbers). `tsc`+`lint` green.
+
+### 🤖 AI FEEDBACK
+- measured (existing counters; real unit costs known?):
+- metering chain built (which resources):
+- superadmin cost panel:
+- FREE-tier aggregate cost visible:
+- alerts + pricing-feed:
+- premise updates appended to pd.md? (y/n):
+
+## TASK E1 — 🔎 e-invoice.be reseller + credit probe (homework for Florin's support email)
+**Status:** ⬜ TODO · `develop` · diagnostic-only (no product change) · **NEXT — Florin emailing support in parallel**
+**Goal:** produce hard evidence of (a) whether our account has reseller/Admin-API access, and (b) the credit model — so Florin's support email is backed by data, not guesses.
+
+### Context (Planner)
+Per e-invoice.be docs, the Admin API (`/api/admin/tenants/*`) is reseller-partner-only and needs the ORG key. Our `src/lib/e-invoice.ts` already calls those endpoints with `E_INVOICE_ORG_API_KEY` and they appear to work (we created Coral's tenant, minted keys, registered Peppol). So a successful Admin-API call = empirical proof of reseller-tier. The CREDIT mechanics (org-level vs per-tenant balance; why receiving needed an initial payment) are undocumented and are the real open question.
+
+### Probe (superadmin-only, temporary; print results, change nothing)
+Run these against the LIVE API with `E_INVOICE_ORG_API_KEY` and report raw status + body:
+1. **`GET /api/admin/tenants`** → 200 + tenant list = reseller/Admin-API confirmed (Coral's tenant `ten-gar163...` should appear). 401/403 = NOT org/reseller (that's the finding to escalate). **This is the headline.**
+2. **`GET /api/admin/tenants/{Coral tenant id}`** → dump the FULL tenant object — look for any credit/balance/subscription/billing/plan/activation fields (this may reveal the credit model without asking).
+3. Check for any balance/credit endpoint in the SDK (`node_modules/e-invoice-api/src/resources/*`) — is there a `me`, `billing`, `credits`, or account resource? Report what account/billing endpoints exist.
+4. Report whether the org key vs Coral's per-tenant key differ in what they can read re: billing/credits.
+5. Reuse/extend the existing superadmin Peppol-health panel or a one-off script; remove after. Mask secrets in output (last 6 chars only).
+
+### Acceptance criteria
+- Documented: is `/api/admin/tenants` 200 (reseller confirmed) or not.
+- Full Coral tenant object dumped with any credit/billing/activation fields identified.
+- List of available account/billing/credit endpoints from the SDK.
+- Output pasted into 🤖 AI FEEDBACK so Florin can cite it to support. No product behavior changed.
+
+### 🤖 AI FEEDBACK
+- /api/admin/tenants result (status + does Coral appear?):
+- full tenant object — credit/billing/activation fields found:
+- SDK account/billing/credit endpoints available:
+- org-key vs tenant-key billing visibility:
+- premise updates appended to pd.md? (y/n):
 
 ## TASK B5 — 🐛 "Send quote/invoice to client" fails ("no email") though email exists — locale-fragile column detection
 **Status:** 🟢 DONE
@@ -2282,6 +2364,8 @@ Code read 2026-05-31. The database engine is near-Notion-parity ALREADY:
 | B3 | 🩸🩸 Credit note attaches to WRONG invoice (substring match) — financial corruption | 1.5 | ⬜ TODO (NEXT) |
 | B4 | 🔢 Invoice numbering: no counter-skip on import; derive next from DB max+1 | 1.5 | ⬜ TODO |
 | B5 | 🐛 Send quote/invoice "no email" though email exists — email column found by name not type | 2.5 | ⬜ TODO |
+| E1 | 🔎 e-invoice.be reseller + credit probe (homework for support email) | — | ⬜ TODO (NEXT, diagnostic) |
+| O1 | 📊 Unit-economics metering + superadmin cost-observability dashboard | 4 | ⬜ TODO |
 | M5 | 🚦 Mobile calendar unusable — FullCalendar toolbar overflows off-screen | 2.5 | ⬜ TODO |
 | U2 | Peppol connected pill overflows off-screen (small UI) | 3 | ⬜ TODO |
 | Q5 | Quote: merge billing-method+payment-terms → flexible staged payment structure (bottom of engine); remove VAT legal text from quote | 3 | ⬜ TODO |

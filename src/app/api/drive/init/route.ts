@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateClientFolderTemplate, generateProjectFolderTemplate, createFolder, findOrCreateFolder, ensureCoralDriveRoot } from '@/lib/google-drive';
+import { generateClientFolderTemplate, generateProjectFolderTemplate, createFolder, findOrCreateFolder } from '@/lib/google-drive';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 

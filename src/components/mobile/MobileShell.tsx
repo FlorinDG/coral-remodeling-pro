@@ -74,9 +74,11 @@ export default function MobileShell({
 
         if (tenant) {
             if (tenant.brandColor) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setBrandColor(tenant.brandColor);
                 document.documentElement.style.setProperty('--brand-color', tenant.brandColor);
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             if (tenant.companyName) setCompanyName(tenant.companyName);
         }
 

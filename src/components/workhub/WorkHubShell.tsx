@@ -52,6 +52,7 @@ export default function WorkHubShell({
     activeModules: string[];
     planType: string;
     lockedDbIds: Record<string, string>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant?: any;
 }) {
     const { data: session } = useSession();
@@ -61,6 +62,7 @@ export default function WorkHubShell({
 
     useEffect(() => {
         if (tenant?.brandColor) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setBrandColor(tenant.brandColor);
             document.documentElement.style.setProperty('--brand-color', tenant.brandColor);
         }

@@ -81,6 +81,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
         }
     }
 
+    // ── Diagnostic: trace planType resolution for upgrade-button debugging ──
+    console.log(`[layout] tenantId=${tenantId}, planType=${planType}, isImpersonating=${isImpersonating}`);
+
     const displayActiveModules = isImpersonating
         ? ["INVOICING", "CRM", "DATABASES", "PROJECTS", "CALENDAR", "HR", "WEBSITES", "EMAIL"]
         : activeModules;

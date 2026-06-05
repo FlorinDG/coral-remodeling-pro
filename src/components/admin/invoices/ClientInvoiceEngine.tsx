@@ -262,6 +262,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 }
             }
         }
+
+        // FIN-4: Persist credited % and amount for grid visibility
+        const creditedPct = roundedInc > 0 ? Math.round((creditedTotal / roundedInc) * 100) : 0;
+        const creditedDisplay = creditedTotal > 0
+            ? `${creditedPct}% — €${new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(creditedTotal)}`
+            : '';
+        if (invoice.properties?.['creditedPercent'] !== creditedDisplay) {
+            updatePageProperty(invoicesDbId, invoice.id, 'creditedPercent', creditedDisplay);
+        }
     }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime'], isHydrated, creditedTotal]);
 
     const rawQuotation = invoice?.properties?.['quotation'];

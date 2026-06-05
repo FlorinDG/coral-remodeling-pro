@@ -383,8 +383,8 @@ export default function InvoiceFooterReport({
                                     style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 80%, black)' }}
                                 >
                                     − {formatCurrency(creditedAmount)}
-                                    {subtotal > 0 && (
-                                        <span className="text-[11px] ml-1.5" style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 50%, black)' }}>({((creditedAmount / subtotal) * 100).toFixed(1)}%)</span>
+                                    {totalInclVAT > 0 && (
+                                        <span className="text-[11px] ml-1.5" style={{ color: 'color-mix(in srgb, var(--brand-color, #d35400) 50%, black)' }}>({((creditedAmount / totalInclVAT) * 100).toFixed(0)}%)</span>
                                     )}
                                 </span>
                             </div>

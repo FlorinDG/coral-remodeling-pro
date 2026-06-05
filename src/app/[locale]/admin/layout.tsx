@@ -62,13 +62,86 @@ export default async function Layout({ children }: { children: React.ReactNode }
     if (tenantId) {
         // 3a. Tenant profile — critical path
         try {
-            // IMPORTANT: select ONLY needed fields. The tenant row contains
-            // ~2.3 MB of base64 image data (logoUrl, stationeryUrl) which blows
-            // up RSC serialization and silently breaks the layout props.
-            // logoUrl and stationeryUrl are fetched client-side on-demand.
+            // Use explicit select — NOT omit. The tenant row has ~2.3 MB of
+            // base64 blobs (logoUrl, stationeryUrl) that blow up RSC serialization.
+            // omit may not work on all Prisma deployments; select is safer.
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
-                omit: { logoUrl: true, stationeryUrl: true },
+                select: {
+                    id: true,
+                    companyName: true,
+                    commercialName: true,
+                    vatNumber: true,
+                    iban: true,
+                    bic: true,
+                    email: true,
+                    street: true,
+                    postalCode: true,
+                    city: true,
+                    peppolId: true,
+                    peppolRegistered: true,
+                    peppolOptOut: true,
+                    peppolSentThisMonth: true,
+                    peppolReceivedThisMonth: true,
+                    planType: true,
+                    activeModules: true,
+                    subscriptionStatus: true,
+                    trialEndsAt: true,
+                    lockedDbIds: true,
+                    brandColor: true,
+                    documentTemplate: true,
+                    documentMode: true,
+                    documentLanguage: true,
+                    driveFolderId: true,
+                    // Numbering
+                    invoicePrefix: true,
+                    invoiceConnector: true,
+                    invoiceDateFormat: true,
+                    invoiceNumberWidth: true,
+                    invoiceNextNumber: true,
+                    quotationPrefix: true,
+                    quotationConnector: true,
+                    quotationDateFormat: true,
+                    quotationNumberWidth: true,
+                    quotationNextNumber: true,
+                    creditnotePrefix: true,
+                    creditnoteConnector: true,
+                    creditnoteDateFormat: true,
+                    creditnoteNumberWidth: true,
+                    creditnoteNextNumber: true,
+                    bordereauPrefix: true,
+                    poPrefix: true,
+                    // Settings
+                    defaultVatRate: true,
+                    vatCalcMode: true,
+                    defaultPaymentTermDays: true,
+                    defaultEventDuration: true,
+                    defaultCalendarView: true,
+                    workHoursPerDay: true,
+                    // Scan
+                    scanCount: true,
+                    scanQuota: true,
+                    ocrEngine: true,
+                    // Delivery
+                    deliveryStreet: true,
+                    deliveryPostalCode: true,
+                    deliveryCity: true,
+                    // HQ
+                    headquartersStreet: true,
+                    headquartersPostalCode: true,
+                    headquartersCity: true,
+                    // Director
+                    directorFirstName: true,
+                    directorLastName: true,
+                    // E-Invoice
+                    eInvoiceApiKey: true,
+                    eInvoiceTenantId: true,
+                    // Stripe
+                    stripeCustomerId: true,
+                    // Timestamps as ISO strings
+                    createdAt: true,
+                    updatedAt: true,
+                },
             });
 
             if (tenant) {

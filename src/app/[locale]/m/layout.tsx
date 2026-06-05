@@ -27,7 +27,23 @@ export default async function MobileLayout({ children }: { children: React.React
         try {
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
-                omit: { logoUrl: true, stationeryUrl: true },
+                select: {
+                    id: true, companyName: true, commercialName: true,
+                    planType: true, activeModules: true, subscriptionStatus: true,
+                    lockedDbIds: true, brandColor: true, trialEndsAt: true,
+                    vatNumber: true, email: true, street: true, postalCode: true, city: true,
+                    documentLanguage: true, driveFolderId: true,
+                    defaultVatRate: true, vatCalcMode: true, defaultPaymentTermDays: true,
+                    invoicePrefix: true, invoiceConnector: true, invoiceDateFormat: true,
+                    invoiceNumberWidth: true, invoiceNextNumber: true,
+                    quotationPrefix: true, quotationConnector: true, quotationDateFormat: true,
+                    quotationNumberWidth: true, quotationNextNumber: true,
+                    creditnotePrefix: true, creditnoteConnector: true, creditnoteDateFormat: true,
+                    creditnoteNumberWidth: true, creditnoteNextNumber: true,
+                    peppolId: true, peppolRegistered: true, peppolOptOut: true,
+                    scanCount: true, scanQuota: true, ocrEngine: true,
+                    createdAt: true, updatedAt: true,
+                },
             });
 
             if (tenant) {

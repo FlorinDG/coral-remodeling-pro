@@ -63,6 +63,19 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+    // ── Diagnostic: log what the server layout actually passed ──
+    useEffect(() => {
+        console.log('[AdminLayout] Props received:', {
+            planType,
+            activeModules: activeModules.length,
+            lockedDbIds: Object.keys(lockedDbIds).length,
+            isOwner,
+            isImpersonating,
+            hasTenant: !!tenant,
+            tenantName: tenant?.companyName,
+        });
+    }, []);
+
     // ── FREE mobile auto-redirect to /m ──────────────────────────────────
     // FREE users on a phone get the clean /m shell by default.
     // PRO/ENT are never redirected. Desktop FREE users stay in /admin.

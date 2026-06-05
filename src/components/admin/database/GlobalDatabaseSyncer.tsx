@@ -1,88 +1,69 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useDatabaseStore } from './store';
 import { Database } from './types';
 
 export default function GlobalDatabaseSyncer({ databases }: { databases: Database[] }) {
     const hasHydrated = useRef(false);
-    const [persistReady, setPersistReady] = useState(false);
+    const serverDbs = useRef(databases);
+    serverDbs.current = databases;
 
-    // ── Wait for IndexedDB rehydration to finish FIRST ──────────────────
-    // Zustand's persist middleware loads stale data from IDB asynchronously.
-    // If we hydrate with server data BEFORE IDB finishes, IDB will overwrite
-    // everything — causing the "good for 500ms then snaps back" bug.
-    // By waiting for persist rehydration, we ensure server data always wins.
+    // Single effect: wait for persist to finish, then merge server data.
+    // Uses a ref to avoid re-running when databases prop changes (it shouldn't).
     useEffect(() => {
+        function applyServerData() {
+            if (hasHydrated.current) return;
+            const dbs = serverDbs.current;
+            if (!dbs || dbs.length === 0) {
+                console.warn('[GlobalDatabaseSyncer] No databases from server — skipping hydration');
+                return;
+            }
+
+            hasHydrated.current = true;
+            console.log(`[GlobalDatabaseSyncer] Hydrating ${dbs.length} databases: ${dbs.map(d => d.id).join(', ')}`);
+            useDatabaseStore.getState().hydrateDatabases(dbs);
+
+            // SECURITY OVERRIDE: 
+            // Forcefully overwrite db-1's and db-tasks' structural blueprints
+            // from the server, but preserve user-set column widths.
+            for (const targetId of ['db-1', 'db-tasks']) {
+                const freshDb = dbs.find(d => d.id === targetId);
+                if (!freshDb) continue;
+                useDatabaseStore.setState(state => {
+                    const localDb = state.databases.find(db => db.id === targetId);
+                    const localViewStateMap = new Map(
+                        (localDb?.views || []).map(v => [v.id, v.propertiesState])
+                    );
+                    return {
+                        databases: state.databases.map(db =>
+                            db.id === targetId ? {
+                                ...db,
+                                properties: freshDb.properties,
+                                views: freshDb.views.map(v => ({
+                                    ...v,
+                                    propertiesState: localViewStateMap.get(v.id) || v.propertiesState,
+                                })),
+                            } : db
+                        )
+                    };
+                });
+            }
+        }
+
+        // If persist already rehydrated (fast IDB), apply immediately
         if (useDatabaseStore.persist.hasHydrated()) {
-            setPersistReady(true);
+            applyServerData();
             return;
         }
+
+        // Otherwise wait for persist to finish
         const unsub = useDatabaseStore.persist.onFinishHydration(() => {
-            setPersistReady(true);
+            applyServerData();
         });
+
         return unsub;
-    }, []);
-
-    // ── Merge server data into the store AFTER IDB rehydration ──────────
-    useEffect(() => {
-        if (!persistReady) return;
-        if (hasHydrated.current) return;
-        if (!databases || databases.length === 0) return;
-
-        useDatabaseStore.getState().hydrateDatabases(databases);
-
-        // SECURITY OVERRIDE: 
-        // The user's browser is aggressively persisting the v1 obsolete views (Calendar).
-        // We forcefully overwrite db-1's structural blueprints with the active codebase,
-        // but preserve user-set column widths (propertiesState).
-        const freshDb1 = databases.find(d => d.id === 'db-1');
-        if (freshDb1) {
-            useDatabaseStore.setState(state => {
-                const localDb1 = state.databases.find(db => db.id === 'db-1');
-                const localViewStateMap = new Map(
-                    (localDb1?.views || []).map(v => [v.id, v.propertiesState])
-                );
-                return {
-                    databases: state.databases.map(db =>
-                        db.id === 'db-1' ? {
-                            ...db,
-                            properties: freshDb1.properties,
-                            views: freshDb1.views.map(v => ({
-                                ...v,
-                                propertiesState: localViewStateMap.get(v.id) || v.propertiesState,
-                            })),
-                        } : db
-                    )
-                };
-            });
-        }
-
-        const freshDbTasks = databases.find(d => d.id === 'db-tasks');
-        if (freshDbTasks) {
-            useDatabaseStore.setState(state => {
-                const localDbTasks = state.databases.find(db => db.id === 'db-tasks');
-                const localViewStateMap = new Map(
-                    (localDbTasks?.views || []).map(v => [v.id, v.propertiesState])
-                );
-                return {
-                    databases: state.databases.map(db =>
-                        db.id === 'db-tasks' ? {
-                            ...db,
-                            properties: freshDbTasks.properties,
-                            views: freshDbTasks.views.map(v => ({
-                                ...v,
-                                propertiesState: localViewStateMap.get(v.id) || v.propertiesState,
-                            })),
-                        } : db
-                    )
-                };
-            });
-        }
-
-        hasHydrated.current = true;
-        console.log(`[GlobalDatabaseSyncer] Hydrated ${databases.length} databases from server (after IDB rehydration)`);
-    }, [persistReady, databases]);
+    }, []); // Empty deps — runs once, uses refs for current data
 
     return null;
 }

@@ -222,7 +222,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         });
     }, [invoice, id]);
 
-    const creditedTotal = creditNotes.reduce((sum, cn) => sum + (Number(cn.properties['totalIncVat']) || 0), 0);
+    const creditedTotal = creditNotes.reduce((sum, cn) => sum + Math.abs(Number(cn.properties['totalIncVat']) || 0), 0);
     const creditNoteInfos = creditNotes.map(cn => ({
         id: cn.id,
         title: String(cn.properties['title'] || 'Credit Note'),
@@ -248,14 +248,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (invoice.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(invoicesDbId, invoice.id, 'totalIncVat', roundedInc);
 
         // Status update logic for credit notes
+        // Guard: never overwrite terminal statuses (paid, uncollectible) with credited status
         const currentStatus = String(invoice.properties?.['status'] || 'opt-draft');
-        if (creditedTotal >= roundedInc && roundedInc > 0) {
-            if (currentStatus !== 'opt-credited') {
-                updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-credited');
-            }
-        } else if (creditedTotal > 0 && roundedInc > 0) {
-            if (currentStatus !== 'opt-partially-credited') {
-                updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-partially-credited');
+        const terminalStatuses = ['opt-paid', 'opt-uncollectible'];
+        if (!terminalStatuses.includes(currentStatus)) {
+            if (creditedTotal >= roundedInc && roundedInc > 0) {
+                if (currentStatus !== 'opt-credited') {
+                    updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-credited');
+                }
+            } else if (creditedTotal > 0 && roundedInc > 0) {
+                if (currentStatus !== 'opt-partially-credited') {
+                    updatePageProperty(invoicesDbId, invoice.id, 'status', 'opt-partially-credited');
+                }
             }
         }
     }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime'], isHydrated, creditedTotal]);
@@ -308,7 +312,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const isDraft = invoiceStatus === 'opt-draft';
     const isLocked = Boolean(invoice.properties?.['isLocked'] || false);
     const snapshotData = (invoice.properties?.['snapshotData'] as any) || null;
-    const isCreditNote = String(invoice.properties?.['docType']) === 'opt-credit-note' || String(invoiceTitle).startsWith('CN-');
+    const isCreditNote = String(invoice.properties?.['docType']) === 'opt-credit-note';
     const isProforma = String(invoice.properties?.['docType']) === 'opt-proforma';
     
     // UI Link to Parent Invoice
@@ -348,7 +352,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             useDatabaseStore.getState().updatePageBlocks(invoicesDbId, newPage.id, clonedBlocks);
 
             // Create corresponding Prisma Invoice record
-            await createPrismaInvoice(result.page.id, cnNumber, id);
+            await createPrismaInvoice(result.page.id, cnNumber, 'CREDIT_NOTE', id);
             router.push(`/admin/financials/income/credit-notes/${result.page.id}`);
         }
     };

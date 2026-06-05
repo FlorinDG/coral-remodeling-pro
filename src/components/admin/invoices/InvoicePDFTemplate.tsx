@@ -12,7 +12,7 @@ import { calculateInvoiceTotals } from '@/lib/invoice-totals';
  * a different title, amount label, and legal text.
  */
 function resolveDocType(invoiceTitle: string, lang: string, docType?: string) {
-    const isCreditNote = docType === 'opt-credit-note' || String(invoiceTitle).startsWith('CN-');
+    const isCreditNote = docType === 'opt-credit-note';
     const isProforma = docType === 'opt-proforma';
 
     if (isProforma) {

@@ -39,7 +39,14 @@ export async function GET() {
         try {
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
-                omit: { logoUrl: true, stationeryUrl: true },
+                select: {
+                    id: true, companyName: true, commercialName: true,
+                    planType: true, activeModules: true, subscriptionStatus: true,
+                    lockedDbIds: true, brandColor: true, trialEndsAt: true,
+                    documentLanguage: true, peppolId: true,
+                    peppolRegistered: true, peppolOptOut: true,
+                    createdAt: true, updatedAt: true,
+                },
             });
             steps.tenantQuery = tenant ? 'OK' : 'NOT_FOUND';
 

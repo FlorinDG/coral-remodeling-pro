@@ -51,6 +51,21 @@ export const TenantProvider = ({
         if (initialTenant) setTenant(initialTenant);
     }, [initialTenant]);
 
+    // Auto-fetch the full tenant profile (including logoUrl) on mount.
+    // The layout omits large blob fields from RSC props to avoid 2 MB+ payloads.
+    // This client-side fetch fills in the gaps without blocking page render.
+    useEffect(() => {
+        fetch('/api/tenant/profile', { cache: 'no-store' })
+            .then(res => res.ok ? res.json() : null)
+            .then(fresh => {
+                if (fresh) {
+                    setTenant(fresh);
+                    window.dispatchEvent(new CustomEvent('tenantProfileUpdated', { detail: fresh }));
+                }
+            })
+            .catch(() => {}); // Non-critical — layout still works without logo
+    }, []);
+
     const resolveDbId = (base: string) => getLockedDbId(base, lockedDbIds);
     const isPro = useMemo(() => ['PRO', 'ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);
     const isEnterprise = useMemo(() => ['ENTERPRISE', 'FOUNDER', 'CUSTOM'].includes(planType), [planType]);

@@ -27,6 +27,7 @@ export default async function MobileLayout({ children }: { children: React.React
         try {
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
+                omit: { logoUrl: true, stationeryUrl: true },
             });
 
             if (tenant) {

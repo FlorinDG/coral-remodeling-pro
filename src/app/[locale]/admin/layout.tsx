@@ -62,8 +62,13 @@ export default async function Layout({ children }: { children: React.ReactNode }
     if (tenantId) {
         // 3a. Tenant profile — critical path
         try {
+            // IMPORTANT: select ONLY needed fields. The tenant row contains
+            // ~2.3 MB of base64 image data (logoUrl, stationeryUrl) which blows
+            // up RSC serialization and silently breaks the layout props.
+            // logoUrl and stationeryUrl are fetched client-side on-demand.
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
+                omit: { logoUrl: true, stationeryUrl: true },
             });
 
             if (tenant) {

@@ -8,108 +8,109 @@ import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
-// Force dynamic rendering — this layout reads auth + cookies on every request.
-// Without this, Next.js may serve a stale RSC payload with planType='FREE'.
+// Force every request to re-render. The layout reads auth + cookies so
+// it must never be served from RSC cache (would return stale planType).
 export const dynamic = 'force-dynamic';
 
 // Coral Enterprises tenant — the platform owner workspace.
-// Set OWNER_TENANT_ID in .env to override the production ID.
 const OWNER_TENANT_ID = process.env.OWNER_TENANT_ID ?? 'cmneyas2b0000veqvkgl2luz1';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
-    // ── Safe defaults (most restrictive — matches new-tenant provisioning) ──
-    // Every block below falls back to these. A failure in one block does NOT
-    // cascade — the layout always renders and tenants always see a working UI.
-    let activeModules: string[] = ["INVOICING"];
-    let planType: string = "FREE";
-    let lockedDbIds: Record<string, string> = {};
-    let tenantId: string | null = null;
-    let isOwner = false;
-    let subscriptionStatus: string = 'ACTIVE';
-    let trialEndsAt: string | null = null;
-    let fullTenant: any = null;
+    // ── 1. Session ──────────────────────────────────────────────────────────
+    // The JWT already carries planType + activeModules (refreshed every 60 s
+    // in auth.ts).  We use those as the BASELINE — never a hardcoded 'FREE'.
+    // The DB read below may upgrade these to the freshest values, but if it
+    // fails the session values are already good enough.
+    const session  = await auth();
+    const userRole = session?.user?.role;
+    let   tenantId = session?.user?.tenantId ?? null;
+    const isOwner  = tenantId === OWNER_TENANT_ID;
+    const isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
 
-    let isImpersonating = false;
-    let isSuperadmin = false;
+    // Baseline from JWT (never hardcoded FREE)
+    let activeModules: string[]               = (session?.user as any)?.activeModules ?? ['INVOICING'];
+    let planType: string                      = (session?.user as any)?.planType      ?? 'FREE';
+    let lockedDbIds: Record<string, string>   = {};
+    let subscriptionStatus: string            = 'ACTIVE';
+    let trialEndsAt: string | null            = null;
+    let fullTenant: any                       = null;
+    let isImpersonating                       = false;
 
-    // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
-    try {
-        const session = await auth();
-        const userRole = session?.user?.role;
-        tenantId = session?.user?.tenantId ?? null;
-        isOwner  = tenantId === OWNER_TENANT_ID;
-
-        // Track if the user is a platform admin (SuperAdmin / TenantManager)
-        isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
-
-        // SuperAdmin impersonation: override tenantId with cookie value
-        if (isSuperadmin) {
+    // ── 2. Impersonation ────────────────────────────────────────────────────
+    if (isSuperadmin) {
+        try {
             const cookieStore = await cookies();
             const impersonatedTenant = cookieStore.get('x-impersonate-tenant')?.value;
             if (impersonatedTenant) {
                 tenantId = impersonatedTenant;
                 isImpersonating = true;
             }
+        } catch (e) {
+            console.error('[layout] cookies() failed during impersonation check:', e);
         }
-
-        console.log(`[layout] role=${userRole}, tenantId=${tenantId}, isImpersonating=${isImpersonating}, isSuperadmin=${isSuperadmin}`);
-    } catch (e) {
-        console.error('[layout] auth() failed:', e);
     }
 
-    // ── 2 & 3. Fetch Tenant data and Global databases in parallel ────────────────
+    // ── 3. Tenant DB read — INDEPENDENT of database fetch ───────────────────
+    // Split into two separate try/catch blocks so a failure in one doesn't
+    // kill the other. The tenant read is critical (planType, modules), while
+    // getGlobalDatabases() is nice-to-have (populates Zustand store).
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
-    
+
     if (tenantId) {
+        // 3a. Tenant profile — critical path
         try {
-            const [tenant, fetchedDbs] = await Promise.all([
-                prisma.tenant.findUnique({
-                    where:  { id: tenantId },
-                }),
-                getGlobalDatabases()
-            ]);
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: tenantId },
+            });
 
-            if (tenant?.activeModules) activeModules = tenant.activeModules;
-            if (tenant?.planType)      planType       = tenant.planType;
-            if (tenant?.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
-            if (tenant?.trialEndsAt) trialEndsAt = tenant.trialEndsAt.toISOString();
+            if (tenant) {
+                // Only override session values if the DB has them
+                if (tenant.activeModules)      activeModules      = tenant.activeModules;
+                if (tenant.planType)           planType           = tenant.planType;
+                if (tenant.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
+                if (tenant.trialEndsAt)        trialEndsAt        = tenant.trialEndsAt.toISOString();
 
-            const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
-            if (persistedIds && Object.keys(persistedIds).length > 0) {
-                lockedDbIds = persistedIds;
+                const persistedIds = tenant.lockedDbIds as Record<string, string> | null;
+                if (persistedIds && Object.keys(persistedIds).length > 0) {
+                    lockedDbIds = persistedIds;
+                } else {
+                    lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                }
+
+                fullTenant = tenant;
             } else {
-                // First login — provision locked DBs
-                lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
+                console.warn(`[layout] Tenant ${tenantId} not found in DB — using session values (planType=${planType})`);
             }
-
-            databases = fetchedDbs;
-            // tenant is now the full object
-            fullTenant = tenant;
-
-            console.log(`[layout] DB read OK — planType=${planType}, modules=${activeModules.length}, pages=${databases.reduce((n, d) => n + d.pages.length, 0)}`);
         } catch (e) {
-            console.error('[layout] Parallel fetch failed:', e);
-            // safe defaults already set
+            console.error(`[layout] Tenant read failed for ${tenantId} — using session values (planType=${planType}):`, e);
+            // Session baseline values remain — NOT a hardcoded 'FREE'
+        }
+
+        // 3b. Global databases — non-critical, never gates features
+        try {
+            databases = await getGlobalDatabases();
+        } catch (e) {
+            console.error('[layout] getGlobalDatabases() failed — Zustand store will hydrate empty:', e);
         }
     } else {
-        console.warn('[layout] No tenantId — using FREE defaults');
+        console.warn('[layout] No tenantId in session — user has no workspace');
     }
 
-    // ── Resolve display values ──────────────────────────────────────────────
-    // SuperAdmins and impersonating users always get full access.
-    // For impersonation we hardcode ENTERPRISE + all modules so the admin
-    // can see every feature in the tenant's workspace.
-    // For SuperAdmins WITHOUT impersonation, we trust the DB values (which
-    // should already be correct for their own tenant).
-    const displayActiveModules = (isImpersonating || isSuperadmin)
-        ? ["INVOICING", "CRM", "DATABASES", "PROJECTS", "CALENDAR", "HR", "WEBSITES", "TASKS", "EMAIL"]
-        : activeModules;
-    const displayPlanType = (isImpersonating || isSuperadmin) ? "ENTERPRISE" : planType;
+    console.log(`[layout] FINAL role=${userRole}, tenantId=${tenantId}, planType=${planType}, modules=${activeModules.length}, impersonating=${isImpersonating}`);
 
     return (
         <AuthProvider>
             <GlobalDatabaseSyncer databases={databases} />
-            <AdminLayout activeModules={displayActiveModules} planType={displayPlanType} lockedDbIds={lockedDbIds} isOwner={isOwner} subscriptionStatus={subscriptionStatus} trialEndsAt={trialEndsAt} isImpersonating={isImpersonating} tenant={fullTenant}>
+            <AdminLayout
+                activeModules={activeModules}
+                planType={planType}
+                lockedDbIds={lockedDbIds}
+                isOwner={isOwner}
+                subscriptionStatus={subscriptionStatus}
+                trialEndsAt={trialEndsAt}
+                isImpersonating={isImpersonating}
+                tenant={fullTenant}
+            >
                 {children}
             </AdminLayout>
         </AuthProvider>

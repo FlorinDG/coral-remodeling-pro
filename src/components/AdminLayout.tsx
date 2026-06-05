@@ -393,7 +393,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                         <ThemeToggle />
                         <LanguageSwitcher />
 
-                        {(planType === 'FREE' && !isImpersonating && !['SUPERADMIN', 'TENANT_MANAGER'].includes(session?.user?.role as string)) && (
+                        {(planType === 'FREE') && (
                             <Link
                                 href="/admin/settings/billing"
                                 className="text-[10px] sm:text-xs text-white px-2.5 sm:px-4 py-1.5 rounded-full font-bold uppercase tracking-widest hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"

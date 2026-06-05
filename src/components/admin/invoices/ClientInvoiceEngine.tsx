@@ -66,6 +66,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [showNewProjectModal, setShowNewProjectModal] = useState(false);
     const [isQuotationDropdownOpen, setIsQuotationDropdownOpen] = useState(false);
+    const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [quotationSearch, setQuotationSearch] = useState('');
     const [importedQuotationIds, setImportedQuotationIds] = useState<string[]>([]);
     const quotationContainerRef = useRef<HTMLDivElement>(null);
@@ -859,25 +860,31 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     };
                                     const current = STATUS_MAP[invoiceStatus] || STATUS_MAP['opt-draft'];
                                     return (
-                                        <div className="relative group/status">
+                                        <div className="relative">
                                             <button
-                                                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${current.bg} ${current.text} transition-all hover:ring-2 hover:ring-neutral-300 dark:hover:ring-white/20`}
+                                                onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
+                                                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md cursor-pointer ${current.bg} ${current.text} transition-all hover:ring-2 hover:ring-neutral-300 dark:hover:ring-white/20`}
                                             >
                                                 <span className={`w-1.5 h-1.5 rounded-full ${current.dot}`} />
                                                 {current.label}
                                             </button>
-                                            <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-50 opacity-0 pointer-events-none group-hover/status:opacity-100 group-hover/status:pointer-events-auto transition-all duration-150">
-                                                {Object.entries(STATUS_MAP).map(([id, s]) => (
-                                                    <button
-                                                        key={id}
-                                                        onClick={() => handleUpdateProperty('status', id)}
-                                                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${id === invoiceStatus ? 'bg-neutral-100 dark:bg-white/10' : 'hover:bg-neutral-50 dark:hover:bg-white/5'} ${s.text}`}
-                                                    >
-                                                        <span className={`w-2 h-2 rounded-full ${s.dot}`} />
-                                                        {s.label}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                            {isStatusDropdownOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-40" onClick={() => setIsStatusDropdownOpen(false)} />
+                                                    <div className="absolute top-full left-0 mt-1 w-40 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-50">
+                                                        {Object.entries(STATUS_MAP).map(([id, s]) => (
+                                                            <button
+                                                                key={id}
+                                                                onClick={() => { handleUpdateProperty('status', id); setIsStatusDropdownOpen(false); }}
+                                                                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${id === invoiceStatus ? 'bg-neutral-100 dark:bg-white/10' : 'hover:bg-neutral-50 dark:hover:bg-white/5'} ${s.text}`}
+                                                            >
+                                                                <span className={`w-2 h-2 rounded-full ${s.dot}`} />
+                                                                {s.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     );
                                 })()}

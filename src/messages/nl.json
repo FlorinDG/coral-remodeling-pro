@@ -403,6 +403,7 @@
         "brandingDesc": "Configureer uw merkkleur, upload een logo, kies een PDF-layout of upload aangepast briefpapier.",
         "invoiceNumbering": "Factuurnummering",
         "quotationNumbering": "Offertenummering",
+        "creditnoteNumbering": "Creditnotanummering",
         "prefix": "Voorvoegsel (1-5 tek.)",
         "connector": "Verbindingsteken",
         "dateFormat": "Datumformaat",

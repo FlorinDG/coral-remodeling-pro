@@ -153,6 +153,11 @@ export default function CompanyInfoSettings() {
         quotationDateFormat: 'YYYY',
         quotationNumberWidth: 3,
         quotationNextNumber: 1,
+        creditnotePrefix: 'CN',
+        creditnoteConnector: '-',
+        creditnoteDateFormat: 'YYYY',
+        creditnoteNumberWidth: 3,
+        creditnoteNextNumber: 1,
         documentTemplate: 't1',
     });
     const [loading, setLoading] = useState(true);
@@ -194,6 +199,11 @@ export default function CompanyInfoSettings() {
                 quotationDateFormat: tenant.quotationDateFormat ?? 'YYYY',
                 quotationNumberWidth: tenant.quotationNumberWidth ?? 3,
                 quotationNextNumber: tenant.quotationNextNumber ?? 1,
+                creditnotePrefix: tenant.creditnotePrefix ?? 'CN',
+                creditnoteConnector: tenant.creditnoteConnector ?? '-',
+                creditnoteDateFormat: tenant.creditnoteDateFormat ?? 'YYYY',
+                creditnoteNumberWidth: tenant.creditnoteNumberWidth ?? 3,
+                creditnoteNextNumber: tenant.creditnoteNextNumber ?? 1,
                 documentTemplate: tenant.documentTemplate ?? 't1',
             });
             setLoading(false);
@@ -602,7 +612,7 @@ export default function CompanyInfoSettings() {
                     </h3>
                     <p className="text-xs text-neutral-500 -mt-4">{t('nav.settings.documentNumberingDesc')}</p>
 
-                    {(['invoice', 'quotation'] as const).map((docType) => {
+                    {(['invoice', 'quotation', 'creditnote'] as const).map((docType) => {
                         const prefix = profile[`${docType}Prefix` as keyof typeof profile] as string;
                         const connector = profile[`${docType}Connector` as keyof typeof profile] as string;
                         const dateFormat = profile[`${docType}DateFormat` as keyof typeof profile] as string;
@@ -634,7 +644,7 @@ export default function CompanyInfoSettings() {
                         return (
                             <div key={docType} className="bg-white dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-2xl p-6 space-y-5">
                                 <div className="flex items-center justify-between">
-                                    <h4 className="text-sm font-bold capitalize">{docType === 'invoice' ? t('nav.settings.invoiceNumbering') : t('nav.settings.quotationNumbering')}</h4>
+                                    <h4 className="text-sm font-bold capitalize">{docType === 'invoice' ? t('nav.settings.invoiceNumbering') : docType === 'quotation' ? t('nav.settings.quotationNumbering') : t('nav.settings.creditnoteNumbering')}</h4>
                                     <div className="flex items-center gap-2">
                                         <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">{t('nav.settings.preview')}</span>
                                         <span className="font-mono text-sm font-black tracking-wider px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5" style={{ color: 'var(--brand-color, #d35400)' }}>{preview}</span>

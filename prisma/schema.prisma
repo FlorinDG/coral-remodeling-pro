@@ -48,6 +48,11 @@ model Tenant {
   quotationNextNumber      Int?                    @default(1)
   quotationNumberWidth     Int?                    @default(3)
   quotationPrefix          String?                 @default("OFF")
+  creditnoteConnector      String?                 @default("-")
+  creditnoteDateFormat     String?                 @default("YYYY")
+  creditnoteNextNumber     Int?                    @default(1)
+  creditnoteNumberWidth    Int?                    @default(3)
+  creditnotePrefix         String?                 @default("CN")
   eInvoiceApiKey           String?
   eInvoiceTenantId         String?
   peppolRegistered         Boolean                 @default(false)

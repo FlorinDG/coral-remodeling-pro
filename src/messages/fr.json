@@ -402,6 +402,7 @@
         "brandingDesc": "Configurez votre couleur de marque, téléchargez un logo, choisissez une mise en page PDF ou un papier à en-tête personnalisé.",
         "invoiceNumbering": "Numérotation des Factures",
         "quotationNumbering": "Numérotation des Devis",
+        "creditnoteNumbering": "Numérotation des Notes de Crédit",
         "prefix": "Préfixe (1-5 car.)",
         "connector": "Connecteur",
         "dateFormat": "Format de Date",

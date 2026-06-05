@@ -403,6 +403,7 @@
         "brandingDesc": "Configure your brand color, upload a logo, choose a PDF layout, or upload custom stationery.",
         "invoiceNumbering": "Invoice Numbering",
         "quotationNumbering": "Quotation Numbering",
+        "creditnoteNumbering": "Credit Note Numbering",
         "prefix": "Prefix (1-5 chars)",
         "connector": "Connector",
         "dateFormat": "Date Format",

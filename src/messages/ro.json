@@ -402,6 +402,7 @@
         "brandingDesc": "Configurați culoarea brandului, încărcați un logo, alegeți un aspect PDF sau încărcați antet personalizat.",
         "invoiceNumbering": "Numerotare Facturi",
         "quotationNumbering": "Numerotare Oferte",
+        "creditnoteNumbering": "Numerotare Note de Credit",
         "prefix": "Prefix (1-5 car.)",
         "connector": "Conector",
         "dateFormat": "Format Dată",

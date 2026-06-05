@@ -3,7 +3,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/auth";
 
-type DocType = 'invoice' | 'quotation';
+type DocType = 'invoice' | 'quotation' | 'creditnote';
 
 /**
  * Formats a date string based on the chosen date format.
@@ -118,6 +118,20 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
             for (const q of quotes) {
                 if (!q.quoteNumber) continue;
                 const seqStr = q.quoteNumber.substring(basePrefix.length);
+                const seqNum = parseInt(seqStr, 10);
+                if (!isNaN(seqNum) && seqNum > maxSeq) {
+                    maxSeq = seqNum;
+                }
+            }
+        } else if (docType === 'creditnote') {
+            // Credit notes live in the Invoice table with type='CREDIT_NOTE'
+            const creditNotes = await (prisma.invoice as any).findMany({
+                where: { tenantId, type: 'CREDIT_NOTE', invoiceNumber: { startsWith: basePrefix } },
+                select: { invoiceNumber: true }
+            });
+            for (const cn of creditNotes) {
+                if (!cn.invoiceNumber) continue;
+                const seqStr = cn.invoiceNumber.substring(basePrefix.length);
                 const seqNum = parseInt(seqStr, 10);
                 if (!isNaN(seqNum) && seqNum > maxSeq) {
                     maxSeq = seqNum;

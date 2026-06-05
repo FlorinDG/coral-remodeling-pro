@@ -334,7 +334,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     // Create Credit Nota from this invoice
     const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
-        const cnNumber = `CN-${invoiceNum}`;
+        // Use the configured credit note numbering system
+        const numResult = await getNextDocumentNumber('creditnote');
+        const cnNumber = numResult.success && numResult.number ? numResult.number : `CN-${invoiceNum}`;
         const result = await createPageServerFirst(invoicesDbId, {
             title: cnNumber,
             client: clientId,

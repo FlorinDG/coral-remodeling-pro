@@ -932,7 +932,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             <select
                                 value={projectId}
                                 onChange={(e) => handleUpdateProperty('project', e.target.value)}
-                                disabled={!isDraft}
+                                disabled={false}
                                 className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate disabled:opacity-60 disabled:cursor-default"
                             >
                                 <option value="">Project koppelen...</option>
@@ -969,8 +969,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         <div ref={quotationContainerRef} className="relative shrink-0">
                             <button
                                 type="button"
-                                disabled={isLocked || !isDraft}
-                                onClick={() => { if (!isLocked && isDraft) setIsQuotationDropdownOpen(!isQuotationDropdownOpen); }}
+                                disabled={false}
+                                onClick={() => setIsQuotationDropdownOpen(!isQuotationDropdownOpen)}
                                 className="flex items-center gap-1.5 px-3 py-2 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all disabled:opacity-60 disabled:cursor-default cursor-pointer outline-none focus:ring-1 focus:ring-orange-500/30"
                             >
                                 <FileText className="w-3.5 h-3.5 text-neutral-400 shrink-0" />

@@ -409,7 +409,12 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             getDatabase: (id) => {
-                return get().databases.find(db => db.id === id);
+                const exact = get().databases.find(db => db.id === id);
+                if (exact) return exact;
+                // Fallback: if lockedDbIds is empty (tenant read failed), resolveDbId
+                // returns the bare base ID (e.g. 'db-invoices'). The store has the
+                // tenant-scoped ID (e.g. 'db-invoices-cmneyas2'). Match by prefix.
+                return get().databases.find(db => db.id.startsWith(id + '-'));
             },
 
             // --- VIEW OPERATIONS ---

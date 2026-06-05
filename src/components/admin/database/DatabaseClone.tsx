@@ -686,17 +686,33 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale]);
 
 
+  // ── Self-healing: if the store doesn't have this DB after hydration,
+  // fetch ALL databases from the server and re-hydrate the store.
+  // This covers the case where the layout's getGlobalDatabases() failed
+  // or was too slow — the component rescues itself instead of spinning forever.
+  const [clientFetchAttempted, setClientFetchAttempted] = useState(false);
+
   useEffect(() => {
     if (!hydrated) return;
-    if (database || autoInitializing) return;
+    if (database || autoInitializing || clientFetchAttempted) return;
 
-    // Server-provisioned databases (the 8 locked bases) are guaranteed to exist
-    // in Postgres via provisionLockedDatabases. They will hydrate from the server
-    // via getGlobalDatabases(). Never auto-create them client-side — doing so
-    // would recreate bare-ID duplicates (e.g. 'db-invoices' alongside 'db-invoices-xyz').
-    if (SERVER_PROVISIONED_BASES.has(databaseId)) return;
+    // For server-provisioned databases, NEVER auto-create locally.
+    // Instead, fetch from the server — they're guaranteed to exist in Postgres.
+    if (SERVER_PROVISIONED_BASES.has(databaseId)) {
+      setClientFetchAttempted(true);
+      console.log(`[DatabaseClone] ${resolvedId} missing from store — fetching from server`);
+      import('@/app/actions/global-databases').then(({ getGlobalDatabases }) => {
+        getGlobalDatabases().then(serverDbs => {
+          if (serverDbs.length > 0) {
+            useDatabaseStore.getState().hydrateDatabases(serverDbs);
+          }
+        }).catch(e => console.error('[DatabaseClone] Server fetch failed:', e));
+      });
+      return;
+    }
 
-    const existing = useDatabaseStore.getState().getDatabase(resolvedId); // use resolvedId
+    // For client-only databases, auto-create if missing
+    const existing = useDatabaseStore.getState().getDatabase(resolvedId);
     if (existing) return;
 
     setAutoInitializing(true);
@@ -716,8 +732,8 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-payments-out') parsedName = 'Outgoing Payments';
 
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
-    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps); // use resolvedId
-  }, [database, databaseId, resolvedId, autoInitializing, hydrated, DEFAULT_PROPERTIES_MAP]);
+    useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps);
+  }, [database, databaseId, resolvedId, autoInitializing, hydrated, clientFetchAttempted, DEFAULT_PROPERTIES_MAP]);
 
   if (!database) {
     return (

@@ -8,33 +8,39 @@ import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
-// Force every request to re-render. The layout reads auth + cookies so
-// it must never be served from RSC cache (would return stale planType).
-export const dynamic = 'force-dynamic';
-
 // Coral Enterprises tenant — the platform owner workspace.
 const OWNER_TENANT_ID = process.env.OWNER_TENANT_ID ?? 'cmneyas2b0000veqvkgl2luz1';
 
 export default async function Layout({ children }: { children: React.ReactNode }) {
     // ── 1. Session ──────────────────────────────────────────────────────────
-    // The JWT already carries planType + activeModules (refreshed every 60 s
-    // in auth.ts).  We use those as the BASELINE — never a hardcoded 'FREE'.
-    // The DB read below may upgrade these to the freshest values, but if it
-    // fails the session values are already good enough.
-    const session  = await auth();
-    const userRole = session?.user?.role;
-    let   tenantId = session?.user?.tenantId ?? null;
-    const isOwner  = tenantId === OWNER_TENANT_ID;
-    const isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
+    let session: any = null;
+    let userRole: string | undefined;
+    let tenantId: string | null = null;
+    let isOwner = false;
+    let isSuperadmin = false;
+    let isImpersonating = false;
 
-    // Baseline from JWT (never hardcoded FREE)
-    let activeModules: string[]               = (session?.user as any)?.activeModules ?? ['INVOICING'];
-    let planType: string                      = (session?.user as any)?.planType      ?? 'FREE';
+    // Baseline defaults — overridden by JWT session if available
+    let activeModules: string[]               = ['INVOICING'];
+    let planType: string                      = 'FREE';
     let lockedDbIds: Record<string, string>   = {};
     let subscriptionStatus: string            = 'ACTIVE';
     let trialEndsAt: string | null            = null;
     let fullTenant: any                       = null;
-    let isImpersonating                       = false;
+
+    try {
+        session    = await auth();
+        userRole   = session?.user?.role;
+        tenantId   = session?.user?.tenantId ?? null;
+        isOwner    = tenantId === OWNER_TENANT_ID;
+        isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
+
+        // Pull JWT-cached values as baseline (better than hardcoded defaults)
+        if ((session?.user as any)?.activeModules) activeModules = (session.user as any).activeModules;
+        if ((session?.user as any)?.planType)      planType      = (session.user as any).planType;
+    } catch (e) {
+        console.error('[layout] auth() failed:', e);
+    }
 
     // ── 2. Impersonation ────────────────────────────────────────────────────
     if (isSuperadmin) {
@@ -46,14 +52,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 isImpersonating = true;
             }
         } catch (e) {
-            console.error('[layout] cookies() failed during impersonation check:', e);
+            console.error('[layout] cookies() failed:', e);
         }
     }
 
     // ── 3. Tenant DB read — INDEPENDENT of database fetch ───────────────────
-    // Split into two separate try/catch blocks so a failure in one doesn't
-    // kill the other. The tenant read is critical (planType, modules), while
-    // getGlobalDatabases() is nice-to-have (populates Zustand store).
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
 
     if (tenantId) {
@@ -64,7 +67,6 @@ export default async function Layout({ children }: { children: React.ReactNode }
             });
 
             if (tenant) {
-                // Only override session values if the DB has them
                 if (tenant.activeModules)      activeModules      = tenant.activeModules;
                 if (tenant.planType)           planType           = tenant.planType;
                 if (tenant.subscriptionStatus) subscriptionStatus = tenant.subscriptionStatus;
@@ -78,25 +80,24 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 }
 
                 fullTenant = tenant;
+                console.log(`[layout] Tenant OK: planType=${planType}, modules=${activeModules.length}, dbs=${Object.keys(lockedDbIds).length}`);
             } else {
-                console.warn(`[layout] Tenant ${tenantId} not found in DB — using session values (planType=${planType})`);
+                console.warn(`[layout] Tenant ${tenantId} not found`);
             }
         } catch (e) {
-            console.error(`[layout] Tenant read failed for ${tenantId} — using session values (planType=${planType}):`, e);
-            // Session baseline values remain — NOT a hardcoded 'FREE'
+            console.error(`[layout] Tenant read FAILED for ${tenantId}:`, e);
         }
 
-        // 3b. Global databases — non-critical, never gates features
+        // 3b. Global databases — non-critical
         try {
             databases = await getGlobalDatabases();
+            console.log(`[layout] Databases: ${databases.length} loaded, ${databases.reduce((n, d) => n + d.pages.length, 0)} total pages`);
         } catch (e) {
-            console.error('[layout] getGlobalDatabases() failed — Zustand store will hydrate empty:', e);
+            console.error('[layout] getGlobalDatabases() FAILED:', e);
         }
     } else {
-        console.warn('[layout] No tenantId in session — user has no workspace');
+        console.warn('[layout] No tenantId — skipping all DB reads');
     }
-
-    console.log(`[layout] FINAL role=${userRole}, tenantId=${tenantId}, planType=${planType}, modules=${activeModules.length}, impersonating=${isImpersonating}`);
 
     return (
         <AuthProvider>

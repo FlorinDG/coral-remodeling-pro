@@ -6,24 +6,24 @@ import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import MobileShell from "@/components/mobile/MobileShell";
 
-// Force every request to re-render — reads auth + cookies.
-export const dynamic = 'force-dynamic';
-
 export default async function MobileLayout({ children }: { children: React.ReactNode }) {
-    // ── 1. Session baseline ─────────────────────────────────────────────────
-    // JWT already carries planType + activeModules (refreshed every 60 s).
-    // Use those as the baseline — never a hardcoded 'FREE'.
-    const session   = await auth();
-    const tenantId  = session?.user?.tenantId ?? null;
-
-    let activeModules: string[]             = (session?.user as any)?.activeModules ?? ['INVOICING'];
-    let planType: string                    = (session?.user as any)?.planType      ?? 'FREE';
+    let activeModules: string[]             = ['INVOICING'];
+    let planType: string                    = 'FREE';
     let lockedDbIds: Record<string, string> = {};
     let fullTenant: any                     = null;
+    let tenantId: string | null             = null;
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
 
+    try {
+        const session = await auth();
+        tenantId = session?.user?.tenantId ?? null;
+        if ((session?.user as any)?.activeModules) activeModules = (session.user as any).activeModules;
+        if ((session?.user as any)?.planType)      planType      = (session.user as any).planType;
+    } catch (e) {
+        console.error('[m/layout] auth() failed:', e);
+    }
+
     if (tenantId) {
-        // ── 2a. Tenant profile — critical path ──────────────────────────────
         try {
             const tenant = await prisma.tenant.findUnique({
                 where: { id: tenantId },
@@ -41,14 +41,11 @@ export default async function MobileLayout({ children }: { children: React.React
                 }
 
                 fullTenant = tenant;
-            } else {
-                console.warn(`[m/layout] Tenant ${tenantId} not found — using session values`);
             }
         } catch (e) {
-            console.error(`[m/layout] Tenant read failed — using session values (planType=${planType}):`, e);
+            console.error(`[m/layout] Tenant read failed:`, e);
         }
 
-        // ── 2b. Global databases — non-critical ─────────────────────────────
         try {
             databases = await getGlobalDatabases();
         } catch (e) {

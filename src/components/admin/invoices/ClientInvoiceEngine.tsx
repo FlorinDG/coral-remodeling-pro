@@ -87,6 +87,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
+        // PROFILE-1: React to tenant changes from TenantContext (settings saves, refreshTenant)
         if (tenant) {
             setTenantProfile(tenant);
         }
@@ -94,7 +95,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         return () => {
             if (unsubscribe) unsubscribe();
         };
-    }, []);
+    }, [tenant]);
 
     const invoice = useDatabaseStore(state => {
         const db = state.databases.find(d => d.id === invoicesDbId);

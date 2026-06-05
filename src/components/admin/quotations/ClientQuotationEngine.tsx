@@ -85,6 +85,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
+        // PROFILE-1: React to tenant changes from TenantContext (settings saves, refreshTenant)
         if (tenant) {
             setTenantProfile(tenant);
         }
@@ -95,7 +96,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 clearTimeout(debounceTimeoutRef.current);
             }
         };
-    }, []);
+    }, [tenant]);
 
     const quotation = useDatabaseStore(state => {
         const db = state.databases.find(d => d.id === quotationsDbId);

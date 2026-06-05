@@ -270,6 +270,8 @@ export default function MobileSettingsClient({
             });
             if (res.ok) {
                 toast.success("Profile changes saved successfully!");
+                // PROFILE-1: Notify any listeners (TenantContext, AdminLayout) of the profile update
+                window.dispatchEvent(new CustomEvent('tenantProfileUpdated', { detail: profile }));
                 router.refresh();
             } else {
                 throw new Error("Failed to save settings");
@@ -584,7 +586,14 @@ export default function MobileSettingsClient({
                                             const supported = ["en", "fr", "nl", "ro", "ru"];
                                             if (!supported.includes(lang)) return;
                                             await updateSession({ environmentLanguage: lang });
-                                            router.refresh();
+                                            // PROFILE-1: Sync NEXT_LOCALE cookie immediately — don't rely on middleware round-trip
+                                            document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+                                            const currentPath = window.location.pathname;
+                                            const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
+                                            const newPath = localeRegex.test(currentPath)
+                                                ? currentPath.replace(localeRegex, `/${lang}$2`)
+                                                : `/${lang}${currentPath}`;
+                                            window.location.href = newPath;
                                         }}
                                         options={[
                                             { value: "nl", label: "Nederlands" },

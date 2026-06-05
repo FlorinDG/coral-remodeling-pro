@@ -170,7 +170,7 @@ export default function DocumentTemplatesModule() {
 
     const [tenantProfile, setTenantProfile] = useState<any>(null);
 
-    const { tenant } = useTenant();
+    const { tenant, refreshTenant } = useTenant();
     const router = useRouter();
 
     // Load saved settings
@@ -211,6 +211,8 @@ export default function DocumentTemplatesModule() {
                     stationeryUrl: mode === 'stationery' ? stationeryUrl : (p?.stationeryUrl || null),
                 }));
                 toast.success('Branding settings saved');
+                // PROFILE-1: Propagate fresh tenant to all consumers (engines, layout, etc.)
+                await refreshTenant();
                 router.refresh();
             } else {
                 toast.error('Failed to save branding settings');

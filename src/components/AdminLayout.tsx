@@ -129,8 +129,25 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             const color = (e as CustomEvent<string>).detail;
             if (color) setBrandColor(color);
         };
+        // PROFILE-1: Listen for full tenant profile updates (settings saves via TenantContext.refreshTenant)
+        const handleTenantUpdated = (e: Event) => {
+            const fresh = (e as CustomEvent).detail;
+            if (fresh) {
+                setCompanyName(fresh.commercialName || fresh.companyName || '');
+                if (fresh.brandColor) {
+                    setBrandColor(fresh.brandColor);
+                    document.documentElement.style.setProperty('--brand-color', fresh.brandColor);
+                }
+                if (fresh.logoUrl) setLogoUrl(fresh.logoUrl);
+                else setLogoUrl(null);
+            }
+        };
         window.addEventListener('brandColorChanged', handleBrandColorChanged);
-        return () => window.removeEventListener('brandColorChanged', handleBrandColorChanged);
+        window.addEventListener('tenantProfileUpdated', handleTenantUpdated);
+        return () => {
+            window.removeEventListener('brandColorChanged', handleBrandColorChanged);
+            window.removeEventListener('tenantProfileUpdated', handleTenantUpdated);
+        };
     }, [tenant]);
 
     const { items: menuItems } = useSidebarStore();

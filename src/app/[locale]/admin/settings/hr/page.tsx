@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 
 export default function HRSettingsPage() {
     usePageTitle('HR Settings');
-    const { tenant, activeModules } = useTenant();
+    const { tenant, activeModules, refreshTenant } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
     const router = useRouter();
 
@@ -36,6 +36,8 @@ export default function HRSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        // PROFILE-1: Propagate fresh tenant to all consumers
+        await refreshTenant();
         router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };

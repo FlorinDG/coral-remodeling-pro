@@ -340,7 +340,7 @@ function RolesPermissionsPanel() {
 // ─── Tenant Setting Panels (re-use existing logic) ───────────────────────────
 
 function CompanyProfilePanel() {
-    const { tenant } = useTenant();
+    const { tenant, refreshTenant } = useTenant();
     const router = useRouter();
     const [profile, setProfile] = useState({ companyName: '', vatNumber: '', iban: '', logoUrl: '', peppolId: '' });
     const [saving, setSaving] = useState(false);
@@ -366,6 +366,8 @@ function CompanyProfilePanel() {
                 body: JSON.stringify(profile)
             });
             toast.success('Company profile saved!');
+            // PROFILE-1: Propagate fresh tenant to all consumers
+            await refreshTenant();
             router.refresh();
         } catch (e) {
             console.error('Failed to save profile', e);

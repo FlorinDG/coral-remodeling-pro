@@ -35,6 +35,23 @@ description: PRO TIER HARDENING — execution workplan for Antigravity AI. Read 
 
 ---
 
+## 🔒 EXECUTION PROTOCOL — STRICT, EFFECTIVE 2026-06-04 (Florin directive)
+> The previous loose loop (batching many tasks per commit, marking DONE without Florin verification) lost trust. From now on, this is binding. Violating it is worse than working slowly.
+
+1. **ONE TASK AT A TIME.** Pick exactly ONE task, complete it, STOP. Do NOT start another task until Florin has verified the current one. NO multi-task commits (the `B1-B5,M4,M5` style commit is exactly what NOT to do).
+2. **TWO-STAGE STATUS, FLORIN GATES.**
+   - Coder may set: `🟢 DONE — awaiting Florin verify`. That is the FURTHEST the coder may go.
+   - ONLY Florin sets `✅ VERIFIED`. `✅ VERIFIED` is a HARD BLOCK: **no new task may start until the previous task is `✅ VERIFIED` by Florin.** If Florin's verify fails → status back to `🟡 IN PROGRESS`, fix, re-submit as `🟢 DONE — awaiting verify`. Loop until verified.
+3. **THE LOOP per task:** coder implements → measures own result (state what was tested) → `🟢 DONE — awaiting verify` + fills 🤖 AI FEEDBACK → STOP → Florin measures on deploy → feedback → (fix if needed) → Florin `✅ VERIFIED` → ONLY THEN next task.
+4. **COMMIT NAMING — DETERMINISTIC (the "checksum").** One task = one commit. Commit subject MUST start with the task ID, exact format:
+   `<TASK-ID>: <short imperative subject>`  e.g. `B3: link credit notes by parentInvoiceId only` · `M5: responsive mobile calendar toolbar`.
+   - NO random/creative commit names. NO bundling task IDs. One ID per commit.
+   - If a task genuinely needs >1 commit, every commit starts with the SAME task ID (`B3: …` / `B3: follow-up …`) so the log greps clean.
+   - Purpose: Florin can screenshot `git log --oneline` and read task status at a glance — the commit log is the checksum against the status table.
+5. **MEASURE, don't claim.** "Done" means you tested the actual behavior and state HOW in 🤖 AI FEEDBACK (what you ran, what you saw). "Should work" / "implemented" is NOT done.
+
+---
+
 ## 📐 STANDING GUIDELINE — Unit metrics & observability (applies to EVERY task that touches cost/usage/limits)
 > Florin, 2026-06-03: "unit metrics all the way down to admin UI observability, not just empirical calculations."
 

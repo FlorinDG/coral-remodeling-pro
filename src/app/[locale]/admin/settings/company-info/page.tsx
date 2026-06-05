@@ -163,7 +163,7 @@ export default function CompanyInfoSettings() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    const { tenant, activeModules } = useTenant();
+    const { tenant, activeModules, refreshTenant } = useTenant();
 
     useEffect(() => {
         if (tenant) {
@@ -231,6 +231,8 @@ export default function CompanyInfoSettings() {
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
+                // PROFILE-1: Propagate fresh tenant to all consumers (engines, layout, etc.)
+                await refreshTenant();
                 router.refresh();
             } else {
                 throw new Error('Failed to save');
@@ -561,6 +563,8 @@ export default function CompanyInfoSettings() {
                                     const supported = ['en', 'fr', 'nl', 'ro', 'ru'];
                                     if (!supported.includes(lang)) return;
                                     await updateSession({ environmentLanguage: lang });
+                                    // PROFILE-1: Sync NEXT_LOCALE cookie immediately — don't rely on middleware round-trip
+                                    document.cookie = `NEXT_LOCALE=${lang};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
                                     const currentPath = window.location.pathname;
                                     const localeRegex = /^\/(en|fr|nl|ro|ru)(\/|$)/;
                                     const newPath = localeRegex.test(currentPath)

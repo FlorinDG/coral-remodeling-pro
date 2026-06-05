@@ -108,7 +108,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             // Handle session.update() calls — e.g., after saving language preference
             // This keeps the JWT in sync without requiring a full sign-out/sign-in.
             if (trigger === 'update' && session) {
-                if (session.environmentLanguage !== undefined) token.environmentLanguage = session.environmentLanguage;
+                if (session.environmentLanguage !== undefined) {
+                    token.environmentLanguage = session.environmentLanguage;
+                    // PROFILE-1: Persist to DB immediately — don't rely on next JWT refresh
+                    // to read it back. Prevents desync on token expiry or cross-device login.
+                    const userId = token.sub;
+                    if (userId) {
+                        try {
+                            await prisma.user.update({
+                                where: { id: userId },
+                                data: { environmentLanguage: session.environmentLanguage },
+                            });
+                        } catch (e) {
+                            console.error('[Auth JWT] Failed to persist environmentLanguage:', e);
+                        }
+                    }
+                }
                 if (session.role              !== undefined) token.role              = session.role;
                 if (session.tenantId          !== undefined) token.tenantId          = session.tenantId;
             }
@@ -121,7 +136,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 // Auto-provision a Tenant workspace for first-time Google OAuth users
                 if (dbUser && !dbUser.tenantId) {
                     const cookieStore = await cookies();
-                    const nextLocale  = cookieStore.get("NEXT_LOCALE")?.value || "fr";
+                    const nextLocale  = cookieStore.get("NEXT_LOCALE")?.value || "nl";
 
                     const newTenant = await prisma.tenant.create({
                         data: {

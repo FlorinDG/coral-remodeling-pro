@@ -19,7 +19,7 @@ interface AccountantUser {
 
 export default function FinancialsSettingsPage() {
     usePageTitle('Financials Settings');
-    const { tenant, activeModules } = useTenant();
+    const { tenant, activeModules, refreshTenant } = useTenant();
     const filteredSettingsTabs = getFilteredSettingsTabs(activeModules);
     const router = useRouter();
 
@@ -102,6 +102,8 @@ export default function FinancialsSettingsPage() {
         });
         setSaving(false);
         setSaved(true);
+        // PROFILE-1: Propagate fresh tenant to all consumers
+        await refreshTenant();
         router.refresh();
         setTimeout(() => setSaved(false), 2000);
     };

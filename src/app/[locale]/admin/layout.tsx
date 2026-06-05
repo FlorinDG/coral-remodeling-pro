@@ -84,7 +84,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
                 }
 
-                fullTenant = tenant;
+                // JSON round-trip converts Prisma Date objects to ISO strings.
+                // Without this, any component that renders {tenant.createdAt}
+                // directly in JSX gets React error #301.
+                fullTenant = JSON.parse(JSON.stringify(tenant));
                 console.log(`[layout] Tenant OK: planType=${planType}, modules=${activeModules.length}, dbs=${Object.keys(lockedDbIds).length}`);
             } else {
                 console.warn(`[layout] Tenant ${tenantId} not found`);

@@ -41,7 +41,7 @@ export default async function MobileLayout({ children }: { children: React.React
                     lockedDbIds = await provisionLockedDatabases(tenantId, prisma);
                 }
 
-                fullTenant = tenant;
+                fullTenant = JSON.parse(JSON.stringify(tenant));
             }
         } catch (e) {
             console.error(`[m/layout] Tenant read failed:`, e);

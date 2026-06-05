@@ -8,6 +8,10 @@ import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
 import { cookies } from "next/headers";
 import { PLATFORM_ADMIN_ROLES } from "@/lib/roles";
 
+// Force dynamic rendering — this layout reads auth + cookies on every request.
+// Without this, Next.js may serve a stale RSC payload with planType='FREE'.
+export const dynamic = 'force-dynamic';
+
 // Coral Enterprises tenant — the platform owner workspace.
 // Set OWNER_TENANT_ID in .env to override the production ID.
 const OWNER_TENANT_ID = process.env.OWNER_TENANT_ID ?? 'cmneyas2b0000veqvkgl2luz1';
@@ -26,6 +30,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
     let fullTenant: any = null;
 
     let isImpersonating = false;
+    let isSuperadmin = false;
 
     // ── 1. Session — safe fallback: treat as unauthenticated ────────────────
     try {
@@ -34,8 +39,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
         tenantId = session?.user?.tenantId ?? null;
         isOwner  = tenantId === OWNER_TENANT_ID;
 
+        // Track if the user is a platform admin (SuperAdmin / TenantManager)
+        isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
+
         // SuperAdmin impersonation: override tenantId with cookie value
-        if (userRole && PLATFORM_ADMIN_ROLES.includes(userRole)) {
+        if (isSuperadmin) {
             const cookieStore = await cookies();
             const impersonatedTenant = cookieStore.get('x-impersonate-tenant')?.value;
             if (impersonatedTenant) {
@@ -43,6 +51,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
                 isImpersonating = true;
             }
         }
+
+        console.log(`[layout] role=${userRole}, tenantId=${tenantId}, isImpersonating=${isImpersonating}, isSuperadmin=${isSuperadmin}`);
     } catch (e) {
         console.error('[layout] auth() failed:', e);
     }
@@ -75,19 +85,26 @@ export default async function Layout({ children }: { children: React.ReactNode }
             databases = fetchedDbs;
             // tenant is now the full object
             fullTenant = tenant;
+
+            console.log(`[layout] DB read OK — planType=${planType}, modules=${activeModules.length}, pages=${databases.reduce((n, d) => n + d.pages.length, 0)}`);
         } catch (e) {
             console.error('[layout] Parallel fetch failed:', e);
             // safe defaults already set
         }
+    } else {
+        console.warn('[layout] No tenantId — using FREE defaults');
     }
 
-    // ── Diagnostic: trace planType resolution for upgrade-button debugging ──
-    console.log(`[layout] tenantId=${tenantId}, planType=${planType}, isImpersonating=${isImpersonating}`);
-
-    const displayActiveModules = isImpersonating
-        ? ["INVOICING", "CRM", "DATABASES", "PROJECTS", "CALENDAR", "HR", "WEBSITES", "EMAIL"]
+    // ── Resolve display values ──────────────────────────────────────────────
+    // SuperAdmins and impersonating users always get full access.
+    // For impersonation we hardcode ENTERPRISE + all modules so the admin
+    // can see every feature in the tenant's workspace.
+    // For SuperAdmins WITHOUT impersonation, we trust the DB values (which
+    // should already be correct for their own tenant).
+    const displayActiveModules = (isImpersonating || isSuperadmin)
+        ? ["INVOICING", "CRM", "DATABASES", "PROJECTS", "CALENDAR", "HR", "WEBSITES", "TASKS", "EMAIL"]
         : activeModules;
-    const displayPlanType = isImpersonating ? "ENTERPRISE" : planType;
+    const displayPlanType = (isImpersonating || isSuperadmin) ? "ENTERPRISE" : planType;
 
     return (
         <AuthProvider>

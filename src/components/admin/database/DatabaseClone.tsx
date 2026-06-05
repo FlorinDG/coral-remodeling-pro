@@ -11,7 +11,7 @@ import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
 import { Property } from './types';
-import { isSystemDatabase } from '@/lib/systemDatabases';
+import { isSystemDatabase, SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
 import { t } from '@/lib/document-i18n';
 import { useLocale } from 'next-intl';
 
@@ -689,6 +689,12 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   useEffect(() => {
     if (!hydrated) return;
     if (database || autoInitializing) return;
+
+    // Server-provisioned databases (the 8 locked bases) are guaranteed to exist
+    // in Postgres via provisionLockedDatabases. They will hydrate from the server
+    // via getGlobalDatabases(). Never auto-create them client-side — doing so
+    // would recreate bare-ID duplicates (e.g. 'db-invoices' alongside 'db-invoices-xyz').
+    if (SERVER_PROVISIONED_BASES.has(databaseId)) return;
 
     const existing = useDatabaseStore.getState().getDatabase(resolvedId); // use resolvedId
     if (existing) return;

@@ -30,6 +30,22 @@ export const SYSTEM_DB_PREFIXES = [
 ] as const;
 
 /**
+ * Subset of SYSTEM_DB_PREFIXES that are provisioned server-side by
+ * provisionLockedDatabases. These MUST NOT be auto-created client-side
+ * — they already exist in Postgres and will hydrate via getGlobalDatabases().
+ */
+export const SERVER_PROVISIONED_BASES = new Set([
+    'db-invoices',
+    'db-clients',
+    'db-suppliers',
+    'db-expenses',
+    'db-tickets',
+    'db-quotations',
+    'db-payments-in',
+    'db-payments-out',
+]);
+
+/**
  * Check if a database ID belongs to a system database.
  * Handles both bare IDs (e.g. 'db-clients') and tenant-scoped IDs
  * (e.g. 'db-clients-abc12345').

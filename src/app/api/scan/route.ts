@@ -4,6 +4,8 @@ import OpenAI from 'openai';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
+import { isSystemDatabase } from '@/lib/systemDatabases';
+import { getLockedDbId } from '@/lib/lockedDbUtils';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Increased — pdfjs page render can take longer
@@ -293,8 +295,18 @@ export async function POST(req: Request) {
         // ── Parse form data ───────────────────────────────────────────────────
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
-        const targetDb = (formData.get('targetDb') as string) || 'db-tickets';
-        const isInvoice = targetDb === 'db-expenses';
+        let targetDb = (formData.get('targetDb') as string) || 'db-tickets';
+        const isInvoice = targetDb === 'db-expenses' || targetDb.startsWith('db-expenses');
+
+        // SCHEMA-1a: Resolve system DB to the tenant's canonical scoped ID
+        if (isSystemDatabase(targetDb)) {
+            const tenantData = await prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { lockedDbIds: true },
+            });
+            const lockedDbIds = (tenantData?.lockedDbIds as Record<string, string>) || {};
+            targetDb = getLockedDbId(targetDb, lockedDbIds);
+        }
 
         if (!file) {
             return NextResponse.json({ error: 'No file provided' }, { status: 400 });

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
 
@@ -20,6 +20,8 @@ export default function DynamicDatabasePage() {
                     <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Workspace Databases</h1>
                     <p className="text-neutral-500 dark:text-neutral-400">Custom dynamic tables.</p>
                 </div>
+                {/* SCHEMA-1a: Safe — createDatabase generates a UUID-based ID, not a system prefix.
+                   Custom DBs use random IDs and are NOT in SYSTEM_DB_PREFIXES. */}
                 <button
                     onClick={() => createDatabase('New Database', 'A newly instantiated schema.')}
                     className="px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-black font-semibold rounded-lg hover:opacity-90"
@@ -39,3 +41,4 @@ export default function DynamicDatabasePage() {
         </div>
     );
 }
+

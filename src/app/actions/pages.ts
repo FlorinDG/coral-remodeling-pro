@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { Page, PropertyValue } from '@/components/admin/database/types';
 import { generateOGM } from '@/lib/ogm';
+import { isSystemDatabase } from '@/lib/systemDatabases';
+import { getLockedDbId } from '@/lib/lockedDbUtils';
 
 // Infer required module from locked DB ID prefix.
 // Works for both bare IDs ('db-invoices') and scoped IDs ('db-invoices-abc12345').
@@ -60,9 +62,21 @@ export async function createPageServerFirst(
     }
 
     try {
+        // SCHEMA-1a: For system databases, resolve to the tenant's canonical ID
+        // to prevent duplicate DB creation with mismatched IDs.
+        let resolvedDbId = databaseId;
+        if (isSystemDatabase(databaseId)) {
+            const tenant = await prisma.tenant.findUnique({
+                where: { id: tenantId },
+                select: { lockedDbIds: true },
+            });
+            const lockedDbIds = (tenant?.lockedDbIds as Record<string, string>) || {};
+            resolvedDbId = getLockedDbId(databaseId, lockedDbIds);
+        }
+
         // Ensure parent DB exists — upsert a stub if it's a first-session locked DB
         const existingDb = await prisma.globalDatabase.findUnique({
-            where: { id: databaseId },
+            where: { id: resolvedDbId },
             select: { id: true, tenantId: true }
         });
 
@@ -74,9 +88,9 @@ export async function createPageServerFirst(
             // Locked DB not yet in Postgres — create a minimal stub
             await prisma.globalDatabase.create({
                 data: {
-                    id: databaseId,
+                    id: resolvedDbId,
                     tenantId,
-                    name: databaseId,
+                    name: resolvedDbId,
                     properties: [],
                     views: [],
                     activeFilters: [],
@@ -86,6 +100,9 @@ export async function createPageServerFirst(
                 }
             });
         }
+
+        // Use the resolved ID for all downstream operations
+        databaseId = resolvedDbId;
 
         const pageId = customId || uuidv4();
 

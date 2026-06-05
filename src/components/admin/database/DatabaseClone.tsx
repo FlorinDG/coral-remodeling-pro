@@ -14,6 +14,7 @@ import { Property } from './types';
 import { isSystemDatabase, SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
 import { t } from '@/lib/document-i18n';
 import { useLocale } from 'next-intl';
+import { getGlobalDatabases } from '@/app/actions/global-databases';
 
 const NotionGridDynamic = dynamic(
   () => import('@/components/admin/database/NotionGrid'),
@@ -701,13 +702,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (SERVER_PROVISIONED_BASES.has(databaseId)) {
       setClientFetchAttempted(true);
       console.log(`[DatabaseClone] ${resolvedId} missing from store — fetching from server`);
-      import('@/app/actions/global-databases').then(({ getGlobalDatabases }) => {
-        getGlobalDatabases().then(serverDbs => {
-          if (serverDbs.length > 0) {
-            useDatabaseStore.getState().hydrateDatabases(serverDbs);
-          }
-        }).catch(e => console.error('[DatabaseClone] Server fetch failed:', e));
-      });
+      getGlobalDatabases().then(serverDbs => {
+        if (serverDbs.length > 0) {
+          console.log(`[DatabaseClone] Got ${serverDbs.length} DBs from server — hydrating store`);
+          useDatabaseStore.getState().hydrateDatabases(serverDbs);
+        } else {
+          console.warn('[DatabaseClone] Server returned 0 databases');
+        }
+      }).catch(e => console.error('[DatabaseClone] Server fetch failed:', e));
       return;
     }
 

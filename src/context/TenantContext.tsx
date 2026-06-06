@@ -45,11 +45,18 @@ export const TenantProvider = ({
     // PROFILE-1: Tenant is now STATE, not a pass-through prop.
     // This allows refreshTenant() to update all consumers without a full page reload.
     const [tenant, setTenant] = useState<any>(initialTenant);
+    // Track whether we've fetched the FULL profile (with branding/numbering fields).
+    // The server-side initialTenant uses a MINIMAL select, so we must not let it
+    // overwrite a full profile that was already fetched client-side.
+    const [hasFetchedFull, setHasFetchedFull] = useState(false);
 
-    // Sync with server-side prop updates (e.g., from router.refresh())
+    // Sync with server-side prop updates (e.g., from router.refresh()).
+    // PROFILE-2: Only sync if we haven't fetched the full profile yet.
+    // The server select omits branding/numbering fields — overwriting with it
+    // causes settings to visually flash to defaults.
     useEffect(() => {
-        if (initialTenant) setTenant(initialTenant);
-    }, [initialTenant]);
+        if (initialTenant && !hasFetchedFull) setTenant(initialTenant);
+    }, [initialTenant, hasFetchedFull]);
 
     // Auto-fetch the full tenant profile (including logoUrl) on mount.
     // The layout omits large blob fields from RSC props to avoid 2 MB+ payloads.
@@ -60,6 +67,7 @@ export const TenantProvider = ({
             .then(fresh => {
                 if (fresh) {
                     setTenant(fresh);
+                    setHasFetchedFull(true);
                     window.dispatchEvent(new CustomEvent('tenantProfileUpdated', { detail: fresh }));
                 }
             })

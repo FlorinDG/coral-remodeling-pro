@@ -287,9 +287,12 @@ export default function CompanyInfoSettings() {
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
-                // PROFILE-1: Propagate fresh tenant to all consumers (engines, layout, etc.)
+                // PROFILE-2: refreshTenant() fetches the FULL tenant from the API.
+                // Do NOT call router.refresh() — it triggers a server re-render
+                // that overwrites the full tenant (with branding/numbering) with
+                // the minimal server-side select (without those fields), causing
+                // a visible flash to defaults.
                 await refreshTenant();
-                router.refresh();
             } else {
                 throw new Error('Failed to save');
             }

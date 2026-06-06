@@ -224,9 +224,10 @@ export default function DocumentTemplatesModule() {
                     stationeryUrl: mode === 'stationery' ? stationeryUrl : (p?.stationeryUrl || null),
                 }));
                 toast.success('Branding settings saved');
-                // PROFILE-1: Propagate fresh tenant to all consumers (engines, layout, etc.)
+                // PROFILE-2: refreshTenant() fetches the FULL tenant from the API.
+                // Do NOT call router.refresh() — it overwrites the full tenant
+                // with the minimal server-side select, causing a visible reset.
                 await refreshTenant();
-                router.refresh();
             } else {
                 toast.error('Failed to save branding settings');
             }

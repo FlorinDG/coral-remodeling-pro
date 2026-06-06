@@ -36,7 +36,10 @@ export async function POST(req: Request) {
 
         // --- MULTI-TENANT SANDBOX PARTITIONING ---
         // Resolve or generate the root directory for this SaaS tenant across the Master Google Workspace
-        const tenantInfo = await prisma.tenant.findUnique({ where: { id: tenantId } });
+        const tenantInfo = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { id: true, companyName: true, driveFolderId: true },
+        });
         if (!tenantInfo) return NextResponse.json({ error: 'Invalid tenant context' }, { status: 403 });
 
         let tenantRootDriveId = tenantInfo.driveFolderId;

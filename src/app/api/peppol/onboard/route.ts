@@ -21,7 +21,14 @@ export async function POST() {
         const tenantId = (session!.user as any).tenantId;
 
         // Fetch our tenant info from Prisma
-        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: {
+                id: true, companyName: true, vatNumber: true,
+                email: true, street: true, postalCode: true, city: true,
+                peppolId: true, eInvoiceTenantId: true, eInvoiceApiKey: true,
+            },
+        });
         if (!tenant) {
             return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
         }

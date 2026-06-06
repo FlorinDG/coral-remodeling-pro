@@ -106,7 +106,13 @@ export async function POST(req: Request) {
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
-            where: { id: tenantId }
+            where: { id: tenantId },
+            select: {
+                id: true, companyName: true, vatNumber: true,
+                street: true, postalCode: true, city: true,
+                email: true, iban: true, bic: true,
+                eInvoiceApiKey: true,
+            },
         });
 
         if (!tenant) {

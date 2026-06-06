@@ -328,11 +328,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             },
                         ),
                         title: GhostHeader,
-                        basis: columnWidth,
+                        basis: currentWidth,
                         grow: 0,
                         shrink: 0,
-                        minWidth: columnWidth,
-                        maxWidth: columnWidth,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
                         cellClassName: `dsg-col-${prop.id}`
                     };
                 }
@@ -342,11 +342,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId, prop.config.rollupAggregation) as any,
                         title: GhostHeader,
-                        basis: columnWidth,
+                        basis: currentWidth,
                         grow: 0,
                         shrink: 0,
-                        minWidth: columnWidth,
-                        maxWidth: columnWidth,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
                         cellClassName: `dsg-col-${prop.id}`
                     };
                 }
@@ -356,11 +356,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...relationColumn(prop.id, prop.config.relationDatabaseId, prop.config.relationDisplayPropertyId) as any,
                         title: GhostHeader,
-                        basis: columnWidth,
+                        basis: currentWidth,
                         grow: 0,
                         shrink: 0,
-                        minWidth: columnWidth,
-                        maxWidth: columnWidth,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
                         cellClassName: `dsg-col-${prop.id}`
                     };
                 }
@@ -370,11 +370,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...formulaColumn(prop.config.formulaExpression, databaseIdRef, prop.id) as any,
                         title: GhostHeader,
-                        basis: columnWidth,
+                        basis: currentWidth,
                         grow: 0,
                         shrink: 0,
-                        minWidth: columnWidth,
-                        maxWidth: columnWidth,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
                         cellClassName: `dsg-col-${prop.id}`
                     };
                 }
@@ -415,11 +415,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...baseColumn,
                         title: GhostHeader,
-                        basis: columnWidth,
+                        basis: currentWidth,
                         grow: 0,
                         shrink: 0,
-                        minWidth: columnWidth,
-                        maxWidth: columnWidth,
+                        minWidth: currentWidth,
+                        maxWidth: currentWidth,
                         cellClassName: `dsg-col-${prop.id}`
                     };
                 }
@@ -427,11 +427,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 return {
                     ...keyColumn(prop.id, baseColumn),
                     title: GhostHeader,
-                    basis: columnWidth,
+                    basis: currentWidth,
                     grow: 0,
                     shrink: 0,
-                    minWidth: columnWidth,
-                    maxWidth: columnWidth,
+                    minWidth: currentWidth,
+                    maxWidth: currentWidth,
                     cellClassName: `dsg-col-${prop.id}`
                 };
             });

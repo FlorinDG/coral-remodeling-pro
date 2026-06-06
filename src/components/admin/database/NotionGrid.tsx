@@ -242,20 +242,44 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         return () => ro.disconnect();
     }, []);
 
-    // Use properties reference directly to avoid recreating columns when page data updates (which changes database reference)
-    let databaseProperties = database?.properties || [];
-
-    // ENFORCE LICENSING ISOLATION: Hide 'Lead Source' property for Free Tier
-    if (!hasCRM && databaseId === 'db-clients') {
-        databaseProperties = databaseProperties.filter(p => p.name.toLowerCase() !== 'lead source');
-    }
-
     const databaseIdRef = database?.id || '';
 
-    const viewStateMap = useMemo(() => new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []), [activeView?.propertiesState]);
+    // Create a stable hash of the structural schema and view configuration
+    const schemaHash = useMemo(() => {
+        if (!database) return '';
+        const props = database.properties || [];
+        const viewPropsState = activeView?.propertiesState || [];
+        
+        return JSON.stringify({
+            properties: props.map(p => ({
+                id: p.id,
+                type: p.type,
+                name: p.name,
+                config: p.config
+            })),
+            viewState: viewPropsState.map(vs => ({
+                propertyId: vs.propertyId,
+                width: vs.width,
+                hidden: vs.hidden,
+                order: vs.order
+            }))
+        });
+    }, [database?.properties, activeView?.propertiesState]);
+
+    const viewStateMap = useMemo(() => {
+        return new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []);
+    }, [schemaHash]);
 
     const orderedVisibleProperties = useMemo(() => {
-        return [...databaseProperties]
+        const props = database?.properties || [];
+        
+        // ENFORCE LICENSING ISOLATION: Hide 'Lead Source' property for Free Tier
+        let filteredProps = [...props];
+        if (!hasCRM && databaseId === 'db-clients') {
+            filteredProps = filteredProps.filter(p => p.name.toLowerCase() !== 'lead source');
+        }
+
+        return filteredProps
             .filter(prop => {
                 const state = viewStateMap.get(prop.id);
                 return !state?.hidden;
@@ -265,15 +289,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 const orderB = viewStateMap.get(b.id)?.order ?? 999;
                 return orderA - orderB;
             });
-    }, [databaseProperties, viewStateMap]);
-
-    // Deeply stringify the critical widths to force React to trigger the columns useMemo when a drag ends
-    const columnWidthsHash = useMemo(() => {
-        return orderedVisibleProperties.map(p => `${p.id}:${viewStateMap.get(p.id)?.width || 150}`).join('|');
-    }, [orderedVisibleProperties, viewStateMap]);
+    }, [schemaHash, viewStateMap, databaseId, hasCRM]);
 
     const columns = useMemo<Column<any, any>[]>(() => {
-        if (!databaseProperties.length || !databaseIdRef || !activeViewId) return [];
+        const propsCount = database?.properties?.length || 0;
+        if (!propsCount || !databaseIdRef || !activeViewId) return [];
 
         const columnTraceLogs = orderedVisibleProperties.map(p => `${p.id}:${viewStateMap.get(p.id)?.width || 150}`).join(', ');
         console.log("NotionGrid Rebuilding Columns! ->", columnTraceLogs);
@@ -522,7 +542,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             },
             ...mappedProperties
         ]
-    }, [databaseProperties, databaseIdRef, activeViewId, activeView?.propertiesState, viewStateMap, orderedVisibleProperties, columnWidthsHash, selectedRowIds]);
+    }, [databaseIdRef, activeViewId, viewStateMap, orderedVisibleProperties, resizingProperty, resizeOffset, isBestekReadOnly, preventDelete, router, isFree]);
 
 
     const filteredPages = useMemo(() => {
@@ -1221,7 +1241,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                         <div ref={gridAreaRef} className="flex-1 w-full relative z-10 min-h-0">
                             <DataSheetGrid
-                                key={columnWidthsHash}
+                                key={databaseIdRef}
                                 value={rowData}
                                 onChange={(newRows) => {
                                     if (!isMounted.current) return;

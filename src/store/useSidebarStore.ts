@@ -90,9 +90,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 18, // bump: added JOURNAL sidebar item
+            version: 19, // bump: force reset — fix stale sidebar across browsers (CROSS-7)
             migrate: (persistedState: any, version: number) => {
-                if (version < 18) {
+                if (version < 19) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

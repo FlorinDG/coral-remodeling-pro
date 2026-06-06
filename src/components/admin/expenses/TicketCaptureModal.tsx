@@ -88,7 +88,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     };
 
     const handleAutoCalcVat = (ratePercent: number) => {
-        const gross = parseDecimal(form.amount);
+        const gross = parseDecimal(form.amount) ?? 0;
         if (gross <= 0) return;
         const net = gross / (1 + ratePercent / 100);
         const vat = gross - net;
@@ -225,8 +225,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     // ── Save (update the already-saved record with user edits) ────────────────
     const handleSave = async () => {
-        const parsedAmount = parseDecimal(form.amount);
-        const parsedVat = parseDecimal(form.vatAmount);
+        const parsedAmount = parseDecimal(form.amount) ?? 0;
+        const parsedVat = parseDecimal(form.vatAmount) ?? 0;
         setLastSavedDetails({
             merchant: form.merchant || (isInvoiceMode ? 'Manual Invoice' : 'Unnamed Expense'),
             amount: form.amount

@@ -17,8 +17,10 @@ export default async function MobileLayout({ children }: { children: React.React
     try {
         const session = await auth();
         tenantId = session?.user?.tenantId ?? null;
-        if ((session?.user as any)?.activeModules) activeModules = (session.user as any).activeModules;
-        if ((session?.user as any)?.planType)      planType      = (session.user as any).planType;
+        if (session?.user) {
+            if ((session.user as any).activeModules) activeModules = (session.user as any).activeModules;
+            if ((session.user as any).planType)      planType      = (session.user as any).planType;
+        }
     } catch (e) {
         console.error('[m/layout] auth() failed:', e);
     }

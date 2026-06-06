@@ -743,7 +743,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 if (/^-?[\d.,]*$/.test(v) || v === '') {
                                     setVerkoopText(v);
                                     const parsed = parseDecimal(v);
-                                    handleMathChange('verkoopPrice', parsed - variantDeltas);
+                                    handleMathChange('verkoopPrice', (parsed ?? 0) - variantDeltas);
                                 }
                             }}
                             onBlur={() => {

@@ -35,9 +35,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
         isOwner    = tenantId === OWNER_TENANT_ID;
         isSuperadmin = !!(userRole && PLATFORM_ADMIN_ROLES.includes(userRole as any));
 
-        // Pull JWT-cached values as baseline (better than hardcoded defaults)
-        if ((session?.user as any)?.activeModules) activeModules = (session.user as any).activeModules;
-        if ((session?.user as any)?.planType)      planType      = (session.user as any).planType;
+        if (session?.user) {
+            const user = session.user as any;
+            if (user.activeModules) activeModules = user.activeModules;
+            if (user.planType)      planType      = user.planType;
+        }
     } catch (e) {
         console.error('[layout] auth() failed:', e);
     }

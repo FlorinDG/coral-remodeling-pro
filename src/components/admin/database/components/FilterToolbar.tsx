@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
-import { FilterOperator } from '../types';
+import { FilterOperator, Property } from '../types';
 import { Filter, Plus, Trash2, X, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -12,7 +12,8 @@ interface FilterToolbarProps {
     viewId?: string;
 }
 
-const OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
+// Operators grouped by property type — mirrors Notion's behavior
+const TEXT_OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
     { value: 'contains', label: 'Contains', needsValue: true },
     { value: 'does_not_contain', label: 'Does not contain', needsValue: true },
     { value: 'equals', label: 'Is', needsValue: true },
@@ -20,6 +21,42 @@ const OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[]
     { value: 'is_empty', label: 'Is empty', needsValue: false },
     { value: 'is_not_empty', label: 'Is not empty', needsValue: false }
 ];
+
+const SELECT_OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
+    { value: 'equals', label: 'Is', needsValue: true },
+    { value: 'does_not_equal', label: 'Is not', needsValue: true },
+    { value: 'is_empty', label: 'Is empty', needsValue: false },
+    { value: 'is_not_empty', label: 'Is not empty', needsValue: false }
+];
+
+const CHECKBOX_OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
+    { value: 'equals', label: 'Is', needsValue: true },
+    { value: 'does_not_equal', label: 'Is not', needsValue: true },
+];
+
+const NUMBER_OPERATORS: { value: FilterOperator; label: string; needsValue: boolean }[] = [
+    { value: 'equals', label: 'Equals', needsValue: true },
+    { value: 'does_not_equal', label: 'Does not equal', needsValue: true },
+    { value: 'contains', label: 'Contains', needsValue: true },
+    { value: 'is_empty', label: 'Is empty', needsValue: false },
+    { value: 'is_not_empty', label: 'Is not empty', needsValue: false }
+];
+
+function getOperatorsForType(type: string): typeof TEXT_OPERATORS {
+    switch (type) {
+        case 'select':
+        case 'multi_select':
+            return SELECT_OPERATORS;
+        case 'checkbox':
+            return CHECKBOX_OPERATORS;
+        case 'number':
+        case 'currency':
+        case 'percent':
+            return NUMBER_OPERATORS;
+        default:
+            return TEXT_OPERATORS;
+    }
+}
 
 export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps) {
     const addFilter = useDatabaseStore(state => state.addFilter);
@@ -111,6 +148,19 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
         setIsOpen(false);
     };
 
+    // When the user changes the property, reset operator and value to sensible
+    // defaults for the new property type (prevents stale operator/value combos).
+    const handlePropertyChange = (filterId: string, newPropertyId: string) => {
+        const newProp = database.properties.find(p => p.id === newPropertyId);
+        const ops = getOperatorsForType(newProp?.type || 'text');
+        const defaultOp = ops[0].value;
+        updateFilter(databaseId, viewId, filterId, {
+            propertyId: newPropertyId,
+            operator: defaultOp,
+            value: ''
+        });
+    };
+
     // ── Portal Panel ──
     const panel = isOpen && panelPos && typeof document !== 'undefined' && createPortal(
         <div
@@ -144,8 +194,12 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                     </div>
                 ) : (
                     activeFilters.map((filter, index) => {
-                        const op = OPERATORS.find(o => o.value === filter.operator);
+                        const prop = database.properties.find(p => p.id === filter.propertyId);
+                        const propType = prop?.type || 'text';
+                        const operators = getOperatorsForType(propType);
+                        const op = operators.find(o => o.value === filter.operator);
                         const needsValue = op?.needsValue ?? true;
+
                         return (
                             <div key={filter.id} className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 group">
                                 {index === 0 ? (
@@ -169,11 +223,12 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                                      </button>
                                  )}
 
+                                {/* Property selector */}
                                 <div className="relative flex-shrink-0">
                                     <select
                                         className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-[110px] cursor-pointer"
                                         value={filter.propertyId}
-                                        onChange={e => updateFilter(databaseId, viewId, filter.id, { propertyId: e.target.value })}
+                                        onChange={e => handlePropertyChange(filter.id, e.target.value)}
                                     >
                                         {database.properties.map(p => (
                                             <option key={p.id} value={p.id}>{p.name}</option>
@@ -182,25 +237,27 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
                                 </div>
 
+                                {/* Operator selector — type-adapted */}
                                 <div className="relative flex-shrink-0">
                                     <select
                                         className="appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-[120px] cursor-pointer"
                                         value={filter.operator}
                                         onChange={e => updateFilter(databaseId, viewId, filter.id, { operator: e.target.value as FilterOperator })}
                                     >
-                                        {OPERATORS.map(o => (
+                                        {operators.map(o => (
                                             <option key={o.value} value={o.value}>{o.label}</option>
                                         ))}
                                     </select>
                                     <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
                                 </div>
 
+                                {/* Value input — type-adapted */}
                                 {needsValue && (
-                                    <input
-                                        className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-0"
-                                        placeholder="Type a value..."
-                                        value={filter.value as string || ''}
-                                        onChange={e => updateFilter(databaseId, viewId, filter.id, { value: e.target.value })}
+                                    <FilterValueInput
+                                        prop={prop}
+                                        operator={filter.operator}
+                                        value={filter.value}
+                                        onChange={val => updateFilter(databaseId, viewId, filter.id, { value: val })}
                                         autoFocus={index === activeFilters.length - 1}
                                     />
                                 )}
@@ -262,5 +319,76 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
             </button>
             {panel}
         </>
+    );
+}
+
+// ── Type-adapted value input ──────────────────────────────────────────────────
+// Shows the right control for the property type: dropdown for select/multi_select,
+// toggle for checkbox, text input for everything else.
+function FilterValueInput({
+    prop,
+    operator,
+    value,
+    onChange,
+    autoFocus,
+}: {
+    prop?: Property;
+    operator: FilterOperator;
+    value: any;
+    onChange: (val: any) => void;
+    autoFocus?: boolean;
+}) {
+    const type = prop?.type || 'text';
+
+    // Select / Multi-select → dropdown of options (like Notion)
+    if ((type === 'select' || type === 'multi_select') &&
+        (operator === 'equals' || operator === 'does_not_equal')) {
+        const options = prop?.config?.options || [];
+        return (
+            <div className="relative flex-1 min-w-0">
+                <select
+                    className="w-full appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors cursor-pointer"
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                    autoFocus={autoFocus}
+                >
+                    <option value="">Select an option…</option>
+                    {options.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.name}</option>
+                    ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+            </div>
+        );
+    }
+
+    // Checkbox → simple true/false dropdown
+    if (type === 'checkbox') {
+        return (
+            <div className="relative flex-1 min-w-0">
+                <select
+                    className="w-full appearance-none bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 pr-7 text-xs font-medium text-neutral-700 dark:text-neutral-200 outline-none focus:border-orange-400 dark:focus:border-orange-500 transition-colors cursor-pointer"
+                    value={String(value ?? '')}
+                    onChange={e => onChange(e.target.value)}
+                    autoFocus={autoFocus}
+                >
+                    <option value="">Select…</option>
+                    <option value="true">Checked</option>
+                    <option value="false">Unchecked</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
+            </div>
+        );
+    }
+
+    // Default: text input
+    return (
+        <input
+            className="flex-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-md px-2.5 py-1.5 text-xs text-neutral-700 dark:text-neutral-200 outline-none placeholder:text-neutral-400 focus:border-orange-400 dark:focus:border-orange-500 transition-colors min-w-0"
+            placeholder="Type a value..."
+            value={value as string || ''}
+            onChange={e => onChange(e.target.value)}
+            autoFocus={autoFocus}
+        />
     );
 }

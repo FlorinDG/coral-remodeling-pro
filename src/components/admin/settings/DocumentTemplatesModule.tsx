@@ -157,9 +157,11 @@ const TEMPLATES = [
 export default function DocumentTemplatesModule() {
     const [mode, setMode] = useState<'dynamic' | 'stationery'>('dynamic');
 
-    const [selectedTemplate, setSelectedTemplate] = useState('t1');
-    const [primaryColor, setPrimaryColor] = useState('#d35400');
-    const [documentLanguage, setDocumentLanguage] = useState('nl');
+    // PROFILE-2: Initialize to null sentinels ("not loaded from DB").
+    // Display defaults applied at render via ?? operators.
+    const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+    const [primaryColor, setPrimaryColor] = useState<string | null>(null);
+    const [documentLanguage, setDocumentLanguage] = useState<string | null>(null);
 
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -167,6 +169,8 @@ export default function DocumentTemplatesModule() {
     const [stationeryName, setStationeryName] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
+    // Track whether tenant data has been hydrated into local state
+    const [hydrated, setHydrated] = useState(false);
 
     const [tenantProfile, setTenantProfile] = useState<any>(null);
 
@@ -183,26 +187,35 @@ export default function DocumentTemplatesModule() {
             if (tenant.documentMode) setMode(tenant.documentMode);
             if (tenant.stationeryUrl) { setStationeryUrl(tenant.stationeryUrl); setStationeryName('Saved stationery'); }
             setTenantProfile(tenant);
+            setHydrated(true);
         }
     }, [tenant]);
 
     const handleSaveSettings = async () => {
+        // PROFILE-2: Gate save on hydration — never persist un-hydrated defaults
+        if (!tenant || !hydrated) {
+            toast.error('Settings not loaded yet. Please wait and try again.');
+            return;
+        }
         setIsSaving(true);
         try {
+            // PROFILE-2: Only send fields this component OWNS, and only if hydrated (non-null).
+            const payload: Record<string, any> = {};
+            if (primaryColor !== null) payload.brandColor = primaryColor;
+            if (selectedTemplate !== null) payload.documentTemplate = selectedTemplate;
+            payload.documentMode = mode;
+            if (logoUrl !== undefined) payload.logoUrl = logoUrl;
+            payload.stationeryUrl = mode === 'stationery' ? stationeryUrl : (tenantProfile?.stationeryUrl || null);
+
             const res = await fetch('/api/tenant/profile', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    brandColor: primaryColor,
-                    documentTemplate: selectedTemplate,
-                    documentMode: mode,
-                    logoUrl: logoUrl,
-                    stationeryUrl: mode === 'stationery' ? stationeryUrl : (tenantProfile?.stationeryUrl || null),
-                }),
+                body: JSON.stringify(payload),
             });
             if (res.ok) {
-                document.documentElement.style.setProperty('--brand-color', primaryColor);
-                window.dispatchEvent(new CustomEvent('brandColorChanged', { detail: primaryColor }));
+                const effectiveColor = primaryColor ?? '#d35400';
+                document.documentElement.style.setProperty('--brand-color', effectiveColor);
+                window.dispatchEvent(new CustomEvent('brandColorChanged', { detail: effectiveColor }));
                 setTenantProfile((p: any) => ({
                     ...p,
                     brandColor: primaryColor,
@@ -223,15 +236,19 @@ export default function DocumentTemplatesModule() {
         setIsSaving(false);
     };
 
+    // PROFILE-2: Display defaults — used in JSX and handlers, never persisted.
+    const displayColor = primaryColor ?? '#d35400';
+    const displayTemplate = selectedTemplate ?? 't1';
+
     // Generate real PDF preview
     const handlePreview = async () => {
         setIsPreviewing(true);
         try {
             const profile = {
                 ...(tenantProfile || {}),
-                brandColor: primaryColor,
+                brandColor: displayColor,
                 logoUrl: logoUrl,
-                documentTemplate: selectedTemplate,
+                documentTemplate: displayTemplate,
                 documentMode: mode,
                 stationeryUrl: mode === 'stationery' ? stationeryUrl : null,
                 planType: 'FOUNDER',
@@ -252,8 +269,8 @@ export default function DocumentTemplatesModule() {
                     grandTotal={PREVIEW_TOTAL}
                     databaseStoreState={{ databases: [] }}
                     tenantProfile={profile}
-                    templateId={selectedTemplate as any}
-                    language={documentLanguage || 'nl'}
+                    templateId={displayTemplate as any}
+                    language={documentLanguage ?? 'nl'}
                 />
             );
 
@@ -300,6 +317,7 @@ export default function DocumentTemplatesModule() {
         setStationeryName(null);
     };
 
+
     return (
         <div className="flex flex-col gap-8 max-w-5xl mx-auto pb-24">
             {/* Mode tabs */}
@@ -333,16 +351,16 @@ export default function DocumentTemplatesModule() {
                                 <div
                                     key={tmpl.id}
                                     onClick={() => setSelectedTemplate(tmpl.id)}
-                                    className={`relative flex flex-col gap-3 p-5 rounded-xl border-2 cursor-pointer transition-all group ${selectedTemplate === tmpl.id ? 'shadow-md' : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/20 bg-white dark:bg-[#111]'}`}
-                                    style={selectedTemplate === tmpl.id ? { borderColor: primaryColor, backgroundColor: `${primaryColor}09` } : {}}
+                                    className={`relative flex flex-col gap-3 p-5 rounded-xl border-2 cursor-pointer transition-all group ${displayTemplate === tmpl.id ? 'shadow-md' : 'border-neutral-200 dark:border-white/10 hover:border-neutral-300 dark:hover:border-white/20 bg-white dark:bg-[#111]'}`}
+                                    style={displayTemplate === tmpl.id ? { borderColor: displayColor, backgroundColor: `${displayColor}09` } : {}}
                                 >
-                                    {selectedTemplate === tmpl.id ? (
-                                        <CheckCircle2 className="absolute top-3 right-3 w-4 h-4" style={{ color: primaryColor }} />
+                                    {displayTemplate === tmpl.id ? (
+                                        <CheckCircle2 className="absolute top-3 right-3 w-4 h-4" style={{ color: displayColor }} />
                                     ) : (
                                         <Circle className="absolute top-3 right-3 w-4 h-4 text-neutral-300 dark:text-neutral-700" />
                                     )}
                                     <div className="mb-1 flex items-center justify-center h-16">
-                                        {tmpl.preview(primaryColor)}
+                                        {tmpl.preview(displayColor)}
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
@@ -397,10 +415,10 @@ export default function DocumentTemplatesModule() {
                                     <span className="text-xs text-neutral-500">Used for headers, accents, table rows, and app theming.</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="text-xs font-mono text-neutral-400">{primaryColor}</span>
+                                    <span className="text-xs font-mono text-neutral-400">{displayColor}</span>
                                     <input
                                         type="color"
-                                        value={primaryColor}
+                                        value={displayColor}
                                         onChange={e => setPrimaryColor(e.target.value)}
                                         className="w-10 h-10 rounded border-none cursor-pointer bg-transparent"
                                     />
@@ -409,7 +427,7 @@ export default function DocumentTemplatesModule() {
 
                             {/* Live swatch */}
                             <div className="flex gap-2">
-                                {[primaryColor, `${primaryColor}cc`, `${primaryColor}88`, `${primaryColor}44`, `${primaryColor}1a`].map((c, i) => (
+                                {[displayColor, `${displayColor}cc`, `${displayColor}88`, `${displayColor}44`, `${displayColor}1a`].map((c, i) => (
                                     <div key={i} className="flex-1 h-7 rounded" style={{ backgroundColor: c }} />
                                 ))}
                             </div>
@@ -426,10 +444,10 @@ export default function DocumentTemplatesModule() {
                     </div>
 
                     {stationeryUrl ? (
-                        <div className="w-full max-w-2xl mx-auto rounded-xl border-2 overflow-hidden relative" style={{ borderColor: `${primaryColor}80` }}>
+                        <div className="w-full max-w-2xl mx-auto rounded-xl border-2 overflow-hidden relative" style={{ borderColor: `${displayColor}80` }}>
                             {stationeryUrl.startsWith('data:application/pdf') ? (
                                 <div className="w-full aspect-[1/1.414] bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center justify-center gap-3">
-                                    <FileImage className="w-16 h-16" style={{ color: primaryColor }} />
+                                    <FileImage className="w-16 h-16" style={{ color: displayColor }} />
                                     <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">PDF Stationery</p>
                                     <p className="text-xs text-neutral-500">Will be used as background on all exported documents</p>
                                 </div>
@@ -458,11 +476,11 @@ export default function DocumentTemplatesModule() {
                     ) : (
                         <label
                             className="w-full max-w-2xl aspect-[1/1.414] mx-auto rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 cursor-pointer transition-colors relative overflow-hidden group"
-                            style={{ borderColor: `${primaryColor}80`, backgroundColor: `${primaryColor}08` }}
+                            style={{ borderColor: `${displayColor}80`, backgroundColor: `${displayColor}08` }}
                         >
                             <input type="file" accept="application/pdf,image/png,image/jpeg" className="hidden" onChange={handleStationeryUpload} />
                             <div className="p-4 bg-white dark:bg-black rounded-full shadow-sm">
-                                <UploadCloud className="w-10 h-10" style={{ color: primaryColor }} />
+                                <UploadCloud className="w-10 h-10" style={{ color: displayColor }} />
                             </div>
                             <div className="text-center px-8">
                                 <p className="text-base font-bold text-neutral-900 dark:text-white mb-1">Upload your A4 stationery</p>
@@ -479,8 +497,8 @@ export default function DocumentTemplatesModule() {
                                 <span className="text-xs text-neutral-500">Used for table headers and summary highlights on your stationery.</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <span className="text-xs font-mono text-neutral-400">{primaryColor}</span>
-                                <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded border-none cursor-pointer bg-transparent" />
+                                <span className="text-xs font-mono text-neutral-400">{displayColor}</span>
+                                <input type="color" value={displayColor} onChange={e => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded border-none cursor-pointer bg-transparent" />
                             </div>
                         </div>
                     </div>
@@ -499,9 +517,9 @@ export default function DocumentTemplatesModule() {
                 </button>
                 <button
                     onClick={handleSaveSettings}
-                    disabled={isSaving}
+                    disabled={isSaving || !hydrated}
                     className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-bold rounded-lg shadow-sm transition-colors disabled:opacity-70"
-                    style={{ backgroundColor: primaryColor }}
+                    style={{ backgroundColor: displayColor }}
                 >
                     {isSaving && <Loader2 className="w-4 h-4 animate-spin" />}
                     {isSaving ? 'Saving…' : 'Save Branding'}

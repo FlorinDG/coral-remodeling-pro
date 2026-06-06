@@ -12,10 +12,29 @@ console.log("[DEBUG AUTH] Google Client ID loaded:", !!process.env.GOOGLE_CLIENT
 
 
 
+const prismaAdapter = PrismaAdapter(prisma);
+
+// Wrap PrismaAdapter to ensure all email queries and updates are lowercased and trimmed.
+// This prevents case-sensitivity bugs from creating duplicate users or resetting tenant profiles.
+const customAdapter = {
+    ...prismaAdapter,
+    createUser: (data: any) => {
+        const email = data.email ? data.email.toLowerCase().trim() : data.email;
+        return prismaAdapter.createUser!({ ...data, email });
+    },
+    getUserByEmail: (email: string) => {
+        return prismaAdapter.getUserByEmail!(email.toLowerCase().trim());
+    },
+    updateUser: (data: any) => {
+        const email = data.email ? data.email.toLowerCase().trim() : data.email;
+        return prismaAdapter.updateUser!({ ...data, email });
+    },
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
     trustHost: true, // Required on Vercel custom domains — derives base URL from X-Forwarded-Host header
-    adapter: PrismaAdapter(prisma),
+    adapter: customAdapter,
     providers: [
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID,
@@ -130,7 +149,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
             if (user && user.email) {
                 let dbUser = await prisma.user.findUnique({
-                    where: { email: user.email },
+                    where: { email: user.email.toLowerCase().trim() },
                 });
 
                 // Auto-provision a Tenant workspace for first-time Google OAuth users

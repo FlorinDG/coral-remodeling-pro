@@ -120,7 +120,49 @@ export default function CompanyInfoSettings() {
     const router = useRouter();
     const { data: session, update: updateSession } = useSession();
 
-    const [profile, setProfile] = useState({
+    // PROFILE-2: Initialize persisted fields to null ("not loaded" sentinel), NOT to fake
+    // defaults like 'INV'/1/'#d35400'. This prevents unconditional PUTs from overwriting
+    // real DB values with hardcoded defaults if save fires before hydration.
+    // Display defaults are applied ONLY at render time via ?? operators.
+    const [profile, setProfile] = useState<{
+        companyName: string;
+        vatNumber: string;
+        email: string;
+        street: string;
+        postalCode: string;
+        city: string;
+        iban: string;
+        peppolId: string;
+        peppolRegistered: boolean;
+        peppolOptOut: boolean;
+        commercialName: string;
+        bic: string;
+        deliveryStreet: string;
+        deliveryPostalCode: string;
+        deliveryCity: string;
+        headquartersStreet: string;
+        headquartersPostalCode: string;
+        headquartersCity: string;
+        directorFirstName: string;
+        directorLastName: string;
+        documentLanguage: string;
+        // Document numbering — null = not yet loaded from DB
+        invoicePrefix: string | null;
+        invoiceConnector: string | null;
+        invoiceDateFormat: string | null;
+        invoiceNumberWidth: number | null;
+        invoiceNextNumber: number | null;
+        quotationPrefix: string | null;
+        quotationConnector: string | null;
+        quotationDateFormat: string | null;
+        quotationNumberWidth: number | null;
+        quotationNextNumber: number | null;
+        creditnotePrefix: string | null;
+        creditnoteConnector: string | null;
+        creditnoteDateFormat: string | null;
+        creditnoteNumberWidth: number | null;
+        creditnoteNextNumber: number | null;
+    }>({
         companyName: '',
         vatNumber: '',
         email: '',
@@ -142,23 +184,22 @@ export default function CompanyInfoSettings() {
         directorFirstName: '',
         directorLastName: '',
         documentLanguage: '',
-        // Document numbering
-        invoicePrefix: 'INV',
-        invoiceConnector: '-',
-        invoiceDateFormat: 'YYYY',
-        invoiceNumberWidth: 3,
-        invoiceNextNumber: 1,
-        quotationPrefix: 'OFF',
-        quotationConnector: '-',
-        quotationDateFormat: 'YYYY',
-        quotationNumberWidth: 3,
-        quotationNextNumber: 1,
-        creditnotePrefix: 'CN',
-        creditnoteConnector: '-',
-        creditnoteDateFormat: 'YYYY',
-        creditnoteNumberWidth: 3,
-        creditnoteNextNumber: 1,
-        documentTemplate: 't1',
+        // Document numbering — null sentinels (not loaded yet)
+        invoicePrefix: null,
+        invoiceConnector: null,
+        invoiceDateFormat: null,
+        invoiceNumberWidth: null,
+        invoiceNextNumber: null,
+        quotationPrefix: null,
+        quotationConnector: null,
+        quotationDateFormat: null,
+        quotationNumberWidth: null,
+        quotationNextNumber: null,
+        creditnotePrefix: null,
+        creditnoteConnector: null,
+        creditnoteDateFormat: null,
+        creditnoteNumberWidth: null,
+        creditnoteNextNumber: null,
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -189,22 +230,23 @@ export default function CompanyInfoSettings() {
                 directorFirstName: tenant.directorFirstName || '',
                 directorLastName: tenant.directorLastName || '',
                 documentLanguage: tenant.documentLanguage || '',
-                invoicePrefix: tenant.invoicePrefix ?? 'INV',
-                invoiceConnector: tenant.invoiceConnector ?? '-',
-                invoiceDateFormat: tenant.invoiceDateFormat ?? 'YYYY',
-                invoiceNumberWidth: tenant.invoiceNumberWidth ?? 3,
-                invoiceNextNumber: tenant.invoiceNextNumber ?? 1,
-                quotationPrefix: tenant.quotationPrefix ?? 'OFF',
-                quotationConnector: tenant.quotationConnector ?? '-',
-                quotationDateFormat: tenant.quotationDateFormat ?? 'YYYY',
-                quotationNumberWidth: tenant.quotationNumberWidth ?? 3,
-                quotationNextNumber: tenant.quotationNextNumber ?? 1,
-                creditnotePrefix: tenant.creditnotePrefix ?? 'CN',
-                creditnoteConnector: tenant.creditnoteConnector ?? '-',
-                creditnoteDateFormat: tenant.creditnoteDateFormat ?? 'YYYY',
-                creditnoteNumberWidth: tenant.creditnoteNumberWidth ?? 3,
-                creditnoteNextNumber: tenant.creditnoteNextNumber ?? 1,
-                documentTemplate: tenant.documentTemplate ?? 't1',
+                // PROFILE-2: Store the ACTUAL DB values (including null/undefined).
+                // Display defaults (INV, 1, etc.) are applied at render via ?? operators.
+                invoicePrefix: tenant.invoicePrefix ?? null,
+                invoiceConnector: tenant.invoiceConnector ?? null,
+                invoiceDateFormat: tenant.invoiceDateFormat ?? null,
+                invoiceNumberWidth: tenant.invoiceNumberWidth ?? null,
+                invoiceNextNumber: tenant.invoiceNextNumber ?? null,
+                quotationPrefix: tenant.quotationPrefix ?? null,
+                quotationConnector: tenant.quotationConnector ?? null,
+                quotationDateFormat: tenant.quotationDateFormat ?? null,
+                quotationNumberWidth: tenant.quotationNumberWidth ?? null,
+                quotationNextNumber: tenant.quotationNextNumber ?? null,
+                creditnotePrefix: tenant.creditnotePrefix ?? null,
+                creditnoteConnector: tenant.creditnoteConnector ?? null,
+                creditnoteDateFormat: tenant.creditnoteDateFormat ?? null,
+                creditnoteNumberWidth: tenant.creditnoteNumberWidth ?? null,
+                creditnoteNextNumber: tenant.creditnoteNextNumber ?? null,
             });
             setLoading(false);
         }
@@ -222,12 +264,26 @@ export default function CompanyInfoSettings() {
     };
 
     const proceedWithSave = async (dataToSave: typeof profile) => {
+        // PROFILE-2: Gate save on hydration — never persist un-hydrated state
+        if (!tenant) {
+            toast.error('Profile not loaded yet. Please wait and try again.');
+            return;
+        }
         setSaving(true);
         try {
+            // PROFILE-2: Send only fields this page OWNS and that were actually loaded.
+            // Skip null fields (not-loaded sentinels) and drop documentTemplate
+            // (owned by DocumentTemplatesModule — overlapping writers caused resets).
+            const ownedFields: Record<string, any> = {};
+            for (const [key, value] of Object.entries(dataToSave)) {
+                if (key === 'documentTemplate') continue; // not our field
+                if (value === null) continue; // not loaded — don't overwrite DB
+                ownedFields[key] = value;
+            }
             const res = await fetch('/api/tenant/profile', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dataToSave)
+                body: JSON.stringify(ownedFields)
             });
             if (res.ok) {
                 toast.success('Company profile saved securely!');
@@ -326,7 +382,7 @@ export default function CompanyInfoSettings() {
                     </div>
                     <Button
                         onClick={handleSave}
-                        disabled={saving || loading}
+                        disabled={saving || loading || !tenant}
                         className="gap-2 text-white disabled:opacity-50"
                         style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                     >
@@ -617,11 +673,12 @@ export default function CompanyInfoSettings() {
                     <p className="text-xs text-neutral-500 -mt-4">{t('nav.settings.documentNumberingDesc')}</p>
 
                     {(['invoice', 'quotation', 'creditnote'] as const).map((docType) => {
-                        const prefix = profile[`${docType}Prefix` as keyof typeof profile] as string;
-                        const connector = profile[`${docType}Connector` as keyof typeof profile] as string;
-                        const dateFormat = profile[`${docType}DateFormat` as keyof typeof profile] as string;
-                        const numberWidth = profile[`${docType}NumberWidth` as keyof typeof profile] as number;
-                        const nextNumber = profile[`${docType}NextNumber` as keyof typeof profile] as number;
+                        // PROFILE-2: Apply display defaults at render \u2014 null = not loaded yet
+                        const prefix = (profile[`${docType}Prefix` as keyof typeof profile] as string | null) ?? (docType === 'invoice' ? 'INV' : docType === 'quotation' ? 'OFF' : 'CN');
+                        const connector = (profile[`${docType}Connector` as keyof typeof profile] as string | null) ?? '-';
+                        const dateFormat = (profile[`${docType}DateFormat` as keyof typeof profile] as string | null) ?? 'YYYY';
+                        const numberWidth = (profile[`${docType}NumberWidth` as keyof typeof profile] as number | null) ?? 3;
+                        const nextNumber = (profile[`${docType}NextNumber` as keyof typeof profile] as number | null) ?? 1;
 
                         // Live preview
                         const datePart = (() => {

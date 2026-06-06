@@ -251,26 +251,44 @@ export default async function RootLayout({
                     </ThemeProvider>
                 </NextIntlClientProvider>
 
-                {/* Aggressively kill any stale service workers + caches on non-main-site domains.
-                    Safari non-incognito can serve cached main-site content on subdomains
-                    unless we explicitly purge both SW registrations and Cache API entries. */}
+                {/* Service worker lifecycle: WorkHub gets versioned SW, others get SW purge.
+                    CROSS-7c: Pass deploy SHA as cache-bust param. Listen for controllerchange
+                    to auto-reload when a new SW activates. Check for updates on focus. */}
                 <script
                     dangerouslySetInnerHTML={{
                         __html: `
                           (function() {
                             try {
                               var subdomain = window.location.hostname;
+                              var appVersion = '${process.env.VERCEL_GIT_COMMIT_SHA || 'dev'}';
 
-                              // WorkHub subdomain: register the real service worker
+                              // WorkHub subdomain: register versioned service worker
                               if (subdomain.startsWith('work.')) {
                                 if ('serviceWorker' in navigator) {
-                                  navigator.serviceWorker.register('/sw-workhub.js', { scope: '/' })
+                                  // Pass version as query param — SW uses it for cache name
+                                  navigator.serviceWorker.register('/sw-workhub.js?v=' + appVersion, { scope: '/' })
                                     .then(function(reg) {
-                                      console.log('[WorkHub] SW registered, scope:', reg.scope);
+                                      console.log('[WorkHub] SW registered, scope:', reg.scope, 'version:', appVersion);
+                                      // Check for SW updates on window focus
+                                      window.addEventListener('focus', function() {
+                                        reg.update().catch(function() {});
+                                      });
+                                      // Check for updates on visibility change (tab switch back)
+                                      document.addEventListener('visibilitychange', function() {
+                                        if (document.visibilityState === 'visible') {
+                                          reg.update().catch(function() {});
+                                        }
+                                      });
                                     })
                                     .catch(function(err) {
                                       console.warn('[WorkHub] SW registration failed:', err);
                                     });
+
+                                  // When a new SW takes control, reload to get fresh assets
+                                  navigator.serviceWorker.addEventListener('controllerchange', function() {
+                                    console.log('[WorkHub] New SW controller — reloading for fresh assets');
+                                    window.location.reload();
+                                  });
                                 }
                                 return; // Don't kill SW on work subdomain
                               }

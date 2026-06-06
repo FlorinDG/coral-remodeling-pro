@@ -1,12 +1,19 @@
 /**
- * WorkHub Service Worker — App Shell + Network First strategy
+ * WorkHub Service Worker — Versioned App Shell + Network First strategy
+ *
+ * CROSS-7c: The cache name includes a version param from the registration URL.
+ * When a new deployment registers the SW with a new ?v=SHA, the old caches are
+ * purged on activate and the new app shell is cached.
  *
  * Caches the app shell (HTML, JS, CSS) for offline-capable launch.
  * API calls and dynamic content always go network-first.
  * Falls back to cached app shell when offline.
  */
 
-const CACHE_NAME = 'workhub-v1';
+// Derive cache version from the SW URL's ?v= param (set by the registering page)
+const swUrl = new URL(self.location.href);
+const BUILD_VERSION = swUrl.searchParams.get('v') || 'v1';
+const CACHE_NAME = `workhub-${BUILD_VERSION}`;
 
 // App shell assets to pre-cache on install
 const APP_SHELL = [
@@ -19,7 +26,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()) // Take control immediately
   );
 });
 
@@ -28,13 +35,17 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then(names => {
+        // Purge ALL caches that aren't the current version
         return Promise.all(
           names
             .filter(name => name !== CACHE_NAME)
-            .map(name => caches.delete(name))
+            .map(name => {
+              console.log(`[SW] Purging old cache: ${name}`);
+              return caches.delete(name);
+            })
         );
       })
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()) // Claim all open tabs
   );
 });
 
@@ -46,7 +57,7 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
-  // Skip API calls and auth routes — always network
+  // Skip API calls, auth routes, and version endpoint — always network
   if (url.pathname.startsWith('/api/') || url.pathname.includes('/login')) {
     return;
   }

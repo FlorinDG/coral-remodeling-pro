@@ -417,44 +417,45 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
             {/* ── Slash command floating menu ─────────────────────────────── */}
             {slashMenu && filteredCommands.length > 0 && (() => {
                 const estimatedHeight = Math.min(24 + (filteredCommands.length * 48), 288); // max-h-72 is 288px
-                const spaceBelow = window.innerHeight - slashMenu.top;
-                const placement = spaceBelow < estimatedHeight && slashMenu.top > estimatedHeight ? 'top' : 'bottom';
+                const spaceBelow = typeof window !== 'undefined' ? window.innerHeight - slashMenu.top : 0;
+                const placement = typeof window !== 'undefined' && spaceBelow < estimatedHeight && slashMenu.top > estimatedHeight ? 'top' : 'bottom';
+                const posStyle = placement === 'top'
+                    ? { bottom: typeof window !== 'undefined' ? window.innerHeight - slashMenu.top + 8 : 0, left: slashMenu.left }
+                    : { top: slashMenu.top, left: slashMenu.left };
                 return (
                     <div
                         className="fixed z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 w-64 max-h-72 overflow-y-auto"
-                        style={placement === 'top'
-                            ? { bottom: window.innerHeight - slashMenu.top + 8, left: slashMenu.left }
-                            : { top: slashMenu.top, left: slashMenu.left }
-                        }
+                        style={posStyle}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
-                        Blocks
+                            Blocks
+                        </div>
+                        {filteredCommands.map((cmd, i) => (
+                            <button
+                                key={cmd.type}
+                                onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    changeBlockType(slashMenu.blockId, cmd.type);
+                                }}
+                                onMouseEnter={() => setSlashIndex(i)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
+                                    i === slashIndex
+                                        ? 'bg-neutral-100 dark:bg-white/10'
+                                        : 'hover:bg-neutral-50 dark:hover:bg-white/5'
+                                }`}
+                            >
+                                <div className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-white/10 flex items-center justify-center text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-white/5">
+                                    {cmd.icon}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-neutral-900 dark:text-white">{cmd.label}</p>
+                                    <p className="text-[11px] text-neutral-400">{cmd.description}</p>
+                                </div>
+                            </button>
+                        ))}
                     </div>
-                    {filteredCommands.map((cmd, i) => (
-                        <button
-                            key={cmd.type}
-                            onMouseDown={(e) => {
-                                e.preventDefault();
-                                changeBlockType(slashMenu.blockId, cmd.type);
-                            }}
-                            onMouseEnter={() => setSlashIndex(i)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                                i === slashIndex
-                                    ? 'bg-neutral-100 dark:bg-white/10'
-                                    : 'hover:bg-neutral-50 dark:hover:bg-white/5'
-                            }`}
-                        >
-                            <div className="w-8 h-8 rounded-lg border border-neutral-200 dark:border-white/10 flex items-center justify-center text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-white/5">
-                                {cmd.icon}
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-neutral-900 dark:text-white">{cmd.label}</p>
-                                <p className="text-[11px] text-neutral-400">{cmd.description}</p>
-                            </div>
-                        </button>
-                    ))}
-                </div>
+                );
             })()}
 
             {/* ── @prop / @this_page mention flyout ─────────────────────────── */}

@@ -54,6 +54,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const router = useRouter();
   const pathname = usePathname();
   const projectIdParam = searchParams.get('projectId');
+  const openParam = searchParams.get('open');
   const locale = useLocale();
 
   const hasCRM = activeModules.includes('CRM');
@@ -68,6 +69,12 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete('projectId');
+    router.replace(`${pathname}?${newParams.toString()}`);
+  }
+
+  const handleCloseOpenModal = () => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.delete('open');
     router.replace(`${pathname}?${newParams.toString()}`);
   }
 
@@ -903,6 +910,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           databaseId={database.id}
           pageId={projectIdParam}
           onClose={handleCloseProjectModal}
+        />
+      )}
+
+      {openParam && (
+        <PageModal
+          databaseId={database.id}
+          pageId={openParam}
+          onClose={handleCloseOpenModal}
         />
       )}
     </div>

@@ -314,14 +314,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     return {
                         ...titleColumn(
                             prop.id,
-                            // Single OPEN action: financial DBs → engine, non-financial → full record page, free → page modal
+                            // Single OPEN action: financial DBs → engine, non-financial/all others → side-peek modal directly
                             (row) => {
                                 if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
                                     router.push(`/admin/quotations/${row.id}`);
                                 } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
                                     router.push(`/admin/financials/income/invoices/${row.id}`);
-                                } else if (!isFinancialDb && !isFree) {
-                                    router.push(`/admin/database/${databaseIdRef}/${row.id}`);
                                 } else {
                                     setActivePageId(row.id);
                                 }

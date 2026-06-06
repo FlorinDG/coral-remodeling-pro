@@ -25,19 +25,30 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         if (!articleDb) return;
         setDb(articleDb);
 
-        const findPropId = (keywords: string[]) => {
-            return articleDb.properties.find(p => p.name && keywords.some(k => p.name.toLowerCase().includes(k.toLowerCase())))?.id;
-        };
-
-        const map = {
-            title: findPropId(['naam', 'titel', 'title', 'name', 'artikel', 'code', 'omschrijving']) || 'title',
-            bruto: findPropId(['bruto', 'brutoprijs', 'kost', 'prijs', 'price', 'inkoop']) || '',
-            verkoop: findPropId(['verkoop', 'selling']) || '',
-            marge: findPropId(['marge', 'margin']) || '',
-            discount: findPropId(['korting', 'remise', 'discount', 'disc', 'lever']) || '',
-            unit: findPropId(['eenheid', 'unit', 'maat', 'eeh']) || '',
-            type: findPropId(['type', 'calculatietype', 'calculationtype']) || ''
-        };
+        // QUOTE-7: db-articles is a SYSTEM db with canonical prop ids — use them directly
+        // instead of substring name matching (which caused 'lever' in discount aliases
+        // to match 'Leverancier'/supplier, corrupting data).
+        const isSystemArticleDb = articleDb.id === 'db-articles' || articleDb.id.startsWith('db-articles-');
+        const map = isSystemArticleDb
+            ? {
+                title: 'title',
+                bruto: 'prop-art-bruto',
+                verkoop: 'prop-art-verkoop',
+                marge: 'prop-art-margin',
+                discount: 'prop-art-remise',
+                unit: 'prop-art-unit',
+                type: '', // calculationType is block-level, not a DB property
+            }
+            : {
+                // Fallback: exact name match for custom (non-system) DBs — never substring
+                title: articleDb.properties.find(p => ['Naam', 'Titel', 'Title', 'Name'].includes(p.name))?.id || 'title',
+                bruto: articleDb.properties.find(p => ['BruttoKost', 'Brutoprijs', 'Kost', 'Prijs'].includes(p.name))?.id || '',
+                verkoop: articleDb.properties.find(p => ['Verkoopprijs', 'Selling'].includes(p.name))?.id || '',
+                marge: articleDb.properties.find(p => ['Marge Standard', 'Marge', 'Margin'].includes(p.name))?.id || '',
+                discount: articleDb.properties.find(p => ['Discount', 'Korting', 'Remise'].includes(p.name))?.id || '',
+                unit: articleDb.properties.find(p => ['Eeh', 'Eenheid', 'Unit'].includes(p.name))?.id || '',
+                type: articleDb.properties.find(p => ['Type', 'Calculatietype'].includes(p.name))?.id || '',
+            };
         setPropMap(map);
 
         if (block.articleId) {

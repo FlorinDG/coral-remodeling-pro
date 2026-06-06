@@ -37,10 +37,11 @@ Financial correctness underpins the middle of this path → that's why FIN works
 ---
 
 ## 🔧 CURRENT DEBUG QUEUE (Florin's live batch — run in THIS order, one-at-a-time, ✅-gated)
-1. **FIN-8** — CN-from-invoice 404 (add `credit-notes/[id]` route). DO FIRST: one file, and it unblocks *viewing* the created CN so FIN-7 can be verified.
-2. **FIN-7** — CN gets invoice number (measure why `getNextDocumentNumber('creditnote')` fails; remove the invoice-number fallback). Financial/legal correctness.
-3. **QUOTE-7** — Save-to-Library writes discount into the supplier column (map to canonical `prop-art-*` ids). Stops silent data corruption.
-— **PROFILE-2** (profile reset) is owned by Florin's direct debug pointing, tracked separately — NOT in this coder queue unless reassigned.
+1. **FIN-8** 🟢 coded+committed (1568399), awaiting Florin verify — CN-from-invoice 404 (added `credit-notes/[id]` route). Verify: create CN → opens editor, no 404.
+2. **FIN-7** 🟢 coded+committed (28b4acb), awaiting Florin verify — invoice-number fallback removed. ⚠️ coder kept a TIMESTAMP fallback (not abort). Verify: created CN shows a proper `CN-2026-NNN` sequence — NOT a long timestamp (timestamp = numbering action still failing → schema drift unresolved).
+3. **QUOTE-7** 🟢 coded+committed (4fc9b13), awaiting Florin verify — now maps to canonical `prop-art-*` ids. Verify: save article w/ discount → Discount col set, Leverancier relation untouched; reload into quote → discount applies.
+4. **CROSS-7** 🟢 coded+committed — runtime version sync. Sub-items: **7a** version stamp+`/api/version` (000e9e0) ✅ **7b** client version watcher (b0c74c1) ✅ **7c** SW lifecycle fix (24eb70d) ✅ **7d** Vercel Skew Protection = FLORIN MANUAL toggle in Vercel dashboard **7e** env+SHA badge (243dee7) ✅. Sidebar store bumped to v19 (0b013c7) — forces all browsers to reset to full 16-item sidebar.
+— **PROFILE-2** 🟢 coded+committed (216ca27), owned by Florin's direct debug pointing — tracked separately, NOT in this coder queue. Verify: set numbering+color+template, hard-reload, save before load → no reset; glance email still saves (coder folded in email normalization).
 
 # ════════════════ THE BOARD ════════════════
 # Workstreams ordered by execution priority. Each item: ID · state · one-line.
@@ -208,6 +209,13 @@ Financial correctness underpins the middle of this path → that's why FIN works
 - **CROSS-4** 📊 Peppol credit tracking + unit-economics observability (FULL SPEC below). (was O1; now grounded in confirmed reseller pricing.)
 - **CROSS-5** OpenAI import engine audit — regression check + accuracy (was OAI-1/L2). VERIFY current state first.
 - **CROSS-6** My personal Notion module + anything in pro-hardening.md not yet done (sweep at the end).
+- **CROSS-7** 🟢 **RUNTIME VERSION SYNC + service-worker auto-update (FOUNDATION).** Coded+committed 2026-06-06. 5 sub-items: **7a** `NEXT_PUBLIC_APP_VERSION` baked from `VERCEL_GIT_COMMIT_SHA` + `GET /api/version` (force-dynamic, no-store). **7b** `VersionWatcher.tsx` mounted in AdminLayout — polls `/api/version` every 3min + on focus + on route change; shows persistent toast on SHA mismatch. **7c** `sw-workhub.js` versioned cache names via `?v=SHA` registration param; purges all old caches on activate; `controllerchange` → reload; `registration.update()` on focus/visibility. **7d** ⏳ Vercel Skew Protection = Florin manual toggle (Project Settings → General). **7e** `EnvBadge.tsx` — `env · shortSHA` badge, superadmin-only in prod, always in non-prod. Also bumped sidebar store v18→v19 to force all browsers to reset stale sidebar.
+  1. **CROSS-7a — version stamp + endpoint.** Bake deploy version into the client: `NEXT_PUBLIC_APP_VERSION` = `VERCEL_GIT_COMMIT_SHA` (Vercel system env var) at build. Add `GET /api/version` (`dynamic='force-dynamic'`, no-store) returning `{ version, environment }` of the CURRENTLY-deployed server.
+  2. **CROSS-7b — client version watcher.** Small provider mounted in admin layout: on interval (~3 min) + on `window` focus + on route change, fetch `/api/version`, compare to baked-in `NEXT_PUBLIC_APP_VERSION`. On mismatch → non-blocking banner/toast "New version available — Reload" (optionally auto-reload on next route change). Works in ALL browsers, not just PWA. Throttle so it isn't chatty.
+  3. **CROSS-7c — service-worker lifecycle fix (BOTH sw.js + sw-workhub.js).** Versioned cache names (include build id); `install`→`skipWaiting()`; `activate`→purge old caches + `clients.claim()`; on `controllerchange`→reload (or hand off to 7b's banner). Call `registration.update()` on focus/interval. This is what actually unsticks the pinned PWA shell. Confirm install scope/`start_url` so an old install isn't pinned to the wrong (ERP vs Workhub) shell.
+  4. **CROSS-7d — enable + verify Vercel Skew Protection** (platform layer; complements, doesn't replace 7a-c). Pins a session's requests to the deployment it loaded → kills mid-session API/asset skew ERRORS. Default-on only for projects created after 2024-11-19; **Coral's project may predate it — check the toggle in Project Settings.** It does NOT refresh a stale PWA shell (that's 7b/7c). [docs: vercel.com/docs/skew-protection]
+  5. **CROSS-7e — environment+version badge** (debug aid): small badge showing `environment · short-SHA` (non-prod, or superadmin-only) so "which build am I on?" is answerable at a glance — directly prevents today's confusion and protects verification.
+  **Also (separate concern surfaced by the same screenshot):** confirm `activeModules` gating isn't OVER-hiding for enterprise — Coral is enterprise and should see the full module set; the reduced Safari list may be newer code gating modules it shouldn't. Verify against `PLAN_MODULES`.
 
 ## DASH — Dashboard
 - **DASH-1** ⬜ Future development (deferred — not now).

@@ -106,6 +106,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
     const [resizeOffset, setResizeOffset] = useState<number>(0);
+    // Track last-committed resize widths per property so the columns memo can
+    // immediately use them when resizingProperty transitions to null, before
+    // the store→selector→viewStateMap chain catches up in the same React batch.
+    const committedWidthsRef = useRef<Map<string, number>>(new Map());
 
     // ── Accountant date range filter ───────────────────────────────────
     const [acctDatePreset, setAcctDatePreset] = useState<string>('this-year');
@@ -270,7 +274,19 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     const viewStateMap = useMemo(() => {
         return new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []);
-    }, [schemaHash]);
+    }, [activeView?.propertiesState]);
+
+    // Once the store has propagated the new widths into viewStateMap,
+    // clear the committed-width overrides so we don't hold stale values.
+    useEffect(() => {
+        if (committedWidthsRef.current.size === 0) return;
+        committedWidthsRef.current.forEach((width, propId) => {
+            const storeWidth = viewStateMap.get(propId)?.width;
+            if (storeWidth === width) {
+                committedWidthsRef.current.delete(propId);
+            }
+        });
+    }, [viewStateMap]);
 
     const orderedVisibleProperties = useMemo(() => {
         const props = database?.properties || [];
@@ -303,7 +319,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         const mappedProperties = orderedVisibleProperties
             .map((prop: Property, i: number) => {
                 const state = viewStateMap.get(prop.id);
-                const columnWidth = state?.width || 150;
+                const storeWidth = state?.width || 150;
+                // During live drag: use the live offset.
+                // After drag end: viewStateMap may still be stale (same React batch),
+                // so fall back to the committed width ref.
+                const columnWidth = committedWidthsRef.current.get(prop.id) ?? storeWidth;
                 const currentWidth = resizingProperty === prop.id ? resizeOffset : columnWidth;
                 const GhostHeader = <div className="hidden" />;
 
@@ -1307,7 +1327,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                 property={prop}
                                                 index={i}
                                                 onLiveResize={(w) => { setResizingProperty(prop.id); setResizeOffset(w); }}
-                                                onLiveResizeEnd={() => { setResizingProperty(null); }}
+                                                onLiveResizeEnd={() => {
+                                                    // Commit the final live width to the ref so the columns memo
+                                                    // can read it immediately, before the store propagates.
+                                                    committedWidthsRef.current.set(prop.id, resizeOffset);
+                                                    setResizingProperty(null);
+                                                }}
                                             />
                                             {/* Blue insertion indicator — right edge (last column only) */}
                                             {isDropAfter && <div className="col-drop-indicator col-drop-indicator-right" />}

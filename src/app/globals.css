@@ -128,3 +128,11 @@ input, textarea, select, table, td, th,
 .dark .glass-morphism p {
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* Disable elastic/rubber-band overscroll at view edges globally */
+.overflow-auto,
+.overflow-x-auto,
+.overflow-y-auto,
+.dsg-container {
+  overscroll-behavior: none;
+}

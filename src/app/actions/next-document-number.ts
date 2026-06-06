@@ -142,6 +142,12 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
         const nextNumberToUse = Math.max(maxSeq + 1, storedNextNumber);
         const formattedNumber = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
 
+        // Atomically bump the counter so the next call gets the next number
+        await (prisma.tenant as any).update({
+            where: { id: tenantId },
+            data: { [nextNumberField]: nextNumberToUse + 1 },
+        });
+
         return { success: true, number: formattedNumber };
     } catch (e: any) {
         console.error('Error generating document number:', e);

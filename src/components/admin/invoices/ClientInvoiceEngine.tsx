@@ -346,8 +346,22 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
         // Use the configured credit note numbering system
-        const numResult = await getNextDocumentNumber('creditnote');
-        const cnNumber = numResult.success && numResult.number ? numResult.number : `CN-${invoiceNum}`;
+        let cnNumber: string;
+        try {
+            const numResult = await getNextDocumentNumber('creditnote');
+            if (numResult.success && numResult.number) {
+                cnNumber = numResult.number;
+            } else {
+                // Fallback: generate a unique CN number (don't copy the invoice number)
+                console.error('getNextDocumentNumber failed for creditnote:', numResult.error);
+                const seq = String(Date.now()).slice(-6);
+                cnNumber = `CN-${new Date().getFullYear()}-${seq}`;
+            }
+        } catch (e) {
+            console.error('getNextDocumentNumber threw for creditnote:', e);
+            const seq = String(Date.now()).slice(-6);
+            cnNumber = `CN-${new Date().getFullYear()}-${seq}`;
+        }
         const result = await createPageServerFirst(invoicesDbId, {
             title: cnNumber,
             client: clientId,

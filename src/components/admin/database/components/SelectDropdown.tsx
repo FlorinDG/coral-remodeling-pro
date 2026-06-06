@@ -25,7 +25,7 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
     const [isOpen, setIsOpen] = useState(false);
     const triggerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [pos, setPos] = useState<{ top: number; left: number; minWidth: number } | null>(null);
+    const [pos, setPos] = useState<{ top: number; left: number; minWidth: number; placement: 'bottom' | 'top' } | null>(null);
 
     const selected = options.find(o => o.id === value);
     const styles = selected ? (COLOR_STYLES[selected.color] || COLOR_STYLES.gray) : null;
@@ -39,11 +39,14 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
     useLayoutEffect(() => {
         if (isOpen && triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
-            const left = Math.min(rect.left, window.innerWidth - 220);
+            const left = Math.max(10, Math.min(rect.left, window.innerWidth - 220));
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const placement = spaceBelow < 250 && rect.top > spaceBelow ? 'top' : 'bottom';
             setPos({
-                top: rect.bottom + 4,
+                top: placement === 'top' ? rect.top - 4 : rect.bottom + 4,
                 left,
                 minWidth: Math.max(rect.width, 200),
+                placement
             });
         } else {
             setPos(null);
@@ -113,7 +116,10 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                 <div
                     ref={dropdownRef}
                     className="fixed z-[99999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 overflow-hidden"
-                    style={{ top: pos.top, left: pos.left, minWidth: pos.minWidth }}
+                    style={pos.placement === 'top'
+                        ? { bottom: window.innerHeight - pos.top, left: pos.left, minWidth: pos.minWidth }
+                        : { top: pos.top, left: pos.left, minWidth: pos.minWidth }
+                    }
                     onMouseDown={e => e.preventDefault()}
                 >
                     {/* Search input for long lists */}

@@ -55,16 +55,19 @@ interface AddColumnFlyoutProps {
 export default function AddColumnFlyout({ anchorRef, isOpen, onClose, onAdd }: AddColumnFlyoutProps) {
     const { isEnterprise } = useTenant();
     const [search, setSearch] = useState('');
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+    const [pos, setPos] = useState<{ top: number; left: number; placement: 'bottom' | 'top' } | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const updatePos = useCallback(() => {
         if (anchorRef.current) {
             const rect = anchorRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const placement = spaceBelow < 430 && rect.top > spaceBelow ? 'top' : 'bottom';
             setPos({
-                top: rect.bottom + 6,
+                top: placement === 'top' ? rect.top - 6 : rect.bottom + 6,
                 left: Math.min(rect.left, window.innerWidth - 280),
+                placement
             });
         }
     }, [anchorRef]);
@@ -108,7 +111,10 @@ export default function AddColumnFlyout({ anchorRef, isOpen, onClose, onAdd }: A
         <div
             ref={panelRef}
             className="fixed w-64 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150"
-            style={{ top: pos.top, left: pos.left, zIndex: 99999, maxHeight: '420px' }}
+            style={pos.placement === 'top'
+                ? { bottom: window.innerHeight - pos.top, left: pos.left, zIndex: 99999, maxHeight: '420px' }
+                : { top: pos.top, left: pos.left, zIndex: 99999, maxHeight: '420px' }
+            }
         >
             {/* Search */}
             <div className="p-2.5 border-b border-neutral-100 dark:border-white/5">

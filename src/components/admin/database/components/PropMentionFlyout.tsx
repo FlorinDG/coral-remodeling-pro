@@ -210,11 +210,18 @@ export default function PropMentionFlyout({
         : step === 'property' ? `${selectedDbName} → Select Property`
         : `${selectedDbName}.${selectedPropName} → Aggregator`;
 
+    const estimatedHeight = 384; // max-h-96 is 384px
+    const spaceBelow = typeof window !== 'undefined' ? window.innerHeight - position.top : 300;
+    const placement = spaceBelow < estimatedHeight && position.top > estimatedHeight ? 'top' : 'bottom';
+
     return (
         <div
             ref={flyoutRef}
             className="fixed z-[100] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl w-72 max-h-96 flex flex-col overflow-hidden"
-            style={{ top: position.top, left: position.left }}
+            style={placement === 'top'
+                ? { bottom: typeof window !== 'undefined' ? window.innerHeight - position.top + 8 : undefined, left: position.left }
+                : { top: position.top, left: position.left }
+            }
             onKeyDown={handleKeyDown}
         >
             {/* Expression preview bar */}

@@ -415,13 +415,20 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
             {blocks.map(renderBlockInput)}
 
             {/* ── Slash command floating menu ─────────────────────────────── */}
-            {slashMenu && filteredCommands.length > 0 && (
-                <div
-                    className="fixed z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 w-64 max-h-72 overflow-y-auto"
-                    style={{ top: slashMenu.top, left: slashMenu.left }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+            {slashMenu && filteredCommands.length > 0 && (() => {
+                const estimatedHeight = Math.min(24 + (filteredCommands.length * 48), 288); // max-h-72 is 288px
+                const spaceBelow = window.innerHeight - slashMenu.top;
+                const placement = spaceBelow < estimatedHeight && slashMenu.top > estimatedHeight ? 'top' : 'bottom';
+                return (
+                    <div
+                        className="fixed z-50 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl py-1.5 w-64 max-h-72 overflow-y-auto"
+                        style={placement === 'top'
+                            ? { bottom: window.innerHeight - slashMenu.top + 8, left: slashMenu.left }
+                            : { top: slashMenu.top, left: slashMenu.left }
+                        }
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                         Blocks
                     </div>
                     {filteredCommands.map((cmd, i) => (
@@ -448,7 +455,7 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
                         </button>
                     ))}
                 </div>
-            )}
+            })()}
 
             {/* ── @prop / @this_page mention flyout ─────────────────────────── */}
             {mentionFlyout && (

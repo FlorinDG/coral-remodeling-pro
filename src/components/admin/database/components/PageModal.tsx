@@ -672,7 +672,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                 </div>
                                                                 <div className="flex-1 align-top min-w-0 pr-4">
                                                                     <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
-                                                                        {(prop.type === 'text' && (prop.id === 'prop-vat-number' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer')) ? (
+                                                                         {(prop.type === 'text' && (prop.id === 'prop-vat-number' || prop.id === 'vat' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer' || prop.name.toLowerCase() === 'btw-nummer')) ? (
                                                                             <SmartVATLookup
                                                                                 value={(page.properties[prop.id] as string) || ''}
                                                                                 onChange={(val) => updatePageProperty(databaseId, pageId, prop.id, val)}

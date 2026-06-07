@@ -873,7 +873,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             </div>
                         </div>
 
-                        <div ref={gridAreaRef} className="flex-1 w-full relative z-10 min-h-0">
+                        <div 
+                            ref={gridAreaRef} 
+                            className="flex-1 w-full relative z-10 min-h-0"
+                            style={resizingProperty ? { width: `calc(100% - ${resizeOffset % 2 ? 0.2 : 0}px)` } : undefined}
+                        >
                             <DataSheetGrid
                                 key={`${databaseIdRef}-${gridKeySuffix}`}
                                 value={rowData}

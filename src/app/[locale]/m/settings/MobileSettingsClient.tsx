@@ -65,6 +65,11 @@ interface ProfileData {
     quotationDateFormat: string;
     quotationNumberWidth: number;
     quotationNextNumber: number;
+    creditnotePrefix: string;
+    creditnoteConnector: string;
+    creditnoteDateFormat: string;
+    creditnoteNumberWidth: number;
+    creditnoteNextNumber: number;
     documentTemplate: string;
     brandColor: string;
     documentFont?: string;
@@ -355,7 +360,7 @@ export default function MobileSettingsClient({
     const isFounder = billingData.planType === "FOUNDER" || billingData.planType === "CUSTOM";
 
     // Dynamic numbering live preview
-    const getNumberingPreview = (type: "invoice" | "quotation") => {
+    const getNumberingPreview = (type: "invoice" | "quotation" | "creditnote") => {
         const prefix = profile[`${type}Prefix` as keyof ProfileData] as string;
         const connector = profile[`${type}Connector` as keyof ProfileData] as string;
         const dateFormat = profile[`${type}DateFormat` as keyof ProfileData] as string;
@@ -628,11 +633,15 @@ export default function MobileSettingsClient({
                         <div className="space-y-4 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-white/10 rounded-2xl p-4 shadow-sm">
                             <h4 className="text-xs font-black uppercase tracking-wider text-neutral-800 dark:text-neutral-200">{t('settings_doc_numbering')}</h4>
                             
-                            {(["invoice", "quotation"] as const).map(type => (
+                            {(["invoice", "quotation", "creditnote"] as const).map(type => (
                                 <div key={type} className="border-b border-neutral-100 dark:border-white/5 pb-4 last:border-b-0 last:pb-0 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h5 className="text-xs font-black capitalize text-neutral-700 dark:text-neutral-300">
-                                            {type === 'invoice' ? t('settings_invoice_numbering') : t('settings_quotation_numbering')}
+                                            {type === 'invoice' 
+                                                ? t('settings_invoice_numbering') 
+                                                : type === 'quotation' 
+                                                    ? t('settings_quotation_numbering') 
+                                                    : t('settings_creditnote_numbering')}
                                         </h5>
                                         <span className="font-mono text-xs font-black px-2 py-1 bg-neutral-100 dark:bg-neutral-800 text-[var(--brand-color)] rounded border border-neutral-300 dark:border-white/10">
                                             {getNumberingPreview(type)}

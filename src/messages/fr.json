@@ -652,6 +652,7 @@
     "settings_doc_numbering": "Numérotation des Documents",
     "settings_invoice_numbering": "Numérotation des Factures",
     "settings_quotation_numbering": "Numérotation des Devis",
+    "settings_creditnote_numbering": "Numérotation des Notes de Crédit",
     "settings_prefix": "Préfixe",
     "settings_next_number": "Numéro Suivant",
     "settings_custom_hex": "Code Hexa Perso",

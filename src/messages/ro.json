@@ -650,6 +650,7 @@
     "settings_doc_numbering": "Numerotare Documente",
     "settings_invoice_numbering": "Numerotare Facturi",
     "settings_quotation_numbering": "Numerotare Oferte",
+    "settings_creditnote_numbering": "Numerotare Note de Credit",
     "settings_prefix": "Prefix",
     "settings_next_number": "Numărul Următor",
     "settings_custom_hex": "Cod Hex Personalizat",

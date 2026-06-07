@@ -6,6 +6,7 @@ import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
+import { generateClientSideDocNumber } from '@/lib/docNumberFallback';
 import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -28,7 +29,7 @@ const FALLBACK_PAGES: Page[] = [];
 export default function MobileCreateInvoicePage() {
     const t = useTranslations('Mobile');
     const router = useRouter();
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const getDatabase = useDatabaseStore(s => s.getDatabase);
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const createPage = useDatabaseStore(s => s.createPage);
@@ -40,7 +41,7 @@ export default function MobileCreateInvoicePage() {
     const clientPages = clientsDb?.pages || FALLBACK_PAGES;
     const clientOptions = clientPages.map(p => ({
         value: p.id,
-        label: String((p.properties as Record<string, any>)?.title || 'Unnamed'),
+        label: String((p.properties as Record<string, unknown>)?.title || 'Unnamed'),
     }));
 
     const [selectedClientId, setSelectedClientId] = useState('');
@@ -97,7 +98,7 @@ export default function MobileCreateInvoicePage() {
             const result = await getNextDocumentNumber('invoice');
             const invoiceNumber = result.success && result.number
                 ? result.number
-                : `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
+                : generateClientSideDocNumber(tenant, 'invoice');
 
             const pageResult = await createPageServerFirst(invoicesDbId, {
                 title: invoiceNumber,
@@ -149,7 +150,7 @@ export default function MobileCreateInvoicePage() {
             toast.error('Something went wrong');
         }
         setIsCreating(false);
-    }, [isCreating, selectedClientId, selectedClientName, invoiceDate, dueDate, lines, subtotal, totalVat, totalIncVat, invoicesDbId, addConfirmedPage, router]);
+    }, [isCreating, selectedClientId, selectedClientName, invoiceDate, dueDate, lines, subtotal, totalVat, totalIncVat, invoicesDbId, addConfirmedPage, router, tenant, setIsCreating]);
 
     const handleClientCreated = (pageId: string) => {
         setSelectedClientId(pageId);

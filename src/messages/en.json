@@ -653,6 +653,7 @@
     "settings_doc_numbering": "Document Numbering",
     "settings_invoice_numbering": "Invoice Numbering",
     "settings_quotation_numbering": "Quotation Numbering",
+    "settings_creditnote_numbering": "Credit Note Numbering",
     "settings_prefix": "Prefix",
     "settings_next_number": "Next Number",
     "settings_custom_hex": "Custom Hex Code",

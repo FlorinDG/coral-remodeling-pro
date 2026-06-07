@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
+import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { createPageServerFirst } from "@/app/actions/pages";
 import { useTenant } from "@/context/TenantContext";
 import { useState } from "react";
@@ -12,7 +13,7 @@ import { useTranslations } from "next-intl";
 
 export default function CreateInvoiceButton() {
     const router = useRouter();
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const addConfirmedPage = useDatabaseStore(state => state.addConfirmedPage);
     const [isCreating, setIsCreating] = useState(false);
     const t = useTranslations('Admin');
@@ -25,7 +26,7 @@ export default function CreateInvoiceButton() {
             const result = await getNextDocumentNumber('invoice');
             const invoiceNumber = result.success && result.number
                 ? result.number
-                : `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
+                : generateClientSideDocNumber(tenant, 'invoice');
 
             // Resolve tenant-scoped DB ID — falls back to bare 'db-invoices' for legacy FOUNDER accounts
             const invoicesDbId = resolveDbId('db-invoices');

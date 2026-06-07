@@ -5,12 +5,13 @@ import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPageServerFirst } from "@/app/actions/pages";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
+import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { useTenant } from "@/context/TenantContext";
 import { useState } from "react";
 
 export default function CreateQuotationButton() {
     const router = useRouter();
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const addConfirmedPage = useDatabaseStore(state => state.addConfirmedPage);
     const [isCreating, setIsCreating] = useState(false);
 
@@ -27,7 +28,7 @@ export default function CreateQuotationButton() {
             const result = await getNextDocumentNumber('quotation');
             const quoteNumber = result.success && result.number
                 ? result.number
-                : `OFT-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
+                : generateClientSideDocNumber(tenant, 'quotation');
 
             // Server-first: persist in Postgres before navigating
             const pageResult = await createPageServerFirst(quotationsDbId, {

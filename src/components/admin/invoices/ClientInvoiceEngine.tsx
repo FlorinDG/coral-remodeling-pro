@@ -17,6 +17,7 @@ import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
+import { generateClientSideDocNumber } from '@/lib/docNumberFallback';
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
@@ -354,15 +355,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             if (numResult.success && numResult.number) {
                 cnNumber = numResult.number;
             } else {
-                // Fallback: generate a unique CN number (don't copy the invoice number)
                 console.error('getNextDocumentNumber failed for creditnote:', numResult.error);
-                const seq = String(Date.now()).slice(-6);
-                cnNumber = `CN-${new Date().getFullYear()}-${seq}`;
+                cnNumber = generateClientSideDocNumber(tenant, 'creditnote');
             }
         } catch (e) {
             console.error('getNextDocumentNumber threw for creditnote:', e);
-            const seq = String(Date.now()).slice(-6);
-            cnNumber = `CN-${new Date().getFullYear()}-${seq}`;
+            cnNumber = generateClientSideDocNumber(tenant, 'creditnote');
         }
         const result = await createPageServerFirst(invoicesDbId, {
             title: cnNumber,

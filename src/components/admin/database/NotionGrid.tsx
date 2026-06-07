@@ -149,6 +149,20 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         };
     }, []);
 
+    // Reset header, footer, and grid body scroll when activeViewId changes
+    useEffect(() => {
+        if (headerScrollRef.current) {
+            headerScrollRef.current.style.transform = 'translateX(0px)';
+        }
+        if (footerScrollRef.current) {
+            footerScrollRef.current.style.transform = 'translateX(0px)';
+        }
+        const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+        if (gridContainer) {
+            gridContainer.scrollLeft = 0;
+        }
+    }, [activeViewId]);
+
     // ── Global Ctrl+Z / ⌘+Z undo handler ────────────────────────────────
     const handleUndo = useCallback((e: KeyboardEvent) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
@@ -879,7 +893,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             style={resizingProperty ? { width: `calc(100% - ${resizeOffset % 2 ? 0.2 : 0}px)` } : undefined}
                         >
                             <DataSheetGrid
-                                key={`${databaseIdRef}-${gridKeySuffix}`}
+                                key={`${databaseIdRef}-${activeViewId || ''}-${gridKeySuffix}`}
                                 value={rowData}
                                 onChange={(newRows) => {
                                     if (!isMounted.current) return;

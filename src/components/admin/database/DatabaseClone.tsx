@@ -3,14 +3,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Clock } from 'lucide-react';
+import { LayoutGrid, Table2, Calendar as CalendarIcon, Plus, GanttChartSquare, Settings, Clock, ChevronDown, Edit, Trash2 } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useTenant } from '@/context/TenantContext';
 import { useSession } from 'next-auth/react';
-import { Property } from './types';
+import { Property, DatabaseView } from './types';
 import { isSystemDatabase, SERVER_PROVISIONED_BASES } from '@/lib/systemDatabases';
 import { t } from '@/lib/document-i18n';
 import { useLocale } from 'next-intl';
@@ -78,11 +78,28 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     router.replace(`${pathname}?${newParams.toString()}`);
   }
 
+  // Restrict to Single View "All Contacts" for Free Tier on Contact Databases
+  const supportedViews = useMemo(() => {
+    if (!database) return [];
+    let views = [...database.views];
+    if (isImmutableContactDB && !hasCRM) {
+      if (views.length > 0) {
+        views = [views.find(v => v.name.toLowerCase().includes('all')) || views[0]];
+      }
+    }
+    return views;
+  }, [database, isImmutableContactDB, hasCRM]);
+
   // Renaming state
   const [renamingViewId, setRenamingViewId] = useState<string | null>(null);
   const [renamingValue, setRenamingValue] = useState("");
   const [showViewTypeSelector, setShowViewTypeSelector] = useState(false);
   const [selectorPosition, setSelectorPosition] = useState({ top: 0, left: 0 });
+
+  // View context menu state
+  const [viewMenuOpenId, setViewMenuOpenId] = useState<string | null>(null);
+  const [viewMenuPosition, setViewMenuPosition] = useState({ top: 0, left: 0 });
+  const viewMenuRef = React.useRef<HTMLDivElement>(null);
 
   const updateView = useDatabaseStore(state => state.updateView);
   const addView = useDatabaseStore(state => state.addView);
@@ -107,6 +124,52 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       config: type === 'board' ? { groupByPropertyId: 'status' } : {}
     });
     setShowViewTypeSelector(false);
+  };
+
+  const handleSetViewType = (viewId: string, type: 'table' | 'board' | 'calendar' | 'timeline') => {
+    const updates: Partial<DatabaseView> = { type };
+    if (type === 'board') {
+      updates.config = { groupByPropertyId: 'status' };
+    } else {
+      updates.config = {};
+    }
+    updateView(resolvedId, viewId, updates);
+    setViewMenuOpenId(null);
+  };
+
+  const handleDeleteView = (viewId: string) => {
+    if (supportedViews.length <= 1) {
+      return;
+    }
+    if (window.confirm("Are you sure you want to delete this view?")) {
+      if (viewId === activeViewId) {
+        const otherView = supportedViews.find(v => v.id !== viewId);
+        if (otherView) {
+          setActiveViewId(otherView.id);
+        }
+      }
+      useDatabaseStore.getState().deleteView(resolvedId, viewId);
+      setViewMenuOpenId(null);
+    }
+  };
+
+  const handleOpenViewMenu = (e: React.MouseEvent, viewId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    let top = 0;
+    let left = 0;
+    if (e.type === 'contextmenu') {
+      top = e.clientY + 5;
+      left = e.clientX;
+    } else {
+      const rect = e.currentTarget.getBoundingClientRect();
+      top = rect.bottom + 5;
+      left = rect.left;
+    }
+    
+    setViewMenuOpenId(viewId);
+    setViewMenuPosition({ top, left });
   };
 
   // Initialize synchronously to avoid a second re-render after mounting
@@ -157,6 +220,17 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showViewTypeSelector]);
+
+  // Close view context menu on click outside
+  useEffect(() => {
+    if (!viewMenuOpenId) return;
+    const handleClick = (e: MouseEvent) => {
+      if (viewMenuRef.current?.contains(e.target as Node)) return;
+      setViewMenuOpenId(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [viewMenuOpenId]);
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
   const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => ({
@@ -754,14 +828,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     );
   }
 
-  // Restrict to Single View "All Contacts" for Free Tier on Contact Databases
-  let supportedViews = [...database.views];
-  if (isImmutableContactDB && !hasCRM) {
-    if (supportedViews.length > 0) {
-      supportedViews = [supportedViews.find(v => v.name.toLowerCase().includes('all')) || supportedViews[0]];
-    }
-  }
-
   const activeView = supportedViews.find(v => v.id === activeViewId) || supportedViews[0] || database.views[0];
 
   // Guard: database exists but has no views yet (newly provisioned stub with views: []).
@@ -828,13 +894,24 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
                   <button
                     onClick={() => setActiveViewId(view.id)}
                     onDoubleClick={() => handleRenameStart(view.id, view.name)}
-                    className={`flex items-center gap-2 px-3 py-2.5 pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap -mb-[1px] ${isActive
+                    onContextMenu={(e) => handleOpenViewMenu(e, view.id)}
+                    className={`flex items-center gap-2 pl-3 pr-2 py-2.5 pb-2 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap -mb-[1px] ${isActive
                       ? 'border-neutral-900 dark:border-white text-neutral-900 dark:text-white'
                       : 'border-transparent text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'
                       }`}
                   >
                     {getViewIcon(view.type)}
-                    {view.name}
+                    <span>{view.name}</span>
+                    <span
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenViewMenu(e, view.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 p-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 inline-flex items-center justify-center"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </span>
                   </button>
                 )}
               </div>
@@ -894,6 +971,95 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
           )}
         </div>
       )}
+
+      {viewMenuOpenId && typeof document !== 'undefined' && (() => {
+        const targetView = supportedViews.find(v => v.id === viewMenuOpenId);
+        if (!targetView) return null;
+        return createPortal(
+          <div
+            ref={viewMenuRef}
+            style={{
+              position: 'fixed',
+              top: viewMenuPosition.top,
+              left: viewMenuPosition.left,
+              zIndex: 9999
+            }}
+            className="w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5"
+          >
+            <div className="px-3 py-1.5 text-[10px] font-bold text-neutral-400 uppercase tracking-wider border-b border-neutral-100 dark:border-white/5 mb-1">
+              View Options
+            </div>
+            
+            <button
+              onClick={() => {
+                handleRenameStart(targetView.id, targetView.name);
+                setViewMenuOpenId(null);
+              }}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+            >
+              <Edit className="w-4 h-4 text-neutral-400" /> Rename View
+            </button>
+            
+            <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
+              <div className="px-3 py-1 text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">
+                Change Type To
+              </div>
+              <button
+                onClick={() => handleSetViewType(targetView.id, 'table')}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
+                  targetView.type === 'table'
+                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                }`}
+              >
+                <Table2 className="w-4 h-4" /> Table
+              </button>
+              <button
+                onClick={() => handleSetViewType(targetView.id, 'board')}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
+                  targetView.type === 'board'
+                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" /> Board
+              </button>
+              <button
+                onClick={() => handleSetViewType(targetView.id, 'calendar')}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
+                  targetView.type === 'calendar'
+                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                }`}
+              >
+                <CalendarIcon className="w-4 h-4" /> Calendar
+              </button>
+              <button
+                onClick={() => handleSetViewType(targetView.id, 'timeline')}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-sm rounded-lg transition-colors text-left ${
+                  targetView.type === 'timeline'
+                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium'
+                    : 'text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                }`}
+              >
+                <Clock className="w-4 h-4" /> Timeline
+              </button>
+            </div>
+            
+            {supportedViews.length > 1 && (
+              <div className="mt-1.5 border-t border-neutral-100 dark:border-white/5 pt-1.5">
+                <button
+                  onClick={() => handleDeleteView(targetView.id)}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg transition-colors text-left"
+                >
+                  <Trash2 className="w-4 h-4 text-red-500" /> Delete View
+                </button>
+              </div>
+            )}
+          </div>,
+          document.body
+        );
+      })()}
     </>
   );
 

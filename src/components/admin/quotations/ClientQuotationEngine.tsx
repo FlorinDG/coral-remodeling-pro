@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
@@ -261,14 +261,41 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return projects.find(p => p.id === projectId) || null;
     }, [projects, projectId]);
 
+    const rawClient = quotation?.properties?.['client'];
+    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+
+    // Calculate totals using the shared calculator
+    const totals = useMemo(() => {
+        const vatMode = ((quotation?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
+        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
+    }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
+
+    const grandTotal = totals.subtotal;
+    const vatAmount = totals.totalVAT;
+    const totalIncVat = totals.totalInclVAT;
+
+    const docLanguage = useMemo(() => {
+        if (!quotation) return 'nl';
+        const docLangProp = quotation.properties?.['docLanguage'] as string;
+        if (docLangProp) return docLangProp;
+
+        const clientRecord = clients.find(c => c.id === clientId);
+        if (clientRecord?.language) {
+            const rawLang = clientRecord.language.toLowerCase();
+            if (rawLang.includes('fr')) return 'fr';
+            if (rawLang.includes('en')) return 'en';
+            return 'nl';
+        }
+        return tenantProfile?.documentLanguage || 'nl';
+    }, [quotation, clients, clientId, tenantProfile?.documentLanguage]);
+
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
 
     const quotationTitle = quotation.properties?.['title'] || ti18n('engine_draft_quotation', locale);
-    const rawClient = quotation.properties?.['client'];
     const billingRule = (quotation.properties?.['prop-billing-rule'] as string) || 'opt-fixed';
     const paymentTerms = (quotation.properties?.['prop-payment-method'] as string) || 'pay-30';
-    const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
@@ -410,16 +437,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageProperty(quotationsDbId, quotation.id, key, value);
     };
 
-    // Calculate totals using the shared calculator
-    const totals = useMemo(() => {
-        const vatMode = ((quotation?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
-        const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
-    }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
 
-    const grandTotal = totals.subtotal;
-    const vatAmount = totals.totalVAT;
-    const totalIncVat = totals.totalInclVAT;
 
 
 
@@ -434,20 +452,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         };
     };
 
-    const docLanguage = useMemo(() => {
-        if (!quotation) return 'nl';
-        const docLangProp = quotation.properties?.['docLanguage'] as string;
-        if (docLangProp) return docLangProp;
 
-        const clientRecord = clients.find(c => c.id === clientId);
-        if (clientRecord?.language) {
-            const rawLang = clientRecord.language.toLowerCase();
-            if (rawLang.includes('fr')) return 'fr';
-            if (rawLang.includes('en')) return 'en';
-            return 'nl';
-        }
-        return tenantProfile?.documentLanguage || 'nl';
-    }, [quotation, clients, clientId, tenantProfile?.documentLanguage]);
 
     const handleSendEmail = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
@@ -721,9 +726,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0"
+                        title="Vorige pagina"
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
+                    <Link
+                        href="/admin/quotations"
+                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
+                        title="Naar Offertes database"
+                    >
+                        <Database className="w-4 h-4" />
+                        <span className="hidden sm:inline">Database</span>
+                    </Link>
                     <div className="flex flex-col min-w-0 flex-1">
                         <input
                             type="text"

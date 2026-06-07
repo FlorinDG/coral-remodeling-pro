@@ -326,7 +326,20 @@ export async function POST(req: Request) {
             headers,
             body: JSON.stringify(invoicePayload),
         });
-        const validateData = await validateRes.json();
+        
+        let validateData;
+        try {
+            validateData = await validateRes.json();
+        } catch {
+            const errorText = await validateRes.text();
+            console.error('[e-invoice.be] Validation returned non-JSON:', errorText);
+            return NextResponse.json({
+                error: 'PEPPOL_VALIDATION_FAILED',
+                code: 'PEPPOL_VALIDATION_FAILED',
+                success: false,
+                issues: `HTTP ${validateRes.status}: ${errorText || 'Invalid JSON response from validation API'}`,
+            }, { status: 400 });
+        }
 
         // API returns { is_valid: bool, issues: [...], ubl_document?: string }
         if (!validateRes.ok || validateData.is_valid === false) {
@@ -352,7 +365,20 @@ export async function POST(req: Request) {
             headers,
             body: JSON.stringify(invoicePayload),
         });
-        const createData = await createRes.json();
+        
+        let createData;
+        try {
+            createData = await createRes.json();
+        } catch {
+            const errorText = await createRes.text();
+            console.error('[e-invoice.be] Document creation returned non-JSON:', errorText);
+            return NextResponse.json({
+                error: 'PEPPOL_CREATE_FAILED',
+                code: 'PEPPOL_CREATE_FAILED',
+                success: false,
+                details: `HTTP ${createRes.status}: ${errorText || 'Invalid JSON response from creation API'}`,
+            }, { status: 400 });
+        }
 
         if (!createRes.ok || !createData.id) {
             console.error('[e-invoice.be] Document creation failed:', createData);
@@ -392,7 +418,20 @@ export async function POST(req: Request) {
             method: 'POST',
             headers,
         });
-        const sendData = await sendRes.json();
+        
+        let sendData;
+        try {
+            sendData = await sendRes.json();
+        } catch {
+            const errorText = await sendRes.text();
+            console.error('[e-invoice.be] Document send returned non-JSON:', errorText);
+            return NextResponse.json({
+                error: 'PEPPOL_SEND_FAILED',
+                code: 'PEPPOL_SEND_FAILED',
+                success: false,
+                details: `HTTP ${sendRes.status}: ${errorText || 'Invalid JSON response from send API'}`,
+            }, { status: 400 });
+        }
 
         if (!sendRes.ok) {
             console.error('[e-invoice.be] Send failed:', sendData);

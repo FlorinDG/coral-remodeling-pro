@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -758,6 +758,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,
                     blocks: blocks,
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
+                    isCreditNote,
+                    parentInvoiceId,
                     client: {
                         firstName: selectedClient.firstName,
                         lastName: selectedClient.lastName,
@@ -796,9 +798,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     <button
                         onClick={() => router.back()}
                         className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0"
+                        title="Vorige pagina"
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
+                    <Link
+                        href={isCreditNote ? '/admin/financials/income/credit-notes' : '/admin/financials/income/invoices'}
+                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
+                        title={isCreditNote ? 'Naar Creditnota\'s database' : 'Naar Facturen database'}
+                    >
+                        <Database className="w-4 h-4" />
+                        <span className="hidden sm:inline">Database</span>
+                    </Link>
                     <div className="flex flex-col min-w-0 shrink-0">
                         <input
                             type="text"

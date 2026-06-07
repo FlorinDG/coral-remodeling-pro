@@ -1,17 +1,16 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/preserve-manual-memoization, react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
 
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
 import {
-    DataSheetGrid,
-    Column
+    DataSheetGrid
 } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
 import './NotionGrid.css';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, GripVertical, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, CalendarRange, Lock, Trash } from 'lucide-react';
+import { Download, Upload, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, Lock, Trash } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
@@ -28,7 +27,7 @@ import { Property } from './types';
 import { toast } from 'sonner';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import { useGridColumns } from './hooks/useGridColumns';
-import { useFilteredPages } from './hooks/useFilteredPages';
+
 import { useVatLookup } from './hooks/useVatLookup';
 import { useExportCSV } from './hooks/useExportCSV';
 
@@ -79,18 +78,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const t = useTranslations('Admin');
     const { data: session } = useSession();
     const isAccountant = session?.user?.role === 'ACCOUNTANT';
-    const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const createPage = useDatabaseStore(state => state.createPage);
-    const addPages = useDatabaseStore(state => state.addPages);
     const deletePage = useDatabaseStore(state => state.deletePage);
     const deletePages = useDatabaseStore(state => state.deletePages);
     const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
     const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
-    const addProperty = useDatabaseStore(state => state.addProperty);
     const clearDatabase = useDatabaseStore(state => state.clearDatabase);
     const undo = useDatabaseStore(state => state.undo);
-    const undoStackLength = useDatabaseStore(state => state.undoStack.length);
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -100,12 +95,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     // immediately use them when resizingProperty transitions to null, before
     // the store→selector→viewStateMap chain catches up in the same React batch.
     const committedWidthsRef = useRef<Map<string, number>>(new Map());
+    const [gridKeySuffix, setGridKeySuffix] = useState(0);
 
     // ── Accountant date range filter ───────────────────────────────────
     const [acctDatePreset, setAcctDatePreset] = useState<string>('this-year');
     const [acctDateFrom, setAcctDateFrom] = useState<string>('');
     const [acctDateTo, setAcctDateTo] = useState<string>('');
-    const [showAcctDateFilter, setShowAcctDateFilter] = useState(false);
+
 
     // VAT lookup state is managed by the useVatLookup hook (called after rowData is computed)
 
@@ -199,27 +195,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     const databaseIdRef = database?.id || '';
 
-    // Create a stable hash of the structural schema and view configuration
-    const schemaHash = useMemo(() => {
-        if (!database) return '';
-        const props = database.properties || [];
-        const viewPropsState = activeView?.propertiesState || [];
-        
-        return JSON.stringify({
-            properties: props.map(p => ({
-                id: p.id,
-                type: p.type,
-                name: p.name,
-                config: p.config
-            })),
-            viewState: viewPropsState.map(vs => ({
-                propertyId: vs.propertyId,
-                width: vs.width,
-                hidden: vs.hidden,
-                order: vs.order
-            }))
-        });
-    }, [database?.properties, activeView?.propertiesState]);
+
 
     const viewStateMap = useMemo(() => {
         return new Map(activeView?.propertiesState?.map(ps => [ps.propertyId, ps]) || []);
@@ -256,7 +232,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 const orderB = viewStateMap.get(b.id)?.order ?? 999;
                 return orderA - orderB;
             });
-    }, [schemaHash, viewStateMap, databaseId, hasCRM]);
+    }, [database, viewStateMap, databaseId, hasCRM]);
 
     const columns = useGridColumns({
         databaseId,
@@ -413,7 +389,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             return result;
         });
-    }, [database?.pages, database?.properties, activeView?.filters, database?.activeFilters, hardFilter, allDatabases]);
+    }, [database, activeView?.filters, hardFilter, allDatabases]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
@@ -466,7 +442,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             return 0;
         });
-    }, [filteredPages, activeView?.sorts, database?.activeSorts]);
+    }, [database, filteredPages, activeView?.sorts]);
 
     // ── Accountant date range filtering (applied after sort) ──────────────
     const acctDateFilteredPages = useMemo(() => {
@@ -881,6 +857,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                     // can read it immediately, before the store propagates.
                                                     committedWidthsRef.current.set(prop.id, resizeOffset);
                                                     setResizingProperty(null);
+                                                    setGridKeySuffix(prev => prev + 1);
                                                 }}
                                             />
                                             {/* Blue insertion indicator — right edge (last column only) */}
@@ -898,7 +875,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                         <div ref={gridAreaRef} className="flex-1 w-full relative z-10 min-h-0">
                             <DataSheetGrid
-                                key={databaseIdRef}
+                                key={`${databaseIdRef}-${gridKeySuffix}`}
                                 value={rowData}
                                 onChange={(newRows) => {
                                     if (!isMounted.current) return;

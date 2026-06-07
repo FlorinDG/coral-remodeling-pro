@@ -261,7 +261,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
         { id: 'opt-proforma', name: 'Proforma', color: 'orange' },
       ]}},
-      { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'relation', config: { relationDatabaseId: 'db-invoices', relationDisplayPropertyId: 'title' } },
+      { id: 'parentInvoiceId', name: 'Oorspronkelijke Factuur', type: 'relation', config: { relationDatabaseId: resolveDbId('db-invoices'), relationDisplayPropertyId: 'title' } },
       { id: 'structuredComm', name: 'Gestructureerde Mededeling', type: 'text' },
       { id: 'project',     name: 'Project',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-1'), relationDisplayPropertyId: 'title' } },
       { id: 'quote',       name: 'Offerte',           type: 'relation', config: { relationDatabaseId: resolveDbId('db-quotations'), relationDisplayPropertyId: 'title' } },
@@ -680,18 +680,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
       // Enforce that parentInvoiceId is a relation to db-invoices
       const parentInvoiceProp = database.properties.find(p => p.id === 'parentInvoiceId');
-      if (parentInvoiceProp && parentInvoiceProp.type !== 'relation') {
+      const expectedTargetDbId = resolveDbId('db-invoices');
+      if (parentInvoiceProp && (parentInvoiceProp.type !== 'relation' || parentInvoiceProp.config?.relationDatabaseId !== expectedTargetDbId)) {
         const updatedProperties = database.properties.map(p => 
           p.id === 'parentInvoiceId' ? { 
             ...p, 
             type: 'relation' as const, 
-            config: { relationDatabaseId: 'db-invoices', relationDisplayPropertyId: 'title' } 
+            config: { relationDatabaseId: expectedTargetDbId, relationDisplayPropertyId: 'title' } 
           } : p
         );
         store.updateDatabase(resolvedId, { properties: updatedProperties });
       }
     }
-  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale]);
+  }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale, resolveDbId]);
 
 
   // ── Self-healing: if the store doesn't have this DB after hydration,

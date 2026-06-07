@@ -130,13 +130,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             snapshotData: inv.snapshotData as any,
                             peppolDocumentId: inv.peppolDocumentId,
                             peppolState: inv.peppolState,
+                            parentInvoiceId: inv.parentInvoiceId ? [inv.parentInvoiceId] : [],
+                            docType: inv.type === 'CREDIT_NOTE' ? 'opt-credit-note' : (inv.type === 'PROFORMA' ? 'opt-proforma' : 'opt-invoice'),
                         },
                         blocks: [],
                     });
                 }
             }
         }).catch(console.error);
-    }, [isHydrated, invoice, hydrationAttempted, id]);
+    }, [isHydrated, invoice, hydrationAttempted, id, invoicesDbId]);
 
     // Initialize importedQuotationIds once when the invoice is loaded
     useEffect(() => {

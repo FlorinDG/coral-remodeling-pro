@@ -1,0 +1,78 @@
+/* NotionGrid.css — Extracted from inline <style> in NotionGrid.tsx */
+
+.database-grid-custom {
+    --dsg-border-color: rgba(0,0,0,0.1);
+    --dsg-cell-background: transparent;
+    --dsg-header-background: #f9fafb;
+    --dsg-header-text-color: #6b7280;
+    --dsg-cell-disabled-background: transparent;
+    width: 100%;
+    height: 100%;
+    font-size: 0.875rem; /* 14px — matches Tailwind text-sm used in custom columns */
+}
+
+/* Normalize all DSG native inputs to match custom column font size */
+.database-grid-custom .dsg-cell {
+    font-size: inherit;
+}
+.database-grid-custom .dsg-input {
+    font-size: inherit !important;
+}
+
+/* Force DSG container to fill the available wrapper height
+   so there's no white gap between the last row and the footer */
+.database-grid-custom .dsg-container {
+    min-height: 100% !important;
+}
+
+.dark .database-grid-custom {
+    --dsg-border-color: rgba(255,255,255,0.1);
+    --dsg-header-background: rgba(255,255,255,0.05);
+    --dsg-header-text-color: #9ca3af;
+}
+
+/* Column drag-and-drop animations */
+.col-header-cell {
+    transition: opacity 150ms ease, background-color 150ms ease;
+}
+.col-header-cell.col-dragging {
+    opacity: 0.4;
+    background-color: rgba(59, 130, 246, 0.05) !important;
+}
+.col-drop-indicator {
+    position: absolute;
+    left: -1.5px;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    border-radius: 2px;
+    background: #3b82f6;
+    z-index: 100;
+    animation: col-indicator-pulse 600ms ease-in-out infinite alternate;
+}
+.col-drop-indicator-right {
+    left: auto;
+    right: -1.5px;
+}
+@keyframes col-indicator-pulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+.dsg-row:hover .title-open-button {
+    opacity: 1 !important;
+}
+
+/* Peppol Active Styling */
+.peppol-active-row [class*="dsg-col-vat"] .dsg-input,
+.peppol-active-row [class*="dsg-col-btw"] .dsg-input,
+.peppol-active-row [class*="dsg-col-tva"] .dsg-input {
+    color: #16a34a !important;
+    font-weight: 900 !important;
+    background-color: #f0fdf4 !important;
+}
+.dark .peppol-active-row [class*="dsg-col-vat"] .dsg-input,
+.dark .peppol-active-row [class*="dsg-col-btw"] .dsg-input,
+.dark .peppol-active-row [class*="dsg-col-tva"] .dsg-input {
+    color: #22c55e !important;
+    background-color: rgba(34, 197, 94, 0.1) !important;
+}

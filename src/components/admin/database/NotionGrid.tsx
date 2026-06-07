@@ -6,33 +6,19 @@ import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from './store';
 import {
     DataSheetGrid,
-    textColumn,
-    keyColumn,
-    checkboxColumn,
     Column
 } from 'react-datasheet-grid';
 import 'react-datasheet-grid/dist/style.css';
-import Papa from 'papaparse';
+import './NotionGrid.css';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, GripVertical, Trash, Copy, Maximize2, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, CalendarRange, Lock } from 'lucide-react';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { Download, Upload, GripVertical, Search, Building2, MapPin, CheckCircle2, X, Loader2, Plus, CalendarRange, Lock, Trash } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useSession } from 'next-auth/react';
-import { selectColumn } from './columns/SelectColumn';
-import { dateColumn } from './columns/DateColumn';
 import ColumnHeader from './components/ColumnHeader';
 import FilterToolbar from './components/FilterToolbar';
 import SortToolbar from './components/SortToolbar';
 import { Checkbox } from '@/components/common/Checkbox';
-import { titleColumn } from './columns/TitleColumn';
-import { relationColumn } from './columns/RelationColumn';
-import { rollupColumn } from './columns/RollupColumn';
-import { formulaColumn } from './columns/FormulaColumn';
-import { currencyColumn } from './columns/CurrencyColumn';
-import { variantsColumn } from './columns/VariantsColumn';
-import { metaDateColumn } from './columns/MetaDateColumn';
-import { checkboxColumnCustom } from './columns/CheckboxColumn';
 import PageModal from './components/PageModal';
 import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
@@ -41,6 +27,10 @@ import AddColumnFlyout from './components/AddColumnFlyout';
 import { Property } from './types';
 import { toast } from 'sonner';
 import { isSystemDatabase } from '@/lib/systemDatabases';
+import { useGridColumns } from './hooks/useGridColumns';
+import { useFilteredPages } from './hooks/useFilteredPages';
+import { useVatLookup } from './hooks/useVatLookup';
+import { useExportCSV } from './hooks/useExportCSV';
 
 // ── Add Column Button (rendered at the end of the header row) ───────────────
 function AddColumnButton({ databaseId }: { databaseId: string }) {
@@ -117,48 +107,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const [acctDateTo, setAcctDateTo] = useState<string>('');
     const [showAcctDateFilter, setShowAcctDateFilter] = useState(false);
 
-    // ── VAT Company Lookup Flyout ────────────────────────────────────────────
-    type VatLookupState = {
-        status: 'typing' | 'loading' | 'found' | 'not_found' | 'error';
-        vatNumber: string;
-        rowId: string;
-        anchorRect: DOMRect | null;
-        data?: { name: string | null; street: string | null; postalCode: string | null; city: string | null; peppolActive?: boolean };
-    } | null;
-    const [vatLookup, setVatLookup] = useState<VatLookupState>(null);
-    const vatDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    // Trigger API fetch when vatLookup enters 'loading' state
-    useEffect(() => {
-        if (!vatLookup || vatLookup.status !== 'loading') return;
-        const controller = new AbortController();
-        fetch(`/api/company/lookup?vat=${encodeURIComponent(vatLookup.vatNumber)}`, { signal: controller.signal })
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                if (!data?.isValid) {
-                    setVatLookup(prev => prev ? { ...prev, status: 'not_found' } : null);
-                    return;
-                }
-                const name = data.name && data.name !== '---' ? data.name : null;
-                const addressParts = data.address && data.address !== '---' ? data.address.split('\n') : [];
-                const streetLine = addressParts[0] || null;
-                const cityLineParts = (addressParts[1] || '').match(/^(\d{4,5})\s+(.+)/);
-                setVatLookup(prev => prev ? {
-                    ...prev,
-                    status: 'found',
-                    data: {
-                        name,
-                        street: streetLine,
-                        postalCode: cityLineParts?.[1] || null,
-                        city: cityLineParts?.[2] || null,
-                        peppolActive: !!data.peppolActive
-                    }
-                } : null);
-            })
-            .catch(() => setVatLookup(prev => prev ? { ...prev, status: 'error' } : null));
-        return () => controller.abort();
-    }, [vatLookup?.status, vatLookup?.vatNumber]);
-
+    // VAT lookup state is managed by the useVatLookup hook (called after rowData is computed)
 
     // Column drag-and-drop state (Notion-style)
     const [colDragIndex, setColDragIndex] = useState<number | null>(null);
@@ -309,261 +258,26 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             });
     }, [schemaHash, viewStateMap, databaseId, hasCRM]);
 
-    const columns = useMemo<Column<any, any>[]>(() => {
-        const propsCount = database?.properties?.length || 0;
-        if (!propsCount || !databaseIdRef || !activeViewId) return [];
-
-        const columnTraceLogs = orderedVisibleProperties.map(p => `${p.id}:${viewStateMap.get(p.id)?.width || 150}`).join(', ');
-        console.log("NotionGrid Rebuilding Columns! ->", columnTraceLogs);
-
-        const mappedProperties = orderedVisibleProperties
-            .map((prop: Property, i: number) => {
-                const state = viewStateMap.get(prop.id);
-                const storeWidth = state?.width || 150;
-                // During live drag: use the live offset.
-                // After drag end: viewStateMap may still be stale (same React batch),
-                // so fall back to the committed width ref.
-                const columnWidth = committedWidthsRef.current.get(prop.id) ?? storeWidth;
-                const currentWidth = resizingProperty === prop.id ? resizeOffset : columnWidth;
-                const GhostHeader = <div className="hidden" />;
-
-                // Because TitleColumn operates on the full row data, we handle it separately
-                if (prop.id === 'title') {
-                    const isFinancialDb =
-                        databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-') ||
-                        databaseIdRef === 'db-invoices'   || databaseIdRef.startsWith('db-invoices-');
-
-                    return {
-                        ...titleColumn(
-                            prop.id,
-                            // Single OPEN action: financial DBs → engine, non-financial/all others → side-peek modal directly
-                            (row) => {
-                                if (databaseIdRef === 'db-quotations' || databaseIdRef.startsWith('db-quotations-')) {
-                                    router.push(`/admin/quotations/${row.id}`);
-                                } else if (databaseIdRef === 'db-invoices' || databaseIdRef.startsWith('db-invoices-')) {
-                                    router.push(`/admin/financials/income/invoices/${row.id}`);
-                                } else {
-                                    setActivePageId(row.id);
-                                }
-                            },
-                        ),
-                        title: GhostHeader,
-                        basis: currentWidth,
-                        grow: 0,
-                        shrink: 0,
-                        minWidth: currentWidth,
-                        maxWidth: currentWidth,
-                        cellClassName: `dsg-col-${prop.id}`
-                    };
-                }
-
-                // Rollups also need full row data to read sibling relation properties
-                if (prop.type === 'rollup' && prop.config?.rollupPropertyId && prop.config?.rollupTargetPropertyId) {
-                    return {
-                        ...rollupColumn(prop.config.rollupPropertyId, prop.config.rollupTargetPropertyId, prop.config.rollupAggregation) as any,
-                        title: GhostHeader,
-                        basis: currentWidth,
-                        grow: 0,
-                        shrink: 0,
-                        minWidth: currentWidth,
-                        maxWidth: currentWidth,
-                        cellClassName: `dsg-col-${prop.id}`
-                    };
-                }
-
-                // Relations need full row data to allow precise multi-select array mutations
-                if (prop.type === 'relation' && prop.config?.relationDatabaseId) {
-                    return {
-                        ...relationColumn(prop.id, prop.config.relationDatabaseId, prop.config.relationDisplayPropertyId) as any,
-                        title: GhostHeader,
-                        basis: currentWidth,
-                        grow: 0,
-                        shrink: 0,
-                        minWidth: currentWidth,
-                        maxWidth: currentWidth,
-                        cellClassName: `dsg-col-${prop.id}`
-                    };
-                }
-
-                // Formulas evaluate mathematical logic against row data dynamically
-                if (prop.type === 'formula' && prop.config?.formulaExpression) {
-                    return {
-                        ...formulaColumn(prop.config.formulaExpression, databaseIdRef, prop.id) as any,
-                        title: GhostHeader,
-                        basis: currentWidth,
-                        grow: 0,
-                        shrink: 0,
-                        minWidth: currentWidth,
-                        maxWidth: currentWidth,
-                        cellClassName: `dsg-col-${prop.id}`
-                    };
-                }
-
-                // Map our PropertyType to react-datasheet-grid columns for other types
-                let baseColumn = textColumn;
-
-                if (prop.type === 'checkbox') {
-                    baseColumn = checkboxColumnCustom({
-                        propId: prop.id,
-                        onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value)
-                    }) as any;
-                } else if (prop.type === 'select' || prop.type === 'multi_select') {
-                    // Full-row column — no keyColumn wrapping needed.
-                    // onCommit calls updatePageProperty directly, bypassing the
-                    // setRowData → onChange → updatePageProperty timing race.
-                    baseColumn = selectColumn({
-                        choices: prop.config?.options || [],
-                        propId: prop.id,
-                        onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value),
-                    }) as any;
-                } else if (prop.type === 'date') {
-                    baseColumn = dateColumn as any;
-                } else if (prop.type === 'created_time' || prop.type === 'last_edited_time') {
-                    baseColumn = metaDateColumn as any;
-                } else if (prop.type === 'currency' || prop.type === 'number' || prop.type === 'percent') {
-                    const symbol = prop.type === 'currency' ? (prop.config?.format === 'dollar' ? '$' : '€') : prop.type === 'percent' ? '%' : '';
-                    const isComputed = ['totalExVat', 'totalVat', 'totalIncVat'].includes(prop.id);
-                    baseColumn = currencyColumn(prop.id, symbol, isComputed) as any;
-                } else if (prop.type === 'variants') {
-                    baseColumn = variantsColumn as any;
-                }
-                // More custom columns like Number will go here later
-
-                // Select/multi_select/checkbox use full row access:
-                // they directly call onCommit — no keyColumn needed.
-                if (prop.type === 'select' || prop.type === 'multi_select' || prop.type === 'checkbox') {
-                    return {
-                        ...baseColumn,
-                        title: GhostHeader,
-                        basis: currentWidth,
-                        grow: 0,
-                        shrink: 0,
-                        minWidth: currentWidth,
-                        maxWidth: currentWidth,
-                        cellClassName: `dsg-col-${prop.id}`
-                    };
-                }
-
-                return {
-                    ...keyColumn(prop.id, baseColumn),
-                    title: GhostHeader,
-                    basis: currentWidth,
-                    grow: 0,
-                    shrink: 0,
-                    minWidth: currentWidth,
-                    maxWidth: currentWidth,
-                    cellClassName: `dsg-col-${prop.id}`
-                };
-            });
-
-        // Prepend Selection Checkbox Col and native HTML5 drag-and-drop Grip handle column
-        return [
-            {
-                title: <div className="hidden" />,
-                basis: 40,
-                grow: 0,
-                shrink: 0,
-                minWidth: 40,
-                maxWidth: 40,
-                component: ({ rowData }) => (
-                    <div
-                        className="w-full h-full flex items-center justify-center cursor-default bg-neutral-50 dark:bg-black/50 border-r border-neutral-200 dark:border-white/10"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Checkbox
-                            checked={rowData._isSelected || false}
-                            onChange={(checked) => {
-                                const isChecked = checked;
-                                setSelectedRowIds(prevSet => {
-                                    const next = new Set(prevSet);
-                                    if (isChecked) next.add(rowData.id);
-                                    else next.delete(rowData.id);
-                                    return next;
-                                });
-                            }}
-                            className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                        />
-                    </div>
-                )
-            },
-            {
-                title: <div className="hidden" />,
-                basis: 40,
-                grow: 0,
-                shrink: 0,
-                minWidth: 40,
-                maxWidth: 40,
-                component: ({ rowIndex, rowData }) => (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <div
-                                draggable
-                                onDragStart={(e) => {
-                                    e.dataTransfer.setData('text/plain', rowIndex.toString());
-                                }}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                }}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                                    if (!isNaN(sourceIndex) && sourceIndex !== rowIndex && databaseIdRef) {
-                                        updatePageOrder(databaseIdRef, sourceIndex, rowIndex);
-                                    }
-                                }}
-                                className="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition bg-neutral-50 dark:bg-black/50"
-                            >
-                                <GripVertical size={16} />
-                            </div>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align="start" className="w-48 z-[100]">
-                            <DropdownMenuItem onClick={() => setActivePageId(rowData.id)} className="cursor-pointer">
-                                <Maximize2 className="w-4 h-4 mr-2" />
-                                <span>Open</span>
-                            </DropdownMenuItem>
-                            {!isBestekReadOnly && (
-                                <DropdownMenuItem onClick={() => {
-                                    const newProps = { ...rowData.properties };
-                                    if (newProps.title) {
-                                        newProps.title = `${newProps.title} (Copy)`;
-                                    }
-                                    createPage(databaseIdRef, newProps, undefined, rowData.blocks);
-                                }} className="cursor-pointer">
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    <span>Duplicate</span>
-                                </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            {/* Delete — blocked if preventDelete says so */}
-                            {(() => {
-                                const blocked = typeof preventDelete === 'function'
-                                    ? preventDelete(rowData)
-                                    : !!preventDelete || isBestekReadOnly;
-                                if (blocked) return null;
-                                return (
-                                    <DropdownMenuItem
-                                        onClick={() => {
-                                            if (window.confirm('Permanently delete this record?')) {
-                                                deletePage(databaseIdRef, rowData.id);
-                                            }
-                                        }}
-                                        className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20"
-                                    >
-                                        <Trash className="w-4 h-4 mr-2" />
-                                        <span>Delete</span>
-                                    </DropdownMenuItem>
-                                );
-                            })()}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
-            },
-            ...mappedProperties
-        ]
-    }, [databaseIdRef, activeViewId, viewStateMap, orderedVisibleProperties, resizingProperty, resizeOffset, isBestekReadOnly, preventDelete, router, isFree]);
-
+    const columns = useGridColumns({
+        databaseId,
+        databaseIdRef,
+        activeViewId,
+        orderedVisibleProperties,
+        viewStateMap,
+        resizingProperty,
+        resizeOffset,
+        committedWidthsRef,
+        isBestekReadOnly,
+        isFree,
+        preventDelete,
+        router,
+        updatePageProperty,
+        updatePageOrder,
+        createPage,
+        deletePage,
+        setSelectedRowIds,
+        setActivePageId,
+    });
 
     const filteredPages = useMemo(() => {
         if (!database) return [];
@@ -730,15 +444,17 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 const strA = String(valA || '').trim();
                 const strB = String(valB || '').trim();
 
-                // 1. Numerical parse attempt
-                const numA = parseFloat(strA.replace(',', '.'));
-                const numB = parseFloat(strB.replace(',', '.'));
-                const isNumA = !isNaN(numA) && isFinite(numA);
-                const isNumB = !isNaN(numB) && isFinite(numB);
+                // 1. Numerical parse attempt (only for pure numbers)
+                const cleanA = strA.replace(',', '.');
+                const cleanB = strB.replace(',', '.');
+                const valNumA = Number(cleanA);
+                const valNumB = Number(cleanB);
+                const isNumA = cleanA !== '' && !isNaN(valNumA) && isFinite(valNumA);
+                const isNumB = cleanB !== '' && !isNaN(valNumB) && isFinite(valNumB);
 
                 let result = 0;
                 if (isNumA && isNumB) {
-                    result = numA - numB;
+                    result = valNumA - valNumB;
                 } else {
                     result = collator.compare(strA, strB);
                 }
@@ -831,190 +547,23 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         _propHash: JSON.stringify(page.properties)
     })), [acctDateFilteredPages, selectedRowIds]);
 
-    // ── Live VAT typing detection via event delegation ────────────────────────
-    useEffect(() => {
-        const gridEl = gridAreaRef.current;
-        if (!gridEl || !database) return;
-
-        const vatPropertyNames = ['vat', 'tva', 'btw', 'vat_number', 'vatnumber', 'n_tva', 'nrtva', 'btw_nummer', 'btwnr'];
-        const vatPropIds = database.properties
-            .filter(p => vatPropertyNames.some(v =>
-                p.id.toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, '')) ||
-                (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(v.replace(/[^a-z0-9]/g, ''))
-            ))
-            .map(p => p.id);
-
-        if (vatPropIds.length === 0) return;
-
-        const handleInput = (e: Event) => {
-            const input = e.target as HTMLInputElement;
-            if (!input || input.tagName !== 'INPUT') return;
-
-            const cell = input.closest('[class*="dsg-col-"]') as HTMLElement;
-            if (!cell) return;
-
-            const vatPropId = vatPropIds.find(id => cell.classList.contains(`dsg-col-${id}`));
-            if (!vatPropId) return;
-
-            const value = input.value.trim();
-
-            if (vatDebounceRef.current) clearTimeout(vatDebounceRef.current);
-
-            if (value.length < 2) {
-                setVatLookup(null);
-                return;
-            }
-
-            const rect = cell.getBoundingClientRect();
-
-            // Find the row — walk up from cell, count among siblings
-            const rowEl = cell.parentElement;
-            let rowIndex = 0;
-            if (rowEl?.parentElement) {
-                const siblings = Array.from(rowEl.parentElement.children);
-                rowIndex = siblings.indexOf(rowEl);
-            }
-            const rowId = rowData[rowIndex]?.id || '';
-
-            const cleanVal = value.replace(/[\s.]/g, '');
-            const isValidVat = cleanVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(cleanVal);
-
-            // Show flyout immediately in 'typing' state
-            setVatLookup({
-                status: 'typing',
-                vatNumber: cleanVal,
-                rowId,
-                anchorRect: rect,
-            });
-
-            // Debounce: auto-trigger lookup if valid pattern
-            vatDebounceRef.current = setTimeout(() => {
-                if (isValidVat) {
-                    setVatLookup(prev => prev ? { ...prev, status: 'loading', vatNumber: cleanVal } : null);
-                }
-            }, 400);
-        };
-
-        gridEl.addEventListener('input', handleInput, true);
-        return () => {
-            gridEl.removeEventListener('input', handleInput, true);
-            if (vatDebounceRef.current) clearTimeout(vatDebounceRef.current);
-        };
-    }, [database?.id, database?.properties, rowData]);
-
-    // ── Automatic Background Peppol Verification ──────────────────────────
-    useEffect(() => {
-        if (!database || (database.id !== 'db-suppliers' && database.id !== 'db-clients')) return;
-        
-        const vatPropId = database.properties.find(p => 
-            ['vat', 'tva', 'btw', 'vat_number'].some(v => (p.name || '').toLowerCase().includes(v)) ||
-            p.id.toLowerCase() === 'vat'
-        )?.id;
-        
-        if (!vatPropId) return;
-
-        // Find pages that have a VAT but no peppol_active flag (not even false)
-        const uncheckedPages = database.pages.filter(p => {
-            const vatVal = String(p.properties[vatPropId] || '').replace(/[\s.]/g, '');
-            const hasVat = vatVal.length >= 8;
-            const isUnchecked = p.properties['peppol_active'] === undefined;
-            return hasVat && isUnchecked;
-        }).slice(0, 3); // process in small batches of 3
-
-        if (uncheckedPages.length === 0) return;
-
-        const checkBatch = async () => {
-            for (const page of uncheckedPages) {
-                const vatVal = String(page.properties[vatPropId] || '').replace(/[\s.]/g, '');
-                try {
-                    const res = await fetch(`/api/company/lookup?vat=${encodeURIComponent(vatVal)}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        updatePageProperty(database.id, page.id, 'peppol_active', !!data.peppolActive);
-                    } else {
-                        // Mark as checked (false) so we don't infinitely retry failed lookups
-                        updatePageProperty(database.id, page.id, 'peppol_active', false);
-                    }
-                } catch (err) {
-                    updatePageProperty(database.id, page.id, 'peppol_active', false);
-                }
-                // small delay between checks to avoid rate limits
-                await new Promise(r => setTimeout(r, 1000));
-            }
-        };
-
-        checkBatch();
-    }, [database, database?.id, database?.pages.length, updatePageProperty]); // trigger on DB load or new pages
-
-    // Apply the VAT lookup data to the row
-    const applyVatLookup = () => {
-        if (!vatLookup?.data || !database) return;
-        const findPropId = (patterns: string[]) =>
-            database.properties.find(p =>
-                patterns.some(pat => (p.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(pat))
-            )?.id;
-        const companyPropId = findPropId(['societe', 'société', 'company', 'bedrijf', 'onderneming', 'firmanaam']);
-        const addressPropId = findPropId(['adresse', 'address', 'adres', 'straat', 'street', 'rue']);
-        const cityPropId = findPropId(['ville', 'city', 'stad', 'gemeente', 'town']);
-        const postalPropId = findPropId(['code postal', 'postal', 'postcode', 'postalcode', 'zip', 'plz']);
-
-        const { name, street, city, postalCode, peppolActive } = vatLookup.data;
-        if (companyPropId && name) updatePageProperty(database.id, vatLookup.rowId, companyPropId, name);
-        if (addressPropId && street) updatePageProperty(database.id, vatLookup.rowId, addressPropId, street);
-        if (cityPropId && city) updatePageProperty(database.id, vatLookup.rowId, cityPropId, city);
-        if (postalPropId && postalCode) updatePageProperty(database.id, vatLookup.rowId, postalPropId, postalCode);
-        
-        // Save peppol_active flag internally
-        updatePageProperty(database.id, vatLookup.rowId, 'peppol_active', !!peppolActive);
-        
-        setVatLookup(null);
-    };
+    // ── Live VAT lookup flyout logic (encapsulated in useVatLookup hook) ─────
+    const { vatLookup, setVatLookup, applyVatLookup } = useVatLookup({
+        database,
+        rowData,
+        gridAreaRef,
+        updatePageProperty,
+    });
 
 
-    const handleExportCSV = () => {
-        if (!database) return;
 
-        // Prepare rows (using acctDateFilteredPages so it respects current filters)
-        const csvData = acctDateFilteredPages.map(page => {
-            const row: Record<string, string> = {};
-            database.properties.forEach(p => {
-                // Skip the export flag from CSV output
-                if (p.id === 'accountantExportedAt') return;
-                const val = page.properties[p.id];
-                if (val === undefined || val === null) {
-                    row[p.name] = '';
-                } else if (Array.isArray(val)) {
-                    row[p.name] = val.map(String).join(', ');
-                } else {
-                    row[p.name] = String(val);
-                }
-            });
-            return row;
-        });
 
-        const csvContent = Papa.unparse(csvData);
-
-        // Add UTF-8 BOM for Excel compatibility
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', url);
-        const dateStr = new Date().toISOString().split('T')[0];
-        link.setAttribute('download', `${database.name}_${dateStr}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // ── Accountant export: stamp all exported records ─────────────
-        if (isAccountant) {
-            acctDateFilteredPages.forEach(page => {
-                if (!page.properties.accountantExportedAt) {
-                    updatePageProperty(database.id, page.id, 'accountantExportedAt', true);
-                }
-            });
-            toast.success(`${acctDateFilteredPages.length} records exported & flagged`);
-        }
-    };
+    const handleExportCSV = useExportCSV({
+        database,
+        filteredPages: acctDateFilteredPages,
+        isAccountant,
+        updatePageProperty,
+    });
 
     // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
 

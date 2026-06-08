@@ -320,7 +320,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             }
             return String(raw);
         };
-
+ 
         // Check emptiness accounting for arrays
         const isEmpty = (raw: any): boolean => {
             if (raw === null || raw === undefined || raw === '') return true;
@@ -335,6 +335,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 const resolvedVal = cellVal ? String(cellVal) : 'opt-invoice'; // Backwards compat: existing records without docType are invoices
                 if (resolvedVal !== hardFilter.value) return false;
             }
+
+            // Always include newly created pages to prevent them from being hidden by active filters while editing (GRID-3)
+            const isRecent = Date.now() - new Date(page.createdAt).getTime() < 120000;
+            if (isRecent) return true;
 
             if (!activeFilters || activeFilters.length === 0) return true;
 
@@ -410,14 +414,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         if (!database) return [];
         const activeSorts = activeView?.sorts || database.activeSorts || [];
 
-        // Partition: newly created blank pages are forced to the top
+        // Partition: newly created pages are forced to the top
         const newPages: Page[] = [];
         const regularPages: Page[] = [];
 
         filteredPages.forEach(p => {
-            const isRecent = Date.now() - new Date(p.createdAt).getTime() < 60000;
-            const hasEmptyTitle = !p.properties['title'] || String(p.properties['title']).trim() === '';
-            if (isRecent && hasEmptyTitle) {
+            const isRecent = Date.now() - new Date(p.createdAt).getTime() < 120000;
+            if (isRecent) {
                 newPages.push(p);
             } else {
                 regularPages.push(p);

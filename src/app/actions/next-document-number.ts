@@ -67,85 +67,91 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
         const numberWidthField = `${docType}NumberWidth`;
         const nextNumberField = `${docType}NextNumber`;
 
-        // Fetch current settings
-        const tenant = await (prisma.tenant as any).findUnique({
-            where: { id: tenantId },
-            select: {
-                [prefixField]: true,
-                [connectorField]: true,
-                [dateFormatField]: true,
-                [numberWidthField]: true,
-                [nextNumberField]: true,
-            }
-        });
-
-        if (!tenant) return { success: false, error: 'Tenant not found' };
-
-        const prefix = tenant[prefixField] || '';
-        const connector = tenant[connectorField] || '-';
-        const dateFormat = tenant[dateFormatField] || 'YYYY';
-        const numberWidth = tenant[numberWidthField] ?? 3;
-        const storedNextNumber = tenant[nextNumberField] || 1;
-
-        const datePart = formatDate(dateFormat);
-        const joiner = connector === 'none' ? '' : connector;
-        
-        const baseParts: string[] = [];
-        if (prefix) baseParts.push(prefix);
-        if (datePart) baseParts.push(datePart);
-        const basePrefix = baseParts.join(joiner) + (baseParts.length > 0 ? joiner : '');
-
-        let maxSeq = 0;
-
-        if (docType === 'invoice') {
-            const invoices = await (prisma.invoice as any).findMany({
-                where: { tenantId, invoiceNumber: { startsWith: basePrefix } },
-                select: { invoiceNumber: true }
+        // Generate the formatted number and increment settings inside a Serializable transaction
+        const formattedNumber = await prisma.$transaction(async (tx) => {
+            // Fetch current settings inside the transaction
+            const tenant = await (tx.tenant as any).findUnique({
+                where: { id: tenantId },
+                select: {
+                    [prefixField]: true,
+                    [connectorField]: true,
+                    [dateFormatField]: true,
+                    [numberWidthField]: true,
+                    [nextNumberField]: true,
+                }
             });
-            for (const inv of invoices) {
-                if (!inv.invoiceNumber) continue;
-                const seqStr = inv.invoiceNumber.substring(basePrefix.length);
-                const seqNum = parseInt(seqStr, 10);
-                if (!isNaN(seqNum) && seqNum > maxSeq) {
-                    maxSeq = seqNum;
+
+            if (!tenant) throw new Error('Tenant not found');
+
+            const prefix = tenant[prefixField] || '';
+            const connector = tenant[connectorField] || '-';
+            const dateFormat = tenant[dateFormatField] || 'YYYY';
+            const numberWidth = tenant[numberWidthField] ?? 3;
+            const storedNextNumber = tenant[nextNumberField] || 1;
+
+            const datePart = formatDate(dateFormat);
+            const joiner = connector === 'none' ? '' : connector;
+            
+            const baseParts: string[] = [];
+            if (prefix) baseParts.push(prefix);
+            if (datePart) baseParts.push(datePart);
+            const basePrefix = baseParts.join(joiner) + (baseParts.length > 0 ? joiner : '');
+
+            let maxSeq = 0;
+
+            if (docType === 'invoice') {
+                const invoices = await (tx.invoice as any).findMany({
+                    where: { tenantId, invoiceNumber: { startsWith: basePrefix } },
+                    select: { invoiceNumber: true }
+                });
+                for (const inv of invoices) {
+                    if (!inv.invoiceNumber) continue;
+                    const seqStr = inv.invoiceNumber.substring(basePrefix.length);
+                    const seqNum = parseInt(seqStr, 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                }
+            } else if (docType === 'quotation') {
+                const quotes = await (tx.quotation as any).findMany({
+                    where: { tenantId, quoteNumber: { startsWith: basePrefix } },
+                    select: { quoteNumber: true }
+                });
+                for (const q of quotes) {
+                    if (!q.quoteNumber) continue;
+                    const seqStr = q.quoteNumber.substring(basePrefix.length);
+                    const seqNum = parseInt(seqStr, 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
+                }
+            } else if (docType === 'creditnote') {
+                const creditNotes = await (tx.invoice as any).findMany({
+                    where: { tenantId, type: 'CREDIT_NOTE', invoiceNumber: { startsWith: basePrefix } },
+                    select: { invoiceNumber: true }
+                });
+                for (const cn of creditNotes) {
+                    if (!cn.invoiceNumber) continue;
+                    const seqStr = cn.invoiceNumber.substring(basePrefix.length);
+                    const seqNum = parseInt(seqStr, 10);
+                    if (!isNaN(seqNum) && seqNum > maxSeq) {
+                        maxSeq = seqNum;
+                    }
                 }
             }
-        } else if (docType === 'quotation') {
-            const quotes = await (prisma.quotation as any).findMany({
-                where: { tenantId, quoteNumber: { startsWith: basePrefix } },
-                select: { quoteNumber: true }
-            });
-            for (const q of quotes) {
-                if (!q.quoteNumber) continue;
-                const seqStr = q.quoteNumber.substring(basePrefix.length);
-                const seqNum = parseInt(seqStr, 10);
-                if (!isNaN(seqNum) && seqNum > maxSeq) {
-                    maxSeq = seqNum;
-                }
-            }
-        } else if (docType === 'creditnote') {
-            // Credit notes live in the Invoice table with type='CREDIT_NOTE'
-            const creditNotes = await (prisma.invoice as any).findMany({
-                where: { tenantId, type: 'CREDIT_NOTE', invoiceNumber: { startsWith: basePrefix } },
-                select: { invoiceNumber: true }
-            });
-            for (const cn of creditNotes) {
-                if (!cn.invoiceNumber) continue;
-                const seqStr = cn.invoiceNumber.substring(basePrefix.length);
-                const seqNum = parseInt(seqStr, 10);
-                if (!isNaN(seqNum) && seqNum > maxSeq) {
-                    maxSeq = seqNum;
-                }
-            }
-        }
 
-        const nextNumberToUse = Math.max(maxSeq + 1, storedNextNumber);
-        const formattedNumber = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
+            const nextNumberToUse = Math.max(maxSeq + 1, storedNextNumber);
+            const formatted = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
 
-        // Atomically bump the counter so the next call gets the next number
-        await (prisma.tenant as any).update({
-            where: { id: tenantId },
-            data: { [nextNumberField]: nextNumberToUse + 1 },
+            // Atomically bump the counter inside the transaction
+            await (tx.tenant as any).update({
+                where: { id: tenantId },
+                data: { [nextNumberField]: nextNumberToUse + 1 },
+            });
+
+            return formatted;
+        }, {
+            isolationLevel: 'Serializable'
         });
 
         return { success: true, number: formattedNumber };

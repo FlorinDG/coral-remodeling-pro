@@ -86,16 +86,16 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
             {onOpen && (
                 <div className={`absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 transition-opacity duration-150 title-open-button ${active ? 'opacity-100' : 'opacity-0'}`}>
                     <button
+                        onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpen();
+                        }}
                         onMouseDown={(e) => {
                             e.stopPropagation();
                         }}
                         onDoubleClick={(e) => {
                             e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onOpen();
                         }}
                         className="flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 shadow-sm rounded text-xs font-semibold text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-600 transition"
                         style={{ pointerEvents: 'auto' }}

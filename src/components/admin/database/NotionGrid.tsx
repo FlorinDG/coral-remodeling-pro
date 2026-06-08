@@ -410,10 +410,24 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         if (!database) return [];
         const activeSorts = activeView?.sorts || database.activeSorts || [];
 
+        // Partition: newly created blank pages are forced to the top
+        const newPages: Page[] = [];
+        const regularPages: Page[] = [];
+
+        filteredPages.forEach(p => {
+            const isRecent = Date.now() - new Date(p.createdAt).getTime() < 60000;
+            const hasEmptyTitle = !p.properties['title'] || String(p.properties['title']).trim() === '';
+            if (isRecent && hasEmptyTitle) {
+                newPages.push(p);
+            } else {
+                regularPages.push(p);
+            }
+        });
+
         // Use Intl.Collator with numeric: true for natural sorting (e.g., "10" > "2")
         const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
-        return [...filteredPages].sort((a, b) => {
+        const sortedRegular = [...regularPages].sort((a, b) => {
             if (!activeSorts || activeSorts.length === 0) {
                 // Default: Newest on top
                 return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -456,6 +470,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             return 0;
         });
+
+        // Combine new pages at the very top (sorted newest first) followed by sorted regular pages
+        newPages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return [...newPages, ...sortedRegular];
     }, [database, filteredPages, activeView?.sorts]);
 
     // ── Accountant date range filtering (applied after sort) ──────────────

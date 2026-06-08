@@ -764,11 +764,25 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 })
             });
 
-            const data = await res.json();
+            // SEND-2: Guard .json() — a non-JSON error page (e.g. HTML 500) would throw here
+            let data: any;
+            try {
+                data = await res.json();
+            } catch {
+                const text = await res.text().catch(() => '');
+                toast.error(`Peppol fout: server gaf een onverwacht antwoord (HTTP ${res.status}). ${text.substring(0, 100)}`);
+                return;
+            }
+
+            if (!res.ok) {
+                toast.error(`Peppol fout: ${data?.issues || data?.error || `HTTP ${res.status}`}`);
+                return;
+            }
+
             if (data.success) {
                 // Auto-transition to "sent" status
                 handleUpdateProperty('status', 'opt-sent');
-                toast.success('Factuur succesvol verzonden via Peppol! ✅');
+                toast.success(isCreditNote ? 'Creditnota succesvol verzonden via Peppol! ✅' : 'Factuur succesvol verzonden via Peppol! ✅');
             } else if (data.code === 'PEPPOL_SEND_LIMIT') {
                 setPeppolLimitDialog(true);
             } else {

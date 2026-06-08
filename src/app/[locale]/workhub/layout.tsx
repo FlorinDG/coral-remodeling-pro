@@ -30,13 +30,61 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         const [tenant, databases] = await Promise.all([
             prisma.tenant.findUnique({
                 where: { id: tenantId },
-                select: { activeModules: true, planType: true, lockedDbIds: true },
+                select: {
+                    id: true,
+                    companyName: true,
+                    commercialName: true,
+                    vatNumber: true,
+                    iban: true,
+                    bic: true,
+                    email: true,
+                    street: true,
+                    postalCode: true,
+                    city: true,
+                    logoUrl: true,
+                    brandColor: true,
+                    documentTemplate: true,
+                    documentMode: true,
+                    stationeryUrl: true,
+                    documentFont: true,
+                    documentFontSize: true,
+                    planType: true,
+                    activeModules: true,
+                    subscriptionStatus: true,
+                    trialEndsAt: true,
+                    lockedDbIds: true,
+                    documentLanguage: true,
+                    peppolId: true,
+                    peppolRegistered: true,
+                    peppolOptOut: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    invoicePrefix: true,
+                    invoiceConnector: true,
+                    invoiceDateFormat: true,
+                    invoiceNumberWidth: true,
+                    invoiceNextNumber: true,
+                    quotationPrefix: true,
+                    quotationConnector: true,
+                    quotationDateFormat: true,
+                    quotationNumberWidth: true,
+                    quotationNextNumber: true,
+                    creditnotePrefix: true,
+                    creditnoteConnector: true,
+                    creditnoteDateFormat: true,
+                    creditnoteNumberWidth: true,
+                    creditnoteNextNumber: true,
+                },
             }),
             getGlobalDatabases()
         ]);
 
-        if (tenant?.activeModules) activeModules = tenant.activeModules;
-        if (tenant?.planType) planType = tenant.planType;
+        let fullTenant = null;
+        if (tenant) {
+            if (tenant.activeModules) activeModules = tenant.activeModules;
+            if (tenant.planType) planType = tenant.planType;
+            fullTenant = JSON.parse(JSON.stringify(tenant));
+        }
 
         const persistedIds = tenant?.lockedDbIds as Record<string, string> | null;
         if (persistedIds && Object.keys(persistedIds).length > 0) {
@@ -48,7 +96,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         return (
             <AuthProvider>
                 <GlobalDatabaseSyncer databases={databases} />
-                <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+                <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                     {children}
                 </WorkHubShell>
             </AuthProvider>

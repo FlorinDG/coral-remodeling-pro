@@ -344,6 +344,7 @@
         "syncPeppolInbox": "Sync Peppol Inbox",
         "scanUpload": "Scan / Upload",
         "manualInvoice": "Manual Invoice",
+        "manualTicket": "Manual Entry",
         "creating": "Creating…",
         "peppolNotConfigured": "Peppol not configured. Go to Settings → Financials.",
         "peppolConnectedBadge": "Peppol Connected",

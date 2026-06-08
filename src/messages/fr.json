@@ -343,6 +343,7 @@
         "syncPeppolInbox": "Synchroniser Boîte Peppol",
         "scanUpload": "Scanner / Télécharger",
         "manualInvoice": "Facture Manuelle",
+        "manualTicket": "Saisie Manuelle",
         "creating": "Création…",
         "peppolNotConfigured": "Peppol non configuré. Allez dans Paramètres → Finances.",
         "peppolConnectedBadge": "Peppol Connecté",

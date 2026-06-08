@@ -378,38 +378,7 @@ export const QuotationPDFTemplate = ({
                             </View>
                         </View>
 
-                        {/* Billing and Payment Conditions section */}
-                        {(billingRule || paymentTerms) && (
-                            <View style={{ marginTop: 16, padding: 8, backgroundColor: '#fafafa', borderLeft: `2.5px solid ${accent}`, borderRadius: 4, flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const }} wrap={false}>
-                                {billingRule && (
-                                    <View style={{ flexDirection: 'column' as const, gap: 1 }}>
-                                        <Text style={{ fontSize: 7.5, color: '#888888', textTransform: 'uppercase' as const, fontWeight: 'bold' as const }}>
-                                            {lang === 'fr' ? 'Méthode de facturation' : lang === 'en' ? 'Billing method' : 'Facturatiemethode'}
-                                        </Text>
-                                        <Text style={{ fontSize: 9, color: '#333333', fontWeight: 'bold' as const }}>
-                                            {billingRule === 'opt-fixed' ? (lang === 'fr' ? 'Prix fixe' : lang === 'en' ? 'Fixed price' : 'Vaste prijs') :
-                                             billingRule === 'opt-progress' ? (lang === 'fr' ? 'États d\'avancement' : lang === 'en' ? 'Progress billing' : 'Vorderingsstaten') :
-                                             billingRule === 'opt-hourly' ? (lang === 'fr' ? 'En régie' : lang === 'en' ? 'Hourly rate' : 'In regie') : 'Vaste prijs'}
-                                        </Text>
-                                    </View>
-                                )}
-                                {paymentTerms && (
-                                    <View style={{ flexDirection: 'column' as const, gap: 1, alignItems: 'flex-end' as const }}>
-                                        <Text style={{ fontSize: 7.5, color: '#888888', textTransform: 'uppercase' as const, fontWeight: 'bold' as const }}>
-                                            {lang === 'fr' ? 'Conditions de paiement' : lang === 'en' ? 'Payment terms' : 'Betalingsvoorwaarden'}
-                                        </Text>
-                                        <Text style={{ fontSize: 9, color: '#333333', fontWeight: 'bold' as const }}>
-                                            {paymentTerms === 'pay-0' ? (lang === 'fr' ? 'Immédiat' : lang === 'en' ? 'Immediate' : 'Onmiddellijk') :
-                                             paymentTerms === 'pay-8' ? (lang === 'fr' ? '8 jours' : lang === 'en' ? '8 days' : '8 dagen') :
-                                             paymentTerms === 'pay-14' ? (lang === 'fr' ? '14 jours' : lang === 'en' ? '14 days' : '14 dagen') :
-                                             paymentTerms === 'pay-30' ? (lang === 'fr' ? '30 jours' : lang === 'en' ? '30 days' : '30 dagen') :
-                                             paymentTerms === 'pay-60' ? (lang === 'fr' ? '60 jours' : lang === 'en' ? '60 days' : '60 dagen') :
-                                             paymentTerms === 'pay-90' ? (lang === 'fr' ? '90 jours' : lang === 'en' ? '90 days' : '90 dagen') : '30 dagen'}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                        )}
+
 
                         {/* Medecontractant Legal Notice */}
                         {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
@@ -597,38 +566,7 @@ export const QuotationPDFTemplate = ({
                     </View>
                 </View>
 
-                {/* Billing and Payment Conditions section */}
-                {(billingRule || paymentTerms) && (
-                    <View style={{ marginTop: 16, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 8, backgroundColor: '#fafafa', borderLeft: `2.5px solid ${accent}`, borderRadius: 4, flexDirection: 'row' as const, justifyContent: 'space-between' as const, alignItems: 'center' as const }} wrap={false}>
-                        {billingRule && (
-                            <View style={{ flexDirection: 'column' as const, gap: 1 }}>
-                                <Text style={{ fontSize: 7.5, color: '#888888', textTransform: 'uppercase' as const, fontWeight: 'bold' as const }}>
-                                    {lang === 'fr' ? 'Méthode de facturation' : lang === 'en' ? 'Billing method' : 'Facturatiemethode'}
-                                </Text>
-                                <Text style={{ fontSize: 9, color: '#333333', fontWeight: 'bold' as const }}>
-                                    {billingRule === 'opt-fixed' ? (lang === 'fr' ? 'Prix fixe' : lang === 'en' ? 'Fixed price' : 'Vaste prijs') :
-                                     billingRule === 'opt-progress' ? (lang === 'fr' ? 'États d\'avancement' : lang === 'en' ? 'Progress billing' : 'Vorderingsstaten') :
-                                     billingRule === 'opt-hourly' ? (lang === 'fr' ? 'En régie' : lang === 'en' ? 'Hourly rate' : 'In regie') : 'Vaste prijs'}
-                                </Text>
-                            </View>
-                        )}
-                        {paymentTerms && (
-                            <View style={{ flexDirection: 'column' as const, gap: 1, alignItems: 'flex-end' as const }}>
-                                <Text style={{ fontSize: 7.5, color: '#888888', textTransform: 'uppercase' as const, fontWeight: 'bold' as const }}>
-                                    {lang === 'fr' ? 'Conditions de paiement' : lang === 'en' ? 'Payment terms' : 'Betalingsvoorwaarden'}
-                                </Text>
-                                <Text style={{ fontSize: 9, color: '#333333', fontWeight: 'bold' as const }}>
-                                    {paymentTerms === 'pay-0' ? (lang === 'fr' ? 'Immédiat' : lang === 'en' ? 'Immediate' : 'Onmiddellijk') :
-                                     paymentTerms === 'pay-8' ? (lang === 'fr' ? '8 jours' : lang === 'en' ? '8 days' : '8 dagen') :
-                                     paymentTerms === 'pay-14' ? (lang === 'fr' ? '14 jours' : lang === 'en' ? '14 days' : '14 dagen') :
-                                     paymentTerms === 'pay-30' ? (lang === 'fr' ? '30 jours' : lang === 'en' ? '30 days' : '30 dagen') :
-                                     paymentTerms === 'pay-60' ? (lang === 'fr' ? '60 jours' : lang === 'en' ? '60 days' : '60 dagen') :
-                                     paymentTerms === 'pay-90' ? (lang === 'fr' ? '90 jours' : lang === 'en' ? '90 days' : '90 dagen') : '30 dagen'}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                )}
+
 
                 {/* Medecontractant Legal Notice */}
                 {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (

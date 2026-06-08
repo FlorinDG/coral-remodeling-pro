@@ -21,6 +21,9 @@ export const COLOR_STYLES: Record<string, { badge: string; dot: string }> = {
     purple:  { badge: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200', dot: 'bg-purple-500' },
     pink:    { badge: 'bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200',       dot: 'bg-pink-500' },
     orange:  { badge: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200', dot: 'bg-orange-400' },
+    brown:   { badge: 'bg-amber-900/10 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200', dot: 'bg-amber-800' },
+    charcoal: { badge: 'bg-zinc-100 text-zinc-800 dark:bg-zinc-800/80 dark:text-zinc-200',      dot: 'bg-zinc-500' },
+    default: { badge: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400', dot: 'bg-neutral-400' },
 };
 
 /**

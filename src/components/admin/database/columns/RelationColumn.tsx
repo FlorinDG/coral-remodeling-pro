@@ -113,8 +113,14 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                 className="bg-white dark:bg-neutral-900 border border-orange-500 shadow-xl flex flex-col p-2 animate-in fade-in duration-100 rounded-b-md"
                 style={{
                     position: 'absolute',
-                    top: rect.bottom,
-                    left: rect.left,
+                    top: (() => {
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const maxH = 350;
+                        return spaceBelow < maxH && rect.top > maxH
+                            ? rect.top - maxH
+                            : rect.bottom;
+                    })(),
+                    left: Math.min(rect.left, window.innerWidth - Math.max(300, rect.width)),
                     width: Math.max(300, rect.width),
                     height: 'auto',
                     maxHeight: '350px',

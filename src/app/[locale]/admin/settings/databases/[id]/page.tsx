@@ -35,6 +35,67 @@ const PROPERTY_TYPES: { id: PropertyType; label: string; icon: any }[] = [
     { id: 'last_edited_by', label: 'Last Edited By', icon: Type },
 ];
 
+interface OptionColorPickerProps {
+    color: string;
+    onSelectColor: (color: string) => void;
+    disabled?: boolean;
+}
+
+const OptionColorPicker = ({ color, onSelectColor, disabled }: OptionColorPickerProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const ref = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (!isOpen) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [isOpen]);
+
+    const colors = ['gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red'];
+    const colorStyles: Record<string, string> = {
+        gray: 'bg-neutral-400',
+        brown: 'bg-[#a37e71]',
+        orange: 'bg-orange-400',
+        yellow: 'bg-amber-400',
+        green: 'bg-emerald-500',
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
+        pink: 'bg-pink-500',
+        red: 'bg-red-500',
+    };
+
+    return (
+        <div ref={ref} className="relative flex items-center">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-2.5 h-2.5 rounded-full ${colorStyles[color] || 'bg-neutral-400'} hover:scale-110 transition-transform cursor-pointer focus:outline-none`}
+                title="Change color"
+            />
+            {isOpen && (
+                <div className="absolute top-full left-0 mt-1 z-[110] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/80 shadow-xl rounded-lg p-1.5 flex gap-1 min-w-[140px] flex-wrap max-w-[160px]">
+                    {colors.map(c => (
+                        <button
+                            key={c}
+                            type="button"
+                            onClick={() => {
+                                onSelectColor(c);
+                                setIsOpen(false);
+                            }}
+                            className={`w-4 h-4 rounded-full ${colorStyles[c]} hover:ring-2 hover:ring-orange-500 transition-all focus:outline-none`}
+                            title={c}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function DatabaseConfigurator() {
     const params = useParams();
     const router = useRouter();
@@ -273,7 +334,15 @@ export default function DatabaseConfigurator() {
                                                                     {(prop.type === 'select' || prop.type === 'multi_select') && (
                                                                         <div className="flex flex-wrap gap-1 items-center bg-neutral-100/50 dark:bg-white/5 p-1 rounded-md border border-transparent min-h-[30px] w-full">
                                                                             {prop.config?.options?.map(opt => (
-                                                                                <div key={opt.id} className="flex items-center gap-1 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 px-1.5 py-0.5 rounded text-[10px]">
+                                                                                <div key={opt.id} className="flex items-center gap-1.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-white/10 px-1.5 py-0.5 rounded text-[10px]">
+                                                                                    <OptionColorPicker
+                                                                                        color={opt.color || 'gray'}
+                                                                                        disabled={isLocked}
+                                                                                        onSelectColor={(newColor) => {
+                                                                                            const updatedOptions = prop.config?.options?.map(o => o.id === opt.id ? { ...o, color: newColor } : o) || [];
+                                                                                            updateProperty(databaseId, prop.id, { config: { ...prop.config, options: updatedOptions } });
+                                                                                        }}
+                                                                                    />
                                                                                     <span>{opt.name}</span>
                                                                                     {!isLocked && (
                                                                                         <button

@@ -437,10 +437,10 @@ export const QuotationPDFTemplate = ({
     // ── DYNAMIC TEMPLATE MODE (T1/T2/T3/T4) ────────────────────────────────
 
     const renderInspiredHeader = () => {
-        const formattedCompanyVat = formatBelgianVat(vatNumber) || 'BE 1018.865.828';
-        const formattedCompanyIban = formatIban(iban) || 'BE82 7310 6564 9268';
-        const companyAddress = [street, (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : ''].filter(Boolean).join(' ') || 'Z5 Industriezone 230 1730 ASSE';
-        const companyMail = email || 'info@coral-group.be';
+        const formattedCompanyVat = formatBelgianVat(vatNumber) || '';
+        const formattedCompanyIban = formatIban(iban) || '';
+        const companyAddress = [street, (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : ''].filter(Boolean).join(' ') || '';
+        const companyMail = email || '';
         
         const formattedClientVat = clientInfo.vatNumber ? formatBelgianVat(clientInfo.vatNumber) : '';
         const clientAddress = clientInfo.address || '';
@@ -457,7 +457,7 @@ export const QuotationPDFTemplate = ({
                     <View style={{ flex: 0.55, flexDirection: 'column', gap: 2 }}>
                         {logoUrl && <Image src={logoUrl} style={{ width: 80, height: 'auto', marginBottom: 6 }} />}
                         <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
-                            {companyName || 'Coral Enterprises'}
+                            {companyName || ''}
                         </Text>
                         <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{companyAddress}</Text>
                         <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{formattedCompanyVat}</Text>
@@ -555,7 +555,7 @@ export const QuotationPDFTemplate = ({
         return (
             <View style={s.footerText} fixed>
                 <Text>
-                    {companyName || 'Coral Enterprises'}
+                    {companyName || ''}
                     {vatNumber ? `  ·  ${t('vat', lang)}: ${vatNumber}` : ''}
                     {iban ? `  ·  IBAN: ${iban}` : ''}
                     {email ? `  ·  ${email}` : ''}

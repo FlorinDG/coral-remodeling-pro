@@ -499,7 +499,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     id, clientEmail, clientName, String(projectName),
                     `€${grandTotal.toFixed(2)}`, base64data,
                     undefined,
-                    String(tenantProfile?.commercialName || tenantProfile?.companyName || 'Coral Enterprises'),
+                    String(tenantProfile?.commercialName || tenantProfile?.companyName || ''),
                     docLanguage,
                     tenantProfile?.brandColor
                 );

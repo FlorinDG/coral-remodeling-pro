@@ -14,20 +14,32 @@ const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: f
 
 type SignatureMode = 'draw' | 'type' | 'upload';
 
-interface TenantBranding {
+interface TenantProfile {
     companyName: string;
+    commercialName?: string | null;
     logoUrl: string | null;
     brandColor: string | null;
     email: string | null;
     vatNumber: string | null;
+    iban?: string | null;
+    bic?: string | null;
+    street?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+    documentLanguage?: string | null;
     planType: string;
+    documentMode?: string | null;
+    stationeryUrl?: string | null;
+    documentFont?: string | null;
+    documentFontSize?: number | null;
+    documentTemplate?: string | null;
 }
 
 interface QuotationViewerProps {
     quoteId: string;
     properties: any;
     blocks: any;
-    tenant: TenantBranding;
+    tenant: TenantProfile;
     lang: string;
 }
 
@@ -323,7 +335,7 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                         {tenant.logoUrl ? (
                             <img
                                 src={tenant.logoUrl}
-                                alt={tenant.companyName}
+                                alt={tenant.commercialName || tenant.companyName}
                                 className="h-10 w-auto object-contain"
                             />
                         ) : (
@@ -331,10 +343,10 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                 className="h-10 w-10 rounded-lg flex items-center justify-center text-white font-black text-lg"
                                 style={{ backgroundColor: brandColor }}
                             >
-                                {tenant.companyName.charAt(0)}
+                                {(tenant.commercialName || tenant.companyName).charAt(0)}
                             </div>
                         )}
-                        <span className="text-lg font-bold text-neutral-900 hidden sm:block">{tenant.companyName}</span>
+                        <span className="text-lg font-bold text-neutral-900 hidden sm:block">{tenant.commercialName || tenant.companyName}</span>
                     </div>
                     <div className="text-right text-xs text-neutral-400 hidden sm:block">
                         {tenant.email && <div>{tenant.email}</div>}

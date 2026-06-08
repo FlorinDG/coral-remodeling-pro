@@ -60,6 +60,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
                     tenant: {
                         select: {
                             companyName: true,
+                            commercialName: true,
                             logoUrl: true,
                             brandColor: true,
                             email: true,
@@ -67,8 +68,15 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
                             city: true,
                             postalCode: true,
                             vatNumber: true,
+                            iban: true,
+                            bic: true,
                             documentLanguage: true,
                             planType: true,
+                            documentMode: true,
+                            stationeryUrl: true,
+                            documentFont: true,
+                            documentFontSize: true,
+                            documentTemplate: true,
                         }
                     }
                 }
@@ -93,14 +101,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
             quoteId={quote.id}
             properties={quote.properties}
             blocks={enrichedBlocks}
-            tenant={{
-                companyName: tenant.companyName,
-                logoUrl: tenant.logoUrl,
-                brandColor: tenant.brandColor,
-                email: tenant.email,
-                vatNumber: tenant.vatNumber,
-                planType: tenant.planType,
-            }}
+            tenant={tenant}
             lang={lang}
         />
     );

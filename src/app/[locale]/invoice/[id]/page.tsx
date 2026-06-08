@@ -59,6 +59,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                     tenant: {
                         select: {
                             companyName: true,
+                            commercialName: true,
                             logoUrl: true,
                             brandColor: true,
                             email: true,
@@ -66,8 +67,15 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
                             city: true,
                             postalCode: true,
                             vatNumber: true,
+                            iban: true,
+                            bic: true,
                             documentLanguage: true,
                             planType: true,
+                            documentMode: true,
+                            stationeryUrl: true,
+                            documentFont: true,
+                            documentFontSize: true,
+                            documentTemplate: true,
                         }
                     }
                 }
@@ -89,14 +97,7 @@ export default async function PublicInvoicePage({ params }: { params: Promise<{ 
             invoiceId={invoice.id}
             properties={invoice.properties}
             blocks={enrichedBlocks}
-            tenant={{
-                companyName: tenant.companyName,
-                logoUrl: tenant.logoUrl,
-                brandColor: tenant.brandColor,
-                email: tenant.email,
-                vatNumber: tenant.vatNumber,
-                planType: tenant.planType,
-            }}
+            tenant={tenant}
             lang={lang}
         />
     );

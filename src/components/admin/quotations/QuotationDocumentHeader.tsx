@@ -2,16 +2,41 @@ import React from 'react';
 import { Page } from '@/components/admin/database/types';
 import { User, Briefcase, FileText } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { useTenant } from '@/context/TenantContext';
 
 interface QuotationDocumentHeaderProps {
     quotation: Page;
     onUpdateProperty: (key: string, value: any) => void;
 }
 
+function formatBelgianVat(vat?: string) {
+    if (!vat) return '';
+    const clean = vat.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    let digits = clean;
+    if (clean.startsWith('BE')) {
+        digits = clean.substring(2);
+    }
+    if (digits.length === 10) {
+        return `BE ${digits.substring(0, 4)}.${digits.substring(4, 7)}.${digits.substring(7, 10)}`;
+    }
+    return vat;
+}
+
 export default function QuotationDocumentHeader({ quotation, onUpdateProperty }: QuotationDocumentHeaderProps) {
+    const { tenant } = useTenant();
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const clientId = (quotation.properties?.['client'] as string) || '';
     const projectId = (quotation.properties?.['project'] as string) || '';
+
+    const companyName = tenant?.commercialName || tenant?.companyName || '';
+    const vatNumber = tenant?.vatNumber ? formatBelgianVat(tenant.vatNumber) : '';
+    const email = tenant?.email || '';
+
+    // Resolve address fields
+    const street = tenant?.street || '';
+    const postalCode = tenant?.postalCode || '';
+    const city = tenant?.city || '';
+    const address = [street, `${postalCode || ''} ${city || ''}`.trim()].filter(Boolean).join(', ');
 
     // We can pull actual client data from db-clients later when wired up fully,
     // for now we provide a sleek manual override and relation picker visual layout.
@@ -24,14 +49,14 @@ export default function QuotationDocumentHeader({ quotation, onUpdateProperty }:
 
                 {/* Left: Company Identity */}
                 <div className="flex flex-col gap-1 text-sm text-neutral-500 dark:text-neutral-400">
-                    <div className="text-2xl font-black text-black dark:text-white tracking-widest uppercase mb-2">
-                        CORAL
-                    </div>
-                    <p>Coral Remodeling Pro</p>
-                    <p>BTW: BE 0123.456.789</p>
-                    <p>info@coral-remodeling.be</p>
-                    <p>+32 400 00 00 00</p>
-                    <p>Antwerp, Belgium</p>
+                    {companyName && (
+                        <div className="text-2xl font-black text-black dark:text-white tracking-widest uppercase mb-2">
+                            {companyName}
+                        </div>
+                    )}
+                    {vatNumber && <p>BTW: {vatNumber}</p>}
+                    {email && <p>{email}</p>}
+                    {address && <p>{address}</p>}
                 </div>
 
                 {/* Right: Client / Relation Picker */}

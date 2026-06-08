@@ -45,16 +45,19 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
     useLayoutEffect(() => {
         if ((focus || active) && containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
+            const dropdownHeight = Math.min(choices.length * 32 + 48, 280); // approx height
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const flipUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
             const left = Math.min(rect.left, window.innerWidth - 220);
             setDropdownPos({
-                top: rect.bottom + 4,
+                top: flipUp ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
                 left,
                 minWidth: Math.max(rect.width, 200),
             });
         } else {
             setDropdownPos(null);
         }
-    }, [focus, active]);
+    }, [focus, active, choices.length]);
 
     const handleSelect = (choiceId: string | null) => {
         if (!fullRow?.id) return;

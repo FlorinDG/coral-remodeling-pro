@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
+import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
@@ -223,7 +224,9 @@ export const InvoicePDFTemplate = ({
             } else if (block.type === 'text') {
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
-                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>{cleanContent}</Text>
+                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>
+                            {renderRichText(block.content, { fontStyle: 'italic', color: '#555', fontSize: 9 })}
+                        </Text>
                     </View>
                 );
             } else {
@@ -231,7 +234,9 @@ export const InvoicePDFTemplate = ({
                 const unitPrice = blockTotal / (block.quantity || 1);
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad }}>
-                        <Text style={colDesc}>{cleanContent}</Text>
+                        <Text style={colDesc}>
+                            {renderRichText(block.content, colDesc)}
+                        </Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
                         <Text style={colPrice}>€ {unitPrice.toFixed(2)}</Text>

@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { Document, Page, Text, View, Image, Svg, Polygon, Rect } from '@react-pdf/renderer';
 import { Block } from '@/components/admin/database/types';
+import { renderRichText } from '@/components/admin/shared/pdfRichText';
 import { getTemplateStyles, TemplateId, lighten, withAlpha } from '@/components/admin/shared/templateStyles';
 import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
@@ -185,15 +186,20 @@ export const QuotationPDFTemplate = ({
             } else if (block.type === 'text') {
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
-                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>{cleanContent}</Text>
+                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>
+                            {renderRichText(block.content, { fontStyle: 'italic', color: '#555', fontSize: 9 })}
+                        </Text>
                     </View>
                 );
             } else {
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
                 const unitPrice = blockTotal / (block.quantity || 1);
+                const descStyle = { fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' };
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad, backgroundColor: depth > 0 ? '#fafafa' : undefined }}>
-                        <Text style={{ ...colDesc, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{cleanContent}</Text>
+                        <Text style={{ ...colDesc, ...descStyle }}>
+                            {renderRichText(block.content, descStyle)}
+                        </Text>
                         <Text style={{ ...colQty, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.quantity || 1}</Text>
                         <Text style={{ ...colUnit, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.unit || 'stk'}</Text>
                         <Text style={{ ...colPrice, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>€  {unitPrice.toFixed(2)}</Text>

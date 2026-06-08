@@ -67,7 +67,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [tenantProfile, setTenantProfile] = useState<TenantProfile | null>(null);
     const [showProperties, setShowProperties] = useState(false);
     const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
 
@@ -85,18 +84,13 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
-        // PROFILE-1: React to tenant changes from TenantContext (settings saves, refreshTenant)
-        if (tenant) {
-            setTenantProfile(tenant);
-        }
-
         return () => {
             if (unsubscribe) unsubscribe();
             if (debounceTimeoutRef.current) {
                 clearTimeout(debounceTimeoutRef.current);
             }
         };
-    }, [tenant]);
+    }, []);
 
     const quotation = useDatabaseStore(state => {
         const db = state.databases.find(d => d.id === quotationsDbId);
@@ -287,8 +281,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             if (rawLang.includes('en')) return 'en';
             return 'nl';
         }
-        return tenantProfile?.documentLanguage || 'nl';
-    }, [quotation, clients, clientId, tenantProfile?.documentLanguage]);
+        return tenant?.documentLanguage || 'nl';
+    }, [quotation, clients, clientId, tenant?.documentLanguage]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
@@ -479,8 +473,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
-                    tenantProfile={tenantProfile}
-                    templateId={tenantProfile?.documentTemplate || 't1'}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     vatCalcMode={vatCalcMode}
                     vatRegime={vatRegime}
@@ -489,7 +483,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 />
             );
 
-            const blob = await generatePdfBlob(doc, tenantProfile);
+            const blob = await generatePdfBlob(doc, tenant);
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -499,9 +493,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     id, clientEmail, clientName, String(projectName),
                     `€${grandTotal.toFixed(2)}`, base64data,
                     undefined,
-                    String(tenantProfile?.commercialName || tenantProfile?.companyName || ''),
+                    String(tenant?.commercialName || tenant?.companyName || ''),
                     docLanguage,
-                    tenantProfile?.brandColor
+                    tenant?.brandColor
                 );
 
                 if (response.success) {
@@ -565,8 +559,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
-                    tenantProfile={tenantProfile}
-                    templateId={tenantProfile?.documentTemplate || 't1'}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     vatCalcMode={vatCalcMode}
                     vatRegime={vatRegime}
@@ -575,7 +569,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 />
             );
 
-            const blob = await generatePdfBlob(doc, tenantProfile);
+            const blob = await generatePdfBlob(doc, tenant);
 
             const file = new File([blob], `Offerte_${quotationTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
             const formData = new FormData();
@@ -939,7 +933,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 </div>
             </div>
 
-            {tenantProfile && (!tenantProfile.companyName || !tenantProfile.vatNumber) && (
+            {tenant && (!tenant.companyName || !tenant.vatNumber) && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
@@ -1184,8 +1178,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             projectId={String(projectId)}
                                             grandTotal={grandTotal}
                                             databaseStoreState={useDatabaseStore.getState()}
-                                            tenantProfile={tenantProfile}
-                                            templateId={tenantProfile?.documentTemplate || 't1'}
+                                            tenantProfile={tenant}
+                                            templateId={tenant?.documentTemplate || 't1'}
                                             language={docLanguage}
                                             showSubcomponents={true}
                                             vatCalcMode={vatCalcMode}
@@ -1194,7 +1188,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             paymentTerms={paymentTerms}
                                         />
                                     );
-                                    const blob = await generatePdfBlob(doc, tenantProfile);
+                                    const blob = await generatePdfBlob(doc, tenant);
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url;
@@ -1234,8 +1228,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             projectId={String(projectId)}
                                             grandTotal={grandTotal}
                                             databaseStoreState={useDatabaseStore.getState()}
-                                            tenantProfile={tenantProfile}
-                                            templateId={tenantProfile?.documentTemplate || 't1'}
+                                            tenantProfile={tenant}
+                                            templateId={tenant?.documentTemplate || 't1'}
                                             language={docLanguage}
                                             showSubcomponents={false}
                                             vatCalcMode={vatCalcMode}
@@ -1244,7 +1238,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                             paymentTerms={paymentTerms}
                                         />
                                     );
-                                    const blob = await generatePdfBlob(doc, tenantProfile);
+                                    const blob = await generatePdfBlob(doc, tenant);
                                     const url = URL.createObjectURL(blob);
                                     const a = document.createElement('a');
                                     a.href = url;

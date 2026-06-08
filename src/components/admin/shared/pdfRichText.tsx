@@ -22,7 +22,7 @@ interface ListState {
  * Parses a basic HTML string and converts it to an array of @react-pdf/renderer Text elements.
  * Supports standard contenteditable tags: b, strong, i, em, u, br, p, div, ul, ol, li, and span/font color.
  */
-export function renderRichText(html: string | undefined, defaultStyle: any = {}): React.ReactNode[] {
+export function renderRichText(html: string | undefined, defaultStyle: Record<string, string | number | undefined> = {}): React.ReactNode[] {
     if (!html) return [];
 
     // Split HTML into text segments and tags
@@ -36,8 +36,8 @@ export function renderRichText(html: string | undefined, defaultStyle: any = {})
 
     const decodeEntities = (str: string): string => {
         return str
-            .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
+            .replace(/&nbsp;/g, ' ')
             .replace(/&lt;/g, '<')
             .replace(/&gt;/g, '>')
             .replace(/&quot;/g, '"')
@@ -51,7 +51,7 @@ export function renderRichText(html: string | undefined, defaultStyle: any = {})
     };
 
     const getResolvedStyle = () => {
-        const style: any = {};
+        const style: Record<string, string | number | undefined> = {};
         for (const entry of stack) {
             const override = entry.override;
             if (override.bold !== undefined) style.fontWeight = override.bold ? 'bold' : 'normal';
@@ -62,12 +62,8 @@ export function renderRichText(html: string | undefined, defaultStyle: any = {})
         return style;
     };
 
-    const addNewline = (resolvedStyle: any) => {
-        elements.push(
-            <Text key={`nl-${keyCounter++}`} style={{ ...defaultStyle, ...resolvedStyle }}>
-                {"\n"}
-            </Text>
-        );
+    const addNewline = (resolvedStyle?: Record<string, string | number | undefined>) => {
+        elements.push("\n");
     };
 
     for (let i = 0; i < tokens.length; i++) {

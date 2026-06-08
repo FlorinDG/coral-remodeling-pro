@@ -81,23 +81,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const [rejectMode, setRejectMode] = useState(false);
     const [rejectComment, setRejectComment] = useState('');
     const [approveLoading, setApproveLoading] = useState(false);
-    const [tenantProfile, setTenantProfile] = useState<{
-        companyName?: string;
-        commercialName?: string;
-        vatNumber?: string;
-        street?: string;
-        postalCode?: string;
-        city?: string;
-        country?: string;
-        brandColor?: string;
-        email?: string;
-    } | null>(null);
 
-    useEffect(() => {
-        if (tenant) {
-            setTenantProfile(tenant);
-        }
-    }, [tenant]);
 
     // Editable fields for manual/draft invoices
     const [editData, setEditData] = useState({
@@ -223,14 +207,14 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
             const lines = peppolDetail?.lines || [];
 
             const buyerAddress = [
-                tenantProfile?.street,
-                [tenantProfile?.postalCode, tenantProfile?.city].filter(Boolean).join(' '),
-                tenantProfile?.country
+                tenant?.street,
+                [tenant?.postalCode, tenant?.city].filter(Boolean).join(' '),
+                tenant?.country
             ].filter(Boolean).join(', ');
 
             await downloadPurchaseInvoicePDF({
-                buyerName: tenantProfile?.commercialName || tenantProfile?.companyName || 'Coral Remodeling',
-                buyerVat: tenantProfile?.vatNumber || '',
+                buyerName: tenant?.commercialName || tenant?.companyName || 'Coral Remodeling',
+                buyerVat: tenant?.vatNumber || '',
                 buyerAddress: buyerAddress || '',
                 supplierName,
                 supplierVat: peppolDetail?.supplierVat || '',
@@ -244,7 +228,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 totalExVat: parseFloat(String(page.properties.totalExVat || 0)),
                 totalVat: parseFloat(String(page.properties.totalVat || 0)),
                 totalIncVat: parseFloat(String(page.properties.totalIncVat || 0)),
-            }, tenantProfile?.brandColor);
+            }, tenant?.brandColor);
         } catch (err) {
             console.error('PDF export failed:', err);
         } finally {

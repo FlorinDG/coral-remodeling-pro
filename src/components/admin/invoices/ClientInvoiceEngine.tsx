@@ -17,7 +17,7 @@ import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
-import { generateClientSideDocNumber } from '@/lib/docNumberFallback';
+
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
@@ -60,7 +60,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [tenantProfile, setTenantProfile] = useState<any>(null);
     const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
     const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
@@ -88,15 +87,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     useEffect(() => {
         const unsubscribe = useDatabaseStore.persist.onFinishHydration(() => setIsHydrated(true));
 
-        // PROFILE-1: React to tenant changes from TenantContext (settings saves, refreshTenant)
-        if (tenant) {
-            setTenantProfile(tenant);
-        }
-
         return () => {
             if (unsubscribe) unsubscribe();
         };
-    }, [tenant]);
+    }, []);
 
     const invoice = useDatabaseStore(state => {
         const db = state.databases.find(d => d.id === invoicesDbId);
@@ -302,8 +296,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             if (rawLang.includes('en')) return 'en';
             return 'nl';
         }
-        return tenantProfile?.documentLanguage || 'nl';
-    }, [invoice, clients, clientId, tenantProfile?.documentLanguage]);
+        return tenant?.documentLanguage || 'nl';
+    }, [invoice, clients, clientId, tenant?.documentLanguage]);
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
         const blks = invoice?.blocks || [];
@@ -348,7 +342,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     // Create Credit Nota from this invoice
     const handleCreateCreditNote = async () => {
         const invoiceNum = String(invoiceTitle);
-        // Use the configured credit note numbering system
+        // Use the configured credit note numbering system — NEVER fall back to a wrong number (FIN-7)
         let cnNumber: string;
         try {
             const numResult = await getNextDocumentNumber('creditnote');
@@ -356,11 +350,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 cnNumber = numResult.number;
             } else {
                 console.error('getNextDocumentNumber failed for creditnote:', numResult.error);
-                cnNumber = generateClientSideDocNumber(tenant, 'creditnote');
+                toast.error(`Creditnota nummer kon niet worden aangemaakt: ${numResult.error || 'onbekende fout'}. Controleer de nummeringsinstellingen.`);
+                return;
             }
         } catch (e) {
             console.error('getNextDocumentNumber threw for creditnote:', e);
-            cnNumber = generateClientSideDocNumber(tenant, 'creditnote');
+            toast.error('Er is een fout opgetreden bij het genereren van het creditnota nummer. Probeer opnieuw.');
+            return;
         }
         const result = await createPageServerFirst(invoicesDbId, {
             title: cnNumber,
@@ -598,8 +594,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
-                    tenantProfile={tenantProfile}
-                    templateId={tenantProfile?.documentTemplate || 't1'}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
@@ -612,7 +608,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             const asPdf = pdf(doc);
-            const blob = await generatePdfBlob(doc, tenantProfile);
+            const blob = await generatePdfBlob(doc, tenant);
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -622,9 +618,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     id, clientEmail, clientName, String(projectName),
                     `€${grandTotal.toFixed(2)}`, base64data,
                     undefined,
-                    String(tenantProfile?.commercialName || tenantProfile?.companyName || ''),
+                    String(tenant?.commercialName || tenant?.companyName || ''),
                     docLanguage,
-                    tenantProfile?.brandColor
+                    tenant?.brandColor
                 );
 
                 if (response.success) {
@@ -691,8 +687,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     projectId={String(projectId)}
                     grandTotal={grandTotal}
                     databaseStoreState={useDatabaseStore.getState()}
-                    tenantProfile={tenantProfile}
-                    templateId={tenantProfile?.documentTemplate || 't1'}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
@@ -705,7 +701,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             );
 
             const asPdf = pdf(doc);
-            const blob = await generatePdfBlob(doc, tenantProfile);
+            const blob = await generatePdfBlob(doc, tenant);
 
             const file = new File([blob], `Factuur_${invoiceTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
             const formData = new FormData();
@@ -1200,7 +1196,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 return null;
             })()}
 
-            {tenantProfile && (!tenantProfile.companyName || !tenantProfile.vatNumber) && (
+            {tenant && (!tenant.companyName || !tenant.vatNumber) && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
@@ -1403,17 +1399,19 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 projectId={String(projectId)}
                                                 grandTotal={grandTotal}
                                                 databaseStoreState={useDatabaseStore.getState()}
-                                                tenantProfile={tenantProfile}
-                                                templateId={tenantProfile?.documentTemplate || 't1'}
+                                                tenantProfile={tenant}
+                                                templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                                                 deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
+                                                vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
+                                                vatRegime={invoice?.properties?.['vatRegime'] as string}
                                                 structuredComm={invoice?.properties?.['structuredComm'] as string}
                                             />
                                         );
-                                        const blob = await generatePdfBlob(doc, tenantProfile);
+                                        const blob = await generatePdfBlob(doc, tenant);
                                         const url = URL.createObjectURL(blob);
                                         const a = document.createElement('a');
                                         a.href = url;

@@ -24,7 +24,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 
 const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const databases = useDatabaseStore(state => state.databases);
-    const page = databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId);
+    const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
 
     const rollupPropertyId = property.config?.rollupPropertyId;
     const rollupTargetPropertyId = property.config?.rollupTargetPropertyId;
@@ -68,8 +68,8 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
 
 const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const targetDbId = property.config?.relationDatabaseId;
-    const targetDatabase = useDatabaseStore(state => state.databases.find(db => db.id === targetDbId));
-    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
+    const targetDatabase = useDatabaseStore(state => state.getDatabase(targetDbId));
+    const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     const rawValue = page?.properties[property.id];
@@ -81,7 +81,10 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
 
     React.useEffect(() => {
         const listener = (e: MouseEvent | TouchEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setIsOpen(false);
+            const target = e.target as Node;
+            const inRef = ref.current && ref.current.contains(target);
+            const inPortal = (target as Element)?.closest?.('[data-relation-portal]');
+            if (!inRef && !inPortal) setIsOpen(false);
         };
         document.addEventListener('mousedown', listener);
         document.addEventListener('touchstart', listener);
@@ -130,6 +133,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
 
             {isOpen && ref.current && typeof document !== 'undefined' && createPortal(
                 <div
+                    data-relation-portal
                     className="fixed z-[999999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700/80 shadow-2xl rounded-xl w-64 p-2 animate-in fade-in duration-200"
                     style={{
                         top: ref.current.getBoundingClientRect().bottom + 4,
@@ -276,9 +280,9 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
 
 // ─── Purchase Invoice Paper View ────────────────────────────────────────────
 const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; pageId: string }) => {
-    const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
-    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
-    const supplierDb = useDatabaseStore(state => state.databases.find(db => db.id === 'db-suppliers'));
+    const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
+    const database = useDatabaseStore(state => state.getDatabase(databaseId));
+    const supplierDb = useDatabaseStore(state => state.getDatabase('db-suppliers'));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 
     if (!page || !database) return null;
@@ -450,7 +454,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
-    const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
+    const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const page = database?.pages.find(p => p.id === pageId);
 

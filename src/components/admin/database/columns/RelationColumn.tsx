@@ -69,7 +69,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     const value = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
 
     // Subscribe to the target database to fetch titles
-    const targetDatabase = useDatabaseStore(state => state.databases.find(db => db.id === relationDatabaseId));
+    const targetDatabase = useDatabaseStore(state => state.getDatabase(relationDatabaseId));
 
     const selectedTitles = useMemo(() => {
         if (!targetDatabase || value.length === 0) return [];

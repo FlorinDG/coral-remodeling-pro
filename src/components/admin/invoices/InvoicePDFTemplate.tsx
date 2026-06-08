@@ -272,20 +272,70 @@ export const InvoicePDFTemplate = ({
                     {!isPdfStationery && <Image src={stationeryUrl} style={{ position: 'absolute', top: 0, left: 0, width: 595, height: 842 }} fixed />}
 
                     <View style={{ flex: 1 }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 }}>
-                            <View>
-                                <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{t('bill_to', lang)}:</Text>
-                                <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{clientInfo.name || 'Klant'}</Text>
-                                {clientInfo.address && <Text style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{clientInfo.address}</Text>}
-                                {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
+                        {/* Inspired Header for Stationery (Company Details hidden) */}
+                        <View style={{ marginBottom: 15 }}>
+                            {/* Top Section */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
+                                {/* Left Column: Blank (since company info is on pre-printed letterhead) */}
+                                <View style={{ flex: 0.55 }} />
+
+                                {/* Right Column: Title & Client Details */}
+                                <View style={{ flex: 0.45, flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingLeft: 10 }}>
+                                    <Text style={{ fontSize: 14, fontWeight: 'bold', color: accent, textTransform: 'none', marginBottom: 10, fontFamily: docFont }}>
+                                        {docTitle} {invoiceTitle || 'DRAFT'}
+                                    </Text>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                        {clientInfo.name || 'Klant'}
+                                    </Text>
+                                    {clientInfo.address ? (
+                                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{clientInfo.address}</Text>
+                                    ) : null}
+                                    {clientInfo.vatNumber ? (
+                                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{formatBelgianVat(clientInfo.vatNumber)}</Text>
+                                    ) : null}
+                                </View>
                             </View>
-                            <View style={{ alignItems: 'flex-end' }}>
-                                <Text style={{ fontSize: 16, fontWeight: 'bold', color: accent, textTransform: 'uppercase' }}>{docTitle}</Text>
-                                <Text style={{ fontSize: 9, color: '#666', marginTop: 3 }}>#{invoiceTitle || 'DRAFT'} · {dateStr}</Text>
-                                {deliveryDateStr && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('delivery_date', lang)}: {deliveryDateStr}</Text>}
-                                <Text style={{ fontSize: 8, color: '#888', marginTop: 3 }}>{t('project_re', lang)}: {betreft || '—'}</Text>
-                                {!isCreditNote && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('payment_terms', lang)}: 30 {lang === 'nl' ? 'dagen' : lang === 'fr' ? 'jours' : 'days'}</Text>}
-                                {dueDateStr && <Text style={{ fontSize: 8, color: '#888', marginTop: 2 }}>{t('due_date', lang)}: {dueDateStr}</Text>}
+
+                            {/* Horizontal Divider Line */}
+                            <View style={{ height: 0.8, backgroundColor: '#cccccc', marginVertical: 8 }} />
+
+                            {/* Bottom Section: Dates (Left) and Betreft (Right) */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
+                                {/* Left side: Dates */}
+                                <View style={{ flex: 0.55, flexDirection: 'column', gap: 3 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                        <Text style={{ width: 65, fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                            {lang === 'nl' ? 'Datum:' : lang === 'fr' ? 'Date:' : 'Date:'}
+                                        </Text>
+                                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{dateStr}</Text>
+                                    </View>
+                                    {dueDateStr && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ width: 65, fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                                {lang === 'nl' ? 'Vervaldag:' : lang === 'fr' ? 'Échéance:' : 'Due Date:'}
+                                            </Text>
+                                            <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{dueDateStr}</Text>
+                                        </View>
+                                    )}
+                                    {deliveryDateStr && (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                            <Text style={{ width: 65, fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                                {lang === 'nl' ? 'Levering:' : lang === 'fr' ? 'Livraison:' : 'Delivery:'}
+                                            </Text>
+                                            <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{deliveryDateStr}</Text>
+                                        </View>
+                                    )}
+                                </View>
+
+                                {/* Right side: Betreft */}
+                                <View style={{ flex: 0.45, paddingLeft: 10 }}>
+                                    <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                                        <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                            {lang === 'nl' ? 'Betreft: ' : lang === 'fr' ? 'Concerne: ' : 'Subject: '}
+                                        </Text>
+                                        <Text style={{ flex: 1, fontSize: 9, color: '#333333', fontFamily: docFont }}>{betreft || '—'}</Text>
+                                    </View>
+                                </View>
                             </View>
                         </View>
 

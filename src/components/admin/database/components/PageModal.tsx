@@ -139,6 +139,9 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                         top: ref.current.getBoundingClientRect().bottom + 4,
                         left: ref.current.getBoundingClientRect().left
                     }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <input
                         autoFocus
@@ -157,7 +160,8 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                                     {selectedTitles[i]}
                                     <button
                                         className="ml-1 hover:text-red-500"
-                                        onClick={(e) => {
+                                        onPointerDown={(e) => {
+                                            e.preventDefault();
                                             e.stopPropagation();
                                             updatePageProperty(databaseId, pageId, property.id, value.filter(v => v !== id));
                                         }}
@@ -166,7 +170,7 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                             ))}
                         </div>
                     )}
-
+ 
                     <div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto">
                         {filteredPages.length === 0 && <span className="text-xs text-neutral-400 p-2 italic">No results</span>}
                         {filteredPages.map(p => {
@@ -174,7 +178,9 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
                             return (
                                 <button
                                     key={p.id}
-                                    onClick={() => {
+                                    onPointerDown={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
                                         if (isSelected) updatePageProperty(databaseId, pageId, property.id, value.filter(v => v !== p.id));
                                         else updatePageProperty(databaseId, pageId, property.id, [...value, p.id]);
                                     }}
@@ -241,6 +247,9 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
                     data-select-portal
                     style={{ top: dropdownPos.top, left: dropdownPos.left }}
                     className="fixed z-[999999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 min-w-[180px] animate-in fade-in zoom-in-95 duration-100"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <button
                         className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left"
@@ -590,7 +599,12 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     if (typeof document === 'undefined') return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[99999] flex justify-end">
+        <div 
+            className="fixed inset-0 z-[99999] flex justify-end"
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+        >
             <div className="absolute inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
             <div

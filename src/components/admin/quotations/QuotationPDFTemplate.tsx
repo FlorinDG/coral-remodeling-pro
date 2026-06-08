@@ -7,6 +7,26 @@ import { t } from '@/lib/document-i18n';
 import { canAccess } from '@/lib/feature-flags';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
+function formatBelgianVat(vat?: string) {
+    if (!vat) return '';
+    const clean = vat.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    let digits = clean;
+    if (clean.startsWith('BE')) {
+        digits = clean.substring(2);
+    }
+    if (digits.length === 10) {
+        return `BE ${digits.substring(0, 4)}.${digits.substring(4, 7)}.${digits.substring(7, 10)}`;
+    }
+    return vat;
+}
+
+function formatIban(iban?: string) {
+    if (!iban) return '';
+    const clean = iban.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+    const chunks = clean.match(/.{1,4}/g);
+    return chunks ? chunks.join(' ') : iban;
+}
+
 interface ClientInfo {
     name: string;
     address?: string;
@@ -76,7 +96,6 @@ export const QuotationPDFTemplate = ({
     );
 
     const navy   = (s as any).navyColor  || '#1a3a5c';
-    const navyMid = (s as any).navyMid  || '#245076';
     const darkBrand = (s as any).darkColor || navy;
 
     const colDesc  = { flex: 4, paddingRight: 8 };
@@ -89,14 +108,6 @@ export const QuotationPDFTemplate = ({
         if (!html) return '';
         return html.replace(/<[^>]*>?/gm, '').trim();
     };
-
-    const companyInfoLines = [
-        vatNumber ? `${t('vat', lang)}: ${vatNumber}` : '',
-        street || '',
-        (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : '',
-        iban ? `IBAN: ${iban}` : '',
-        email || '',
-    ].filter(Boolean);
 
     // ── Recursive block renderer ────────────────────────────────────────────
     const renderBlocks = (nodes: Block[], depth = 0): React.ReactNode[] => {
@@ -388,125 +399,80 @@ export const QuotationPDFTemplate = ({
 
     // ── DYNAMIC TEMPLATE MODE (T1/T2/T3/T4) ────────────────────────────────
 
-    // T4: PRISM geometric SVG header
-    const renderT4Header = () => (
-        <>
-            <View style={{ position: 'relative', height: 120 }}>
-                <Svg width={595} height={120} style={{ position: 'absolute', top: 0, left: 0 }}>
-                    <Rect x={0} y={0} width={595} height={120} fill={navy} />
-                    <Polygon points="370,0 595,0 595,120 480,120" fill={navyMid} />
-                    <Polygon points="0,88 210,88 290,120 0,120" fill={navyMid} />
-                </Svg>
-                <View style={{ position: 'absolute', top: 22, left: 32 }}>
-                    {logoUrl ? (
-                        <Image src={logoUrl} style={{ width: 56, marginBottom: 6 }} />
-                    ) : (
-                        <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#ffffff', letterSpacing: 0.5, marginBottom: 6 }}>
-                            {companyName?.toUpperCase() || 'CORAL'}
-                        </Text>
-                    )}
-                    {companyInfoLines.slice(0, 3).map((line, i) => (
-                        <Text key={i} style={{ fontSize: 8, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{line}</Text>
-                    ))}
-                </View>
-            </View>
-            {/* Accent stripe */}
-            <View style={{ height: 3, backgroundColor: accent }} />
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 32, paddingTop: 14, marginBottom: 4 }}>
-                <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 24, fontWeight: 'bold', color: navy, textTransform: 'uppercase', letterSpacing: 2 }}>{t('quotation', lang)}</Text>
-                    <Text style={{ fontSize: 9, color: '#888', marginTop: 3 }}>#{quotationTitle || 'DRAFT'} · {dateStr}</Text>
-                </View>
-            </View>
-        </>
-    );
+    const renderInspiredHeader = () => {
+        const formattedCompanyVat = formatBelgianVat(vatNumber) || 'BE 1018.865.828';
+        const formattedCompanyIban = formatIban(iban) || 'BE82 7310 6564 9268';
+        const companyAddress = [street, (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : ''].filter(Boolean).join(' ') || 'Z5 Industriezone 230 1730 ASSE';
+        const companyMail = email || 'info@coral-group.be';
+        
+        const formattedClientVat = clientInfo.vatNumber ? formatBelgianVat(clientInfo.vatNumber) : '';
+        const clientAddress = clientInfo.address || '';
 
-    // T1: BLOCK black/white header
-    const renderT1Header = () => (
-        <View style={{ flexDirection: 'row', alignItems: 'stretch', marginBottom: 0 }}>
-            <View style={{ flex: 0.55, backgroundColor: darkBrand, padding: 28, flexDirection: 'column', justifyContent: 'flex-end', minHeight: 130 }}>
-                {logoUrl ? (
-                    <Image src={logoUrl} style={{ width: 100, marginBottom: 8 }} />
-                ) : (
-                    <Text style={{ fontSize: 22, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
-                        {companyName || 'CORAL ENTERPRISES'}
-                    </Text>
-                )}
-                {companyInfoLines.map((line, i) => (
-                    <Text key={i} style={{ fontSize: 8.5, color: '#aaaaaa', marginTop: 2 }}>{line}</Text>
-                ))}
-            </View>
-            <View style={{ flex: 0.45, padding: 28, flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', color: darkBrand, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-                    {t('quotation', lang)}
-                </Text>
-                <Text style={{ fontSize: 13, color: darkBrand, fontWeight: 'bold', marginBottom: 3 }}>#{quotationTitle || 'DRAFT'}</Text>
-                <Text style={{ fontSize: 9, color: '#777777' }}>{dateStr}</Text>
-            </View>
-        </View>
-    );
+        const headerPadH = isT3 ? 8 : (isT1 ? 28 : 32);
+        const docId = quotationTitle || 'DRAFT';
+        const subjectLabel = lang === 'nl' ? 'Betreft: ' : lang === 'fr' ? 'Concerne: ' : 'Subject: ';
 
-    // T3: NAVY
-    const renderT3Header = () => (
-        <>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                <View style={{ flexDirection: 'column', gap: 2 }}>
-                    {logoUrl ? (
-                        <Image src={logoUrl} style={{ width: 90, marginBottom: 6 }} />
-                    ) : (
-                        <Text style={{ fontSize: 15, fontWeight: 'bold', color: navy, marginBottom: 4 }}>
+        return (
+            <View style={{ paddingHorizontal: headerPadH, marginTop: isT3 ? 0 : 25, marginBottom: 15 }}>
+                {/* Top Section: Company Info (Left) and Doc Title & Client Info (Right) */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
+                    {/* Left Column: Company Details */}
+                    <View style={{ flex: 0.55, flexDirection: 'column', gap: 2 }}>
+                        {logoUrl && <Image src={logoUrl} style={{ width: 80, height: 'auto', marginBottom: 6 }} />}
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
                             {companyName || 'Coral Enterprises'}
                         </Text>
-                    )}
-                    {companyInfoLines.map((line, i) => (
-                        <Text key={i} style={{ fontSize: 8.5, color: '#555555' }}>{line}</Text>
-                    ))}
-                </View>
-                <Text style={{ fontSize: 38, fontWeight: 'bold', color: '#111111', textTransform: 'uppercase' }}>
-                    {t('quotation', lang)}
-                </Text>
-            </View>
-            <View style={{ flexDirection: 'row', backgroundColor: navy, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 1 }}>
-                <Text style={{ flex: 1, color: '#ffffff', fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    {t('bill_to', lang)}
-                </Text>
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 40 }}>
-                    <Text style={{ color: lighten(navy, 0.60), fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>{t('quotation', lang)} #</Text>
-                    <Text style={{ color: lighten(navy, 0.60), fontSize: 8.5, fontWeight: 'bold', textTransform: 'uppercase' }}>{t('date', lang)}</Text>
-                </View>
-            </View>
-            <View style={{ flexDirection: 'row', backgroundColor: navyMid, paddingVertical: 7, paddingHorizontal: 8, marginBottom: 20 }}>
-                <Text style={{ flex: 1, color: lighten(navy, 0.85), fontSize: 9 }}>{clientInfo.name || '—'}</Text>
-                <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 36 }}>
-                    <Text style={{ color: lighten(navy, 0.85), fontSize: 9 }}>#{quotationTitle || 'DRAFT'}</Text>
-                    <Text style={{ color: lighten(navy, 0.85), fontSize: 9 }}>{dateStr}</Text>
-                </View>
-            </View>
-        </>
-    );
+                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{companyAddress}</Text>
+                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{formattedCompanyVat}</Text>
+                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{formattedCompanyIban}</Text>
+                        <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{companyMail}</Text>
+                    </View>
 
-    // Default header (T2)
-    const renderDefaultHeader = () => (
-        <View style={s.headerRow}>
-            <View style={s.headerLeft}>
-                {logoUrl ? (
-                    <Image src={logoUrl} style={s.logo} />
-                ) : (
-                    <Text style={s.companyFallback}>{companyName || 'Coral'}</Text>
-                )}
-                <View style={{ flexDirection: 'column', gap: 2 }}>
-                    {companyInfoLines.map((line, i) => (
-                        <Text key={i} style={(s as any).companyInfoText || s.subtitle}>{line}</Text>
-                    ))}
+                    {/* Right Column: Title & Client Details */}
+                    <View style={{ flex: 0.45, flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingLeft: 10 }}>
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: accent, textTransform: 'none', marginBottom: 10, fontFamily: docFont }}>
+                            {t('quotation', lang)} {docId}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                            {clientInfo.name || 'Klant'}
+                        </Text>
+                        {clientAddress ? (
+                            <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{clientAddress}</Text>
+                        ) : null}
+                        {formattedClientVat ? (
+                            <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{formattedClientVat}</Text>
+                        ) : null}
+                    </View>
+                </View>
+
+                {/* Horizontal Divider Line */}
+                <View style={{ height: 0.8, backgroundColor: '#cccccc', marginVertical: 8 }} />
+
+                {/* Bottom Section: Dates (Left) and Betreft (Right) */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginTop: 4 }}>
+                    {/* Left side: Dates */}
+                    <View style={{ flex: 0.55, flexDirection: 'column', gap: 3 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={{ width: 65, fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                {lang === 'nl' ? 'Datum:' : lang === 'fr' ? 'Date:' : 'Date:'}
+                            </Text>
+                            <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>{dateStr}</Text>
+                        </View>
+                    </View>
+
+                    {/* Right side: Betreft */}
+                    <View style={{ flex: 0.45, paddingLeft: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                {subjectLabel}
+                            </Text>
+                            <Text style={{ flex: 1, fontSize: 9, color: '#333333', fontFamily: docFont }}>{betreft || '—'}</Text>
+                        </View>
+                    </View>
                 </View>
             </View>
-            <View style={s.headerRight}>
-                <Text style={s.title}>{t('quotation', lang)}</Text>
-                <Text style={s.subtitle}>#{quotationTitle || 'DRAFT'}</Text>
-                <Text style={s.subtitle}>{t('date', lang)}: {dateStr}</Text>
-            </View>
-        </View>
-    );
+        );
+    };
 
     // T3 navy grand total bar
     const renderGrandTotal = () => {
@@ -564,36 +530,8 @@ export const QuotationPDFTemplate = ({
     return (
         <Document>
             <Page size="A4" style={s.page}>
-                {isT4 ? renderT4Header() : isT1 ? renderT1Header() : isT3 ? renderT3Header() : renderDefaultHeader()}
-
-                {!isT3 && (
-                    <View style={s.clientSection || { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, paddingHorizontal: padH }}>
-                        <View>
-                            <Text style={s.clientLabel}>{t('bill_to', lang)}:</Text>
-                            <Text style={{ fontSize: 11, fontWeight: 'bold' }}>{clientInfo.name || 'Klant'}</Text>
-                            {clientInfo.address && <Text style={{ fontSize: 9, color: '#555', marginTop: 2 }}>{clientInfo.address}</Text>}
-                            {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888', marginTop: 2 }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
-                            {clientInfo.email && <Text style={{ fontSize: 9, color: '#888', marginTop: 1 }}>{clientInfo.email}</Text>}
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={s.clientLabel}>{t('project_re', lang)}:</Text>
-                            <Text style={s.betreftLabel}>{betreft || '—'}</Text>
-                        </View>
-                    </View>
-                )}
-
-                {isT3 && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16 }}>
-                        <View>
-                            <Text style={{ fontSize: 9, color: '#999', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{t('project_re', lang)}</Text>
-                            <Text style={s.betreftLabel}>{betreft || '—'}</Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                            {clientInfo.address && <Text style={{ fontSize: 9, color: '#555' }}>{clientInfo.address}</Text>}
-                            {clientInfo.vatNumber && <Text style={{ fontSize: 9, color: '#888' }}>{t('vat', lang)}: {clientInfo.vatNumber}</Text>}
-                        </View>
-                    </View>
-                )}
+                {/* Header & Client & Metadata Section */}
+                {renderInspiredHeader()}
 
                 <View style={s.tableHeaderRow}>
                     <Text style={colDesc}>{t('description', lang)}</Text>

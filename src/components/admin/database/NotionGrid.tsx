@@ -797,7 +797,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             <div ref={headerScrollRef} className="flex h-full min-w-max relative z-20" style={{ willChange: 'transform' }}>
                                 {orderedVisibleProperties.map((prop: Property, i: number) => {
                                     const state = viewStateMap.get(prop.id);
-                                    const width = state?.width || 150;
+                                    const storeWidth = state?.width || 150;
+                                    const width = committedWidthsRef.current?.get(prop.id) ?? storeWidth;
                                     const currentWidth = resizingProperty === prop.id ? resizeOffset : width;
                                     const isDragged = colDragIndex === i;
                                     const isDropBefore = colDropTarget === i && colDragIndex !== null && colDragIndex !== i && colDragIndex !== i - 1;

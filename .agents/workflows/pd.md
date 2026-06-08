@@ -169,6 +169,8 @@ develop  →  staging  →  main
 
 5. **After a production release**, sync `develop` with the new main: `git checkout develop && git merge main && git push origin develop`.
 
+6. **SEPARATION OF POWERS — `board-v2.md` is the Planner's file ONLY.** The coding AI must NEVER edit `.agents/workflows/board-v2.md` (no "docs: update board" commits). The coder's status channel is the deterministic `TASK-ID:` commit name — that IS how it reports; the Planner reconciles the commit log into the board. **Why this is binding:** the board is edited in the working tree by the Planner and is often UNCOMMITTED; the coder's frequent `develop`↔`main` checkouts/merges reset the working tree and silently wipe those uncommitted Planner edits (happened repeatedly 2026-06-07/08). Two consequences: (a) the coder leaves the board alone; (b) a Planner board update should be COMMITTED promptly (`git add .agents/workflows/board-v2.md` as its own commit) so branch operations can't discard it. One writer per artifact; ground truth = `git log --oneline` + the committed board.
+
 ---
 
 ## Known Premises That Have Already Been Validated (as of 2026-04-21)

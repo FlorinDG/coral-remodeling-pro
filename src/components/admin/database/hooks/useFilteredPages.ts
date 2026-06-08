@@ -84,10 +84,9 @@ export function useFilteredPages({ database, activeView, hardFilter, allDatabase
                 if (resolvedVal !== hardFilter.value) return false;
             }
 
-            // Always include newly created blank pages to prevent them from being hidden by active filters
-            const isRecent = Date.now() - new Date(page.createdAt).getTime() < 60000;
-            const hasEmptyTitle = !page.properties['title'] || String(page.properties['title']).trim() === '';
-            if (isRecent && hasEmptyTitle) return true;
+            // Always include newly created pages to prevent them from being hidden by active filters while editing
+            const isRecent = Date.now() - new Date(page.createdAt).getTime() < 120000;
+            if (isRecent) return true;
 
             if (!activeFilters || activeFilters.length === 0) return true;
 

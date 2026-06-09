@@ -31,7 +31,7 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
             data: {
                 properties: {
                     ...currentProps,
-                    status: "ACCEPTED",
+                    status: "opt-accepted",
                     clientSignature: signatureBase64,
                     signatureMethod,
                     consentName,
@@ -49,6 +49,36 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
         if (quoteWithDb?.database.tenantId) {
             const { autoCreateProjectFromQuote } = await import('@/lib/services/quote-service');
             await autoCreateProjectFromQuote(quoteId, quoteWithDb.database.tenantId);
+
+            // Fetch tenant details for email notification
+            try {
+                const tenant = await prisma.tenant.findUnique({
+                    where: { id: quoteWithDb.database.tenantId }
+                });
+
+                if (tenant?.email) {
+                    const { Resend } = await import('resend');
+                    const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
+                    const quoteTitle = (currentProps.betreft as string) || (currentProps.title as string) || 'Offerte';
+                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
+                    const quoteLink = `${appUrl}/nl/quote/${quoteId}`;
+                    const date = new Date().toLocaleDateString('nl-BE');
+
+                    await resend.emails.send({
+                        from: `${tenant.commercialName || tenant.companyName || 'Coral Enterprises'} <noreply@coral-group.be>`,
+                        to: [tenant.email],
+                        subject: `Offerte geaccepteerd: ${quoteTitle}`,
+                        html: `
+                            <p>Beste ${tenant.commercialName || tenant.companyName},</p>
+                            <p>Uw offerte <strong>${quoteTitle}</strong> is succesvol geaccepteerd en ondertekend door <strong>${consentName}</strong> op ${date}.</p>
+                            <p>Er is automatisch een nieuw project voor u aangemaakt.</p>
+                            <p>U kunt de getekende offerte hier bekijken: <a href="${quoteLink}">${quoteLink}</a></p>
+                        `
+                    });
+                }
+            } catch (emailErr) {
+                console.error("Failed to send signature notification email to tenant:", emailErr);
+            }
         }
 
         return { success: true };

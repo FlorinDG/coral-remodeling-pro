@@ -220,3 +220,26 @@ export interface SortRule {
     propertyId: string;
     direction: SortDirection;
 }
+
+export interface PaymentTerms {
+    dueModel: 'net' | 'eom' | 'fixed' | 'receipt';
+    dueDays: number;
+    lateClause?: string;
+}
+
+export interface PaymentScheduleStage {
+    label: string;
+    trigger: 'date' | 'milestone' | 'progress';
+    basis: 'percent' | 'euro';
+    value: number;
+    dueOffset: number;
+    status: 'planned' | 'invoiced' | 'paid';
+    generatedInvoiceId?: string | null;
+}
+
+export interface PaymentPlan {
+    method: 'bank_transfer' | 'peppol' | 'cash' | 'stripe' | 'qr';
+    terms: PaymentTerms;
+    schedule: PaymentScheduleStage[];
+    deposit?: number | null;
+}

@@ -495,7 +495,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     undefined,
                     String(tenant?.commercialName || tenant?.companyName || ''),
                     docLanguage,
-                    tenant?.brandColor
+                    tenant?.brandColor,
+                    tenant?.email || undefined
                 );
 
                 if (response.success) {

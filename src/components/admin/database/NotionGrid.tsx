@@ -23,7 +23,7 @@ import PropertiesDropdown from './components/PropertiesDropdown';
 import { SpreadsheetImportModal } from './components/SpreadsheetImportModal';
 import DatabaseFooter from './components/DatabaseFooter';
 import AddColumnFlyout from './components/AddColumnFlyout';
-import { Property } from './types';
+import { Property, Page } from './types';
 import { toast } from 'sonner';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import { useGridColumns } from './hooks/useGridColumns';

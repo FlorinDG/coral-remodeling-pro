@@ -133,7 +133,7 @@ export function renderRichText(html: string | undefined, defaultStyle: Record<st
                         }
                     }
                     elements.push(
-                        <Text key={`li-prefix-${keyCounter++}`} style={{ ...defaultStyle, ...resolvedStyle }}>
+                        <Text key={`li-prefix-${keyCounter++}`} style={{ ...defaultStyle, ...resolvedStyle } as any}>
                             {prefix}
                         </Text>
                     );
@@ -153,7 +153,7 @@ export function renderRichText(html: string | undefined, defaultStyle: Record<st
             if (decoded) {
                 const resolvedStyle = getResolvedStyle();
                 elements.push(
-                    <Text key={`txt-${keyCounter++}`} style={{ ...defaultStyle, ...resolvedStyle }}>
+                    <Text key={`txt-${keyCounter++}`} style={{ ...defaultStyle, ...resolvedStyle } as any}>
                         {decoded}
                     </Text>
                 );

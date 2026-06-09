@@ -620,7 +620,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     undefined,
                     String(tenant?.commercialName || tenant?.companyName || ''),
                     docLanguage,
-                    tenant?.brandColor
+                    tenant?.brandColor,
+                    tenant?.email || undefined
                 );
 
                 if (response.success) {

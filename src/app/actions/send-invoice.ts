@@ -17,7 +17,8 @@ export async function sendInvoiceToClient(
     customMessage?: string,
     companyName?: string,
     language?: string,
-    brandColor?: string
+    brandColor?: string,
+    tenantEmail?: string
 ) {
     if (!process.env.RESEND_API_KEY) {
         console.warn('RESEND_API_KEY is missing. Email will be simulated.');
@@ -34,6 +35,8 @@ export async function sendInvoiceToClient(
         const { data, error } = await resend.emails.send({
             from: `${company} <noreply@coral-group.be>`,
             to: [clientEmail],
+            bcc: tenantEmail ? [tenantEmail] : undefined,
+            replyTo: tenantEmail || undefined,
             subject: `${t('subject_invoice', lang)}: ${projectName} — ${company}`,
             react: React.createElement(InvoiceEmail, {
                 clientName,

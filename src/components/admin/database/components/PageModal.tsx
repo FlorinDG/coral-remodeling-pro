@@ -68,7 +68,7 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
 
 const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const targetDbId = property.config?.relationDatabaseId;
-    const targetDatabase = useDatabaseStore(state => state.getDatabase(targetDbId));
+    const targetDatabase = useDatabaseStore(state => state.getDatabase(targetDbId || ''));
     const page = useDatabaseStore(state => state.getDatabase(databaseId))?.pages.find(p => p.id === pageId);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
 

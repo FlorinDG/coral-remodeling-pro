@@ -130,7 +130,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         setStep('capture'); // keep on capture to show spinner
 
         let clientExtracted: Record<string, any> | null = null;
-        if (isFree) {
+        if (isFree && file.type.startsWith('image/')) {
             try {
                 const { recognizeReceipt } = await import('@/lib/ocr');
                 const ocrResult = await recognizeReceipt(file);
@@ -150,8 +150,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 };
             } catch (err: any) {
                 console.error('[TicketCaptureModal] Client-side OCR error:', err);
-                setScanError(err?.message || 'Client-side OCR failed. Entering manual mode.');
-                return;
+                clientExtracted = null;
             }
         }
 

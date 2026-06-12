@@ -69,9 +69,10 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
 
         // Generate the formatted number and increment settings inside a Serializable transaction
         const formattedNumber = await prisma.$transaction(async (tx) => {
-            // Fetch current settings inside the transaction
-            const tenant = await (tx.tenant as any).findUnique({
+            // 1. Atomically lock the tenant row and get an allocated number by incrementing
+            const lockedTenant = await (tx.tenant as any).update({
                 where: { id: tenantId },
+                data: { [nextNumberField]: { increment: 1 } },
                 select: {
                     [prefixField]: true,
                     [connectorField]: true,
@@ -81,13 +82,14 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
                 }
             });
 
-            if (!tenant) throw new Error('Tenant not found');
+            if (!lockedTenant) throw new Error('Tenant not found');
 
-            const prefix = tenant[prefixField] || '';
-            const connector = tenant[connectorField] || '-';
-            const dateFormat = tenant[dateFormatField] || 'YYYY';
-            const numberWidth = tenant[numberWidthField] ?? 3;
-            const storedNextNumber = tenant[nextNumberField] || 1;
+            const prefix = lockedTenant[prefixField] || '';
+            const connector = lockedTenant[connectorField] || '-';
+            const dateFormat = lockedTenant[dateFormatField] || 'YYYY';
+            const numberWidth = lockedTenant[numberWidthField] ?? 3;
+            // The number allocated to THIS request is the new value minus 1
+            const allocatedNumber = (lockedTenant[nextNumberField] || 2) - 1;
 
             const datePart = formatDate(dateFormat);
             const joiner = connector === 'none' ? '' : connector;
@@ -140,14 +142,18 @@ export async function getNextDocumentNumber(docType: DocType): Promise<{ success
                 }
             }
 
-            const nextNumberToUse = Math.max(maxSeq + 1, storedNextNumber);
-            const formatted = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
+            let nextNumberToUse = allocatedNumber;
 
-            // Atomically bump the counter inside the transaction
-            await (tx.tenant as any).update({
-                where: { id: tenantId },
-                data: { [nextNumberField]: nextNumberToUse + 1 },
-            });
+            if (maxSeq >= allocatedNumber) {
+                // A manual document exists with a higher number; jump the counter past it
+                nextNumberToUse = maxSeq + 1;
+                await (tx.tenant as any).update({
+                    where: { id: tenantId },
+                    data: { [nextNumberField]: nextNumberToUse + 1 },
+                });
+            }
+
+            const formatted = basePrefix + (numberWidth === 0 ? String(nextNumberToUse) : String(nextNumberToUse).padStart(numberWidth, '0'));
 
             return formatted;
         }, {

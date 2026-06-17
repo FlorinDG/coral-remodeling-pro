@@ -182,9 +182,13 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const handleSelectEntity = (entity: any) => {
         const payload: Partial<Block> = { type: entity.type as BlockType }; // Force form mutation
 
-        const cleanDesc = (entity.description || '').replace(/ › /g, ' - ');
-        const constructedName = `${entity.title} — ${cleanDesc}`;
-        payload.content = constructedName;
+        // QUOTE-7: block content = CLEAN article name ONLY. The financial schema
+        // (bruto/marge/discount/…) lives in its own columns — never concatenate it into
+        // the name. Doing so polluted the library title on Save-to-Library and compounded
+        // on every round-trip. Strip any pre-existing "— …" suffix so the fix is idempotent
+        // even for already-polluted titles.
+        const cleanName = String(entity.title || '').split(' — ')[0].trim();
+        payload.content = cleanName;
 
         if (entity.databaseId === 'db-articles') {
             payload.articleId = entity.id;

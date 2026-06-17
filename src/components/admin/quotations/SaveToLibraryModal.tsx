@@ -82,7 +82,9 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
         };
 
         const updates: Record<string, any> = {};
-        updates[propMap.title] = cleanHtml(block.content);
+        // QUOTE-7: persist the CLEAN article name only — strip any "— …" specs suffix (and HTML)
+        // so repeated Save-to-Library can never compound the financial schema into the title.
+        updates[propMap.title] = (cleanHtml(block.content).split(' — ')[0].trim()) || 'Nieuw Artikel';
         if (propMap.bruto && block.brutoPrice !== undefined) updates[propMap.bruto] = block.brutoPrice;
         if (propMap.verkoop && block.verkoopPrice !== undefined) updates[propMap.verkoop] = block.verkoopPrice;
         if (propMap.marge && block.margePercent !== undefined) updates[propMap.marge] = block.margePercent;

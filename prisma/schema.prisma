@@ -82,6 +82,10 @@ model Tenant {
   defaultCalendarView      String?                 @default("month")
   defaultEventDuration     Int?                    @default(60)
   defaultPaymentTermDays   Int?                    @default(30)
+  defaultPaymentMethod     String?                 @default("transfer")
+  defaultPaymentDueModel   String?                 @default("net")
+  defaultPaymentLateClauseNL String?
+  defaultPaymentLateClauseFR String?
   defaultVatRate           Int?                    @default(21)
   poPrefix                 String?                 @default("PO")
   vatCalcMode              String?                 @default("lines")
@@ -547,7 +551,7 @@ model InvoiceItem {
 model Quotation {
   id          String          @id @default(cuid())
   tenantId    String
-  quoteNumber String          @unique
+  quoteNumber String
   status      String          @default("DRAFT")
   date        DateTime        @default(now())
   validUntil  DateTime
@@ -560,6 +564,11 @@ model Quotation {
   updatedAt   DateTime        @updatedAt
   tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items       QuotationItem[]
+
+  // FIN-7b: quote numbers are unique PER TENANT (was global @unique on quoteNumber, a
+  // multi-tenant bug — tenant B colliding with tenant A's number made the create fail and
+  // fall back to the timestamp hack, so the counter never advanced). Mirrors Invoice.
+  @@unique([tenantId, quoteNumber])
 }
 
 model QuotationItem {

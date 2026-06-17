@@ -13,6 +13,7 @@ import {
     pointerWithin,
     rectIntersection,
 } from '@dnd-kit/core';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { 
     SortableContext, 
     verticalListSortingStrategy, 
@@ -83,12 +84,13 @@ const COLOR_MAP: Record<string, { bg: string; text: string; header: string; bord
 function getColor(color: string) { return COLOR_MAP[color] || COLOR_MAP.default; }
 
 // ── Sortable Card ──────────────────────────────────────────────────────────────
-function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId }: {
+function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onClick }: {
     page: Page;
     dateProp: Property | undefined;
     priorityProp: Property | undefined;
     coverProp: Property | undefined;
     databaseId: string;
+    onClick?: () => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: page.id,
@@ -135,6 +137,11 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId }: {
             style={style} 
             {...attributes} 
             {...listeners} 
+            onClick={(e) => {
+                if (!isEditing && onClick) {
+                    onClick();
+                }
+            }}
             className="group bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-neutral-300 dark:hover:border-white/20 flex flex-col"
         >
             {coverUrl && (
@@ -172,7 +179,8 @@ function SortableColumn({
     priorityProp, 
     coverProp,
     toggleCollapse, 
-    handleQuickAdd 
+    handleQuickAdd,
+    onCardClick
 }: {
     col: KanbanColumn;
     databaseId: string;
@@ -183,6 +191,7 @@ function SortableColumn({
     coverProp?: Property;
     toggleCollapse: (id: string) => void;
     handleQuickAdd: (id: string) => void;
+    onCardClick: (id: string) => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: col.id,
@@ -236,6 +245,7 @@ function SortableColumn({
                             priorityProp={priorityProp} 
                             coverProp={coverProp}
                             databaseId={databaseId} 
+                            onClick={() => onCardClick(page.id)}
                         />
                     ))}
                     {col.pages.length === 0 && (
@@ -256,6 +266,16 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
     const updateView = useDatabaseStore(state => state.updateView);
     const updatePropertyOptionOrder = useDatabaseStore(state => state.updatePropertyOptionOrder);
     const createPage = useDatabaseStore(state => state.createPage);
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+
+    const handleCardClick = (pageId: string) => {
+        const newParams = new URLSearchParams(searchParams?.toString() || '');
+        newParams.set('open', pageId);
+        router.push(`${pathname}?${newParams.toString()}`);
+    };
 
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
     const [activeType, setActiveType] = useState<'card' | 'column' | null>(null);
@@ -521,6 +541,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
                                 coverProp={coverProp}
                                 toggleCollapse={toggleCollapse}
                                 handleQuickAdd={handleQuickAdd}
+                                onCardClick={handleCardClick}
                             />
                         ))}
                     </SortableContext>

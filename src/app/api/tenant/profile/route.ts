@@ -27,6 +27,7 @@ const TENANT_FIELDS = [
     'documentFontSize',
     // Module settings
     'defaultVatRate', 'vatCalcMode', 'defaultPaymentTermDays',
+    'defaultPaymentMethod', 'defaultPaymentDueModel', 'defaultPaymentLateClauseNL', 'defaultPaymentLateClauseFR',
     'defaultEventDuration', 'defaultCalendarView',
     'workHoursPerDay',
     'bordereauPrefix', 'poPrefix',

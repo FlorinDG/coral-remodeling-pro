@@ -166,7 +166,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
 
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 min-w-0">
-                    <span className="font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500 text-[10px]">
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate">
                         {displayName}
                     </span>
                     <ChevronRight className="w-3 h-3 flex-shrink-0" />

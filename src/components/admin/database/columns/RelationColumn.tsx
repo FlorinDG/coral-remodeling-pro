@@ -115,15 +115,25 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                     position: 'absolute',
                     top: (() => {
                         const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
                         const maxH = 350;
-                        return spaceBelow < maxH && rect.top > maxH
-                            ? rect.top - maxH
-                            : rect.bottom;
+                        if (spaceBelow < maxH && spaceAbove > spaceBelow) {
+                            return rect.top - Math.min(maxH, spaceAbove - 16);
+                        }
+                        return rect.bottom;
                     })(),
                     left: Math.min(rect.left, window.innerWidth - Math.max(300, rect.width)),
                     width: Math.max(300, rect.width),
                     height: 'auto',
-                    maxHeight: '350px',
+                    maxHeight: (() => {
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        const maxH = 350;
+                        if (spaceBelow < maxH && spaceAbove > spaceBelow) {
+                            return Math.min(maxH, spaceAbove - 16);
+                        }
+                        return Math.min(maxH, spaceBelow - 16);
+                    })(),
                     pointerEvents: 'auto',
                     boxSizing: 'border-box'
                 }}

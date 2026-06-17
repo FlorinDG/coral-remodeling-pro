@@ -40,19 +40,40 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
     const selectedOption = choices.find(c => c.id === value);
     const styles = selectedOption ? (COLOR_STYLES[selectedOption.color] || COLOR_STYLES.gray) : null;
 
-    const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; minWidth: number } | null>(null);
+    const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; minWidth: number; maxHeight: number } | null>(null);
 
     useLayoutEffect(() => {
         if ((focus || active) && containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
             const dropdownHeight = Math.min(choices.length * 32 + 48, 280); // approx height
             const spaceBelow = window.innerHeight - rect.bottom;
-            const flipUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
+            const spaceAbove = rect.top;
+            
+            let flipUp = false;
+            let actualMaxHeight = 280;
+
+            if (spaceBelow < dropdownHeight && spaceAbove > spaceBelow) {
+                flipUp = true;
+                actualMaxHeight = Math.max(100, spaceAbove - 16);
+            } else if (spaceBelow < dropdownHeight) {
+                actualMaxHeight = Math.max(100, spaceBelow - 16);
+            }
+
             const left = Math.min(rect.left, window.innerWidth - 220);
+            
+            // if we flip up, we position `bottom` to be just above the cell? 
+            // Wait, using `top` is fine but we must subtract actualMaxHeight.
+            // But what if the dropdown doesn't actually REACH actualMaxHeight because choices are few?
+            // If choices are few, dropdownHeight is small, and spaceBelow > dropdownHeight, so it doesn't flip.
+            // If it DOES flip up, its content might be smaller than actualMaxHeight! 
+            // In that case, `top: rect.top - actualMaxHeight - 4` puts it too high up!
+            // It's much better to use flex or CSS `bottom` when flipped!
+            
             setDropdownPos({
-                top: flipUp ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+                top: flipUp ? rect.top - Math.min(dropdownHeight, actualMaxHeight) - 4 : rect.bottom + 4,
                 left,
                 minWidth: Math.max(rect.width, 200),
+                maxHeight: actualMaxHeight
             });
         } else {
             setDropdownPos(null);
@@ -96,13 +117,13 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
             {/* Custom dropdown portal */}
             {(focus || active) && dropdownPos && typeof document !== 'undefined' && createPortal(
                 <div
-                    className="fixed z-[99999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 overflow-hidden"
-                    style={{ top: dropdownPos.top, left: dropdownPos.left, minWidth: dropdownPos.minWidth }}
+                    className="fixed z-[99999] bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-neutral-100 dark:border-neutral-700/80 py-1.5 overflow-hidden flex flex-col"
+                    style={{ top: dropdownPos.top, left: dropdownPos.left, minWidth: dropdownPos.minWidth, maxHeight: dropdownPos.maxHeight }}
                     onMouseDown={e => e.preventDefault()}
                 >
                     {/* Empty option */}
                     <button
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left group"
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors text-left group flex-shrink-0"
                         onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -116,10 +137,11 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
                     </button>
 
                     {choices.length > 0 && (
-                        <div className="h-px bg-neutral-100 dark:bg-neutral-800 mx-2 my-0.5" />
+                        <div className="h-px bg-neutral-100 dark:bg-neutral-800 mx-2 my-0.5 flex-shrink-0" />
                     )}
 
-                    {choices.map(choice => {
+                    <div className="overflow-y-auto overflow-x-hidden flex-1 no-scrollbar">
+                        {choices.map(choice => {
                         const c = COLOR_STYLES[choice.color] || COLOR_STYLES.gray;
                         const isSelected = choice.id === value;
                         return (
@@ -142,6 +164,7 @@ const SelectComponent = ({ rowData: fullRow, setRowData, focus, active, stopEdit
                             </button>
                         );
                     })}
+                    </div>
                 </div>,
                 document.body
             )}

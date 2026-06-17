@@ -573,7 +573,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                     <div className={`rounded-2xl border border-neutral-200 dark:border-white/10 p-4 ${statusInfo.bg} flex items-center gap-3 shadow-sm`}>
                         <div className={`${statusInfo.color}`}>{statusInfo.icon}</div>
                         <div>
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</p>
+                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Status</p>
                             <p className={`text-sm font-bold ${statusInfo.color}`}>{statusInfo.label}</p>
                         </div>
                     </div>
@@ -581,7 +581,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                     {/* Task Progress */}
                     <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-2 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Tasks</p>
+                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Tasks</p>
                             <span className="text-xs font-black text-neutral-900 dark:text-white">{taskStats.progress}%</span>
                         </div>
                         <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-800 rounded-full overflow-hidden">
@@ -600,7 +600,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
 
                     {/* Timeline */}
                     <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-1 shadow-sm">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Timeline</p>
+                        <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Timeline</p>
                         {daysRemaining !== null ? (
                             <>
                                 <p className={`text-lg font-black ${daysRemaining < 0 ? 'text-red-500' : daysRemaining < 7 ? 'text-amber-500' : 'text-neutral-900 dark:text-white'}`}>
@@ -623,7 +623,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                     {/* Budget */}
                     <div className="rounded-2xl border border-neutral-200 dark:border-white/10 p-4 bg-white dark:bg-neutral-900 flex flex-col gap-1 shadow-sm">
                         <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Budget</p>
+                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Budget</p>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${finInfo.color} bg-neutral-100 dark:bg-white/5`}>
                                 {finInfo.label}
                             </span>
@@ -690,7 +690,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                 </div>
                                 <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
                                     <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Contract Value</p>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Contract Value</p>
                                         <p className="text-lg font-black text-neutral-900 dark:text-white tabular-nums font-mono">
                                             {quotationFinancials.total > 0 ? `€${quotationFinancials.total.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
                                         </p>
@@ -891,19 +891,19 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
                                 <div className="p-4 space-y-3">
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Planned Start</p>
+                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Planned Start</p>
                                             <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedStart)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Planned End</p>
+                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Planned End</p>
                                             <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedEnd)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Actual Start</p>
+                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Actual Start</p>
                                             <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualStart)}</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mb-0.5">Actual End</p>
+                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Actual End</p>
                                             <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualEnd)}</p>
                                         </div>
                                     </div>

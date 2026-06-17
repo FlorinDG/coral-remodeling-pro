@@ -7,6 +7,9 @@ import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Lin
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
+import dynamic from 'next/dynamic';
+
+const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
 import FileManager from '@/components/admin/file-manager/FileManager';
 import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
@@ -634,6 +637,13 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 </div>
 
                 {/* Page Content */}
+                {databaseId === 'db-projects' ? (
+                    <div className="flex-1 overflow-y-auto">
+                        <ErrorBoundary componentName="ProjectDetailView">
+                            <ProjectDetailView databaseId={databaseId} pageId={pageId} locale="nl" />
+                        </ErrorBoundary>
+                    </div>
+                ) : (
                 <div className="flex-1 px-8 pt-2 pb-6 max-w-[1200px] mx-auto w-full">
                     {/* Title */}
                     <input
@@ -972,6 +982,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         </div>
                     </ErrorBoundary>
                 </div>
+                )}
             </div>
         </div>,
         document.body

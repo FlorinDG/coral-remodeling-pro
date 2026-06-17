@@ -244,7 +244,7 @@ function PropertyRow({
 }) {
     const isReadOnly = READ_ONLY_TYPES.has(property.type) || forceReadOnly;
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;
-    const inputBase = "w-full text-xs bg-transparent outline-none focus:ring-0 text-neutral-900 dark:text-white placeholder:text-neutral-400";
+    const inputBase = "w-full text-sm font-medium bg-transparent outline-none focus:ring-0 text-neutral-900 dark:text-neutral-100 placeholder:text-neutral-300 dark:placeholder:text-neutral-700";
 
     let valueEl: React.ReactNode;
 
@@ -361,7 +361,7 @@ function PropertyRow({
     } else if (property.type === 'formula' || property.type === 'rollup') {
         // Display computed value (read-only)
         const display = value !== null && value !== undefined && String(value) !== '' ? String(value) : '—';
-        valueEl = <span className="text-xs text-neutral-500 dark:text-neutral-400 font-mono">{display}</span>;
+        valueEl = <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400 font-mono">{display}</span>;
     } else if (property.type === 'number' || property.type === 'currency' || property.type === 'percent') {
         const numVal = value !== null && value !== undefined && String(value) !== '' ? Number(value) : '';
         valueEl = (
@@ -470,13 +470,17 @@ function PropertyRow({
             </div>
             
             {/* Label Column */}
-            <div className="w-24 lg:w-32 flex-shrink-0 flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400 py-1">
-                <span className="flex-shrink-0 opacity-60 scale-75">{icon}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider truncate">{property.name}</span>
+            <div className="w-[160px] flex-shrink-0 flex items-start gap-1.5 py-1">
+                <div className="flex flex-col gap-0.5 mt-0.5">
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate">
+                        {property.name}
+                    </span>
+                    <span className="text-[9px] text-neutral-400 opacity-50 font-mono truncate">{property.type}</span>
+                </div>
             </div>
 
             {/* Value Column */}
-            <div className="flex-1 min-w-0 min-h-[28px] flex items-center pr-2">
+            <div className="flex-1 min-w-0 min-h-[32px] flex items-center pr-2">
                 {valueEl}
                 {isReadOnly && <Lock className="w-2.5 h-2.5 ml-auto flex-shrink-0 opacity-30" />}
             </div>

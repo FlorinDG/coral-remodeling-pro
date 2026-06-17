@@ -37,7 +37,7 @@ interface ColumnHeaderProps {
     property: Property;
     index?: number;  // The column's current active visual index 
     onLiveResize?: (width: number) => void;
-    onLiveResizeEnd?: () => void;
+    onLiveResizeEnd?: (finalWidth: number) => void;
 }
 
 export default function ColumnHeader({ databaseId, viewId, property, index = 0, onLiveResize, onLiveResizeEnd }: ColumnHeaderProps) {
@@ -108,7 +108,6 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
             const diff = moveEvent.clientX - resizeStartX.current;
             const newWidth = Math.max(60, resizeStartWidth.current + diff); // Min width 60px
             setLocalWidth(newWidth);
-            onLiveResize?.(newWidth);
         };
 
         const handlePointerUp = (upEvent: PointerEvent) => {
@@ -121,7 +120,7 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
             }
 
             setIsResizing(false);
-            onLiveResizeEnd?.();
+            onLiveResizeEnd?.(finalWidth);
             document.documentElement.style.cursor = '';
             document.body.style.userSelect = '';
             document.removeEventListener('pointermove', handlePointerMove);
@@ -168,6 +167,18 @@ export default function ColumnHeader({ databaseId, viewId, property, index = 0, 
             </div>
 
             {/* Resize Handle overlaying the right border edge */}
+            {/* Resize Drag Proxy Handle */}
+            {isResizing && (
+                <div
+                    className="fixed top-0 w-0.5 bg-orange-500 z-[100] pointer-events-none"
+                    style={{
+                        left: resizeStartX.current + (localWidth - resizeStartWidth.current),
+                        height: '100vh'
+                    }}
+                />
+            )}
+            
+            {/* Native Resize Handle Trigger */}
             <div
                 className={`absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-orange-500 hover:opacity-100 opacity-0 z-10 transition-colors ${isResizing ? 'bg-orange-500 opacity-100' : ''}`}
                 onPointerDown={handleResizeStart}

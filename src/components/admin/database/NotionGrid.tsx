@@ -737,7 +737,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             })()}
 
             <div
-                className="flex-1 w-full p-0 relative overflow-hidden min-h-0 bg-white dark:bg-black"
+                className="flex-1 w-full p-0 relative overflow-hidden overscroll-none min-h-0 bg-white dark:bg-black"
                 ref={gridWrapperRef}
                 onScrollCapture={(e) => {
                     // Synchronously intercept bubbled scroll events and lock the header offset translation
@@ -886,13 +886,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                 databaseId={databaseIdRef}
                                                 viewId={activeViewId!}
                                                 property={prop}
-                                                index={i}
-                                                onLiveResize={(w) => { setResizingProperty(prop.id); setResizeOffset(w); }}
-                                                onLiveResizeEnd={() => {
+                                                onLiveResizeEnd={(finalWidth) => {
                                                     // Commit the final live width to the ref so the columns memo
                                                     // can read it immediately, before the store propagates.
-                                                    committedWidthsRef.current.set(prop.id, resizeOffset);
-                                                    setResizingProperty(null);
+                                                    committedWidthsRef.current.set(prop.id, finalWidth);
                                                     setGridKeySuffix(prev => prev + 1);
                                                 }}
                                             />

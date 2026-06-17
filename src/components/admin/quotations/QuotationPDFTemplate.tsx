@@ -304,8 +304,24 @@ export const QuotationPDFTemplate = ({
                         <View style={{ marginBottom: 15 }}>
                             {/* Top Section */}
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 }}>
-                                {/* Left Column: Blank (since company info is on pre-printed letterhead) */}
-                                <View style={{ flex: 0.55 }} />
+                                {/* Left Column: Company Details (now rendered in stationery mode too) */}
+                                <View style={{ flex: 0.55, flexDirection: 'column', gap: 2 }}>
+                                    <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#111111', fontFamily: docFont }}>
+                                        {companyName || ''}
+                                    </Text>
+                                    <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>
+                                        {[street, (postalCode || city) ? `${postalCode || ''} ${city || ''}`.trim() : ''].filter(Boolean).join(' ') || ''}
+                                    </Text>
+                                    <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>
+                                        {formatBelgianVat(vatNumber) || ''}
+                                    </Text>
+                                    <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>
+                                        {formatIban(iban) || ''}
+                                    </Text>
+                                    <Text style={{ fontSize: 9, color: '#333333', fontFamily: docFont }}>
+                                        {email || ''}
+                                    </Text>
+                                </View>
 
                                 {/* Right Column: Title & Client Details */}
                                 <View style={{ flex: 0.45, flexDirection: 'column', alignItems: 'flex-start', gap: 2, paddingLeft: 10 }}>
@@ -555,36 +571,36 @@ export const QuotationPDFTemplate = ({
 
                 {renderBlocks(blocks)}
 
-                <View style={{ alignItems: 'flex-end', width: '100%' }} wrap={false}>
-                    <View style={s.summaryBox}>
-                        <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
-                            <Text style={s.summaryValue}>€  {finalSubtotal.toFixed(2)}</Text>
+                <View wrap={false}>
+                    {/* Medecontractant Legal Notice */}
+                    {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                        <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                {t('footer_medecontractant_legal', lang)}
+                            </Text>
                         </View>
-                        {renderVatRowsDynamic()}
-                        {renderGrandTotal()}
+                    )}
+
+                    {/* 6% VAT Legal Notice */}
+                    {hasVat6 && (
+                        <View style={{ marginTop: 12, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                            <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                {t('footer_vat6_legal', lang)}
+                            </Text>
+                        </View>
+                    )}
+
+                    <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 20 }}>
+                        <View style={s.summaryBox}>
+                            <View style={s.summaryRow}>
+                                <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
+                                <Text style={s.summaryValue}>€  {finalSubtotal.toFixed(2)}</Text>
+                            </View>
+                            {renderVatRowsDynamic()}
+                            {renderGrandTotal()}
+                        </View>
                     </View>
                 </View>
-
-
-
-                {/* Medecontractant Legal Notice */}
-                {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
-                    <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }} wrap={false}>
-                        <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
-                            {t('footer_medecontractant_legal', lang)}
-                        </Text>
-                    </View>
-                )}
-
-                {/* 6% VAT Legal Notice */}
-                {hasVat6 && (
-                    <View style={{ marginTop: 12, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }} wrap={false}>
-                        <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
-                            {t('footer_vat6_legal', lang)}
-                        </Text>
-                    </View>
-                )}
 
                 {renderFooter()}
 

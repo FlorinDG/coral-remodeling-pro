@@ -26,6 +26,10 @@ export default function FinancialsSettingsPage() {
     const [defaultVatRate, setDefaultVatRate] = useState(21);
     const [vatCalcMode, setVatCalcMode] = useState('lines');
     const [defaultPaymentTermDays, setDefaultPaymentTermDays] = useState(30);
+    const [defaultPaymentMethod, setDefaultPaymentMethod] = useState('transfer');
+    const [defaultPaymentDueModel, setDefaultPaymentDueModel] = useState('net');
+    const [defaultPaymentLateClauseNL, setDefaultPaymentLateClauseNL] = useState('Bij niet-betaling op de vervaldag is van rechtswege en zonder ingebrekestelling een intrest verschuldigd van 10% per jaar, alsook een forfaitaire schadevergoeding van 10% op het factuurbedrag met een minimum van € 40.');
+    const [defaultPaymentLateClauseFR, setDefaultPaymentLateClauseFR] = useState('En cas de non-paiement à l\'échéance, un intérêt de 10% par an est dû de plein droit et sans mise en demeure, ainsi qu\'une indemnité forfaitaire de 10% sur le montant de la facture avec un minimum de 40 €.');
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -43,6 +47,10 @@ export default function FinancialsSettingsPage() {
             if (tenant.defaultVatRate != null) setDefaultVatRate(tenant.defaultVatRate);
             if (tenant.vatCalcMode) setVatCalcMode(tenant.vatCalcMode);
             if (tenant.defaultPaymentTermDays != null) setDefaultPaymentTermDays(tenant.defaultPaymentTermDays);
+            if (tenant.defaultPaymentMethod) setDefaultPaymentMethod(tenant.defaultPaymentMethod);
+            if (tenant.defaultPaymentDueModel) setDefaultPaymentDueModel(tenant.defaultPaymentDueModel);
+            if (tenant.defaultPaymentLateClauseNL) setDefaultPaymentLateClauseNL(tenant.defaultPaymentLateClauseNL);
+            if (tenant.defaultPaymentLateClauseFR) setDefaultPaymentLateClauseFR(tenant.defaultPaymentLateClauseFR);
             setLoading(false);
         }
     }, [tenant]);
@@ -98,7 +106,15 @@ export default function FinancialsSettingsPage() {
         await fetch('/api/tenant/profile', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ defaultVatRate, vatCalcMode, defaultPaymentTermDays }),
+            body: JSON.stringify({
+                defaultVatRate,
+                vatCalcMode,
+                defaultPaymentTermDays,
+                defaultPaymentMethod,
+                defaultPaymentDueModel,
+                defaultPaymentLateClauseNL,
+                defaultPaymentLateClauseFR
+            }),
         });
         setSaving(false);
         setSaved(true);
@@ -178,14 +194,70 @@ export default function FinancialsSettingsPage() {
 
                         {/* Payment Terms */}
                         <div className="bg-white dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 p-5">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2 block">Default Payment Terms (days)</label>
-                            <input
-                                type="number" min={0} max={120}
-                                value={defaultPaymentTermDays}
-                                onChange={e => setDefaultPaymentTermDays(parseInt(e.target.value) || 0)}
-                                className="w-32 px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
-                            />
-                            <p className="text-xs text-neutral-400 mt-2">Shown on invoice PDFs as &quot;Payment due within X days&quot;.</p>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-4 block">Default Payment Plan</label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Payment Method</label>
+                                    <select
+                                        value={defaultPaymentMethod}
+                                        onChange={e => setDefaultPaymentMethod(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                    >
+                                        <option value="transfer">Bank Transfer (with QR)</option>
+                                        <option value="card">Credit Card / Stripe</option>
+                                        <option value="cash">Cash</option>
+                                        <option value="peppol">Peppol e-Invoice</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Due Model</label>
+                                    <select
+                                        value={defaultPaymentDueModel}
+                                        onChange={e => setDefaultPaymentDueModel(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                    >
+                                        <option value="net">Net (Days)</option>
+                                        <option value="eom">End of Month</option>
+                                        <option value="receipt">On Receipt</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Default Payment Terms (days)</label>
+                                <input
+                                    type="number" min={0} max={120}
+                                    value={defaultPaymentTermDays}
+                                    onChange={e => setDefaultPaymentTermDays(parseInt(e.target.value) || 0)}
+                                    className="w-32 px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                />
+                                <p className="text-xs text-neutral-400 mt-2">Shown on invoice PDFs as &quot;Payment due within X days&quot;.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Late Payment Clause (NL)</label>
+                                    <textarea
+                                        value={defaultPaymentLateClauseNL}
+                                        onChange={e => setDefaultPaymentLateClauseNL(e.target.value)}
+                                        rows={3}
+                                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                        placeholder="Bij niet-betaling op de vervaldag..."
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5 block">Late Payment Clause (FR)</label>
+                                    <textarea
+                                        value={defaultPaymentLateClauseFR}
+                                        onChange={e => setDefaultPaymentLateClauseFR(e.target.value)}
+                                        rows={3}
+                                        className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
+                                        placeholder="En cas de non-paiement à l'échéance..."
+                                    />
+                                </div>
+                                <p className="text-[11px] text-neutral-400">Added to the bottom of all commercial documents.</p>
+                            </div>
                         </div>
 
                         {/* Save */}

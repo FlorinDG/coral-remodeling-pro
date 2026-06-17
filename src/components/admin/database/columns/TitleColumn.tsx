@@ -87,12 +87,15 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
                 <div className={`absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1 z-10 transition-opacity duration-150 title-open-button ${active ? 'opacity-100' : 'opacity-0'}`}>
                     <button
                         onPointerDown={(e) => {
-                            e.preventDefault();
                             e.stopPropagation();
-                            onOpen();
                         }}
                         onMouseDown={(e) => {
                             e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onOpen();
                         }}
                         onDoubleClick={(e) => {
                             e.stopPropagation();

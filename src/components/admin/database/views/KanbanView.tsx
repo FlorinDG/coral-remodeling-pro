@@ -23,6 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList } from 'lucide-react';
 import { format } from 'date-fns';
+import PageModal from '@/components/admin/database/components/PageModal';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/time-tracker/components/ui/dropdown-menu';
 
@@ -56,6 +57,7 @@ interface KanbanViewProps {
     databaseId: string;
     viewId: string;
     renderTabs?: React.ReactNode;
+    onOpenRecord?: (pageId: string) => void;
 }
 
 interface KanbanColumn {
@@ -260,7 +262,8 @@ function SortableColumn({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanViewProps) {
+export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecord }: KanbanViewProps) {
+    const [activePageId, setActivePageId] = useState<string | null>(null);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const updateView = useDatabaseStore(state => state.updateView);
@@ -272,9 +275,11 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
     const pathname = usePathname();
 
     const handleCardClick = (pageId: string) => {
-        const newParams = new URLSearchParams(searchParams?.toString() || '');
-        newParams.set('open', pageId);
-        router.push(`${pathname}?${newParams.toString()}`);
+        if (onOpenRecord) {
+            onOpenRecord(pageId);
+        } else {
+            setActivePageId(pageId);
+        }
     };
 
     const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
@@ -571,6 +576,14 @@ export default function KanbanView({ databaseId, viewId, renderTabs }: KanbanVie
                     )}
                 </DragOverlay>
             </DndContext>
+            
+            {activePageId && (
+                <PageModal
+                    onClose={() => setActivePageId(null)}
+                    databaseId={databaseId}
+                    pageId={activePageId}
+                />
+            )}
         </div>
     );
 }

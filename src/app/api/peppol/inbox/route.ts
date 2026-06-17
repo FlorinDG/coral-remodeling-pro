@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 
         const tenant = await prisma.tenant.findUnique({
             where: { id: tenantId },
-            select: { eInvoiceApiKey: true, lockedDbIds: true },
+            select: { eInvoiceApiKey: true, lockedDbIds: true, driveFolderId: true },
         });
 
         if (!tenant?.eInvoiceApiKey) {
@@ -241,6 +241,8 @@ export async function GET(req: Request) {
 
         const { v4: uuidv4 } = await import('uuid');
         const { incrementPeppolReceived } = await import('@/lib/plan-limits');
+        const { getInboxDocumentPdf } = await import('@/lib/e-invoice-inbox');
+        const { uploadFile, findOrCreateFolder } = await import('@/lib/google-drive');
 
         let newlyImportedCount = 0;
         const newlyImportedPages: any[] = [];
@@ -250,6 +252,58 @@ export async function GET(req: Request) {
 
             const parsed = doc.parsed;
             if (!parsed) continue;
+
+            // 1. Supplier Auto-creation
+            let matchedSupplierId = doc.matchedSupplierId;
+            if (!matchedSupplierId && (parsed.supplierName || parsed.supplierVat)) {
+                const safeVat = (parsed.supplierVat || '').replace(/\s/g, '').toUpperCase();
+                try {
+                    let supplier = safeVat ? await prisma.supplier.findUnique({ where: { vatNumber: safeVat } }) : null;
+                    if (!supplier || supplier.tenantId !== tenantId) {
+                        supplier = await prisma.supplier.create({
+                            data: {
+                                tenantId,
+                                companyName: parsed.supplierName || 'Unknown Supplier',
+                                vatNumber: safeVat || null,
+                                address: parsed.supplierAddress || '',
+                            }
+                        });
+                        if (safeVat) vatToSupplier.set(safeVat, supplier.id);
+                    }
+                    matchedSupplierId = supplier.id;
+                } catch(e) {
+                    console.error('[Peppol AutoCreateSupplier]', e);
+                }
+            }
+
+            // 2. Fetch PDF and Store in Drive
+            let receiptUrl = '';
+            try {
+                if (tenant.driveFolderId && process.env.GOOGLE_CLIENT_ID) {
+                    const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, doc.id);
+                    const expensesFolder = await findOrCreateFolder('Aankopen', tenant.driveFolderId);
+                    const fileId = await uploadFile(`Peppol_${parsed.invoiceNumber || doc.id}.pdf`, 'application/pdf', pdfBuffer, expensesFolder, tenantId);
+                    receiptUrl = `https://drive.google.com/file/d/${fileId}/view`;
+                }
+            } catch (pdfErr) {
+                console.error('[Peppol Inbox] Failed to fetch or upload PDF for doc', doc.id, pdfErr);
+            }
+
+            // 3. Structured Line Items
+            const blocks = (parsed.lines || []).map((line: any, idx: number) => ({
+                id: uuidv4(),
+                type: 'financial-row',
+                content: line.description || '',
+                order: idx,
+                properties: {
+                    quantity: line.quantity ?? 1,
+                    unitCode: line.unitCode ?? 'C62',
+                    unitPrice: line.unitPrice ?? 0,
+                    vatRate: line.vatRate ?? 0,
+                    lineTotal: line.lineTotal ?? 0,
+                    margePercent: 0,
+                }
+            }));
 
             // Get max order
             const maxOrderRow = await prisma.globalPage.findFirst({
@@ -267,7 +321,7 @@ export async function GET(req: Request) {
                     databaseId: expensesDbId,
                     properties: {
                         title: parsed.invoiceNumber || doc.id,
-                        betreft: parsed.lines?.[0]?.description || '',
+                        betreft: '',
                         source: 'src-peppol',
                         status: 'opt-unpaid',
                         invoiceDate: parsed.issueDate || '',
@@ -279,10 +333,11 @@ export async function GET(req: Request) {
                         invoiceLines: JSON.stringify(parsed.lines || []),
                         supplierName: parsed.supplierName || '',
                         supplierVat: parsed.supplierVat || '',
-                        supplier: doc.matchedSupplierId ? [doc.matchedSupplierId] : [],
+                        supplier: matchedSupplierId ? [matchedSupplierId] : [],
+                        receiptUrl,
                     },
                     order,
-                    blocks: [],
+                    blocks,
                     createdBy: 'system',
                     lastEditedBy: 'system',
                 }

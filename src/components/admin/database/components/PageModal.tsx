@@ -10,6 +10,7 @@ import BlockEditor from './BlockEditor';
 import dynamic from 'next/dynamic';
 
 const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
+const PurchaseInvoiceEngine = dynamic(() => import('@/components/admin/expenses/PurchaseInvoiceEngine'), { ssr: false });
 import FileManager from '@/components/admin/file-manager/FileManager';
 import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
@@ -637,10 +638,16 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 </div>
 
                 {/* Page Content */}
-                {databaseId === 'db-projects' ? (
+                {databaseId === 'db-projects' || databaseId.startsWith('db-projects') ? (
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="ProjectDetailView">
                             <ProjectDetailView databaseId={databaseId} pageId={pageId} locale="nl" />
+                        </ErrorBoundary>
+                    </div>
+                ) : databaseId === 'db-expenses' || databaseId.startsWith('db-expenses') ? (
+                    <div className="flex-1 overflow-y-auto">
+                        <ErrorBoundary componentName="PurchaseInvoiceEngine">
+                            <PurchaseInvoiceEngine pageId={pageId} onClose={onClose} />
                         </ErrorBoundary>
                     </div>
                 ) : (

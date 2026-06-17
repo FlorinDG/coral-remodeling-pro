@@ -129,6 +129,17 @@ export async function getInboxDocument(apiKey: string, docId: string): Promise<I
     return res.json();
 }
 
+export async function getInboxDocumentPdf(apiKey: string, docId: string): Promise<Buffer> {
+    const res = await fetch(`${BASE_URL}/api/inbox/${docId}/pdf`, {
+        headers: tenantHeaders(apiKey),
+    });
+    if (!res.ok) {
+        throw new Error(`Inbox PDF fetch failed (${res.status})`);
+    }
+    const arrayBuffer = await res.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+}
+
 export async function acceptInboxDocument(apiKey: string, docId: string): Promise<{ success: boolean }> {
     const res = await fetch(`${BASE_URL}/api/inbox/${docId}/accept`, {
         method: 'POST',

@@ -44,6 +44,35 @@ Financial correctness underpins the middle of this path → that's why FIN works
 4. **CROSS-7** 🟢 coded+committed — runtime version sync. Sub-items: **7a** version stamp+`/api/version` (000e9e0) ✅ **7b** client version watcher (b0c74c1) ✅ **7c** SW lifecycle fix (24eb70d) ✅ **7d** Vercel Skew Protection = FLORIN MANUAL toggle in Vercel dashboard **7e** env+SHA badge (243dee7) ✅. Sidebar store bumped to v19 (0b013c7) — forces all browsers to reset to full 16-item sidebar.
 — **PROFILE-2** 🟢 coded+committed (216ca27), owned by Florin's direct debug pointing — tracked separately, NOT in this coder queue. Verify: set numbering+color+template, hard-reload, save before load → no reset; glance email still saves (coder folded in email normalization).
 
+## ⚡ CODER — UNATTENDED QUEUE (cron-triggered: on each read, take the FIRST not-yet-committed item, do ONLY it, commit, stop)
+**UNATTENDED SAFETY PROTOCOL (binding):**
+- **One item = one commit** named exactly `<ID>: <imperative>`. Do ONLY that item per run. Then stop.
+- **tsc + lint must be green before committing.** If your change breaks them and you can't fix in-window → `git checkout .` (revert) and leave it; do NOT commit broken code.
+- **If an item is ambiguous, needs a decision, or its files are mid-change → SKIP it, move to the next.** Never guess on scope. Never expand scope.
+- **NEVER edit `board-v2.md`** (Planner-only, pd.md rule 6). Report only via commit names.
+- Items below the `── SUPERVISED LINE ──` are OFF-LIMITS unattended (need Florin) — do not start them.
+
+**ALREADY CODE-COMPLETE (do NOT redo): AGG-1..4, QUOTE-7, SCAN-2, GRID-0/1, CROSS-7, SEND-4, FIN-8.**
+
+**QUEUE (in order):**
+1. **FIN-7b-MIGRATION** — schema already has `@@unique([tenantId, quoteNumber])` on `Quotation` but no migration → constraint not live. RUN `npx prisma migrate dev --name quotation_per_tenant_unique` then `npx prisma generate`. Verify: new folder under `prisma/migrations/`, tsc green. **Commit:** `FIN-7b: migration — Quotation quoteNumber unique per tenant`.
+2. **SEND-3** — `send-quote.ts` + `send-invoice.ts`: add `bcc:[tenant.email]` + `replyTo: tenant.email` to `resend.emails.send` (source tenant email like `companyName` already is; skip if empty; don't change `from`). **Commit:** `SEND-3: bcc + reply-to tenant on sent docs`.
+3. **FIN-9** — `QuotationPDFTemplate.tsx` + `InvoicePDFTemplate.tsx`, ALL variants: legal group immediately BEFORE totals; wrap legal group AND calc block each in `<View wrap={false}>`. **Commit:** `FIN-9: legal above totals, no page-split`.
+4. **GRID-9** — `RecordDetailPage.tsx`+`PageModal.tsx`+`ProjectDetailView.tsx`: values ≥14px, labels 13px, headings 16-18px; remove every `text-[9/10/11px]`; labels `text-neutral-600 dark:text-neutral-300`, values `text-neutral-900 dark:text-neutral-100`. **Commit:** `GRID-9: detail-view legibility scale`.
+5. **GRID-2** — name-property "open" button is dead when the cell is selected; make it work whether or not the cell is selected (stop the selection layer from eating the click). **Commit:** `GRID-2: open button works when cell selected`.
+6. **GRID-4** — remove the elastic/rubber-band overscroll at grid edges; stop hard at the edge. **Commit:** `GRID-4: remove edge rubber-band`.
+7. **GRID-5** — flyouts/dropdowns clip at screen edges; add edge-aware positioning (measure viewport, flip when overflowing) in the shared dropdown/flyout component. **Commit:** `GRID-5: edge-aware flyout positioning`.
+8. **GRID-3** — column resize (FULL spec in GRID section): live drag in CSS, commit width once on release, NO key-remount. **Commit:** `GRID-3: live CSS resize, persist on release`.
+9. **PROFILE-3-STATIONERY** — the stationery-mode header variant doesn't render the tenant company block; render companyName/VAT/IBAN/email/address there too (the widened select already provides the data). **Commit:** `PROFILE-3: tenant block in stationery header`.
+10. **CROSS-2** — untranslated i18n keys leak to UI (e.g. `Admin.nav.pages.manualTicket`); add the missing keys to `messages/{nl,fr,en,ro}.json`. **Commit:** `CROSS-2: add missing i18n keys`.
+11. **PROJ-8** — Kanban card click doesn't open the project; on click open a flyout/panel showing the project's properties, editable + savable (Notion card behavior). File: `KanbanView.tsx`. **Commit:** `PROJ-8: kanban card opens editable property flyout`.
+12. **PROJ-9** — Kanban card three-dot menu does nothing; wire its actions (open/duplicate/delete as appropriate). **Commit:** `PROJ-9: fix kanban card three-dot menu`.
+13. **PROJ-10** — Kanban view-settings: let the user choose which card properties are visible, editable in place. **Commit:** `PROJ-10: kanban configurable card properties`.
+14. **GRID-9b** — `@` mention to insert dates/reminders in text cells (Notion-style). **Commit:** `GRID-9b: @ date/reminder insert`.
+15. **CROSS-1** — replace the black crash screen with a themed error screen. **Commit:** `CROSS-1: themed crash screen`.
+
+**── SUPERVISED LINE (do NOT start unattended — need Florin): FIN-10 (duplicate detection), NOTIF-0..4 (new model), full GRID-10 consolidation/retire RecordDetailPage, QUOTE-6c/6d/6e, FILES Blob migration, GRID-11. ──**
+
 ## 🎯 AGGREGATE PLAN — Purchase-Invoice Detail View + Inbound Mapping (SINGLE SPEC — follow exactly, no interpretation)
 **This supersedes the purchase-invoice parts of GRID-10 + PEPPOL-4. One coherent result. Reference = Florin's 2 screenshots: image 1 = the WRONG generic modal (sparse, useless); image 2 = the CORRECT full split view (BigMat).**
 **TARGET RESULT:** Opening ANY purchase invoice (manual, scanned, or Peppol-inbound) shows the FULL `PurchaseInvoiceEngine` split view — LEFT: all properties + **ORDERLIJNEN** (line-item table) + **BIJLAGEN** (attachments incl. source doc); RIGHT: the **original document rendered** (PDF). The generic `PageModal` is NEVER used for `db-expenses`. Inbound invoices arrive with supplier linked, line items structured, and the original document stored.
@@ -296,10 +325,20 @@ Financial correctness underpins the middle of this path → that's why FIN works
 - **CS-3** Articles: remove details view (GRID-6).
 - **CS-4** Bestek details: remove stats + journal cards; connected-properties → **connected articles**; add a **pricing table** (a miniature quotations engine); properties stay in left column + populate DB.
 
-## MOBILE — (cross-cutting, v0.4)
+## TT — Time-Tracker CONSOLIDATION (🔒 SUPERVISED — Florin 2026-06-17: do this FIRST, before mobile)
+**MEASURED (Planner): the time-tracker is a half-migrated PARALLEL APP embedded in CoralOS, not a native module.** It carries its own duplicate `components/ui/*` (full shadcn set), own `i18n/` + `locales`, own `contexts/` (ThemeContext + a Supabase `AuthContext`), own `pages/`, and an `integrations/supabase` data layer. **SPLIT-BRAIN DATA:** part of it reads/writes **Supabase** (a SECOND database — announcements, documents, TimesheetView, LateEntry, ApprovalManager, UserDetailView, auth) while other hooks (`useClockEntries`, `useApprovalRequests`, `useScheduleAttachments`) use the app's Prisma/Neon API. Consolidation = fully absorb it onto CoralOS's stack and retire the parallel infra. **Phased, each phase its own commit; Florin-gated.**
+- **TT-0 — AUDIT (Planner-led, partly done).** Exhaustive map: every Supabase read/write (table → feature), every duplicate `ui/` component vs the app's, the parallel i18n/theme/auth, and — CRITICAL — whether the Supabase data is **tenant-scoped** (if TT data has no `tenantId` isolation, it's a cross-tenant data-leak risk; treat as launch-blocking before TT ships to tenants). Output = migration map + isolation verdict.
+- **TT-1 — DATA off Supabase → Prisma/Neon (the core).** Per feature (announcements, documents, timesheets, late entries, approvals, user detail), move storage to the app's Prisma schema + API routes; ensure tenant scoping. Then delete `integrations/supabase`. Kills the second database + the data fragmentation. Highest value, do per-feature.
+- **TT-2 — AUTH.** Replace the Supabase `AuthContext` with the app's NextAuth session/tenant. One auth, tenant-scoped.
+- **TT-3 — UI.** Replace `time-tracker/components/ui/*` with the app's shared components; delete the duplicate set.
+- **TT-4 — i18n + THEME.** Fold its `i18n/locales` into next-intl (NL/FR/EN/RO) and its ThemeContext into the app theme.
+- **TT-5 — Make it a tenant-scoped MODULE** behaving like the rest (gating via `PLAN_MODULES`, lockedDbIds where relevant). **VERIFY:** time-tracker runs entirely on CoralOS auth/data/UI; no Supabase; data tenant-isolated; HR timesheets/schedule/leave all work.
+
+## MOBILE — App-wide mobile-friendliness (🔒 SUPERVISED — Florin: AFTER time-tracker consolidation, v0.4)
+**MEASURED: mobile coverage is PARTIAL + inconsistent.** `/m` has only `clients, settings, purchases, invoices, quotes, expenses` — MISSING dashboard, projects, tasks, calendar, contacts, suppliers, library, inbox, files, time-tracker. So most modules fall back to desktop layouts on phone ("topsy turvy"). **FIRST DECISION (Florin's call — I'll recommend): strategy.** (A) keep building per-module `/m` routes (current path — duplicated UI, drifts) OR (B) **make the main app responsive** (one codebase, responsive layouts + a mobile shell/nav) — fewer surfaces, no drift, the modern default. **Recommend B**, with `/m` kept only where a genuinely different mobile flow is needed (capture/scan). Then a per-module pass.
 - **MOB-1** 🚦 FREE mobile lands in WORKHUB (subdomain/PWA-scope) — must stay in `/m`. (was M4, launch blocker)
 - **MOB-2** Overall mobile optimization pass (legibility/layout verified, not just committed). (M2 committed — re-verify)
-- **MOB-3** MOBILE OPTIMISATION OVERALL — every module usable on phone. (umbrella; individual modules tagged mobile-first as reached)
+- **MOB-3** MOBILE OPTIMISATION OVERALL — every module usable on phone (umbrella). After the strategy decision: per-module responsive pass — incl. the gaps above (CAL-5 mobile calendar, projects, tasks, dashboard). Each module = its own commit + verify on a real 380px viewport.
 
 ## LOCALE — Localization (FOUNDATION, not string-sweep) (v0.3/0.5)
 > Principle (Florin): fix the MECHANISM, not each leaked string. The "Creditnota voor 2026-19" on a French doc is not a typo — it's a SYSTEMIC fault: text isn't bound to the document's language, and some text is HARDCODED/stored in one language. Fix foundations.

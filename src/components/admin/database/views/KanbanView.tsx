@@ -21,7 +21,7 @@ import {
     useSortable 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { cn } from '@/components/time-tracker/lib/utils';
@@ -101,6 +101,22 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const createPage = useDatabaseStore(state => state.createPage);
+    const deletePage = useDatabaseStore(state => state.deletePage);
+
+    const handleDuplicate = () => {
+        const newProps = { ...page.properties };
+        if (typeof newProps['title'] === 'string') {
+            newProps['title'] = `${newProps['title']} (Copy)`;
+        }
+        createPage(databaseId, newProps);
+    };
+
+    const handleDelete = () => {
+        if (confirm('Are you sure you want to delete this card?')) {
+            deletePage(databaseId, page.id);
+        }
+    };
 
     const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
     const title = String(page.properties['title'] || 'Untitled');
@@ -158,7 +174,25 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
                     ) : (
                         <div className="line-clamp-2 text-sm font-semibold text-neutral-800 dark:text-neutral-200 leading-snug cursor-text" onClick={e => { e.stopPropagation(); setIsEditing(true); setEditTitle(title); }}>{title}</div>
                     )}
-                    <button className="opacity-0 group-hover:opacity-100 p-1 -mr-1 -mt-1 text-neutral-400 hover:text-neutral-600 transition-opacity flex-shrink-0"><MoreHorizontal className="w-4 h-4" /></button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button onClick={e => e.stopPropagation()} className="opacity-0 group-hover:opacity-100 p-1 -mr-1 -mt-1 text-neutral-400 hover:text-neutral-600 transition-opacity flex-shrink-0">
+                                <MoreHorizontal className="w-4 h-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 z-50" onClick={e => e.stopPropagation()}>
+                            <DropdownMenuItem onSelect={() => onClick?.()}>
+                                <Maximize2 className="w-4 h-4 mr-2" /> Open
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={handleDuplicate}>
+                                <Copy className="w-4 h-4 mr-2" /> Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={handleDelete} className="text-red-600 focus:bg-red-50 dark:focus:bg-red-950/30 focus:text-red-700 dark:focus:text-red-400">
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
                 <div className="flex items-center gap-2 mt-3">
                     {priorityMarkup}

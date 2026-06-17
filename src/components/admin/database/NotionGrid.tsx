@@ -71,9 +71,10 @@ interface NotionGridProps {
     preventDelete?: boolean | ((rowData: any) => boolean);
     hideFooterNew?: boolean;
     hardFilter?: { propertyId: string; value: string };
+    onOpenRecord?: (pageId: string) => void;
 }
 
-export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter }: NotionGridProps) {
+export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchema, preventDelete, hideFooterNew, hardFilter, onOpenRecord }: NotionGridProps) {
     const router = useRouter();
     const t = useTranslations('Admin');
     const { data: session } = useSession();
@@ -248,6 +249,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             });
     }, [database, viewStateMap, databaseId, hasCRM]);
 
+    const handleOpenPage = useCallback((action: React.SetStateAction<string | null>) => {
+        const id = typeof action === 'function' ? action(activePageId) : action;
+        if (id && onOpenRecord) {
+            onOpenRecord(id);
+        } else {
+            setActivePageId(action);
+        }
+    }, [onOpenRecord, activePageId]);
+
     const columns = useGridColumns({
         databaseId,
         databaseIdRef,
@@ -266,7 +276,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         createPage,
         deletePage,
         setSelectedRowIds,
-        setActivePageId,
+        setActivePageId: handleOpenPage,
     });
 
     const filteredPages = useMemo(() => {

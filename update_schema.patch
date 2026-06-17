@@ -1,0 +1,13 @@
+--- prisma/schema.prisma
++++ prisma/schema.prisma
+@@ -102,6 +102,10 @@
+   defaultCalendarView      String?                 @default("month")
+   defaultEventDuration     Int?                    @default(60)
+   defaultPaymentTermDays   Int?                    @default(30)
++  defaultPaymentMethod     String?                 @default("transfer")
++  defaultPaymentDueModel   String?                 @default("net")
++  defaultPaymentLateClauseNL String?
++  defaultPaymentLateClauseFR String?
+   defaultVatRate           Int?                    @default(21)
+   poPrefix                 String?                 @default("PO")
+   vatCalcMode              String?                 @default("lines")

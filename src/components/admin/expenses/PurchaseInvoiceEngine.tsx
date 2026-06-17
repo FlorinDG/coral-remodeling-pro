@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine } from 'lucide-react';
+import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine, Camera, CheckCircle2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import type { Page } from '@/components/admin/database/types';
 import { downloadPurchaseInvoicePDF } from '@/components/admin/expenses/PurchaseInvoicePDF';
@@ -198,6 +198,13 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
     const handleExportPDF = async () => {
         if (!page) return;
+
+        // AGG-4: If original PDF exists, download it
+        if (page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string') {
+            window.open(page.properties.receiptUrl, '_blank');
+            return;
+        }
+
         setExportingPdf(true);
         try {
             const supplierName = resolvedSupplier
@@ -254,257 +261,252 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="relative w-full max-w-2xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10">
-                    <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-base font-bold text-neutral-900 dark:text-white truncate">
-                                    {page.properties.title || 'Untitled Invoice'}
-                                </h2>
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sourceBadge.color}`}>
-                                    {sourceBadge.label}
-                                </span>
+            <div className="relative w-full max-w-7xl h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                
+                {/* Left Pane (Metadata & Lines) */}
+                <div className="w-[55%] flex flex-col border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0">
+                                <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                             </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[status] || STATUS_COLORS['opt-draft']}`}>
-                                    {STATUS_LABELS[status] || status}
-                                </span>
-                                {resolvedSupplier && (
-                                    <span className="text-xs text-neutral-500">• {String(resolvedSupplier.properties.title)}</span>
-                                )}
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-base font-bold text-neutral-900 dark:text-white truncate">
+                                        {page.properties.title || 'Untitled Invoice'}
+                                    </h2>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sourceBadge.color}`}>
+                                        {sourceBadge.label}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[status] || STATUS_COLORS['opt-draft']}`}>
+                                        {STATUS_LABELS[status] || status}
+                                    </span>
+                                    {resolvedSupplier && (
+                                        <span className="text-xs text-neutral-500">• {String(resolvedSupplier.properties.title)}</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="p-6 max-h-[65vh] overflow-y-auto space-y-6">
-                    {/* Peppol loading */}
-                    {loadingPeppol && (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                            <span className="ml-2 text-sm text-neutral-500">Loading Peppol document...</span>
-                        </div>
-                    )}
-
-                    {/* Invoice details (view/edit mode) */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <InfoField
-                            label="Invoice #"
-                            value={isEditing ? editData.title : String(page.properties.title || '-')}
-                            editable={isEditing}
-                            onChange={v => setEditData(p => ({ ...p, title: v }))}
-                        />
-                        <InfoField
-                            label="Description"
-                            value={isEditing ? editData.betreft : String(page.properties.betreft || '-')}
-                            editable={isEditing}
-                            onChange={v => setEditData(p => ({ ...p, betreft: v }))}
-                        />
-                        <InfoField
-                            label="Invoice Date"
-                            value={isEditing ? editData.invoiceDate : String(page.properties.invoiceDate || '-')}
-                            editable={isEditing}
-                            type="date"
-                            onChange={v => setEditData(p => ({ ...p, invoiceDate: v }))}
-                        />
-                        <InfoField
-                            label="Due Date"
-                            value={isEditing ? editData.dueDate : String(page.properties.dueDate || '-')}
-                            editable={isEditing}
-                            type="date"
-                            onChange={v => setEditData(p => ({ ...p, dueDate: v }))}
-                        />
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0 xl:hidden block">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
 
-                    {/* Financial summary */}
-                    <div className="rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden">
-                        <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/[0.03] border-b border-neutral-200 dark:border-white/10">
-                            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Financial Summary</h3>
+                    {/* Left Body */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {loadingPeppol && (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
+                                <span className="ml-2 text-sm text-neutral-500">Loading Peppol document...</span>
+                            </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <InfoField
+                                label="Supplier"
+                                value={resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(peppolDetail?.supplierName || page.properties.supplier || '')}
+                            />
+                            <InfoField
+                                label="Supplier VAT"
+                                value={resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(peppolDetail?.supplierVat || '')}
+                            />
+                            <InfoField
+                                label="Invoice Date"
+                                value={String((isEditing ? editData.invoiceDate : page.properties.invoiceDate) || '')}
+                                editable={isEditing}
+                                type="date"
+                                onChange={v => setEditData(p => ({ ...p, invoiceDate: v }))}
+                            />
+                            <InfoField
+                                label="Due Date"
+                                value={String((isEditing ? editData.dueDate : page.properties.dueDate) || '')}
+                                editable={isEditing}
+                                type="date"
+                                onChange={v => setEditData(p => ({ ...p, dueDate: v }))}
+                            />
                         </div>
-                        <div className="grid grid-cols-3 divide-x divide-neutral-200 dark:divide-white/10">
+
+                        {/* Financial summary */}
+                        <div className="grid grid-cols-3 divide-x divide-neutral-200 dark:divide-white/10 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-50/50 dark:bg-black/10">
                             <FinancialCell
-                                label="Excl. VAT"
-                                value={isEditing ? editData.totalExVat : (page.properties.totalExVat as string | number | null | undefined)}
+                                label="Total Excl. VAT"
+                                value={(isEditing ? editData.totalExVat : page.properties.totalExVat) as string | number}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalExVat: v }))}
                             />
                             <FinancialCell
-                                label="VAT"
-                                value={isEditing ? editData.totalVat : (page.properties.totalVat as string | number | null | undefined)}
+                                label="Total VAT"
+                                value={(isEditing ? editData.totalVat : page.properties.totalVat) as string | number}
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalVat: v }))}
                             />
                             <FinancialCell
-                                label="Incl. VAT"
-                                value={isEditing ? editData.totalIncVat : (page.properties.totalIncVat as string | number | null | undefined)}
+                                label="Total Incl. VAT"
+                                value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
+                                highlight
                                 editable={isEditing}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
-                                highlight
                             />
                         </div>
+
+                        {/* Structured line items */}
+                        {page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
+                                <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
+                                            <tr>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Description</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Qty</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Price</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">VAT%</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-200 dark:divide-white/10">
+                                            {page.blocks.filter((b: any) => b.type === 'financial-row').map((block: any, i: number) => (
+                                                <tr key={block.id || i} className="bg-white dark:bg-transparent">
+                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium">{block.content}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">{block.properties?.quantity || 0}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">€{Number(block.properties?.unitPrice || 0).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">{block.properties?.vatRate || 0}%</td>
+                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium text-right">€{Number(block.properties?.lineTotal || 0).toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Fallback for legacy peppol detail lines if blocks aren't available */}
+                        {(!page.blocks || page.blocks.filter((b: any) => b.type === 'financial-row').length === 0) && peppolDetail && peppolDetail.lines.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Legacy Peppol Line Items</h3>
+                                <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
+                                            <tr>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Description</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Qty</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Price</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">VAT%</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-neutral-200 dark:divide-white/10">
+                                            {peppolDetail.lines.map((line: any, i: number) => (
+                                                <tr key={i} className="bg-white dark:bg-transparent">
+                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium">{line.name}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">{line.quantity}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">€{Number(line.price).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">{line.vatRate}%</td>
+                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium text-right">€{Number(line.totalExVat).toFixed(2)}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Peppol line items (from UBL) */}
-                    {peppolDetail && peppolDetail.lines.length > 0 && (
-                        <div className="rounded-xl border border-neutral-200 dark:border-white/10 overflow-hidden">
-                            <div className="px-4 py-2.5 bg-orange-50 dark:bg-blue-950/20 border-b border-neutral-200 dark:border-white/10">
-                                <h3 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">
-                                    Line Items (from UBL)
-                                </h3>
-                            </div>
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="border-b border-neutral-200 dark:border-white/10 text-xs text-neutral-500 uppercase tracking-wider">
-                                        <th className="text-left px-4 py-2">Description</th>
-                                        <th className="text-right px-3 py-2">Qty</th>
-                                        <th className="text-right px-3 py-2">Unit Price</th>
-                                        <th className="text-right px-3 py-2">VAT %</th>
-                                        <th className="text-right px-4 py-2">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {peppolDetail.lines.map((line, i) => (
-                                        <tr key={i} className="border-b border-neutral-100 dark:border-white/5 last:border-b-0">
-                                            <td className="px-4 py-2.5 text-neutral-900 dark:text-white">{line.description || '-'}</td>
-                                            <td className="px-3 py-2.5 text-right text-neutral-600 dark:text-neutral-400">{line.quantity}</td>
-                                            <td className="px-3 py-2.5 text-right text-neutral-600 dark:text-neutral-400">€{line.unitPrice.toFixed(2)}</td>
-                                            <td className="px-3 py-2.5 text-right text-neutral-600 dark:text-neutral-400">{line.vatRate}%</td>
-                                            <td className="px-4 py-2.5 text-right font-semibold text-neutral-900 dark:text-white">€{line.lineTotal.toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                    {/* Left Footer Action bar */}
+                    <div className="px-6 py-4 border-t border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-neutral-50/50 dark:bg-black/10">
+                        <div className="flex items-center gap-2">
+                            {status === 'opt-draft' && (
+                                <>
+                                    <button
+                                        onClick={handleApprove}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-green-50 dark:bg-green-950/20 hover:bg-green-100 dark:hover:bg-green-950/40 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/30 text-xs font-bold rounded-lg transition-colors"
+                                    >
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Approve
+                                    </button>
+                                    <button
+                                        onClick={() => setRejectMode(true)}
+                                        className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 text-xs font-bold rounded-lg transition-colors"
+                                    >
+                                        <XCircle className="w-3.5 h-3.5" />
+                                        Reject
+                                    </button>
+                                </>
+                            )}
+                            {status === 'opt-unpaid' && (
+                                <button
+                                    onClick={handleMarkPaid}
+                                    className="flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                >
+                                    <Check className="w-3.5 h-3.5" /> Mark Paid
+                                </button>
+                            )}
+                            {status === 'opt-disputed' && page?.properties.rejectionNote && (
+                                <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg max-w-xs">
+                                    <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
+                                    <p className="text-xs text-red-700 dark:text-red-400 leading-relaxed truncate">{String(page.properties.rejectionNote)}</p>
+                                </div>
+                            )}
                         </div>
-                    )}
 
-                    {/* Peppol supplier info */}
-                    {peppolDetail && (
-                        <div className="rounded-xl bg-orange-50/50 dark:bg-blue-950/10 border border-orange-200/50 dark:border-blue-800/30 p-4 space-y-2">
-                            <h4 className="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Supplier (from Peppol)</h4>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div><span className="text-neutral-500">Name:</span> <span className="text-neutral-900 dark:text-white font-medium">{peppolDetail.supplierName}</span></div>
-                                <div><span className="text-neutral-500">VAT:</span> <span className="text-neutral-900 dark:text-white font-medium">{peppolDetail.supplierVat}</span></div>
-                                <div className="col-span-2"><span className="text-neutral-500">Address:</span> <span className="text-neutral-900 dark:text-white font-medium">{peppolDetail.supplierAddress}</span></div>
-                            </div>
+                        <div className="flex items-center gap-2">
+                            {!isPeppol && (
+                                isEditing ? (
+                                    <button
+                                        onClick={handleSaveEdit}
+                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="px-4 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
+                                    >
+                                        Edit
+                                    </button>
+                                )
+                            )}
+                            <button
+                                onClick={handleExportPDF}
+                                disabled={exportingPdf}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                                title="Export PDF"
+                            >
+                                {exportingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowDownToLine className="w-3.5 h-3.5" />}
+                                PDF
+                            </button>
                         </div>
-                    )}
+                    </div>
                 </div>
 
-                {/* Reject comment field (appears when reject mode is active) */}
-                {rejectMode && status === 'opt-received' && (
-                    <div className="px-6 py-4 bg-red-50/60 dark:bg-red-950/20 border-t border-red-200 dark:border-red-800/40">
-                        <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-2">Rejection Reason</p>
-                        <textarea
-                            value={rejectComment}
-                            onChange={e => setRejectComment(e.target.value)}
-                            placeholder="Describe why this invoice is being rejected (optional)…"
-                            rows={3}
-                            className="w-full bg-white dark:bg-neutral-900 border border-red-300 dark:border-red-700/50 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-red-500/30 resize-none placeholder:text-neutral-400 dark:text-white"
-                        />
-                        <div className="flex items-center gap-2 mt-3">
-                            <button
-                                onClick={handleRejectConfirm}
-                                disabled={approveLoading}
-                                className="flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                            >
-                                {approveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                                Confirm Rejection
-                            </button>
-                            <button
-                                onClick={() => { setRejectMode(false); setRejectComment(''); }}
-                                className="px-4 py-2 bg-neutral-200 dark:bg-white/10 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg hover:bg-neutral-300 dark:hover:bg-white/20 transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
+                {/* Right Pane (Document Viewer) */}
+                <div className="w-[45%] flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
+                    <div className="px-6 py-4 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
+                        <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
+                            <Camera className="w-4 h-4" /> Original Document
+                        </h3>
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0 xl:block hidden">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
-                )}
-
-                {/* Footer actions */}
-                <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/[0.02]">
-                    <div className="flex items-center gap-2">
-                        {/* Universal approve / reject — for ALL invoices in received state */}
-                        {status === 'opt-received' && !rejectMode && (
-                            <>
-                                <button
-                                    onClick={handleApprove}
-                                    disabled={approveLoading}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50 shadow-sm"
-                                >
-                                    {approveLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                                    Approve
-                                </button>
-                                <button
-                                    onClick={() => setRejectMode(true)}
-                                    className="flex items-center gap-1.5 px-3.5 py-2 bg-red-500 hover:bg-red-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                                >
-                                    <XCircle className="w-3.5 h-3.5" />
-                                    Reject
-                                </button>
-                            </>
-                        )}
-
-                        {/* Mark as paid */}
-                        {status === 'opt-unpaid' && (
-                            <button
-                                onClick={handleMarkPaid}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white text-xs font-bold rounded-lg transition-colors"
-                            >
-                                <Check className="w-3.5 h-3.5" /> Mark Paid
-                            </button>
-                        )}
-
-                        {/* Show rejection note if invoice was disputed */}
-                        {status === 'opt-disputed' && page?.properties.rejectionNote && (
-                            <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg max-w-xs">
-                                <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-                                <p className="text-xs text-red-700 dark:text-red-400 leading-relaxed">{String(page.properties.rejectionNote)}</p>
+                    <div className="flex-1 p-4 flex flex-col min-h-0">
+                        {page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' ? (
+                            <iframe 
+                                src={page.properties.receiptUrl} 
+                                className="w-full h-full rounded-xl border border-neutral-200 dark:border-white/10 bg-white" 
+                                title="Original Document"
+                            />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center w-full h-full text-neutral-400 bg-white/40 dark:bg-white/5 rounded-xl border border-dashed border-neutral-300 dark:border-white/20">
+                                <FileText className="w-12 h-12 mb-4 opacity-50" />
+                                <p className="text-sm font-medium">No original document attached</p>
+                                <p className="text-xs mt-1 opacity-70">This invoice was either manually created or has no scanned receipt.</p>
                             </div>
                         )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {/* Edit / Save toggle */}
-                        {!isPeppol && (
-                            isEditing ? (
-                                <button
-                                    onClick={handleSaveEdit}
-                                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
-                                >
-                                    Save Changes
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="px-4 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
-                                >
-                                    Edit
-                                </button>
-                            )
-                        )}
-
-                        {/* Export PDF */}
-                        <button
-                            onClick={handleExportPDF}
-                            disabled={exportingPdf}
-                            className="flex items-center gap-1.5 px-3 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
-                            title="Export PDF"
-                        >
-                            {exportingPdf
-                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                : <ArrowDownToLine className="w-3.5 h-3.5" />
-                            }
-                            PDF
-                        </button>
                     </div>
                 </div>
             </div>

@@ -70,13 +70,13 @@ export class BlobStorageProvider implements StorageProvider {
         const entries: StorageListEntry[] = [];
 
         while (hasMore) {
-            const listResult = await vercelList({
+            const listResult: any = await vercelList({
                 prefix,
                 token: this.token,
                 cursor
             });
 
-            entries.push(...listResult.blobs.map(b => ({
+            entries.push(...listResult.blobs.map((b: any) => ({
                 key: b.pathname,
                 url: this.get(b.pathname),
                 size: b.size,

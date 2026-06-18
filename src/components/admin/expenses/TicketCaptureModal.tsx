@@ -7,6 +7,7 @@ import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
 import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
+import { uploadFileAction } from '@/app/actions/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { parseDecimal } from '@/lib/decimal-parser';
 
@@ -234,23 +235,19 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         setStep('saving');
         setSaveError('');
 
-        let driveUrl = '';
+        let receiptUrl = '';
         if (lastFileRef.current) {
             try {
                 const fd = new FormData();
                 fd.append('file', lastFileRef.current);
-                fd.append('targetSubfolder', isInvoiceMode ? 'Invoices' : 'Expenses');
-                const uploadRes = await fetch('/api/drive/upload', { method: 'POST', body: fd });
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    if (uploadData.fileId) {
-                        driveUrl = `https://drive.google.com/file/d/${uploadData.fileId}/view`;
-                    }
+                const uploadRes = await uploadFileAction(fd, isInvoiceMode ? 'purchase-invoice' : 'receipt');
+                if (uploadRes.success && uploadRes.key) {
+                    receiptUrl = uploadRes.key;
                 } else {
-                    console.warn('[TicketCaptureModal] Drive upload failed', await uploadRes.text());
+                    console.warn('[TicketCaptureModal] Blob upload failed', uploadRes.error);
                 }
             } catch (err) {
-                console.warn('[TicketCaptureModal] Drive upload network error', err);
+                console.warn('[TicketCaptureModal] Blob upload network error', err);
             }
         }
 
@@ -267,7 +264,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         totalExVat: parsedAmount,
                         totalVat: parsedVat,
                         totalIncVat: parsedAmount + parsedVat,
-                        receiptUrl: driveUrl,
+                        receiptUrl: receiptUrl,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
@@ -280,7 +277,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
                         notes: form.notes,
-                        receiptUrl: driveUrl,
+                        receiptUrl: receiptUrl,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 }
@@ -309,7 +306,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     totalIncVat: parsedAmount + parsedVat,
                     status: 'opt-unpaid',
                 };
-                if (driveUrl) updatedProps.receiptUrl = driveUrl;
+                if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
             } else {
                 updatedProps = {
                     ...currentProps,
@@ -321,7 +318,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     paymentMethod: form.paymentMethod,
                     notes: form.notes,
                 };
-                if (driveUrl) updatedProps.receiptUrl = driveUrl;
+                if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
             }
 
             const result = await updatePageServerFirst(scanResult.page.id, updatedProps);

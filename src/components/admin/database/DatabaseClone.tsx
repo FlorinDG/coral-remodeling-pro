@@ -68,10 +68,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isUngated = isStoreUngated || isSuperAdmin;
 
     const handleOpenEditor = (pageId: string) => {
-    if (database?.name.toLowerCase().includes('quote') || database?.name.toLowerCase().includes('offerte')) {
+    if (databaseId === 'db-quotations' || databaseId.startsWith('db-quotations-')) {
       router.push(`/${locale}/admin/quotations/${pageId}`);
     } else {
-      router.push(`/${locale}/admin/database/${databaseId}/page/${pageId}`);
+      router.push(`/${locale}/admin/database/${databaseId}/${pageId}`);
     }
   };
 

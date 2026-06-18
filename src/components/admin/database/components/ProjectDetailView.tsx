@@ -116,9 +116,10 @@ interface ProjectDetailViewProps {
     databaseId: string;     // resolved DB ID
     pageId: string;
     locale: string;
+    onClose?: () => void;
 }
 
-export default function ProjectDetailView({ databaseId, pageId, locale }: ProjectDetailViewProps) {
+export default function ProjectDetailView({ databaseId, pageId, locale, onClose }: ProjectDetailViewProps) {
     const { resolveDbId } = useTenant();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'journal' | 'files' | 'vorderingen'>('overview');
@@ -531,8 +532,18 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
         router.push(`/${locale}/admin/invoices/${newInvoice.id}`);
     };
 
-    return (
+    const content = (
         <div className="flex-1 overflow-y-auto bg-neutral-50 dark:bg-[#0a0a0a]">
+            {onClose && (
+                <div className="sticky top-0 z-50 flex justify-end p-4 pointer-events-none">
+                    <button 
+                        onClick={onClose}
+                        className="pointer-events-auto p-2 rounded-full bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-white/10 text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-all"
+                    >
+                        <XCircle className="w-6 h-6" />
+                    </button>
+                </div>
+            )}
             <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-6 flex flex-col gap-6">
 
                 {/* ── Project Type Badge ────────────────────────────────────── */}
@@ -1503,4 +1514,16 @@ export default function ProjectDetailView({ databaseId, pageId, locale }: Projec
             </div>
         </div>
     );
+
+    if (onClose) {
+        return (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+                <div className="relative w-full max-w-[95vw] h-[95vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    {content}
+                </div>
+            </div>
+        );
+    }
+
+    return content;
 }

@@ -39,14 +39,15 @@ const customCollisionDetection: CollisionDetection = (args) => {
 
 // ── Droppable Column Body ──────────────────────────────────────────────────────
 // A dedicated droppable zone for each column so empty columns can receive drops.
-function DroppableColumnBody({ columnId, children }: { columnId: string; children: React.ReactNode }) {
+function DroppableColumnBody({ columnId, children, c }: { columnId: string; children: React.ReactNode; c?: any }) {
     const { setNodeRef, isOver } = useDroppable({ id: `droppable-${columnId}` });
     return (
         <div 
             ref={setNodeRef} 
             className={cn(
-                "flex-1 overflow-y-auto no-scrollbar pb-10 space-y-2.5 min-h-[100px] rounded-lg transition-colors duration-150",
-                isOver ? 'bg-orange-50/50 dark:bg-orange-900/10 ring-2 ring-orange-300/30 ring-inset' : 'bg-transparent'
+                "flex-1 overflow-y-auto no-scrollbar p-2 pb-10 space-y-2.5 min-h-[100px] rounded-lg transition-colors duration-150",
+                c ? c.bg : 'bg-transparent',
+                isOver ? 'ring-2 ring-orange-300/50 ring-inset opacity-80' : ''
             )}
         >
             {children}
@@ -436,7 +437,7 @@ function SortableColumn({
     }
 
     return (
-        <div ref={setNodeRef} style={style} className="flex flex-col min-w-[300px] max-w-[300px] shrink-0 group">
+        <div ref={setNodeRef} style={style} className="flex flex-col h-full min-w-[300px] max-w-[300px] shrink-0 group">
             <div className="flex items-center gap-2 mb-3 px-1" {...attributes} {...listeners}>
                 <button onClick={(e) => { e.stopPropagation(); toggleCollapse(col.id); }} className="p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
                 <div className={cn("px-2.5 py-0.5 rounded-md text-xs font-semibold", c.header, c.text)}>{col.name}</div>
@@ -449,7 +450,7 @@ function SortableColumn({
             </div>
             
             <SortableContext items={col.pages.map(p => p.id)} strategy={verticalListSortingStrategy}>
-                <DroppableColumnBody columnId={col.id}>
+                <DroppableColumnBody columnId={col.id} c={c}>
                     {col.pages.map(page => (
                         <SortableCard 
                             key={page.id} 

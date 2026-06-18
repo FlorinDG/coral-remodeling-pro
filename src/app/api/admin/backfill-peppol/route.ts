@@ -83,14 +83,16 @@ export async function GET(req: Request) {
         let updatedCount = 0;
         const errors: any[] = [];
 
-        // Pre-load suppliers for matching
-        const suppliers = await prisma.supplier.findMany({
-            where: { tenantId },
-            select: { id: true, vatNumber: true },
+        // Pre-load suppliers for matching from db-suppliers
+        const suppliersDbId = getLockedDbId('db-suppliers', lockedDbIds);
+        const suppliers = await prisma.globalPage.findMany({
+            where: { databaseId: suppliersDbId },
+            select: { id: true, properties: true },
         });
         const vatToSupplier = new Map<string, string>();
         suppliers.forEach((s) => {
-            if (s.vatNumber) vatToSupplier.set(s.vatNumber.replace(/\s/g, '').toUpperCase(), s.id);
+            const vat = (s.properties as any)?.vatNumber || (s.properties as any)?.vat;
+            if (vat) vatToSupplier.set(String(vat).replace(/\s/g, '').toUpperCase(), s.id);
         });
 
         for (const page of pagesToUpdate) {
@@ -117,21 +119,37 @@ export async function GET(req: Request) {
                 const vendorVat = rawDoc.vendor_tax_id || '';
                 const vendorAddr = rawDoc.vendor_address || '';
 
-                // A) Auto-create + link supplier
+                // A) Auto-create + link supplier (GlobalPage in db-suppliers)
                 const hasSupplier = Array.isArray(props.supplier) && props.supplier.length > 0;
                 if (!hasSupplier && (vendorName || vendorVat)) {
                     let matchedSupplierId = null;
                     const safeVat = vendorVat.replace(/\s/g, '').toUpperCase();
                     if (safeVat && vatToSupplier.has(safeVat)) {
-                        matchedSupplierId = vatToSupplier.get(safeVat);
+                        matchedSupplierId = vatToSupplier.get(safeVat) ?? null;
                     } else {
-                        // Create supplier
-                        const newSupplier = await prisma.supplier.create({
+                        // Create db-suppliers GlobalPage
+                        const newSupplierId = uuidv4();
+                        
+                        // Get max order
+                        const maxOrderRow = await prisma.globalPage.findFirst({
+                            where: { databaseId: suppliersDbId },
+                            orderBy: { order: 'desc' },
+                            select: { order: true }
+                        });
+                        const order = (maxOrderRow?.order ?? -1) + 1;
+                        
+                        const newSupplier = await prisma.globalPage.create({
                             data: {
-                                tenantId,
-                                companyName: vendorName || 'Unknown Supplier',
-                                vatNumber: safeVat || null,
-                                address: vendorAddr || '',
+                                id: newSupplierId,
+                                databaseId: suppliersDbId,
+                                order,
+                                properties: {
+                                    title: vendorName || 'Unknown Supplier',
+                                    vatNumber: safeVat || null,
+                                    address: vendorAddr || '',
+                                },
+                                createdBy: 'system',
+                                lastEditedBy: 'system',
                             }
                         });
                         matchedSupplierId = newSupplier.id;

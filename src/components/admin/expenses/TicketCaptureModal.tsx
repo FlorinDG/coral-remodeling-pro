@@ -258,7 +258,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             // Manual entry — server-first
             try {
                 if (isInvoiceMode) {
-                    const result = await createPageServerFirst('db-expenses', {
+                    const result = await createPageServerFirst(targetDatabaseId, {
                         title: form.merchant || 'Manual Invoice',
                         source: 'src-manual',
                         status: 'opt-draft',
@@ -271,7 +271,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
-                    const result = await createPageServerFirst('db-tickets', {
+                    const result = await createPageServerFirst(targetDatabaseId, {
                         title: form.merchant || 'Unnamed Expense',
                         date: form.date,
                         amount: parsedAmount,
@@ -498,8 +498,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             )}
 
                             {/* Hidden inputs */}
-                            <input ref={fileInputRef} type="file" accept={isInvoiceMode ? 'image/*,application/pdf' : 'image/*'} className="hidden" onChange={handleInputChange} />
-                            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleInputChange} />
+                            <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleInputChange} />
+                            <input ref={cameraInputRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={handleInputChange} />
                         </div>
                     )}
 

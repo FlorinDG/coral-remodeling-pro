@@ -68,36 +68,17 @@ Rules:
  * isScanned = true when the PDF has pages but no extractable text (image-only).
  */
 async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount: number; isScanned: boolean }> {
-    // Dynamic import — pdfjs-dist is large and server-side only
-    const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs' as any);
-
-    // Suppress pdfjs worker warning in Node (no worker needed server-side)
-    pdfjsLib.GlobalWorkerOptions = pdfjsLib.GlobalWorkerOptions ?? {};
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-
-    const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
-    let pdf: any;
+    const { extractText } = await import('unpdf');
     try {
-        pdf = await loadingTask.promise;
+        const { text, totalPages } = await extractText(new Uint8Array(buffer));
+        const cleanText = (Array.isArray(text) ? text.join('\n\n') : text) || '';
+        return { text: cleanText, pageCount: totalPages, isScanned: cleanText.trim().length === 0 };
     } catch (err: any) {
         if (err?.message?.includes('Password') || err?.name === 'PasswordException') {
             throw Object.assign(new Error('PDF is password-protected'), { code: 'PDF_ENCRYPTED' });
         }
         throw Object.assign(new Error('PDF could not be loaded: ' + (err?.message ?? 'unknown')), { code: 'PDF_LOAD_ERROR' });
     }
-
-    const pageCount = pdf.numPages;
-    const textParts: string[] = [];
-
-    for (let i = 1; i <= Math.min(pageCount, 10); i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        const pageText = content.items.map((item: any) => item.str ?? '').join(' ').trim();
-        if (pageText) textParts.push(pageText);
-    }
-
-    const text = textParts.join('\n\n').trim();
-    return { text, pageCount, isScanned: text.length === 0 };
 }
 
 /**

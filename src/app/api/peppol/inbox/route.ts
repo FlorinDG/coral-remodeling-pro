@@ -115,14 +115,19 @@ export async function GET(req: Request) {
         await maybeResetMonthlyCounters(tenantId);
         const quotaInfo = await checkPeppolReceivedQuota(tenantId);
 
+        const { getLockedDbId } = await import('@/lib/lockedDbUtils');
+        const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
+        const suppliersDbId = getLockedDbId('db-suppliers', lockedDbIds);
+
         // Pre-load supplier contacts for auto-matching by VAT
-        const suppliers = await prisma.supplier.findMany({
-            where: { tenantId },
-            select: { id: true, vatNumber: true },
+        const suppliers = await prisma.globalPage.findMany({
+            where: { databaseId: suppliersDbId },
+            select: { id: true, properties: true },
         });
         const vatToSupplier = new Map<string, string>();
         suppliers.forEach((s) => {
-            if (s.vatNumber) vatToSupplier.set(s.vatNumber.replace(/\s/g, '').toUpperCase(), s.id);
+            const vat = (s.properties as any)?.vatNumber || (s.properties as any)?.vat;
+            if (vat) vatToSupplier.set(String(vat).replace(/\s/g, '').toUpperCase(), s.id);
         });
 
         // ── Parse each DocumentResponse into our internal format ──
@@ -202,8 +207,6 @@ export async function GET(req: Request) {
         });
 
         // ── AUTOMATIC SERVER-SIDE DATABASE SYNC ─────────────────────────────────
-        const { getLockedDbId } = await import('@/lib/lockedDbUtils');
-        const lockedDbIds = (tenant.lockedDbIds as Record<string, string>) || {};
         const expensesDbId = getLockedDbId('db-expenses', lockedDbIds);
 
         // Ensure database exists
@@ -253,24 +256,43 @@ export async function GET(req: Request) {
             const parsed = doc.parsed;
             if (!parsed) continue;
 
-            // 1. Supplier Auto-creation
+            // 1. Supplier Auto-creation (GlobalPage in db-suppliers)
             let matchedSupplierId = doc.matchedSupplierId;
             if (!matchedSupplierId && (parsed.supplierName || parsed.supplierVat)) {
                 const safeVat = (parsed.supplierVat || '').replace(/\s/g, '').toUpperCase();
                 try {
-                    let supplier = safeVat ? await prisma.supplier.findUnique({ where: { vatNumber: safeVat } }) : null;
-                    if (!supplier || supplier.tenantId !== tenantId) {
-                        supplier = await prisma.supplier.create({
+                    if (safeVat && vatToSupplier.has(safeVat)) {
+                        matchedSupplierId = vatToSupplier.get(safeVat) ?? null;
+                    } else {
+                        // Create db-suppliers GlobalPage
+                        const { v4: uuidv4 } = await import('uuid');
+                        const newSupplierId = uuidv4();
+                        
+                        // Get max order
+                        const maxOrderRow = await prisma.globalPage.findFirst({
+                            where: { databaseId: suppliersDbId },
+                            orderBy: { order: 'desc' },
+                            select: { order: true }
+                        });
+                        const order = (maxOrderRow?.order ?? -1) + 1;
+                        
+                        const supplier = await prisma.globalPage.create({
                             data: {
-                                tenantId,
-                                companyName: parsed.supplierName || 'Unknown Supplier',
-                                vatNumber: safeVat || null,
-                                address: parsed.supplierAddress || '',
+                                id: newSupplierId,
+                                databaseId: suppliersDbId,
+                                order,
+                                properties: {
+                                    title: parsed.supplierName || 'Unknown Supplier',
+                                    vatNumber: safeVat || null,
+                                    address: parsed.supplierAddress || '',
+                                },
+                                createdBy: 'system',
+                                lastEditedBy: 'system',
                             }
                         });
                         if (safeVat) vatToSupplier.set(safeVat, supplier.id);
+                        matchedSupplierId = supplier.id;
                     }
-                    matchedSupplierId = supplier.id;
                 } catch(e) {
                     console.error('[Peppol AutoCreateSupplier]', e);
                 }

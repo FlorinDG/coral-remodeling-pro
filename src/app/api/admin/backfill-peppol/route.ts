@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getInboxDocument, getInboxDocumentPdf } from '@/lib/e-invoice-inbox';
+import { getInboxDocument, getDocumentUbl, parseUBLToInvoice, getDocumentSupplierPdf } from '@/lib/e-invoice-inbox';
 import { storage } from '@/lib/storage';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { v4 as uuidv4 } from 'uuid';
@@ -167,13 +167,14 @@ export async function GET(req: Request) {
                 // B) Fetch original PDF -> store -> set receiptUrl
                 if (!props.receiptUrl) {
                     try {
-                        const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, docId);
-                        const fileName = `Peppol_${rawDoc.invoice_id || docId}.pdf`.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-                        const key = `t_${tenantId}/purchase-invoice/${page.id}/${fileName}`;
-                        
-                        const result = await storage.put(key, pdfBuffer, { contentType: 'application/pdf' });
-                        updateData.properties.receiptUrl = result.key;
-                        isDirty = true;
+                        const pdfResult = await getDocumentSupplierPdf(tenant.eInvoiceApiKey, docId);
+                        if (pdfResult) {
+                            const safeName = pdfResult.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                            const key = `t_${tenantId}/purchase-invoice/${page.id}/${safeName}`;
+                            const result = await storage.put(key, pdfResult.buffer, { contentType: 'application/pdf' });
+                            updateData.properties.receiptUrl = result.key;
+                            isDirty = true;
+                        }
                     } catch (pdfErr) {
                         console.error(`[Backfill] Failed to fetch or upload PDF for ${docId}`, pdfErr);
                         errors.push({ id: page.id, docId, error: 'Failed to upload PDF to Blob' });

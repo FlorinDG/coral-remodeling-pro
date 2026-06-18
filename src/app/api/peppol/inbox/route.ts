@@ -7,6 +7,9 @@ import {
     listInboxDocuments,
     listInboxInvoices,
     listInboxCreditNotes,
+    getDocumentUbl,
+    getDocumentSupplierPdf,
+    parseUBLToInvoice,
     acceptInboxDocument,
     rejectInboxDocument,
     InboxDocument,
@@ -132,69 +135,71 @@ export async function GET(req: Request) {
         });
 
         // ── Parse each DocumentResponse into our internal format ──
-        // F3: Use structured data from DocumentResponse directly — no inline ubl_xml exists.
-        const parsedDocs = uniqueDocuments.map((doc: InboxDocument) => {
+        // C2: For each doc, try to fetch and parse the full UBL for rich data.
+        // Falls back to the sparse inbox-list fields if UBL is unavailable.
+        const parsedDocs = [];
+        for (const doc of uniqueDocuments) {
             try {
-                // Map real DocumentResponse fields → internal ParsedPurchaseInvoice shape
                 const docType = doc.document_type === 'CREDIT_NOTE' ? 'credit_note' : 'invoice';
-                const invoiceNumber = doc.invoice_id || doc.id;
-                const issueDate = doc.invoice_date || '';
-                const dueDate = doc.due_date || '';
-                const vendorName = doc.vendor_name || '';
-                const vendorVat = doc.vendor_tax_id || '';
-                const vendorAddr = doc.vendor_address || '';
-                const buyerName = doc.customer_name || '';
-                const buyerVat = doc.customer_tax_id || '';
-                const currency = doc.currency || 'EUR';
-                const totalIncVat = parseFloat(doc.invoice_total || '0');
-                const totalExVat = parseFloat(doc.subtotal || '0');
-                const totalVat = parseFloat(doc.total_tax || '0');
 
-                // Map line items from DocumentResponse.items[] → ParsedInvoiceLine[]
-                const lines = (doc.items || []).map((item) => ({
-                    description: item.description || '',
-                    quantity: parseFloat(String(item.quantity || '1')),
-                    unitCode: item.unit_code || 'C62',
-                    unitPrice: parseFloat(String(item.unit_price || '0')),
-                    vatRate: parseFloat(String(item.tax_rate || '0')),
-                    lineTotal: parseFloat(String(item.amount || '0')),
-                }));
+                // Try to get the full UBL and parse it for rich data
+                let parsed: any = null;
+                const ublXml = await getDocumentUbl(tenant.eInvoiceApiKey, doc.id);
+                if (ublXml) {
+                    try {
+                        parsed = parseUBLToInvoice(ublXml, doc.id);
+                    } catch (ublErr) {
+                        console.warn(`[Peppol Inbox] UBL parse failed for ${doc.id}, falling back to sparse data:`, ublErr);
+                    }
+                }
 
-                const parsed = {
-                    invoiceNumber,
-                    issueDate,
-                    dueDate,
-                    supplierName: vendorName,
-                    supplierVat: vendorVat,
-                    supplierAddress: vendorAddr,
-                    buyerName,
-                    buyerVat,
-                    currency,
-                    lines,
-                    totalExVat,
-                    totalVat,
-                    totalIncVat,
-                    peppolDocId: doc.id,
-                    rawXml: '', // UBL XML is fetched separately if needed
-                };
+                // Fallback: use the sparse inbox-list fields
+                if (!parsed) {
+                    const lines = (doc.items || []).map((item) => ({
+                        description: item.description || '',
+                        quantity: parseFloat(String(item.quantity || '1')),
+                        unitCode: item.unit_code || 'C62',
+                        unitPrice: parseFloat(String(item.unit_price || '0')),
+                        vatRate: parseFloat(String(item.tax_rate || '0')),
+                        lineTotal: parseFloat(String(item.amount || '0')),
+                    }));
 
-                return {
+                    parsed = {
+                        invoiceNumber: doc.invoice_id || doc.id,
+                        issueDate: doc.invoice_date || '',
+                        dueDate: doc.due_date || '',
+                        supplierName: doc.vendor_name || '',
+                        supplierVat: doc.vendor_tax_id || '',
+                        supplierAddress: doc.vendor_address || '',
+                        buyerName: doc.customer_name || '',
+                        buyerVat: doc.customer_tax_id || '',
+                        currency: doc.currency || 'EUR',
+                        lines,
+                        totalExVat: parseFloat(doc.subtotal || '0'),
+                        totalVat: parseFloat(doc.total_tax || '0'),
+                        totalIncVat: parseFloat(doc.invoice_total || '0'),
+                        peppolDocId: doc.id,
+                        rawXml: '',
+                    };
+                }
+
+                parsedDocs.push({
                     id: doc.id,
                     type: docType,
                     state: doc.state,
-                    vendor_name: vendorName,
-                    vendor_tax_id: vendorVat,
-                    invoice_id: invoiceNumber,
-                    invoice_date: issueDate,
-                    due_date: dueDate,
-                    invoice_total: doc.invoice_total,
-                    currency,
+                    vendor_name: parsed.supplierName,
+                    vendor_tax_id: parsed.supplierVat,
+                    invoice_id: parsed.invoiceNumber,
+                    invoice_date: parsed.issueDate,
+                    due_date: parsed.dueDate,
+                    invoice_total: String(parsed.totalIncVat),
+                    currency: parsed.currency,
                     parsed,
-                    matchedSupplierId: matchSupplier(vendorVat, vatToSupplier),
-                };
+                    matchedSupplierId: matchSupplier(parsed.supplierVat, vatToSupplier),
+                });
             } catch (parseErr) {
                 console.error(`[Peppol Inbox] Failed to parse doc ${doc.id}:`, parseErr);
-                return {
+                parsedDocs.push({
                     id: doc.id,
                     type: doc.document_type === 'CREDIT_NOTE' ? 'credit_note' : 'invoice',
                     state: doc.state,
@@ -203,9 +208,9 @@ export async function GET(req: Request) {
                     parsed: null,
                     parseError: String(parseErr),
                     matchedSupplierId: null,
-                };
+                });
             }
-        });
+        }
 
         // ── AUTOMATIC SERVER-SIDE DATABASE SYNC ─────────────────────────────────
         const expensesDbId = getLockedDbId('db-expenses', lockedDbIds);
@@ -245,8 +250,6 @@ export async function GET(req: Request) {
 
         const { v4: uuidv4 } = await import('uuid');
         const { incrementPeppolReceived } = await import('@/lib/plan-limits');
-        const { getInboxDocumentPdf } = await import('@/lib/e-invoice-inbox');
-        const { uploadFile, findOrCreateFolder } = await import('@/lib/google-drive');
 
         let newlyImportedCount = 0;
         const newlyImportedPages: any[] = [];
@@ -301,16 +304,16 @@ export async function GET(req: Request) {
 
             const pageId = uuidv4();
 
-            // 2. Fetch PDF and Store in Blob
+            // 2. Fetch supplier PDF attachment and store in Blob
             let receiptUrl = '';
             try {
-                const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, doc.id);
-                // We use .pdf extension for the uploaded file
-                const filename = `Peppol_${parsed.invoiceNumber || doc.id}.pdf`.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-                const key = `t_${tenantId}/purchase-invoice/${pageId}/${filename}`;
-                
-                const result = await storage.put(key, pdfBuffer, { contentType: 'application/pdf' });
-                receiptUrl = result.key;
+                const pdfResult = await getDocumentSupplierPdf(tenant.eInvoiceApiKey, doc.id);
+                if (pdfResult) {
+                    const safeName = pdfResult.fileName.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                    const key = `t_${tenantId}/purchase-invoice/${pageId}/${safeName}`;
+                    const result = await storage.put(key, pdfResult.buffer, { contentType: 'application/pdf' });
+                    receiptUrl = result.key;
+                }
             } catch (pdfErr) {
                 console.error('[Peppol Inbox] Failed to fetch or upload PDF for doc', doc.id, pdfErr);
             }

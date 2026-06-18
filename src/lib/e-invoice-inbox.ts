@@ -4,6 +4,7 @@
  * 
  * Uses per-tenant API keys (same as sending).
  * Endpoints: /api/inbox/, /api/inbox/invoices, /api/inbox/credit-notes
+ * Document detail/UBL/attachments: /api/documents/{id}[/ubl|/attachments]
  */
 
 import { XMLParser } from 'fast-xml-parser';
@@ -83,7 +84,15 @@ export interface ParsedInvoiceLine {
     lineTotal: number;
 }
 
-// ── Inbox API ──
+export interface DocumentAttachment {
+    id: string;
+    file_name: string;
+    file_size?: number;
+    file_type?: string;
+    file_url?: string | null;
+}
+
+// ── Inbox API (list endpoints — these are correct) ──
 
 export async function listInboxDocuments(apiKey: string): Promise<InboxListResponse> {
     const res = await fetch(`${BASE_URL}/api/inbox/?page=1&page_size=100`, {
@@ -118,26 +127,133 @@ export async function listInboxCreditNotes(apiKey: string): Promise<InboxListRes
     return res.json();
 }
 
+// ── Document Detail API (CORRECT endpoints via /api/documents/) ──
+
+/**
+ * Get full document detail by ID.
+ * FIXED: was /api/inbox/{id} (404) → now /api/documents/{id}
+ */
 export async function getInboxDocument(apiKey: string, docId: string): Promise<InboxDocument> {
-    const res = await fetch(`${BASE_URL}/api/inbox/${docId}`, {
+    const res = await fetch(`${BASE_URL}/api/documents/${docId}`, {
         headers: tenantHeaders(apiKey),
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(`Inbox get doc failed (${res.status}): ${JSON.stringify(err)}`);
+        throw new Error(`Document get failed (${res.status}): ${JSON.stringify(err)}`);
     }
     return res.json();
 }
 
-export async function getInboxDocumentPdf(apiKey: string, docId: string): Promise<Buffer> {
-    const res = await fetch(`${BASE_URL}/api/inbox/${docId}/pdf`, {
-        headers: tenantHeaders(apiKey),
-    });
-    if (!res.ok) {
-        throw new Error(`Inbox PDF fetch failed (${res.status})`);
+/**
+ * Get the UBL XML for a document.
+ * Endpoint: GET /api/documents/{id}/ubl → { signed_url, file_name, ... }
+ * Then fetch(signed_url) to get the actual UBL XML string.
+ * Returns the XML string, or null if no signed_url.
+ */
+export async function getDocumentUbl(apiKey: string, docId: string): Promise<string | null> {
+    try {
+        const res = await fetch(`${BASE_URL}/api/documents/${docId}/ubl`, {
+            headers: tenantHeaders(apiKey),
+        });
+        if (!res.ok) {
+            console.warn(`[e-invoice] UBL fetch failed (${res.status}) for ${docId}`);
+            return null;
+        }
+        const data = await res.json();
+        if (!data.signed_url) {
+            console.warn(`[e-invoice] No signed_url in UBL response for ${docId}`);
+            return null;
+        }
+        // Fetch the actual UBL XML from the signed URL (no auth header needed)
+        const xmlRes = await fetch(data.signed_url);
+        if (!xmlRes.ok) {
+            console.warn(`[e-invoice] UBL signed_url fetch failed (${xmlRes.status}) for ${docId}`);
+            return null;
+        }
+        return await xmlRes.text();
+    } catch (err) {
+        console.error(`[e-invoice] getDocumentUbl error for ${docId}:`, err);
+        return null;
     }
-    const arrayBuffer = await res.arrayBuffer();
-    return Buffer.from(arrayBuffer);
+}
+
+/**
+ * List all attachments for a document.
+ * Endpoint: GET /api/documents/{id}/attachments → DocumentAttachment[]
+ */
+export async function listDocumentAttachments(apiKey: string, docId: string): Promise<DocumentAttachment[]> {
+    try {
+        const res = await fetch(`${BASE_URL}/api/documents/${docId}/attachments`, {
+            headers: tenantHeaders(apiKey),
+        });
+        if (!res.ok) {
+            console.warn(`[e-invoice] Attachments list failed (${res.status}) for ${docId}`);
+            return [];
+        }
+        return await res.json();
+    } catch (err) {
+        console.error(`[e-invoice] listDocumentAttachments error for ${docId}:`, err);
+        return [];
+    }
+}
+
+/**
+ * Get the supplier's original PDF from attachments.
+ * Lists attachments, picks the first PDF, fetches it via file_url.
+ * Returns { buffer, fileName } or null if no PDF attachment exists.
+ * Does NOT throw — many docs may have no PDF attachment.
+ */
+export async function getDocumentSupplierPdf(
+    apiKey: string,
+    docId: string
+): Promise<{ buffer: Buffer; fileName: string } | null> {
+    try {
+        const attachments = await listDocumentAttachments(apiKey, docId);
+        if (!attachments || attachments.length === 0) return null;
+
+        // Find first PDF attachment
+        const pdfAttachment = attachments.find(a =>
+            (a.file_type && a.file_type.toLowerCase().includes('pdf')) ||
+            (a.file_name && a.file_name.toLowerCase().endsWith('.pdf'))
+        );
+
+        if (!pdfAttachment) return null;
+
+        // If no file_url, we need to fetch the individual attachment to get the signed URL
+        let downloadUrl = pdfAttachment.file_url;
+        if (!downloadUrl) {
+            // Fetch individual attachment detail which should include file_url
+            const detailRes = await fetch(
+                `${BASE_URL}/api/documents/${docId}/attachments/${pdfAttachment.id}`,
+                { headers: tenantHeaders(apiKey) }
+            );
+            if (detailRes.ok) {
+                const detail = await detailRes.json();
+                downloadUrl = detail.file_url;
+            }
+        }
+
+        if (!downloadUrl) {
+            console.warn(`[e-invoice] No download URL for PDF attachment ${pdfAttachment.id} on doc ${docId}`);
+            return null;
+        }
+
+        // Fetch the actual PDF file (signed URL, no auth needed)
+        const pdfRes = await fetch(downloadUrl);
+        if (!pdfRes.ok) {
+            console.warn(`[e-invoice] PDF download failed (${pdfRes.status}) for attachment ${pdfAttachment.id}`);
+            return null;
+        }
+
+        const arrayBuffer = await pdfRes.arrayBuffer();
+        return {
+            buffer: Buffer.from(arrayBuffer),
+            fileName: pdfAttachment.file_name || `attachment_${pdfAttachment.id}.pdf`,
+        };
+    } catch (err) {
+        console.error(`[e-invoice] getDocumentSupplierPdf error for ${docId}:`, err);
+        return null;
+    }
 }
 
 export async function acceptInboxDocument(apiKey: string, docId: string): Promise<{ success: boolean }> {

@@ -59,6 +59,17 @@ const SOURCE_BADGES: Record<string, { label: string; color: string }> = {
     'src-manual': { label: 'Manual', color: 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400' },
     'src-pdf': { label: 'PDF Import', color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300' },
 };
+// Format ISO date to Belgian dd/MM/yyyy
+function formatDateBE(isoDate: string | undefined | null): string {
+    if (!isoDate) return '—';
+    try {
+        const d = new Date(isoDate);
+        if (isNaN(d.getTime())) return String(isoDate);
+        return new Intl.DateTimeFormat('nl-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+    } catch {
+        return String(isoDate);
+    }
+}
 
 export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoiceEngineProps) {
     const { activeModules, resolveDbId, tenant } = useTenant();
@@ -307,22 +318,22 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                         <div className="grid grid-cols-2 gap-4">
                             <InfoField
                                 label="Supplier"
-                                value={resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(peppolDetail?.supplierName || page.properties.supplier || '')}
+                                value={resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(page.properties.supplierName || '') || '—'}
                             />
                             <InfoField
                                 label="Supplier VAT"
-                                value={resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(peppolDetail?.supplierVat || '')}
+                                value={resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(page.properties.supplierVat || peppolDetail?.supplierVat || '')}
                             />
                             <InfoField
                                 label="Invoice Date"
-                                value={String((isEditing ? editData.invoiceDate : page.properties.invoiceDate) || '')}
+                                value={isEditing ? String(editData.invoiceDate || '') : formatDateBE(String(page.properties.invoiceDate || ''))}
                                 editable={isEditing}
                                 type="date"
                                 onChange={v => setEditData(p => ({ ...p, invoiceDate: v }))}
                             />
                             <InfoField
                                 label="Due Date"
-                                value={String((isEditing ? editData.dueDate : page.properties.dueDate) || '')}
+                                value={isEditing ? String(editData.dueDate || '') : formatDateBE(String(page.properties.dueDate || ''))}
                                 editable={isEditing}
                                 type="date"
                                 onChange={v => setEditData(p => ({ ...p, dueDate: v }))}
@@ -496,7 +507,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                     <div className="flex-1 p-4 flex flex-col min-h-0">
                         {page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' ? (
                             <iframe 
-                                src={page.properties.receiptUrl} 
+                                src={page.properties.receiptUrl.startsWith('http') ? page.properties.receiptUrl : `/api/files/${page.properties.receiptUrl}`} 
                                 className="w-full h-full rounded-xl border border-neutral-200 dark:border-white/10 bg-white" 
                                 title="Original Document"
                             />

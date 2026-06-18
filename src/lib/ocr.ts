@@ -47,32 +47,22 @@ async function getWorker() {
  */
 async function renderPdfPages(file: File): Promise<string[]> {
     const arrayBuffer = await file.arrayBuffer();
-    const pdfjsLib = await import('pdfjs-dist');
+    const { renderPageAsImage, getDocumentProxy } = await import('unpdf');
 
-    // Worker script: point to the matching CDN version so we don't need a separate webpack worker
-    const version = (pdfjsLib as unknown as { version?: string }).version ?? '5.0.0';
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
-
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const pdf = await getDocumentProxy(new Uint8Array(arrayBuffer));
     const pageCount = pdf.numPages;
     const dataUrls: string[] = [];
 
     for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-
-        // 2× scale = better OCR resolution
-        const viewport = page.getViewport({ scale: 2.0 });
-        const canvas = document.createElement('canvas');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-
-        const ctx = canvas.getContext('2d')!;
-        // pdfjs-dist v5: `canvas` is the primary param; `canvasContext` is legacy-supported
-        await page.render({ canvas, canvasContext: ctx as unknown, viewport } as unknown as Parameters<typeof page.render>[0]).promise;
-
-        dataUrls.push(canvas.toDataURL('image/png'));
-        canvas.remove();
+        // unpdf's renderPageAsImage automatically handles canvas in the browser.
+        // It returns a data URL when toDataURL is true!
+        const dataUrl = await renderPageAsImage(new Uint8Array(arrayBuffer), pageNum, {
+            scale: 2.0,
+            toDataURL: true
+        });
+        if (dataUrl) {
+            dataUrls.push(dataUrl as string);
+        }
     }
 
     return dataUrls;

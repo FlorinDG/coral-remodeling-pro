@@ -87,26 +87,18 @@ async function extractPdfText(buffer: Buffer): Promise<{ text: string; pageCount
  */
 async function renderPdfPageToImage(buffer: Buffer): Promise<Buffer | null> {
     try {
-        // pdfjs canvas rendering requires the 'canvas' npm package on Node
+        const { renderPageAsImage } = await import('unpdf');
+        // unpdf canvas rendering requires the 'canvas' npm package on Node
         // Use webpackIgnore to prevent Vercel build errors since we handle it gracefully if missing
-        const { createCanvas } = await import(/* webpackIgnore: true */ 'canvas' as any);
-        const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs' as any);
-        pdfjsLib.GlobalWorkerOptions = pdfjsLib.GlobalWorkerOptions ?? {};
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
-        const pdf = await loadingTask.promise;
-        const page = await pdf.getPage(1);
-
-        const scale = 2.0; // High-res for better OCR accuracy
-        const viewport = page.getViewport({ scale });
-        const canvas = createCanvas(viewport.width, viewport.height);
-        const context = canvas.getContext('2d');
-
-        await page.render({ canvasContext: context, viewport }).promise;
-        return canvas.toBuffer('image/jpeg', { quality: 0.92 });
-    } catch {
-        // canvas package not installed — can't render. Return null, caller handles gracefully.
+        // renderPageAsImage returns an ArrayBuffer by default
+        const imageArrayBuffer = await renderPageAsImage(new Uint8Array(buffer), 1, { 
+            scale: 2,
+            canvasImport: () => import(/* webpackIgnore: true */ 'canvas' as any)
+        });
+        
+        return Buffer.from(imageArrayBuffer as ArrayBuffer);
+    } catch (e) {
+        // canvas package not installed or rendering failed — can't render. Return null, caller handles gracefully.
         return null;
     }
 }

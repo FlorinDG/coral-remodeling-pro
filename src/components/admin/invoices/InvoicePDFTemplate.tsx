@@ -371,23 +371,25 @@ export const InvoicePDFTemplate = ({
                         {renderBlocks(blocks)}
 
                         {/* Legal texts — above totals */}
-                        {hasMedecontractant && (
-                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
-                                {MEDECONTRACTANT_TEXT}
-                            </Text>
-                        )}
+                        <View wrap={false}>
+                            {hasMedecontractant && (
+                                <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
+                                    {MEDECONTRACTANT_TEXT}
+                                </Text>
+                            )}
 
-                        {hasVat6 && (
-                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
-                                {VAT6_TEXT}
-                            </Text>
-                        )}
+                            {hasVat6 && (
+                                <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
+                                    {VAT6_TEXT}
+                                </Text>
+                            )}
 
-                        {legalText && (
-                        <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-                            {legalText}
-                        </Text>
-                        )}
+                            {legalText && (
+                                <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
+                                    {legalText}
+                                </Text>
+                            )}
+                        </View>
 
                         {/* Summary and Stripe Payment Section */}
                         <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 16 }} wrap={false}>
@@ -625,11 +627,13 @@ export const InvoicePDFTemplate = ({
                     )}
 
                     {legalText && (
-                    <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 12, paddingHorizontal: padH, lineHeight: 1.4 }}>
-                        {legalText}
-                    </Text>
+                        <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 12, paddingHorizontal: padH, lineHeight: 1.4 }}>
+                            {legalText}
+                        </Text>
                     )}
+                </View>
 
+                <View wrap={false}>
                     {/* Summary and Stripe Payment Section */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, marginHorizontal: isT1 || isT4 ? 32 : 8 }}>
                         {/* Left Side: Stripe Payment QR Code */}

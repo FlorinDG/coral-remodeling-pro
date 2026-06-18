@@ -379,40 +379,43 @@ export const QuotationPDFTemplate = ({
                         {/* Rows */}
                         {renderBlocks(blocks)}
 
-                        {/* Summary */}
-                        <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 16 }}>
-                            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {finalSubtotal.toFixed(2)}</Text>
+                        {/* Legal texts — above totals */}
+                        <View wrap={false}>
+                            {/* Medecontractant Legal Notice */}
+                            {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                                <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                                    <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                        {t('footer_medecontractant_legal', lang)}
+                                    </Text>
                                 </View>
-                                {renderVatRows(240)}
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('grand_total_incl', lang)}:</Text>
-                                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€  {totalInclTax.toFixed(2)}</Text>
+                            )}
+
+                            {/* 6% VAT Legal Notice */}
+                            {hasVat6 && (
+                                <View style={{ marginTop: 12, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
+                                    <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
+                                        {t('footer_vat6_legal', lang)}
+                                    </Text>
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Summary */}
+                        <View wrap={false}>
+                            <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 16 }}>
+                                <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
+                                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
+                                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {finalSubtotal.toFixed(2)}</Text>
+                                    </View>
+                                    {renderVatRows(240)}
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
+                                        <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{t('grand_total_incl', lang)}:</Text>
+                                        <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€  {totalInclTax.toFixed(2)}</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
-
-
-
-                        {/* Medecontractant Legal Notice */}
-                        {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
-                            <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
-                                <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
-                                    {t('footer_medecontractant_legal', lang)}
-                                </Text>
-                            </View>
-                        )}
-
-                        {/* 6% VAT Legal Notice */}
-                        {hasVat6 && (
-                            <View style={{ marginTop: 12, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
-                                <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
-                                    {t('footer_vat6_legal', lang)}
-                                </Text>
-                            </View>
-                        )}
                     </View>
 
                     {showWatermark && (
@@ -589,7 +592,9 @@ export const QuotationPDFTemplate = ({
                             </Text>
                         </View>
                     )}
+                </View>
 
+                <View wrap={false}>
                     <View style={{ alignItems: 'flex-end', width: '100%', marginTop: 20 }}>
                         <View style={s.summaryBox}>
                             <View style={s.summaryRow}>

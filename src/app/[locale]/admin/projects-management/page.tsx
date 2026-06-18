@@ -7,18 +7,11 @@ import { useLocale } from 'next-intl';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
 import { Layers3, Hammer, Briefcase, Rocket } from 'lucide-react';
-import { resolveDbId } from '@/lib/lockedDbUtils';
-import { useLocale } from 'next-intl';
-
 const ProjectDetailView = dynamic(
     () => import('@/components/admin/database/components/ProjectDetailView'),
     { ssr: false }
 );
 
-const ProjectDetailView = dynamic(
-    () => import('@/components/admin/database/components/ProjectDetailView'),
-    { ssr: false }
-);
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),

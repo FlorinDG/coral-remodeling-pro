@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { storage } from '@/lib/storage';
 import prisma from '@/lib/prisma';
 import {
     listInboxDocuments,
@@ -298,15 +299,18 @@ export async function GET(req: Request) {
                 }
             }
 
-            // 2. Fetch PDF and Store in Drive
+            const pageId = uuidv4();
+
+            // 2. Fetch PDF and Store in Blob
             let receiptUrl = '';
             try {
-                if (tenant.driveFolderId && process.env.GOOGLE_CLIENT_ID) {
-                    const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, doc.id);
-                    const expensesFolder = await findOrCreateFolder('Aankopen', tenant.driveFolderId);
-                    const fileId = await uploadFile(`Peppol_${parsed.invoiceNumber || doc.id}.pdf`, 'application/pdf', pdfBuffer, expensesFolder, tenantId);
-                    receiptUrl = `https://drive.google.com/file/d/${fileId}/view`;
-                }
+                const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, doc.id);
+                // We use .pdf extension for the uploaded file
+                const filename = `Peppol_${parsed.invoiceNumber || doc.id}.pdf`.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                const key = `t_${tenantId}/purchase-invoice/${pageId}/${filename}`;
+                
+                const result = await storage.put(key, pdfBuffer, { contentType: 'application/pdf' });
+                receiptUrl = result.key;
             } catch (pdfErr) {
                 console.error('[Peppol Inbox] Failed to fetch or upload PDF for doc', doc.id, pdfErr);
             }
@@ -334,8 +338,6 @@ export async function GET(req: Request) {
                 select: { order: true }
             });
             const order = (maxOrderRow?.order ?? -1) + 1;
-
-            const pageId = uuidv4();
 
             const saved = await prisma.globalPage.create({
                 data: {

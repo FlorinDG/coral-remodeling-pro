@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { getInboxDocument, getInboxDocumentPdf } from '@/lib/e-invoice-inbox';
+import { storage } from '@/lib/storage';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { v4 as uuidv4 } from 'uuid';
-import { uploadFile, findOrCreateFolder } from '@/lib/google-drive';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // Allow 5 minutes for backfill script
@@ -166,18 +166,17 @@ export async function GET(req: Request) {
 
                 // B) Fetch original PDF -> store -> set receiptUrl
                 if (!props.receiptUrl) {
-                    if (tenant.driveFolderId && process.env.GOOGLE_CLIENT_ID) {
-                        try {
-                            const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, docId);
-                            const expensesFolder = await findOrCreateFolder('Aankopen', tenant.driveFolderId);
-                            const fileName = `Peppol_${rawDoc.invoice_id || docId}.pdf`;
-                            const fileId = await uploadFile(fileName, 'application/pdf', pdfBuffer, expensesFolder, tenantId);
-                            updateData.properties.receiptUrl = `https://drive.google.com/file/d/${fileId}/view`;
-                            isDirty = true;
-                        } catch (pdfErr) {
-                            console.error(`[Backfill] Failed to fetch or upload PDF for ${docId}`, pdfErr);
-                            errors.push({ id: page.id, docId, error: 'Failed to upload PDF to Drive' });
-                        }
+                    try {
+                        const pdfBuffer = await getInboxDocumentPdf(tenant.eInvoiceApiKey, docId);
+                        const fileName = `Peppol_${rawDoc.invoice_id || docId}.pdf`.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+                        const key = `t_${tenantId}/purchase-invoice/${page.id}/${fileName}`;
+                        
+                        const result = await storage.put(key, pdfBuffer, { contentType: 'application/pdf' });
+                        updateData.properties.receiptUrl = result.key;
+                        isDirty = true;
+                    } catch (pdfErr) {
+                        console.error(`[Backfill] Failed to fetch or upload PDF for ${docId}`, pdfErr);
+                        errors.push({ id: page.id, docId, error: 'Failed to upload PDF to Blob' });
                     }
                 }
 

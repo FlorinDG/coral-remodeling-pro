@@ -5,6 +5,13 @@ import { useState } from 'react';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
 import { Layers3, Hammer, Briefcase, Rocket } from 'lucide-react';
+import { resolveDbId } from '@/lib/lockedDbUtils';
+import { useLocale } from 'next-intl';
+
+const ProjectDetailView = dynamic(
+    () => import('@/components/admin/database/components/ProjectDetailView'),
+    { ssr: false }
+);
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -24,7 +31,9 @@ const TYPE_TABS: { id: ProjectTypeFilter; label: string; icon: React.ReactNode; 
 ];
 
 export default function ProjectManagementPage() {
+    const locale = useLocale();
     const [activeType, setActiveType] = useState<ProjectTypeFilter>('all');
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const activeTab = TYPE_TABS.find(t => t.id === activeType) || TYPE_TABS[0];
 
     return (
@@ -58,12 +67,22 @@ export default function ProjectManagementPage() {
                 <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
                     <DatabaseCloneDynamic
                         key={activeType}
-                        databaseId="db-1"
+                        databaseId="db-projects"
                         hideViewTabs={false}
                         defaultFilter={activeTab.filterValue ? { propertyId: 'prop-project-type', value: activeTab.filterValue } : undefined}
+                        onOpenRecord={(id) => setSelectedProjectId(id)}
                     />
                 </div>
             </div>
+
+            {selectedProjectId && (
+                <ProjectDetailView
+                    databaseId={resolveDbId('db-projects')}
+                    pageId={selectedProjectId}
+                    locale={locale}
+                    onClose={() => setSelectedProjectId(null)}
+                />
+            )}
         </div>
     );
 }

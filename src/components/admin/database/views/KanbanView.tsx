@@ -120,11 +120,11 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
             const c = getColor(opt.color);
             displayValue = opt.name;
             return (
-                <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
-                    <span className="text-neutral-500 font-medium">{property.name}</span>
+                <div className="flex items-center justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
+                    <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className={cn("px-2 py-0.5 rounded-full font-medium truncate max-w-[120px]", c.bg, c.text)} onClick={e => e.stopPropagation()}>
+                            <button className={cn("px-2 py-0.5 rounded-full font-medium truncate max-w-[120px] ml-auto", c.bg, c.text)} onClick={e => e.stopPropagation()}>
                                 {displayValue}
                             </button>
                         </DropdownMenuTrigger>
@@ -144,11 +144,11 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
             );
         }
         return (
-            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
-                <span className="text-neutral-500 font-medium">{property.name}</span>
+            <div className="flex items-center justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
+                <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="px-2 py-0.5 rounded-full font-medium text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5" onClick={e => e.stopPropagation()}>
+                        <button className="px-2 py-0.5 rounded-full font-medium text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5 ml-auto" onClick={e => e.stopPropagation()}>
                             Empty
                         </button>
                     </DropdownMenuTrigger>
@@ -168,8 +168,8 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
     if (property.type === 'checkbox') {
         const isChecked = !!page.properties[property.id];
         return (
-            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
-                <span className="text-neutral-500 font-medium">{property.name}</span>
+            <div className="flex items-center justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
                 <Checkbox 
                     checked={isChecked} 
                     onChange={(c) => updatePageProperty(databaseId, page.id, property.id, c === true)} 
@@ -181,8 +181,8 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
 
     if (property.type === 'date') {
         return (
-            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
-                <span className="text-neutral-500 font-medium">{property.name}</span>
+            <div className="flex items-center justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
                 <input 
                     type="date" 
                     value={String(page.properties[property.id] || '').split('T')[0]} 
@@ -207,9 +207,9 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
             }
         }
         return (
-            <div className="flex items-start flex-col gap-1 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
-                <span className="text-neutral-500 font-medium mr-2 shrink-0">{property.name}</span>
-                <div className="text-left text-neutral-700 dark:text-neutral-300 min-w-0 whitespace-pre-wrap break-words">
+            <div className="flex items-start justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
+                <div className="text-right text-neutral-700 dark:text-neutral-300 min-w-0 truncate ml-auto">
                     {relName || <span className="text-neutral-400 italic">Empty</span>}
                 </div>
             </div>
@@ -217,13 +217,14 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
     }
 
     // Default text/number editing
+    const isSubject = property.id === 'betreft' || property.name.toLowerCase() === 'betreft';
     return (
-        <div className={cn("flex text-[11px] py-1 border-t border-neutral-100 dark:border-white/5", property.type === 'text' ? "flex-col items-start gap-1" : "items-center justify-between")} onClick={e => e.stopPropagation()}>
-            <span className="text-neutral-500 font-medium mr-2 shrink-0">{property.name}</span>
+        <div className="flex items-start justify-between gap-4 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+            <span className="text-neutral-700 dark:text-neutral-300 font-bold text-left shrink-0">{property.name}</span>
             {isEditing ? (
                 <input 
                     type={property.type === 'number' ? 'number' : 'text'}
-                    className="flex-1 text-right bg-transparent border-b border-orange-400 outline-none text-neutral-800 dark:text-neutral-200 py-0.5 min-w-0"
+                    className="flex-1 text-right bg-transparent border-b border-orange-400 outline-none text-neutral-800 dark:text-neutral-200 py-0.5 min-w-0 ml-auto"
                     value={localVal}
                     onChange={e => setLocalVal(e.target.value)}
                     onBlur={handleSave}
@@ -233,8 +234,8 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
             ) : (
                 <div 
                     className={cn(
-                        "flex-1 text-neutral-700 dark:text-neutral-300 cursor-text hover:bg-neutral-50 dark:hover:bg-white/5 px-1 rounded -mr-1 min-w-0 w-full",
-                        property.type === 'text' ? "text-left whitespace-pre-wrap break-words" : "text-right truncate"
+                        "text-neutral-700 dark:text-neutral-300 cursor-text hover:bg-neutral-50 dark:hover:bg-white/5 px-1 rounded -mr-1 min-w-0 ml-auto",
+                        isSubject ? "text-right whitespace-pre-wrap break-words" : "text-right truncate"
                     )}
                     onClick={(e) => { e.stopPropagation(); setIsEditing(true); setLocalVal(page.properties[property.id] ?? ''); }}
                 >
@@ -283,7 +284,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
         }
     };
 
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: 'pan-x pan-y' };
     const title = String(page.properties['title'] || 'Untitled');
 
     // Card Cover
@@ -417,7 +418,7 @@ function SortableColumn({
         data: { type: 'column', column: col }
     });
 
-    const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, touchAction: 'pan-x pan-y' };
     const c = getColor(col.color);
     const isOverLimit = col.wipLimit && col.pages.length > col.wipLimit;
 

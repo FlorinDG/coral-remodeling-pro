@@ -21,6 +21,7 @@ import {
     Building2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import GlobalMentionDateInterceptor from '@/components/admin/database/components/GlobalMentionDateInterceptor';
 import Breadcrumbs from "@/components/admin/Breadcrumbs";
 import UniversalSearch from "@/components/admin/UniversalSearch";
 import MobileBottomNav from "@/components/admin/MobileBottomNav";
@@ -561,6 +562,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             <GlobalLoadingModal />
             <MobileBottomNav />
             <VersionWatcher />
+            <GlobalMentionDateInterceptor />
             <EnvBadge />
             <Toaster position="top-right" richColors closeButton />
         </div>

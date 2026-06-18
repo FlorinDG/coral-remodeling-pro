@@ -13,6 +13,8 @@ import {
     pointerWithin,
     rectIntersection,
 } from '@dnd-kit/core';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { Checkbox } from '@/components/common/Checkbox';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { 
     SortableContext, 
@@ -85,8 +87,136 @@ const COLOR_MAP: Record<string, { bg: string; text: string; header: string; bord
 
 function getColor(color: string) { return COLOR_MAP[color] || COLOR_MAP.default; }
 
+
+// ── Inline Property Renderer ───────────────────────────────────────────────────
+function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty }: { databaseId: string, page: Page, property: Property, updatePageProperty: any }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [localVal, setLocalVal] = useState<any>(page.properties[property.id] ?? '');
+
+    const handleSave = () => {
+        setIsEditing(false);
+        if (localVal !== page.properties[property.id]) {
+            updatePageProperty(databaseId, page.id, property.id, localVal);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleSave();
+        if (e.key === 'Escape') {
+            setLocalVal(page.properties[property.id] ?? '');
+            setIsEditing(false);
+        }
+    };
+
+    let displayValue = String(page.properties[property.id] ?? '');
+    if (property.type === 'select' || property.type === 'multi_select') {
+        const opt = property.config?.options?.find(o => o.id === page.properties[property.id]);
+        if (opt) {
+            const c = getColor(opt.color);
+            displayValue = opt.name;
+            return (
+                <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
+                    <span className="text-neutral-500 font-medium">{property.name}</span>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className={cn("px-2 py-0.5 rounded-full font-medium truncate max-w-[120px]", c.bg, c.text)} onClick={e => e.stopPropagation()}>
+                                {displayValue}
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 z-50">
+                            {property.config?.options?.map(o => (
+                                <DropdownMenuItem key={o.id} onSelect={() => updatePageProperty(databaseId, page.id, property.id, o.id)}>
+                                    <span className={cn("w-2 h-2 rounded-full mr-2", getColor(o.color).bg)} />
+                                    {o.name}
+                                </DropdownMenuItem>
+                            ))}
+                            <DropdownMenuItem onSelect={() => updatePageProperty(databaseId, page.id, property.id, null)} className="text-neutral-400">
+                                Clear
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            );
+        }
+        return (
+            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5">
+                <span className="text-neutral-500 font-medium">{property.name}</span>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <button className="px-2 py-0.5 rounded-full font-medium text-neutral-400 hover:bg-neutral-100 dark:hover:bg-white/5" onClick={e => e.stopPropagation()}>
+                            Empty
+                        </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40 z-50">
+                        {property.config?.options?.map(o => (
+                            <DropdownMenuItem key={o.id} onSelect={() => updatePageProperty(databaseId, page.id, property.id, o.id)}>
+                                <span className={cn("w-2 h-2 rounded-full mr-2", getColor(o.color).bg)} />
+                                {o.name}
+                            </DropdownMenuItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        );
+    }
+
+    if (property.type === 'checkbox') {
+        const isChecked = !!page.properties[property.id];
+        return (
+            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-500 font-medium">{property.name}</span>
+                <Checkbox 
+                    checked={isChecked} 
+                    onChange={(c) => updatePageProperty(databaseId, page.id, property.id, c === true)} 
+                    className="h-3.5 w-3.5" 
+                />
+            </div>
+        );
+    }
+
+    if (property.type === 'date') {
+        return (
+            <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-500 font-medium">{property.name}</span>
+                <input 
+                    type="date" 
+                    value={String(page.properties[property.id] || '').split('T')[0]} 
+                    onChange={e => updatePageProperty(databaseId, page.id, property.id, e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    className="bg-transparent text-right outline-none text-neutral-700 dark:text-neutral-300 w-28 cursor-pointer"
+                />
+            </div>
+        );
+    }
+
+    // Default text/number editing
+    return (
+        <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+            <span className="text-neutral-500 font-medium mr-2 shrink-0">{property.name}</span>
+            {isEditing ? (
+                <input 
+                    type={property.type === 'number' ? 'number' : 'text'}
+                    className="flex-1 text-right bg-transparent border-b border-orange-400 outline-none text-neutral-800 dark:text-neutral-200 py-0.5 min-w-0"
+                    value={localVal}
+                    onChange={e => setLocalVal(e.target.value)}
+                    onBlur={handleSave}
+                    onKeyDown={handleKeyDown}
+                    autoFocus
+                />
+            ) : (
+                <div 
+                    className="flex-1 text-right truncate text-neutral-700 dark:text-neutral-300 cursor-text hover:bg-neutral-50 dark:hover:bg-white/5 px-1 rounded -mr-1 min-w-0" 
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setLocalVal(page.properties[property.id] ?? ''); }}
+                >
+                    {displayValue || <span className="text-neutral-400 italic">Empty</span>}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ── Sortable Card ──────────────────────────────────────────────────────────────
-function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onClick }: {
+function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onClick, visibleProperties = [] }: {
+    visibleProperties?: Property[];
     page: Page;
     dateProp: Property | undefined;
     priorityProp: Property | undefined;
@@ -200,6 +330,13 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
                     {dateStr && <div className="flex items-center gap-1 text-xs text-neutral-400"><CalendarIcon className="w-3 h-3" />{dateStr}</div>}
                     <div className="w-5 h-5 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center border border-white dark:border-neutral-900 shrink-0"><User2 className="w-3 h-3 text-neutral-500" /></div>
                 </div>
+                {visibleProperties.length > 0 && (
+                    <div className="mt-3 flex flex-col gap-0.5">
+                        {visibleProperties.map(p => (
+                            <InlinePropertyRenderer key={p.id} databaseId={databaseId} page={page} property={p} updatePageProperty={updatePageProperty} />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -216,7 +353,8 @@ function SortableColumn({
     coverProp,
     toggleCollapse, 
     handleQuickAdd,
-    onCardClick
+    onCardClick,
+    visibleProperties = []
 }: {
     col: KanbanColumn;
     databaseId: string;
@@ -228,6 +366,7 @@ function SortableColumn({
     toggleCollapse: (id: string) => void;
     handleQuickAdd: (id: string) => void;
     onCardClick: (id: string) => void;
+    visibleProperties?: Property[];
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: col.id,
@@ -280,7 +419,8 @@ function SortableColumn({
                             dateProp={dateProp} 
                             priorityProp={priorityProp} 
                             coverProp={coverProp}
-                            databaseId={databaseId} 
+                            databaseId={databaseId}
+                            visibleProperties={visibleProperties} 
                             onClick={() => onCardClick(page.id)}
                         />
                     ))}
@@ -305,6 +445,18 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
     const createPage = useDatabaseStore(state => state.createPage);
 
     const router = useRouter();
+    const [userPrefs, setUserPrefs] = useUserPreferences<Record<string, string[]>>('kanban_visible_props', {});
+    const visiblePropIds = userPrefs[databaseId] || [];
+    const visibleProperties = database?.properties.filter(p => visiblePropIds.includes(p.id)) || [];
+    
+    const toggleVisibleProperty = (propId: string) => {
+        setUserPrefs(prev => {
+            const current = prev[databaseId] || [];
+            const next = current.includes(propId) ? current.filter(id => id !== propId) : [...current, propId];
+            return { ...prev, [databaseId]: next };
+        });
+    };
+
     const searchParams = useSearchParams();
     const pathname = usePathname();
 
@@ -541,8 +693,20 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                                 }
                             </DropdownMenuRadioGroup>
 
+
                             <DropdownMenuSeparator />
                             
+                            <DropdownMenuLabel className="flex items-center gap-2">
+                                <LayoutList className="w-4 h-4" /> Card Properties
+                            </DropdownMenuLabel>
+                            {database.properties.filter(p => p.id !== 'title').map(p => (
+                                <DropdownMenuItem key={p.id} onSelect={(e) => { e.preventDefault(); toggleVisibleProperty(p.id); }} className="flex items-center gap-2">
+                                    <Checkbox checked={visiblePropIds.includes(p.id)} className="w-3.5 h-3.5" />
+                                    <span className="text-xs">{p.name}</span>
+                                </DropdownMenuItem>
+                            ))}
+
+                            <DropdownMenuSeparator />
                             <DropdownMenuLabel className="flex items-center gap-2">
                                 <ImageIcon className="w-4 h-4" /> Card Cover
                             </DropdownMenuLabel>
@@ -573,6 +737,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                                 key={col.id} 
                                 col={col} 
                                 databaseId={databaseId}
+                            visibleProperties={visibleProperties}
                                 viewId={viewId}
                                 groupProperty={groupProperty!}
                                 dateProp={dateProp}

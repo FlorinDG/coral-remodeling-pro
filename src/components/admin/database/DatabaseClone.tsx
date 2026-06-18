@@ -67,6 +67,14 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const isSuperAdmin = (session?.user?.role as string) === 'SUPERADMIN' || (session?.user?.role as string) === 'PLATFORM_ADMIN';
   const isUngated = isStoreUngated || isSuperAdmin;
 
+    const handleOpenEditor = (pageId: string) => {
+    if (database?.name.toLowerCase().includes('quote') || database?.name.toLowerCase().includes('offerte')) {
+      router.push(`/${locale}/admin/quotations/${pageId}`);
+    } else {
+      router.push(`/${locale}/admin/database/${databaseId}/page/${pageId}`);
+    }
+  };
+
   const handleCloseProjectModal = () => {
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.delete('projectId');
@@ -1068,7 +1076,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div className="flex-1 min-w-0 min-h-0 w-full h-full relative">
         {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
-        {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} onOpenRecord={onOpenRecord} />}
+        {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}
         {activeView.type === 'calendar' && <CalendarViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
         {activeView.type === 'timeline' && <TimelineViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} />}
       </div>

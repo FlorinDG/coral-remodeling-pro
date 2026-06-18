@@ -23,7 +23,7 @@ import {
     useSortable 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2 } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2, FileEdit, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { cn } from '@/components/time-tracker/lib/utils';
@@ -60,6 +60,7 @@ interface KanbanViewProps {
     viewId: string;
     renderTabs?: React.ReactNode;
     onOpenRecord?: (pageId: string) => void;
+    onOpenEditor?: (pageId: string) => void;
 }
 
 interface KanbanColumn {
@@ -89,7 +90,7 @@ function getColor(color: string) { return COLOR_MAP[color] || COLOR_MAP.default;
 
 
 // ── Inline Property Renderer ───────────────────────────────────────────────────
-function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty }: { databaseId: string, page: Page, property: Property, updatePageProperty: any }) {
+function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty, getDatabase }: { databaseId: string, page: Page, property: Property, updatePageProperty: any, getDatabase: any }) {
     const [isEditing, setIsEditing] = useState(false);
     const [localVal, setLocalVal] = useState<any>(page.properties[property.id] ?? '');
 
@@ -188,9 +189,32 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
         );
     }
 
+    
+    if (property.type === 'relation') {
+        const relDbId = property.config?.relationDatabaseId;
+        const relDb = getDatabase(relDbId);
+        const relPageId = page.properties[property.id];
+        let relName = Array.isArray(relPageId) ? relPageId.join(', ') : relPageId;
+        if (relDb && relPageId) {
+            if (Array.isArray(relPageId)) {
+                relName = relPageId.map(id => relDb.pages.find((p: any) => p.id === id)?.properties['title'] || id).join(', ');
+            } else {
+                relName = relDb.pages.find((p: any) => p.id === relPageId)?.properties['title'] || relPageId;
+            }
+        }
+        return (
+            <div className="flex items-start flex-col gap-1 text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+                <span className="text-neutral-500 font-medium mr-2 shrink-0">{property.name}</span>
+                <div className="text-left text-neutral-700 dark:text-neutral-300 min-w-0 whitespace-pre-wrap break-words">
+                    {relName || <span className="text-neutral-400 italic">Empty</span>}
+                </div>
+            </div>
+        );
+    }
+
     // Default text/number editing
     return (
-        <div className="flex items-center justify-between text-[11px] py-1 border-t border-neutral-100 dark:border-white/5" onClick={e => e.stopPropagation()}>
+        <div className={cn("flex text-[11px] py-1 border-t border-neutral-100 dark:border-white/5", property.type === 'text' ? "flex-col items-start gap-1" : "items-center justify-between")} onClick={e => e.stopPropagation()}>
             <span className="text-neutral-500 font-medium mr-2 shrink-0">{property.name}</span>
             {isEditing ? (
                 <input 
@@ -204,7 +228,10 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
                 />
             ) : (
                 <div 
-                    className="flex-1 text-right truncate text-neutral-700 dark:text-neutral-300 cursor-text hover:bg-neutral-50 dark:hover:bg-white/5 px-1 rounded -mr-1 min-w-0" 
+                    className={cn(
+                        "flex-1 text-neutral-700 dark:text-neutral-300 cursor-text hover:bg-neutral-50 dark:hover:bg-white/5 px-1 rounded -mr-1 min-w-0 w-full",
+                        property.type === 'text' ? "text-left whitespace-pre-wrap break-words" : "text-right truncate"
+                    )}
                     onClick={(e) => { e.stopPropagation(); setIsEditing(true); setLocalVal(page.properties[property.id] ?? ''); }}
                 >
                     {displayValue || <span className="text-neutral-400 italic">Empty</span>}
@@ -215,7 +242,7 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
 }
 
 // ── Sortable Card ──────────────────────────────────────────────────────────────
-function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onClick, visibleProperties = [] }: {
+function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onClick, onOpenEditor, visibleProperties = [] }: {
     visibleProperties?: Property[];
     page: Page;
     dateProp: Property | undefined;
@@ -223,6 +250,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     coverProp: Property | undefined;
     databaseId: string;
     onClick?: () => void;
+    onOpenEditor?: () => void;
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: page.id,
@@ -231,6 +259,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState('');
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const getDatabase = useDatabaseStore(state => state.getDatabase);
     const createPage = useDatabaseStore(state => state.createPage);
     const deletePage = useDatabaseStore(state => state.deletePage);
 
@@ -256,6 +285,8 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     if (coverProp) {
         const val = page.properties[coverProp.id];
         if (typeof val === 'string' && val.startsWith('http')) coverUrl = val;
+        else if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'object' && val[0].url) coverUrl = val[0].url;
+        else if (Array.isArray(val) && val.length > 0 && typeof val[0] === 'string' && val[0].startsWith('http')) coverUrl = val[0];
     }
 
     let priorityMarkup = null;
@@ -314,6 +345,11 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
                             <DropdownMenuItem onSelect={() => onClick?.()}>
                                 <Maximize2 className="w-4 h-4 mr-2" /> Open
                             </DropdownMenuItem>
+                            {onOpenEditor && (
+                                <DropdownMenuItem onSelect={() => onOpenEditor()}>
+                                    <FileEdit className="w-4 h-4 mr-2" /> Edit Engine
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem onSelect={handleDuplicate}>
                                 <Copy className="w-4 h-4 mr-2" /> Duplicate
                             </DropdownMenuItem>
@@ -333,7 +369,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
                 {visibleProperties.length > 0 && (
                     <div className="mt-3 flex flex-col gap-0.5">
                         {visibleProperties.map(p => (
-                            <InlinePropertyRenderer key={p.id} databaseId={databaseId} page={page} property={p} updatePageProperty={updatePageProperty} />
+                            <InlinePropertyRenderer key={p.id} databaseId={databaseId} page={page} property={p} updatePageProperty={updatePageProperty} getDatabase={getDatabase} />
                         ))}
                     </div>
                 )}
@@ -354,6 +390,7 @@ function SortableColumn({
     toggleCollapse, 
     handleQuickAdd,
     onCardClick,
+    onOpenEditor,
     visibleProperties = []
 }: {
     col: KanbanColumn;
@@ -366,6 +403,7 @@ function SortableColumn({
     toggleCollapse: (id: string) => void;
     handleQuickAdd: (id: string) => void;
     onCardClick: (id: string) => void;
+    onOpenEditor?: (id: string) => void;
     visibleProperties?: Property[];
 }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
@@ -422,6 +460,7 @@ function SortableColumn({
                             databaseId={databaseId}
                             visibleProperties={visibleProperties} 
                             onClick={() => onCardClick(page.id)}
+                            onOpenEditor={onOpenEditor ? () => onOpenEditor(page.id) : undefined}
                         />
                     ))}
                     {col.pages.length === 0 && (
@@ -436,10 +475,11 @@ function SortableColumn({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecord }: KanbanViewProps) {
+export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecord, onOpenEditor }: KanbanViewProps) {
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
+    const getDatabase = useDatabaseStore(state => state.getDatabase);
     const updateView = useDatabaseStore(state => state.updateView);
     const updatePropertyOptionOrder = useDatabaseStore(state => state.updatePropertyOptionOrder);
     const createPage = useDatabaseStore(state => state.createPage);
@@ -481,8 +521,21 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
     const view = database?.views.find(v => v.id === viewId);
     const groupByPropertyId = view?.config?.groupByPropertyId;
     const groupProperty = database?.properties.find(p => p.id === groupByPropertyId);
-    const isValidGroup = groupProperty && (groupProperty.type === 'select' || groupProperty.type === 'multi_select');
-    const options: SelectOption[] = (isValidGroup ? groupProperty.config?.options : []) || [];
+    const isValidGroup = groupProperty && (groupProperty.type === 'select' || groupProperty.type === 'multi_select' || groupProperty.type === 'relation');
+    const options: SelectOption[] = useMemo(() => {
+        if (!isValidGroup || !groupProperty) return [];
+        if (groupProperty.type === 'select' || groupProperty.type === 'multi_select') return groupProperty.config?.options || [];
+        if (groupProperty.type === 'relation') {
+            const relDb = getDatabase(groupProperty.config?.relationDatabaseId as string);
+            if (!relDb) return [];
+            return relDb.pages.map(p => ({
+                id: p.id,
+                name: String(p.properties['title'] || p.id),
+                color: 'default'
+            }));
+        }
+        return [];
+    }, [isValidGroup, groupProperty, getDatabase]);
     const collapsedCols = view?.config?.kanbanCollapsedColumns || [];
     const wipLimits = view?.config?.kanbanWipLimits || {};
     const coverPropId = view?.config?.kanbanCardCoverPropertyId;
@@ -540,7 +593,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                                     onValueChange={(val) => updateView(databaseId, viewId, { config: { ...view?.config, groupByPropertyId: val } })}
                                 >
                                     {database.properties
-                                        .filter(p => p.type === 'select' || p.type === 'multi_select')
+                                        .filter(p => p.type === 'select' || p.type === 'multi_select' || p.type === 'relation')
                                         .map(p => (
                                             <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
                                                 {p.name}
@@ -684,7 +737,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                                 onValueChange={(val) => updateView(databaseId, viewId, { config: { ...view?.config, groupByPropertyId: val } })}
                             >
                                 {database.properties
-                                    .filter(p => p.type === 'select' || p.type === 'multi_select')
+                                    .filter(p => p.type === 'select' || p.type === 'multi_select' || p.type === 'relation')
                                     .map(p => (
                                         <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
                                             {p.name}
@@ -716,7 +769,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                             >
                                 <DropdownMenuRadioItem value="none" className="text-xs italic text-neutral-400">None</DropdownMenuRadioItem>
                                 {database.properties
-                                    .filter(p => p.type === 'url' || p.type === 'text')
+                                    .filter(p => p.type === 'url' || p.type === 'text' || (p.type as any) === 'files')
                                     .map(p => (
                                         <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
                                             {p.name}
@@ -746,6 +799,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
                                 toggleCollapse={toggleCollapse}
                                 handleQuickAdd={handleQuickAdd}
                                 onCardClick={handleCardClick}
+                                onOpenEditor={onOpenEditor}
                             />
                         ))}
                     </SortableContext>

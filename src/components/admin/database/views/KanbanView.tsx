@@ -26,6 +26,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2, FileEdit, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import PageModal from '@/components/admin/database/components/PageModal';
+import { useFilteredPages } from '../hooks/useFilteredPages';
+
 import { cn } from '@/components/time-tracker/lib/utils';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/time-tracker/components/ui/dropdown-menu';
 
@@ -62,6 +64,7 @@ interface KanbanViewProps {
     renderTabs?: React.ReactNode;
     onOpenRecord?: (pageId: string) => void;
     onOpenEditor?: (pageId: string) => void;
+    hardFilter?: { propertyId: string; value: any };
 }
 
 interface KanbanColumn {
@@ -262,6 +265,8 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const createPage = useDatabaseStore(state => state.createPage);
+    const allDatabases = useDatabaseStore(state => state.databases);
+
     const deletePage = useDatabaseStore(state => state.deletePage);
 
     const handleDuplicate = () => {
@@ -476,7 +481,7 @@ function SortableColumn({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────────
-export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecord, onOpenEditor }: KanbanViewProps) {
+export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter, onOpenRecord, onOpenEditor }: KanbanViewProps) {
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
@@ -484,6 +489,8 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
     const updateView = useDatabaseStore(state => state.updateView);
     const updatePropertyOptionOrder = useDatabaseStore(state => state.updatePropertyOptionOrder);
     const createPage = useDatabaseStore(state => state.createPage);
+    const allDatabases = useDatabaseStore(state => state.databases);
+
 
     const router = useRouter();
     const [userPrefs, setUserPrefs] = useUserPreferences<Record<string, string[]>>('kanban_visible_props', {});
@@ -520,6 +527,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
 
     // Derive config (null-safe)
     const view = database?.views.find(v => v.id === viewId);
+    const filteredPages = useFilteredPages({ database: database as any, activeView: view, hardFilter, allDatabases });
     const groupByPropertyId = view?.config?.groupByPropertyId;
     const groupProperty = database?.properties.find(p => p.id === groupByPropertyId);
     const isValidGroup = groupProperty && (groupProperty.type === 'select' || groupProperty.type === 'multi_select' || groupProperty.type === 'relation');
@@ -547,16 +555,16 @@ export default function KanbanView({ databaseId, viewId, renderTabs, onOpenRecor
         if (!database || !groupProperty || !isValidGroup) return [];
         const cols: KanbanColumn[] = options.map(opt => ({
             id: opt.id, name: opt.name, color: opt.color,
-            pages: database.pages.filter(p => { const val = p.properties[groupProperty.id]; return Array.isArray(val) ? val.includes(opt.id) : val === opt.id; }),
+            pages: filteredPages.filter(p => { const val = p.properties[groupProperty.id]; return Array.isArray(val) ? val.includes(opt.id) : val === opt.id; }),
             isCollapsed: collapsedCols.includes(opt.id),
             wipLimit: wipLimits[opt.id],
         }));
-        const unassigned = database.pages.filter(p => { const val = p.properties[groupProperty.id]; return !val || (Array.isArray(val) && val.length === 0); });
+        const unassigned = filteredPages.filter(p => { const val = p.properties[groupProperty.id]; return !val || (Array.isArray(val) && val.length === 0); });
         if (unassigned.length > 0) {
             cols.push({ id: 'no-status', name: 'No Status', color: 'gray', pages: unassigned, isCollapsed: collapsedCols.includes('no-status') });
         }
         return cols;
-    }, [database?.pages, options, groupProperty?.id, isValidGroup, collapsedCols, wipLimits]);
+    }, [filteredPages, options, groupProperty?.id, isValidGroup, collapsedCols, wipLimits]);
 
     const priorityProp = useMemo(() => database?.properties.find(p => p.name.toLowerCase().includes('priority') || p.name.toLowerCase().includes('prioriteit')), [database?.properties]);
     const dateProp = useMemo(() => database?.properties.find(p => p.type === 'date'), [database?.properties]);

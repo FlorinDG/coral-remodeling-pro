@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertOctagon, RefreshCw, LayoutDashboard, ChevronDown, ChevronUp, Terminal } from 'lucide-react';
-import '../globals.css';
+import './globals.css';
 
 export default function GlobalError({
     error,

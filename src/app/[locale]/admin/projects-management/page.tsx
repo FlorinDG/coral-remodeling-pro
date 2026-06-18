@@ -2,9 +2,16 @@
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
+import { useTenant } from '@/context/TenantContext';
+import { useLocale } from 'next-intl';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { projectsTabs } from "@/config/tabs";
 import { Layers3, Hammer, Briefcase, Rocket } from 'lucide-react';
+
+const ProjectDetailView = dynamic(
+    () => import('@/components/admin/database/components/ProjectDetailView'),
+    { ssr: false }
+);
 
 const DatabaseCloneDynamic = dynamic(
     () => import('@/components/admin/database/DatabaseClone'),
@@ -24,6 +31,8 @@ const TYPE_TABS: { id: ProjectTypeFilter; label: string; icon: React.ReactNode; 
 ];
 
 export default function ProjectManagementPage() {
+    const locale = useLocale();
+    const { resolveDbId } = useTenant();
     const [activeType, setActiveType] = useState<ProjectTypeFilter>('all');
     const activeTab = TYPE_TABS.find(t => t.id === activeType) || TYPE_TABS[0];
 

@@ -711,7 +711,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }
 
         toast.success('Factuur aangemaakt vanuit offerte!');
-        router.push(`/${locale}/admin/invoices/${newInvoice.id}`);
+        router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
     };
 
     // Create an addendum — independent quotation linked to the parent

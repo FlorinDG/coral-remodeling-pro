@@ -44,12 +44,20 @@ Financial correctness underpins the middle of this path → that's why FIN works
 4. **CROSS-7** 🟢 coded+committed — runtime version sync. Sub-items: **7a** version stamp+`/api/version` (000e9e0) ✅ **7b** client version watcher (b0c74c1) ✅ **7c** SW lifecycle fix (24eb70d) ✅ **7d** Vercel Skew Protection = FLORIN MANUAL toggle in Vercel dashboard **7e** env+SHA badge (243dee7) ✅. Sidebar store bumped to v19 (0b013c7) — forces all browsers to reset to full 16-item sidebar.
 — **PROFILE-2** 🟢 coded+committed (216ca27), owned by Florin's direct debug pointing — tracked separately, NOT in this coder queue. Verify: set numbering+color+template, hard-reload, save before load → no reset; glance email still saves (coder folded in email normalization).
 
-## ⚡ CODER — UNATTENDED QUEUE (cron-triggered: on each read, take the FIRST not-yet-committed item, do ONLY it, commit, stop)
+## ⚡ CODER — UNATTENDED QUEUE (cron-triggered)
+**PER-RUN STEPS (do IN THIS ORDER every cron window):**
+0. **PERSIST THE BOARD FIRST (fixes the lost-update clobber — Planner edits live only in the working tree and your later `git checkout` wipes them).** Run `git status --porcelain .agents/workflows/board-v2.md`. If it reports changes, IMMEDIATELY `git add .agents/workflows/board-v2.md && git commit -m "docs(planner): persist board"` — BEFORE reading the queue or touching code. You are NOT authoring/editing the board (Rule 6 still forbids that); you are only SAVING the Planner's pending edits so step 3's revert can't destroy them. This is the ONLY board commit you ever make, and it must change nothing in the file's content.
+1. Read the board; take the FIRST not-yet-committed QUEUE item (top to bottom).
+2. Do ONLY that item. Never expand scope.
+3. `tsc` + lint must be green. If your code change breaks them and you can't fix in-window → `git checkout .` (now safe: the board was already persisted in step 0). Do NOT commit broken code.
+4. Commit the code as exactly `<ID>: <imperative>` (rule 3). One item = one commit. Then STOP.
+(Bootstrap note for Florin: commit this protocol change ONCE; from then on the coder self-persists the board each run.)
+
 **UNATTENDED SAFETY PROTOCOL (binding):**
 - **One item = one commit** named exactly `<ID>: <imperative>`. Do ONLY that item per run. Then stop.
 - **tsc + lint must be green before committing.** If your change breaks them and you can't fix in-window → `git checkout .` (revert) and leave it; do NOT commit broken code.
 - **If an item is ambiguous, needs a decision, or its files are mid-change → SKIP it, move to the next.** Never guess on scope. Never expand scope.
-- **NEVER edit `board-v2.md`** (Planner-only, pd.md rule 6). Report only via commit names.
+- **NEVER EDIT/AUTHOR `board-v2.md` content** (Planner-only, pd.md rule 6) — no rewording, no status changes, no marking ✅ (only Florin sets ✅). The ONE allowed board git action is the **content-preserving persist commit in PER-RUN STEP 0** (saving the Planner's pending edits verbatim). Report your own work only via `<ID>:` commit names.
 - Items below the `── SUPERVISED LINE ──` are OFF-LIMITS unattended (need Florin) — do not start them.
 
 **ALREADY CODE-COMPLETE (do NOT redo): AGG-1..4, QUOTE-7, SCAN-2, GRID-0/1, CROSS-7, SEND-4, FIN-8.**

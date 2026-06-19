@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
 import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
@@ -443,6 +443,50 @@ interface PageModalProps {
 }
 
 export default function PageModal({ databaseId, pageId, onClose }: PageModalProps) {
+
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // (3) Clear/blur the DSG active cell
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+
+        // Basic focus trap: focus first field
+        if (modalRef.current) {
+            const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            if (focusable.length > 0) {
+                focusable[0].focus();
+            }
+        }
+    }, []);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        e.stopPropagation(); // (2) stop propagation
+        if (e.key === 'Tab' && modalRef.current) {
+            const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            if (focusable.length === 0) return;
+            const firstElement = focusable[0];
+            const lastElement = focusable[focusable.length - 1];
+
+            if (e.shiftKey) {
+                if (document.activeElement === firstElement) {
+                    lastElement.focus();
+                    e.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastElement) {
+                    firstElement.focus();
+                    e.preventDefault();
+                }
+            }
+        }
+    };
+
     const [isMaximized, setIsMaximized] = useState(false);
     const [width, setWidth] = useState(1200);
 
@@ -604,10 +648,12 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     return createPortal(
         <div 
+            ref={modalRef}
             className="fixed inset-0 z-[99999] flex justify-end"
             onPointerDown={(e) => e.stopPropagation()}
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={handleKeyDown}
         >
             <div className="absolute inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
 

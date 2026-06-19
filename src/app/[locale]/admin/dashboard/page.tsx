@@ -158,7 +158,7 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
         hasInvoicing ? countPages(dbSuppliers, tenantId) : Promise.resolve(0),
         hasInvoicing ? countPages(dbQuotations, tenantId) : Promise.resolve(0),
         hasCRM ? countPages('db-tasks', tenantId) : Promise.resolve(0),
-        hasProjects ? countPages('db-projects', tenantId) : Promise.resolve(0),
+        hasProjects ? countPages('db-1', tenantId) : Promise.resolve(0),
         hasCRM ? countPagesByStatus('db-tasks', tenantId, 'prop-task-status', 'opt-todo') : Promise.resolve(0),
         hasInvoicing ? countPagesByStatus(dbInvoices, tenantId, 'status', 'opt-draft') : Promise.resolve(0),
     ]);

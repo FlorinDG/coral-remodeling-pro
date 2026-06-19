@@ -684,7 +684,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 </div>
 
                 {/* Page Content */}
-                {databaseId === 'db-projects' || databaseId.startsWith('db-projects') ? (
+                {databaseId === 'db-1' || databaseId.startsWith('db-1') ? (
                     <div className="flex-1 overflow-y-auto">
                         <ErrorBoundary componentName="ProjectDetailView">
                             <ProjectDetailView databaseId={databaseId} pageId={pageId} locale="nl" />

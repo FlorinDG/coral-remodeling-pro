@@ -68,7 +68,7 @@ export default function ProjectManagementPage() {
                 <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
                     <DatabaseCloneDynamic
                         key={activeType}
-                        databaseId="db-projects"
+                        databaseId="db-1"
                         hideViewTabs={false}
                         defaultFilter={activeTab.filterValue ? { propertyId: 'prop-project-type', value: activeTab.filterValue } : undefined}
                         onOpenRecord={(id) => setSelectedProjectId(id)}
@@ -78,7 +78,7 @@ export default function ProjectManagementPage() {
 
             {selectedProjectId && (
                 <ProjectDetailView
-                    databaseId={resolveDbId('db-projects')}
+                    databaseId={resolveDbId('db-1')}
                     pageId={selectedProjectId}
                     locale={locale}
                     onClose={() => setSelectedProjectId(null)}

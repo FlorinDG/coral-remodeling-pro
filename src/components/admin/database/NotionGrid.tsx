@@ -771,7 +771,10 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 }}
             >
                 {isReady ? (
-                    <div className="w-full h-full flex flex-col pt-9 relative">
+                    <div 
+                        className={`w-full h-full flex flex-col pt-9 relative ${activePageId ? 'pointer-events-none' : ''}`}
+                        {...(activePageId ? { inert: "" } as any : {})}
+                    >
                         {/* Custom Floating Header context to override native grid pointer events */}
                         <div
                             onClick={e => e.stopPropagation()}
@@ -842,13 +845,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                                     // Find which column header the pointer is over
                                                     const headerRow = headerScrollRef.current;
                                                     if (!headerRow) return;
+                                                    const headerRect = headerRow.getBoundingClientRect();
+                                                    const relativeX = me.clientX - headerRect.left;
+                                                    
                                                     const cols = headerRow.querySelectorAll<HTMLElement>('[data-col-index]');
                                                     let target: number | null = null;
                                                     cols.forEach((col) => {
-                                                        const r = col.getBoundingClientRect();
-                                                        const midX = r.left + r.width / 2;
+                                                        const midX = col.offsetLeft + col.offsetWidth / 2;
                                                         const idx = parseInt(col.dataset.colIndex || '0');
-                                                        if (me.clientX < midX && target === null) {
+                                                        if (relativeX < midX && target === null) {
                                                             target = idx;
                                                         }
                                                     });
@@ -987,7 +992,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                 disableContextMenu={isAccountant || isBestekReadOnly}
                                 headerRowHeight={0}
                                 height={gridHeight}
-                                rowClassName={({ rowData }: { rowData: Record<string, unknown> }) => rowData.peppol_active ? 'peppol-active-row' : ''}
+                                rowClassName={({ rowData }: { rowData: Record<string, unknown> }) => `row-id-${rowData.id} ${rowData.peppol_active ? 'peppol-active-row' : ''}`}
                                 className="database-grid-custom tracking-wider"
                             />
                         </div>

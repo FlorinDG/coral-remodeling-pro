@@ -92,22 +92,21 @@ export function useVatLookup({ database, rowData, gridAreaRef, updatePagePropert
 
             const rect = cell.getBoundingClientRect();
 
-            // Find the row — walk up from cell, count among siblings
+            // Find the row ID from the injected row-id-* class
             const rowEl = cell.parentElement;
-            let rowIndex = 0;
-            if (rowEl?.parentElement) {
-                const siblings = Array.from(rowEl.parentElement.children);
-                rowIndex = siblings.indexOf(rowEl);
-            }
-            const rowId = rowData[rowIndex]?.id || '';
+            const rowIdClass = Array.from(rowEl?.classList || []).find(c => c.startsWith('row-id-'));
+            const rowId = rowIdClass ? rowIdClass.replace('row-id-', '') : '';
+            if (!rowId) return;
 
             const cleanVal = value.replace(/[\s.]/g, '');
-            const isValidVat = cleanVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(cleanVal);
+            const isBareNumber = /^\d{9,10}$/.test(cleanVal);
+            const lookupVal = isBareNumber ? 'BE' + cleanVal : cleanVal;
+            const isValidVat = lookupVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(lookupVal);
 
             // Show flyout immediately in 'typing' state
             setVatLookup({
                 status: 'typing',
-                vatNumber: cleanVal,
+                vatNumber: lookupVal,
                 rowId,
                 anchorRect: rect,
             });
@@ -115,7 +114,7 @@ export function useVatLookup({ database, rowData, gridAreaRef, updatePagePropert
             // Debounce: auto-trigger lookup if valid pattern
             vatDebounceRef.current = setTimeout(() => {
                 if (isValidVat) {
-                    setVatLookup(prev => prev ? { ...prev, status: 'loading', vatNumber: cleanVal } : null);
+                    setVatLookup(prev => prev ? { ...prev, status: 'loading', vatNumber: lookupVal } : null);
                 }
             }, 400);
         };

@@ -1575,12 +1575,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 onClose={() => setShowSendModal(false)}
                 onSend={executeSendEmail}
                 clientEmail={clients.find(c => c.id === clientId)?.email || ''}
-                defaultSubject={`${ti18n('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
-                defaultBody={ti18n('email_invoice_body', docLanguage)}
+                defaultSubject={`${t('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
+                defaultBody={t('email_invoice_body', docLanguage)}
                 projectId={projectId || undefined}
                 documentId={id}
                 documentType="invoice"
-                documentFileName={`${ti18n('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                documentFileName={`${t('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
                 isSending={isSending}
             />
 

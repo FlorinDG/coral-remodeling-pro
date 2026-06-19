@@ -299,6 +299,18 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
     const parsed = parser.parse(ublXml);
     const doc = parsed.Invoice || parsed.CreditNote || {};
 
+    const txt = (val: any): string => {
+        if (val == null) return '';
+        if (typeof val === 'object') return String(val['#text'] || val['value'] || '');
+        return String(val);
+    };
+
+    const num = (val: any): number => {
+        const t = txt(val);
+        const parsed = parseFloat(t);
+        return isNaN(parsed) ? 0 : parsed;
+    };
+
     // Extract supplier (AccountingSupplierParty)
     const supplierParty = doc.AccountingSupplierParty?.Party || {};
     const supplierName = supplierParty.PartyName?.Name
@@ -320,51 +332,53 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
         || '';
     const buyerVat = buyerParty.PartyTaxScheme?.CompanyID || '';
 
+    const currency = txt(doc.DocumentCurrencyCode) || 'EUR';
+
     // Extract line items
     const rawLines = doc.InvoiceLine || doc.CreditNoteLine || [];
     const lines: ParsedInvoiceLine[] = (Array.isArray(rawLines) ? rawLines : [rawLines]).map((item: unknown) => {
         const line = item as Record<string, any>;
-        const quantity = parseFloat(line.InvoicedQuantity || line.CreditedQuantity || '1');
-        const unitCode = line.InvoicedQuantity?.['@_unitCode'] || line.CreditedQuantity?.['@_unitCode'] || 'C62';
-        const unitPrice = parseFloat(line.Price?.PriceAmount || '0');
-        const lineTotal = parseFloat(line.LineExtensionAmount || '0');
+        const quantityField = line.InvoicedQuantity || line.CreditedQuantity;
+        const quantity = num(quantityField) || 1;
+        const unitCode = quantityField?.['@_unitCode'] || 'C62';
+        const unitPrice = num(line.Price?.PriceAmount);
+        const lineTotal = num(line.LineExtensionAmount);
 
         // VAT rate from line-level tax
         const taxPercent = line.Item?.ClassifiedTaxCategory?.Percent
-            || line.TaxTotal?.TaxSubtotal?.[0]?.TaxCategory?.Percent
-            || 0;
+            || line.TaxTotal?.TaxSubtotal?.[0]?.TaxCategory?.Percent;
 
         return {
-            description: line.Item?.Name || line.Item?.Description || '',
+            description: txt(line.Item?.Name || line.Item?.Description) || '',
             quantity,
             unitCode,
             unitPrice,
-            vatRate: parseFloat(String(taxPercent)),
+            vatRate: num(taxPercent),
             lineTotal,
         };
     });
 
     // Extract totals
     const legalTotal = doc.LegalMonetaryTotal || {};
-    const totalExVat = parseFloat(legalTotal.TaxExclusiveAmount || '0');
-    const totalIncVat = parseFloat(legalTotal.PayableAmount || legalTotal.TaxInclusiveAmount || '0');
+    const totalExVat = num(legalTotal.TaxExclusiveAmount);
+    const totalIncVat = num(legalTotal.PayableAmount || legalTotal.TaxInclusiveAmount);
 
     // VAT total from TaxTotal
     const taxTotal = doc.TaxTotal;
-    const totalVat = parseFloat(
-        (Array.isArray(taxTotal) ? taxTotal[0] : taxTotal)?.TaxAmount || '0'
+    const totalVat = num(
+        (Array.isArray(taxTotal) ? taxTotal[0] : taxTotal)?.TaxAmount
     );
 
     return {
-        invoiceNumber: doc.ID || '',
-        issueDate: doc.IssueDate || '',
-        dueDate: doc.DueDate || doc.PaymentMeans?.PaymentDueDate || '',
-        supplierName,
-        supplierVat,
-        supplierAddress,
-        buyerName,
-        buyerVat,
-        currency: doc.DocumentCurrencyCode || 'EUR',
+        invoiceNumber: txt(doc.ID) || '',
+        issueDate: txt(doc.IssueDate) || '',
+        dueDate: txt(doc.DueDate || doc.PaymentMeans?.PaymentDueDate) || '',
+        supplierName: txt(supplierName),
+        supplierVat: txt(supplierVat),
+        supplierAddress: txt(supplierAddress),
+        buyerName: txt(buyerName),
+        buyerVat: txt(buyerVat),
+        currency,
         lines,
         totalExVat,
         totalVat,

@@ -15,6 +15,7 @@ import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
 import CreateVorderingstaatModal from './CreateVorderingstaatModal';
+import { QuoteSendModal } from './QuoteSendModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
@@ -448,15 +449,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
 
 
-    const handleSendEmail = async () => {
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
+
+    const handleSendEmailClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
 
         setIsSending(true);
         try {
             const clientRecord = clients.find(c => c.id === clientId);
             const clientEmail = String(clientRecord?.email || '');
-            const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
-            const projectName = betreft || quotationTitle || 'Offerte';
 
             if (!clientEmail || clientEmail === 'undefined') {
                 toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
@@ -489,26 +491,48 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 const base64data = (reader.result as string).split(',')[1];
-                const response = await sendQuotationToClient(
-                    id, clientEmail, clientName, String(projectName),
-                    `€${grandTotal.toFixed(2)}`, base64data,
-                    undefined,
-                    String(tenant?.commercialName || tenant?.companyName || ''),
-                    docLanguage,
-                    tenant?.brandColor,
-                    tenant?.email || undefined
-                );
-
-                if (response.success) {
-                    toast.success('Offerte is succesvol verzonden!');
-                } else {
-                    toast.error(`Fout bij verzenden: ${response.error}`);
-                }
+                setSendModalPdfBase64(base64data);
+                setShowSendModal(true);
                 setIsSending(false);
             };
         } catch (error) {
             console.error(error);
             toast.error('Er is iets misgegaan tijdens het genereren van de PDF.');
+            setIsSending(false);
+        }
+    };
+
+    const executeSendEmail = async (subjectOverride: string, bodyOverride: string, attachmentKeys: string[]) => {
+        const clientRecord = clients.find(c => c.id === clientId);
+        const clientEmail = String(clientRecord?.email || '');
+        const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
+        const projectName = betreft || quotationTitle || 'Offerte';
+
+        setIsSending(true);
+        try {
+            const response = await sendQuotationToClient(
+                id, clientEmail, clientName, String(projectName),
+                `€${grandTotal.toFixed(2)}`, sendModalPdfBase64,
+                bodyOverride,
+                String(tenant?.commercialName || tenant?.companyName || ''),
+                docLanguage,
+                tenant?.brandColor,
+                tenant?.email || undefined,
+                subjectOverride,
+                attachmentKeys
+            );
+
+            if (response.success) {
+                toast.success('Offerte is succesvol verzonden!');
+                setShowSendModal(false);
+                handleUpdateProperty('status', 'opt-sent');
+            } else {
+                toast.error(`Fout bij verzenden: ${response.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Verzenden mislukt.');
+        } finally {
             setIsSending(false);
         }
     };
@@ -1121,7 +1145,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         {/* Send */}
                         <button
-                            onClick={handleSendEmail}
+                            onClick={handleSendEmailClick}
                             disabled={isSending || !clientId}
                             className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
                             style={{
@@ -1286,6 +1310,21 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     locale={locale}
                 />
             )}
+
+            <QuoteSendModal
+                isOpen={showSendModal}
+                onClose={() => setShowSendModal(false)}
+                onSend={executeSendEmail}
+                clientEmail={clients.find(c => c.id === clientId)?.email || ''}
+                defaultSubject={`${ti18n('subject_quote', docLanguage)}: ${betreft || quotationTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
+                defaultBody={ti18n('email_quote_body', docLanguage)}
+                projectId={projectId || undefined}
+                documentId={id}
+                documentType="quotation"
+                documentFileName={`${ti18n('quotation', docLanguage)}_${(betreft || quotationTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                isSending={isSending}
+            />
+
         </div>
         </ErrorBoundary>
     );

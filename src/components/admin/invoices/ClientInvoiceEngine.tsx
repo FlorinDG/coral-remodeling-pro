@@ -20,6 +20,7 @@ import { getNextDocumentNumber } from '@/app/actions/next-document-number';
 
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
+import { QuoteSendModal } from '../quotations/QuoteSendModal';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
@@ -569,7 +570,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         };
     };
 
-    const handleSendEmail = async () => {
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
+
+    const handleSendEmailClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de factuur te versturen.');
 
         setIsSending(true);
@@ -607,35 +611,55 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 />
             );
 
-            const asPdf = pdf(doc);
             const blob = await generatePdfBlob(doc, tenant);
 
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             reader.onloadend = async () => {
                 const base64data = (reader.result as string).split(',')[1];
-                const response = await sendInvoiceToClient(
-                    id, clientEmail, clientName, String(projectName),
-                    `€${grandTotal.toFixed(2)}`, base64data,
-                    undefined,
-                    String(tenant?.commercialName || tenant?.companyName || ''),
-                    docLanguage,
-                    tenant?.brandColor,
-                    tenant?.email || undefined
-                );
-
-                if (response.success) {
-                    // Auto-transition to "sent" status
-                    handleUpdateProperty('status', 'opt-sent');
-                    toast.success('Factuur is succesvol verzonden!');
-                } else {
-                    toast.error(`Fout bij verzenden: ${response.error}`);
-                }
+                setSendModalPdfBase64(base64data);
+                setShowSendModal(true);
                 setIsSending(false);
             };
         } catch (error) {
             console.error(error);
             toast.error('Er is iets misgegaan tijdens het genereren van de PDF.');
+            setIsSending(false);
+        }
+    };
+
+    const executeSendEmail = async (subjectOverride: string, bodyOverride: string, attachmentKeys: string[]) => {
+        const clientRecord = clients.find(c => c.id === clientId);
+        const clientEmail = String(clientRecord?.email || '');
+        const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
+        const projectName = betreft || invoiceTitle || 'Factuur';
+
+        setIsSending(true);
+        try {
+            const response = await sendInvoiceToClient(
+                id, clientEmail, clientName, String(projectName),
+                `€${grandTotal.toFixed(2)}`, sendModalPdfBase64,
+                bodyOverride,
+                String(tenant?.commercialName || tenant?.companyName || ''),
+                docLanguage,
+                tenant?.brandColor,
+                tenant?.email || undefined,
+                subjectOverride,
+                attachmentKeys
+            );
+
+            if (response.success) {
+                // Auto-transition to "sent" status
+                handleUpdateProperty('status', 'opt-sent');
+                toast.success('Factuur is succesvol verzonden!');
+                setShowSendModal(false);
+            } else {
+                toast.error(`Fout bij verzenden: ${response.error}`);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error('Verzenden mislukt.');
+        } finally {
             setIsSending(false);
         }
     };
@@ -1359,7 +1383,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </button>
                             )}
                             <button
-                                onClick={handleSendEmail}
+                                onClick={handleSendEmailClick}
                                 disabled={isSending || !clientId}
                                 className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
                                 style={{
@@ -1545,6 +1569,21 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 projectDbId={projectDbId}
                 preselectedClientId={clientId}
             />
+
+            <QuoteSendModal
+                isOpen={showSendModal}
+                onClose={() => setShowSendModal(false)}
+                onSend={executeSendEmail}
+                clientEmail={clients.find(c => c.id === clientId)?.email || ''}
+                defaultSubject={`${ti18n('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
+                defaultBody={ti18n('email_invoice_body', docLanguage)}
+                projectId={projectId || undefined}
+                documentId={id}
+                documentType="invoice"
+                documentFileName={`${ti18n('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
+                isSending={isSending}
+            />
+
         </div>
     );
 }

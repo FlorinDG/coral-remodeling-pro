@@ -210,9 +210,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const handleExportPDF = async () => {
         if (!page) return;
 
-        // AGG-4: If original PDF exists, download it
         if (page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string') {
-            window.open(page.properties.receiptUrl, '_blank');
+            const receiptUrl = page.properties.receiptUrl;
+            const u = receiptUrl.startsWith('http') ? receiptUrl : `/api/files/${receiptUrl}`;
+            window.open(u, '_blank');
             return;
         }
 

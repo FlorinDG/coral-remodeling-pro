@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// Payment settings page supporting Stripe and manual bank transfer onboarding options.
 "use client";
 import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";

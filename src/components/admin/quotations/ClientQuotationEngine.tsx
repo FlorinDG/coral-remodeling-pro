@@ -288,7 +288,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">{ti18n('engine_loading', locale)}</div>;
     if (!quotation) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>{ti18n('engine_not_found', locale)}</h1><button onClick={() => router.back()} className="text-blue-500">{ti18n('engine_go_back', locale)}</button></div>;
 
-    const quotationTitle = quotation.properties?.['title'] || ti18n('engine_draft_quotation', locale);
+    const quotationTitle = String(quotation.properties?.['title'] || ti18n('engine_draft_quotation', locale));
     const billingRule = (quotation.properties?.['prop-billing-rule'] as string) || 'opt-fixed';
     const paymentTerms = (quotation.properties?.['prop-payment-method'] as string) || 'pay-30';
     const betreft = (quotation.properties?.['betreft'] as string) || '';

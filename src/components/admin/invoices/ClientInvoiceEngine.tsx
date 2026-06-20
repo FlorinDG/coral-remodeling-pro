@@ -144,7 +144,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!isHydrated || !invoice) return;
         const currentOgm = invoice.properties?.structuredComm;
         if (!currentOgm) {
-            const invoiceNumber = invoice.properties?.title || '';
+            const invoiceNumber = String(invoice.properties?.title || '');
             const generated = generateOGM(invoiceNumber);
             updatePageProperty(invoicesDbId, invoice.id, 'structuredComm', generated);
         }
@@ -329,7 +329,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
     if (!invoice) return <div className="flex h-screen items-center justify-center flex-col gap-4"><h1>Invoice Not Found</h1><button onClick={() => router.back()} className="text-orange-500">Go Back</button></div>;
 
-    const invoiceTitle = invoice.properties?.['title'] || 'Draft Invoice';
+    const invoiceTitle = String(invoice.properties?.['title'] || 'Draft Invoice');
     const rawProject = invoice.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (invoice.properties?.['betreft'] as string) || '';

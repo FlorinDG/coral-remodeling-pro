@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine, Camera, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine, Camera, CheckCircle2, Upload } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import type { Page } from '@/components/admin/database/types';
 import { downloadPurchaseInvoicePDF } from '@/components/admin/expenses/PurchaseInvoicePDF';
@@ -104,6 +104,32 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const [rejectMode, setRejectMode] = useState(false);
     const [rejectComment, setRejectComment] = useState('');
     const [approveLoading, setApproveLoading] = useState(false);
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !pageId) return;
+
+        setUploading(true);
+        try {
+            const { uploadFileAction } = await import('@/app/actions/files');
+            const fd = new FormData();
+            fd.append('file', file);
+            const result = await uploadFileAction(fd, 'purchase-invoice', pageId);
+            if (result.success && result.key) {
+                updatePageProperty(expensesDbId, pageId, 'receiptUrl', result.key);
+            } else {
+                alert('Upload failed: ' + (result.error || 'Unknown error'));
+            }
+        } catch (err: any) {
+            console.error('File upload error:', err);
+            alert('Upload failed: ' + (err.message || err));
+        } finally {
+            setUploading(false);
+        }
+    };
 
 
     // Editable fields for manual/draft invoices
@@ -224,7 +250,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
         const newBlocks = editData.lines.map((line: any) => ({
             id: line.id && !line.id.startsWith('temp-') ? line.id : `line-${Date.now()}-${Math.random().toString(36).substring(2)}`,
-            type: 'financial-row',
+            type: 'financial-row' as any,
             content: line.description,
             properties: {
                 quantity: parseFloat(String(line.quantity)) || 0,
@@ -367,6 +393,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${sourceBadge.color}`}>
                                         {sourceBadge.label}
                                     </span>
+                                    {page.properties.docType === 'opt-credit-note' && (
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300">
+                                            Credit Note
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_COLORS[status] || STATUS_COLORS['opt-draft']}`}>
@@ -660,10 +691,32 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                 title="Original Document"
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center w-full h-full text-neutral-400 bg-white/40 dark:bg-white/5 rounded-xl border border-dashed border-neutral-300 dark:border-white/20">
+                            <div className="flex flex-col items-center justify-center w-full h-full text-neutral-400 bg-white/40 dark:bg-white/5 rounded-xl border border-dashed border-neutral-300 dark:border-white/20 p-4">
                                 <FileText className="w-12 h-12 mb-4 opacity-50" />
-                                <p className="text-sm font-medium">No original document attached</p>
-                                <p className="text-xs mt-1 opacity-70">This invoice was either manually created or has no scanned receipt.</p>
+                                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">No original document attached</p>
+                                <p className="text-xs mt-1 opacity-70 mb-4 text-center max-w-xs">This invoice was either manually created or has no scanned receipt.</p>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="application/pdf,image/*"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="flex items-center gap-1.5 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="w-3.5 h-3.5" /> Upload Document
+                                        </>
+                                    )}
+                                </button>
                             </div>
                         )}
                     </div>

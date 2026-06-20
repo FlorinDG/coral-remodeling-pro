@@ -18,7 +18,6 @@ import VariantsPropertyEditor from './VariantsPropertyEditor';
 import { Property, VariantsConfig } from '../types';
 import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import DriveFileExplorer from '@/components/admin/drive/DriveFileExplorer';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
@@ -903,21 +902,18 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                             if (!file) return;
                                                                                             const fd = new FormData();
                                                                                             fd.append('file', file);
-                                                                                            fd.append('targetSubfolder', databaseId === 'db-expenses' ? 'Invoices' : 'Expenses');
                                                                                             try {
                                                                                                 toast.loading('Uploading document...', { id: 'upload' });
-                                                                                                const res = await fetch('/api/drive/upload', { method: 'POST', body: fd });
-                                                                                                if (res.ok) {
-                                                                                                    const data = await res.json();
-                                                                                                    if (data.fileId) {
-                                                                                                        updatePageProperty(databaseId, pageId, prop.id, `https://drive.google.com/file/d/${data.fileId}/view`);
-                                                                                                        toast.success('Document uploaded and attached', { id: 'upload' });
-                                                                                                    }
+                                                                                                const { uploadFileAction } = await import('@/app/actions/files');
+                                                                                                const res = await uploadFileAction(fd, databaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageId);
+                                                                                                if (res.success && res.key) {
+                                                                                                    updatePageProperty(databaseId, pageId, prop.id, res.key);
+                                                                                                    toast.success('Document uploaded and attached', { id: 'upload' });
                                                                                                 } else {
-                                                                                                    toast.error('Upload failed', { id: 'upload' });
+                                                                                                    toast.error(res.error || 'Upload failed', { id: 'upload' });
                                                                                                 }
-                                                                                            } catch {
-                                                                                                toast.error('Upload network error', { id: 'upload' });
+                                                                                            } catch (err: unknown) {
+                                                                                                toast.error(err instanceof Error ? err.message : 'Upload error', { id: 'upload' });
                                                                                             }
                                                                                             e.target.value = '';
                                                                                         }} />

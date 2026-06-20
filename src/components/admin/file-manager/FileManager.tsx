@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFileManagerStore } from './store';
 import { FileContextType, FileNode } from './types';
-import { LayoutGrid, List, FolderPlus, UploadCloud, Search, Folder, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, FilePlus2, FileSpreadsheet, Download } from 'lucide-react';
+import { LayoutGrid, List, UploadCloud, Search, Folder, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download } from 'lucide-react';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { format } from 'date-fns';
 import FileViewerModal from './FileViewerModal';
@@ -163,8 +163,6 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
     const isLoading = useFileManagerStore(state => state.isLoading);
     const error = useFileManagerStore(state => state.error);
     const fetchNodes = useFileManagerStore(state => state.fetchNodes);
-    const createFolder = useFileManagerStore(state => state.createFolder);
-    const createGoogleFile = useFileManagerStore(state => state.createGoogleFile);
     const uploadFile = useFileManagerStore(state => state.uploadFile);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -311,41 +309,6 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                 <LayoutGrid className="w-3.5 h-3.5" />
                             </button>
                         </div>
-
-                        <div className="hidden sm:block h-4 w-px bg-border mx-0.5 md:mx-1" />
-
-                        <button
-                            onClick={async () => {
-                                const name = prompt('Enter new folder name:');
-                                if (name) await createFolder(name, currentFolderId, contextType || 'global', contextId, driveFolderId);
-                            }}
-                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 rounded-md border border-transparent transition-colors"
-                        >
-                            <FolderPlus className="w-4 h-4" />
-                            <span className="hidden lg:inline">Folder</span>
-                        </button>
-
-                        <button
-                            onClick={async () => {
-                                const name = prompt('Enter Google Doc name:');
-                                if (name) await createGoogleFile(name, 'document', currentFolderId, contextType || 'global', contextId, driveFolderId);
-                            }}
-                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-blue-500 hover:bg-blue-500/10 rounded-md border border-transparent transition-colors"
-                        >
-                            <FilePlus2 className="w-4 h-4" />
-                            <span className="hidden lg:inline">Doc</span>
-                        </button>
-
-                        <button
-                            onClick={async () => {
-                                const name = prompt('Enter Google Sheet name:');
-                                if (name) await createGoogleFile(name, 'spreadsheet', currentFolderId, contextType || 'global', contextId, driveFolderId);
-                            }}
-                            className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-emerald-500 hover:bg-emerald-500/10 rounded-md border border-transparent transition-colors"
-                        >
-                            <FileSpreadsheet className="w-4 h-4" />
-                            <span className="hidden lg:inline">Sheet</span>
-                        </button>
 
                         <label className="flex items-center gap-1.5 px-2 py-1 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 rounded-md border border-transparent transition-colors shadow-sm cursor-pointer ml-1">
                             <UploadCloud className="w-4 h-4" />

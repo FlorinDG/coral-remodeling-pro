@@ -122,17 +122,11 @@ export function useClockEntries() {
         const uploadPromises = data.photos.map(async (file) => {
           const formData = new FormData();
           formData.append('file', file);
-          // Optional: context for file manager
-          formData.append('contextType', 'hr');
-          formData.append('contextId', activeEntry.id);
           
-          const res = await fetch('/api/drive/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          if (!res.ok) throw new Error('Upload failed');
-          const result = await res.json();
-          return result.url;
+          const { uploadFileAction } = await import('@/app/actions/files');
+          const result = await uploadFileAction(formData, 'hr', activeEntry.id);
+          if (!result.success || !result.key) throw new Error(result.error || 'Upload failed');
+          return result.key;
         });
         photoUrls = await Promise.all(uploadPromises);
       }

@@ -52,26 +52,19 @@ export function useScheduleAttachments(shiftId?: string | null) {
   const uploadFile = useCallback(async (file: File) => {
     if (!shiftId) return;
     try {
-      // Upload to Google Drive via /api/drive/upload
+      // Upload to Vercel Blob via uploadFileAction
       let fileUrl = `/uploads/${file.name}`;
       try {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('contextType', 'hr-shift');
-        formData.append('contextId', shiftId);
-        const uploadRes = await fetch('/api/drive/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          fileUrl = uploadData.url || uploadData.fileId
-            ? `https://drive.google.com/file/d/${uploadData.fileId}/view`
-            : fileUrl;
+        const { uploadFileAction } = await import('@/app/actions/files');
+        const uploadRes = await uploadFileAction(formData, 'hr-shift', shiftId);
+        if (uploadRes.success && uploadRes.key) {
+          fileUrl = uploadRes.key;
         }
-      } catch {
-        // Drive upload failed — fall back to mock URL
-        console.warn('[ShiftAttachment] Drive upload failed, using mock URL');
+      } catch (err) {
+        // Blob upload failed — fall back to mock URL
+        console.warn('[ShiftAttachment] Blob upload failed, using mock URL', err);
       }
 
       const res = await hrCreate('shift-attachments', {

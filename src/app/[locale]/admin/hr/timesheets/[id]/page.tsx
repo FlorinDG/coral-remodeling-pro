@@ -202,7 +202,7 @@ export default function WerkbonDetailPage() {
                             {entry.photos.map((url, idx) => (
                                 <div key={idx} className="aspect-video bg-neutral-100 dark:bg-neutral-800 rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 flex items-center justify-center">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={url} alt={`Werf foto ${idx + 1}`} className="w-full h-full object-cover" />
+                                    <img src={url.startsWith('t_') ? `/api/files/${url}` : url} alt={`Werf foto ${idx + 1}`} className="w-full h-full object-cover" />
                                 </div>
                             ))}
                         </div>

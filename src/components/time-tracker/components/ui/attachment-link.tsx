@@ -13,6 +13,18 @@ export function AttachmentLink({ filePath, children, className }: AttachmentLink
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!filePath) {
+      setLoading(false);
+      return;
+    }
+
+    if (filePath.startsWith('http') || filePath.startsWith('/api/files/') || filePath.startsWith('t_')) {
+      const url = filePath.startsWith('t_') ? `/api/files/${filePath}` : filePath;
+      setSignedUrl(url);
+      setLoading(false);
+      return;
+    }
+
     const fetchSignedUrl = async () => {
       setLoading(true);
       const { data, error } = await supabase.storage
@@ -56,6 +68,18 @@ export function AttachmentImage({ filePath, alt, className, fallback }: Attachme
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!filePath) {
+      setLoading(false);
+      return;
+    }
+
+    if (filePath.startsWith('http') || filePath.startsWith('/api/files/') || filePath.startsWith('t_')) {
+      const url = filePath.startsWith('t_') ? `/api/files/${filePath}` : filePath;
+      setSignedUrl(url);
+      setLoading(false);
+      return;
+    }
+
     const fetchSignedUrl = async () => {
       setLoading(true);
       const { data, error } = await supabase.storage

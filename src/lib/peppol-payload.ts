@@ -124,10 +124,17 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
     const due = dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
 
     const cleanVat = (vat: string) => vat.replace(/[\s.]/g, '').toUpperCase();
-    const vendorVat = tenant.vatNumber ? cleanVat(tenant.vatNumber) : '';
-    const customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
+    let vendorVat = tenant.vatNumber ? cleanVat(tenant.vatNumber) : '';
+    if (vendorVat && /^\d+$/.test(vendorVat)) {
+        vendorVat = 'BE' + vendorVat;
+    }
 
     const customerCountry = client.country || 'BE';
+    let customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
+    if (customerVat && /^\d+$/.test(customerVat)) {
+        customerVat = customerCountry.toUpperCase() + customerVat;
+    }
+
     const countryLabel = customerCountry === 'BE' ? 'Belgium' : customerCountry;
     const customerAddressStr = [
         client.street,
@@ -203,8 +210,11 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
     if (!params.tenant.vatNumber) {
         errors.push("Uw BTW-nummer ontbreekt in uw bedrijfsprofiel.");
     } else {
-        const cleanVendorVat = params.tenant.vatNumber.replace(/[\s.]/g, '').toUpperCase();
-        if (!/^[A-Z]{2}\d{8,12}$/.test(cleanVendorVat) && !/^\d{8,12}$/.test(cleanVendorVat)) {
+        let cleanVendorVat = params.tenant.vatNumber.replace(/[\s.]/g, '').toUpperCase();
+        if (/^\d+$/.test(cleanVendorVat)) {
+            cleanVendorVat = 'BE' + cleanVendorVat;
+        }
+        if (!/^[A-Z]{2}\d{8,12}$/.test(cleanVendorVat)) {
             errors.push("Uw BTW-nummer heeft een ongeldig formaat.");
         }
     }
@@ -220,9 +230,12 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
     }
 
     if (params.client.vatNumber) {
-        const cleanCustomerVat = params.client.vatNumber.replace(/[\s.]/g, '').toUpperCase();
-        // Standard check: 2 letter prefix + 8 to 12 digits, or bare 8 to 12 digits
-        if (!/^[A-Z]{2}\d{8,12}$/.test(cleanCustomerVat) && !/^\d{8,12}$/.test(cleanCustomerVat)) {
+        let cleanCustomerVat = params.client.vatNumber.replace(/[\s.]/g, '').toUpperCase();
+        const country = params.client.country || 'BE';
+        if (/^\d+$/.test(cleanCustomerVat)) {
+            cleanCustomerVat = country.toUpperCase() + cleanCustomerVat;
+        }
+        if (!/^[A-Z]{2}\d{8,12}$/.test(cleanCustomerVat)) {
             errors.push("Het BTW-nummer van de klant heeft een ongeldig formaat. Het moet bestaan uit een landcode gevolgd door cijfers (bijv. BE0768798123).");
         }
     } else if (!params.isCreditNote) {

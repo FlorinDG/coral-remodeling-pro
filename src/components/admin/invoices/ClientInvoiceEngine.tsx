@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -62,6 +62,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
     const [offerteImportDialog, setOfferteImportDialog] = useState<{ open: boolean; quotationId: string; quotationTitle: string; lineCount: number }>({ open: false, quotationId: '', quotationTitle: '', lineCount: 0 });
     const [peppolLimitDialog, setPeppolLimitDialog] = useState(false);
@@ -1455,6 +1456,49 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
                         {/* Right group: export + delete */}
                         <div className="flex items-center gap-2">
+                            <button
+                                onClick={async () => {
+                                    if (isPreviewing) return;
+                                    setIsPreviewing(true);
+                                    try {
+                                        const doc = (
+                                            <InvoicePDFTemplate
+                                                blocks={blocks}
+                                                invoiceTitle={String(invoiceTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenant}
+                                                templateId={tenant?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                                invoiceDate={invoice?.properties?.['invoiceDate'] as string}
+                                                deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                                                dueDate={invoice?.properties?.['dueDate'] as string}
+                                                docType={String(invoice.properties?.['docType'] || '')}
+                                                vatCalcMode={((invoice?.properties?.['vatCalcMode'] as string) || 'lines') as any}
+                                                vatRegime={invoice?.properties?.['vatRegime'] as string}
+                                                structuredComm={invoice?.properties?.['structuredComm'] as string}
+                                            />
+                                        );
+                                        const blob = await generatePdfBlob(doc, tenant);
+                                        const url = URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                    } catch (e) {
+                                        console.error('[PDF] preview failed:', e);
+                                        toast.error('PDF preview mislukt.');
+                                    } finally {
+                                        setIsPreviewing(false);
+                                    }
+                                }}
+                                disabled={isPreviewing}
+                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 active:scale-[0.97] disabled:opacity-60 shadow-sm"
+                            >
+                                <Eye className="w-4 h-4" />
+                                {isPreviewing ? 'Generating...' : 'Preview PDF'}
+                            </button>
+
                             <button
                                 onClick={async () => {
                                     if (isDownloading) return;

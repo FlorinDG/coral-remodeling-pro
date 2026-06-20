@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
@@ -68,6 +68,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
     const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
     const [showSendModal, setShowSendModal] = useState(false);
@@ -1250,6 +1251,47 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             {ti18n('engine_export_detailed', locale)}
                         </button>
  
+                        <button
+                            onClick={async () => {
+                                if (isPreviewing) return;
+                                setIsPreviewing(true);
+                                try {
+                                    const doc = (
+                                        <QuotationPDFTemplate
+                                            blocks={blocks}
+                                            quotationTitle={String(quotationTitle)}
+                                            betreft={String(betreft)}
+                                            clientInfo={buildClientInfo()}
+                                            projectId={String(projectId)}
+                                            grandTotal={grandTotal}
+                                            databaseStoreState={useDatabaseStore.getState()}
+                                            tenantProfile={tenant}
+                                            templateId={tenant?.documentTemplate || 't1'}
+                                            language={docLanguage}
+                                            showSubcomponents={false}
+                                            vatCalcMode={vatCalcMode}
+                                            vatRegime={vatRegime}
+                                            billingRule={billingRule}
+                                            paymentTerms={paymentTerms}
+                                        />
+                                    );
+                                    const blob = await generatePdfBlob(doc, tenant);
+                                    const url = URL.createObjectURL(blob);
+                                    window.open(url, '_blank');
+                                } catch (e) {
+                                    console.error('[PDF] preview failed:', e);
+                                    toast.error('PDF preview mislukt.');
+                                } finally {
+                                    setIsPreviewing(false);
+                                }
+                            }}
+                            disabled={isPreviewing}
+                            className="text-xs font-semibold px-5 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-white/5 disabled:opacity-60"
+                        >
+                            <Eye className="w-3.5 h-3.5" />
+                            {isPreviewing ? ti18n('engine_generating', locale) : (locale === 'fr' ? 'Aperçu PDF' : locale === 'en' ? 'Preview PDF' : 'Voorbeeld PDF')}
+                        </button>
+
                         {/* Export PDF — primary action */}
                         <button
                             onClick={async () => {

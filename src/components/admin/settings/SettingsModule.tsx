@@ -51,7 +51,6 @@ const NAV_ITEMS: NavItem[] = [
     { id: 'ui-preferences',    label: 'UI & Appearance',   icon: <Palette className="w-4 h-4" />, tier: 'tenant', description: 'Theme, brand color, layout density' },
     { id: 'notifications',     label: 'Notifications',     icon: <Bell className="w-4 h-4" />, tier: 'tenant', description: 'Email digests, in-app alerts, webhooks' },
     { id: 'calendar-sync',     label: 'Calendar Sync',     icon: <CalendarIcon className="w-4 h-4" />, tier: 'tenant', description: 'Google Calendar integration' },
-    { id: 'file-storage',      label: 'File Storage',      icon: <HardDrive className="w-4 h-4" />, tier: 'tenant', description: 'Google Drive authorization' },
     { id: 'peppol',            label: 'Peppol E-Invoicing', icon: <Globe className="w-4 h-4" />, tier: 'tenant', description: 'Connect to the Peppol network' },
 ];
 
@@ -457,16 +456,6 @@ function IntegrationsPanel() {
                     </div>
                 )}
             </SettingsCard>
-
-            {/* Google Drive */}
-            <SettingsCard title="Google Drive Storage">
-                <div className="flex items-center justify-between">
-                    <p className="text-sm text-neutral-500 max-w-md">Authorize file storage via Google Drive.</p>
-                    <a href="/api/drive/auth" className="px-4 py-2 bg-[#4285F4] text-white rounded-lg text-sm font-bold hover:bg-[#3367d6] transition-all shadow-sm flex items-center gap-2">
-                        <HardDrive className="w-4 h-4" /> Authorize Drive
-                    </a>
-                </div>
-            </SettingsCard>
         </SectionShell>
     );
 }
@@ -639,7 +628,6 @@ function PanelContent({ id }: { id: string }) {
         case 'ui-preferences': return <UiPreferencesPanel />;
         case 'notifications': return <NotificationsPanel />;
         case 'calendar-sync': return <IntegrationsPanel />;
-        case 'file-storage': return <IntegrationsPanel />;
         case 'peppol': return <PeppolPanel />;
         default: return <div className="text-neutral-400 italic text-sm">Select a section from the sidebar.</div>;
     }

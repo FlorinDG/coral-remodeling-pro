@@ -8,7 +8,15 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, email, phone, service, message, tenantId } = body;
 
-        if (!tenantId) {
+        let finalTenantId = tenantId;
+        if (!finalTenantId) {
+            const fallbackTenant = await prisma.tenant.findFirst({
+                where: { companyName: { contains: 'CORAL ENTERPRISES', mode: 'insensitive' } }
+            }) || await prisma.tenant.findFirst();
+            finalTenantId = fallbackTenant?.id;
+        }
+
+        if (!finalTenantId) {
             return NextResponse.json({ error: "Missing tenant ID for routing." }, { status: 400 });
         }
 
@@ -18,7 +26,7 @@ export async function POST(request: Request) {
         try {
             lead = await dbRetry(() => prisma.lead.create({
                 data: {
-                    tenantId,
+                    tenantId: finalTenantId,
                     name,
                     email,
                     phone,

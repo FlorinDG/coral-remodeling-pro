@@ -40,7 +40,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         service: 'Kitchen',
         message: ''
     });
-    const [file, setFile] = useState<File | null>(null);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [sent, setSent] = useState(false); // New state for button animation
@@ -61,30 +61,11 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         setError(null);
 
         try {
-            let uploadedFileLink = null;
-            if (file) {
-                const uploadData = new FormData();
-                uploadData.append('action', 'upload_file');
-                uploadData.append('file', file);
-                uploadData.append('moduleTag', 'Lead');
-
-                const uploadRes = await fetch('/api/drive', {
-                    method: 'POST',
-                    body: uploadData,
-                });
-                if (!uploadRes.ok) throw new Error("File upload failed");
-                const uploadJson = await uploadRes.json();
-                uploadedFileLink = uploadJson.node?.webViewLink;
-            }
-
             // Bundle address into message to avoid DB migration and protect Notion Sync
             let finalMessage = formData.message;
             const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
             if (addressParts.length > 0) {
                 finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
-            }
-            if (uploadedFileLink) {
-                finalMessage += `\n\nAttached File: ${uploadedFileLink}`;
             }
             const finalName = `${formData.name} ${formData.surname}`.trim();
 
@@ -135,31 +116,12 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
         setError(null);
 
         try {
-            let uploadedFileLink = null;
-            if (file) {
-                const uploadData = new FormData();
-                uploadData.append('action', 'upload_file');
-                uploadData.append('file', file);
-                uploadData.append('moduleTag', 'Booking');
-
-                const uploadRes = await fetch('/api/drive', {
-                    method: 'POST',
-                    body: uploadData,
-                });
-                if (!uploadRes.ok) throw new Error("File upload failed");
-                const uploadJson = await uploadRes.json();
-                uploadedFileLink = uploadJson.node?.webViewLink;
-            }
-
             const finalName = `${formData.name} ${formData.surname}`.trim();
 
             let finalMessage = formData.message;
             const addressParts = [formData.street, formData.postalCode, formData.town].filter(Boolean);
             if (addressParts.length > 0) {
                 finalMessage = `Address: ${addressParts.join(', ')}\n\n${formData.message}`;
-            }
-            if (uploadedFileLink) {
-                finalMessage += `\n\nAttached File: ${uploadedFileLink}`;
             }
 
             const res = await fetch('/api/bookings', {
@@ -314,7 +276,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             }}
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="mb-3">
                                         <select
                                             className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d75d00] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
                                             value={formData.service}
@@ -327,20 +289,6 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                             <option value="Bathroom">{t('services.bathroom')}</option>
                                             <option value="Addition">{t('services.addition')}</option>
                                         </select>
-                                        <div className="relative w-full h-[44px]">
-                                            <input
-                                                type="file"
-                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                onChange={(e) => {
-                                                    setFile(e.target.files?.[0] || null);
-                                                    setError(null);
-                                                }}
-                                            />
-                                            <div className="w-full h-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 flex items-center justify-between text-neutral-400 text-sm hover:border-white/30 transition-all pointer-events-none">
-                                                <span className="truncate pr-2">{file ? file.name : t('placeholders.file')}</span>
-                                                <span className="text-lg flex-shrink-0">📎</span>
-                                            </div>
-                                        </div>
                                     </div>
                                     <textarea
                                         placeholder={t('placeholders.message')}
@@ -475,7 +423,7 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                     defaultValue={formData.street}
                                     onChange={(e: any) => setFormData({ ...formData, street: e.target.value })}
                                 />
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="mb-3">
                                     <select
                                         className="w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 h-[44px] outline-none hover:border-white/30 focus:border-[#d75d00] transition-all text-neutral-900 dark:text-white placeholder:text-neutral-400 text-sm"
                                         value={formData.service}
@@ -485,17 +433,6 @@ export default function LeadForm({ initialTab = 'inquiry', onClose }: LeadFormPr
                                         <option value="Bathroom">{t('services.bathroom')}</option>
                                         <option value="Addition">{t('services.addition')}</option>
                                     </select>
-                                    <div className="relative w-full h-[44px]">
-                                        <input
-                                            type="file"
-                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                            onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                        />
-                                        <div className="w-full h-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 flex items-center justify-between text-neutral-400 text-sm hover:border-white/30 transition-all pointer-events-none">
-                                            <span className="truncate pr-2">{file ? file.name : t('placeholders.file')}</span>
-                                            <span className="text-lg flex-shrink-0">📎</span>
-                                        </div>
-                                    </div>
                                 </div>
                                 <textarea
                                     placeholder={t('placeholders.message')}

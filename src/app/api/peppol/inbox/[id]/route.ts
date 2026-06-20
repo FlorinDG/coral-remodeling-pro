@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { getInboxDocument } from '@/lib/e-invoice-inbox';
+import { getInboxDocument, getDocumentUbl } from '@/lib/e-invoice-inbox';
 
 /**
  * GET /api/peppol/inbox/[id]
@@ -35,6 +35,13 @@ export async function GET(
 
         const doc = await getInboxDocument(tenant.eInvoiceApiKey, docId);
 
+        let ublXml = '';
+        try {
+            ublXml = await getDocumentUbl(tenant.eInvoiceApiKey, docId) || '';
+        } catch (xmlErr) {
+            console.warn('[Peppol Inbox Detail] failed to fetch UBL XML:', xmlErr);
+        }
+
         // F3: Extract structured fields from DocumentResponse (no inline UBL)
         const parsed = {
             invoiceNumber: doc.invoice_id || doc.id,
@@ -58,7 +65,7 @@ export async function GET(
             totalVat: parseFloat(doc.total_tax || '0'),
             totalIncVat: parseFloat(doc.invoice_total || '0'),
             peppolDocId: doc.id,
-            rawXml: '',
+            rawXml: ublXml,
         };
 
         return NextResponse.json({

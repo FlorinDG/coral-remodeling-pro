@@ -539,43 +539,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     const handleSaveToDrive = async () => {
-        if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan in Google Drive.');
-
-        const clientRecord = clients.find(c => c.id === clientId);
-        let parentId = clientRecord?.driveFolderId;
+        if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan.');
 
         setIsSavingToDrive(true);
         try {
-            if (!parentId) {
-                // Auto-create client folder
-                const clientName = `${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant';
-                const initRes = await fetch('/api/drive/init', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        databaseId: clientsDbId,
-                        pageId: clientId,
-                        title: clientName,
-                    }),
-                });
-                if (!initRes.ok) {
-                    throw new Error(`Auto-provisioning client Drive folder failed: ${await initRes.text()}`);
-                }
-                const initData = await initRes.json();
-                parentId = initData.driveFolderId;
-                
-                // Write back to database store so the record locally has the driveFolderId
-                if (parentId && clientsDb) {
-                    const driveProp = clientsDb.properties.find(p => p.name.toLowerCase().includes('drive'));
-                    if (driveProp) {
-                        useDatabaseStore.getState().updatePageProperty(clientsDbId, clientId, driveProp.id, parentId);
-                    }
-                }
-            }
-
-            if (!parentId) {
-                throw new Error('Geen Google Drive folder ID ontvangen.');
-            }
             const doc = (
                 <QuotationPDFTemplate
                     blocks={blocks}
@@ -600,19 +567,14 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             const file = new File([blob], `Offerte_${quotationTitle || 'Draft'}.pdf`, { type: 'application/pdf' });
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('parentId', String(parentId));
-            formData.append('targetSubfolder', 'Offertes');
 
-            const res = await fetch('/api/drive/upload', {
-                method: 'POST',
-                body: formData
-            });
+            const { uploadFileAction } = await import('@/app/actions/files');
+            const result = await uploadFileAction(formData, 'quotation', quotation.id);
 
-            const data = await res.json();
-            if (data.success) {
-                toast.success('Succesvol opgeslagen in Google Drive!');
+            if (result.success) {
+                toast.success('Succesvol opgeslagen in dossier!');
             } else {
-                toast.error(`Drive fout: ${data.error}`);
+                toast.error(`Opslaan mislukt: ${result.error}`);
             }
         } catch (e: unknown) {
             console.error(e);

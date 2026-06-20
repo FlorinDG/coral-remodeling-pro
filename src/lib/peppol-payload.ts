@@ -251,12 +251,6 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
     const items = flattenBlocksToLineItems(params.blocks || []);
     if (items.length === 0) {
         errors.push("De factuur heeft geen geldige factuurlijnen. Voeg ten minste één product of dienst toe.");
-    } else {
-        items.forEach((item, index) => {
-            if (item.amount <= 0 && !params.isCreditNote) {
-                errors.push(`Regel ${index + 1} (${item.description}): Het bedrag moet groter zijn dan 0.`);
-            }
-        });
     }
 
     return {

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
-import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save } from 'lucide-react';
+import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save, Minus } from 'lucide-react';
 import PageModal from '@/components/admin/database/components/PageModal';
 import SaveToLibraryModal from './SaveToLibraryModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
@@ -69,6 +69,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
             case 'subsection': return <FolderOpen className="w-4 h-4 text-orange-500" />;
             case 'line': return <FileMinus className="w-4 h-4 text-orange-500" />;
             case 'post': return <AlignLeft className="w-4 h-4 text-black dark:text-white" />;
+            case 'divider': return <Minus className="w-4 h-4 text-black dark:text-white" />;
             default: return <Type className="w-4 h-4 text-black dark:text-white" />;
         }
     };
@@ -83,6 +84,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
             case 'subsection': return 'Subsection Engine';
             case 'line': return 'Calculation Line';
             case 'post': return 'Post (Phase)';
+            case 'divider': return 'Horizontal Divider';
             default: return 'Text Block';
         }
     };
@@ -202,11 +204,20 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                     <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'article' })}>
                         <Box className="w-4 h-4 mr-2" /> Calculator Article
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'bestek' })}>
+                        <Layers className="w-4 h-4 mr-2" /> Pricebook Bestek
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'line' })}>
+                        <FileMinus className="w-4 h-4 mr-2" /> Calculation Line
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'text' })}>
                         <Text className="w-4 h-4 mr-2" /> Rich Text Notes
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'image' })}>
                         <ImageIcon className="w-4 h-4 mr-2" /> Image Attachment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'divider' })}>
+                        <Minus className="w-4 h-4 mr-2" /> Horizontal Divider
                     </DropdownMenuItem>
 
                     {!isContainer && (
@@ -621,6 +632,12 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 )}
                                             </Droppable>
                                         </div>
+
+                                         {block.type === 'divider' && (
+                                             <div className="py-4 px-3 w-full flex items-center justify-center bg-transparent">
+                                                 <div className="w-full border-t border-neutral-350 dark:border-neutral-800" />
+                                             </div>
+                                         )}
 
                                         {block.type === 'text' && (
                                             <div className="flex flex-col gap-1.5 w-full pt-2">

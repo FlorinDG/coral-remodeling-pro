@@ -344,10 +344,26 @@ export async function POST(req: Request) {
         // API returns { is_valid: bool, issues: [...], ubl_document?: string }
         if (!validateRes.ok || validateData.is_valid === false) {
             console.error('[e-invoice.be] Validation failed:', JSON.stringify(validateData, null, 2));
-            const issues = validateData.issues || validateData.errors || [];
-            const errorMsg = Array.isArray(issues) && issues.length > 0
-                ? issues.map((e: any) => `${e.severity || 'ERROR'}: ${e.message || e.field || JSON.stringify(e)}`).join('; ')
-                : validateData.message || validateData.detail || 'Validatiefout';
+            let errorMsg = '';
+            if (Array.isArray(validateData)) {
+                errorMsg = validateData.map((e: any) => e.message || e.detail || JSON.stringify(e)).join('; ');
+            } else if (validateData && typeof validateData === 'object') {
+                const issuesList = validateData.issues || validateData.errors || validateData.validation_errors;
+                if (Array.isArray(issuesList)) {
+                    errorMsg = issuesList.map((e: any) => {
+                        if (typeof e === 'string') return e;
+                        return `${e.severity || 'ERROR'}: ${e.message || e.field || e.description || JSON.stringify(e)}`;
+                    }).join('; ');
+                } else if (issuesList && typeof issuesList === 'object') {
+                    errorMsg = Object.entries(issuesList)
+                        .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : JSON.stringify(v)}`)
+                        .join('; ');
+                } else {
+                    errorMsg = validateData.message || validateData.detail || validateData.error || JSON.stringify(validateData);
+                }
+            } else {
+                errorMsg = String(validateData || 'Validatiefout');
+            }
             return NextResponse.json({
                 error: 'PEPPOL_VALIDATION_FAILED',
                 code: 'PEPPOL_VALIDATION_FAILED',
@@ -381,12 +397,26 @@ export async function POST(req: Request) {
         }
 
         if (!createRes.ok || !createData.id) {
-            console.error('[e-invoice.be] Document creation failed:', createData);
+            console.error('[e-invoice.be] Document creation failed:', JSON.stringify(createData, null, 2));
+            let errorMsg = '';
+            if (createData && typeof createData === 'object') {
+                const issuesList = createData.issues || createData.errors || createData.validation_errors;
+                if (Array.isArray(issuesList)) {
+                    errorMsg = issuesList.map((e: any) => typeof e === 'string' ? e : `${e.severity || 'ERROR'}: ${e.message || e.field || JSON.stringify(e)}`).join('; ');
+                } else if (issuesList && typeof issuesList === 'object') {
+                    errorMsg = Object.entries(issuesList).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : JSON.stringify(v)}`).join('; ');
+                } else {
+                    errorMsg = createData.message || createData.detail || createData.error || JSON.stringify(createData);
+                }
+            } else {
+                errorMsg = String(createData || 'Creatiefout');
+            }
             return NextResponse.json({
                 error: 'PEPPOL_CREATE_FAILED',
                 code: 'PEPPOL_CREATE_FAILED',
                 success: false,
                 details: createData,
+                issues: errorMsg,
             }, { status: 400 });
         }
         console.log(`[e-invoice.be] ✓ Document created: ${createData.id}`);
@@ -434,12 +464,26 @@ export async function POST(req: Request) {
         }
 
         if (!sendRes.ok) {
-            console.error('[e-invoice.be] Send failed:', sendData);
+            console.error('[e-invoice.be] Send failed:', JSON.stringify(sendData, null, 2));
+            let errorMsg = '';
+            if (sendData && typeof sendData === 'object') {
+                const issuesList = sendData.issues || sendData.errors || sendData.validation_errors;
+                if (Array.isArray(issuesList)) {
+                    errorMsg = issuesList.map((e: any) => typeof e === 'string' ? e : `${e.severity || 'ERROR'}: ${e.message || e.field || JSON.stringify(e)}`).join('; ');
+                } else if (issuesList && typeof issuesList === 'object') {
+                    errorMsg = Object.entries(issuesList).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : JSON.stringify(v)}`).join('; ');
+                } else {
+                    errorMsg = sendData.message || sendData.detail || sendData.error || JSON.stringify(sendData);
+                }
+            } else {
+                errorMsg = String(sendData || 'Verzendfout');
+            }
             return NextResponse.json({
                 error: 'PEPPOL_SEND_FAILED',
                 code: 'PEPPOL_SEND_FAILED',
                 success: false,
                 details: sendData,
+                issues: errorMsg,
             }, { status: 400 });
         }
 

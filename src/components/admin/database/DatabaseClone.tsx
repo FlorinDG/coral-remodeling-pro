@@ -359,6 +359,10 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     'db-expenses': [
       { id: 'title',       name: 'Factuur #',         type: 'text' },
       { id: 'supplier',    name: 'Leverancier',       type: 'relation', config: { relationDatabaseId: resolveDbId('db-suppliers'), relationDisplayPropertyId: 'title' } },
+      { id: 'docType',     name: 'Document Type',     type: 'select', config: { options: [
+        { id: 'opt-invoice', name: 'Factuur', color: 'blue' },
+        { id: 'opt-credit-note', name: 'Creditnota', color: 'purple' },
+      ]}},
       { id: 'betreft',     name: 'Omschrijving',      type: 'text' },
       { id: 'source',      name: 'Bron', type: 'select', config: { options: [
         { id: 'src-peppol', name: 'Peppol',       color: 'blue'   },
@@ -772,8 +776,20 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
             config: { relationDatabaseId: expectedTargetDbId, relationDisplayPropertyId: 'title' } 
           } : p
         );
-        store.updateDatabase(resolvedId, { properties: updatedProperties });
       }
+    }
+
+    // Migrate: db-expenses docType population
+    if (databaseId === 'db-expenses') {
+      const store = useDatabaseStore.getState();
+      database.pages.forEach(page => {
+        const currentDocType = page.properties['docType'];
+        if (!currentDocType) {
+          const isCN = page.properties['source'] === 'src-credit-note' || page.properties['status'] === 'opt-credited' || String(page.properties['title'] || '').startsWith('CN-');
+          const newType = isCN ? 'opt-credit-note' : 'opt-invoice';
+          store.updatePageProperty(resolvedId, page.id, 'docType', newType);
+        }
+      });
     }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale, resolveDbId]);
 

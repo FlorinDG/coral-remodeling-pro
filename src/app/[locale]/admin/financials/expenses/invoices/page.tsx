@@ -224,7 +224,11 @@ export default function ExpensesInvoicesPage() {
 
                 {/* Database grid */}
                 <div className="flex-1 min-h-0">
-                    <DatabaseCloneDynamic databaseId="db-expenses" onOpenRecord={(id) => setSelectedInvoiceId(id)} />
+                    <DatabaseCloneDynamic
+                        databaseId="db-expenses"
+                        defaultFilter={{ propertyId: 'docType', value: 'opt-invoice' }}
+                        onOpenRecord={(id) => setSelectedInvoiceId(id)}
+                    />
                 </div>
             </div>
 

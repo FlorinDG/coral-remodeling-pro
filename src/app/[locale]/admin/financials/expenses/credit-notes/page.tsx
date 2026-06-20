@@ -21,7 +21,7 @@ export default function ExpensesCreditNotesPage() {
             <div className="w-full flex-1 flex flex-col pt-6 min-h-0">
                 <DatabaseCloneDynamic
                     databaseId="db-expenses"
-                    defaultFilter={{ propertyId: 'source', value: 'src-credit-note' }}
+                    defaultFilter={{ propertyId: 'docType', value: 'opt-credit-note' }}
                 />
             </div>
         </div>

@@ -44,7 +44,7 @@ function resolveDocType(invoiceTitle: string, lang: string, docType?: string) {
                 : lang === 'fr'
                     ? 'Cette note de cr\u00e9dit remplace le montant initialement factur\u00e9 et sera d\u00e9duite de la prochaine facture ou rembours\u00e9e.'
                     : 'This credit note replaces the originally invoiced amount and will be deducted from the next invoice or refunded.')
-            : t('invoice_legal', lang),
+            : undefined,
     };
 }
 
@@ -222,7 +222,7 @@ export const InvoicePDFTemplate = ({
                     <View key={block.id} style={sectionStyle}>
                         <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
@@ -230,7 +230,7 @@ export const InvoicePDFTemplate = ({
                     <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'image') {
@@ -405,91 +405,94 @@ export const InvoicePDFTemplate = ({
 
                         {renderBlocks(blocks)}
 
-                        {/* Legal texts — above totals */}
-                        <View wrap={false}>
-                            {hasMedecontractant && (
-                                <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
-                                    {MEDECONTRACTANT_TEXT}
-                                </Text>
-                            )}
+                        {/* Legal + Totals + Payment Block bottom-aligned */}
+                        <View style={{ marginTop: 'auto', paddingTop: 16 }} wrap={false}>
+                            {/* Legal texts — above totals */}
+                            <View>
+                                {hasMedecontractant && (
+                                    <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 6, paddingHorizontal: 40 }}>
+                                        {MEDECONTRACTANT_TEXT}
+                                    </Text>
+                                )}
 
-                            {hasVat6 && (
-                                <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: 40 }}>
-                                    {VAT6_TEXT}
-                                </Text>
-                            )}
+                                {hasVat6 && (
+                                    <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 6, paddingHorizontal: 40 }}>
+                                        {VAT6_TEXT}
+                                    </Text>
+                                )}
 
-                            {legalText && (
-                                <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 12, lineHeight: 1.4 }}>
-                                    {legalText}
-                                </Text>
-                            )}
-                        </View>
+                                {legalText && (
+                                    <Text style={{ fontSize: 7.5, color: '#999', textAlign: 'center', marginTop: 6, lineHeight: 1.4 }}>
+                                        {legalText}
+                                    </Text>
+                                )}
+                            </View>
 
-                        {/* Summary and Stripe Payment Section */}
-                        <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 16 }} wrap={false}>
-                            {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
-                            {!isCreditNote && iban && (
-                                <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
-                                    <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
-                                        <View style={{ alignItems: 'center' as const, gap: 3 }}>
-                                            <Image 
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
-                                                style={{ width: 55, height: 55, borderRadius: 3 }}
-                                            />
-                                            <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
-                                                {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
-                                            </Text>
-                                        </View>
-                                        <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
-                                            <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
-                                            </Text>
-                                            <View style={{ gap: 1 }}>
-                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                    {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
+                            {/* Summary and Stripe Payment Section */}
+                            <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 12 }}>
+                                {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
+                                {!isCreditNote && iban && (
+                                    <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
+                                        <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                            <View style={{ alignItems: 'center' as const, gap: 3 }}>
+                                                <Image 
+                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
+                                                    style={{ width: 55, height: 55, borderRadius: 3 }}
+                                                />
+                                                <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
+                                                    {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
                                                 </Text>
-                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                    IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
+                                            </View>
+                                            <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
+                                                <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                                    {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
                                                 </Text>
-                                                {bic && (
+                                                <View style={{ gap: 1 }}>
                                                     <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                        BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                        {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
                                                     </Text>
-                                                )}
-                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                    {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
-                                                </Text>
-                                                {ogmToDisplay && (
                                                     <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                        {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                        IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
                                                     </Text>
-                                                )}
+                                                    {bic && (
+                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                            BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                        </Text>
+                                                    )}
+                                                    <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                        {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
+                                                    </Text>
+                                                    {ogmToDisplay && (
+                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                            {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                        </Text>
+                                                    )}
+                                                </View>
                                             </View>
                                         </View>
                                     </View>
-                                </View>
-                            )}
-                            {(!isCreditNote && isProforma && !iban) && <View style={{ flex: 1 }} />}
-                            {isCreditNote && <View style={{ flex: 1 }} />}
+                                )}
+                                {(!isCreditNote && isProforma && !iban) && <View style={{ flex: 1 }} />}
+                                {isCreditNote && <View style={{ flex: 1 }} />}
 
-                            {/* Right Side: Totals Summary */}
-                            <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4, width: 240 }}>
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('subtotal_excl', lang)}:</Text>
-                                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{finalSubtotal.toFixed(2)}</Text>
-                                </View>
-                                {vatBreakdown.map((v, i) => (
-                                    <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between' }}>
-                                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                            {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
-                                        </Text>
-                                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€{v.vat.toFixed(2)}</Text>
+                                {/* Right Side: Totals Summary */}
+                                <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6, width: 240 }}>
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                        <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
+                                        <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>
                                     </View>
-                                ))}
-                                <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                                    <Text style={{ fontSize: 8.5, color: '#000', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
-                                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: accent }}>€{totalInclTax.toFixed(2)}</Text>
+                                    {vatBreakdown.map((v, i) => (
+                                        <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>
+                                                {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
+                                            </Text>
+                                            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {v.vat.toFixed(2)}</Text>
+                                        </View>
+                                    ))}
+                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1.5px solid #111111', paddingVertical: 2 }}>
+                                        <Text style={{ fontSize: 11, color: '#111111', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
+                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: accent }}>€ {totalInclTax.toFixed(2)}</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
@@ -602,20 +605,20 @@ export const InvoicePDFTemplate = ({
     const renderGrandTotal = () => {
         if (isT3) {
             return (
-                <View style={{ marginTop: 4, backgroundColor: navy, padding: 10, flexDirection: 'row', width: 265, justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 11, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase' }}>
+                <View style={{ marginTop: 6, backgroundColor: navy, padding: 10, flexDirection: 'row', width: 265, justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#ffffff', textTransform: 'uppercase' }}>
                         {amountLabel}
                     </Text>
-                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: '#ffffff' }}>
-                        €{totalInclTax.toFixed(2)}
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#ffffff' }}>
+                        € {totalInclTax.toFixed(2)}
                     </Text>
                 </View>
             );
         }
         return (
-            <View style={{ ...s.summaryRow, marginTop: 4, paddingTop: 4, borderTop: '1px solid #e5e7eb' }}>
-                <Text style={{ ...s.summaryLabel, color: '#000', fontWeight: 'bold' }}>{amountLabel}:</Text>
-                <Text style={s.grandTotalValue}>€{totalInclTax.toFixed(2)}</Text>
+            <View style={{ ...s.summaryRow, marginTop: 6, paddingTop: 6, borderTop: '1.5px solid #111111', paddingVertical: 2 }}>
+                <Text style={{ ...s.summaryLabel, color: '#111111', fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase' }}>{amountLabel}:</Text>
+                <Text style={{ ...s.grandTotalValue, fontSize: 18, fontWeight: 'bold' }}>€ {totalInclTax.toFixed(2)}</Text>
             </View>
         );
     };
@@ -670,30 +673,31 @@ export const InvoicePDFTemplate = ({
                 {/* Content */}
                 {renderBlocks(blocks)}
 
-                <View wrap={false}>
-                    {/* Legal texts — above totals */}
-                    {hasMedecontractant && (
-                        <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: padH }}>
-                            {MEDECONTRACTANT_TEXT}
-                        </Text>
-                    )}
+                {/* Legal + Totals + Payment Block bottom-aligned */}
+                <View style={{ marginTop: 'auto', paddingTop: 16 }} wrap={false}>
+                    <View>
+                        {/* Legal texts — above totals */}
+                        {hasMedecontractant && (
+                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 6, paddingHorizontal: padH }}>
+                                {MEDECONTRACTANT_TEXT}
+                            </Text>
+                        )}
 
-                    {hasVat6 && (
-                        <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 12, paddingHorizontal: padH }}>
-                            {VAT6_TEXT}
-                        </Text>
-                    )}
+                        {hasVat6 && (
+                            <Text style={{ fontSize: 7.5, color: accent, fontWeight: 'bold', marginTop: 6, paddingHorizontal: padH }}>
+                                {VAT6_TEXT}
+                            </Text>
+                        )}
 
-                    {legalText && (
-                        <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 12, paddingHorizontal: padH, lineHeight: 1.4 }}>
-                            {legalText}
-                        </Text>
-                    )}
-                </View>
+                        {legalText && (
+                            <Text style={{ fontSize: 7.5, color: '#999999', textAlign: 'center', marginTop: 6, paddingHorizontal: padH, lineHeight: 1.4 }}>
+                                {legalText}
+                            </Text>
+                        )}
+                    </View>
 
-                <View wrap={false}>
                     {/* Summary and Stripe Payment Section */}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, marginHorizontal: isT1 || isT4 ? 32 : 8 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, marginHorizontal: isT1 || isT4 ? 32 : 8 }}>
                         {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
                         {!isCreditNote && iban && (
                             <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 280 }}>
@@ -739,22 +743,22 @@ export const InvoicePDFTemplate = ({
                         {isCreditNote && <View style={{ flex: 1 }} />}
 
                         {/* Right Side: Totals Summary */}
-                    <View style={{ width: isT3 ? 265 : 240 }}>
-                        <View style={s.summaryRow}>
-                            <Text style={s.summaryLabel}>{t('subtotal_excl', lang)}:</Text>
-                            <Text style={s.summaryValue}>€{finalSubtotal.toFixed(2)}</Text>
-                        </View>
-                        {vatBreakdown.map((v, i) => (
-                            <View key={i} style={s.summaryRow}>
-                                <Text style={s.summaryLabel}>
-                                    {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
-                                </Text>
-                                <Text style={s.summaryValue}>€{v.vat.toFixed(2)}</Text>
+                        <View style={{ width: isT3 ? 265 : 240, gap: 6 }}>
+                            <View style={{ ...s.summaryRow, paddingVertical: 2 }}>
+                                <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
+                                <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>
                             </View>
-                        ))}
-                        {renderGrandTotal()}
+                            {vatBreakdown.map((v, i) => (
+                                <View key={i} style={{ ...s.summaryRow, paddingVertical: 2 }}>
+                                    <Text style={{ ...s.summaryLabel, fontSize: 10, color: '#333333', fontWeight: 'bold' }}>
+                                        {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
+                                    </Text>
+                                    <Text style={{ ...s.summaryValue, fontSize: 12, fontWeight: 'bold' }}>€ {v.vat.toFixed(2)}</Text>
+                                </View>
+                            ))}
+                            {renderGrandTotal()}
+                        </View>
                     </View>
-                </View>
                 </View>
 
                 {/* Footer */}

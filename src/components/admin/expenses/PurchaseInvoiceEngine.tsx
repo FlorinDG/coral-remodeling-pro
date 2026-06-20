@@ -1009,6 +1009,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                         onMouseUp={handleMouseUp}
                                         onMouseLeave={handleMouseUp}
                                     >
+                                        {zoom !== 1 && (
+                                            <div className="absolute inset-0 z-20 bg-transparent" />
+                                        )}
                                         <iframe 
                                             src={page.properties.receiptUrl.startsWith('http') ? page.properties.receiptUrl : `/api/files/${page.properties.receiptUrl}`} 
                                             className={`w-full h-full border-none bg-white transition-transform duration-75 origin-center ${isDragging ? 'pointer-events-none' : ''}`}

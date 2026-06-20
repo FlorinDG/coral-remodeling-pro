@@ -123,7 +123,8 @@ const SETTINGS_TAB_KEYS: Record<string, string> = {
     'opt-tasks': 'tasks',
     'opt-website': 'website',
     'opt-databases': 'databases',
-    'opt-templates': 'templates'
+    'opt-templates': 'templates',
+    'opt-payments': 'payments'
 };
 
 const settingsTabsBase = [
@@ -141,7 +142,8 @@ const settingsTabsBase = [
     { label: 'WEBSITE', href: '/admin/settings/website', id: 'opt-website' },
     { label: 'PEPPOL', href: '/admin/settings/peppol', id: 'opt-peppol' },
     { label: 'DATABASES SCHEMA', href: '/admin/settings/databases', id: 'opt-databases' },
-    { label: 'TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' }
+    { label: 'TEMPLATES', href: '/admin/settings/templates', id: 'opt-templates' },
+    { label: 'PAYMENTS', href: '/admin/settings/payments', id: 'opt-payments' }
 ];
 
 export function getSettingsTabs(t?: (key: string) => string, tHas?: (key: string) => boolean) {
@@ -168,6 +170,7 @@ const SETTINGS_MODULE_MAP: Record<string, string> = {
     'opt-tasks':      'TASKS',
     'opt-website':    'WEBSITES',
     'opt-peppol':     'INVOICING',
+    'opt-payments':   'INVOICING',
 };
 
 /**

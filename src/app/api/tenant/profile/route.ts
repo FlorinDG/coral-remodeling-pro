@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import prisma from '@/lib/prisma';
@@ -31,6 +32,8 @@ const TENANT_FIELDS = [
     'defaultEventDuration', 'defaultCalendarView',
     'workHoursPerDay',
     'bordereauPrefix', 'poPrefix',
+    // Payments settings
+    'paymentProvider', 'stripeSecretKey', 'stripePublishableKey',
 ];
 
 // Build a select object from field list + extras
@@ -56,6 +59,10 @@ export async function GET() {
 
         if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
+        if (tenant.stripeSecretKey) {
+            tenant.stripeSecretKey = '********';
+        }
+
         return NextResponse.json(tenant);
     } catch (error) {
         console.error('Error fetching tenant profile:', error);
@@ -78,7 +85,16 @@ export async function PUT(request: Request) {
         const data: Record<string, any> = {};
         for (const field of TENANT_FIELDS) {
             if (field in body) {
-                data[field] = body[field];
+                if (field === 'stripeSecretKey') {
+                    if (body.stripeSecretKey === '') {
+                        data.stripeSecretKey = null;
+                    } else if (body.stripeSecretKey !== '********') {
+                        const { encrypt } = await import('@/lib/encryption');
+                        data.stripeSecretKey = encrypt(body.stripeSecretKey);
+                    }
+                } else {
+                    data[field] = body[field];
+                }
             }
         }
 

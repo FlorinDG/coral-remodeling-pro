@@ -65,6 +65,10 @@ export const FEATURE_FLAGS = {
     // ── HR ───────────────────────────────────────────────────────────
     /** HR contracts and advanced workforce management */
     HR_CONTRACTS:                   { minTier: 'ENTERPRISE'  as Tier },
+
+    // ── Payments ─────────────────────────────────────────────────────
+    /** Stripe online payments for sales invoices (opt-in) */
+    STRIPE_PAYMENTS:                { minTier: 'PRO'         as Tier },
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;

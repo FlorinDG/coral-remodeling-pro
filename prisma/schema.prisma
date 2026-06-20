@@ -89,6 +89,9 @@ model Tenant {
   defaultVatRate           Int?                    @default(21)
   poPrefix                 String?                 @default("PO")
   vatCalcMode              String?                 @default("lines")
+  paymentProvider          String                  @default("bank_transfer")
+  stripeSecretKey          String?
+  stripePublishableKey     String?
   workHoursPerDay          Float?                  @default(8.0)
   peppolOptOut             Boolean                 @default(false)
   mindeeApiKey             String?

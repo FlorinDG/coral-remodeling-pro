@@ -877,7 +877,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                             {providedDroppable.placeholder}
 
                                             {/* Modal Spawners */}
-                                            <div className="flex items-center gap-2 mt-4 ml-2 py-2 border-t border-neutral-200 dark:border-neutral-800">
+                                            <div className="flex flex-wrap items-center gap-2 mt-4 ml-2 py-2 border-t border-neutral-200 dark:border-neutral-800">
                                                 <button onClick={() => handleAddChild('article')} className="text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors px-3 py-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
                                                     <Box className="w-3.5 h-3.5" /> Calculator Article
                                                 </button>
@@ -886,6 +886,12 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                 </button>
                                                 <button onClick={() => handleAddChild('image')} className="text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors px-3 py-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
                                                     <ImageIcon className="w-3.5 h-3.5" /> Image Attachment
+                                                </button>
+                                                <button onClick={() => handleAddChild('space')} className="text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                                                    <ChevronsUpDown className="w-3.5 h-3.5" /> Spacer
+                                                </button>
+                                                <button onClick={() => handleAddChild('page-break')} className="text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors px-3 py-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
+                                                    <Scissors className="w-3.5 h-3.5" /> Page Break
                                                 </button>
                                             </div>
                                         </div>

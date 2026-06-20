@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -71,6 +72,17 @@ function formatDateBE(isoDate: string | undefined | null): string {
     }
 }
 
+function calculateHeaderTotalsFromLines(lines: any[]) {
+    const totalExVat = lines.reduce((sum, line) => sum + (line.lineTotal || 0), 0);
+    const totalVat = lines.reduce((sum, line) => sum + ((line.lineTotal || 0) * ((line.vatRate ?? 21) / 100)), 0);
+    const totalIncVat = totalExVat + totalVat;
+    return {
+        totalExVat: String(Math.round(totalExVat * 100) / 100),
+        totalVat: String(Math.round(totalVat * 100) / 100),
+        totalIncVat: String(Math.round(totalIncVat * 100) / 100),
+    };
+}
+
 export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoiceEngineProps) {
     const { activeModules, resolveDbId, tenant } = useTenant();
     const expensesDbId = resolveDbId('db-expenses');
@@ -134,6 +146,17 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 }));
             }
 
+            let totalExVat = page.properties.totalExVat ? String(page.properties.totalExVat) : '';
+            let totalVat = page.properties.totalVat ? String(page.properties.totalVat) : '';
+            let totalIncVat = page.properties.totalIncVat ? String(page.properties.totalIncVat) : '';
+
+            if (lines.length > 0) {
+                const computed = calculateHeaderTotalsFromLines(lines);
+                totalExVat = computed.totalExVat;
+                totalVat = computed.totalVat;
+                totalIncVat = computed.totalIncVat;
+            }
+
             setEditData({
                 title: String(page.properties.title || ''),
                 supplierName: String(page.properties.supplierName || ''),
@@ -143,9 +166,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 contact: String(page.properties.contact || ''),
                 invoiceDate: String(page.properties.invoiceDate || ''),
                 dueDate: String(page.properties.dueDate || ''),
-                totalExVat: page.properties.totalExVat ? String(page.properties.totalExVat) : '',
-                totalVat: page.properties.totalVat ? String(page.properties.totalVat) : '',
-                totalIncVat: page.properties.totalIncVat ? String(page.properties.totalIncVat) : '',
+                totalExVat,
+                totalVat,
+                totalIncVat,
                 lines,
             });
 
@@ -421,20 +444,20 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                             <FinancialCell
                                 label="Total Excl. VAT"
                                 value={(isEditing ? editData.totalExVat : page.properties.totalExVat) as string | number}
-                                editable={isEditing}
+                                editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalExVat: v }))}
                             />
                             <FinancialCell
                                 label="Total VAT"
                                 value={(isEditing ? editData.totalVat : page.properties.totalVat) as string | number}
-                                editable={isEditing}
+                                editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalVat: v }))}
                             />
                             <FinancialCell
                                 label="Total Incl. VAT"
                                 value={(isEditing ? editData.totalIncVat : page.properties.totalIncVat) as string | number}
                                 highlight
-                                editable={isEditing}
+                                editable={isEditing && editData.lines.length === 0}
                                 onChange={v => setEditData(p => ({ ...p, totalIncVat: v }))}
                             />
                         </div>
@@ -445,7 +468,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
                                     {isEditing && (
-                                        <button onClick={() => setEditData(p => ({ ...p, lines: [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0 }] }))} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
+                                        <button onClick={() => setEditData(p => {
+                                            const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0 }];
+                                            const computed = calculateHeaderTotalsFromLines(newLines);
+                                            return { ...p, lines: newLines, ...computed };
+                                        })} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
                                             + Add Line
                                         </button>
                                     )}
@@ -476,35 +503,35 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{line.quantity || 0}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">€{Number(line.unitPrice || 0).toFixed(2)}</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.vatRate} onChange={e => { const l = [...editData.lines]; l[i].vatRate = parseFloat(e.target.value) || 0; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                            <input type="number" step="0.01" value={line.vatRate} onChange={e => { const l = [...editData.lines]; l[i].vatRate = parseFloat(e.target.value) || 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
                                                         ) : (
                                                             <span className="text-neutral-500">{line.vatRate || 0}%</span>
                                                         )}
                                                     </td>
                                                     <td className="px-3 py-2 text-right">
                                                         {isEditing ? (
-                                                            <input type="number" step="0.01" value={line.lineTotal} onChange={e => { const l = [...editData.lines]; l[i].lineTotal = parseFloat(e.target.value) || 0; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
+                                                            <input type="number" step="0.01" value={line.lineTotal} onChange={e => { const l = [...editData.lines]; l[i].lineTotal = parseFloat(e.target.value) || 0; const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
                                                         ) : (
                                                             <span className="text-neutral-900 dark:text-white font-medium">€{Number(line.lineTotal || 0).toFixed(2)}</span>
                                                         )}
                                                     </td>
                                                     {isEditing && (
                                                         <td className="px-2 py-2 text-center">
-                                                            <button onClick={() => { const l = editData.lines.filter((_, idx) => idx !== i); setEditData({ ...editData, lines: l }); }} className="text-red-400 hover:text-red-600">
+                                                            <button onClick={() => { const l = editData.lines.filter((_, idx) => idx !== i); const computed = calculateHeaderTotalsFromLines(l); setEditData({ ...editData, lines: l, ...computed }); }} className="text-red-400 hover:text-red-600">
                                                                 <X className="w-3.5 h-3.5" />
                                                             </button>
                                                         </td>

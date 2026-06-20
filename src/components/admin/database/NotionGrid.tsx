@@ -86,6 +86,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const updateViewPropertyOrder = useDatabaseStore(state => state.updateViewPropertyOrder);
     const updatePageOrder = useDatabaseStore(state => state.updatePageOrder);
     const clearDatabase = useDatabaseStore(state => state.clearDatabase);
+    const clearFilters = useDatabaseStore(state => state.clearFilters);
     const undo = useDatabaseStore(state => state.undo);
     const [activePageId, setActivePageId] = useState<string | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
@@ -278,10 +279,13 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         setSelectedRowIds,
         setActivePageId: handleOpenPage,
     });
+    const activeFilters = useMemo(() => {
+        if (!database) return [];
+        return activeView?.filters || database.activeFilters || [];
+    }, [database, activeView?.filters, database?.activeFilters]);
 
     const filteredPages = useMemo(() => {
         if (!database) return [];
-        const activeFilters = activeView?.filters || database.activeFilters || [];
 
         // Build lookup helpers once per filter pass
         const propMap = new Map(database.properties.map(p => [p.id, p]));
@@ -347,12 +351,16 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             }
 
             // Always include newly created pages to prevent them from being hidden by active filters while editing (GRID-3)
+            // eslint-disable-next-line react-hooks/purity
             const isRecent = Date.now() - new Date(page.createdAt).getTime() < 120000;
             if (isRecent) return true;
 
             if (!activeFilters || activeFilters.length === 0) return true;
 
             const configuredFilters = activeFilters.filter(filter => {
+                if (!propMap.has(filter.propertyId)) {
+                    return false;
+                }
                 const isTextOp = ['equals', 'does_not_equal', 'contains', 'does_not_contain'].includes(filter.operator);
                 if (isTextOp && (filter.value === '' || filter.value === undefined || filter.value === null)) {
                     return false;
@@ -429,6 +437,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         const regularPages: Page[] = [];
 
         filteredPages.forEach(p => {
+            // eslint-disable-next-line react-hooks/purity
             const isRecent = Date.now() - new Date(p.createdAt).getTime() < 120000;
             if (isRecent) {
                 newPages.push(p);
@@ -732,7 +741,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 </div>
             </div>
 
-            {/* \u2500\u2500 Export lock banner (non-accountant users) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 */}
+            {/* ── Export lock banner (non-accountant users) ────────────────────── */}
             {!isAccountant && (() => {
                 const exportedCount = acctDateFilteredPages.filter(p => p.properties.accountantExportedAt).length;
                 if (exportedCount === 0) return null;
@@ -745,6 +754,21 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </div>
                 );
             })()}
+
+            {/* ── Filter safety banner ── */}
+            {filteredPages.length === 0 && database.pages.length > 0 && activeFilters.length > 0 && (
+                <div className="px-4 py-2 bg-orange-50 dark:bg-orange-950/20 border-b border-orange-200 dark:border-orange-500/20 flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-orange-700 dark:text-orange-300">
+                        Filters active ({activeFilters.length}) &mdash; No rows match current filters.
+                    </p>
+                    <button
+                        onClick={() => clearFilters(database.id, activeViewId)}
+                        className="text-xs font-bold text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 hover:underline transition-colors shrink-0"
+                    >
+                        Clear
+                    </button>
+                </div>
+            )}
 
             <div
                 className="flex-1 w-full p-0 relative overflow-hidden overscroll-none min-h-0 bg-white dark:bg-black"

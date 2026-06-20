@@ -537,9 +537,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                                                 <tr key={i} className="bg-white dark:bg-transparent">
                                                     <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium">{line.name}</td>
                                                     <td className="px-3 py-2 text-neutral-500 text-right">{line.quantity}</td>
-                                                    <td className="px-3 py-2 text-neutral-500 text-right">€{Number(line.price).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-neutral-500 text-right">€{Number(line.unitPrice ?? line.price).toFixed(2)}</td>
                                                     <td className="px-3 py-2 text-neutral-500 text-right">{line.vatRate}%</td>
-                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium text-right">€{Number(line.totalExVat).toFixed(2)}</td>
+                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium text-right">€{Number(line.lineTotal ?? line.totalExVat).toFixed(2)}</td>
                                                 </tr>
                                             ))}
                                         </tbody>

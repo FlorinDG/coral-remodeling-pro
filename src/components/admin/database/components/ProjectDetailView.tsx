@@ -4,6 +4,9 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
+import { createPrismaInvoice } from "@/app/actions/create-invoice";
+import { getNextDocumentNumber } from "@/app/actions/next-document-number";
+import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
@@ -119,7 +122,7 @@ interface ProjectDetailViewProps {
 }
 
 export default function ProjectDetailView({ databaseId, pageId, locale, onClose }: ProjectDetailViewProps) {
-    const { resolveDbId } = useTenant();
+    const { resolveDbId, tenant } = useTenant();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'journal' | 'files' | 'vorderingen'>('overview');
     const [taskFilter, setTaskFilter] = useState<string | null>(null);
@@ -452,7 +455,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
     };
 
 
-    const handleCreateInvoiceFromVS = (vs: any) => {
+    const handleCreateInvoiceFromVS = async (vs: any) => {
         const invoiceDbId = resolveDbId('db-invoices');
         const today = new Date().toISOString().split('T')[0];
 
@@ -460,55 +463,70 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         const rawClient = page.properties['client'] || page.properties['prop-client'] || [];
         const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
 
-        // 2. Create the invoice
-        const newInvoice = createPage(invoiceDbId, {
-            client: clientId ? [clientId] : [],
-            betreft: `Vorderingstaat ${vs.number} — ${page.properties['title'] || page.properties['name'] || 'Project'}`,
-            status: 'opt-draft',
-            invoiceDate: today,
-            deliveryDate: today,
-            totalExVat: vs.totalExVat,
-            totalVat: vs.vatAmount,
-            totalIncVat: vs.totalIncVat,
-        });
+        try {
+            // Generate sequential invoice number
+            const numResult = await getNextDocumentNumber('invoice');
+            const invoiceNumber = numResult.success && numResult.number
+                ? numResult.number
+                : generateClientSideDocNumber(tenant, 'invoice');
 
-        if (!newInvoice) {
-            toast.error('Factuur aanmaken mislukt.');
-            return;
-        }
+            // 2. Create the invoice
+            const newInvoice = createPage(invoiceDbId, {
+                title: invoiceNumber,
+                client: clientId ? [clientId] : [],
+                betreft: `Vorderingstaat ${vs.number} — ${page.properties['title'] || page.properties['name'] || 'Project'}`,
+                status: 'opt-draft',
+                invoiceDate: today,
+                deliveryDate: today,
+                totalExVat: vs.totalExVat,
+                totalVat: vs.vatAmount,
+                totalIncVat: vs.totalIncVat,
+            });
 
-        // 3. Clone line items as blocks
-        const invoiceBlocks: Block[] = vs.items.map((item: any) => ({
-            id: crypto.randomUUID(),
-            type: 'line',
-            content: `${item.content} (Cumulatieve vordering: ${item.previousProgress + item.currentProgress}%)`,
-            quantity: 1,
-            unit: 'st',
-            verkoopPrice: item.amount,
-            brutoPrice: item.amount,
-            margePercent: 0,
-            vatRate: '21',
-        }));
-
-        updatePageBlocks(invoiceDbId, newInvoice.id, invoiceBlocks);
-
-        // 4. Update the vorderingenstaten array in this project
-        const updatedStates = vorderingenstaten.map((state: any) => {
-            if (state.id === vs.id) {
-                return {
-                    ...state,
-                    status: 'invoiced',
-                    invoiceId: newInvoice.id,
-                    invoicedAt: new Date().toISOString()
-                };
+            if (!newInvoice) {
+                toast.error('Factuur aanmaken mislukt.');
+                return;
             }
-            return state;
-        });
 
-        updatePageProperty(databaseId, pageId, 'vorderingenstaten', updatedStates);
+            // Create the Prisma invoice record with the confirmed page ID
+            await createPrismaInvoice(newInvoice.id, invoiceNumber);
 
-        toast.success(`Factuur aangemaakt voor Vorderingstaat ${vs.number}!`);
-        router.push(`/${locale}/admin/invoices/${newInvoice.id}`);
+            // 3. Clone line items as blocks
+            const invoiceBlocks: Block[] = vs.items.map((item: any) => ({
+                id: crypto.randomUUID(),
+                type: 'line',
+                content: `${item.content} (Cumulatieve vordering: ${item.previousProgress + item.currentProgress}%)`,
+                quantity: 1,
+                unit: 'st',
+                verkoopPrice: item.amount,
+                brutoPrice: item.amount,
+                margePercent: 0,
+                vatRate: '21',
+            }));
+
+            updatePageBlocks(invoiceDbId, newInvoice.id, invoiceBlocks);
+
+            // 4. Update the vorderingenstaten array in this project
+            const updatedStates = vorderingenstaten.map((state: any) => {
+                if (state.id === vs.id) {
+                    return {
+                        ...state,
+                        status: 'invoiced',
+                        invoiceId: newInvoice.id,
+                        invoicedAt: new Date().toISOString()
+                    };
+                }
+                return state;
+            });
+
+            updatePageProperty(databaseId, pageId, 'vorderingenstaten', updatedStates);
+
+            toast.success(`Factuur aangemaakt voor Vorderingstaat ${vs.number}!`);
+            router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
+        } catch (e: any) {
+            console.error('Failed to create invoice from progress statement:', e);
+            toast.error('Factuur aanmaken mislukt door een systeemfout.');
+        }
     };
 
     const content = (

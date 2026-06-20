@@ -628,41 +628,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     // Initialize all properties defined in the schema to prevent DataSheetGrid from breaking
                     const fullProperties: Record<string, any> = { ...initialProperties };
 
-                    // Custom Auto-Numbering for Quotations (CEO-YYYY-XXX.00)
-                    if (isBaseDb(databaseId, 'db-quotations') && !fullProperties['title']) {
-                        const year = new Date().getFullYear();
-                        let maxNum = 0;
-                        db.pages.forEach((p: Page) => {
-                            const title = p.properties['title'] as string;
-                            if (title && title.startsWith(`CEO-${year}-`)) {
-                                const match = title.match(/CEO-\d{4}-(\d+)/);
-                                if (match && match[1]) {
-                                    const parsed = parseInt(match[1], 10);
-                                    if (parsed > maxNum) maxNum = parsed;
-                                }
-                            }
-                        });
-                        const nextStr = String(maxNum + 1).padStart(3, '0');
-                        fullProperties['title'] = `CEO-${year}-${nextStr}.00`;
-                    }
 
-                    // Custom Auto-Numbering for Invoices (FAC-YYYY-XXX)
-                    if (isBaseDb(databaseId, 'db-invoices') && !fullProperties['title']) {
-                        const year = new Date().getFullYear();
-                        let maxNum = 0;
-                        db.pages.forEach((p: Page) => {
-                            const title = p.properties['title'] as string;
-                            if (title && title.startsWith(`FAC-${year}-`)) {
-                                const match = title.match(/FAC-\d{4}-(\d+)/);
-                                if (match && match[1]) {
-                                    const parsed = parseInt(match[1], 10);
-                                    if (parsed > maxNum) maxNum = parsed;
-                                }
-                            }
-                        });
-                        const nextStr = String(maxNum + 1).padStart(3, '0');
-                        fullProperties['title'] = `FAC-${year}-${nextStr}`;
-                    }
 
                     // Ensure structuredComm is generated for invoices
                     if (isBaseDb(databaseId, 'db-invoices') && !fullProperties['structuredComm']) {
@@ -811,22 +777,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                         databases: state.databases.map(db => {
                             if (db.id !== databaseId) return db;
 
-                            // Evaluate max sequence number if handling quotations
-                            let currentMax = 0;
-                            const year = new Date().getFullYear();
-                            if (isBaseDb(databaseId, 'db-quotations')) {
-                                db.pages.forEach((p: Page) => {
-                                    const title = p.properties['title'] as string;
-                                    if (title && title.startsWith(`CEO-${year}-`)) {
-                                        const m = title.match(/CEO-\d{4}-(\d+)/);
-                                        if (m && m[1]) {
-                                            const pNum = parseInt(m[1], 10);
-                                            if (pNum > currentMax) currentMax = pNum;
-                                        }
-                                    }
-                                });
-                            }
-
                             // Evaluate max sequence counters for articles
                             const currentArticleMax: Record<string, number> = {};
                             if (databaseId === 'db-articles') {
@@ -847,10 +797,6 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                             const newPages: Page[] = pagesProperties.map((initialProperties, index) => {
                                 const pProps = { ...initialProperties };
-                                if (isBaseDb(databaseId, 'db-quotations') && !pProps['title']) {
-                                    currentMax++;
-                                    pProps['title'] = `CEO-${year}-${String(currentMax).padStart(3, '0')}.00`;
-                                }
 
                                 if (databaseId === 'db-articles' && !pProps['prop-art-id']) {
                                     let groupCode = '00';
@@ -1121,18 +1067,33 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 }
 
-                                // Invoice: invoiceDate set → auto-calculate dueDate
-                                if (isBaseDb(databaseId, 'db-invoices') && propertyId === 'invoiceDate' && value) {
-                                    if (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate']) {
-                                        // Fetch tenant payment terms and calculate dueDate async
-                                        fetch('/api/tenant/profile', { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }).then(r => r.json()).then(data => {
-                                            const days = data.defaultPaymentTermDays ?? 30;
-                                            const invoiceDate = new Date(value as string);
-                                            invoiceDate.setDate(invoiceDate.getDate() + days);
-                                            const dueDate = invoiceDate.toISOString().split('T')[0];
-                                            // Use store's own method to set the dueDate
-                                            get().updatePageProperty(databaseId, pageId, 'dueDate', dueDate);
-                                        }).catch(() => { /* silent — fallback to manual */ });
+                                // Invoice: invoiceDate or prop-payment-method set → auto-calculate dueDate
+                                if (isBaseDb(databaseId, 'db-invoices') && (propertyId === 'invoiceDate' || propertyId === 'prop-payment-method') && value) {
+                                    const currentInvDate = propertyId === 'invoiceDate' ? (value as string) : (newProps['invoiceDate'] as string || page.properties['invoiceDate'] as string);
+                                    const currentPaymentMethod = propertyId === 'prop-payment-method' ? (value as string) : (newProps['prop-payment-method'] as string || page.properties['prop-payment-method'] as string);
+
+                                    if (currentInvDate) {
+                                        if (currentPaymentMethod && currentPaymentMethod.startsWith('pay-')) {
+                                            const daysStr = currentPaymentMethod.split('-')[1];
+                                            const days = parseInt(daysStr, 10);
+                                            if (!isNaN(days)) {
+                                                const invoiceDate = new Date(currentInvDate);
+                                                invoiceDate.setDate(invoiceDate.getDate() + days);
+                                                const dueDate = invoiceDate.toISOString().split('T')[0];
+                                                newProps['dueDate'] = dueDate;
+                                            }
+                                        } else {
+                                            // Fallback to fetch tenant default profile if invoiceDate was changed and prop-payment-method is not set
+                                            if (propertyId === 'invoiceDate' && (!newProps['dueDate'] || newProps['dueDate'] === page.properties['dueDate'])) {
+                                                fetch('/api/tenant/profile', { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }).then(r => r.json()).then(data => {
+                                                    const days = data.defaultPaymentTermDays ?? 30;
+                                                    const invoiceDate = new Date(currentInvDate);
+                                                    invoiceDate.setDate(invoiceDate.getDate() + days);
+                                                    const dueDate = invoiceDate.toISOString().split('T')[0];
+                                                    get().updatePageProperty(databaseId, pageId, 'dueDate', dueDate);
+                                                }).catch(() => { /* silent — fallback to manual */ });
+                                            }
+                                        }
                                     }
                                 }
 

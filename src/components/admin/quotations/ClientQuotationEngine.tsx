@@ -22,6 +22,9 @@ import SelectDropdown from '@/components/admin/database/components/SelectDropdow
 import { canAccess } from '@/lib/feature-flags';
 import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { createPrismaInvoice } from "@/app/actions/create-invoice";
+import { getNextDocumentNumber } from "@/app/actions/next-document-number";
+import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -635,46 +638,59 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     // Convert accepted quotation → invoice
-    const handleConvertToInvoice = () => {
+    const handleConvertToInvoice = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant.');
 
         const invoiceDbId = resolveDbId('db-invoices');
         const today = new Date().toISOString().split('T')[0];
 
-        // Create invoice with data from quotation
-        const newInvoice = createPage(invoiceDbId, {
-            // title is auto-numbered by store (FAC-YYYY-XXX)
-            client: [clientId],
-            betreft: betreft || quotationTitle,
-            status: 'opt-draft',
-            invoiceDate: today,
-            deliveryDate: today,
-            // dueDate will be auto-calculated by store automation
-            totalExVat: Math.round((quotation?.properties?.['totalExVat'] as number || grandTotal) * 100) / 100,
-            totalVat: Math.round((quotation?.properties?.['totalVat'] as number || vatAmount) * 100) / 100,
-            totalIncVat: Math.round((quotation?.properties?.['totalIncVat'] as number || totalIncVat) * 100) / 100,
-        });
+        try {
+            // Generate the next sequential invoice number
+            const numResult = await getNextDocumentNumber('invoice');
+            const invoiceNumber = numResult.success && numResult.number
+                ? numResult.number
+                : generateClientSideDocNumber(tenant, 'invoice');
 
-        if (!newInvoice) {
-            toast.error('Factuur aanmaken mislukt.');
-            return;
+            // Create invoice with data from quotation
+            const newInvoice = createPage(invoiceDbId, {
+                title: invoiceNumber,
+                client: [clientId],
+                betreft: betreft || quotationTitle,
+                status: 'opt-draft',
+                invoiceDate: today,
+                deliveryDate: today,
+                totalExVat: Math.round((quotation?.properties?.['totalExVat'] as number || grandTotal) * 100) / 100,
+                totalVat: Math.round((quotation?.properties?.['totalVat'] as number || vatAmount) * 100) / 100,
+                totalIncVat: Math.round((quotation?.properties?.['totalIncVat'] as number || totalIncVat) * 100) / 100,
+            });
+
+            if (!newInvoice) {
+                toast.error('Factuur aanmaken mislukt.');
+                return;
+            }
+
+            // Create the Prisma invoice record with the confirmed page ID
+            await createPrismaInvoice(newInvoice.id, invoiceNumber);
+
+            // Copy line items (blocks) to the invoice
+            if (blocks.length > 0) {
+                // Deep clone blocks with new IDs to avoid cross-references
+                const cloneBlocks = (nodes: Block[]): Block[] => {
+                    return nodes.map(b => ({
+                        ...b,
+                        id: crypto.randomUUID(),
+                        children: b.children ? cloneBlocks(b.children) : undefined,
+                    }));
+                };
+                updatePageBlocks(invoiceDbId, newInvoice.id, cloneBlocks(blocks));
+            }
+
+            toast.success('Factuur aangemaakt vanuit offerte!');
+            router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
+        } catch (e: any) {
+            console.error('Failed to convert quotation to invoice:', e);
+            toast.error('Factuur aanmaken mislukt door een systeemfout.');
         }
-
-        // Copy line items (blocks) to the invoice
-        if (blocks.length > 0) {
-            // Deep clone blocks with new IDs to avoid cross-references
-            const cloneBlocks = (nodes: Block[]): Block[] => {
-                return nodes.map(b => ({
-                    ...b,
-                    id: crypto.randomUUID(),
-                    children: b.children ? cloneBlocks(b.children) : undefined,
-                }));
-            };
-            updatePageBlocks(invoiceDbId, newInvoice.id, cloneBlocks(blocks));
-        }
-
-        toast.success('Factuur aangemaakt vanuit offerte!');
-        router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
     };
 
     // Create an addendum — independent quotation linked to the parent

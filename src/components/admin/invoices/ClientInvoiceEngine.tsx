@@ -61,6 +61,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isSending, setIsSending] = useState(false);
     const [isSavingToDrive, setIsSavingToDrive] = useState(false);
     const [isSendingPeppol, setIsSendingPeppol] = useState(false);
+    const [isValidatingPeppol, setIsValidatingPeppol] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [isPreviewing, setIsPreviewing] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
@@ -857,6 +858,74 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
     };
 
+    const handleValidatePeppol = async () => {
+        if (!clientId) return toast.warning('Selecteer eerst een klant!');
+        const selectedClient = clients.find(c => c.id === clientId);
+        if (!selectedClient) return toast.error('Klant niet gevonden in database.');
+
+        setIsValidatingPeppol(true);
+        try {
+            // Wait for DB sync to ensure all row calculations are mathematically synced with the backend store
+            await new Promise(r => setTimeout(r, 800));
+
+            const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
+            const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
+
+            const res = await fetch('/api/peppol/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    invoiceId: id,
+                    invoiceTitle: String(invoiceTitle),
+                    betreft: betreft,
+                    invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
+                    dueDate: dueDateProp ? String(dueDateProp) : undefined,
+                    blocks: blocks,
+                    structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
+                    isCreditNote,
+                    parentInvoiceId,
+                    client: {
+                        firstName: selectedClient.firstName,
+                        lastName: selectedClient.lastName,
+                        email: selectedClient.email,
+                        vatNumber: selectedClient.vatNumber,
+                        address: selectedClient.address || '',
+                        street: (selectedClient as any).street || '',
+                        postalCode: (selectedClient as any).postalCode || '',
+                        city: (selectedClient as any).city || '',
+                        country: (selectedClient as any).country || '',
+                    },
+                })
+            });
+
+            let data: any;
+            try {
+                data = await res.json();
+            } catch {
+                toast.error(`Validatie mislukt: Ongeldig antwoord van de server.`);
+                return;
+            }
+
+            if (data.is_valid) {
+                toast.success('Factuur is volledig geldig voor Peppol verzending! Ready to send. ✅');
+            } else {
+                const errors = data.errors || [];
+                if (errors.length > 0) {
+                    errors.forEach((err: string) => {
+                        toast.error(`Validatiefout (${data.source === 'local' ? 'Lokaal' : 'Peppol API'}): ${err}`);
+                    });
+                } else {
+                    toast.error(`Validatie mislukt zonder specifieke fouten.`);
+                }
+            }
+        } catch (e: any) {
+            console.error(e);
+            toast.error('Systeemfout bij Peppol validatie: ' + e.message);
+        } finally {
+            setIsValidatingPeppol(false);
+        }
+    };
+
     return (
         <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
@@ -1478,6 +1547,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 }}
                             >
                                 <CloudUpload className="w-4 h-4" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
+                            </button>
+                            <button
+                                onClick={handleValidatePeppol}
+                                disabled={isValidatingPeppol || !clientId || isProforma}
+                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
+                                style={{
+                                    backgroundColor: (clientId && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
+                                    borderColor: (clientId && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
+                                    color: (clientId && !isProforma) ? 'var(--brand-color, #d35400)' : undefined,
+                                }}
+                            >
+                                <ClipboardCheck className="w-4 h-4" /> {isValidatingPeppol ? 'Valideren...' : 'Test / Valideer'}
                             </button>
                             <button
                                 onClick={handleSendPeppol}

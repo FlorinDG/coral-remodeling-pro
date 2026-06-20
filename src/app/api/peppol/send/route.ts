@@ -5,93 +5,7 @@ import prisma from '@/lib/prisma';
 import { generatePeppolUBL, type UBLLineItem } from '@/lib/peppol-ubl';
 import { Resend } from 'resend';
 import { maybeResetMonthlyCounters, assertPeppolSentLimit, incrementPeppolSent } from '@/lib/plan-limits';
-
-// ──────────────────────────────────────────────────────────
-// Peppol E-Invoice Dispatch via e-invoice.be API
-// Docs: https://docs.e-invoice.be/guides/creating-invoices
-// ──────────────────────────────────────────────────────────
-
-interface InvoiceLinePayload {
-    description: string;
-    quantity: number;
-    unit: string;
-    unit_price: number;
-    amount: number;
-    tax_rate: string;
-}
-
-interface InvoiceBlock {
-    id: string;
-    type: string;
-    content: string;
-    quantity?: number;
-    unit?: string;
-    unitPrice?: number;
-    verkoopPrice?: number;
-    vatRate?: number;
-    vatMedecontractant?: boolean;
-    isOptional?: boolean;
-    children?: InvoiceBlock[];
-}
-
-/**
- * Recursively flattens the block tree into e-invoice.be line items.
- * Only includes priced lines (type: line, article, bestek) that are NOT optional.
- */
-function flattenBlocksToLineItems(blocks: InvoiceBlock[]): InvoiceLinePayload[] {
-    const items: InvoiceLinePayload[] = [];
-
-    const walk = (nodes: InvoiceBlock[]) => {
-        for (const block of nodes) {
-            if (block.isOptional) continue;
-
-            if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-                walk(block.children || []);
-            } else if (block.type === 'line' || block.type === 'article' || block.type === 'bestek') {
-                const qty = block.quantity || 1;
-                const price = block.unitPrice || block.verkoopPrice || 0;
-                if (price === 0 && !block.content) continue; // skip empty lines
-
-                const lineTotal = price * qty;
-                const vatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
-
-                // Map unit to UN/CEFACT code
-                const unitCode = mapUnitToCode(block.unit);
-
-                items.push({
-                    description: block.content || 'Dienstverlening',
-                    quantity: qty,
-                    unit: unitCode,
-                    unit_price: Math.round(price * 100) / 100,
-                    amount: Math.round(lineTotal * 100) / 100,
-                    tax_rate: vatRate.toFixed(2),
-                });
-            }
-        }
-    };
-
-    walk(blocks);
-    return items;
-}
-
-/** Maps internal unit strings to UN/CEFACT codes required by e-invoice.be */
-function mapUnitToCode(unit?: string): string {
-    if (!unit) return 'C62'; // Default: pieces/units
-    const lower = unit.toLowerCase().trim();
-    const map: Record<string, string> = {
-        'stuks': 'C62', 'stuk': 'C62', 'pcs': 'C62', 'st': 'C62', 'pc': 'C62',
-        'uur': 'HUR', 'uren': 'HUR', 'u': 'HUR', 'h': 'HUR', 'hour': 'HUR', 'hours': 'HUR',
-        'dag': 'DAY', 'dagen': 'DAY', 'day': 'DAY', 'days': 'DAY',
-        'm': 'MTR', 'meter': 'MTR', 'meters': 'MTR', 'lm': 'MTR', 'ml': 'MTR',
-        'm2': 'MTK', 'm²': 'MTK',
-        'm3': 'MTQ', 'm³': 'MTQ',
-        'kg': 'KGM', 'kilo': 'KGM',
-        'l': 'LTR', 'liter': 'LTR',
-        'forfait': 'C62', 'forf.': 'C62', 'forf': 'C62', 'vp': 'C62', 'lot': 'C62', 'set': 'C62',
-        'stk': 'C62',
-    };
-    return map[lower] || 'C62';
-}
+import { buildPeppolPayload } from '@/lib/peppol-payload';
 
 export async function POST(req: Request) {
     try {
@@ -137,14 +51,8 @@ export async function POST(req: Request) {
         }
 
         // 2. Validate client data
-        if (!client?.firstName) {
+        if (!client?.firstName && !client?.companyName) {
             return NextResponse.json({ error: 'MISSING_CLIENT', code: 'MISSING_CLIENT', success: false }, { status: 400 });
-        }
-
-        // 3. Transform blocks into e-invoice.be line items
-        const items = flattenBlocksToLineItems(blocks || []);
-        if (items.length === 0) {
-            return NextResponse.json({ error: 'NO_LINE_ITEMS', code: 'NO_LINE_ITEMS', success: false }, { status: 400 });
         }
 
         // 3b. Fetch original invoice for Credit Note reference if applicable
@@ -155,75 +63,33 @@ export async function POST(req: Request) {
             if (parent) parentInvoiceNumber = parent.invoiceNumber;
         }
 
-        console.log(`[e-invoice.be] Preparing Peppol dispatch for Invoice "${invoiceTitle}" → ${client.firstName} ${client.lastName || ''}`);
+        console.log(`[e-invoice.be] Preparing Peppol dispatch for Invoice "${invoiceTitle}" → ${client.firstName || client.companyName || ''}`);
 
         // 4. Build the e-invoice.be payload
-        const today = new Date().toISOString().split('T')[0];
-        const due = dueDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0];
+        const {
+            invoicePayload,
+            vendorVat,
+            customerVat,
+            customerCountry,
+            customerAddressStr,
+            items
+        } = buildPeppolPayload({
+            invoiceId,
+            blocks: blocks || [],
+            client,
+            invoiceTitle,
+            betreft,
+            invoiceDate,
+            dueDate,
+            isCreditNote,
+            parentInvoiceNumber,
+            structuredComm,
+            tenant,
+            userEmail: session?.user?.email || ''
+        });
 
-        // Clean VAT number for e-invoice.be (expects format: BE1018265814)
-        const cleanVat = (vat: string) => vat.replace(/[\s.]/g, '').toUpperCase();
-
-        const vendorVat = cleanVat(tenant.vatNumber);
-        const customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
-
-        const customerCountry = client.country || 'BE';
-        const countryLabel = customerCountry === 'BE' ? 'Belgium' : customerCountry;
-        const customerAddressStr = [
-            client.street,
-            client.postalCode,
-            client.city,
-            countryLabel
-        ].filter(Boolean).join(', ') || client.address || '';
-
-        const invoicePayload: Record<string, any> = {
-            document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',
-            invoice_id: String(invoiceTitle || invoiceId || `INV-${Date.now()}`),
-            invoice_date: invoiceDate || today,
-            due_date: due,
-            currency: 'EUR',
-            related_invoice_id: parentInvoiceNumber,
-
-            // Vendor (Sender) — from Tenant profile
-            vendor_name: tenant.companyName || 'Unknown Company',
-            vendor_tax_id: vendorVat,
-            vendor_address: [tenant.street, tenant.postalCode, tenant.city, 'Belgium'].filter(Boolean).join(', '),
-            vendor_email: tenant.email || session?.user?.email || '',
-
-            // Customer (Receiver) — from selected client
-            customer_name: [client.firstName, client.lastName].filter(Boolean).join(' '),
-            customer_address: customerAddressStr,
-            customer_country: customerCountry,
-
-            // Line items
-            items,
-
-            // Payment terms
-            payment_term: 'Net 30 days',
-        };
-
-        // Add customer VAT if available (required for Peppol B2B routing)
-        if (customerVat) {
-            invoicePayload.customer_tax_id = customerVat;
-        }
-
-        // Add customer email if available
-        if (client.email) {
-            invoicePayload.customer_email = client.email;
-        }
-
-        // Add payment details if tenant has IBAN
-        if (tenant.iban) {
-            invoicePayload.payment_details = [{
-                iban: tenant.iban.replace(/\s/g, ''),
-                ...(tenant.bic ? { swift: tenant.bic } : {}),
-                payment_reference: structuredComm || String(invoiceTitle || invoiceId || ''),
-            }];
-        }
-
-        // Add note/betreft if present
-        if (betreft) {
-            invoicePayload.note = betreft;
+        if (items.length === 0) {
+            return NextResponse.json({ error: 'NO_LINE_ITEMS', code: 'NO_LINE_ITEMS', success: false }, { status: 400 });
         }
 
         // 5. Check for tenant-specific e-invoice.be API key (provisioned via onboarding)

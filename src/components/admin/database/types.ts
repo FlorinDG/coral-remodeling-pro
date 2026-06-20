@@ -60,7 +60,7 @@ export interface VariantAxis {
 
 export type VariantsConfig = VariantAxis[];
 
-export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line' | 'property_mention';
+export type BlockType = 'paragraph' | 'heading_1' | 'heading_2' | 'heading_3' | 'bulleted_list_item' | 'numbered_list_item' | 'todo' | 'toggle' | 'code' | 'quote' | 'callout' | 'divider' | 'image' | 'video' | 'text' | 'article' | 'bestek' | 'post' | 'section' | 'subsection' | 'line' | 'property_mention' | 'space' | 'page-break';
 
 export interface Block {
     id: string;

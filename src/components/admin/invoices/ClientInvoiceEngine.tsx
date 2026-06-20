@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -1329,6 +1329,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
                         >
                             <ImageIcon className="w-3.5 h-3.5" /> Image
+                        </button>
+                        <button
+                            onClick={() => handleAddBlock('space')}
+                            className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                        >
+                            <ChevronsUpDown className="w-3.5 h-3.5" /> Spacer
+                        </button>
+                        <button
+                            onClick={() => handleAddBlock('page-break')}
+                            className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                        >
+                            <Scissors className="w-3.5 h-3.5" /> Page Break
                         </button>
                         <div className="flex-1" />
                         <button

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
@@ -70,6 +70,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isDownloading, setIsDownloading] = useState(false);
     const [showProperties, setShowProperties] = useState(false);
     const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
 
     // Universal Transactional Undo History Setup
     const [history, setHistory] = useState<Block[][]>([]);
@@ -449,8 +451,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
 
 
-    const [showSendModal, setShowSendModal] = useState(false);
-    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
 
     const handleSendEmailClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
@@ -1029,6 +1029,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
                             >
                                 <span className="text-sm leading-none">+</span> Vrije Tekst
+                            </button>
+                            <button
+                                onClick={() => handleAddBlock('space')}
+                                className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                            >
+                                <ChevronsUpDown className="w-3.5 h-3.5" /> Spacer
+                            </button>
+                            <button
+                                onClick={() => handleAddBlock('page-break')}
+                                className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                            >
+                                <Scissors className="w-3.5 h-3.5" /> Page Break
                             </button>
                         </div>
 

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
-import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save, Minus } from 'lucide-react';
+import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save, Minus, ChevronsUpDown, Scissors } from 'lucide-react';
 import PageModal from '@/components/admin/database/components/PageModal';
 import SaveToLibraryModal from './SaveToLibraryModal';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
@@ -40,6 +40,8 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
             case 'line': return <FileMinus className="w-4 h-4 text-orange-500" />;
             case 'post': return <AlignLeft className="w-4 h-4 text-black dark:text-white" />;
             case 'divider': return <Minus className="w-4 h-4 text-black dark:text-white" />;
+            case 'space': return <ChevronsUpDown className="w-4 h-4 text-black dark:text-white" />;
+            case 'page-break': return <Scissors className="w-4 h-4 text-black dark:text-white" />;
             default: return <Type className="w-4 h-4 text-black dark:text-white" />;
         }
     };
@@ -55,6 +57,8 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
             case 'line': return 'Calculation Line';
             case 'post': return 'Post (Phase)';
             case 'divider': return 'Horizontal Divider';
+            case 'space': return 'Spacer (Gap)';
+            case 'page-break': return 'Page Break';
             default: return 'Text Block';
         }
     };
@@ -62,6 +66,9 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
     // Recursive calculation for nested Phase (Post/Section) totals + Subcomponents
     const calculateBlockTotal = (b: Block): number => {
         if (b.isOptional) return 0; // Phase 10: Globally drop any optional value
+
+        // Non-financial types — never contribute to totals
+        if (b.type === 'text' || b.type === 'image' || b.type === 'divider' || b.type === 'space' || b.type === 'page-break') return 0;
 
         // Strict Containers (No quantity multiplier)
         if (b.type === 'post' || b.type === 'section' || b.type === 'subsection') {
@@ -162,6 +169,12 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'divider' })}>
                         <Minus className="w-4 h-4 mr-2" /> Horizontal Divider
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'space', properties: { ...block.properties, height: block.properties?.height || 20 } })}>
+                        <ChevronsUpDown className="w-4 h-4 mr-2" /> Spacer (Gap)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onUpdate(block.id, { type: 'page-break' })}>
+                        <Scissors className="w-4 h-4 mr-2" /> Page Break
                     </DropdownMenuItem>
 
                     {!isContainer && (
@@ -531,6 +544,51 @@ export default function InvoiceRow({ block, index, onUpdate, onDelete, onDuplica
                                          {block.type === 'divider' && (
                                              <div className="py-4 px-3 w-full flex items-center justify-center bg-transparent">
                                                  <div className="w-full border-t border-neutral-350 dark:border-neutral-800" />
+                                             </div>
+                                         )}
+
+                                         {block.type === 'space' && (
+                                             <div className="w-full py-2 px-3 bg-neutral-50/50 dark:bg-white/[0.02] rounded-lg border border-dashed border-neutral-200 dark:border-neutral-850 flex flex-col gap-2">
+                                                 <div className="flex items-center gap-2 text-xs text-neutral-500 select-none">
+                                                     <ChevronsUpDown className="w-4 h-4 text-orange-500" />
+                                                     <span className="font-medium">Spacer (Gap):</span>
+                                                     <input
+                                                         type="number"
+                                                         min="5"
+                                                         max="200"
+                                                         value={block.properties?.height ?? 20}
+                                                         onChange={(e) => onUpdate(block.id, { properties: { ...block.properties, height: Math.max(5, Math.min(200, parseInt(e.target.value) || 20)) } })}
+                                                         className="w-16 px-1.5 py-0.5 bg-white dark:bg-neutral-900 border border-neutral-350 dark:border-neutral-700 rounded text-neutral-800 dark:text-neutral-200 text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-orange-500"
+                                                         disabled={readOnly}
+                                                     />
+                                                     <span>px</span>
+                                                     {!readOnly && (
+                                                         <input
+                                                             type="range"
+                                                             min="5"
+                                                             max="200"
+                                                             value={block.properties?.height ?? 20}
+                                                             onChange={(e) => onUpdate(block.id, { properties: { ...block.properties, height: parseInt(e.target.value) || 20 } })}
+                                                             className="w-32 accent-orange-500 h-1 bg-neutral-200 dark:bg-neutral-800 rounded-lg appearance-none cursor-pointer"
+                                                         />
+                                                     )}
+                                                 </div>
+                                                 <div 
+                                                     className="w-full bg-neutral-100/30 dark:bg-white/[0.01] rounded border border-dotted border-neutral-300 dark:border-neutral-800 transition-all flex items-center justify-center text-[10px] text-neutral-400 select-none"
+                                                     style={{ height: `${block.properties?.height ?? 20}px` }}
+                                                 >
+                                                     {(block.properties?.height ?? 20) >= 30 && "Blank Space"}
+                                                 </div>
+                                             </div>
+                                         )}
+
+                                         {block.type === 'page-break' && (
+                                             <div className="w-full py-3 px-4 bg-neutral-50/80 dark:bg-white/[0.02] rounded-lg border border-dashed border-red-350 dark:border-red-950/30 flex items-center justify-center gap-3 select-none">
+                                                 <Scissors className="w-4 h-4 text-red-500 animate-pulse" />
+                                                 <span className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                                                     Page Break / Pagina-einde (Forces new page on PDF)
+                                                 </span>
+                                                 <div className="flex-1 border-t border-dashed border-red-350 dark:border-red-950/30 ml-2" />
                                              </div>
                                          )}
 

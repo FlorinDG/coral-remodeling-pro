@@ -247,6 +247,15 @@ export const InvoicePDFTemplate = ({
                         <View style={{ width: '100%', height: 1, backgroundColor: '#cccccc' }} />
                     </View>
                 );
+            } else if (block.type === 'space') {
+                const spaceHeight = block.properties?.height ?? 20;
+                rows.push(
+                    <View key={block.id} style={{ height: spaceHeight }} />
+                );
+            } else if (block.type === 'page-break') {
+                rows.push(
+                    <View key={block.id} break />
+                );
             } else if (block.type === 'text') {
                 rows.push(
                     <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>

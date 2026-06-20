@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
-import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
@@ -132,7 +131,6 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const page = useDatabaseStore(state => state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId));
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
-    const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
     const createPage = useDatabaseStore(state => state.createPage);
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
     const allDatabases = useDatabaseStore(state => state.databases);
@@ -160,9 +158,6 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         const progress = total > 0 ? Math.round((done / total) * 100) : 0;
         return { total, done, busy, todo, progress };
     }, [projectTasks]);
-
-    // ── File Manager (must be above early return — rules of hooks) ────────
-    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
 
     // ── Quotation Data Resolution ─────────────────────────────────────────
     const quotationsDbId = resolveDbId('db-quotations');
@@ -365,26 +360,10 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         return diff;
     }, [plannedEndRaw]);
 
-    // ── Drive folder auto-creation ───────────────────────────────────────
     const boundDriveId = page?.driveFolderId || (page?.properties?.['driveFolderId'] as string) || undefined;
 
-    React.useEffect(() => {
-        if (!page || !page.properties) return;
-        const createDriveFolder = async () => {
-            try {
-                if (!boundDriveId && page.properties?.['title']) {
-                    const folderName = String(page.properties['title'] || page.properties['name'] || `Project ${pageId}`);
-                    const driveId = await initializeContextFolder(folderName, 'project', page.id);
-                    if (driveId) {
-                        updatePageDriveId(databaseId, page.id, driveId);
-                    }
-                }
-            } catch (err) {
-                console.warn('[ProjectDetailView] Drive folder init error (non-fatal):', err);
-            }
-        };
-        createDriveFolder();
-    }, [page?.id, boundDriveId, databaseId, initializeContextFolder, updatePageDriveId]);
+    // DRIVE-OUT-1: Auto-create Google Drive folder disabled
+
 
     // ══ EARLY RETURN — all hooks are above this line ═══════════════════════
     if (!database || !page) return null;

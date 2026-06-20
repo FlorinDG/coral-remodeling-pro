@@ -5,7 +5,6 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useTenant } from '@/context/TenantContext';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
@@ -48,8 +47,7 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
         state.databases.find(db => db.id === resolvedDbId)?.pages.find(p => p.id === pageId)
     );
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
-    const updatePageDriveId = useDatabaseStore(state => state.updatePageDriveId);
-    const initializeContextFolder = useFileManagerStore(state => state.initializeContextFolder);
+
 
     // ── Hydration guard: store uses async IndexedDB; on first render databases is []. ──
     const storeHasHydrated = useDatabaseStore((s) => (s as any)._hasHydrated ?? s.databases.length > 0);
@@ -69,23 +67,8 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
 
     const boundDriveId = page?.driveFolderId || (page?.properties?.['driveFolderId'] as string) || undefined;
 
-    React.useEffect(() => {
-        if (!page || !page.properties) return;
-        const createDriveFolder = async () => {
-            try {
-                if (!boundDriveId && page.properties?.['title']) {
-                    const folderName = String(page.properties?.['title'] || page.properties?.['name'] || `Record ${pageId}`);
-                    const driveId = await initializeContextFolder(folderName, fileContextType, page.id);
-                    if (driveId) {
-                        updatePageDriveId(resolvedDbId, page.id, driveId);
-                    }
-                }
-            } catch (err) {
-                console.warn('[RecordDetailPage] Drive folder init error (non-fatal):', err);
-            }
-        };
-        createDriveFolder();
-    }, [page?.id, boundDriveId, resolvedDbId, fileContextType, initializeContextFolder, updatePageDriveId]);
+    // DRIVE-OUT-1: Auto-create Google Drive folder disabled
+
 
     // ── FREE tier gate — record detail view is PRO+ only ──
     if (planType === 'FREE') {

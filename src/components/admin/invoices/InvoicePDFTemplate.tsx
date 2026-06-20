@@ -94,6 +94,24 @@ interface InvoicePDFProps {
     structuredComm?: string;
 }
 
+function generateEpcQrPayload(companyName: string, iban: string, bic: string | undefined, amount: number, ogm: string, invoiceTitle: string) {
+    const cleanOgm = (ogm || '').replace(/\D/g, '');
+    const lines = [
+        'BCD',
+        '002',
+        '1',
+        'SCT',
+        (bic || '').replace(/\s+/g, '').toUpperCase(),
+        (companyName || '').substring(0, 70),
+        (iban || '').replace(/\s+/g, '').toUpperCase(),
+        `EUR${amount.toFixed(2)}`,
+        '', // Purpose Code (empty)
+        cleanOgm, // Structured Remittance (digits only)
+        cleanOgm ? '' : (invoiceTitle || '').substring(0, 140) // Unstructured Remittance
+    ];
+    return lines.join('\n');
+}
+
 export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
@@ -395,50 +413,46 @@ export const InvoicePDFTemplate = ({
 
                         {/* Summary and Stripe Payment Section */}
                         <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 16 }} wrap={false}>
-                            {/* Left Side: Payment Details (Stripe + Bank Transfer) */}
-                            {!isCreditNote && (
+                            {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
+                            {!isCreditNote && iban && (
                                 <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
-                                    {/* Stripe Payment QR Code */}
-                                    {!isProforma && (
-                                        <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                    <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                        <View style={{ alignItems: 'center' as const, gap: 3 }}>
                                             <Image 
-                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://checkout.stripe.com/pay/${invoiceTitle}?amount=${totalInclTax.toFixed(2)}&ref=${invoiceTitle}`)}`}
-                                                style={{ width: 45, height: 45, borderRadius: 3 }}
+                                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
+                                                style={{ width: 55, height: 55, borderRadius: 3 }}
                                             />
-                                            <View style={{ flex: 1, gap: 1 }}>
-                                                <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                    {lang === 'fr' ? 'Payer via Stripe' : lang === 'en' ? 'Pay via Stripe' : 'Betalen via Stripe'}
+                                            <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
+                                                {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
+                                            </Text>
+                                        </View>
+                                        <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
+                                            <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                                {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
+                                            </Text>
+                                            <View style={{ gap: 1 }}>
+                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                    {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
                                                 </Text>
-                                                <Text style={{ fontSize: 6, color: '#697386', lineHeight: 1.2 }}>
-                                                    {lang === 'fr' ? 'Scannez le code QR pour régler en toute sécurité.' : 
-                                                     lang === 'en' ? 'Scan the QR code to securely pay.' : 
-                                                     'Scan de QR-code om direct online te betalen.'}
+                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                    IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
                                                 </Text>
+                                                {bic && (
+                                                    <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                        BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                    </Text>
+                                                )}
+                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                    {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
+                                                </Text>
+                                                {ogmToDisplay && (
+                                                    <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                        {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                    </Text>
+                                                )}
                                             </View>
                                         </View>
-                                    )}
-                                    {/* Bank Transfer info */}
-                                    {iban && (
-                                        <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'column' as const, gap: 2 }}>
-                                            <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                {lang === 'fr' ? 'Virement bancaire' : lang === 'en' ? 'Bank transfer' : 'Overschrijving'}
-                                            </Text>
-                                            <Text style={{ fontSize: 6.5, color: '#4a5568' }}>
-                                                IBAN: <Text style={{ fontWeight: 'bold' as const }}>{formatIban(iban)}</Text>
-                                                {bic ? `  ·  BIC: ${bic}` : ''}
-                                            </Text>
-                                            {ogmToDisplay && (
-                                                <View style={{ gap: 1 }}>
-                                                    <Text style={{ fontSize: 6, color: '#4a5568' }}>
-                                                        Gestructureerde mededeling / Communication structurée:
-                                                    </Text>
-                                                    <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: accent }}>
-                                                        {ogmToDisplay}
-                                                    </Text>
-                                                </View>
-                                            )}
-                                        </View>
-                                    )}
+                                    </View>
                                 </View>
                             )}
                             {(!isCreditNote && isProforma && !iban) && <View style={{ flex: 1 }} />}
@@ -665,50 +679,46 @@ export const InvoicePDFTemplate = ({
                 <View wrap={false}>
                     {/* Summary and Stripe Payment Section */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, marginHorizontal: isT1 || isT4 ? 32 : 8 }}>
-                        {/* Left Side: Payment Details (Stripe + Bank Transfer) */}
-                        {!isCreditNote && (
+                        {/* Left Side: Payment Details (EPC QR + Bank Transfer) */}
+                        {!isCreditNote && iban && (
                             <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 280 }}>
-                                {/* Stripe Payment QR Code */}
-                                {!isProforma && (
-                                    <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                                <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                    <View style={{ alignItems: 'center' as const, gap: 3 }}>
                                         <Image 
-                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`https://checkout.stripe.com/pay/${invoiceTitle}?amount=${totalInclTax.toFixed(2)}&ref=${invoiceTitle}`)}`}
-                                            style={{ width: 45, height: 45, borderRadius: 3 }}
+                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
+                                            style={{ width: 55, height: 55, borderRadius: 3 }}
                                         />
-                                        <View style={{ flex: 1, gap: 1 }}>
-                                            <Text style={{ fontSize: 7.5, fontWeight: 'bold', color: '#1a1f36' }}>
-                                                {lang === 'fr' ? 'Payer en ligne via Stripe' : lang === 'en' ? 'Pay online via Stripe' : 'Veilig betalen via Stripe'}
+                                        <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
+                                            {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
+                                        </Text>
+                                    </View>
+                                    <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
+                                        <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                            {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
+                                        </Text>
+                                        <View style={{ gap: 1 }}>
+                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
                                             </Text>
-                                            <Text style={{ fontSize: 6, color: '#697386', lineHeight: 1.2 }}>
-                                                {lang === 'fr' ? 'Scannez le code QR ci-contre pour régler en toute sécurité.' : 
-                                                 lang === 'en' ? 'Scan the QR code to securely pay.' : 
-                                                 'Scan de QR-code om direct en veilig online te betalen.'}
+                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
                                             </Text>
+                                            {bic && (
+                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                    BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                </Text>
+                                            )}
+                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
+                                            </Text>
+                                            {ogmToDisplay && (
+                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                    {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                </Text>
+                                            )}
                                         </View>
                                     </View>
-                                )}
-                                {/* Bank Transfer info */}
-                                {iban && (
-                                    <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '1px solid #e2e8f0', borderRadius: 8, flexDirection: 'column' as const, gap: 2 }}>
-                                        <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                            {lang === 'fr' ? 'Virement bancaire' : lang === 'en' ? 'Bank transfer' : 'Overschrijving'}
-                                        </Text>
-                                        <Text style={{ fontSize: 6.5, color: '#4a5568' }}>
-                                            IBAN: <Text style={{ fontWeight: 'bold' as const }}>{formatIban(iban)}</Text>
-                                            {bic ? `  ·  BIC: ${bic}` : ''}
-                                        </Text>
-                                        {ogmToDisplay && (
-                                            <View style={{ gap: 1 }}>
-                                                <Text style={{ fontSize: 6, color: '#4a5568' }}>
-                                                    Gestructureerde mededeling / Communication structurée:
-                                                </Text>
-                                                <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: accent }}>
-                                                    {ogmToDisplay}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
+                                </View>
                             </View>
                         )}
                         {isCreditNote && <View style={{ flex: 1 }} />}

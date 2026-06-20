@@ -11,7 +11,6 @@ const syncDb = (db: Database | undefined) => {
     if (db) saveGlobalDatabase(db).catch(console.error);
 };
 
-const inFlightDriveInit = new Set<string>();
 
 /**
  * Helper to check if a database ID matches a "base" ID (e.g. 'db-invoices').
@@ -172,7 +171,6 @@ interface DatabaseState {
     deletePage: (databaseId: string, pageId: string) => void;
     deletePages: (databaseId: string, pageIds: string[]) => void;
     updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => void;
-    updatePageDriveId: (databaseId: string, pageId: string, driveId: string) => void;
 
     // Filter Operations
     addFilter: (databaseId: string, viewId: string | null | undefined, filter: Omit<FilterRule, 'id'>) => void;
@@ -946,35 +944,6 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                                 const newProps = { ...page.properties, [propertyId]: value };
 
-                                // Automated Google Drive Folder generation when a title is first defined
-                                if (propertyId === 'title' && typeof value === 'string' && value.trim() !== '' && !page.driveFolderId) {
-                                    if (
-                                        (isBaseDb(databaseId, 'db-clients') ||
-                                        isBaseDb(databaseId, 'db-1') ||
-                                        isBaseDb(databaseId, 'db-portals') ||
-                                        isBaseDb(databaseId, 'db-hr') ||
-                                        isBaseDb(databaseId, 'db-documents')) &&
-                                        !inFlightDriveInit.has(pageId)
-                                    ) {
-                                        inFlightDriveInit.add(pageId);
-                                        fetch('/api/drive/init', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ databaseId, pageId, title: value })
-                                        })
-                                            .then(res => res.json())
-                                            .then(data => {
-                                                if (data.driveFolderId) {
-                                                    get().updatePageDriveId(databaseId, pageId, data.driveFolderId);
-                                                }
-                                            })
-                                            .catch(console.error)
-                                            .finally(() => {
-                                                inFlightDriveInit.delete(pageId);
-                                            });
-                                    }
-                                }
-
                                 // Project -> Client + Budget inference from Quotation
                                 if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-project-quote') {
                                     const quoteIds = Array.isArray(value) ? value : (value ? [value] : []);
@@ -1220,26 +1189,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     properties: newProps,
                                     updatedAt: new Date().toISOString()
                                 };
-                            }),
-                            updatedAt: new Date().toISOString()
-                        };
-                    })
-                }));
-                const db = get().databases.find(d => d.id === databaseId);
-                if (db) {
-                    syncPage(db.pages.find((p: Page) => p.id === pageId));
-                }
-            },
-
-            updatePageDriveId: (databaseId, pageId, driveId) => {
-                set((state) => ({
-                    databases: state.databases.map(db => {
-                        if (db.id !== databaseId) return db;
-                        return {
-                            ...db,
-                            pages: db.pages.map((page: Page) => {
-                                if (page.id !== pageId) return page;
-                                return { ...page, driveFolderId: driveId, updatedAt: new Date().toISOString() };
                             }),
                             updatedAt: new Date().toISOString()
                         };

@@ -40,32 +40,6 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
 
         const projectId = uuidv4();
 
-        // Safe Multi-Tenant Google Drive Folder Scaffolding
-        let driveFolderId = '';
-        try {
-            if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) {
-                const { generateProjectFolderTemplate, createFolder } = await import('@/lib/google-drive');
-                let tenantRootDriveId = tenant?.driveFolderId;
-                if (!tenantRootDriveId && tenant) {
-                    const cleanTenantName = tenant.companyName.replace(/[^a-zA-Z0-9 ]/g, "").trim();
-                    const parentFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID;
-                    if (parentFolderId) {
-                        tenantRootDriveId = await createFolder(cleanTenantName || `Tenant_${tenantId}`, parentFolderId);
-                    }
-                    await prisma.tenant.update({
-                        where: { id: tenantId },
-                        data: { driveFolderId: tenantRootDriveId }
-                    });
-                }
-                if (tenantRootDriveId) {
-                    const { projectId: gProjectId } = await generateProjectFolderTemplate(`[EXEC] ${title}`.trim(), tenantRootDriveId);
-                    driveFolderId = gProjectId;
-                }
-            }
-        } catch (driveErr) {
-            console.warn('[autoCreateProjectFromQuote] Google Drive scaffolding soft failure:', driveErr);
-        }
-        
         // Get order for db-1
         const maxOrderRow = await prisma.globalPage.findFirst({
             where: { databaseId: projectDbId },
@@ -87,7 +61,6 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                     'prop-budget': total,
                     'prop-quote-link': [quoteId],
                     'prop-billing-rule': billingRule,
-                    driveFolderId: driveFolderId || undefined,
                 } as Prisma.InputJsonValue,
                 blocks: quote.blocks || [], // Copy blocks as initial project scope
                 createdBy: 'system',

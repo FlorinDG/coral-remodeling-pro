@@ -6,18 +6,6 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { useTenant } from '@/context/TenantContext';
 
-const createDriveFolder = async (name: string, parentId?: string) => {
-    const formData = new FormData();
-    formData.append('action', 'create_folder');
-    formData.append('name', name);
-    if (parentId) formData.append('parentId', parentId);
-
-    const res = await fetch('/api/drive', { method: 'POST', body: formData });
-    if (!res.ok) throw new Error(`Drive fault: ${await res.text()}`);
-    const data = await res.json();
-    return data.node.id as string;
-};
-
 export default function NewProjectButton() {
     const { resolveDbId } = useTenant();
     const projectDbId = resolveDbId('db-1');
@@ -37,32 +25,14 @@ export default function NewProjectButton() {
         if (!formData.name) return;
 
         setIsLoading(true);
-        setStatusText("Building Google Drive context...");
+        setStatusText("Saving project record...");
 
         try {
-            // Centralized backend directory syncer: partitions & structures in one secure API roundtrip
-            const initRes = await fetch('/api/drive/init', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    databaseId: projectDbId,
-                    pageId: 'new',
-                    title: formData.name,
-                }),
-            });
-
-            if (!initRes.ok) {
-                throw new Error(`Drive syncer failed: ${await initRes.text()}`);
-            }
-
-            const { driveFolderId } = await initRes.json();
-
-            setStatusText("Saving project record...");
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const propertiesToInject: Record<string, any> = {
                 'title': formData.name,
                 'prop-start-date': formData.startDate || '',
                 'prop-end-date': formData.targetEndDate || '',
-                'driveFolderId': driveFolderId,
             };
             if (formData.budget) {
                 propertiesToInject['prop-budget'] = parseFloat(formData.budget);
@@ -71,17 +41,16 @@ export default function NewProjectButton() {
             // Server-first: await Postgres write before closing modal
             const result = await createPageServerFirst(projectDbId, propertiesToInject);
             if (result.success) {
-                const enrichedPage = { ...result.page, driveFolderId };
-                useDatabaseStore.getState().addConfirmedPage(enrichedPage);
+                useDatabaseStore.getState().addConfirmedPage(result.page);
             } else {
                 console.error('[NewProjectButton] DB write failed:', result.error);
             }
 
             setIsOpen(false);
             setFormData({ name: '', budget: '', startDate: '', targetEndDate: '' });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            alert(`Provisioning Failed: ${error.message}`);
+            alert(`Provisioning Failed: ${error instanceof Error ? error.message : String(error)}`);
         } finally {
             setIsLoading(false);
             setStatusText("");

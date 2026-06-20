@@ -12,7 +12,6 @@ import dynamic from 'next/dynamic';
 const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
 const PurchaseInvoiceEngine = dynamic(() => import('@/components/admin/expenses/PurchaseInvoiceEngine'), { ssr: false });
 import FileManager from '@/components/admin/file-manager/FileManager';
-import { useFileManagerStore } from '@/components/admin/file-manager/store';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import { Property, VariantsConfig } from '../types';
@@ -527,44 +526,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
 
 
-    // Garbage collection script to prune the mass-cloned Google Drive folders created by the previous infinite loop bug
-    const { nodes, deleteNode } = useFileManagerStore();
-    const swept = React.useRef(false);
-    
-    React.useEffect(() => {
-        if (!database || !page || swept.current) return;
-        swept.current = true;
 
-        // Start async sweep to respect Google API rate limits
-        const startGarbageCollection = async () => {
-            // Find all project folders generated for this specific page
-            const duplicateFolders = nodes.filter(n => n.contextType === 'project' && n.contextId === page.id && n.type === 'folder');
-
-            // If we have clones
-            if (duplicateFolders.length > 1) {
-                // Determine the "True" folder ID. Either the one actively bound to the page, or the newest one if none bound.
-                const boundDriveId = page.driveFolderId || page.properties['driveFolderId'] || duplicateFolders[duplicateFolders.length - 1].id;
-
-                // Identify all orphans
-                const orphans = duplicateFolders.filter(f => f.id !== boundDriveId);
-
-                console.log(`[Garbage Collector] Commencing purge of ${orphans.length} cloned Drive folders for ${page.id}...`);
-                for (const orphan of orphans) {
-                    try {
-                        console.log(`[Garbage Collector] Purging node ${orphan.id}...`);
-                        await deleteNode(orphan.id);
-                        // Mandatory 500ms sleep to prevent Google Drive API HTTP 429 Rate Limiting crashes
-                        await new Promise(r => setTimeout(r, 500));
-                    } catch (e) {
-                        console.error(`[Garbage Collector] Failed to delete ${orphan.id}:`, e);
-                    }
-                }
-                console.log(`[Garbage Collector] Purge complete!`);
-            }
-        };
-
-        startGarbageCollection();
-    }, [database?.id, page?.id, page?.driveFolderId]);
 
     const handleVATImport = (data: { name: string; address: string; vatNumber: string }) => {
         if (data.name) updatePageProperty(databaseId, pageId, 'title', data.name);

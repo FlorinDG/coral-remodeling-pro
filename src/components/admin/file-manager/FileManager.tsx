@@ -158,7 +158,7 @@ interface FileManagerProps {
     driveFolderId?: string; // Optional direct mapping to a Google Drive folder
 }
 
-export default function FileManager({ contextType, contextId, driveFolderId }: FileManagerProps) {
+export default function FileManager({ contextType, contextId }: FileManagerProps) {
     const nodes = useFileManagerStore(state => state.nodes);
     const isLoading = useFileManagerStore(state => state.isLoading);
     const error = useFileManagerStore(state => state.error);
@@ -173,12 +173,8 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
     const isGlobalMode = !contextType || contextType === 'global';
 
     useEffect(() => {
-        // Trigger live fetch from Google Drive API on mount and context change
-        // Wait for driveFolderId to be available for non-global contexts.
-        if (!isGlobalMode && !driveFolderId) return;
-
-        fetchNodes(contextType || 'global', contextId, tagFilter, driveFolderId);
-    }, [contextType, contextId, driveFolderId, tagFilter, fetchNodes, isGlobalMode]);
+        fetchNodes(contextType || 'global', contextId);
+    }, [contextType, contextId, fetchNodes]);
 
     // 1. Get the pool of relevant nodes based on scope
     const scopedNodes = useMemo(() => {
@@ -319,7 +315,7 @@ export default function FileManager({ contextType, contextId, driveFolderId }: F
                                 onChange={async (e) => {
                                     const file = e.target.files?.[0];
                                     if (file) {
-                                        await uploadFile(file, currentFolderId, contextType || 'global', contextId, driveFolderId);
+                                        await uploadFile(file, currentFolderId, contextType || 'global', contextId);
                                     }
                                     e.target.value = ''; // reset
                                 }}

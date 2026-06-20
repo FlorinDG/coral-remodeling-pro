@@ -9,9 +9,8 @@ interface FileManagerState {
     isLoading: boolean;
     error: string | null;
 
-    // Actions
-    fetchNodes: (contextType: FileContextType, contextId?: string, tag?: string | null, driveFolderId?: string) => Promise<void>;
-    uploadFile: (file: File, parentId: string | null, contextType: FileContextType, contextId?: string, driveFolderId?: string) => Promise<void>;
+    fetchNodes: (contextType: FileContextType, contextId?: string) => Promise<void>;
+    uploadFile: (file: File, parentId: string | null, contextType: FileContextType, contextId?: string) => Promise<void>;
     deleteNode: (id: string) => Promise<void>;
     initializeContextFolder: (folderName: string, contextType: FileContextType, contextId: string) => Promise<string | null>;
 

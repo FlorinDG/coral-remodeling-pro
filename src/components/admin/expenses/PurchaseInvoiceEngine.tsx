@@ -97,32 +97,64 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     // Editable fields for manual/draft invoices
     const [editData, setEditData] = useState({
         title: '',
+        supplierName: '',
+        supplierVat: '',
         betreft: '',
+        ogm: '',
+        contact: '',
         invoiceDate: '',
         dueDate: '',
         totalExVat: '',
         totalVat: '',
         totalIncVat: '',
+        lines: [] as any[],
     });
 
     useEffect(() => {
         if (page) {
+            let lines = page.blocks?.filter((b: any) => b.type === 'financial-row').map((b: any) => ({
+                id: b.id,
+                description: String(b.content || ''),
+                quantity: Number(b.properties?.quantity || 0),
+                unitCode: String(b.properties?.unitCode || 'C62'),
+                unitPrice: Number(b.properties?.unitPrice || 0),
+                vatRate: Number(b.properties?.vatRate || 0),
+                lineTotal: Number(b.properties?.lineTotal || 0)
+            })) || [];
+
+            if (lines.length === 0 && peppolDetail?.lines) {
+                lines = peppolDetail.lines.map((l: any, i: number) => ({
+                    id: `temp-${i}`,
+                    description: l.description || l.name || '',
+                    quantity: l.quantity || 0,
+                    unitCode: l.unitCode || 'C62',
+                    unitPrice: l.unitPrice || l.price || 0,
+                    vatRate: l.vatRate || 0,
+                    lineTotal: l.lineTotal || l.totalExVat || 0
+                }));
+            }
+
             setEditData({
                 title: String(page.properties.title || ''),
+                supplierName: String(page.properties.supplierName || ''),
+                supplierVat: String(page.properties.supplierVat || ''),
                 betreft: String(page.properties.betreft || ''),
+                ogm: String(page.properties.ogm || ''),
+                contact: String(page.properties.contact || ''),
                 invoiceDate: String(page.properties.invoiceDate || ''),
                 dueDate: String(page.properties.dueDate || ''),
                 totalExVat: page.properties.totalExVat ? String(page.properties.totalExVat) : '',
                 totalVat: page.properties.totalVat ? String(page.properties.totalVat) : '',
                 totalIncVat: page.properties.totalIncVat ? String(page.properties.totalIncVat) : '',
+                lines,
             });
 
             // If this is a Peppol doc, fetch details
-            if (page.properties.source === 'src-peppol' && page.properties.peppolDocId) {
+            if (page.properties.source === 'src-peppol' && page.properties.peppolDocId && !peppolDetail && !loadingPeppol) {
                 fetchPeppolDetail(String(page.properties.peppolDocId));
             }
         }
-    }, [page]);
+    }, [page, peppolDetail]);
 
     const fetchPeppolDetail = async (docId: string) => {
         setLoadingPeppol(true);
@@ -156,13 +188,34 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
         setPeppolAction(null);
     };
 
+    const updatePageBlocks = useDatabaseStore(s => s.updatePageBlocks);
+
     const handleSaveEdit = () => {
         if (!page) return;
         Object.entries(editData).forEach(([key, value]) => {
+            if (key === 'lines') return;
             const numericFields = ['totalExVat', 'totalVat', 'totalIncVat'];
-            const finalVal = numericFields.includes(key) && value ? parseFloat(value) : value;
+            const finalVal = numericFields.includes(key) && value ? parseFloat(value as string) : value;
             updatePageProperty(expensesDbId, pageId, key, finalVal);
         });
+
+        const newBlocks = editData.lines.map((line: any) => ({
+            id: line.id && !line.id.startsWith('temp-') ? line.id : `line-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+            type: 'financial-row',
+            content: line.description,
+            properties: {
+                quantity: parseFloat(String(line.quantity)) || 0,
+                unitCode: line.unitCode || 'C62',
+                unitPrice: parseFloat(String(line.unitPrice)) || 0,
+                vatRate: parseFloat(String(line.vatRate)) || 0,
+                lineTotal: parseFloat(String(line.lineTotal)) || 0
+            }
+        }));
+
+        const oldBlocks = page.blocks || [];
+        const nonFinancialBlocks = oldBlocks.filter((b: any) => b.type !== 'financial-row');
+        updatePageBlocks(expensesDbId, pageId, [...nonFinancialBlocks, ...newBlocks]);
+
         setIsEditing(false);
     };
 
@@ -319,11 +372,33 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                         <div className="grid grid-cols-2 gap-4">
                             <InfoField
                                 label="Supplier"
-                                value={resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(page.properties.supplierName || '') || '—'}
+                                value={isEditing ? String(editData.supplierName || '') : (resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(page.properties.supplierName || '') || '—')}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, supplierName: v }))}
                             />
                             <InfoField
                                 label="Supplier VAT"
-                                value={resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(page.properties.supplierVat || peppolDetail?.supplierVat || '')}
+                                value={isEditing ? String(editData.supplierVat || '') : (resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(page.properties.supplierVat || peppolDetail?.supplierVat || ''))}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, supplierVat: v }))}
+                            />
+                            <InfoField
+                                label="Contact"
+                                value={isEditing ? String(editData.contact || '') : String(page.properties.contact || '') || '—'}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, contact: v }))}
+                            />
+                            <InfoField
+                                label="OGM / Gestructureerde mededeling"
+                                value={isEditing ? String(editData.ogm || '') : String(page.properties.ogm || '') || '—'}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, ogm: v }))}
+                            />
+                            <InfoField
+                                label="Object / Betreft"
+                                value={isEditing ? String(editData.betreft || '') : String(page.properties.betreft || '') || '—'}
+                                editable={isEditing}
+                                onChange={v => setEditData(p => ({ ...p, betreft: v }))}
                             />
                             <InfoField
                                 label="Invoice Date"
@@ -365,28 +440,75 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                         </div>
 
                         {/* Structured line items */}
-                        {page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0 && (
+                        {(isEditing || (page.blocks && page.blocks.filter((b: any) => b.type === 'financial-row').length > 0)) && (
                             <div className="space-y-3">
-                                <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
+                                    {isEditing && (
+                                        <button onClick={() => setEditData(p => ({ ...p, lines: [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0 }] }))} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
+                                            + Add Line
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden">
                                     <table className="w-full text-left text-xs">
                                         <thead className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
                                             <tr>
                                                 <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400">Description</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Qty</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Price</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">VAT%</th>
-                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right">Total</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-16">Qty</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Price</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-20">VAT%</th>
+                                                <th className="px-3 py-2 font-semibold text-neutral-600 dark:text-neutral-400 text-right w-24">Total</th>
+                                                {isEditing && <th className="px-3 py-2 w-8"></th>}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-neutral-200 dark:divide-white/10">
-                                            {page.blocks.filter((b: any) => b.type === 'financial-row').map((block: any, i: number) => (
-                                                <tr key={block.id || i} className="bg-white dark:bg-transparent">
-                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium">{block.content}</td>
-                                                    <td className="px-3 py-2 text-neutral-500 text-right">{block.properties?.quantity || 0}</td>
-                                                    <td className="px-3 py-2 text-neutral-500 text-right">€{Number(block.properties?.unitPrice || 0).toFixed(2)}</td>
-                                                    <td className="px-3 py-2 text-neutral-500 text-right">{block.properties?.vatRate || 0}%</td>
-                                                    <td className="px-3 py-2 text-neutral-900 dark:text-white font-medium text-right">€{Number(block.properties?.lineTotal || 0).toFixed(2)}</td>
+                                            {(isEditing ? editData.lines : page.blocks.filter((b: any) => b.type === 'financial-row').map((b: any) => ({
+                                                id: b.id, description: b.content, quantity: b.properties?.quantity, unitCode: b.properties?.unitCode, unitPrice: b.properties?.unitPrice, vatRate: b.properties?.vatRate, lineTotal: b.properties?.lineTotal
+                                            }))).map((line: any, i: number) => (
+                                                <tr key={line.id || i} className="bg-white dark:bg-transparent">
+                                                    <td className="px-3 py-2">
+                                                        {isEditing ? (
+                                                            <input type="text" value={line.description} onChange={e => { const l = [...editData.lines]; l[i].description = e.target.value; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                                        ) : (
+                                                            <span className="text-neutral-900 dark:text-white font-medium">{line.description}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {isEditing ? (
+                                                            <input type="number" step="1" value={line.quantity} onChange={e => { const l = [...editData.lines]; l[i].quantity = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                        ) : (
+                                                            <span className="text-neutral-500">{line.quantity || 0}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {isEditing ? (
+                                                            <input type="number" step="0.01" value={line.unitPrice} onChange={e => { const l = [...editData.lines]; l[i].unitPrice = parseFloat(e.target.value) || 0; l[i].lineTotal = l[i].quantity * l[i].unitPrice; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                        ) : (
+                                                            <span className="text-neutral-500">€{Number(line.unitPrice || 0).toFixed(2)}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {isEditing ? (
+                                                            <input type="number" step="0.01" value={line.vatRate} onChange={e => { const l = [...editData.lines]; l[i].vatRate = parseFloat(e.target.value) || 0; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right" />
+                                                        ) : (
+                                                            <span className="text-neutral-500">{line.vatRate || 0}%</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-2 text-right">
+                                                        {isEditing ? (
+                                                            <input type="number" step="0.01" value={line.lineTotal} onChange={e => { const l = [...editData.lines]; l[i].lineTotal = parseFloat(e.target.value) || 0; setEditData({ ...editData, lines: l }); }} className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium" />
+                                                        ) : (
+                                                            <span className="text-neutral-900 dark:text-white font-medium">€{Number(line.lineTotal || 0).toFixed(2)}</span>
+                                                        )}
+                                                    </td>
+                                                    {isEditing && (
+                                                        <td className="px-2 py-2 text-center">
+                                                            <button onClick={() => { const l = editData.lines.filter((_, idx) => idx !== i); setEditData({ ...editData, lines: l }); }} className="text-red-400 hover:text-red-600">
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </td>
+                                                    )}
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -465,22 +587,20 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {!isPeppol && (
-                                isEditing ? (
-                                    <button
-                                        onClick={handleSaveEdit}
-                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
-                                    >
-                                        Save Changes
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => setIsEditing(true)}
-                                        className="px-4 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
-                                    >
-                                        Edit
-                                    </button>
-                                )
+                            {isEditing ? (
+                                <button
+                                    onClick={handleSaveEdit}
+                                    className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition-colors"
+                                >
+                                    Save Changes
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => setIsEditing(true)}
+                                    className="px-4 py-2 bg-neutral-200 dark:bg-white/10 hover:bg-neutral-300 dark:hover:bg-white/20 text-neutral-700 dark:text-neutral-300 text-xs font-bold rounded-lg transition-colors"
+                                >
+                                    Edit
+                                </button>
                             )}
                             <button
                                 onClick={handleExportPDF}

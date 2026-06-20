@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye, ClipboardCheck } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
@@ -33,6 +33,7 @@ import CreateProjectModal from './CreateProjectModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search, Type, ImageIcon } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 
 const FALLBACK_PAGES: Page[] = [];
 
@@ -511,9 +512,32 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         updatePageBlocks(invoicesDbId, id, [...blocks, ...newBlocks]);
     };
 
+    const calculateDueDate = (invDate: string, method: string): string => {
+        if (!invDate) return '';
+        const base = new Date(invDate);
+        let days = 30; // default
+        if (method && method.startsWith('pay-')) {
+            const parsed = parseInt(method.split('-')[1], 10);
+            if (!isNaN(parsed)) days = parsed;
+        }
+        base.setDate(base.getDate() + days);
+        return base.toISOString().split('T')[0];
+    };
+
     const handleUpdateProperty = (key: string, value: any) => {
         if (!invoice) return;
         updatePageProperty(invoicesDbId, invoice.id, key, value);
+
+        // Auto due-date calculation
+        if (key === 'invoiceDate' || key === 'prop-payment-method') {
+            const currentInvDate = key === 'invoiceDate' ? value : (invoice.properties['invoiceDate'] as string || new Date().toISOString().split('T')[0]);
+            const currentPaymentMethod = key === 'prop-payment-method' ? value : (invoice.properties['prop-payment-method'] as string || 'pay-30');
+            const computedDueDate = calculateDueDate(currentInvDate, currentPaymentMethod);
+            if (computedDueDate) {
+                updatePageProperty(invoicesDbId, invoice.id, 'dueDate', computedDueDate);
+            }
+        }
+
         // Persist client relationship to Prisma
         if (key === 'client') {
             updateInvoiceContact(id, value).catch(console.error);
@@ -1156,6 +1180,31 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </div>
                             )}
                         </div>
+
+                        {/* Payment terms selector */}
+                        {isHydrated && (() => {
+                            const paymentTerms = invoice ? (invoice.properties?.['prop-payment-method'] as string || 'pay-30') : 'pay-30';
+                            const paymentOptions = [
+                                { id: 'pay-0',  name: 'Onmiddellijk', color: 'green'  },
+                                { id: 'pay-8',  name: '8 Dagen',      color: 'purple' },
+                                { id: 'pay-14', name: '14 Dagen',     color: 'blue'   },
+                                { id: 'pay-30', name: '30 Dagen',     color: 'orange' },
+                                { id: 'pay-60', name: '60 Dagen',     color: 'red'    },
+                                { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
+                            ];
+                            return (
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 h-9 shrink-0">
+                                    <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
+                                    <SelectDropdown
+                                        value={paymentTerms}
+                                        options={paymentOptions}
+                                        onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
+                                        placeholder="Betalingsvoorwaarden"
+                                        compact
+                                    />
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Properties panel toggle */}

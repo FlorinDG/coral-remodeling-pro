@@ -226,6 +226,12 @@ const translations: Record<string, Record<DocumentLanguage, string>> = {
 
     // ── Addendum ─────────────────────────────────────────────────────
     'engine_create_addendum': { nl: 'Addendum aanmaken', fr: 'Créer un avenant', en: 'Create Addendum' },
+
+    // ── Date Picker Quick Actions ─────────────────────────────────────
+    'today': { nl: 'Vandaag', fr: "Aujourd'hui", en: 'Today' },
+    'tomorrow': { nl: 'Morgen', fr: 'Demain', en: 'Tomorrow' },
+    'next_monday': { nl: 'Volgende maandag', fr: 'Lundi prochain', en: 'Next Monday' },
+    'in_30_days': { nl: 'Over 30 dagen', fr: 'Dans 30 jours', en: 'In 30 Days' },
 };
 
 export function t(key: string, lang?: string): string {

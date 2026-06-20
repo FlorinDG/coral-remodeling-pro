@@ -4,8 +4,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/time-tracker/components/ui/popover';
 import { Calendar } from '@/components/time-tracker/components/ui/calendar';
 import { format, addDays, startOfWeek, nextMonday } from 'date-fns';
+import { nl, fr, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { cn } from '@/components/time-tracker/lib/utils';
+import { useParams } from 'next/navigation';
+import { t } from '@/lib/document-i18n';
 
 interface MentionPosition {
     top: number;
@@ -16,6 +19,10 @@ interface MentionPosition {
 }
 
 export default function GlobalMentionDateInterceptor() {
+    const params = useParams();
+    const localeStr = (params?.locale as string) || 'nl';
+    const fnsLocale = localeStr === 'fr' ? fr : (localeStr === 'en' ? enUS : nl);
+
     const [open, setOpen] = useState(false);
     const [pos, setPos] = useState<MentionPosition | null>(null);
     const [date, setDate] = useState<Date | undefined>(undefined);
@@ -81,7 +88,7 @@ export default function GlobalMentionDateInterceptor() {
 
     const insertDate = (selectedDate: Date) => {
         if (!pos) return;
-        const dateStr = format(selectedDate, 'MMM d, yyyy'); // e.g. Apr 15, 2026
+        const dateStr = format(selectedDate, 'dd/MM/yyyy'); // e.g. Apr 15, 2026
         
         const isInput = pos.target.tagName === 'INPUT' || pos.target.tagName === 'TEXTAREA';
         if (isInput) {
@@ -130,16 +137,16 @@ export default function GlobalMentionDateInterceptor() {
                     <div className="flex">
                         <div className="w-32 border-r border-neutral-100 dark:border-white/5 p-2 flex flex-col gap-1 bg-neutral-50/50 dark:bg-neutral-900/20">
                             <button onClick={() => insertDate(new Date())} className="text-left px-2 py-1.5 text-xs rounded-md hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 font-medium transition-colors">
-                                Today
+                                {t('today', localeStr)}
                             </button>
                             <button onClick={() => insertDate(addDays(new Date(), 1))} className="text-left px-2 py-1.5 text-xs rounded-md hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 font-medium transition-colors">
-                                Tomorrow
+                                {t('tomorrow', localeStr)}
                             </button>
                             <button onClick={() => insertDate(nextMonday(new Date()))} className="text-left px-2 py-1.5 text-xs rounded-md hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 font-medium transition-colors">
-                                Next Week
+                                {t('next_monday', localeStr)}
                             </button>
                             <button onClick={() => insertDate(addDays(new Date(), 30))} className="text-left px-2 py-1.5 text-xs rounded-md hover:bg-neutral-100 dark:hover:bg-white/10 text-neutral-600 dark:text-neutral-300 font-medium transition-colors">
-                                In 30 Days
+                                {t('in_30_days', localeStr)}
                             </button>
                         </div>
                         <Calendar
@@ -147,6 +154,8 @@ export default function GlobalMentionDateInterceptor() {
                             selected={date}
                             onSelect={(d) => d && insertDate(d)}
                             initialFocus
+                            locale={fnsLocale}
+                            weekStartsOn={1}
                         />
                     </div>
                 </PopoverContent>

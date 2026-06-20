@@ -570,7 +570,7 @@ model Quotation {
 
   // FIN-7b: quote numbers are unique PER TENANT (was global @unique on quoteNumber, a
   // multi-tenant bug — tenant B colliding with tenant A's number made the create fail and
-  // fall back to the timestamp hack, so the counter never advanced). Mirrors Invoice.
+  // fall back to the timestamp hack, so the counter never advanced). Mirrors Invoice. Applied via db push.
   @@unique([tenantId, quoteNumber])
 }
 

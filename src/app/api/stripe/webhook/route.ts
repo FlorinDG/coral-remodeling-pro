@@ -36,8 +36,61 @@ export async function POST(req: Request) {
     try {
         event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
     } catch (err: unknown) {
-        console.error('[Stripe Webhook] Signature verification failed:', err);
-        return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+        console.log('[Stripe Webhook] Signature verification failed. Trying fallback for tenant checkout session.');
+        try {
+            const rawEvent = JSON.parse(body);
+            if (rawEvent && rawEvent.type === 'checkout.session.completed') {
+                const session = rawEvent.data?.object as Stripe.Checkout.Session;
+                const tenantId = session?.metadata?.tenantId;
+                const invoiceId = session?.metadata?.invoiceId;
+                if (tenantId && invoiceId) {
+                    const { default: prisma } = await import('@/lib/prisma');
+                    const tenant = await prisma.tenant.findUnique({
+                        where: { id: tenantId }
+                    });
+                    if (tenant && tenant.paymentProvider === 'stripe' && tenant.stripeSecretKey) {
+                        const { decrypt } = await import('@/lib/encryption');
+                        const decryptedKey = decrypt(tenant.stripeSecretKey);
+                        if (decryptedKey) {
+                            const tenantStripe = new Stripe(decryptedKey, {
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                apiVersion: '2022-11-15' as any
+                            });
+                            const verifiedSession = await tenantStripe.checkout.sessions.retrieve(session.id);
+                            if (verifiedSession && verifiedSession.payment_status === 'paid') {
+                                event = {
+                                    id: rawEvent.id || 'evt_constructed',
+                                    object: 'event',
+                                    api_version: rawEvent.api_version,
+                                    created: rawEvent.created,
+                                    livemode: rawEvent.livemode,
+                                    pending_webhooks: rawEvent.pending_webhooks,
+                                    request: rawEvent.request,
+                                    type: 'checkout.session.completed',
+                                    data: {
+                                        object: verifiedSession
+                                    }
+                                } as unknown as Stripe.Event;
+                                console.log('[Stripe Webhook] Verification succeeded via tenant Stripe API fetch.');
+                            } else {
+                                throw new Error('Retrieved checkout session was not paid');
+                            }
+                        } else {
+                            throw new Error('Tenant Stripe key decryption failed');
+                        }
+                    } else {
+                        throw new Error('Tenant payment provider is not stripe or Stripe key is missing');
+                    }
+                } else {
+                    throw new Error('Missing tenantId or invoiceId in metadata');
+                }
+            } else {
+                throw err;
+            }
+        } catch (fallbackErr) {
+            console.error('[Stripe Webhook] Signature verification and fallback verification failed:', fallbackErr);
+            return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 });
+        }
     }
 
     console.log(`[Stripe Webhook] Received: ${event.type}`);
@@ -48,6 +101,35 @@ export async function POST(req: Request) {
             case 'checkout.session.completed': {
                 const session = event.data.object as Stripe.Checkout.Session;
                 const tenantId = session.metadata?.tenantId;
+                const invoiceId = session.metadata?.invoiceId;
+
+                if (invoiceId) {
+                    const { default: prisma } = await import('@/lib/prisma');
+                    const page = await prisma.globalPage.findUnique({
+                        where: { id: invoiceId }
+                    });
+                    if (page) {
+                        const props = page.properties as Record<string, unknown>;
+                        const today = new Date().toISOString().split('T')[0];
+                        const updatedProps = {
+                            ...props,
+                            status: 'opt-paid',
+                            paidDate: today,
+                            paymentMethod: 'pay-card'
+                        };
+                        await prisma.globalPage.update({
+                            where: { id: invoiceId },
+                            data: {
+                                properties: updatedProps
+                            }
+                        });
+                        console.log(`[Stripe Webhook] Invoice ${invoiceId} marked as paid`);
+                    } else {
+                        console.warn(`[Stripe Webhook] Invoice page ${invoiceId} not found`);
+                    }
+                    break;
+                }
+
                 const planType = session.metadata?.planType || 'PRO';
 
                 if (!tenantId) {

@@ -73,6 +73,13 @@ export interface ParsedPurchaseInvoice {
     totalIncVat: number;
     peppolDocId: string;
     rawXml: string;
+    betreft?: string;
+    supplierContact?: { name: string; phone: string; email: string };
+    supplierStreet?: string;
+    supplierCity?: string;
+    supplierPostal?: string;
+    supplierCountry?: string;
+    ogm?: string;
 }
 
 export interface ParsedInvoiceLine {
@@ -369,10 +376,27 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
         (Array.isArray(taxTotal) ? taxTotal[0] : taxTotal)?.TaxAmount
     );
 
+    const betreft = txt(doc.Note) || txt(doc.BuyerReference) || '';
+
+    const contact = supplierParty.Contact || {};
+    const supplierContact = {
+        name: txt(contact.Name),
+        phone: txt(contact.Telephone),
+        email: txt(contact.ElectronicMail),
+    };
+
+    const supplierStreet = txt(supplierAddr.StreetName);
+    const supplierCity = txt(supplierAddr.CityName);
+    const supplierPostal = txt(supplierAddr.PostalZone);
+    const supplierCountry = txt(supplierAddr.Country?.IdentificationCode);
+
+    const pm = Array.isArray(doc.PaymentMeans) ? doc.PaymentMeans[0] : doc.PaymentMeans || {};
+    const ogm = txt(pm.PaymentID) || txt(pm.InstructionID) || '';
+
     return {
         invoiceNumber: txt(doc.ID) || '',
         issueDate: txt(doc.IssueDate) || '',
-        dueDate: txt(doc.DueDate || doc.PaymentMeans?.PaymentDueDate) || '',
+        dueDate: txt(doc.DueDate || pm.PaymentDueDate || doc.PaymentMeans?.PaymentDueDate) || '',
         supplierName: txt(supplierName),
         supplierVat: txt(supplierVat),
         supplierAddress: txt(supplierAddress),
@@ -385,5 +409,12 @@ export function parseUBLToInvoice(ublXml: string, peppolDocId: string): ParsedPu
         totalIncVat,
         peppolDocId,
         rawXml: ublXml,
+        betreft,
+        supplierContact,
+        supplierStreet,
+        supplierCity,
+        supplierPostal,
+        supplierCountry,
+        ogm,
     };
 }

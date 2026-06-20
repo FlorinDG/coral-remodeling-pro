@@ -288,7 +288,14 @@ export async function GET(req: Request) {
                                 properties: {
                                     title: parsed.supplierName || 'Unknown Supplier',
                                     vatNumber: safeVat || null,
+                                    vat: safeVat || null,
                                     address: parsed.supplierAddress || '',
+                                    email: parsed.supplierContact?.email || '',
+                                    phone: parsed.supplierContact?.phone || '',
+                                    contact_person: parsed.supplierContact?.name || '',
+                                    city: parsed.supplierCity || '',
+                                    postal: parsed.supplierPostal || '',
+                                    country: parsed.supplierCountry || '',
                                 },
                                 createdBy: 'system',
                                 lastEditedBy: 'system',
@@ -348,7 +355,11 @@ export async function GET(req: Request) {
                     databaseId: expensesDbId,
                     properties: {
                         title: parsed.invoiceNumber || doc.id,
-                        betreft: '',
+                        betreft: parsed.betreft || '',
+                        ogm: parsed.ogm || '',
+                        contact: parsed.supplierContact 
+                            ? [parsed.supplierContact.name, parsed.supplierContact.phone, parsed.supplierContact.email].filter(Boolean).join(' / ') 
+                            : '',
                         source: 'src-peppol',
                         docType: doc.type === 'credit_note' ? 'opt-credit-note' : 'opt-invoice',
                         status: 'opt-unpaid',

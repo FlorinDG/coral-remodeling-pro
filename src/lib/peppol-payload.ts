@@ -66,6 +66,23 @@ export function mapUnitToCode(unit?: string): string {
     return map[lower] || 'C62';
 }
 
+/** Normalizes country name strings to 2-letter ISO 3166-1 alpha-2 codes */
+export function normalizeCountryToCode(country?: string): string {
+    if (!country) return 'BE';
+    const clean = country.trim().toUpperCase();
+    if (clean.length === 2) return clean; // Already a 2-letter code
+    
+    const map: Record<string, string> = {
+        'BELGIË': 'BE', 'BELGIE': 'BE', 'BELGIQUE': 'BE', 'BELGIUM': 'BE',
+        'NEDERLAND': 'NL', 'NETHERLANDS': 'NL', 'PAYS-BAS': 'NL',
+        'FRANKRIJK': 'FR', 'FRANCE': 'FR',
+        'DUITSLAND': 'DE', 'GERMANY': 'DE', 'ALLEMAGNE': 'DE',
+        'VERENIGD KONINKRIJK': 'GB', 'UNITED KINGDOM': 'GB', 'UK': 'GB',
+        'LUXEMBURG': 'LU', 'LUXEMBOURG': 'LU',
+    };
+    return map[clean] || 'BE'; // Fallback to BE
+}
+
 /**
  * Recursively flattens the block tree into e-invoice.be line items.
  * Only includes priced lines (type: line, article, bestek) that are NOT optional.
@@ -129,7 +146,7 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         vendorVat = 'BE' + vendorVat;
     }
 
-    const customerCountry = client.country || 'BE';
+    const customerCountry = normalizeCountryToCode(client.country);
     let customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
     if (customerVat && /^\d+$/.test(customerVat)) {
         customerVat = customerCountry.toUpperCase() + customerVat;
@@ -231,7 +248,7 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
 
     if (params.client.vatNumber) {
         let cleanCustomerVat = params.client.vatNumber.replace(/[\s.]/g, '').toUpperCase();
-        const country = params.client.country || 'BE';
+        const country = normalizeCountryToCode(params.client.country);
         if (/^\d+$/.test(cleanCustomerVat)) {
             cleanCustomerVat = country.toUpperCase() + cleanCustomerVat;
         }
@@ -246,7 +263,7 @@ export function performLocalPreflight(params: BuildPayloadParams): { isValid: bo
     const street = params.client.street || params.client.address;
     const city = params.client.city;
     const postalCode = params.client.postalCode;
-    const country = params.client.country || 'BE';
+    const country = normalizeCountryToCode(params.client.country);
 
     if (!street) {
         errors.push("Straatnaam en huisnummer van de klant ontbreken.");

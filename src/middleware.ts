@@ -1,6 +1,5 @@
 import { decode } from 'next-auth/jwt';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from './i18n/routing';
 import { PLATFORM_ADMIN_ROLES } from '@/lib/roles';
@@ -155,7 +154,7 @@ export default async function middleware(req: NextRequest) {
 
         // ── Check if tenant is allowed on workhub (Enterprise / Workforce / HR) ──
         if (isLoggedIn && !isLoginPage && !isPublicPage) {
-            const isSuperadmin = PLATFORM_ADMIN_ROLES.includes(token.role as any);
+            const isSuperadmin = PLATFORM_ADMIN_ROLES.includes(token.role as (typeof PLATFORM_ADMIN_ROLES)[number]);
             const hasAccess = isSuperadmin || token?.activeModules?.includes('HR');
             
             if (!hasAccess) {
@@ -201,6 +200,10 @@ export default async function middleware(req: NextRequest) {
 
         const isLoginPage  = pathname.includes('/login');
         const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite') || pathname.includes('/reset-password') || pathname.includes('/quote/') || pathname.includes('/invoice/');
+
+        // Clone and inject x-pathname header
+        const requestHeaders = new Headers(req.headers);
+        requestHeaders.set('x-pathname', pathname);
 
         // Virtualise path for auth checks
         const virtualPath = !pathname.startsWith('/admin') && !pathname.startsWith('/portal') && !pathname.startsWith('/superadmin') && !pathname.startsWith('/workhub')
@@ -326,11 +329,16 @@ export default async function middleware(req: NextRequest) {
 
         if (rewriteTarget) {
             const rewriteUrl = new URL(rewriteTarget, req.nextUrl.origin);
-            return applyHeaders(NextResponse.rewrite(rewriteUrl));
+            return applyHeaders(NextResponse.rewrite(rewriteUrl, {
+                request: { headers: requestHeaders }
+            }));
         }
 
         // Path already correctly prefixed — add no-cache and let intl handle it
-        return applyHeaders(intlMiddleware(req));
+        const modifiedReq = new NextRequest(req, {
+            headers: requestHeaders,
+        });
+        return applyHeaders(intlMiddleware(modifiedReq));
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -340,5 +348,5 @@ export default async function middleware(req: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|icon.svg|apple-touch-icon.png|manifest.json|manifest-workhub.json|sw.js|sw-workhub.js).*)'],
+    matcher: ['/((?!api|_next/static|_next/image|images|branding|sitemap.xml|robots.txt|favicon.ico|icon.svg|apple-touch-icon.png|manifest.json|manifest-workhub.json|manifest-mobile.json|sw.js|sw-workhub.js).*)'],
 };

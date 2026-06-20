@@ -167,14 +167,20 @@ export default async function RootLayout({
     const isMainSite = !host.startsWith('app.') && !host.startsWith('coral-sys.') && !host.startsWith('work.');
     const isWorkHub = host.startsWith('work.');
 
+    const rawPathname = headersList2.get('x-pathname') || '';
+    const isMobileRoute = /^\/(?:[a-z]{2}\/)?m(?:\/|$)/.test(rawPathname);
+
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>
             <head>
-                {/* Manifest: work subdomain gets WorkHub PWA manifest, others get CoralOS */}
-                {isWorkHub
-                    ? <link rel="manifest" href="/manifest-workhub.json" />
-                    : <link rel="manifest" href="/manifest.json" />
-                }
+                {/* Manifest: work subdomain gets WorkHub PWA manifest, mobile routes get manifest-mobile, others get CoralOS */}
+                {isWorkHub ? (
+                    <link rel="manifest" href="/manifest-workhub.json" />
+                ) : isMobileRoute ? (
+                    <link rel="manifest" href="/manifest-mobile.json" />
+                ) : (
+                    <link rel="manifest" href="/manifest.json" />
+                )}
                 {/* Apple touch icon — used by iOS home screen and Chrome PWA on Mac */}
                 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
                 <meta name="theme-color" content={isMainSite ? '#000000' : '#c2440f'} />

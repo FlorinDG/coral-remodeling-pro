@@ -108,7 +108,7 @@ export async function createPageServerFirst(
 
         // --- OGM Generation for Invoices ---
         if (databaseId.startsWith('db-invoices') && !properties['structuredComm']) {
-            properties['structuredComm'] = generateOGM();
+            properties['structuredComm'] = generateOGM(properties['title'] as string);
         }
 
         // Get current max order

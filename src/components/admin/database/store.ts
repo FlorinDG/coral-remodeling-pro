@@ -4,6 +4,7 @@ import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
+import { generateOGM } from '@/lib/ogm';
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI
 const syncDb = (db: Database | undefined) => {
@@ -663,6 +664,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                         });
                         const nextStr = String(maxNum + 1).padStart(3, '0');
                         fullProperties['title'] = `FAC-${year}-${nextStr}`;
+                    }
+
+                    // Ensure structuredComm is generated for invoices
+                    if (isBaseDb(databaseId, 'db-invoices') && !fullProperties['structuredComm']) {
+                        fullProperties['structuredComm'] = generateOGM(fullProperties['title']);
                     }
 
                     // Custom Auto-Numbering for Articles (ART-XX-XXX)

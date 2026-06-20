@@ -17,6 +17,7 @@ import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
+import { generateOGM } from '@/lib/ogm';
 
 import { InvoicePDFTemplate } from './InvoicePDFTemplate';
 import PDFImportModal from './PDFImportModal';
@@ -70,6 +71,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
     const [quotationSearch, setQuotationSearch] = useState('');
     const [importedQuotationIds, setImportedQuotationIds] = useState<string[]>([]);
+    const [showSendModal, setShowSendModal] = useState(false);
+    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
     const quotationContainerRef = useRef<HTMLDivElement>(null);
 
     // Close quotation dropdown on outside click
@@ -135,6 +138,17 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             }
         }).catch(console.error);
     }, [isHydrated, invoice, hydrationAttempted, id, invoicesDbId]);
+
+    // Lazy backfill: generate structuredComm if missing on the loaded invoice
+    useEffect(() => {
+        if (!isHydrated || !invoice) return;
+        const currentOgm = invoice.properties?.structuredComm;
+        if (!currentOgm) {
+            const invoiceNumber = invoice.properties?.title || '';
+            const generated = generateOGM(invoiceNumber);
+            updatePageProperty(invoicesDbId, invoice.id, 'structuredComm', generated);
+        }
+    }, [isHydrated, invoice, invoicesDbId, updatePageProperty]);
 
     // Initialize importedQuotationIds once when the invoice is loaded
     useEffect(() => {
@@ -569,9 +583,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             email: clientRecord?.email || undefined,
         };
     };
-
-    const [showSendModal, setShowSendModal] = useState(false);
-    const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
 
     const handleSendEmailClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de factuur te versturen.');

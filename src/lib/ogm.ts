@@ -14,9 +14,20 @@
 export function generateOGM(baseNumber?: number | string): string {
     let baseStr: string;
 
-    if (baseNumber) {
-        // Ensure it's exactly 10 digits
-        baseStr = String(baseNumber).replace(/\D/g, '').substring(0, 10).padStart(10, '0');
+    if (baseNumber !== undefined && baseNumber !== null) {
+        const clean = String(baseNumber).replace(/\D/g, '');
+        if (clean.length > 0) {
+            baseStr = clean.substring(0, 10).padStart(10, '0');
+        } else {
+            // Deterministic hash of the string to a 10-digit number
+            let hash = 0;
+            const str = String(baseNumber);
+            for (let i = 0; i < str.length; i++) {
+                hash = (hash << 5) - hash + str.charCodeAt(i);
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            baseStr = String(Math.abs(hash)).padStart(10, '0').substring(0, 10);
+        }
     } else {
         // Generate a 10-digit number. Unix timestamp in seconds works well (e.g. 1717454234)
         // plus a small random jitter to avoid same-second collisions if generated in bulk.

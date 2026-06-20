@@ -37,6 +37,7 @@ interface UBLInvoiceData {
     customerVatNumber?: string;
     customerAddress?: string;
     customerEmail?: string;
+    customerCountry?: string;
 
     // Payment
     iban?: string;
@@ -104,7 +105,7 @@ function getEndpointId(vat: string): string {
 
 export function generatePeppolUBL(data: UBLInvoiceData): string {
     const supplierCountry = getCountryFromVat(data.supplierVatNumber) || data.supplierCountry;
-    const customerCountry = data.customerVatNumber ? getCountryFromVat(data.customerVatNumber) : 'BE';
+    const customerCountry = data.customerCountry || (data.customerVatNumber ? getCountryFromVat(data.customerVatNumber) : 'BE');
 
     // Calculate tax breakdown
     const taxMap = new Map<number, { taxableAmount: number; taxAmount: number }>();

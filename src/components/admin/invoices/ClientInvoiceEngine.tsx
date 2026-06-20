@@ -205,6 +205,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 driveFolderId: driveProp ? String(page.properties[driveProp.id] || '') : null,
                 vatNumber: vatProp ? String(page.properties[vatProp.id] || '') : null,
                 address: fullAddress || null,
+                street: street || null,
+                postalCode: postal || null,
+                city: city || null,
+                country: country || null,
                 language: langProp ? String(page.properties[langProp.id] || '') : 'lang-nl',
             };
         });
@@ -796,6 +800,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         email: selectedClient.email,
                         vatNumber: selectedClient.vatNumber,
                         address: selectedClient.address || '',
+                        street: (selectedClient as any).street || '',
+                        postalCode: (selectedClient as any).postalCode || '',
+                        city: (selectedClient as any).city || '',
+                        country: (selectedClient as any).country || '',
                     },
                 })
             });

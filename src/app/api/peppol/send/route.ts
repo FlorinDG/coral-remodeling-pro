@@ -167,6 +167,15 @@ export async function POST(req: Request) {
         const vendorVat = cleanVat(tenant.vatNumber);
         const customerVat = client.vatNumber ? cleanVat(client.vatNumber) : undefined;
 
+        const customerCountry = client.country || 'BE';
+        const countryLabel = customerCountry === 'BE' ? 'Belgium' : customerCountry;
+        const customerAddressStr = [
+            client.street,
+            client.postalCode,
+            client.city,
+            countryLabel
+        ].filter(Boolean).join(', ') || client.address || '';
+
         const invoicePayload: Record<string, any> = {
             document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',
             invoice_id: String(invoiceTitle || invoiceId || `INV-${Date.now()}`),
@@ -183,7 +192,8 @@ export async function POST(req: Request) {
 
             // Customer (Receiver) — from selected client
             customer_name: [client.firstName, client.lastName].filter(Boolean).join(' '),
-            customer_address: client.address || '',
+            customer_address: customerAddressStr,
+            customer_country: customerCountry,
 
             // Line items
             items,
@@ -250,8 +260,9 @@ export async function POST(req: Request) {
                 supplierEmail: invoicePayload.vendor_email,
                 customerName: invoicePayload.customer_name,
                 customerVatNumber: customerVat,
-                customerAddress: client.address || undefined,
+                customerAddress: customerAddressStr || undefined,
                 customerEmail: client.email || undefined,
+                customerCountry: customerCountry,
                 iban: tenant.iban?.replace(/\s/g, '') || undefined,
                 bic: tenant.bic || undefined,
                 paymentReference: structuredComm || invoicePayload.invoice_id,

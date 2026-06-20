@@ -19,6 +19,7 @@ import { QuoteSendModal } from './QuoteSendModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { canAccess } from '@/lib/feature-flags';
 import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
@@ -783,23 +784,27 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
                     {/* Client Selector */}
                     <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                        <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                        <select
-                            value={clientId}
-                            onChange={(e) => handleUpdateProperty('client', e.target.value)}
-                            className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-44 truncate"
-                        >
-                            <option value="">{ti18n('engine_select_client', locale)}</option>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id} className="text-black dark:text-neutral-900">
-                                    {client.firstName} {client.lastName}
-                                </option>
-                            ))}
-                        </select>
+                        <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                        <div className="flex-1 w-44 pl-6">
+                            <SearchableSelect
+                                value={clientId}
+                                onChange={(value) => handleUpdateProperty('client', value)}
+                                disabled={false}
+                                placeholder={ti18n('engine_select_client', locale)}
+                                searchPlaceholder="Zoek klant..."
+                                emptyLabel="Geen klanten gevonden"
+                                className="border-none bg-transparent shadow-none ring-0 h-8 text-xs"
+                                borderless
+                                options={clients.map(client => ({
+                                    value: client.id,
+                                    label: `${client.firstName} ${client.lastName}`
+                                }))}
+                            />
+                        </div>
                         {clientId && (
                             <Link
                                 href={`/admin/database/${clientsDbId}/${clientId}`}
-                                className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                 title={ti18n('engine_open_record', locale)}
                             >
                                 <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
@@ -810,23 +815,27 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     {/* Project Selector */}
                     {hasProjects && (
                         <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={projectId}
-                                onChange={(e) => handleUpdateProperty('project', e.target.value)}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate"
-                            >
-                                <option value="">{ti18n('engine_link_project', locale)}</option>
-                                {projects.map(project => (
-                                    <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
-                                        {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
-                                    </option>
-                                ))}
-                            </select>
+                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                            <div className="flex-1 w-48 pl-6">
+                                <SearchableSelect
+                                    value={projectId}
+                                    onChange={(value) => handleUpdateProperty('project', value)}
+                                    disabled={false}
+                                    placeholder={ti18n('engine_link_project', locale)}
+                                    searchPlaceholder="Zoek project..."
+                                    emptyLabel="Geen projecten gevonden"
+                                    className="border-none bg-transparent shadow-none ring-0 h-8 text-xs"
+                                    borderless
+                                    options={projects.map(project => ({
+                                        value: project.id,
+                                        label: String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')
+                                    }))}
+                                />
+                            </div>
                             {projectId && (
                                 <Link
                                     href={`/admin/database/${projectDbId}/${projectId}`}
-                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                    className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                     title={ti18n('engine_open_record', locale)}
                                 >
                                     <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />

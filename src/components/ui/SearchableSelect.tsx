@@ -17,6 +17,7 @@ interface SearchableSelectProps {
     emptyLabel?: string;
     className?: string;
     disabled?: boolean;
+    borderless?: boolean;
 }
 
 export default function SearchableSelect({
@@ -28,6 +29,7 @@ export default function SearchableSelect({
     emptyLabel = 'No options found',
     className = '',
     disabled = false,
+    borderless = false,
 }: SearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -69,7 +71,9 @@ export default function SearchableSelect({
                 type="button"
                 disabled={disabled}
                 onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
-                className={`w-full flex items-center justify-between bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none transition-all ${
+                className={borderless ? `w-full flex items-center justify-between bg-transparent border-none px-1.5 py-1.5 text-xs font-semibold outline-none transition-all ${
+                    disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }` : `w-full flex items-center justify-between bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm outline-none transition-all ${
                     isOpen ? 'ring-2 ring-orange-500/20 border-orange-500' : ''
                 } ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-neutral-300 dark:hover:border-white/20 cursor-pointer'}`}
             >

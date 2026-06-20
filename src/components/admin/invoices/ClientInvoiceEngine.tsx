@@ -1079,6 +1079,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     searchPlaceholder="Zoek klant..."
                                     emptyLabel="Geen klanten gevonden"
                                     className="border-none bg-transparent shadow-none ring-0 h-9"
+                                    borderless
                                     options={clients.map(client => ({
                                         value: client.id,
                                         label: `${client.firstName} ${client.lastName}`
@@ -1110,24 +1111,27 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         {hasProjects && (
                         <>
                         <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
-                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
-                            <select
-                                value={projectId}
-                                onChange={(e) => handleUpdateProperty('project', e.target.value)}
-                                disabled={false}
-                                className="text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-transparent border-none outline-none appearance-none cursor-pointer pl-7 pr-6 py-2 focus:ring-0 w-48 truncate disabled:opacity-60 disabled:cursor-default"
-                            >
-                                <option value="">Project koppelen...</option>
-                                {projects.map(project => (
-                                    <option key={project.id} value={project.id} className="text-black dark:text-neutral-900">
-                                        {String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')}
-                                    </option>
-                                ))}
-                            </select>
+                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                            <div className="flex-1 w-48 pl-6">
+                                <SearchableSelect
+                                    value={projectId}
+                                    onChange={(value) => handleUpdateProperty('project', value)}
+                                    disabled={!isDraft}
+                                    placeholder="Project koppelen..."
+                                    searchPlaceholder="Zoek project..."
+                                    emptyLabel="Geen projecten gevonden"
+                                    className="border-none bg-transparent shadow-none ring-0 h-9"
+                                    borderless
+                                    options={projects.map(project => ({
+                                        value: project.id,
+                                        label: String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')
+                                    }))}
+                                />
+                            </div>
                             {projectId && (
                                 <Link
                                     href={`/admin/database/${projectDbId}/${projectId}`}
-                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                    className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                     title="Open fiche"
                                 >
                                     <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />

@@ -480,7 +480,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
     if (!page) {
         return (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
                 <div className="bg-white dark:bg-neutral-900 rounded-2xl p-8 text-center">
                     <p className="text-neutral-500">Invoice not found</p>
                     <button onClick={onClose} className="mt-4 text-sm text-orange-500 hover:underline">Close</button>
@@ -496,7 +496,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const amountDue = status === 'opt-paid' ? 0 : parseFloat(String(page.properties.totalIncVat || 0));
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="relative w-full max-w-7xl h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
                 
                 {/* Left Pane (Metadata & Lines) */}
@@ -951,7 +951,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
                 {/* Right Pane (Viewer / Attachments) */}
                 <div className="w-[45%] flex flex-col bg-neutral-100 dark:bg-neutral-950 relative">
                     {/* Right Header Tab bar */}
-                    <div className="px-6 py-3 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white/50 dark:bg-black/20 backdrop-blur-sm">
+                    <div className="px-6 py-3 border-b border-neutral-200 dark:border-white/10 flex items-center justify-between shrink-0 bg-white dark:bg-[#191919]">
                         <div className="flex gap-4">
                             <button
                                 onClick={() => setRightTab('preview')}

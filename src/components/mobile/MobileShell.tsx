@@ -127,7 +127,7 @@ export default function MobileShell({
 
             {/* ── Slide-down menu ── */}
             {menuOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
+                <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setMenuOpen(false)}>
                     <div
                         className="bg-white dark:bg-neutral-950 border-b border-neutral-300 dark:border-white/10 shadow-2xl mt-14 animate-in slide-in-from-top-2 duration-200"
                         onClick={e => e.stopPropagation()}

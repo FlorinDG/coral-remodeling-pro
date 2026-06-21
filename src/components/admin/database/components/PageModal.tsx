@@ -601,7 +601,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
             onClick={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
         >
-            <div className="absolute inset-0 bg-black/20 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             <div
                 className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 flex-shrink-0 ${isMaximized ? 'w-full' : ''}`}
@@ -615,7 +615,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                 )}
 
                 {/* Header Actions */}
-                <div className="sticky top-0 z-10 flex items-center justify-between p-3 bg-white/80 dark:bg-[#191919]/80 backdrop-blur-md">
+                <div className="sticky top-0 z-10 flex items-center justify-between p-3 bg-white dark:bg-[#191919]">
                     <div className="flex items-center gap-1">
                         <button
                             onClick={() => setIsMaximized(!isMaximized)}

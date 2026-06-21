@@ -87,9 +87,9 @@ export default function VariantsPropertyEditor({ databaseId, pageId, propertyId,
             </button>
 
             {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
                     <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl shadow-2xl flex flex-col">
-                        <div className="sticky top-0 bg-white/90 dark:bg-[#1a1a1a]/90 backdrop-blur border-b border-neutral-200 dark:border-white/10 p-4 flex items-center justify-between z-10">
+                        <div className="sticky top-0 bg-white dark:bg-[#1a1a1a] border-b border-neutral-200 dark:border-white/10 p-4 flex items-center justify-between z-10">
                             <div>
                                 <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Product Variants</h3>
                                 <p className="text-xs text-neutral-500">Configure multi-axis dimensions like Color, Size, and corresponding price adjustments.</p>

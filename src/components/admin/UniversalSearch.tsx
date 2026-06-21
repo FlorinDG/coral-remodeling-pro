@@ -256,7 +256,7 @@ export default function UniversalSearch() {
             {/* ── Search Modal (portaled to body to escape stacking contexts) ── */}
             {isOpen && typeof document !== 'undefined' && createPortal(
                 <div ref={panelRef} className="fixed inset-0" style={{ zIndex: 100000 }}>
-                    <div className="absolute inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm" onClick={() => setIsOpen(false)} />
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setIsOpen(false)} />
 
                     <div className="absolute top-[12vh] left-1/2 -translate-x-1/2 w-full max-w-xl px-4" style={{ animation: 'searchFlyoutIn 150ms ease-out' }}>
                         <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-white/10 shadow-2xl overflow-hidden">

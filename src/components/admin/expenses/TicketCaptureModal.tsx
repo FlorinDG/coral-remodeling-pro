@@ -347,7 +347,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div className="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">

@@ -19,7 +19,7 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
     const isPdf = file.mimeType?.includes('pdf') || /\.pdf$/i.test(file.name);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 md:p-8 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 md:p-8 animate-in fade-in duration-200">
             <div className="relative w-full h-full max-w-6xl bg-neutral-900 rounded-xl overflow-hidden shadow-2xl flex flex-col border border-white/10">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-neutral-950 border-b border-white/10 shrink-0">

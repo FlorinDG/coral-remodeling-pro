@@ -46,7 +46,7 @@ export default function InlineDialog({
     return (
         <div
             ref={overlayRef}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 animate-in fade-in duration-200"
             onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
         >
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 w-full max-w-md mx-4 overflow-hidden animate-in zoom-in-95 duration-200">

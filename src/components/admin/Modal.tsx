@@ -25,7 +25,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
             <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+                className="absolute inset-0 bg-black/75 animate-in fade-in duration-300"
                 onClick={onClose}
             />
             <div className="relative w-full max-w-lg bg-neutral-50 dark:bg-black rounded-[2.5rem] shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 fade-in duration-300">

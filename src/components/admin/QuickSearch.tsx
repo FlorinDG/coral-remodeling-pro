@@ -41,7 +41,7 @@ export default function QuickSearch() {
     );
 
     const modalContent = isOpen ? (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-24 px-4 bg-black/50 animate-in fade-in duration-200">
             <div className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in zoom-in-95 duration-200">
                 <div className="p-4 border-b border-neutral-200 dark:border-white/10 flex items-center gap-3">
                     <Search className="w-5 h-5 text-[var(--brand-color,#d35400)]" />

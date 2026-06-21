@@ -392,7 +392,7 @@ export default function MobileSettingsClient({
     };
 
     return (
-        <div className="max-w-lg mx-auto flex flex-col min-h-[calc(100vh-8rem)] bg-neutral-50 dark:bg-black pb-10">
+        <div className="max-w-lg mx-auto flex flex-col h-[calc(100vh-7.5rem)] overflow-y-auto pb-24 bg-neutral-50 dark:bg-black">
             {/* Header with Back button */}
             <div className="px-4 pt-4 pb-2 flex items-center justify-between border-b border-neutral-200 dark:border-white/10">
                 <div className="flex items-center gap-2">

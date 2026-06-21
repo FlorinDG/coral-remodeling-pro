@@ -688,7 +688,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
             toast.success('Factuur aangemaakt vanuit offerte!');
             router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
-        } catch (e: any) {
+        } catch (e) {
             console.error('Failed to convert quotation to invoice:', e);
             toast.error('Factuur aanmaken mislukt door een systeemfout.');
         }
@@ -779,13 +779,12 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         </button>
                     </div>
                 </div>
-
                 {/* Row 2: Selectors — responsive wrap */}
-                <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02]">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02] w-full">
                     {/* Client Selector */}
-                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                         <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                        <div className="flex-1 w-44 pl-6">
+                        <div className="flex-1 w-full sm:w-44 pl-6">
                             <SearchableSelect
                                 value={clientId}
                                 onChange={(value) => handleUpdateProperty('client', value)}
@@ -811,12 +810,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </Link>
                         )}
                     </div>
-
                     {/* Project Selector */}
                     {hasProjects && (
-                        <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                        <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                             <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                            <div className="flex-1 w-48 pl-6">
+                            <div className="flex-1 w-full sm:w-48 pl-6">
                                 <SearchableSelect
                                     value={projectId}
                                     onChange={(value) => handleUpdateProperty('project', value)}
@@ -871,7 +869,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             { id: 'opt-rejected', name: ti18n('engine_status_rejected', locale), color: 'red' },
                         ];
                         return (
-                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 w-full sm:w-auto">
                                 <FileText className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
                                 <SelectDropdown
                                     value={quotationStatus || null}
@@ -894,7 +892,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             { id: 'opt-hourly', name: 'In Regie', color: 'orange' },
                         ];
                         return (
-                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 w-full sm:w-auto">
                                 <Receipt className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
                                 <SelectDropdown
                                     value={billingRule}
@@ -920,7 +918,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
                         ];
                         return (
-                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5">
+                            <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 w-full sm:w-auto">
                                 <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
                                 <SelectDropdown
                                     value={paymentTerms}
@@ -934,7 +932,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     })()}
 
                     {/* Date Input */}
-                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                    <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                         <Calendar className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 pointer-events-none" />
                         <input
                             type="date"

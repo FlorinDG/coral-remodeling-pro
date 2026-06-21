@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo, useState } from 'react';
 import { Block, BlockType, VariantsConfig } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';
@@ -71,14 +72,14 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     // Sync local text when block changes externally (e.g. article selection)
     React.useEffect(() => {
         const formatted = block.quantity ? formatDecimal(block.quantity, 2).replace(/,00$/, '') : '';
-        setQtyText(prev => {
+        setQtyText((prev: any) => {
             const parsed = parseDecimal(prev);
             return parsed === (block.quantity || 0) ? prev : formatted;
         });
     }, [block.quantity]);
     React.useEffect(() => {
         const formatted = block.unitPrice ? formatDecimal(block.unitPrice) : '';
-        setPriceText(prev => {
+        setPriceText((prev: any) => {
             const parsed = parseDecimal(prev);
             return parsed === (block.unitPrice || 0) ? prev : formatted;
         });
@@ -141,7 +142,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     const searchResults = useMemo(() => {
         if (!searchQuery || searchQuery.length < 2) return [];
         const lowerQ = searchQuery.toLowerCase();
-        return combinedEntities.filter(x => x.searchableText.includes(lowerQ)).slice(0, 50); // Top 50 hits
+        return combinedEntities.filter((x: any) => x.searchableText.includes(lowerQ)).slice(0, 50); // Top 50 hits
     }, [searchQuery, combinedEntities]);
 
     // Metamorphosis function invoked when an item is selected from dropdown
@@ -295,7 +296,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 <div className="px-3 py-2 text-[10px] font-bold tracking-widest uppercase text-neutral-400 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-black/20 backdrop-blur-md sticky top-0">
                                     Search Results
                                 </div>
-                                {searchResults.map(entity => (
+                                {searchResults.map((entity: any) => (
                                     <div
                                         key={entity.id}
                                         onClick={() => handleSelectEntity(entity)}
@@ -395,97 +396,95 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         </div>
                     );
                 })()}
-
                 {/* Metric columns group that wraps on narrow screens */}
-                <div className="flex flex-row flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 md:flex-nowrap">
-                    <div className="flex flex-col gap-0.5 w-[65px] shrink-0 self-start mt-0.5 relative group/input text-center">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Qty</label>
-                    <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="1"
-                        value={qtyText}
-                        onChange={(e) => {
-                            const v = e.target.value;
-                            // Allow digits, dots (thousands), comma (decimal), minus
-                            if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                setQtyText(v);
-                                const parsed = parseDecimal(v);
-                                onUpdate({ quantity: parsed });
-                            }
-                        }}
-                        onBlur={() => {
-                            const parsed = parseDecimal(qtyText);
-                            if (parsed !== 0) {
-                                setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
-                            } else {
-                                setQtyText('');
-                            }
-                        }}
-                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5"
-                    />
-                </div>
-
-                {/* 3. Unit (EENHEID) */}
-                <div className="flex flex-col gap-0.5 w-[55px] shrink-0 self-start mt-0.5 text-center">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Unit</label>
-                    <select
-                        value={block.unit || 'stuk'}
-                        onChange={(e) => onUpdate({ unit: e.target.value })}
-                        className="w-full bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
-                    >
-                        <option value="u">u</option>
-                        <option value="stuk">stuk</option>
-                        <option value="m">m</option>
-                        <option value="m2">m²</option>
-                        <option value="m3">m³</option>
-                        <option value="L">L</option>
-                        <option value="uur">h</option>
-                        <option value="dag">j</option>
-                        <option value="kg">kg</option>
-                        <option value="vfp">forfait</option>
-                    </select>
-                </div>
-
-                {/* 4. Unit Price excl. VAT (EENHEIDSPRIJS) */}
-                <div className={`flex flex-col gap-0.5 w-[100px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Prijs</label>
-                    <div className="w-full relative">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 w-full md:w-auto mt-2.5 md:mt-0">
+                    {/* 2. Quantity (Qty) */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Qty</label>
                         <input
                             type="text"
                             inputMode="decimal"
-                            placeholder="0,00"
-                            value={priceText}
+                            placeholder="1"
+                            value={qtyText}
                             onChange={(e) => {
                                 const v = e.target.value;
                                 if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                    setPriceText(v);
-                                    const newUnitPrice = parseDecimal(v);
-                                    onUpdate({ unitPrice: newUnitPrice, verkoopPrice: newUnitPrice });
+                                    setQtyText(v);
+                                    const parsed = parseDecimal(v);
+                                    onUpdate({ quantity: parsed });
                                 }
                             }}
                             onBlur={() => {
-                                const parsed = parseDecimal(priceText);
+                                const parsed = parseDecimal(qtyText);
                                 if (parsed !== 0) {
-                                    setPriceText(formatDecimal(parsed));
+                                    setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
                                 } else {
-                                    setPriceText('');
+                                    setQtyText('');
                                 }
                             }}
-                            readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text"
+                            className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 w-24 md:w-full"
                         />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                     </div>
-                </div>
 
-                {/* 5. BTW Rate per line */}
-                <div className={`flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 text-center transition-opacity ${vatCalcMode === 'total' ? 'opacity-30 pointer-events-none' : ''}`}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">BTW</label>
-                    {vatCalcMode === 'total' ? (
-                        <span className="text-xs text-neutral-400 py-1">—</span>
-                    ) : (
-                        <div className="flex flex-col items-center gap-0.5">
+                    {/* 3. Unit (EENHEID) */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Unit</label>
+                        <select
+                            value={block.unit || 'stuk'}
+                            onChange={(e) => onUpdate({ unit: e.target.value })}
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                        >
+                            <option value="u">u</option>
+                            <option value="stuk">stuk</option>
+                            <option value="m">m</option>
+                            <option value="m2">m²</option>
+                            <option value="m3">m³</option>
+                            <option value="L">L</option>
+                            <option value="uur">h</option>
+                            <option value="dag">j</option>
+                            <option value="kg">kg</option>
+                            <option value="vfp">forfait</option>
+                        </select>
+                    </div>
+
+                    {/* 4. Unit Price excl. VAT (EENHEIDSPRIJS) */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Prijs</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0,00"
+                                value={priceText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setPriceText(v);
+                                        const newUnitPrice = parseDecimal(v);
+                                        onUpdate({ unitPrice: newUnitPrice, verkoopPrice: newUnitPrice });
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(priceText);
+                                    if (parsed !== 0) {
+                                        setPriceText(formatDecimal(parsed));
+                                    } else {
+                                        setPriceText('');
+                                    }
+                                }}
+                                readOnly={childrenTotal !== undefined}
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full"
+                            />
+                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
+                        </div>
+                    </div>
+
+                    {/* 5. BTW Rate per line */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 transition-opacity ${vatCalcMode === 'total' ? 'opacity-30 pointer-events-none' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">BTW</label>
+                        {vatCalcMode === 'total' ? (
+                            <span className="text-xs text-neutral-400 py-1 pr-4 md:pr-0">—</span>
+                        ) : (
                             <select
                                 value={block.vatMedecontractant ? 'mc' : (block.vatRate ?? 21)}
                                 onChange={(e) => {
@@ -496,7 +495,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                         onUpdate({ vatRate: parseFloat(val), vatMedecontractant: false });
                                     }
                                 }}
-                                className="w-full bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
+                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
                             >
                                 <option value={21}>21%</option>
                                 <option value={12}>12%</option>
@@ -504,30 +503,28 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 <option value={0}>0%</option>
                                 <option value="mc">Verlegd</option>
                             </select>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                {/* 6. Total excl. VAT = Qty × Unit Price */}
-                <div className="flex flex-col gap-0.5 w-[110px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Totaal</label>
-                    <div className="w-full flex justify-end items-center pr-1 py-0.5">
-                        <span className={`font-medium text-lg tracking-tight tabular-nums ${
-                            (() => {
-                                const total = (block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1);
-                                return total < 0 ? 'text-red-500 dark:text-red-400' : 'text-black dark:text-white';
-                            })()
-                        }`}>
-                            {(() => {
-                                const price = childrenTotal !== undefined ? childrenTotal : (block.unitPrice || block.verkoopPrice || 0);
-                                const total = price * (block.quantity || 1);
-                                return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(total);
-                            })()}
-                        </span>
+                    {/* 6. Total excl. VAT = Qty × Unit Price */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[110px] shrink-0 self-start mt-0.5 relative py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Totaal</label>
+                        <div className="w-24 md:w-full flex justify-end items-center pr-1 py-0.5">
+                            <span className={`font-medium text-lg tracking-tight tabular-nums ${
+                                (() => {
+                                    const total = (block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1);
+                                    return total < 0 ? 'text-red-500 dark:text-red-400' : 'text-black dark:text-white';
+                                })()
+                            }`}>
+                                {(() => {
+                                    const price = childrenTotal !== undefined ? childrenTotal : (block.unitPrice || block.verkoopPrice || 0);
+                                    const total = price * (block.quantity || 1);
+                                    return new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(total);
+                                })()}
+                            </span>
+                        </div>
                     </div>
                 </div>
-                </div>
-
                 {/* 7. Save / Context Menu (Matched via Image context dots) - MOVED TO ACTION TOOLBAR */}
 
                 {/* Removed Global Search Modal - replaced by sleek inline combobox */}

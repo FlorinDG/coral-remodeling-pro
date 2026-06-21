@@ -32,6 +32,7 @@ export default function MobileShell({
     activeModules: string[];
     planType: string;
     lockedDbIds: Record<string, string>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tenant?: any;
 }) {
     const t = useTranslations('Mobile');
@@ -97,7 +98,7 @@ export default function MobileShell({
 
     return (
         <div
-            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col"
+            className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col overflow-x-hidden"
             style={{ '--brand-color': brandColor } as React.CSSProperties}
         >
             {/* ── Top Bar ── */}

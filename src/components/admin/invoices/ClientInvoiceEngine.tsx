@@ -931,7 +931,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
                 {/* Row 1: Title + Selectors + Actions */}
-                <div className="flex items-center gap-4 px-4 py-3">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 px-4 py-3">
                     {/* Back + Title */}
                     <button
                         onClick={() => router.back()}
@@ -1061,16 +1061,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 )}
                             </div>
                     </div>
-
                     {/* Separator */}
-                    <div className="h-8 w-px bg-neutral-200 dark:bg-white/10 shrink-0" />
+                    <div className="hidden md:block h-8 w-px bg-neutral-200 dark:bg-white/10 shrink-0" />
 
                     {/* Selectors */}
-                    <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0 overflow-visible">
+                    <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 flex-1 min-w-0 overflow-visible w-full">
                         {/* Client Selector */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                             <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                            <div className="flex-1 w-48 pl-6">
+                            <div className="flex-1 w-full sm:w-48 pl-6">
                                 <SearchableSelect
                                     value={clientId}
                                     onChange={(value) => handleUpdateProperty('client', value)}
@@ -1110,9 +1109,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         {/* Project Selector — only for tenants with project management */}
                         {hasProjects && (
                         <>
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                             <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                            <div className="flex-1 w-48 pl-6">
+                            <div className="flex-1 w-full sm:w-48 pl-6">
                                 <SearchableSelect
                                     value={projectId}
                                     onChange={(value) => handleUpdateProperty('project', value)}
@@ -1150,14 +1149,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         )}
                         </>
                         )}
-
                         {/* Custom Offerte Multi-Selector */}
-                        <div ref={quotationContainerRef} className="relative shrink-0">
+                        <div ref={quotationContainerRef} className="relative shrink-0 w-full sm:w-auto">
                             <button
                                 type="button"
                                 disabled={false}
                                 onClick={() => setIsQuotationDropdownOpen(!isQuotationDropdownOpen)}
-                                className="flex items-center gap-1.5 px-3 py-2 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all disabled:opacity-60 disabled:cursor-default cursor-pointer outline-none focus:ring-1 focus:ring-orange-500/30"
+                                className="flex items-center justify-between gap-1.5 px-3 py-2 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all disabled:opacity-60 disabled:cursor-default cursor-pointer outline-none focus:ring-1 focus:ring-orange-500/30 w-full"
                             >
                                 <FileText className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
                                 <span className="truncate max-w-[12rem]">
@@ -1266,7 +1264,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 { id: 'pay-90', name: '90 Dagen',     color: 'gray'   },
                             ];
                             return (
-                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 h-9 shrink-0">
+                                <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative px-2.5 py-1.5 h-9 shrink-0 w-full sm:w-auto">
                                     <ClipboardCheck className="w-3.5 h-3.5 text-neutral-400 mr-1.5 flex-shrink-0" />
                                     <SelectDropdown
                                         value={paymentTerms}

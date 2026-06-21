@@ -543,259 +543,260 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     );
                 })()}
 
-                {/* 1.5 Type / Category Pill (Discrete Rectangle) */}
                 {/* Metric columns group that wraps on narrow screens */}
-                <div className="flex flex-row flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end mt-2 md:mt-0 md:flex-nowrap">
-                    <div className="flex flex-col gap-0.5 w-[75px] shrink-0 self-start mt-0.5 text-center">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Type</label>
-                    <select
-                        className="w-full bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5"
-                        style={{ textAlign: 'center', textAlignLast: 'center' }}
-                        value={block.calculationType || 'loon'}
-                        onChange={(e) => onUpdate({ calculationType: e.target.value as any })}
-                    >
-                        <option value="materieel" className="text-black bg-white dark:text-white dark:bg-[#111]">Matériel</option>
-                        <option value="levering" className="text-black bg-white dark:text-white dark:bg-[#111]">Levering</option>
-                        <option value="loon" className="text-black bg-white dark:text-white dark:bg-[#111]">Loon</option>
-                        <option value="indirect" className="text-black bg-white dark:text-white dark:bg-[#111]">Indirect</option>
-                        <option value="bestek" className="text-black bg-white dark:text-white dark:bg-[#111]">Bestek</option>
-                        <option value="oa" className="text-black bg-white dark:text-white dark:bg-[#111]">OA</option>
-                    </select>
-                </div>
-
-                {/* 2. Quantity (QTÉ) */}
-                <div className="flex flex-col gap-0.5 w-[65px] shrink-0 self-start mt-0.5 relative group/input text-center">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Qty</label>
-                    <input
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="1"
-                        value={qtyText}
-                        onChange={(e) => {
-                            const v = e.target.value;
-                            if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                setQtyText(v);
-                                const parsed = parseDecimal(v);
-                                onUpdate({ quantity: parsed });
-                            }
-                        }}
-                        onBlur={() => {
-                            const parsed = parseDecimal(qtyText);
-                            if (parsed !== 0) {
-                                setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
-                            } else {
-                                setQtyText('');
-                            }
-                        }}
-                        className="w-full bg-transparent border-none text-base text-black dark:text-white text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5"
-                    />
-                    {/* Packaging calculator info */}
-                    {(() => {
-                        if (!block.articleId) return null;
-                        const artDb = getDatabase('db-articles');
-                        const artPage = artDb?.pages.find((p: any) => p.id === block.articleId);
-                        if (!artPage) return null;
-                        const coverage = artPage.properties['prop-art-coverage'] as number;
-                        const pcsPerPack = artPage.properties['prop-art-pcs-pack'] as number;
-                        const qty = block.quantity || 0;
-                        const perPack = coverage || pcsPerPack;
-                        if (!perPack || perPack <= 0 || qty <= 0) return null;
-
-                        const packsNeeded = Math.ceil(qty / perPack);
-                        const adjustedQty = Math.round(packsNeeded * perPack * 100) / 100;
-                        const waste = Math.round((adjustedQty - qty) * 100) / 100;
-
-                        if (packsNeeded <= 1 && waste === 0) return null;
-
-                        return (
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 w-[180px] text-center z-10" title={`${packsNeeded} pak × ${perPack} ${block.unit || 'eeh'}/pak = ${adjustedQty} ${block.unit || 'eeh'}`}>
-                                <div className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 border border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
-                                    📦 {packsNeeded} pak → {adjustedQty} {block.unit || 'eeh'}
-                                    {waste > 0 && <span className="text-blue-400 dark:text-blue-500"> (+{waste})</span>}
-                                </div>
-                            </div>
-                        );
-                    })()}
-                </div>
-
-                {/* 3. Unit (UNITÉ) */}
-                <div className="flex flex-col gap-0.5 w-[55px] shrink-0 self-start mt-0.5 text-center">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center">Unit</label>
-                    <select
-                        value={block.unit || 'stuk'}
-                        onChange={(e) => onUpdate({ unit: e.target.value })}
-                        className="w-full bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
-                    >
-                        <option value="u">u</option>
-                        <option value="stuk">stuk</option>
-                        <option value="m">m</option>
-                        <option value="m2">m²</option>
-                        <option value="m3">m³</option>
-                        <option value="L">L</option>
-                        <option value="uur">h</option>
-                        <option value="dag">j</option>
-                    </select>
-                </div>
-
-                {/* 4. Bruto Price (PRIX U. HT) */}
-                <div className={`flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Price driven by subcomponents' : ''}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Bruto</label>
-                    <div className="w-full relative">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={brutoText}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                    setBrutoText(v);
-                                    const parsed = parseDecimal(v);
-                                    handleMathChange('brutoPrice', parsed);
-                                }
-                            }}
-                            onBlur={() => {
-                                const parsed = parseDecimal(brutoText);
-                                if (parsed !== 0) {
-                                    setBrutoText(formatDecimal(parsed));
-                                } else {
-                                    setBrutoText('');
-                                }
-                            }}
-                            readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
-                        />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
-                    </div>
-                </div>
-
-                {/* 4.5. Supplier Discount — Reduction tenant receives from supplier */}
-                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Discount driven by subcomponents' : 'Supplier discount — the reduction you receive from your supplier (not client-facing)'}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default" title={t('col_supplier_discount_tooltip', language)}>{t('col_supplier_discount', language)}</label>
-                    <div className="w-full relative">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0"
-                            value={discountText}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                    setDiscountText(v);
-                                    const parsed = parseDecimal(v);
-                                    handleMathChange('discountPercent', parsed);
-                                }
-                            }}
-                            onBlur={() => {
-                                const parsed = parseDecimal(discountText);
-                                if (parsed !== 0) {
-                                    setDiscountText(formatDecimal(parsed, 2).replace(/,00$/, ''));
-                                } else {
-                                    setDiscountText('');
-                                }
-                            }}
-                            readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
-                        />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
-                    </div>
-                </div>
-
-                {/* 5. Margin / Custom TVA Equivalent */}
-                <div className={`flex flex-col gap-0.5 w-[70px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Margin driven by subcomponents' : ''}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Marge</label>
-                    <div className="w-full relative">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="20"
-                            value={marginText}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                    setMarginText(v);
-                                    const parsed = parseDecimal(v);
-                                    handleMathChange('margePercent', parsed);
-                                }
-                            }}
-                            onBlur={() => {
-                                const parsed = parseDecimal(marginText);
-                                if (parsed !== 0) {
-                                    setMarginText(formatDecimal(parsed, 2).replace(/,00$/, ''));
-                                } else {
-                                    setMarginText('');
-                                }
-                            }}
-                            readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
-                        />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
-                    </div>
-                </div>
-
-                {/* 5.5. Unit Price (P.U. HT) — Selling price per unit before quantity */}
-                <div className={`flex flex-col gap-0.5 w-[90px] shrink-0 self-start mt-0.5 relative text-right transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''}`} title={childrenTotal !== undefined ? 'Unit Price driven by subcomponents' : 'Selling price per unit (exclusive of VAT)'}>
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">P.U. HT</label>
-                    <div className="w-full relative">
-                        <input
-                            type="text"
-                            inputMode="decimal"
-                            placeholder="0.00"
-                            value={verkoopText}
-                            onChange={(e) => {
-                                const v = e.target.value;
-                                if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                    setVerkoopText(v);
-                                    const parsed = parseDecimal(v);
-                                    handleMathChange('verkoopPrice', (parsed ?? 0) - variantDeltas);
-                                }
-                            }}
-                            onBlur={() => {
-                                const parsed = parseDecimal(verkoopText);
-                                if (parsed !== 0) {
-                                    setVerkoopText(formatDecimal(parsed));
-                                } else {
-                                    setVerkoopText('');
-                                }
-                            }}
-                            readOnly={childrenTotal !== undefined}
-                            className="w-full bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 cursor-text disabled:cursor-not-allowed"
-                        />
-                        <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
-                    </div>
-                </div>
-
-                {/* 6. Total (TOTAL HT) */}
-                <div className="flex flex-col gap-0.5 w-[100px] shrink-0 self-start mt-0.5 relative text-right">
-                    <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right pr-4 cursor-default">Total</label>
-                    <div className="w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
-                        <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
-                            {childrenTotal !== undefined
-                                ? (childrenTotal * (block.quantity || 1)).toFixed(2)
-                                : (((block.verkoopPrice || 0) + variantDeltas) * (block.quantity || 1)).toFixed(2)}
-                        </span>
-                        <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
-                    </div>
-                </div>
-
-                {/* 7. Per-line VAT rate selector (only visible in 'per line' mode) */}
-                {vatCalcMode === 'lines' && (
-                    <div className="flex flex-col gap-0.5 w-[58px] shrink-0 self-start mt-0.5 text-center">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-center" title={t('vat', language)}>{t('vat', language)}</label>
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 w-full md:w-auto mt-2.5 md:mt-0">
+                    {/* 1.5 Type / Category Selector */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[75px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Type</label>
                         <select
-                            value={block.vatRate ?? 21}
-                            onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
-                            className="w-full bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-center py-0.5 px-0"
+                            className="bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            style={{ textAlign: 'right', textAlignLast: 'right' }}
+                            value={block.calculationType || 'loon'}
+                            onChange={(e) => onUpdate({ calculationType: e.target.value as any })}
                         >
-                            <option value={21}>21%</option>
-                            <option value={12}>12%</option>
-                            <option value={6}>6%</option>
-                            <option value={0}>0%</option>
+                            <option value="materieel" className="text-black bg-white dark:text-white dark:bg-[#111]">Matériel</option>
+                            <option value="levering" className="text-black bg-white dark:text-white dark:bg-[#111]">Levering</option>
+                            <option value="loon" className="text-black bg-white dark:text-white dark:bg-[#111]">Loon</option>
+                            <option value="indirect" className="text-black bg-white dark:text-white dark:bg-[#111]">Indirect</option>
+                            <option value="bestek" className="text-black bg-white dark:text-white dark:bg-[#111]">Bestek</option>
+                            <option value="oa" className="text-black bg-white dark:text-white dark:bg-[#111]">OA</option>
                         </select>
                     </div>
-                )}
-                </div>
 
+                    {/* 2. Quantity (Qty) */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Qty</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="1"
+                                value={qtyText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setQtyText(v);
+                                        const parsed = parseDecimal(v);
+                                        onUpdate({ quantity: parsed });
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(qtyText);
+                                    if (parsed !== 0) {
+                                        setQtyText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                                    } else {
+                                        setQtyText('');
+                                    }
+                                }}
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 w-full"
+                            />
+                            {/* Packaging calculator info */}
+                            {(() => {
+                                if (!block.articleId) return null;
+                                const artDb = getDatabase('db-articles');
+                                const artPage = artDb?.pages.find((p: any) => p.id === block.articleId);
+                                if (!artPage) return null;
+                                const coverage = artPage.properties['prop-art-coverage'] as number;
+                                const pcsPerPack = artPage.properties['prop-art-pcs-pack'] as number;
+                                const qty = block.quantity || 0;
+                                const perPack = coverage || pcsPerPack;
+                                if (!perPack || perPack <= 0 || qty <= 0) return null;
+
+                                const packsNeeded = Math.ceil(qty / perPack);
+                                const adjustedQty = Math.round(packsNeeded * perPack * 100) / 100;
+                                const waste = Math.round((adjustedQty - qty) * 100) / 100;
+
+                                if (packsNeeded <= 1 && waste === 0) return null;
+
+                                return (
+                                    <div className="absolute top-full right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 mt-0.5 w-[180px] text-center z-10" title={`${packsNeeded} pak × ${perPack} ${block.unit || 'eeh'}/pak = ${adjustedQty} ${block.unit || 'eeh'}`}>
+                                        <div className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 border border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
+                                            📦 {packsNeeded} pak → {adjustedQty} {block.unit || 'eeh'}
+                                            {waste > 0 && <span className="text-blue-400 dark:text-blue-500"> (+{waste})</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* 3. Unit (UNITÉ) */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Unit</label>
+                        <select
+                            value={block.unit || 'stuk'}
+                            onChange={(e) => onUpdate({ unit: e.target.value })}
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                        >
+                            <option value="u">u</option>
+                            <option value="stuk">stuk</option>
+                            <option value="m">m</option>
+                            <option value="m2">m²</option>
+                            <option value="m3">m³</option>
+                            <option value="L">L</option>
+                            <option value="uur">h</option>
+                            <option value="dag">j</option>
+                        </select>
+                    </div>
+
+                    {/* 4. Bruto Price (Bruto) */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Price driven by subcomponents' : ''}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Bruto</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={brutoText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setBrutoText(v);
+                                        const parsed = parseDecimal(v);
+                                        handleMathChange('brutoPrice', parsed);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(brutoText);
+                                    if (parsed !== 0) {
+                                        setBrutoText(formatDecimal(parsed));
+                                    } else {
+                                        setBrutoText('');
+                                    }
+                                }}
+                                readOnly={childrenTotal !== undefined}
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
+                            />
+                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
+                        </div>
+                    </div>
+
+                    {/* 4.5. Supplier Discount — Reduction tenant receives from supplier */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Discount driven by subcomponents' : 'Supplier discount — the reduction you receive from your supplier (not client-facing)'}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default" title={t('col_supplier_discount_tooltip', language)}>{t('col_supplier_discount', language)}</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0"
+                                value={discountText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setDiscountText(v);
+                                        const parsed = parseDecimal(v);
+                                        handleMathChange('discountPercent', parsed);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(discountText);
+                                    if (parsed !== 0) {
+                                        setDiscountText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                                    } else {
+                                        setDiscountText('');
+                                    }
+                                }}
+                                readOnly={childrenTotal !== undefined}
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
+                            />
+                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
+                        </div>
+                    </div>
+
+                    {/* 5. Margin / Custom TVA Equivalent */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Margin driven by subcomponents' : ''}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Marge</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="20"
+                                value={marginText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setMarginText(v);
+                                        const parsed = parseDecimal(v);
+                                        handleMathChange('margePercent', parsed);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(marginText);
+                                    if (parsed !== 0) {
+                                        setMarginText(formatDecimal(parsed, 2).replace(/,00$/, ''));
+                                    } else {
+                                        setMarginText('');
+                                    }
+                                }}
+                                readOnly={childrenTotal !== undefined}
+                                className="bg-transparent border-none text-base text-neutral-500 text-right focus:outline-none focus:ring-0 font-normal placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
+                            />
+                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">%</span>
+                        </div>
+                    </div>
+
+                    {/* 5.5. Unit Price (P.U. HT) — Selling price per unit before quantity */}
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Unit Price driven by subcomponents' : 'Selling price per unit (exclusive of VAT)'}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">P.U. HT</label>
+                        <div className="relative w-24 md:w-full flex justify-end">
+                            <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="0.00"
+                                value={verkoopText}
+                                onChange={(e) => {
+                                    const v = e.target.value;
+                                    if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                        setVerkoopText(v);
+                                        const parsed = parseDecimal(v);
+                                        handleMathChange('verkoopPrice', (parsed ?? 0) - variantDeltas);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const parsed = parseDecimal(verkoopText);
+                                    if (parsed !== 0) {
+                                        setVerkoopText(formatDecimal(parsed));
+                                    } else {
+                                        setVerkoopText('');
+                                    }
+                                }}
+                                readOnly={childrenTotal !== undefined}
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
+                            />
+                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
+                        </div>
+                    </div>
+
+                    {/* 6. Total (TOTAL HT) */}
+                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Total</label>
+                        <div className="w-24 md:w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
+                            <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
+                                {childrenTotal !== undefined
+                                    ? (childrenTotal * (block.quantity || 1)).toFixed(2)
+                                    : (((block.verkoopPrice || 0) + variantDeltas) * (block.quantity || 1)).toFixed(2)}
+                            </span>
+                            <span className="ml-1 text-xs text-neutral-400 font-medium font-sans mt-0.5 cursor-default">€</span>
+                        </div>
+                    </div>
+
+                    {/* 7. Per-line VAT rate selector (only visible in 'per line' mode) */}
+                    {vatCalcMode === 'lines' && (
+                        <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[58px] shrink-0 self-start mt-0.5 py-1.5 md:py-0">
+                            <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center" title={t('vat', language)}>{t('vat', language)}</label>
+                            <select
+                                value={block.vatRate ?? 21}
+                                onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
+                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            >
+                                <option value={21}>21%</option>
+                                <option value={12}>12%</option>
+                                <option value={6}>6%</option>
+                                <option value={0}>0%</option>
+                            </select>
+                        </div>
+                    )}
+                </div>
                 {/* 7. Save / Context Menu (Matched via Image context dots) - MOVED TO ACTION TOOLBAR */}
 
                 {/* Removed Global Search Modal - replaced by sleek inline combobox */}

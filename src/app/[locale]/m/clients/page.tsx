@@ -1,11 +1,14 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+
 import React, { useState } from 'react';
 import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Users, Plus, Building2, Phone, Mail, Search } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
+import PageModal from '@/components/admin/database/components/PageModal';
 import { Page } from '@/components/admin/database/types';
 
 const FALLBACK_PAGES: Page[] = [];
@@ -19,6 +22,7 @@ export default function MobileClientsPage() {
 
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [activePageId, setActivePageId] = useState<string | null>(null);
 
     const db = getDatabase(clientsDbId);
     const rawPages = db?.pages || FALLBACK_PAGES;
@@ -85,50 +89,42 @@ export default function MobileClientsPage() {
                     </p>
                 </div>
             ) : (
-                <div className="space-y-2 pb-20">
-                    {clients.map(client => (
-                        <div
-                            key={client.id}
-                            className="p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 shadow-sm"
-                        >
-                            <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-[var(--brand-color,#d35400)]/10 text-[var(--brand-color,#d35400)] flex items-center justify-center text-sm font-bold uppercase shrink-0">
-                                    {client.name.charAt(0)}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-bold text-neutral-900 dark:text-white truncate">{client.name}</p>
-                                    {client.company && (
-                                        <p className="text-xs text-neutral-500 flex items-center gap-1.5 mt-1 truncate">
-                                            <Building2 className="w-3.5 h-3.5" />
-                                            {client.company}
-                                        </p>
-                                    )}
-                                    {client.vat && (
-                                        <p className="text-[10px] font-medium text-neutral-400 mt-1 uppercase tracking-wider">
-                                            {client.vat}
-                                        </p>
-                                    )}
-                                    
-                                    {(client.phone || client.email) && (
-                                        <div className="flex items-center gap-3 mt-3 pt-3 border-t border-dashed border-neutral-100 dark:border-white/5">
-                                            {client.phone && (
-                                                <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)]">
-                                                    <Phone className="w-3.5 h-3.5" />
-                                                    {t('cli_call')}
-                                                </a>
-                                            )}
-                                            {client.email && (
-                                                <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)]">
-                                                    <Mail className="w-3.5 h-3.5" />
-                                                    {t('cli_email')}
-                                                </a>
-                                            )}
+                <div className="pb-20">
+                    <div className="divide-y divide-neutral-100 dark:divide-white/5 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 overflow-hidden">
+                        {clients.map(client => (
+                            <div
+                                key={client.id}
+                                onClick={() => setActivePageId(client.id)}
+                                className="p-3.5 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer"
+                            >
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-sm font-bold text-neutral-900 dark:text-white truncate">{client.name}</span>
+                                            {client.company && <span className="text-xs text-neutral-400 truncate">({client.company})</span>}
                                         </div>
-                                    )}
+                                        {client.vat && (
+                                            <p className="text-[10px] font-medium text-neutral-400 uppercase tracking-wider mt-0.5">
+                                                {client.vat}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
+                                        {client.phone && (
+                                            <a href={`tel:${client.phone}`} className="p-2 bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)] hover:bg-[var(--brand-color)]/10 transition-colors">
+                                                <Phone className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                        {client.email && (
+                                            <a href={`mailto:${client.email}`} className="p-2 bg-neutral-50 dark:bg-white/5 border border-neutral-100 dark:border-white/5 rounded-xl text-neutral-600 dark:text-neutral-400 hover:text-[var(--brand-color)] hover:bg-[var(--brand-color)]/10 transition-colors">
+                                                <Mail className="w-4 h-4" />
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -140,6 +136,14 @@ export default function MobileClientsPage() {
                 createPage={createPage}
                 clientsDbId={clientsDbId}
             />
+
+            {activePageId && (
+                <PageModal
+                    onClose={() => setActivePageId(null)}
+                    databaseId={clientsDbId}
+                    pageId={activePageId}
+                />
+            )}
         </div>
     );
 }

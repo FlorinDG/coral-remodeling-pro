@@ -7,6 +7,7 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Camera, Wallet, Plus, Calendar, Receipt, Building2, AlertCircle, Inbox } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
+import PageModal from '@/components/admin/database/components/PageModal';
 import { Page } from '@/components/admin/database/types';
 
 // Load modal dynamically so we don't block render
@@ -49,6 +50,7 @@ export default function MobileExpensesPage() {
     const [scanQuota, setScanQuota] = useState(30);
     const [peppolInvoices, setPeppolInvoices] = useState<PeppolInvoice[]>([]);
     const [peppolLoading, setPeppolLoading] = useState(false);
+    const [activePageId, setActivePageId] = useState<string | null>(null);
 
     const db = getDatabase(ticketsDbId);
     const rawPages = db?.pages || FALLBACK_PAGES;
@@ -172,29 +174,32 @@ export default function MobileExpensesPage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="space-y-2 pb-24">
-                            {tickets.map(ticket => (
-                                <div
-                                    key={ticket.id}
-                                    className="p-4 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 shadow-sm flex items-center justify-between"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-neutral-50 dark:bg-white/5 flex items-center justify-center text-lg border border-neutral-100 dark:border-white/5">
-                                            {CATEGORY_ICONS[ticket.category] || '📦'}
+                        <div className="pb-24">
+                            <div className="divide-y divide-neutral-100 dark:divide-white/5 bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-white/5 overflow-hidden">
+                                {tickets.map(ticket => (
+                                    <div
+                                        key={ticket.id}
+                                        onClick={() => setActivePageId(ticket.id)}
+                                        className="p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/40 transition-colors cursor-pointer flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-neutral-50 dark:bg-white/5 flex items-center justify-center text-sm border border-neutral-100 dark:border-white/5">
+                                                {CATEGORY_ICONS[ticket.category] || '📦'}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold leading-tight">{ticket.merchant}</p>
+                                                <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-0.5">
+                                                    <Calendar className="w-3 h-3" />
+                                                    {ticket.date}
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="text-sm font-bold leading-tight">{ticket.merchant}</p>
-                                            <p className="text-[10px] text-neutral-400 flex items-center gap-1 mt-1">
-                                                <Calendar className="w-3 h-3" />
-                                                {ticket.date}
-                                            </p>
-                                        </div>
+                                        <p className="text-xs font-black text-neutral-800 dark:text-neutral-200">
+                                            €{ticket.amount.toFixed(2)}
+                                        </p>
                                     </div>
-                                    <p className="text-sm font-black text-neutral-800 dark:text-neutral-200">
-                                        €{ticket.amount.toFixed(2)}
-                                    </p>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -277,6 +282,14 @@ export default function MobileExpensesPage() {
             {/* Ticket Capture Modal */}
             {showCapture && (
                 <TicketCaptureModal onClose={() => setShowCapture(false)} />
+            )}
+
+            {activePageId && (
+                <PageModal
+                    onClose={() => setActivePageId(null)}
+                    databaseId={ticketsDbId}
+                    pageId={activePageId}
+                />
             )}
         </div>
     );

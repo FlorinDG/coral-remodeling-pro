@@ -56,6 +56,7 @@ export default function MobileShell({
         // Clear any bypass when entering/staying inside mobile shell /m
         try {
             localStorage.removeItem('bypass-mobile-redirect');
+            document.cookie = "desktop-view=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         } catch {}
 
         const handleGlobalClick = (e: MouseEvent) => {
@@ -66,12 +67,16 @@ export default function MobileShell({
                 if (href && (href.includes('/admin') || href.startsWith('admin'))) {
                     try {
                         localStorage.setItem('bypass-mobile-redirect', 'true');
+                        document.cookie = "desktop-view=true; path=/; max-age=31536000; SameSite=Lax";
                     } catch {}
                 }
             }
         };
 
         document.addEventListener('click', handleGlobalClick);
+        return () => {
+            document.removeEventListener('click', handleGlobalClick);
+        };
 
         if (tenant) {
             if (tenant.brandColor) {

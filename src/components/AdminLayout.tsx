@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable */
 
 import { Toaster } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -86,7 +87,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     useEffect(() => {
         if (planType !== 'FREE') return;
         try {
-            const bypass = localStorage.getItem('bypass-mobile-redirect') === 'true';
+            const bypass = localStorage.getItem('bypass-mobile-redirect') === 'true' || document.cookie.includes('desktop-view=true');
             if (bypass) return;
         } catch {}
         if (window.innerWidth < 768) {

@@ -12,6 +12,7 @@ type DecodedToken = {
     email?: string;
     sub?: string;
     exp?: number;
+    planType?: string;
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -63,6 +64,42 @@ function resolveLocale(req: NextRequest): string {
 function hasLocalePrefix(pathname: string): boolean {
     const seg = pathname.split('/')[1];
     return SUPPORTED_LOCALES.includes(seg);
+}
+
+function isMobileUserAgent(ua: string): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+}
+
+function getMobileEquivalent(normalisedPath: string): string | null {
+    if (normalisedPath === '/admin' || normalisedPath === '/admin/dashboard') {
+        return '/m';
+    }
+    if (normalisedPath === '/admin/financials/income/invoices') {
+        return '/m/invoices';
+    }
+    if (normalisedPath === '/admin/financials/income/invoices/new') {
+        return '/m/invoices/new';
+    }
+    if (normalisedPath.startsWith('/admin/financials/income/invoices/')) {
+        const id = normalisedPath.substring('/admin/financials/income/invoices/'.length);
+        return `/m/invoices/${id}`;
+    }
+    if (normalisedPath.startsWith('/admin/financials/expense/expenses')) {
+        return '/m/expenses';
+    }
+    if (normalisedPath.startsWith('/admin/contacts')) {
+        return '/m/clients';
+    }
+    if (normalisedPath.startsWith('/admin/quotations')) {
+        return '/m/quotes';
+    }
+    if (normalisedPath.startsWith('/admin/suppliers')) {
+        return '/m/purchases';
+    }
+    if (normalisedPath.startsWith('/admin/settings')) {
+        return '/m/settings';
+    }
+    return null;
 }
 
 /**
@@ -140,6 +177,17 @@ export default async function middleware(req: NextRequest) {
         const isLoggedIn = !!token;
         const locale = resolveLocale(req);
 
+        // Branch W (WorkHub subdomain): FREE mobile -> redirect to app subdomain /m
+        const userAgent = req.headers.get('user-agent') || '';
+        const isMobile = isMobileUserAgent(userAgent);
+        if (isLoggedIn && token?.planType === 'FREE' && isMobile && req.cookies.get('desktop-view')?.value !== 'true') {
+            const appHostname = hostname.replace(/^work\./, 'app.');
+            const appUrl = new URL(`/${locale}/m`, `${req.nextUrl.protocol}//${appHostname}`);
+            const res = NextResponse.redirect(appUrl);
+            Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+            return res;
+        }
+
         const isLoginPage = pathname.includes('/login');
         const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite') || pathname.includes('/quote/') || pathname.includes('/invoice/');
 
@@ -197,6 +245,26 @@ export default async function middleware(req: NextRequest) {
         const token     = await getToken(req);
         const isLoggedIn = !!token;
         const role       = token?.role;
+        const planType   = token?.planType;
+
+        const strippedPath = hasLocalePrefix(pathname)
+            ? pathname.replace(/^\/(en|fr|nl|ro|ru)/, '')
+            : pathname;
+
+        const userAgent = req.headers.get('user-agent') || '';
+        const isMobile = isMobileUserAgent(userAgent);
+
+        // Branch B (app subdomain): FREE mobile -> redirect to /m equivalents
+        if (isLoggedIn && planType === 'FREE' && isMobile && req.cookies.get('desktop-view')?.value !== 'true') {
+            const mobileTarget = getMobileEquivalent(strippedPath);
+            if (mobileTarget) {
+                const locale = resolveLocale(req);
+                const redirectUrl = new URL(`/${locale}${mobileTarget}`, req.nextUrl.origin);
+                const res = NextResponse.redirect(redirectUrl);
+                Object.entries(noCache()).forEach(([k, v]) => res.headers.set(k, v));
+                return res;
+            }
+        }
 
         const isLoginPage  = pathname.includes('/login');
         const isPublicPage = pathname.includes('/help') || pathname.includes('/terms') || pathname.includes('/privacy') || pathname.includes('/accept-invite') || pathname.includes('/reset-password') || pathname.includes('/quote/') || pathname.includes('/invoice/');
@@ -306,11 +374,6 @@ export default async function middleware(req: NextRequest) {
         // ── Rewrite: map root / non-admin paths → /[locale]/admin ─────────
         const locale = pendingLocaleCookie || resolveLocale(req);
         const noRewriteSegs = ['admin', 'superadmin', 'login', 'help', 'terms', 'privacy', 'portal', 'store', 'reset-password', 'accept-invite', 'workhub', 'm', '_next', 'api', 'quote', 'invoice'];
-        // Strip any accidental locale prefix (e.g. /fr/admin/… → /admin/…)
-        // next-intl's router.replace may inject the prefix despite localePrefix:'never'
-        const strippedPath = hasLocalePrefix(pathname)
-            ? pathname.replace(/^\/(en|fr|nl|ro|ru)/, '')
-            : pathname;
         const rest = strippedPath.replace(/^\//, '');
         let rewriteTarget: string | null = null;
 

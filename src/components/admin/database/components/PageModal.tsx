@@ -457,6 +457,14 @@ interface PageModalProps {
 export default function PageModal({ databaseId, pageId, onClose }: PageModalProps) {
 
     const modalRef = useRef<HTMLDivElement>(null);
+    const [animationDone, setAnimationDone] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimationDone(true);
+        }, 350);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         // (3) Clear/blur the DSG active cell
@@ -621,7 +629,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             <div
-                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-right duration-300 flex-shrink-0 ${isMaximized ? 'w-full' : ''}`}
+                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 ${isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
                 style={isMaximized ? {} : { width: `${width}px` }}
             >
                 {!isMaximized && (

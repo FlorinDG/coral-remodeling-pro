@@ -59,6 +59,15 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
 
+    const [animationDone, setAnimationDone] = useState(false);
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimationDone(true);
+        }, 250);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Steps: capture → (split-confirm →) review → saving → done
     const [step, setStep] = useState<'capture' | 'split-confirm' | 'review' | 'saving' | 'done' | 'error'>('capture');
     const [isDragging, setIsDragging] = useState(false);
@@ -350,7 +359,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className={`relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`}>
 
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20">

@@ -138,14 +138,9 @@ input, textarea, select, table, td, th,
   overscroll-behavior-x: contain;
 }
 
-/* Prevent subpixel antialiasing shifts, blurry text, and 1px jumps on hover transitions */
-.transition-all,
-[class*="transition-"],
+/* Prevent subpixel antialiasing shifts and 1px jumps during scale transformations */
 [class*="hover:scale-"],
-[class*="active:scale-"],
-button,
-a,
-.glass-morphism {
+[class*="active:scale-"] {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }

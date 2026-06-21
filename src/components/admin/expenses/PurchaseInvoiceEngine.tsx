@@ -97,6 +97,15 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
     const suppliersDbId = resolveDbId('db-suppliers');
     const projectsDbId = resolveDbId('db-1');
 
+    const [animationDone, setAnimationDone] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setAnimationDone(true);
+        }, 250);
+        return () => clearTimeout(timer);
+    }, []);
+
     const page = useDatabaseStore(s => {
         const db = s.getDatabase(expensesDbId);
         return db?.pages.find((p: Page) => p.id === pageId);
@@ -497,7 +506,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoi
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="relative w-full max-w-7xl h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className={`relative w-full max-w-7xl h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
                 
                 {/* Left Pane (Metadata & Lines) */}
                 <div className="w-[55%] flex flex-col border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900">

@@ -445,7 +445,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                 {/* Email Verification Banner */}
                 {!isEmailVerified && session?.user && !verifyBannerDismissed && (
-                    <div className="flex-shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
+                    <div className="flex-shrink-0 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/30 px-3 md:px-6 py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                             <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
@@ -477,7 +477,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                 {/* SuperAdmin Impersonation Banner */}
                 {isImpersonating && (
-                    <div className="flex-shrink-0 bg-violet-600 dark:bg-violet-700 px-6 py-2.5 flex items-center justify-between gap-4">
+                    <div className="flex-shrink-0 bg-violet-600 dark:bg-violet-700 px-3 md:px-6 py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <ShieldAlert className="w-4 h-4 text-violet-200 flex-shrink-0" />
                             <p className="text-xs font-bold text-white">
@@ -505,7 +505,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                 {/* Payment Failed Banner */}
                 {subscriptionStatus === 'PAST_DUE' && (
-                    <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800/30 px-6 py-2.5 flex items-center justify-between gap-4">
+                    <div className="flex-shrink-0 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800/30 px-3 md:px-6 py-2.5 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <ShieldAlert className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                             <p className="text-xs font-medium text-red-800 dark:text-red-300">
@@ -523,7 +523,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                 {/* Schema update banner — non-dismissable */}
                 {schemaStale && (
-                    <div className="flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/30 px-6 py-2.5 flex items-center justify-center gap-3">
+                    <div className="flex-shrink-0 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800/30 px-3 md:px-6 py-2.5 flex items-center justify-center gap-3">
                         <RefreshCw className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 animate-spin" />
                         <p className="text-xs font-medium text-blue-800 dark:text-blue-300">
                             Een update is beschikbaar. Herlaad om door te gaan.
@@ -539,7 +539,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                 )}
 
 
-                <div className="flex-1 p-4 overflow-y-auto min-h-0 flex flex-col relative w-full">
+                <div className="flex-1 px-2 py-4 md:p-4 overflow-y-auto min-h-0 flex flex-col relative w-full">
                     <TenantProvider activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={tenant}>
                         {isBlocked ? (
                             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-neutral-50 dark:bg-white/5 rounded-2xl border border-neutral-200 dark:border-white/10 m-4">

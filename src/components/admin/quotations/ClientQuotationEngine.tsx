@@ -780,7 +780,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     </div>
                 </div>
                 {/* Row 2: Selectors — responsive wrap */}
-                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02] w-full">
+                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 px-3 md:px-4 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-white/[0.02] w-full">
                     {/* Client Selector */}
                     <div className="flex items-center bg-white dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
                         <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
@@ -945,7 +945,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             </div>
 
             {tenant && (!tenant.companyName || !tenant.vatNumber) && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
+                <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-700/50 px-3 md:px-4 py-2.5 flex items-center justify-center gap-3 shrink-0">
                     <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-500 shrink-0" />
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                         <strong>{ti18n('engine_identity_missing', locale)}</strong> {ti18n('engine_identity_warning', locale)}

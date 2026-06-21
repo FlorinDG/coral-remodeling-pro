@@ -41,7 +41,7 @@ export default function ProjectManagementPage() {
         <div className="flex flex-col w-full h-full">
             <ModuleTabs tabs={projectsTabs} groupId="projects" />
 
-            <div className="w-full flex-1 flex flex-col pt-6 pb-6 px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
+            <div className="w-full flex-1 flex flex-col pt-6 pb-6 px-3 md:px-6 min-h-0 bg-neutral-50/50 dark:bg-black/50">
                 {/* Type filter tabs */}
                 <div className="flex items-center gap-1 mb-4 overflow-x-auto no-scrollbar">
                     {TYPE_TABS.map((tab) => {

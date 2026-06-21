@@ -10,7 +10,7 @@ export default function FilesPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)]">
-            <div className="flex items-center justify-between px-8 py-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-black">
+            <div className="flex items-center justify-between px-3 md:px-8 py-4 border-b border-neutral-200 dark:border-white/10 bg-white dark:bg-black">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Global Library</h1>
                     <p className="text-sm text-neutral-500 mt-1">

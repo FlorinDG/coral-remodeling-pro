@@ -1001,8 +1001,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                 onClick={() => handleAddBlock('section')}
                                 className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                                title={ti18n('engine_add_section', locale)}
                             >
-                                <span className="text-sm leading-none">+</span> {ti18n('engine_add_section', locale)}
+                                <span className="text-sm leading-none">+</span> {!isMobileRoute && ti18n('engine_add_section', locale)}
                             </button>
                             <button
                                 onClick={() => handleAddBlock('line')}
@@ -1012,26 +1013,30 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
                                     color: 'var(--brand-color, #d35400)',
                                 }}
+                                title={ti18n('engine_add_line', locale)}
                             >
-                                <span className="text-sm leading-none">+</span> {ti18n('engine_add_line', locale)}
+                                <span className="text-sm leading-none">+</span> {!isMobileRoute && ti18n('engine_add_line', locale)}
                             </button>
                             <button
                                 onClick={() => handleAddBlock('text')}
                                 className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                                title="Vrije Tekst"
                             >
-                                <span className="text-sm leading-none">+</span> Vrije Tekst
+                                <span className="text-sm leading-none">+</span> {!isMobileRoute && "Vrije Tekst"}
                             </button>
                             <button
                                 onClick={() => handleAddBlock('space')}
                                 className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                                title="Spacer"
                             >
-                                <ChevronsUpDown className="w-3.5 h-3.5" /> Spacer
+                                <ChevronsUpDown className="w-3.5 h-3.5" /> {!isMobileRoute && "Spacer"}
                             </button>
                             <button
                                 onClick={() => handleAddBlock('page-break')}
                                 className="text-xs font-semibold flex items-center gap-1.5 transition-colors py-1.5 px-3 rounded-lg shadow-sm border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/5"
+                                title="Page Break"
                             >
-                                <Scissors className="w-3.5 h-3.5" /> Page Break
+                                <Scissors className="w-3.5 h-3.5" /> {!isMobileRoute && "Page Break"}
                             </button>
                         </div>
 

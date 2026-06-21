@@ -1432,8 +1432,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             onClick={() => handleAddBlock('section')}
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm text-white hover:opacity-90"
                             style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                            title="Add Section"
                         >
-                            <span className="text-sm leading-none">+</span> Add Section
+                            <span className="text-sm leading-none">+</span> {!isMobileRoute && "Section"}
                         </button>
                         <button
                             onClick={() => handleAddBlock('line')}
@@ -1443,20 +1444,23 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
                                 color: 'var(--brand-color, #d35400)',
                             }}
+                            title="Add Line"
                         >
-                            <span className="text-sm leading-none">+</span> Add Line
+                            <span className="text-sm leading-none">+</span> {!isMobileRoute && "Line"}
                         </button>
                         <button
                             onClick={() => handleAddBlock('text')}
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                            title="Text Block"
                         >
-                            <Type className="w-3.5 h-3.5" /> Text
+                            <Type className="w-3.5 h-3.5" /> {!isMobileRoute && "Text"}
                         </button>
                         <button
                             onClick={() => handleAddBlock('image')}
                             className="text-xs font-semibold flex items-center gap-1 transition-colors py-1.5 px-3 rounded-lg shadow-sm border text-neutral-600 dark:text-neutral-300 border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5"
+                            title="Image Insert"
                         >
-                            <ImageIcon className="w-3.5 h-3.5" /> Image
+                            <ImageIcon className="w-3.5 h-3.5" /> {!isMobileRoute && "Image"}
                         </button>
                         <button
                             onClick={() => handleAddBlock('space')}

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/preserve-manual-memoization */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/preserve-manual-memoization, react-hooks/refs */
 import React, { useMemo } from 'react';
 import {
     textColumn,
@@ -42,6 +42,41 @@ interface UseGridColumnsParams {
     setSelectedRowIds: React.Dispatch<React.SetStateAction<Set<string>>>;
     setActivePageId: React.Dispatch<React.SetStateAction<string | null>>;
 }
+
+const CheckboxGripCell = ({ rowData, setSelectedRowIds }: { rowData: any; setSelectedRowIds: React.Dispatch<React.SetStateAction<Set<string>>> }) => {
+    const ref = React.useRef<HTMLDivElement>(null);
+    React.useEffect(() => {
+        if (ref.current) {
+            const rowEl = ref.current.closest('.dsg-row');
+            if (rowEl) {
+                rowEl.setAttribute('data-page-id', rowData.id);
+            }
+        }
+    }, [rowData.id]);
+
+    return (
+        <div
+            ref={ref}
+            className="w-full h-full flex items-center justify-center cursor-default bg-neutral-50 dark:bg-black/50 border-r border-neutral-200 dark:border-white/10"
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+        >
+            <Checkbox
+                checked={rowData._isSelected || false}
+                onChange={(checked) => {
+                    const isChecked = checked;
+                    setSelectedRowIds(prevSet => {
+                        const next = new Set(prevSet);
+                        if (isChecked) next.add(rowData.id);
+                        else next.delete(rowData.id);
+                        return next;
+                    });
+                }}
+                className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
+            />
+        </div>
+    );
+};
 
 /**
  * Builds the column configuration array for DataSheetGrid.
@@ -223,27 +258,7 @@ export function useGridColumns({
                 shrink: 0,
                 minWidth: 40,
                 maxWidth: 40,
-                component: ({ rowData }) => (
-                    <div
-                        className="w-full h-full flex items-center justify-center cursor-default bg-neutral-50 dark:bg-black/50 border-r border-neutral-200 dark:border-white/10"
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <Checkbox
-                            checked={rowData._isSelected || false}
-                            onChange={(checked) => {
-                                const isChecked = checked;
-                                setSelectedRowIds(prevSet => {
-                                    const next = new Set(prevSet);
-                                    if (isChecked) next.add(rowData.id);
-                                    else next.delete(rowData.id);
-                                    return next;
-                                });
-                            }}
-                            className="w-3.5 h-3.5 rounded border-neutral-300 accent-orange-500 text-orange-600 focus:ring-orange-500 cursor-pointer"
-                        />
-                    </div>
-                )
+                component: (props) => <CheckboxGripCell {...props} setSelectedRowIds={setSelectedRowIds} />
             },
             {
                 title: <div className="hidden" />,

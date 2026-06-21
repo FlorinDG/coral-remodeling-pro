@@ -92,16 +92,16 @@ export function useVatLookup({ database, rowData, gridAreaRef, updatePagePropert
 
             const rect = cell.getBoundingClientRect();
 
-            // Find the row ID from the injected row-id-* class
-            const rowEl = cell.parentElement;
-            const rowIdClass = Array.from(rowEl?.classList || []).find(c => c.startsWith('row-id-'));
-            const rowId = rowIdClass ? rowIdClass.replace('row-id-', '') : '';
+            // Find the row ID from the data-page-id attribute
+            const rowId = cell.closest('[data-page-id]')?.getAttribute('data-page-id') || '';
             if (!rowId) return;
 
-            const cleanVal = value.replace(/[\s.]/g, '');
-            const isBareNumber = /^\d{9,10}$/.test(cleanVal);
-            const lookupVal = isBareNumber ? 'BE' + cleanVal : cleanVal;
-            const isValidVat = lookupVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/i.test(lookupVal);
+            const cleanVal = value.replace(/[\s.]/g, '').toUpperCase();
+            let lookupVal = cleanVal;
+            if (/^\d{9,10}$/.test(cleanVal)) {
+                lookupVal = 'BE' + (cleanVal.length === 9 ? '0' + cleanVal : cleanVal);
+            }
+            const isValidVat = lookupVal.length >= 10 && /^[A-Z]{2}\d{8,12}$/.test(lookupVal);
 
             // Show flyout immediately in 'typing' state
             setVatLookup({

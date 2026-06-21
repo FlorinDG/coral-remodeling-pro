@@ -129,10 +129,8 @@ input, textarea, select, table, td, th,
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Disable elastic/rubber-band overscroll at view edges globally */
-.overflow-auto,
+/* Scope overscroll behavior to prevent horizontal history navigation swipe inside horizontal scroll areas, while allowing vertical scroll chaining */
 .overflow-x-auto,
-.overflow-y-auto,
 .dsg-container {
-  overscroll-behavior: none;
+  overscroll-behavior-x: contain;
 }

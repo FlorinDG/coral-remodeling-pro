@@ -771,7 +771,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             )}
 
             <div
-                className="flex-1 w-full p-0 relative overflow-hidden overscroll-none min-h-0 bg-white dark:bg-black"
+                className="flex-1 w-full p-0 relative overflow-hidden min-h-0 bg-white dark:bg-black"
                 ref={gridWrapperRef}
                 onScrollCapture={(e) => {
                     // Synchronously intercept bubbled scroll events and lock the header offset translation
@@ -804,9 +804,19 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             onClick={e => e.stopPropagation()}
                             onMouseDown={e => e.stopPropagation()}
                             onWheel={e => {
-                                const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container');
+                                const gridContainer = gridWrapperRef.current?.querySelector('.dsg-container') as HTMLElement | null;
                                 if (gridContainer && Math.abs(e.deltaX) > 0) {
-                                    gridContainer.scrollLeft += e.deltaX;
+                                    const canScrollLeft = gridContainer.scrollLeft > 0;
+                                    const canScrollRight = gridContainer.scrollLeft < (gridContainer.scrollWidth - gridContainer.clientWidth - 1);
+                                    const isScrollingLeft = e.deltaX < 0;
+                                    const isScrollingRight = e.deltaX > 0;
+                                    
+                                    if ((isScrollingLeft && canScrollLeft) || (isScrollingRight && canScrollRight)) {
+                                        gridContainer.scrollLeft += e.deltaX;
+                                        if (e.cancelable) {
+                                            e.preventDefault();
+                                        }
+                                    }
                                 }
                             }}
                             className="absolute top-0 left-0 right-0 h-9 z-50 flex bg-[#f9fafb] dark:bg-neutral-900 border-b border-[rgba(0,0,0,0.1)] dark:border-white/10 overflow-visible pointer-events-auto"

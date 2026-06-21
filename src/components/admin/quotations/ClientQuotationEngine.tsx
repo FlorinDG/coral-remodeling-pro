@@ -638,7 +638,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         toast.success('Project aangemaakt en taken toegewezen!');
 
         // 4. Navigate to the newly created project
-        router.push(`/${locale}/admin/projects-management?projectId=${newProject.id}`);
+        if (isMobileRoute) {
+            router.push(`/${locale}/m`);
+        } else {
+            router.push(`/${locale}/admin/projects-management?projectId=${newProject.id}`);
+        }
     };
 
     // Convert accepted quotation → invoice
@@ -690,7 +694,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             }
 
             toast.success('Factuur aangemaakt vanuit offerte!');
-            router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
+            if (isMobileRoute) {
+                router.push(`/${locale}/m/invoices/${newInvoice.id}`);
+            } else {
+                router.push(`/${locale}/admin/financials/income/invoices/${newInvoice.id}`);
+            }
         } catch (e) {
             console.error('Failed to convert quotation to invoice:', e);
             toast.error('Factuur aanmaken mislukt door een systeemfout.');
@@ -712,7 +720,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         });
         if (newPage) {
             toast.success('Addendum aangemaakt!');
-            router.push(`/${locale}/admin/quotations/${newPage.id}`);
+            if (isMobileRoute) {
+                router.push(`/${locale}/m/quotes/${newPage.id}`);
+            } else {
+                router.push(`/${locale}/admin/quotations/${newPage.id}`);
+            }
         } else {
             toast.error('Addendum aanmaken mislukt.');
         }
@@ -807,7 +819,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         </div>
                         {clientId && (
                             <Link
-                                href={`/admin/database/${clientsDbId}/${clientId}`}
+                                href={isMobileRoute ? `/m/clients` : `/admin/database/${clientsDbId}/${clientId}`}
                                 className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                 title={ti18n('engine_open_record', locale)}
                             >
@@ -837,7 +849,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             </div>
                             {projectId && (
                                 <Link
-                                    href={`/admin/database/${projectDbId}/${projectId}`}
+                                    href={isMobileRoute ? `/m` : `/admin/database/${projectDbId}/${projectId}`}
                                     className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                     title={ti18n('engine_open_record', locale)}
                                 >
@@ -955,7 +967,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                         <strong>{ti18n('engine_identity_missing', locale)}</strong> {ti18n('engine_identity_warning', locale)}
                     </p>
-                    <Link href="/admin/settings/company-info" className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
+                    <Link href={isMobileRoute ? "/m/settings?tab=company-info" : "/admin/settings/company-info"} className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
                         {ti18n('engine_update_settings', locale)}
                     </Link>
                 </div>

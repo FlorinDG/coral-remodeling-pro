@@ -433,7 +433,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
             // Create corresponding Prisma Invoice record
             await createPrismaInvoice(result.page.id, cnNumber, 'CREDIT_NOTE', id);
-            router.push(`/admin/financials/income/credit-notes/${result.page.id}`);
+            if (isMobileRoute) {
+                router.push(`/m/invoices/${result.page.id}`);
+            } else {
+                router.push(`/admin/financials/income/credit-notes/${result.page.id}`);
+            }
         }
     };
 
@@ -976,7 +980,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     {parentInvoiceTitle && (
                                         <>
                                             <span>•</span>
-                                            <Link href={`/admin/financials/income/invoices/${parentInvoiceId}`} className="hover:text-neutral-600 dark:hover:text-neutral-200 underline decoration-dashed">
+                                            <Link href={isMobileRoute ? `/m/invoices/${parentInvoiceId}` : `/admin/financials/income/invoices/${parentInvoiceId}`} className="hover:text-neutral-600 dark:hover:text-neutral-200 underline decoration-dashed">
                                                 Link: {String(parentInvoiceTitle)}
                                             </Link>
                                         </>
@@ -1101,7 +1105,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </div>
                                 {clientId && (
                                     <Link
-                                        href={`/admin/database/${clientsDbId}/${clientId}`}
+                                        href={isMobileRoute ? `/m/clients` : `/admin/database/${clientsDbId}/${clientId}`}
                                         className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                         title="Open fiche"
                                     >
@@ -1144,7 +1148,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                 </div>
                                 {projectId && (
                                     <Link
-                                        href={`/admin/database/${projectDbId}/${projectId}`}
+                                        href={isMobileRoute ? `/m` : `/admin/database/${projectDbId}/${projectId}`}
                                         className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
                                         title="Open fiche"
                                     >
@@ -1354,10 +1358,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             <div className="flex items-center gap-2">
                                 <Info className="w-4 h-4 text-blue-500 shrink-0" />
                                 <span>Deze creditnota is gekoppeld aan originele factuur <strong>{parentInvoiceTitle || 'Factuur'}</strong>.</span>
+                                <Link href={isMobileRoute ? `/m/invoices/${parentInvoiceId}` : `/admin/financials/income/invoices/${parentInvoiceId}`} className="font-bold underline hover:opacity-85">
+                                    Open originele factuur →
+                                </Link>
                             </div>
-                            <Link href={`/admin/financials/income/invoices/${parentInvoiceId}`} className="font-bold underline hover:opacity-85">
-                                Open originele factuur →
-                            </Link>
                         </div>
                     );
                 }
@@ -1371,7 +1375,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             </div>
                             <div className="flex items-center gap-3">
                                 {creditNoteInfos.map(cn => (
-                                    <Link key={cn.id} href={`/admin/financials/income/invoices/${cn.id}`} className="font-bold underline hover:opacity-85">
+                                    <Link key={cn.id} href={isMobileRoute ? `/m/invoices/${cn.id}` : `/admin/financials/income/invoices/${cn.id}`} className="font-bold underline hover:opacity-85">
                                         Open {cn.title} →
                                     </Link>
                                 ))}
@@ -1388,7 +1392,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
                         <strong>Identity Missing:</strong> Your PDF exports will appear incomplete. Please link your Company Name and VAT Number in the settings.
                     </p>
-                    <Link href="/admin/settings/company-info" className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
+                    <Link href={isMobileRoute ? "/m/settings?tab=company-info" : "/admin/settings/company-info"} className="text-xs font-bold bg-amber-200 dark:bg-amber-600/30 text-amber-800 dark:text-amber-200 px-3 py-1 rounded hover:bg-amber-300 dark:hover:bg-amber-600/50 transition-colors ml-2">
                         Update Settings
                     </Link>
                 </div>
@@ -1759,7 +1763,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             <InlineDialog
                 isOpen={peppolLimitDialog}
                 onClose={() => setPeppolLimitDialog(false)}
-                onConfirm={() => router.push(`/${locale}/admin/settings/billing`)}
+                onConfirm={() => {
+                    if (isMobileRoute) {
+                        router.push(`/${locale}/m/settings?tab=billing`);
+                    } else {
+                        router.push(`/${locale}/admin/settings/billing`);
+                    }
+                }}
                 title="Peppol Limiet Bereikt"
                 message="Je hebt je maandelijkse limiet voor het verzenden van Peppol facturen bereikt. Om meer facturen te verzenden via e-invoice.be, kan je upgraden naar een hoger plan of een volume pack aankopen in de instellingen."
                 confirmLabel="Upgrade Plan"

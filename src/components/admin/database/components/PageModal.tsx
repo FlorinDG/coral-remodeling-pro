@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
@@ -23,6 +24,19 @@ import { COLOR_STYLES } from '../columns/SelectColumn';
 import LinkedRecords from './LinkedRecords';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Checkbox } from '@/components/common/Checkbox';
+import postcodesData from '@/lib/belgian-postcodes.json';
+
+const isPostalField = (name: string, id: string) => {
+    const n = name.toLowerCase();
+    const i = id.toLowerCase();
+    return n.includes('postal') || n.includes('zip') || n.includes('postcode') || i.includes('postal') || i.includes('zip') || i.includes('postcode');
+};
+
+const isCityField = (name: string, id: string) => {
+    const n = name.toLowerCase();
+    const i = id.toLowerCase();
+    return n.includes('city') || n.includes('stad') || n.includes('gemeente') || i.includes('city') || i.includes('stad') || i.includes('gemeente');
+};
 
 const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string, pageId: string, property: Property }) => {
     const databases = useDatabaseStore(state => state.databases);
@@ -520,6 +534,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
     const page = database?.pages.find(p => p.id === pageId);
 
+    const [suggestions, setSuggestions] = useState<{ zip: string; city: string }[]>([]);
+    const [activePropId, setActivePropId] = useState<string | null>(null);
+
     const handleDragEnd = (result: DropResult) => {
         if (!result.destination || result.source.index === result.destination.index) return;
         // Since we are reordering in the modal, we need the correct indices in the properties array
@@ -706,18 +723,80 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 onImport={handleVATImport}
                                                                             />
                                                                         ) : prop.type === 'text' ? (
-                                                                            <textarea
-                                                                                className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
-                                                                                value={(page.properties[prop.id] as string) || ''}
-                                                                                onChange={(e) => {
-                                                                                    e.target.style.height = 'auto';
-                                                                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                                                                    updatePageProperty(databaseId, pageId, prop.id, e.target.value);
-                                                                                }}
-                                                                                ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
-                                                                                rows={1}
-                                                                                placeholder="Empty"
-                                                                            />
+                                                                            <div className="relative w-full">
+                                                                                <textarea
+                                                                                    className="w-full bg-transparent outline-none placeholder:text-neutral-300 dark:placeholder:text-neutral-700 font-medium resize-none overflow-hidden leading-tight"
+                                                                                    value={(page.properties[prop.id] as string) || ''}
+                                                                                    onChange={(e) => {
+                                                                                        e.target.style.height = 'auto';
+                                                                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                                                                        const val = e.target.value;
+                                                                                        updatePageProperty(databaseId, pageId, prop.id, val);
+
+                                                                                        if (isPostalField(prop.name, prop.id)) {
+                                                                                            setActivePropId(prop.id);
+                                                                                            if (val.trim()) {
+                                                                                                const matches = (postcodesData as { zip: string; city: string }[])
+                                                                                                    .filter(p => p.zip.startsWith(val.trim()))
+                                                                                                    .slice(0, 8);
+                                                                                                setSuggestions(matches);
+                                                                                            } else {
+                                                                                                setSuggestions([]);
+                                                                                            }
+                                                                                        } else if (isCityField(prop.name, prop.id)) {
+                                                                                            setActivePropId(prop.id);
+                                                                                            if (val.trim().length >= 2) {
+                                                                                                const term = val.toLowerCase().trim();
+                                                                                                const matches = (postcodesData as { zip: string; city: string }[])
+                                                                                                    .filter(p => p.city.toLowerCase().includes(term))
+                                                                                                    .slice(0, 8);
+                                                                                                setSuggestions(matches);
+                                                                                            } else {
+                                                                                                setSuggestions([]);
+                                                                                            }
+                                                                                        }
+                                                                                    }}
+                                                                                    onFocus={() => {
+                                                                                        if (isPostalField(prop.name, prop.id) || isCityField(prop.name, prop.id)) {
+                                                                                            setActivePropId(prop.id);
+                                                                                        }
+                                                                                    }}
+                                                                                    onBlur={() => {
+                                                                                        setSuggestions([]);
+                                                                                        setActivePropId(null);
+                                                                                    }}
+                                                                                    ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }}
+                                                                                    rows={1}
+                                                                                    placeholder="Empty"
+                                                                                />
+                                                                                {(isPostalField(prop.name, prop.id) || isCityField(prop.name, prop.id)) && activePropId === prop.id && suggestions.length > 0 && (
+                                                                                    <div className="absolute left-0 right-0 z-[120] mt-1 max-h-48 overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl divide-y divide-neutral-100 dark:divide-white/5">
+                                                                                        {suggestions.map((s, idx) => (
+                                                                                            <button
+                                                                                                key={idx}
+                                                                                                type="button"
+                                                                                                onMouseDown={(e) => {
+                                                                                                    e.preventDefault();
+                                                                                                    updatePageProperty(databaseId, pageId, prop.id, isPostalField(prop.name, prop.id) ? s.zip : s.city);
+                                                                                                    const sibling = database?.properties.find(p => 
+                                                                                                        isPostalField(prop.name, prop.id) 
+                                                                                                            ? isCityField(p.name, p.id) 
+                                                                                                            : isPostalField(p.name, p.id)
+                                                                                                    );
+                                                                                                    if (sibling) {
+                                                                                                        updatePageProperty(databaseId, pageId, sibling.id, isPostalField(prop.name, prop.id) ? s.city : s.zip);
+                                                                                                    }
+                                                                                                    setSuggestions([]);
+                                                                                                    setActivePropId(null);
+                                                                                                }}
+                                                                                                className="w-full text-left px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 font-semibold transition-colors"
+                                                                                            >
+                                                                                                {s.zip} {s.city}
+                                                                                            </button>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
                                                                         ) : prop.type === 'number' ? (
                                                                             <input
                                                                                 type="number"

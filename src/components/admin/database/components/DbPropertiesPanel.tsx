@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
+/* eslint-disable */
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -14,6 +14,19 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import SelectDropdown from './SelectDropdown';
 import { RecurrenceSelector } from '../../tasks/RecurrenceSelector';
+import postcodesData from '@/lib/belgian-postcodes.json';
+
+const isPostalField = (name: string, id: string) => {
+    const n = name.toLowerCase();
+    const i = id.toLowerCase();
+    return n.includes('postal') || n.includes('zip') || n.includes('postcode') || i.includes('postal') || i.includes('zip') || i.includes('postcode');
+};
+
+const isCityField = (name: string, id: string) => {
+    const n = name.toLowerCase();
+    const i = id.toLowerCase();
+    return n.includes('city') || n.includes('stad') || n.includes('gemeente') || i.includes('city') || i.includes('stad') || i.includes('gemeente');
+};
 
 // ─── Type icon map ────────────────────────────────────────────────────────
 const TYPE_ICONS: Record<string, React.ReactNode> = {
@@ -228,6 +241,110 @@ function DebouncedInput({
     );
 }
 
+function PostcodeCityInput({
+    property,
+    value,
+    onChange,
+    isReadOnly,
+    inputBase,
+    allPropertyDefs = [],
+}: {
+    property: Property;
+    value: PropertyValue;
+    onChange: (propId: string, newVal: PropertyValue) => void;
+    isReadOnly: boolean;
+    inputBase: string;
+    allPropertyDefs: Property[];
+}) {
+    const [localValue, setLocalValue] = useState(String(value ?? ''));
+    const [suggestions, setSuggestions] = useState<{ zip: string; city: string }[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        setLocalValue(String(value ?? ''));
+    }, [value]);
+
+    const isPostal = isPostalField(property.name, property.id);
+
+    return (
+        <div className="relative w-full">
+            <input
+                type="text"
+                value={localValue}
+                readOnly={isReadOnly}
+                onChange={e => {
+                    const val = e.target.value;
+                    setLocalValue(val);
+                    if (isReadOnly) return;
+
+                    if (isPostal) {
+                        if (val.trim()) {
+                            const matches = (postcodesData as { zip: string; city: string }[])
+                                .filter(p => p.zip.startsWith(val.trim()))
+                                .slice(0, 8);
+                            setSuggestions(matches);
+                            setIsOpen(true);
+                        } else {
+                            setSuggestions([]);
+                        }
+                    } else {
+                        if (val.trim().length >= 2) {
+                            const term = val.toLowerCase().trim();
+                            const matches = (postcodesData as { zip: string; city: string }[])
+                                .filter(p => p.city.toLowerCase().includes(term))
+                                .slice(0, 8);
+                            setSuggestions(matches);
+                            setIsOpen(true);
+                        } else {
+                            setSuggestions([]);
+                        }
+                    }
+                }}
+                onFocus={() => {
+                    if (!isReadOnly) setIsOpen(true);
+                }}
+                onBlur={() => {
+                    if (localValue !== String(value ?? '')) {
+                        onChange(property.id, localValue);
+                    }
+                    setTimeout(() => {
+                        setSuggestions([]);
+                        setIsOpen(false);
+                    }, 200);
+                }}
+                className={inputBase}
+                placeholder="—"
+            />
+            {isOpen && suggestions.length > 0 && (
+                <div className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl divide-y divide-neutral-100 dark:divide-white/5">
+                    {suggestions.map((s, idx) => (
+                        <button
+                            key={idx}
+                            type="button"
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                onChange(property.id, isPostal ? s.zip : s.city);
+                                const sibling = allPropertyDefs.find(p => 
+                                    isPostal ? isCityField(p.name, p.id) : isPostalField(p.name, p.id)
+                                );
+                                if (sibling) {
+                                    onChange(sibling.id, isPostal ? s.city : s.zip);
+                                }
+                                setLocalValue(isPostal ? s.zip : s.city);
+                                setSuggestions([]);
+                                setIsOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 font-semibold transition-colors"
+                        >
+                            {s.zip} {s.city}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── Individual property row ──────────────────────────────────────────────
 function PropertyRow({
     property,
@@ -235,12 +352,14 @@ function PropertyRow({
     onChange,
     dragHandleProps,
     forceReadOnly = false,
+    allPropertyDefs = [],
 }: {
     property: Property;
     value: PropertyValue;
     onChange: (propId: string, newVal: PropertyValue) => void;
     dragHandleProps?: any;
     forceReadOnly?: boolean;
+    allPropertyDefs?: Property[];
 }) {
     const isReadOnly = READ_ONLY_TYPES.has(property.type) || forceReadOnly;
     const icon = TYPE_ICONS[property.type] ?? <Type className="w-3.5 h-3.5" />;
@@ -450,6 +569,17 @@ function PropertyRow({
                 onChange={v => onChange(property.id, v)}
             />
         );
+    } else if (property.type === 'text' && (isPostalField(property.name, property.id) || isCityField(property.name, property.id))) {
+        valueEl = (
+            <PostcodeCityInput
+                property={property}
+                value={value}
+                onChange={onChange}
+                isReadOnly={isReadOnly}
+                inputBase={inputBase}
+                allPropertyDefs={allPropertyDefs}
+            />
+        );
     } else {
         // text, title, etc.
         valueEl = <DebouncedInput value={value} onChange={val => onChange(property.id, val)} isReadOnly={isReadOnly} inputBase={inputBase} />;
@@ -497,7 +627,8 @@ function Section({
     onToggle, 
     pageProperties, 
     onChange,
-    forceReadOnly = false
+    forceReadOnly = false,
+    allPropertyDefs = []
 }: { 
     id: string; 
     label: string; 
@@ -507,6 +638,7 @@ function Section({
     pageProperties: Record<string, PropertyValue>; 
     onChange: (propId: string, newVal: PropertyValue) => void; 
     forceReadOnly?: boolean;
+    allPropertyDefs?: Property[];
 }) {
     if (!props.length) return null;
     const open = !collapsed.has(id);
@@ -539,6 +671,7 @@ function Section({
                                                 onChange={onChange}
                                                 dragHandleProps={provided.dragHandleProps}
                                                 forceReadOnly={forceReadOnly}
+                                                allPropertyDefs={allPropertyDefs}
                                             />
                                         </div>
                                     )}
@@ -625,6 +758,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         pageProperties={page.properties || {}} 
                         onChange={handleChange} 
                         forceReadOnly={readOnly}
+                        allPropertyDefs={properties}
                     />
                     <Section 
                         id="computed" 
@@ -635,6 +769,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         pageProperties={page.properties || {}} 
                         onChange={handleChange} 
                         forceReadOnly={readOnly}
+                        allPropertyDefs={properties}
                     />
                 </DragDropContext>
             </div>

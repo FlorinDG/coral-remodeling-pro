@@ -1,0 +1,11030 @@
+[
+  {
+    "zip": "1000",
+    "city": "Bruxelles"
+  },
+  {
+    "zip": "1020",
+    "city": "Laeken"
+  },
+  {
+    "zip": "1030",
+    "city": "Schaerbeek"
+  },
+  {
+    "zip": "1040",
+    "city": "Etterbeek"
+  },
+  {
+    "zip": "1050",
+    "city": "Ixelles"
+  },
+  {
+    "zip": "1060",
+    "city": "Saint-Gilles"
+  },
+  {
+    "zip": "1070",
+    "city": "Anderlecht"
+  },
+  {
+    "zip": "1080",
+    "city": "Molenbeek-Saint-Jean"
+  },
+  {
+    "zip": "1081",
+    "city": "Koekelberg"
+  },
+  {
+    "zip": "1082",
+    "city": "Berchem-Sainte-Agathe"
+  },
+  {
+    "zip": "1083",
+    "city": "Ganshoren"
+  },
+  {
+    "zip": "1090",
+    "city": "Jette"
+  },
+  {
+    "zip": "1120",
+    "city": "Neder-Over-Heembeek"
+  },
+  {
+    "zip": "1130",
+    "city": "Haren"
+  },
+  {
+    "zip": "1140",
+    "city": "Evere"
+  },
+  {
+    "zip": "1150",
+    "city": "Woluwe-Saint-Pierre"
+  },
+  {
+    "zip": "1160",
+    "city": "Auderghem"
+  },
+  {
+    "zip": "1170",
+    "city": "Watermael-Boitsfort"
+  },
+  {
+    "zip": "1180",
+    "city": "Uccle"
+  },
+  {
+    "zip": "1190",
+    "city": "Forest"
+  },
+  {
+    "zip": "1200",
+    "city": "Woluwe-Saint-Lambert"
+  },
+  {
+    "zip": "1210",
+    "city": "Saint-Josse-Ten-Noode"
+  },
+  {
+    "zip": "1300",
+    "city": "Limal"
+  },
+  {
+    "zip": "1300",
+    "city": "Wavre"
+  },
+  {
+    "zip": "1301",
+    "city": "Bierges"
+  },
+  {
+    "zip": "1310",
+    "city": "La Hulpe"
+  },
+  {
+    "zip": "1315",
+    "city": "Glimes"
+  },
+  {
+    "zip": "1315",
+    "city": "Incourt"
+  },
+  {
+    "zip": "1315",
+    "city": "Opprebais"
+  },
+  {
+    "zip": "1315",
+    "city": "Pi\u00e8trebais"
+  },
+  {
+    "zip": "1315",
+    "city": "Roux-Miroir"
+  },
+  {
+    "zip": "1320",
+    "city": "Beauvechain"
+  },
+  {
+    "zip": "1320",
+    "city": "Hamme-Mille"
+  },
+  {
+    "zip": "1320",
+    "city": "L'ecluse"
+  },
+  {
+    "zip": "1320",
+    "city": "Nodebais"
+  },
+  {
+    "zip": "1320",
+    "city": "Tourinnes-La-Grosse"
+  },
+  {
+    "zip": "1325",
+    "city": "Bonlez"
+  },
+  {
+    "zip": "1325",
+    "city": "Chaumont-Gistoux"
+  },
+  {
+    "zip": "1325",
+    "city": "Corroy-Le-Grand"
+  },
+  {
+    "zip": "1325",
+    "city": "Dion-Valmont"
+  },
+  {
+    "zip": "1325",
+    "city": "Longueville"
+  },
+  {
+    "zip": "1330",
+    "city": "Rixensart"
+  },
+  {
+    "zip": "1331",
+    "city": "Rosi\u00e8res"
+  },
+  {
+    "zip": "1332",
+    "city": "Genval"
+  },
+  {
+    "zip": "1340",
+    "city": "Ottignies"
+  },
+  {
+    "zip": "1340",
+    "city": "Ottignies-Louvain-La-Neuve"
+  },
+  {
+    "zip": "1341",
+    "city": "C\u00e9roux-Mousty"
+  },
+  {
+    "zip": "1342",
+    "city": "Limelette"
+  },
+  {
+    "zip": "1348",
+    "city": "Louvain-La-Neuve"
+  },
+  {
+    "zip": "1350",
+    "city": "Enines"
+  },
+  {
+    "zip": "1350",
+    "city": "Folx-Les-Caves"
+  },
+  {
+    "zip": "1350",
+    "city": "Jandrain-Jandrenouille"
+  },
+  {
+    "zip": "1350",
+    "city": "Jauche"
+  },
+  {
+    "zip": "1350",
+    "city": "Marilles"
+  },
+  {
+    "zip": "1350",
+    "city": "Noduwez"
+  },
+  {
+    "zip": "1350",
+    "city": "Orp-Jauche"
+  },
+  {
+    "zip": "1350",
+    "city": "Orp-Le-Grand"
+  },
+  {
+    "zip": "1357",
+    "city": "H\u00e9l\u00e9cine"
+  },
+  {
+    "zip": "1357",
+    "city": "Linsmeau"
+  },
+  {
+    "zip": "1357",
+    "city": "Neerheylissem"
+  },
+  {
+    "zip": "1357",
+    "city": "Opheylissem"
+  },
+  {
+    "zip": "1360",
+    "city": "Mal\u00e8ves-Sainte-Marie-Wastines"
+  },
+  {
+    "zip": "1360",
+    "city": "Orbais"
+  },
+  {
+    "zip": "1360",
+    "city": "Perwez"
+  },
+  {
+    "zip": "1360",
+    "city": "Thorembais-Les-B\u00e9guines"
+  },
+  {
+    "zip": "1360",
+    "city": "Thorembais-Saint-Trond"
+  },
+  {
+    "zip": "1367",
+    "city": "Autre-Eglise"
+  },
+  {
+    "zip": "1367",
+    "city": "Bomal"
+  },
+  {
+    "zip": "1367",
+    "city": "G\u00e9rompont"
+  },
+  {
+    "zip": "1367",
+    "city": "Grand-Rosi\u00e8re-Hottomont"
+  },
+  {
+    "zip": "1367",
+    "city": "Huppaye"
+  },
+  {
+    "zip": "1367",
+    "city": "Mont-Saint-Andr\u00e9"
+  },
+  {
+    "zip": "1367",
+    "city": "Ramillies"
+  },
+  {
+    "zip": "1370",
+    "city": "Dongelberg"
+  },
+  {
+    "zip": "1370",
+    "city": "Jauchelette"
+  },
+  {
+    "zip": "1370",
+    "city": "Jodoigne"
+  },
+  {
+    "zip": "1370",
+    "city": "Jodoigne-Souveraine"
+  },
+  {
+    "zip": "1370",
+    "city": "Lathuy"
+  },
+  {
+    "zip": "1370",
+    "city": "M\u00e9lin"
+  },
+  {
+    "zip": "1370",
+    "city": "Pi\u00e9train"
+  },
+  {
+    "zip": "1370",
+    "city": "Saint-Jean-Geest"
+  },
+  {
+    "zip": "1370",
+    "city": "Saint-Remy-Geest"
+  },
+  {
+    "zip": "1370",
+    "city": "Z\u00e9trud-Lumay"
+  },
+  {
+    "zip": "1380",
+    "city": "Couture-Saint-Germain"
+  },
+  {
+    "zip": "1380",
+    "city": "Lasne"
+  },
+  {
+    "zip": "1380",
+    "city": "Lasne-Chapelle-Saint-Lambert"
+  },
+  {
+    "zip": "1380",
+    "city": "Maransart"
+  },
+  {
+    "zip": "1380",
+    "city": "Ohain"
+  },
+  {
+    "zip": "1380",
+    "city": "Plancenoit"
+  },
+  {
+    "zip": "1390",
+    "city": "Archennes"
+  },
+  {
+    "zip": "1390",
+    "city": "Biez"
+  },
+  {
+    "zip": "1390",
+    "city": "Bossut-Gottechain"
+  },
+  {
+    "zip": "1390",
+    "city": "Grez-Doiceau"
+  },
+  {
+    "zip": "1390",
+    "city": "Nethen"
+  },
+  {
+    "zip": "1400",
+    "city": "Monstreux"
+  },
+  {
+    "zip": "1400",
+    "city": "Nivelles"
+  },
+  {
+    "zip": "1401",
+    "city": "Baulers"
+  },
+  {
+    "zip": "1402",
+    "city": "Thines"
+  },
+  {
+    "zip": "1404",
+    "city": "Bornival"
+  },
+  {
+    "zip": "1410",
+    "city": "Waterloo"
+  },
+  {
+    "zip": "1420",
+    "city": "Braine-L'alleud"
+  },
+  {
+    "zip": "1421",
+    "city": "Ophain-Bois-Seigneur-Isaac"
+  },
+  {
+    "zip": "1428",
+    "city": "Lillois-Witterz\u00e9e"
+  },
+  {
+    "zip": "1430",
+    "city": "Bierghes"
+  },
+  {
+    "zip": "1430",
+    "city": "Quenast"
+  },
+  {
+    "zip": "1430",
+    "city": "Rebecq"
+  },
+  {
+    "zip": "1430",
+    "city": "Rebecq-Rognon"
+  },
+  {
+    "zip": "1435",
+    "city": "Corbais"
+  },
+  {
+    "zip": "1435",
+    "city": "H\u00e9villers"
+  },
+  {
+    "zip": "1435",
+    "city": "Mont-Saint-Guibert"
+  },
+  {
+    "zip": "1440",
+    "city": "Braine-Le-Ch\u00e2teau"
+  },
+  {
+    "zip": "1440",
+    "city": "Wauthier-Braine"
+  },
+  {
+    "zip": "1450",
+    "city": "Chastre"
+  },
+  {
+    "zip": "1450",
+    "city": "Chastre-Villeroux-Blanmont"
+  },
+  {
+    "zip": "1450",
+    "city": "Cortil-Noirmont"
+  },
+  {
+    "zip": "1450",
+    "city": "Gentinnes"
+  },
+  {
+    "zip": "1450",
+    "city": "Saint-G\u00e9ry"
+  },
+  {
+    "zip": "1457",
+    "city": "Nil-Saint-Vincent-Saint-Martin"
+  },
+  {
+    "zip": "1457",
+    "city": "Tourinnes-Saint-Lambert"
+  },
+  {
+    "zip": "1457",
+    "city": "Walhain"
+  },
+  {
+    "zip": "1457",
+    "city": "Walhain-Saint-Paul"
+  },
+  {
+    "zip": "1460",
+    "city": "Ittre"
+  },
+  {
+    "zip": "1460",
+    "city": "Virginal-Samme"
+  },
+  {
+    "zip": "1461",
+    "city": "Haut-Ittre"
+  },
+  {
+    "zip": "1470",
+    "city": "Baisy-Thy"
+  },
+  {
+    "zip": "1470",
+    "city": "Bousval"
+  },
+  {
+    "zip": "1470",
+    "city": "Genappe"
+  },
+  {
+    "zip": "1471",
+    "city": "Loupoigne"
+  },
+  {
+    "zip": "1472",
+    "city": "Vieux-Genappe"
+  },
+  {
+    "zip": "1473",
+    "city": "Glabais"
+  },
+  {
+    "zip": "1474",
+    "city": "Ways"
+  },
+  {
+    "zip": "1476",
+    "city": "Houtain-Le-Val"
+  },
+  {
+    "zip": "1480",
+    "city": "Clabecq"
+  },
+  {
+    "zip": "1480",
+    "city": "Oisquercq"
+  },
+  {
+    "zip": "1480",
+    "city": "Saintes"
+  },
+  {
+    "zip": "1480",
+    "city": "Tubize"
+  },
+  {
+    "zip": "1490",
+    "city": "Court-Saint-Etienne"
+  },
+  {
+    "zip": "1495",
+    "city": "Marbais"
+  },
+  {
+    "zip": "1495",
+    "city": "Mellery"
+  },
+  {
+    "zip": "1495",
+    "city": "Sart-Dames-Avelines"
+  },
+  {
+    "zip": "1495",
+    "city": "Tilly"
+  },
+  {
+    "zip": "1495",
+    "city": "Villers-La-Ville"
+  },
+  {
+    "zip": "1500",
+    "city": "Halle"
+  },
+  {
+    "zip": "1501",
+    "city": "Buizingen"
+  },
+  {
+    "zip": "1502",
+    "city": "Lembeek"
+  },
+  {
+    "zip": "1540",
+    "city": "Herfelingen"
+  },
+  {
+    "zip": "1540",
+    "city": "Herne"
+  },
+  {
+    "zip": "1541",
+    "city": "Sint-Pieters-Kapelle"
+  },
+  {
+    "zip": "1547",
+    "city": "Bi\u00e9v\u00e8ne"
+  },
+  {
+    "zip": "1560",
+    "city": "Hoeilaart"
+  },
+  {
+    "zip": "1570",
+    "city": "Galmaarden"
+  },
+  {
+    "zip": "1570",
+    "city": "Tollembeek"
+  },
+  {
+    "zip": "1570",
+    "city": "Vollezele"
+  },
+  {
+    "zip": "1600",
+    "city": "Oudenaken"
+  },
+  {
+    "zip": "1600",
+    "city": "Sint-Laureins-Berchem"
+  },
+  {
+    "zip": "1600",
+    "city": "Sint-Pieters-Leeuw"
+  },
+  {
+    "zip": "1601",
+    "city": "Ruisbroek"
+  },
+  {
+    "zip": "1602",
+    "city": "Vlezenbeek"
+  },
+  {
+    "zip": "1620",
+    "city": "Drogenbos"
+  },
+  {
+    "zip": "1630",
+    "city": "Linkebeek"
+  },
+  {
+    "zip": "1640",
+    "city": "Rhode-Saint-Gen\u00e8se"
+  },
+  {
+    "zip": "1650",
+    "city": "Beersel"
+  },
+  {
+    "zip": "1651",
+    "city": "Lot"
+  },
+  {
+    "zip": "1652",
+    "city": "Alsemberg"
+  },
+  {
+    "zip": "1653",
+    "city": "Dworp"
+  },
+  {
+    "zip": "1654",
+    "city": "Huizingen"
+  },
+  {
+    "zip": "1670",
+    "city": "Bogaarden"
+  },
+  {
+    "zip": "1670",
+    "city": "Heikruis"
+  },
+  {
+    "zip": "1670",
+    "city": "Pepingen"
+  },
+  {
+    "zip": "1671",
+    "city": "Elingen"
+  },
+  {
+    "zip": "1673",
+    "city": "Beert"
+  },
+  {
+    "zip": "1674",
+    "city": "Bellingen"
+  },
+  {
+    "zip": "1700",
+    "city": "Dilbeek"
+  },
+  {
+    "zip": "1700",
+    "city": "Sint-Martens-Bodegem"
+  },
+  {
+    "zip": "1700",
+    "city": "Sint-Ulriks-Kapelle"
+  },
+  {
+    "zip": "1701",
+    "city": "Itterbeek"
+  },
+  {
+    "zip": "1702",
+    "city": "Groot-Bijgaarden"
+  },
+  {
+    "zip": "1703",
+    "city": "Schepdaal"
+  },
+  {
+    "zip": "1730",
+    "city": "Asse"
+  },
+  {
+    "zip": "1730",
+    "city": "Bekkerzeel"
+  },
+  {
+    "zip": "1730",
+    "city": "Kobbegem"
+  },
+  {
+    "zip": "1730",
+    "city": "Mollem"
+  },
+  {
+    "zip": "1731",
+    "city": "Relegem"
+  },
+  {
+    "zip": "1731",
+    "city": "Zellik"
+  },
+  {
+    "zip": "1740",
+    "city": "Ternat"
+  },
+  {
+    "zip": "1741",
+    "city": "Wambeek"
+  },
+  {
+    "zip": "1742",
+    "city": "Sint-Katherina-Lombeek"
+  },
+  {
+    "zip": "1745",
+    "city": "Mazenzele"
+  },
+  {
+    "zip": "1745",
+    "city": "Opwijk"
+  },
+  {
+    "zip": "1750",
+    "city": "Gaasbeek"
+  },
+  {
+    "zip": "1750",
+    "city": "Lennik"
+  },
+  {
+    "zip": "1750",
+    "city": "Sint-Kwintens-Lennik"
+  },
+  {
+    "zip": "1750",
+    "city": "Sint-Martens-Lennik"
+  },
+  {
+    "zip": "1755",
+    "city": "Gooik"
+  },
+  {
+    "zip": "1755",
+    "city": "Kester"
+  },
+  {
+    "zip": "1755",
+    "city": "Leerbeek"
+  },
+  {
+    "zip": "1755",
+    "city": "Oetingen"
+  },
+  {
+    "zip": "1760",
+    "city": "Onze-Lieve-Vrouw-Lombeek"
+  },
+  {
+    "zip": "1760",
+    "city": "Pamel"
+  },
+  {
+    "zip": "1760",
+    "city": "Roosdaal"
+  },
+  {
+    "zip": "1760",
+    "city": "Strijtem"
+  },
+  {
+    "zip": "1761",
+    "city": "Borchtlombeek"
+  },
+  {
+    "zip": "1770",
+    "city": "Liedekerke"
+  },
+  {
+    "zip": "1780",
+    "city": "Wemmel"
+  },
+  {
+    "zip": "1785",
+    "city": "Brussegem"
+  },
+  {
+    "zip": "1785",
+    "city": "Hamme"
+  },
+  {
+    "zip": "1785",
+    "city": "Merchtem"
+  },
+  {
+    "zip": "1790",
+    "city": "Affligem"
+  },
+  {
+    "zip": "1790",
+    "city": "Essene"
+  },
+  {
+    "zip": "1790",
+    "city": "Hekelgem"
+  },
+  {
+    "zip": "1790",
+    "city": "Teralfene"
+  },
+  {
+    "zip": "1800",
+    "city": "Peutie"
+  },
+  {
+    "zip": "1800",
+    "city": "Vilvoorde"
+  },
+  {
+    "zip": "1820",
+    "city": "Melsbroek"
+  },
+  {
+    "zip": "1820",
+    "city": "Perk"
+  },
+  {
+    "zip": "1820",
+    "city": "Steenokkerzeel"
+  },
+  {
+    "zip": "1830",
+    "city": "Machelen"
+  },
+  {
+    "zip": "1831",
+    "city": "Diegem"
+  },
+  {
+    "zip": "1840",
+    "city": "Londerzeel"
+  },
+  {
+    "zip": "1840",
+    "city": "Malderen"
+  },
+  {
+    "zip": "1840",
+    "city": "Steenhuffel"
+  },
+  {
+    "zip": "1850",
+    "city": "Grimbergen"
+  },
+  {
+    "zip": "1851",
+    "city": "Humbeek"
+  },
+  {
+    "zip": "1852",
+    "city": "Beigem"
+  },
+  {
+    "zip": "1853",
+    "city": "Strombeek-Bever"
+  },
+  {
+    "zip": "1860",
+    "city": "Meise"
+  },
+  {
+    "zip": "1861",
+    "city": "Wolvertem"
+  },
+  {
+    "zip": "1880",
+    "city": "Kapelle-Op-Den-Bos"
+  },
+  {
+    "zip": "1880",
+    "city": "Nieuwenrode"
+  },
+  {
+    "zip": "1880",
+    "city": "Ramsdonk"
+  },
+  {
+    "zip": "1910",
+    "city": "Berg"
+  },
+  {
+    "zip": "1910",
+    "city": "Buken"
+  },
+  {
+    "zip": "1910",
+    "city": "Kampenhout"
+  },
+  {
+    "zip": "1910",
+    "city": "Nederokkerzeel"
+  },
+  {
+    "zip": "1930",
+    "city": "Nossegem"
+  },
+  {
+    "zip": "1930",
+    "city": "Zaventem"
+  },
+  {
+    "zip": "1932",
+    "city": "Sint-Stevens-Woluwe"
+  },
+  {
+    "zip": "1933",
+    "city": "Sterrebeek"
+  },
+  {
+    "zip": "1950",
+    "city": "Kraainem"
+  },
+  {
+    "zip": "1970",
+    "city": "Wezembeek-Oppem"
+  },
+  {
+    "zip": "1980",
+    "city": "Eppegem"
+  },
+  {
+    "zip": "1980",
+    "city": "Zemst"
+  },
+  {
+    "zip": "1981",
+    "city": "Hofstade"
+  },
+  {
+    "zip": "1982",
+    "city": "Elewijt"
+  },
+  {
+    "zip": "1982",
+    "city": "Weerde"
+  },
+  {
+    "zip": "2000",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2018",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2020",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2030",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2040",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2040",
+    "city": "Berendrecht"
+  },
+  {
+    "zip": "2040",
+    "city": "Lillo"
+  },
+  {
+    "zip": "2040",
+    "city": "Zandvliet"
+  },
+  {
+    "zip": "2050",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2060",
+    "city": "Antwerpen"
+  },
+  {
+    "zip": "2070",
+    "city": "Burcht"
+  },
+  {
+    "zip": "2070",
+    "city": "Zwijndrecht"
+  },
+  {
+    "zip": "2100",
+    "city": "Deurne"
+  },
+  {
+    "zip": "2110",
+    "city": "Wijnegem"
+  },
+  {
+    "zip": "2140",
+    "city": "Borgerhout"
+  },
+  {
+    "zip": "2150",
+    "city": "Borsbeek"
+  },
+  {
+    "zip": "2160",
+    "city": "Wommelgem"
+  },
+  {
+    "zip": "2170",
+    "city": "Merksem"
+  },
+  {
+    "zip": "2180",
+    "city": "Ekeren"
+  },
+  {
+    "zip": "2200",
+    "city": "Herentals"
+  },
+  {
+    "zip": "2200",
+    "city": "Morkhoven"
+  },
+  {
+    "zip": "2200",
+    "city": "Noorderwijk"
+  },
+  {
+    "zip": "2220",
+    "city": "Hallaar"
+  },
+  {
+    "zip": "2220",
+    "city": "Heist-Op-Den-Berg"
+  },
+  {
+    "zip": "2221",
+    "city": "Booischot"
+  },
+  {
+    "zip": "2222",
+    "city": "Itegem"
+  },
+  {
+    "zip": "2222",
+    "city": "Wiekevorst"
+  },
+  {
+    "zip": "2223",
+    "city": "Schriek"
+  },
+  {
+    "zip": "2230",
+    "city": "Herselt"
+  },
+  {
+    "zip": "2230",
+    "city": "Ramsel"
+  },
+  {
+    "zip": "2235",
+    "city": "Houtvenne"
+  },
+  {
+    "zip": "2235",
+    "city": "Hulshout"
+  },
+  {
+    "zip": "2235",
+    "city": "Westmeerbeek"
+  },
+  {
+    "zip": "2240",
+    "city": "Massenhoven"
+  },
+  {
+    "zip": "2240",
+    "city": "Viersel"
+  },
+  {
+    "zip": "2240",
+    "city": "Zandhoven"
+  },
+  {
+    "zip": "2242",
+    "city": "Pulderbos"
+  },
+  {
+    "zip": "2243",
+    "city": "Pulle"
+  },
+  {
+    "zip": "2250",
+    "city": "Olen"
+  },
+  {
+    "zip": "2260",
+    "city": "Oevel"
+  },
+  {
+    "zip": "2260",
+    "city": "Tongerlo"
+  },
+  {
+    "zip": "2260",
+    "city": "Westerlo"
+  },
+  {
+    "zip": "2260",
+    "city": "Zoerle-Parwijs"
+  },
+  {
+    "zip": "2270",
+    "city": "Herenthout"
+  },
+  {
+    "zip": "2275",
+    "city": "Gierle"
+  },
+  {
+    "zip": "2275",
+    "city": "Lille"
+  },
+  {
+    "zip": "2275",
+    "city": "Poederlee"
+  },
+  {
+    "zip": "2275",
+    "city": "Wechelderzande"
+  },
+  {
+    "zip": "2280",
+    "city": "Grobbendonk"
+  },
+  {
+    "zip": "2288",
+    "city": "Bouwel"
+  },
+  {
+    "zip": "2290",
+    "city": "Vorselaar"
+  },
+  {
+    "zip": "2300",
+    "city": "Turnhout"
+  },
+  {
+    "zip": "2310",
+    "city": "Rijkevorsel"
+  },
+  {
+    "zip": "2320",
+    "city": "Hoogstraten"
+  },
+  {
+    "zip": "2321",
+    "city": "Meer"
+  },
+  {
+    "zip": "2322",
+    "city": "Minderhout"
+  },
+  {
+    "zip": "2323",
+    "city": "Wortel"
+  },
+  {
+    "zip": "2328",
+    "city": "Meerle"
+  },
+  {
+    "zip": "2330",
+    "city": "Merksplas"
+  },
+  {
+    "zip": "2340",
+    "city": "Beerse"
+  },
+  {
+    "zip": "2340",
+    "city": "Vlimmeren"
+  },
+  {
+    "zip": "2350",
+    "city": "Vosselaar"
+  },
+  {
+    "zip": "2360",
+    "city": "Oud-Turnhout"
+  },
+  {
+    "zip": "2370",
+    "city": "Arendonk"
+  },
+  {
+    "zip": "2380",
+    "city": "Ravels"
+  },
+  {
+    "zip": "2381",
+    "city": "Weelde"
+  },
+  {
+    "zip": "2382",
+    "city": "Poppel"
+  },
+  {
+    "zip": "2387",
+    "city": "Baarle-Hertog"
+  },
+  {
+    "zip": "2390",
+    "city": "Malle"
+  },
+  {
+    "zip": "2390",
+    "city": "Oostmalle"
+  },
+  {
+    "zip": "2390",
+    "city": "Westmalle"
+  },
+  {
+    "zip": "2400",
+    "city": "Mol"
+  },
+  {
+    "zip": "2430",
+    "city": "Eindhout"
+  },
+  {
+    "zip": "2430",
+    "city": "Laakdal"
+  },
+  {
+    "zip": "2430",
+    "city": "Vorst"
+  },
+  {
+    "zip": "2431",
+    "city": "Varendonk"
+  },
+  {
+    "zip": "2431",
+    "city": "Veerle"
+  },
+  {
+    "zip": "2440",
+    "city": "Geel"
+  },
+  {
+    "zip": "2450",
+    "city": "Meerhout"
+  },
+  {
+    "zip": "2460",
+    "city": "Kasterlee"
+  },
+  {
+    "zip": "2460",
+    "city": "Lichtaart"
+  },
+  {
+    "zip": "2460",
+    "city": "Tielen"
+  },
+  {
+    "zip": "2470",
+    "city": "Retie"
+  },
+  {
+    "zip": "2480",
+    "city": "Dessel"
+  },
+  {
+    "zip": "2490",
+    "city": "Balen"
+  },
+  {
+    "zip": "2491",
+    "city": "Olmen"
+  },
+  {
+    "zip": "2500",
+    "city": "Koningshooikt"
+  },
+  {
+    "zip": "2500",
+    "city": "Lier"
+  },
+  {
+    "zip": "2520",
+    "city": "Broechem"
+  },
+  {
+    "zip": "2520",
+    "city": "Emblem"
+  },
+  {
+    "zip": "2520",
+    "city": "Oelegem"
+  },
+  {
+    "zip": "2520",
+    "city": "Ranst"
+  },
+  {
+    "zip": "2530",
+    "city": "Boechout"
+  },
+  {
+    "zip": "2531",
+    "city": "Vremde"
+  },
+  {
+    "zip": "2540",
+    "city": "Hove"
+  },
+  {
+    "zip": "2547",
+    "city": "Lint"
+  },
+  {
+    "zip": "2550",
+    "city": "Kontich"
+  },
+  {
+    "zip": "2550",
+    "city": "Waarloos"
+  },
+  {
+    "zip": "2560",
+    "city": "Bevel"
+  },
+  {
+    "zip": "2560",
+    "city": "Kessel"
+  },
+  {
+    "zip": "2560",
+    "city": "Nijlen"
+  },
+  {
+    "zip": "2570",
+    "city": "Duffel"
+  },
+  {
+    "zip": "2580",
+    "city": "Beerzel"
+  },
+  {
+    "zip": "2580",
+    "city": "Putte"
+  },
+  {
+    "zip": "2590",
+    "city": "Berlaar"
+  },
+  {
+    "zip": "2590",
+    "city": "Gestel"
+  },
+  {
+    "zip": "2600",
+    "city": "Berchem"
+  },
+  {
+    "zip": "2610",
+    "city": "Wilrijk"
+  },
+  {
+    "zip": "2620",
+    "city": "Hemiksem"
+  },
+  {
+    "zip": "2627",
+    "city": "Schelle"
+  },
+  {
+    "zip": "2630",
+    "city": "Aartselaar"
+  },
+  {
+    "zip": "2640",
+    "city": "Mortsel"
+  },
+  {
+    "zip": "2650",
+    "city": "Edegem"
+  },
+  {
+    "zip": "2660",
+    "city": "Hoboken"
+  },
+  {
+    "zip": "2800",
+    "city": "Mechelen"
+  },
+  {
+    "zip": "2800",
+    "city": "Walem"
+  },
+  {
+    "zip": "2801",
+    "city": "Heffen"
+  },
+  {
+    "zip": "2811",
+    "city": "Hombeek"
+  },
+  {
+    "zip": "2811",
+    "city": "Leest"
+  },
+  {
+    "zip": "2812",
+    "city": "Muizen"
+  },
+  {
+    "zip": "2820",
+    "city": "Bonheiden"
+  },
+  {
+    "zip": "2820",
+    "city": "Rijmenam"
+  },
+  {
+    "zip": "2830",
+    "city": "Blaasveld"
+  },
+  {
+    "zip": "2830",
+    "city": "Heindonk"
+  },
+  {
+    "zip": "2830",
+    "city": "Tisselt"
+  },
+  {
+    "zip": "2830",
+    "city": "Willebroek"
+  },
+  {
+    "zip": "2840",
+    "city": "Reet"
+  },
+  {
+    "zip": "2840",
+    "city": "Rumst"
+  },
+  {
+    "zip": "2840",
+    "city": "Terhagen"
+  },
+  {
+    "zip": "2845",
+    "city": "Niel"
+  },
+  {
+    "zip": "2850",
+    "city": "Boom"
+  },
+  {
+    "zip": "2860",
+    "city": "Sint-Katelijne-Waver"
+  },
+  {
+    "zip": "2861",
+    "city": "Onze-Lieve-Vrouw-Waver"
+  },
+  {
+    "zip": "2870",
+    "city": "Breendonk"
+  },
+  {
+    "zip": "2870",
+    "city": "Liezele"
+  },
+  {
+    "zip": "2870",
+    "city": "Puurs"
+  },
+  {
+    "zip": "2870",
+    "city": "Ruisbroek"
+  },
+  {
+    "zip": "2880",
+    "city": "Bornem"
+  },
+  {
+    "zip": "2880",
+    "city": "Hingene"
+  },
+  {
+    "zip": "2880",
+    "city": "Mariekerke"
+  },
+  {
+    "zip": "2880",
+    "city": "Weert"
+  },
+  {
+    "zip": "2890",
+    "city": "Lippelo"
+  },
+  {
+    "zip": "2890",
+    "city": "Oppuurs"
+  },
+  {
+    "zip": "2890",
+    "city": "Sint-Amands"
+  },
+  {
+    "zip": "2900",
+    "city": "Schoten"
+  },
+  {
+    "zip": "2910",
+    "city": "Essen"
+  },
+  {
+    "zip": "2920",
+    "city": "Kalmthout"
+  },
+  {
+    "zip": "2930",
+    "city": "Brasschaat"
+  },
+  {
+    "zip": "2940",
+    "city": "Hoevenen"
+  },
+  {
+    "zip": "2940",
+    "city": "Stabroek"
+  },
+  {
+    "zip": "2950",
+    "city": "Kapellen"
+  },
+  {
+    "zip": "2960",
+    "city": "Brecht"
+  },
+  {
+    "zip": "2960",
+    "city": "Sint-Job-In-'t-Goor"
+  },
+  {
+    "zip": "2960",
+    "city": "Sint-Lenaarts"
+  },
+  {
+    "zip": "2970",
+    "city": "'s Gravenwezel"
+  },
+  {
+    "zip": "2970",
+    "city": "Schilde"
+  },
+  {
+    "zip": "2980",
+    "city": "Halle"
+  },
+  {
+    "zip": "2980",
+    "city": "Zoersel"
+  },
+  {
+    "zip": "2990",
+    "city": "Loenhout"
+  },
+  {
+    "zip": "2990",
+    "city": "Wuustwezel"
+  },
+  {
+    "zip": "3000",
+    "city": "Leuven"
+  },
+  {
+    "zip": "3001",
+    "city": "Heverlee"
+  },
+  {
+    "zip": "3010",
+    "city": "Kessel Lo"
+  },
+  {
+    "zip": "3012",
+    "city": "Wilsele"
+  },
+  {
+    "zip": "3018",
+    "city": "Wijgmaal"
+  },
+  {
+    "zip": "3020",
+    "city": "Herent"
+  },
+  {
+    "zip": "3020",
+    "city": "Veltem-Beisem"
+  },
+  {
+    "zip": "3020",
+    "city": "Winksele"
+  },
+  {
+    "zip": "3040",
+    "city": "Huldenberg"
+  },
+  {
+    "zip": "3040",
+    "city": "Loonbeek"
+  },
+  {
+    "zip": "3040",
+    "city": "Neerijse"
+  },
+  {
+    "zip": "3040",
+    "city": "Ottenburg"
+  },
+  {
+    "zip": "3040",
+    "city": "Sint-Agatha-Rode"
+  },
+  {
+    "zip": "3050",
+    "city": "Oud-Heverlee"
+  },
+  {
+    "zip": "3051",
+    "city": "Sint-Joris-Weert"
+  },
+  {
+    "zip": "3052",
+    "city": "Blanden"
+  },
+  {
+    "zip": "3053",
+    "city": "Haasrode"
+  },
+  {
+    "zip": "3054",
+    "city": "Vaalbeek"
+  },
+  {
+    "zip": "3060",
+    "city": "Bertem"
+  },
+  {
+    "zip": "3060",
+    "city": "Korbeek-Dijle"
+  },
+  {
+    "zip": "3061",
+    "city": "Leefdaal"
+  },
+  {
+    "zip": "3070",
+    "city": "Kortenberg"
+  },
+  {
+    "zip": "3071",
+    "city": "Erps-Kwerps"
+  },
+  {
+    "zip": "3078",
+    "city": "Everberg"
+  },
+  {
+    "zip": "3078",
+    "city": "Meerbeek"
+  },
+  {
+    "zip": "3080",
+    "city": "Duisburg"
+  },
+  {
+    "zip": "3080",
+    "city": "Tervuren"
+  },
+  {
+    "zip": "3080",
+    "city": "Vossem"
+  },
+  {
+    "zip": "3090",
+    "city": "Overijse"
+  },
+  {
+    "zip": "3110",
+    "city": "Rotselaar"
+  },
+  {
+    "zip": "3111",
+    "city": "Wezemaal"
+  },
+  {
+    "zip": "3118",
+    "city": "Werchter"
+  },
+  {
+    "zip": "3120",
+    "city": "Tremelo"
+  },
+  {
+    "zip": "3128",
+    "city": "Baal"
+  },
+  {
+    "zip": "3130",
+    "city": "Begijnendijk"
+  },
+  {
+    "zip": "3130",
+    "city": "Betekom"
+  },
+  {
+    "zip": "3140",
+    "city": "Keerbergen"
+  },
+  {
+    "zip": "3150",
+    "city": "Haacht"
+  },
+  {
+    "zip": "3150",
+    "city": "Tildonk"
+  },
+  {
+    "zip": "3150",
+    "city": "Wespelaar"
+  },
+  {
+    "zip": "3190",
+    "city": "Boortmeerbeek"
+  },
+  {
+    "zip": "3191",
+    "city": "Hever"
+  },
+  {
+    "zip": "3200",
+    "city": "Aarschot"
+  },
+  {
+    "zip": "3200",
+    "city": "Gelrode"
+  },
+  {
+    "zip": "3201",
+    "city": "Langdorp"
+  },
+  {
+    "zip": "3202",
+    "city": "Rillaar"
+  },
+  {
+    "zip": "3210",
+    "city": "Linden"
+  },
+  {
+    "zip": "3210",
+    "city": "Lubbeek"
+  },
+  {
+    "zip": "3211",
+    "city": "Binkom"
+  },
+  {
+    "zip": "3212",
+    "city": "Pellenberg"
+  },
+  {
+    "zip": "3220",
+    "city": "Holsbeek"
+  },
+  {
+    "zip": "3220",
+    "city": "Kortrijk-Dutsel"
+  },
+  {
+    "zip": "3220",
+    "city": "Sint-Pieters-Rode"
+  },
+  {
+    "zip": "3221",
+    "city": "Nieuwrode"
+  },
+  {
+    "zip": "3270",
+    "city": "Scherpenheuvel"
+  },
+  {
+    "zip": "3270",
+    "city": "Scherpenheuvel-Zichem"
+  },
+  {
+    "zip": "3271",
+    "city": "Averbode"
+  },
+  {
+    "zip": "3271",
+    "city": "Zichem"
+  },
+  {
+    "zip": "3272",
+    "city": "Messelbroek"
+  },
+  {
+    "zip": "3272",
+    "city": "Testelt"
+  },
+  {
+    "zip": "3290",
+    "city": "Deurne"
+  },
+  {
+    "zip": "3290",
+    "city": "Diest"
+  },
+  {
+    "zip": "3290",
+    "city": "Schaffen"
+  },
+  {
+    "zip": "3290",
+    "city": "Webbekom"
+  },
+  {
+    "zip": "3293",
+    "city": "Kaggevinne"
+  },
+  {
+    "zip": "3294",
+    "city": "Molenstede"
+  },
+  {
+    "zip": "3300",
+    "city": "Bost"
+  },
+  {
+    "zip": "3300",
+    "city": "Goetsenhoven"
+  },
+  {
+    "zip": "3300",
+    "city": "Hakendover"
+  },
+  {
+    "zip": "3300",
+    "city": "Kumtich"
+  },
+  {
+    "zip": "3300",
+    "city": "Oorbeek"
+  },
+  {
+    "zip": "3300",
+    "city": "Oplinter"
+  },
+  {
+    "zip": "3300",
+    "city": "Sint-Margriete-Houtem"
+  },
+  {
+    "zip": "3300",
+    "city": "Tienen"
+  },
+  {
+    "zip": "3300",
+    "city": "Vissenaken"
+  },
+  {
+    "zip": "3320",
+    "city": "Hoegaarden"
+  },
+  {
+    "zip": "3320",
+    "city": "Meldert"
+  },
+  {
+    "zip": "3321",
+    "city": "Outgaarden"
+  },
+  {
+    "zip": "3350",
+    "city": "Drieslinter"
+  },
+  {
+    "zip": "3350",
+    "city": "Linter"
+  },
+  {
+    "zip": "3350",
+    "city": "Melkwezer"
+  },
+  {
+    "zip": "3350",
+    "city": "Neerhespen"
+  },
+  {
+    "zip": "3350",
+    "city": "Neerlinter"
+  },
+  {
+    "zip": "3350",
+    "city": "Orsmaal-Gussenhoven"
+  },
+  {
+    "zip": "3350",
+    "city": "Overhespen"
+  },
+  {
+    "zip": "3350",
+    "city": "Wommersom"
+  },
+  {
+    "zip": "3360",
+    "city": "Bierbeek"
+  },
+  {
+    "zip": "3360",
+    "city": "Korbeek-Lo"
+  },
+  {
+    "zip": "3360",
+    "city": "Lovenjoel"
+  },
+  {
+    "zip": "3360",
+    "city": "Opvelp"
+  },
+  {
+    "zip": "3370",
+    "city": "Boutersem"
+  },
+  {
+    "zip": "3370",
+    "city": "Kerkom"
+  },
+  {
+    "zip": "3370",
+    "city": "Neervelp"
+  },
+  {
+    "zip": "3370",
+    "city": "Roosbeek"
+  },
+  {
+    "zip": "3370",
+    "city": "Vertrijk"
+  },
+  {
+    "zip": "3370",
+    "city": "Willebringen"
+  },
+  {
+    "zip": "3380",
+    "city": "Bunsbeek"
+  },
+  {
+    "zip": "3380",
+    "city": "Glabbeek"
+  },
+  {
+    "zip": "3381",
+    "city": "Kapellen"
+  },
+  {
+    "zip": "3384",
+    "city": "Attenrode"
+  },
+  {
+    "zip": "3390",
+    "city": "Houwaart"
+  },
+  {
+    "zip": "3390",
+    "city": "Sint-Joris-Winge"
+  },
+  {
+    "zip": "3390",
+    "city": "Tielt"
+  },
+  {
+    "zip": "3390",
+    "city": "Tielt-Winge"
+  },
+  {
+    "zip": "3391",
+    "city": "Meensel-Kiezegem"
+  },
+  {
+    "zip": "3400",
+    "city": "Eliksem"
+  },
+  {
+    "zip": "3400",
+    "city": "Ezemaal"
+  },
+  {
+    "zip": "3400",
+    "city": "Laar"
+  },
+  {
+    "zip": "3400",
+    "city": "Landen"
+  },
+  {
+    "zip": "3400",
+    "city": "Neerwinden"
+  },
+  {
+    "zip": "3400",
+    "city": "Overwinden"
+  },
+  {
+    "zip": "3400",
+    "city": "Rumsdorp"
+  },
+  {
+    "zip": "3400",
+    "city": "Wange"
+  },
+  {
+    "zip": "3401",
+    "city": "Waasmont"
+  },
+  {
+    "zip": "3401",
+    "city": "Walsbets"
+  },
+  {
+    "zip": "3401",
+    "city": "Walshoutem"
+  },
+  {
+    "zip": "3401",
+    "city": "Wezeren"
+  },
+  {
+    "zip": "3404",
+    "city": "Attenhoven"
+  },
+  {
+    "zip": "3404",
+    "city": "Neerlanden"
+  },
+  {
+    "zip": "3440",
+    "city": "Budingen"
+  },
+  {
+    "zip": "3440",
+    "city": "Dormaal"
+  },
+  {
+    "zip": "3440",
+    "city": "Halle-Booienhoven"
+  },
+  {
+    "zip": "3440",
+    "city": "Helen-Bos"
+  },
+  {
+    "zip": "3440",
+    "city": "Zoutleeuw"
+  },
+  {
+    "zip": "3450",
+    "city": "Geetbets"
+  },
+  {
+    "zip": "3450",
+    "city": "Grazen"
+  },
+  {
+    "zip": "3454",
+    "city": "Rummen"
+  },
+  {
+    "zip": "3460",
+    "city": "Assent"
+  },
+  {
+    "zip": "3460",
+    "city": "Bekkevoort"
+  },
+  {
+    "zip": "3461",
+    "city": "Molenbeek-Wersbeek"
+  },
+  {
+    "zip": "3470",
+    "city": "Kortenaken"
+  },
+  {
+    "zip": "3470",
+    "city": "Ransberg"
+  },
+  {
+    "zip": "3470",
+    "city": "Sint-Margriete-Houtem"
+  },
+  {
+    "zip": "3471",
+    "city": "Hoeleden"
+  },
+  {
+    "zip": "3472",
+    "city": "Kersbeek-Miskom"
+  },
+  {
+    "zip": "3473",
+    "city": "Waanrode"
+  },
+  {
+    "zip": "3500",
+    "city": "Hasselt"
+  },
+  {
+    "zip": "3500",
+    "city": "Sint-Lambrechts-Herk"
+  },
+  {
+    "zip": "3501",
+    "city": "Wimmertingen"
+  },
+  {
+    "zip": "3510",
+    "city": "Kermt"
+  },
+  {
+    "zip": "3510",
+    "city": "Spalbeek"
+  },
+  {
+    "zip": "3511",
+    "city": "Kuringen"
+  },
+  {
+    "zip": "3511",
+    "city": "Stokrooie"
+  },
+  {
+    "zip": "3512",
+    "city": "Stevoort"
+  },
+  {
+    "zip": "3520",
+    "city": "Zonhoven"
+  },
+  {
+    "zip": "3530",
+    "city": "Helchteren"
+  },
+  {
+    "zip": "3530",
+    "city": "Houthalen"
+  },
+  {
+    "zip": "3530",
+    "city": "Houthalen-Helchteren"
+  },
+  {
+    "zip": "3540",
+    "city": "Berbroek"
+  },
+  {
+    "zip": "3540",
+    "city": "Donk"
+  },
+  {
+    "zip": "3540",
+    "city": "Herk-De-Stad"
+  },
+  {
+    "zip": "3540",
+    "city": "Schulen"
+  },
+  {
+    "zip": "3545",
+    "city": "Halen"
+  },
+  {
+    "zip": "3545",
+    "city": "Loksbergen"
+  },
+  {
+    "zip": "3545",
+    "city": "Zelem"
+  },
+  {
+    "zip": "3550",
+    "city": "Heusden"
+  },
+  {
+    "zip": "3550",
+    "city": "Heusden-Zolder"
+  },
+  {
+    "zip": "3550",
+    "city": "Zolder"
+  },
+  {
+    "zip": "3560",
+    "city": "Linkhout"
+  },
+  {
+    "zip": "3560",
+    "city": "Lummen"
+  },
+  {
+    "zip": "3560",
+    "city": "Meldert"
+  },
+  {
+    "zip": "3570",
+    "city": "Alken"
+  },
+  {
+    "zip": "3580",
+    "city": "Beringen"
+  },
+  {
+    "zip": "3581",
+    "city": "Beverlo"
+  },
+  {
+    "zip": "3582",
+    "city": "Koersel"
+  },
+  {
+    "zip": "3583",
+    "city": "Paal"
+  },
+  {
+    "zip": "3590",
+    "city": "Diepenbeek"
+  },
+  {
+    "zip": "3600",
+    "city": "Genk"
+  },
+  {
+    "zip": "3620",
+    "city": "Gellik"
+  },
+  {
+    "zip": "3620",
+    "city": "Lanaken"
+  },
+  {
+    "zip": "3620",
+    "city": "Neerharen"
+  },
+  {
+    "zip": "3620",
+    "city": "Veldwezelt"
+  },
+  {
+    "zip": "3621",
+    "city": "Rekem"
+  },
+  {
+    "zip": "3630",
+    "city": "Eisden"
+  },
+  {
+    "zip": "3630",
+    "city": "Leut"
+  },
+  {
+    "zip": "3630",
+    "city": "Maasmechelen"
+  },
+  {
+    "zip": "3630",
+    "city": "Mechelen-Aan-De-Maas"
+  },
+  {
+    "zip": "3630",
+    "city": "Meeswijk"
+  },
+  {
+    "zip": "3630",
+    "city": "Opgrimbie"
+  },
+  {
+    "zip": "3630",
+    "city": "Vucht"
+  },
+  {
+    "zip": "3631",
+    "city": "Boorsem"
+  },
+  {
+    "zip": "3631",
+    "city": "Uikhoven"
+  },
+  {
+    "zip": "3640",
+    "city": "Kessenich"
+  },
+  {
+    "zip": "3640",
+    "city": "Kinrooi"
+  },
+  {
+    "zip": "3640",
+    "city": "Molenbeersel"
+  },
+  {
+    "zip": "3640",
+    "city": "Ophoven"
+  },
+  {
+    "zip": "3650",
+    "city": "Dilsen"
+  },
+  {
+    "zip": "3650",
+    "city": "Dilsen-Stokkem"
+  },
+  {
+    "zip": "3650",
+    "city": "Elen"
+  },
+  {
+    "zip": "3650",
+    "city": "Lanklaar"
+  },
+  {
+    "zip": "3650",
+    "city": "Rotem"
+  },
+  {
+    "zip": "3650",
+    "city": "Stokkem"
+  },
+  {
+    "zip": "3660",
+    "city": "Opglabbeek"
+  },
+  {
+    "zip": "3665",
+    "city": "As"
+  },
+  {
+    "zip": "3668",
+    "city": "Niel-Bij-As"
+  },
+  {
+    "zip": "3670",
+    "city": "Ellikom"
+  },
+  {
+    "zip": "3670",
+    "city": "Gruitrode"
+  },
+  {
+    "zip": "3670",
+    "city": "Meeuwen"
+  },
+  {
+    "zip": "3670",
+    "city": "Meeuwen-Gruitrode"
+  },
+  {
+    "zip": "3670",
+    "city": "Neerglabbeek"
+  },
+  {
+    "zip": "3670",
+    "city": "Wijshagen"
+  },
+  {
+    "zip": "3680",
+    "city": "Maaseik"
+  },
+  {
+    "zip": "3680",
+    "city": "Neeroeteren"
+  },
+  {
+    "zip": "3680",
+    "city": "Opoeteren"
+  },
+  {
+    "zip": "3690",
+    "city": "Zutendaal"
+  },
+  {
+    "zip": "3700",
+    "city": "'s Herenelderen"
+  },
+  {
+    "zip": "3700",
+    "city": "Berg"
+  },
+  {
+    "zip": "3700",
+    "city": "Diets-Heur"
+  },
+  {
+    "zip": "3700",
+    "city": "Haren"
+  },
+  {
+    "zip": "3700",
+    "city": "Henis"
+  },
+  {
+    "zip": "3700",
+    "city": "Kolmont"
+  },
+  {
+    "zip": "3700",
+    "city": "Koninksem"
+  },
+  {
+    "zip": "3700",
+    "city": "Lauw"
+  },
+  {
+    "zip": "3700",
+    "city": "Mal"
+  },
+  {
+    "zip": "3700",
+    "city": "Neerrepen"
+  },
+  {
+    "zip": "3700",
+    "city": "Nerem"
+  },
+  {
+    "zip": "3700",
+    "city": "Overrepen"
+  },
+  {
+    "zip": "3700",
+    "city": "Piringen"
+  },
+  {
+    "zip": "3700",
+    "city": "Riksingen"
+  },
+  {
+    "zip": "3700",
+    "city": "Rutten"
+  },
+  {
+    "zip": "3700",
+    "city": "Sluizen"
+  },
+  {
+    "zip": "3700",
+    "city": "Tongeren"
+  },
+  {
+    "zip": "3700",
+    "city": "Vreren"
+  },
+  {
+    "zip": "3700",
+    "city": "Widooie"
+  },
+  {
+    "zip": "3717",
+    "city": "Herstappe"
+  },
+  {
+    "zip": "3720",
+    "city": "Kortessem"
+  },
+  {
+    "zip": "3721",
+    "city": "Vliermaalroot"
+  },
+  {
+    "zip": "3722",
+    "city": "Wintershoven"
+  },
+  {
+    "zip": "3723",
+    "city": "Guigoven"
+  },
+  {
+    "zip": "3724",
+    "city": "Vliermaal"
+  },
+  {
+    "zip": "3730",
+    "city": "Hoeselt"
+  },
+  {
+    "zip": "3730",
+    "city": "Romershoven"
+  },
+  {
+    "zip": "3730",
+    "city": "Sint-Huibrechts-Hern"
+  },
+  {
+    "zip": "3730",
+    "city": "Werm"
+  },
+  {
+    "zip": "3732",
+    "city": "Schalkhoven"
+  },
+  {
+    "zip": "3740",
+    "city": "Beverst"
+  },
+  {
+    "zip": "3740",
+    "city": "Bilzen"
+  },
+  {
+    "zip": "3740",
+    "city": "Eigenbilzen"
+  },
+  {
+    "zip": "3740",
+    "city": "Grote-Spouwen"
+  },
+  {
+    "zip": "3740",
+    "city": "Hees"
+  },
+  {
+    "zip": "3740",
+    "city": "Kleine-Spouwen"
+  },
+  {
+    "zip": "3740",
+    "city": "Mopertingen"
+  },
+  {
+    "zip": "3740",
+    "city": "Munsterbilzen"
+  },
+  {
+    "zip": "3740",
+    "city": "Rijkhoven"
+  },
+  {
+    "zip": "3740",
+    "city": "Rosmeer"
+  },
+  {
+    "zip": "3740",
+    "city": "Waltwilder"
+  },
+  {
+    "zip": "3742",
+    "city": "Martenslinde"
+  },
+  {
+    "zip": "3746",
+    "city": "Hoelbeek"
+  },
+  {
+    "zip": "3770",
+    "city": "Genoelselderen"
+  },
+  {
+    "zip": "3770",
+    "city": "Herderen"
+  },
+  {
+    "zip": "3770",
+    "city": "Kanne"
+  },
+  {
+    "zip": "3770",
+    "city": "Membruggen"
+  },
+  {
+    "zip": "3770",
+    "city": "Millen"
+  },
+  {
+    "zip": "3770",
+    "city": "Riemst"
+  },
+  {
+    "zip": "3770",
+    "city": "Val-Meer"
+  },
+  {
+    "zip": "3770",
+    "city": "Vlijtingen"
+  },
+  {
+    "zip": "3770",
+    "city": "Vroenhoven"
+  },
+  {
+    "zip": "3770",
+    "city": "Zichen-Zussen-Bolder"
+  },
+  {
+    "zip": "3790",
+    "city": "Fouron-Saint-Martin"
+  },
+  {
+    "zip": "3790",
+    "city": "Fourons"
+  },
+  {
+    "zip": "3790",
+    "city": "Mouland"
+  },
+  {
+    "zip": "3791",
+    "city": "Remersdaal"
+  },
+  {
+    "zip": "3792",
+    "city": "Fouron-Saint-Pierre"
+  },
+  {
+    "zip": "3793",
+    "city": "Teuven"
+  },
+  {
+    "zip": "3798",
+    "city": "Fouron-Le-Comte"
+  },
+  {
+    "zip": "3800",
+    "city": "Aalst"
+  },
+  {
+    "zip": "3800",
+    "city": "Brustem"
+  },
+  {
+    "zip": "3800",
+    "city": "Engelmanshoven"
+  },
+  {
+    "zip": "3800",
+    "city": "Gelinden"
+  },
+  {
+    "zip": "3800",
+    "city": "Groot-Gelmen"
+  },
+  {
+    "zip": "3800",
+    "city": "Halmaal"
+  },
+  {
+    "zip": "3800",
+    "city": "Kerkom-Bij-Sint-Truiden"
+  },
+  {
+    "zip": "3800",
+    "city": "Ordingen"
+  },
+  {
+    "zip": "3800",
+    "city": "Sint-Truiden"
+  },
+  {
+    "zip": "3800",
+    "city": "Zepperen"
+  },
+  {
+    "zip": "3803",
+    "city": "Duras"
+  },
+  {
+    "zip": "3803",
+    "city": "Gorsem"
+  },
+  {
+    "zip": "3803",
+    "city": "Runkelen"
+  },
+  {
+    "zip": "3803",
+    "city": "Wilderen"
+  },
+  {
+    "zip": "3806",
+    "city": "Velm"
+  },
+  {
+    "zip": "3830",
+    "city": "Berlingen"
+  },
+  {
+    "zip": "3830",
+    "city": "Wellen"
+  },
+  {
+    "zip": "3831",
+    "city": "Herten"
+  },
+  {
+    "zip": "3832",
+    "city": "Ulbeek"
+  },
+  {
+    "zip": "3840",
+    "city": "Bommershoven"
+  },
+  {
+    "zip": "3840",
+    "city": "Borgloon"
+  },
+  {
+    "zip": "3840",
+    "city": "Broekom"
+  },
+  {
+    "zip": "3840",
+    "city": "Gors-Opleeuw"
+  },
+  {
+    "zip": "3840",
+    "city": "Gotem"
+  },
+  {
+    "zip": "3840",
+    "city": "Groot-Loon"
+  },
+  {
+    "zip": "3840",
+    "city": "Haren"
+  },
+  {
+    "zip": "3840",
+    "city": "Hendrieken"
+  },
+  {
+    "zip": "3840",
+    "city": "Hoepertingen"
+  },
+  {
+    "zip": "3840",
+    "city": "Jesseren"
+  },
+  {
+    "zip": "3840",
+    "city": "Kerniel"
+  },
+  {
+    "zip": "3840",
+    "city": "Kolmont"
+  },
+  {
+    "zip": "3840",
+    "city": "Kuttekoven"
+  },
+  {
+    "zip": "3840",
+    "city": "Rijkel"
+  },
+  {
+    "zip": "3840",
+    "city": "Voort"
+  },
+  {
+    "zip": "3850",
+    "city": "Binderveld"
+  },
+  {
+    "zip": "3850",
+    "city": "Kozen"
+  },
+  {
+    "zip": "3850",
+    "city": "Nieuwerkerken"
+  },
+  {
+    "zip": "3850",
+    "city": "Wijer"
+  },
+  {
+    "zip": "3870",
+    "city": "Batsheers"
+  },
+  {
+    "zip": "3870",
+    "city": "Bovelingen"
+  },
+  {
+    "zip": "3870",
+    "city": "Heers"
+  },
+  {
+    "zip": "3870",
+    "city": "Heks"
+  },
+  {
+    "zip": "3870",
+    "city": "Horpmaal"
+  },
+  {
+    "zip": "3870",
+    "city": "Klein-Gelmen"
+  },
+  {
+    "zip": "3870",
+    "city": "Mechelen-Bovelingen"
+  },
+  {
+    "zip": "3870",
+    "city": "Mettekoven"
+  },
+  {
+    "zip": "3870",
+    "city": "Opheers"
+  },
+  {
+    "zip": "3870",
+    "city": "Rukkelingen-Loon"
+  },
+  {
+    "zip": "3870",
+    "city": "Vechmaal"
+  },
+  {
+    "zip": "3870",
+    "city": "Veulen"
+  },
+  {
+    "zip": "3890",
+    "city": "Boekhout"
+  },
+  {
+    "zip": "3890",
+    "city": "Gingelom"
+  },
+  {
+    "zip": "3890",
+    "city": "Jeuk"
+  },
+  {
+    "zip": "3890",
+    "city": "Kortijs"
+  },
+  {
+    "zip": "3890",
+    "city": "Montenaken"
+  },
+  {
+    "zip": "3890",
+    "city": "Niel-Bij-Sint-Truiden"
+  },
+  {
+    "zip": "3890",
+    "city": "Vorsen"
+  },
+  {
+    "zip": "3891",
+    "city": "Borlo"
+  },
+  {
+    "zip": "3891",
+    "city": "Buvingen"
+  },
+  {
+    "zip": "3891",
+    "city": "Mielen-Boven-Aalst"
+  },
+  {
+    "zip": "3891",
+    "city": "Muizen"
+  },
+  {
+    "zip": "3900",
+    "city": "Overpelt"
+  },
+  {
+    "zip": "3910",
+    "city": "Neerpelt"
+  },
+  {
+    "zip": "3910",
+    "city": "Sint-Huibrechts-Lille"
+  },
+  {
+    "zip": "3920",
+    "city": "Lommel"
+  },
+  {
+    "zip": "3930",
+    "city": "Achel"
+  },
+  {
+    "zip": "3930",
+    "city": "Hamont"
+  },
+  {
+    "zip": "3930",
+    "city": "Hamont-Achel"
+  },
+  {
+    "zip": "3940",
+    "city": "Hechtel"
+  },
+  {
+    "zip": "3940",
+    "city": "Hechtel-Eksel"
+  },
+  {
+    "zip": "3941",
+    "city": "Eksel"
+  },
+  {
+    "zip": "3945",
+    "city": "Ham"
+  },
+  {
+    "zip": "3945",
+    "city": "Kwaadmechelen"
+  },
+  {
+    "zip": "3945",
+    "city": "Oostham"
+  },
+  {
+    "zip": "3950",
+    "city": "Bocholt"
+  },
+  {
+    "zip": "3950",
+    "city": "Kaulille"
+  },
+  {
+    "zip": "3950",
+    "city": "Reppel"
+  },
+  {
+    "zip": "3960",
+    "city": "Beek"
+  },
+  {
+    "zip": "3960",
+    "city": "Bree"
+  },
+  {
+    "zip": "3960",
+    "city": "Gerdingen"
+  },
+  {
+    "zip": "3960",
+    "city": "Opitter"
+  },
+  {
+    "zip": "3960",
+    "city": "Tongerlo"
+  },
+  {
+    "zip": "3970",
+    "city": "Leopoldsburg"
+  },
+  {
+    "zip": "3971",
+    "city": "Heppen"
+  },
+  {
+    "zip": "3980",
+    "city": "Tessenderlo"
+  },
+  {
+    "zip": "3990",
+    "city": "Grote-Brogel"
+  },
+  {
+    "zip": "3990",
+    "city": "Kleine-Brogel"
+  },
+  {
+    "zip": "3990",
+    "city": "Peer"
+  },
+  {
+    "zip": "3990",
+    "city": "Wijchmaal"
+  },
+  {
+    "zip": "4000",
+    "city": "Glain"
+  },
+  {
+    "zip": "4000",
+    "city": "Li\u00e8ge"
+  },
+  {
+    "zip": "4000",
+    "city": "Rocourt"
+  },
+  {
+    "zip": "4020",
+    "city": "Bressoux"
+  },
+  {
+    "zip": "4020",
+    "city": "Jupille-Sur-Meuse"
+  },
+  {
+    "zip": "4020",
+    "city": "Li\u00e8ge"
+  },
+  {
+    "zip": "4020",
+    "city": "Wandre"
+  },
+  {
+    "zip": "4030",
+    "city": "Grivegnee"
+  },
+  {
+    "zip": "4031",
+    "city": "Angleur"
+  },
+  {
+    "zip": "4032",
+    "city": "Ch\u00eanee"
+  },
+  {
+    "zip": "4040",
+    "city": "Herstal"
+  },
+  {
+    "zip": "4041",
+    "city": "Milmort"
+  },
+  {
+    "zip": "4041",
+    "city": "Vottem"
+  },
+  {
+    "zip": "4042",
+    "city": "Liers"
+  },
+  {
+    "zip": "4050",
+    "city": "Chaudfontaine"
+  },
+  {
+    "zip": "4051",
+    "city": "Vaux-Sous-Ch\u00e8vremont"
+  },
+  {
+    "zip": "4052",
+    "city": "Beaufays"
+  },
+  {
+    "zip": "4053",
+    "city": "Embourg"
+  },
+  {
+    "zip": "4100",
+    "city": "Boncelles"
+  },
+  {
+    "zip": "4100",
+    "city": "Seraing"
+  },
+  {
+    "zip": "4101",
+    "city": "Jemeppe-Sur-Meuse"
+  },
+  {
+    "zip": "4102",
+    "city": "Ougr\u00e9e"
+  },
+  {
+    "zip": "4120",
+    "city": "Ehein"
+  },
+  {
+    "zip": "4120",
+    "city": "Neupr\u00e9"
+  },
+  {
+    "zip": "4120",
+    "city": "Rotheux-Rimi\u00e8re"
+  },
+  {
+    "zip": "4121",
+    "city": "Neuville-En-Condroz"
+  },
+  {
+    "zip": "4122",
+    "city": "Plainevaux"
+  },
+  {
+    "zip": "4130",
+    "city": "Esneux"
+  },
+  {
+    "zip": "4130",
+    "city": "Tilff"
+  },
+  {
+    "zip": "4140",
+    "city": "Dolembreux"
+  },
+  {
+    "zip": "4140",
+    "city": "Gomz\u00e9-Andoumont"
+  },
+  {
+    "zip": "4140",
+    "city": "Rouvreux"
+  },
+  {
+    "zip": "4140",
+    "city": "Sprimont"
+  },
+  {
+    "zip": "4141",
+    "city": "Louveign\u00e9"
+  },
+  {
+    "zip": "4160",
+    "city": "Anthisnes"
+  },
+  {
+    "zip": "4161",
+    "city": "Villers-Aux-Tours"
+  },
+  {
+    "zip": "4162",
+    "city": "Hody"
+  },
+  {
+    "zip": "4163",
+    "city": "Tavier"
+  },
+  {
+    "zip": "4170",
+    "city": "Comblain-Au-Pont"
+  },
+  {
+    "zip": "4171",
+    "city": "Poulseur"
+  },
+  {
+    "zip": "4180",
+    "city": "Comblain-Fairon"
+  },
+  {
+    "zip": "4180",
+    "city": "Comblain-La-Tour"
+  },
+  {
+    "zip": "4180",
+    "city": "Hamoir"
+  },
+  {
+    "zip": "4181",
+    "city": "Filot"
+  },
+  {
+    "zip": "4190",
+    "city": "Ferri\u00e8res"
+  },
+  {
+    "zip": "4190",
+    "city": "My"
+  },
+  {
+    "zip": "4190",
+    "city": "Vieuxville"
+  },
+  {
+    "zip": "4190",
+    "city": "Werbomont"
+  },
+  {
+    "zip": "4190",
+    "city": "Xhoris"
+  },
+  {
+    "zip": "4210",
+    "city": "Burdinne"
+  },
+  {
+    "zip": "4210",
+    "city": "Hann\u00eache"
+  },
+  {
+    "zip": "4210",
+    "city": "Lamontz\u00e9e"
+  },
+  {
+    "zip": "4210",
+    "city": "Marneffe"
+  },
+  {
+    "zip": "4210",
+    "city": "Oteppe"
+  },
+  {
+    "zip": "4217",
+    "city": "H\u00e9ron"
+  },
+  {
+    "zip": "4217",
+    "city": "Lavoir"
+  },
+  {
+    "zip": "4217",
+    "city": "Waret-L'ev\u00eaque"
+  },
+  {
+    "zip": "4218",
+    "city": "Couthuin"
+  },
+  {
+    "zip": "4219",
+    "city": "Acosse"
+  },
+  {
+    "zip": "4219",
+    "city": "Ambresin"
+  },
+  {
+    "zip": "4219",
+    "city": "Meeffe"
+  },
+  {
+    "zip": "4219",
+    "city": "Wasseiges"
+  },
+  {
+    "zip": "4250",
+    "city": "Bo\u00eblhe"
+  },
+  {
+    "zip": "4250",
+    "city": "Geer"
+  },
+  {
+    "zip": "4250",
+    "city": "Hollogne-Sur-Geer"
+  },
+  {
+    "zip": "4250",
+    "city": "Lens-Saint-Servais"
+  },
+  {
+    "zip": "4252",
+    "city": "Omal"
+  },
+  {
+    "zip": "4253",
+    "city": "Darion"
+  },
+  {
+    "zip": "4254",
+    "city": "Ligney"
+  },
+  {
+    "zip": "4257",
+    "city": "Berloz"
+  },
+  {
+    "zip": "4257",
+    "city": "Corswarem"
+  },
+  {
+    "zip": "4260",
+    "city": "Avennes"
+  },
+  {
+    "zip": "4260",
+    "city": "Braives"
+  },
+  {
+    "zip": "4260",
+    "city": "Ciplet"
+  },
+  {
+    "zip": "4260",
+    "city": "Fallais"
+  },
+  {
+    "zip": "4260",
+    "city": "Fumal"
+  },
+  {
+    "zip": "4260",
+    "city": "Ville-En-Hesbaye"
+  },
+  {
+    "zip": "4261",
+    "city": "Latinne"
+  },
+  {
+    "zip": "4263",
+    "city": "Tourinne"
+  },
+  {
+    "zip": "4280",
+    "city": "Abolens"
+  },
+  {
+    "zip": "4280",
+    "city": "Avernas-Le-Bauduin"
+  },
+  {
+    "zip": "4280",
+    "city": "Avin"
+  },
+  {
+    "zip": "4280",
+    "city": "Bertr\u00e9e"
+  },
+  {
+    "zip": "4280",
+    "city": "Blehen"
+  },
+  {
+    "zip": "4280",
+    "city": "Cras-Avernas"
+  },
+  {
+    "zip": "4280",
+    "city": "Crehen"
+  },
+  {
+    "zip": "4280",
+    "city": "Grand-Hallet"
+  },
+  {
+    "zip": "4280",
+    "city": "Hannut"
+  },
+  {
+    "zip": "4280",
+    "city": "Lens-Saint-Remy"
+  },
+  {
+    "zip": "4280",
+    "city": "Merdorp"
+  },
+  {
+    "zip": "4280",
+    "city": "Moxhe"
+  },
+  {
+    "zip": "4280",
+    "city": "Petit-Hallet"
+  },
+  {
+    "zip": "4280",
+    "city": "Poucet"
+  },
+  {
+    "zip": "4280",
+    "city": "Thisnes"
+  },
+  {
+    "zip": "4280",
+    "city": "Trogn\u00e9e"
+  },
+  {
+    "zip": "4280",
+    "city": "Villers-Le-Peuplier"
+  },
+  {
+    "zip": "4280",
+    "city": "Wansin"
+  },
+  {
+    "zip": "4287",
+    "city": "Lincent"
+  },
+  {
+    "zip": "4287",
+    "city": "Pellaines"
+  },
+  {
+    "zip": "4287",
+    "city": "Racour"
+  },
+  {
+    "zip": "4300",
+    "city": "Bettincourt"
+  },
+  {
+    "zip": "4300",
+    "city": "Bleret"
+  },
+  {
+    "zip": "4300",
+    "city": "Bovenistier"
+  },
+  {
+    "zip": "4300",
+    "city": "Grand-Axhe"
+  },
+  {
+    "zip": "4300",
+    "city": "Lantremange"
+  },
+  {
+    "zip": "4300",
+    "city": "Oleye"
+  },
+  {
+    "zip": "4300",
+    "city": "Waremme"
+  },
+  {
+    "zip": "4317",
+    "city": "Aineffe"
+  },
+  {
+    "zip": "4317",
+    "city": "Borlez"
+  },
+  {
+    "zip": "4317",
+    "city": "Celles"
+  },
+  {
+    "zip": "4317",
+    "city": "Faimes"
+  },
+  {
+    "zip": "4317",
+    "city": "Les Waleffes"
+  },
+  {
+    "zip": "4317",
+    "city": "Viemme"
+  },
+  {
+    "zip": "4340",
+    "city": "Awans"
+  },
+  {
+    "zip": "4340",
+    "city": "Fooz"
+  },
+  {
+    "zip": "4340",
+    "city": "Oth\u00e9e"
+  },
+  {
+    "zip": "4340",
+    "city": "Villers-L'ev\u00eaque"
+  },
+  {
+    "zip": "4342",
+    "city": "Hognoul"
+  },
+  {
+    "zip": "4347",
+    "city": "Fexhe-Le-Haut-Clocher"
+  },
+  {
+    "zip": "4347",
+    "city": "Freloux"
+  },
+  {
+    "zip": "4347",
+    "city": "Noville"
+  },
+  {
+    "zip": "4347",
+    "city": "Roloux"
+  },
+  {
+    "zip": "4347",
+    "city": "Voroux-Goreux"
+  },
+  {
+    "zip": "4350",
+    "city": "Lamine"
+  },
+  {
+    "zip": "4350",
+    "city": "Momalle"
+  },
+  {
+    "zip": "4350",
+    "city": "Pousset"
+  },
+  {
+    "zip": "4350",
+    "city": "Remicourt"
+  },
+  {
+    "zip": "4351",
+    "city": "Hodeige"
+  },
+  {
+    "zip": "4357",
+    "city": "Donceel"
+  },
+  {
+    "zip": "4357",
+    "city": "Haneffe"
+  },
+  {
+    "zip": "4357",
+    "city": "Jeneffe"
+  },
+  {
+    "zip": "4357",
+    "city": "Limont"
+  },
+  {
+    "zip": "4360",
+    "city": "Bergilers"
+  },
+  {
+    "zip": "4360",
+    "city": "Grandville"
+  },
+  {
+    "zip": "4360",
+    "city": "Lens-Sur-Geer"
+  },
+  {
+    "zip": "4360",
+    "city": "Oreye"
+  },
+  {
+    "zip": "4360",
+    "city": "Otrange"
+  },
+  {
+    "zip": "4367",
+    "city": "Crisn\u00e9e"
+  },
+  {
+    "zip": "4367",
+    "city": "Fize-Le-Marsal"
+  },
+  {
+    "zip": "4367",
+    "city": "Kemexhe"
+  },
+  {
+    "zip": "4367",
+    "city": "Odeur"
+  },
+  {
+    "zip": "4367",
+    "city": "Thys"
+  },
+  {
+    "zip": "4400",
+    "city": "Awirs"
+  },
+  {
+    "zip": "4400",
+    "city": "Chokier"
+  },
+  {
+    "zip": "4400",
+    "city": "Fl\u00e9malle"
+  },
+  {
+    "zip": "4400",
+    "city": "Fl\u00e9malle-Grande"
+  },
+  {
+    "zip": "4400",
+    "city": "Fl\u00e9malle-Haute"
+  },
+  {
+    "zip": "4400",
+    "city": "Ivoz-Ramet"
+  },
+  {
+    "zip": "4400",
+    "city": "Mons-Lez-Li\u00e8ge"
+  },
+  {
+    "zip": "4420",
+    "city": "Montegn\u00e9e"
+  },
+  {
+    "zip": "4420",
+    "city": "Saint-Nicolas"
+  },
+  {
+    "zip": "4420",
+    "city": "Tilleur"
+  },
+  {
+    "zip": "4430",
+    "city": "Ans"
+  },
+  {
+    "zip": "4431",
+    "city": "Loncin"
+  },
+  {
+    "zip": "4432",
+    "city": "Alleur"
+  },
+  {
+    "zip": "4432",
+    "city": "Xhendremael"
+  },
+  {
+    "zip": "4450",
+    "city": "Juprelle"
+  },
+  {
+    "zip": "4450",
+    "city": "Lantin"
+  },
+  {
+    "zip": "4450",
+    "city": "Slins"
+  },
+  {
+    "zip": "4451",
+    "city": "Voroux-Lez-Liers"
+  },
+  {
+    "zip": "4452",
+    "city": "Paifve"
+  },
+  {
+    "zip": "4452",
+    "city": "Wihogne"
+  },
+  {
+    "zip": "4453",
+    "city": "Villers-Saint-Sim\u00e9on"
+  },
+  {
+    "zip": "4458",
+    "city": "Fexhe-Slins"
+  },
+  {
+    "zip": "4460",
+    "city": "Bierset"
+  },
+  {
+    "zip": "4460",
+    "city": "Gr\u00e2ce-Berleur"
+  },
+  {
+    "zip": "4460",
+    "city": "Gr\u00e2ce-Hollogne"
+  },
+  {
+    "zip": "4460",
+    "city": "Hollogne-Aux-Pierres"
+  },
+  {
+    "zip": "4460",
+    "city": "Horion-Hoz\u00e9mont"
+  },
+  {
+    "zip": "4460",
+    "city": "Velroux"
+  },
+  {
+    "zip": "4470",
+    "city": "Saint-Georges-Sur-Meuse"
+  },
+  {
+    "zip": "4480",
+    "city": "Clermont-Sous-Huy"
+  },
+  {
+    "zip": "4480",
+    "city": "Ehein"
+  },
+  {
+    "zip": "4480",
+    "city": "Engis"
+  },
+  {
+    "zip": "4480",
+    "city": "Hermalle-Sous-Huy"
+  },
+  {
+    "zip": "4500",
+    "city": "Ben-Ahin"
+  },
+  {
+    "zip": "4500",
+    "city": "Huy"
+  },
+  {
+    "zip": "4500",
+    "city": "Tihange"
+  },
+  {
+    "zip": "4520",
+    "city": "Antheit"
+  },
+  {
+    "zip": "4520",
+    "city": "Bas-Oha"
+  },
+  {
+    "zip": "4520",
+    "city": "Huccorgne"
+  },
+  {
+    "zip": "4520",
+    "city": "Moha"
+  },
+  {
+    "zip": "4520",
+    "city": "Vinalmont"
+  },
+  {
+    "zip": "4520",
+    "city": "Wanze"
+  },
+  {
+    "zip": "4530",
+    "city": "Fize-Fontaine"
+  },
+  {
+    "zip": "4530",
+    "city": "Vaux-Et-Borset"
+  },
+  {
+    "zip": "4530",
+    "city": "Vieux-Waleffe"
+  },
+  {
+    "zip": "4530",
+    "city": "Villers-Le-Bouillet"
+  },
+  {
+    "zip": "4530",
+    "city": "Warnant-Dreye"
+  },
+  {
+    "zip": "4537",
+    "city": "Bodegn\u00e9e"
+  },
+  {
+    "zip": "4537",
+    "city": "Chapon-Seraing"
+  },
+  {
+    "zip": "4537",
+    "city": "Seraing-Le-Ch\u00e2teau"
+  },
+  {
+    "zip": "4537",
+    "city": "Verlaine"
+  },
+  {
+    "zip": "4540",
+    "city": "Amay"
+  },
+  {
+    "zip": "4540",
+    "city": "Ampsin"
+  },
+  {
+    "zip": "4540",
+    "city": "Fl\u00f4ne"
+  },
+  {
+    "zip": "4540",
+    "city": "Jehay"
+  },
+  {
+    "zip": "4540",
+    "city": "Ombret"
+  },
+  {
+    "zip": "4550",
+    "city": "Nandrin"
+  },
+  {
+    "zip": "4550",
+    "city": "Saint-S\u00e9verin"
+  },
+  {
+    "zip": "4550",
+    "city": "Villers-Le-Temple"
+  },
+  {
+    "zip": "4550",
+    "city": "Yern\u00e9e-Fraineux"
+  },
+  {
+    "zip": "4557",
+    "city": "Ab\u00e9e"
+  },
+  {
+    "zip": "4557",
+    "city": "Fraiture"
+  },
+  {
+    "zip": "4557",
+    "city": "Ramelot"
+  },
+  {
+    "zip": "4557",
+    "city": "Seny"
+  },
+  {
+    "zip": "4557",
+    "city": "Soheit-Tinlot"
+  },
+  {
+    "zip": "4557",
+    "city": "Tinlot"
+  },
+  {
+    "zip": "4560",
+    "city": "Bois-Et-Borsu"
+  },
+  {
+    "zip": "4560",
+    "city": "Clavier"
+  },
+  {
+    "zip": "4560",
+    "city": "Les Avins"
+  },
+  {
+    "zip": "4560",
+    "city": "Ocquier"
+  },
+  {
+    "zip": "4560",
+    "city": "Pailhe"
+  },
+  {
+    "zip": "4560",
+    "city": "Terwagne"
+  },
+  {
+    "zip": "4570",
+    "city": "Marchin"
+  },
+  {
+    "zip": "4570",
+    "city": "Vyle-Et-Tharoul"
+  },
+  {
+    "zip": "4577",
+    "city": "Modave"
+  },
+  {
+    "zip": "4577",
+    "city": "Outrelouxhe"
+  },
+  {
+    "zip": "4577",
+    "city": "Str\u00e9e-Lez-Huy"
+  },
+  {
+    "zip": "4577",
+    "city": "Vierset-Barse"
+  },
+  {
+    "zip": "4590",
+    "city": "Ellemelle"
+  },
+  {
+    "zip": "4590",
+    "city": "Ouffet"
+  },
+  {
+    "zip": "4590",
+    "city": "Warz\u00e9e"
+  },
+  {
+    "zip": "4600",
+    "city": "Lanaye"
+  },
+  {
+    "zip": "4600",
+    "city": "Lixhe"
+  },
+  {
+    "zip": "4600",
+    "city": "Richelle"
+  },
+  {
+    "zip": "4600",
+    "city": "Vis\u00e9"
+  },
+  {
+    "zip": "4601",
+    "city": "Argenteau"
+  },
+  {
+    "zip": "4602",
+    "city": "Cheratte"
+  },
+  {
+    "zip": "4606",
+    "city": "Saint-Andr\u00e9"
+  },
+  {
+    "zip": "4607",
+    "city": "Berneau"
+  },
+  {
+    "zip": "4607",
+    "city": "Bombaye"
+  },
+  {
+    "zip": "4607",
+    "city": "Dalhem"
+  },
+  {
+    "zip": "4607",
+    "city": "Feneur"
+  },
+  {
+    "zip": "4607",
+    "city": "Mortroux"
+  },
+  {
+    "zip": "4608",
+    "city": "Neufch\u00e2teau"
+  },
+  {
+    "zip": "4608",
+    "city": "Warsage"
+  },
+  {
+    "zip": "4610",
+    "city": "Bellaire"
+  },
+  {
+    "zip": "4610",
+    "city": "Beyne-Heusay"
+  },
+  {
+    "zip": "4610",
+    "city": "Queue-Du-Bois"
+  },
+  {
+    "zip": "4620",
+    "city": "Fl\u00e9ron"
+  },
+  {
+    "zip": "4621",
+    "city": "Retinne"
+  },
+  {
+    "zip": "4623",
+    "city": "Magn\u00e9e"
+  },
+  {
+    "zip": "4624",
+    "city": "Roms\u00e9e"
+  },
+  {
+    "zip": "4630",
+    "city": "Ayeneux"
+  },
+  {
+    "zip": "4630",
+    "city": "Micheroux"
+  },
+  {
+    "zip": "4630",
+    "city": "Soumagne"
+  },
+  {
+    "zip": "4630",
+    "city": "Tign\u00e9e"
+  },
+  {
+    "zip": "4631",
+    "city": "Evegn\u00e9e"
+  },
+  {
+    "zip": "4632",
+    "city": "C\u00e9rexhe-Heuseux"
+  },
+  {
+    "zip": "4633",
+    "city": "Melen"
+  },
+  {
+    "zip": "4650",
+    "city": "Chaineux"
+  },
+  {
+    "zip": "4650",
+    "city": "Grand-Rechain"
+  },
+  {
+    "zip": "4650",
+    "city": "Herve"
+  },
+  {
+    "zip": "4650",
+    "city": "Jul\u00e9mont"
+  },
+  {
+    "zip": "4651",
+    "city": "Battice"
+  },
+  {
+    "zip": "4652",
+    "city": "Xhendelesse"
+  },
+  {
+    "zip": "4653",
+    "city": "Bolland"
+  },
+  {
+    "zip": "4654",
+    "city": "Charneux"
+  },
+  {
+    "zip": "4670",
+    "city": "Bl\u00e9gny"
+  },
+  {
+    "zip": "4670",
+    "city": "Mortier"
+  },
+  {
+    "zip": "4670",
+    "city": "Trembleur"
+  },
+  {
+    "zip": "4671",
+    "city": "Barchon"
+  },
+  {
+    "zip": "4671",
+    "city": "Housse"
+  },
+  {
+    "zip": "4671",
+    "city": "Saive"
+  },
+  {
+    "zip": "4672",
+    "city": "Saint-Remy"
+  },
+  {
+    "zip": "4680",
+    "city": "Herm\u00e9e"
+  },
+  {
+    "zip": "4680",
+    "city": "Oupeye"
+  },
+  {
+    "zip": "4681",
+    "city": "Hermalle-Sous-Argenteau"
+  },
+  {
+    "zip": "4682",
+    "city": "Heure-Le-Romain"
+  },
+  {
+    "zip": "4682",
+    "city": "Houtain-Saint-Sim\u00e9on"
+  },
+  {
+    "zip": "4683",
+    "city": "Vivegnis"
+  },
+  {
+    "zip": "4684",
+    "city": "Haccourt"
+  },
+  {
+    "zip": "4690",
+    "city": "Bassenge"
+  },
+  {
+    "zip": "4690",
+    "city": "Boirs"
+  },
+  {
+    "zip": "4690",
+    "city": "Eben-Emael"
+  },
+  {
+    "zip": "4690",
+    "city": "Glons"
+  },
+  {
+    "zip": "4690",
+    "city": "Roclenge-Sur-Geer"
+  },
+  {
+    "zip": "4690",
+    "city": "Wonck"
+  },
+  {
+    "zip": "4700",
+    "city": "Eupen"
+  },
+  {
+    "zip": "4701",
+    "city": "Kettenis"
+  },
+  {
+    "zip": "4710",
+    "city": "Lontzen"
+  },
+  {
+    "zip": "4711",
+    "city": "Walhorn"
+  },
+  {
+    "zip": "4720",
+    "city": "La Calamine"
+  },
+  {
+    "zip": "4721",
+    "city": "Neu-Moresnet"
+  },
+  {
+    "zip": "4728",
+    "city": "Hergenrath"
+  },
+  {
+    "zip": "4730",
+    "city": "Hauset"
+  },
+  {
+    "zip": "4730",
+    "city": "Raeren"
+  },
+  {
+    "zip": "4731",
+    "city": "Eynatten"
+  },
+  {
+    "zip": "4750",
+    "city": "Butgenbach"
+  },
+  {
+    "zip": "4750",
+    "city": "Elsenborn"
+  },
+  {
+    "zip": "4760",
+    "city": "Bullange"
+  },
+  {
+    "zip": "4760",
+    "city": "Manderfeld"
+  },
+  {
+    "zip": "4761",
+    "city": "Rocherath"
+  },
+  {
+    "zip": "4770",
+    "city": "Ambl\u00e8ve"
+  },
+  {
+    "zip": "4770",
+    "city": "Meyerode"
+  },
+  {
+    "zip": "4771",
+    "city": "Heppenbach"
+  },
+  {
+    "zip": "4780",
+    "city": "Recht"
+  },
+  {
+    "zip": "4780",
+    "city": "Saint-Vith"
+  },
+  {
+    "zip": "4782",
+    "city": "Schoenberg"
+  },
+  {
+    "zip": "4783",
+    "city": "Lommersweiler"
+  },
+  {
+    "zip": "4784",
+    "city": "Crombach"
+  },
+  {
+    "zip": "4790",
+    "city": "Burg-Reuland"
+  },
+  {
+    "zip": "4790",
+    "city": "Reuland"
+  },
+  {
+    "zip": "4791",
+    "city": "Thommen"
+  },
+  {
+    "zip": "4800",
+    "city": "Ensival"
+  },
+  {
+    "zip": "4800",
+    "city": "Lambermont"
+  },
+  {
+    "zip": "4800",
+    "city": "Petit-Rechain"
+  },
+  {
+    "zip": "4800",
+    "city": "Polleur"
+  },
+  {
+    "zip": "4800",
+    "city": "Verviers"
+  },
+  {
+    "zip": "4801",
+    "city": "Stembert"
+  },
+  {
+    "zip": "4802",
+    "city": "Heusy"
+  },
+  {
+    "zip": "4820",
+    "city": "Dison"
+  },
+  {
+    "zip": "4821",
+    "city": "Andrimont"
+  },
+  {
+    "zip": "4830",
+    "city": "Limbourg"
+  },
+  {
+    "zip": "4831",
+    "city": "Bilstain"
+  },
+  {
+    "zip": "4834",
+    "city": "Go\u00e9"
+  },
+  {
+    "zip": "4837",
+    "city": "Baelen"
+  },
+  {
+    "zip": "4837",
+    "city": "Membach"
+  },
+  {
+    "zip": "4840",
+    "city": "Welkenraedt"
+  },
+  {
+    "zip": "4841",
+    "city": "Henri-Chapelle"
+  },
+  {
+    "zip": "4845",
+    "city": "Jalhay"
+  },
+  {
+    "zip": "4845",
+    "city": "Sart-Lez-Spa"
+  },
+  {
+    "zip": "4850",
+    "city": "Montzen"
+  },
+  {
+    "zip": "4850",
+    "city": "Moresnet"
+  },
+  {
+    "zip": "4850",
+    "city": "Plombi\u00e8res"
+  },
+  {
+    "zip": "4851",
+    "city": "Gemmenich"
+  },
+  {
+    "zip": "4851",
+    "city": "Sippenaeken"
+  },
+  {
+    "zip": "4852",
+    "city": "Hombourg"
+  },
+  {
+    "zip": "4860",
+    "city": "Cornesse"
+  },
+  {
+    "zip": "4860",
+    "city": "Pepinster"
+  },
+  {
+    "zip": "4860",
+    "city": "Wegnez"
+  },
+  {
+    "zip": "4861",
+    "city": "Soiron"
+  },
+  {
+    "zip": "4870",
+    "city": "For\u00eat"
+  },
+  {
+    "zip": "4870",
+    "city": "Fraipont"
+  },
+  {
+    "zip": "4870",
+    "city": "Nessonvaux"
+  },
+  {
+    "zip": "4870",
+    "city": "Trooz"
+  },
+  {
+    "zip": "4877",
+    "city": "Olne"
+  },
+  {
+    "zip": "4880",
+    "city": "Aubel"
+  },
+  {
+    "zip": "4890",
+    "city": "Clermont"
+  },
+  {
+    "zip": "4890",
+    "city": "Thimister"
+  },
+  {
+    "zip": "4890",
+    "city": "Thimister-Clermont"
+  },
+  {
+    "zip": "4900",
+    "city": "Spa"
+  },
+  {
+    "zip": "4910",
+    "city": "La Reid"
+  },
+  {
+    "zip": "4910",
+    "city": "Polleur"
+  },
+  {
+    "zip": "4910",
+    "city": "Theux"
+  },
+  {
+    "zip": "4920",
+    "city": "Aywaille"
+  },
+  {
+    "zip": "4920",
+    "city": "Ernonheid"
+  },
+  {
+    "zip": "4920",
+    "city": "Harz\u00e9"
+  },
+  {
+    "zip": "4920",
+    "city": "Louveign\u00e9"
+  },
+  {
+    "zip": "4950",
+    "city": "Faymonville"
+  },
+  {
+    "zip": "4950",
+    "city": "Robertville"
+  },
+  {
+    "zip": "4950",
+    "city": "Sourbrodt"
+  },
+  {
+    "zip": "4950",
+    "city": "Waimes"
+  },
+  {
+    "zip": "4960",
+    "city": "Beverc\u00e9"
+  },
+  {
+    "zip": "4960",
+    "city": "Malmedy"
+  },
+  {
+    "zip": "4970",
+    "city": "Francorchamps"
+  },
+  {
+    "zip": "4970",
+    "city": "Stavelot"
+  },
+  {
+    "zip": "4980",
+    "city": "Fosse"
+  },
+  {
+    "zip": "4980",
+    "city": "Trois-Ponts"
+  },
+  {
+    "zip": "4980",
+    "city": "Wanne"
+  },
+  {
+    "zip": "4983",
+    "city": "Basse-Bodeux"
+  },
+  {
+    "zip": "4987",
+    "city": "Chevron"
+  },
+  {
+    "zip": "4987",
+    "city": "La Gleize"
+  },
+  {
+    "zip": "4987",
+    "city": "Lorc\u00e9"
+  },
+  {
+    "zip": "4987",
+    "city": "Rahier"
+  },
+  {
+    "zip": "4987",
+    "city": "Stoumont"
+  },
+  {
+    "zip": "4990",
+    "city": "Arbrefontaine"
+  },
+  {
+    "zip": "4990",
+    "city": "Bra"
+  },
+  {
+    "zip": "4990",
+    "city": "Lierneux"
+  },
+  {
+    "zip": "5000",
+    "city": "Beez"
+  },
+  {
+    "zip": "5000",
+    "city": "Namur"
+  },
+  {
+    "zip": "5001",
+    "city": "Belgrade"
+  },
+  {
+    "zip": "5002",
+    "city": "Saint-Servais"
+  },
+  {
+    "zip": "5003",
+    "city": "Saint-Marc"
+  },
+  {
+    "zip": "5004",
+    "city": "Bouge"
+  },
+  {
+    "zip": "5020",
+    "city": "Champion"
+  },
+  {
+    "zip": "5020",
+    "city": "Daussoulx"
+  },
+  {
+    "zip": "5020",
+    "city": "Flawinne"
+  },
+  {
+    "zip": "5020",
+    "city": "Malonne"
+  },
+  {
+    "zip": "5020",
+    "city": "Suarl\u00e9e"
+  },
+  {
+    "zip": "5020",
+    "city": "Temploux"
+  },
+  {
+    "zip": "5020",
+    "city": "Vedrin"
+  },
+  {
+    "zip": "5021",
+    "city": "Boninne"
+  },
+  {
+    "zip": "5022",
+    "city": "Cognel\u00e9e"
+  },
+  {
+    "zip": "5024",
+    "city": "Gelbress\u00e9e"
+  },
+  {
+    "zip": "5024",
+    "city": "Marche-Les-Dames"
+  },
+  {
+    "zip": "5030",
+    "city": "Beuzet"
+  },
+  {
+    "zip": "5030",
+    "city": "Ernage"
+  },
+  {
+    "zip": "5030",
+    "city": "Gembloux"
+  },
+  {
+    "zip": "5030",
+    "city": "Grand-Manil"
+  },
+  {
+    "zip": "5030",
+    "city": "Lonz\u00e9e"
+  },
+  {
+    "zip": "5030",
+    "city": "Sauveni\u00e8re"
+  },
+  {
+    "zip": "5031",
+    "city": "Grand-Leez"
+  },
+  {
+    "zip": "5032",
+    "city": "Bossi\u00e8re"
+  },
+  {
+    "zip": "5032",
+    "city": "Bothey"
+  },
+  {
+    "zip": "5032",
+    "city": "Corroy-Le-Ch\u00e2teau"
+  },
+  {
+    "zip": "5032",
+    "city": "Isnes"
+  },
+  {
+    "zip": "5032",
+    "city": "Mazy"
+  },
+  {
+    "zip": "5060",
+    "city": "Arsimont"
+  },
+  {
+    "zip": "5060",
+    "city": "Auvelais"
+  },
+  {
+    "zip": "5060",
+    "city": "Falisolle"
+  },
+  {
+    "zip": "5060",
+    "city": "Keumi\u00e9e"
+  },
+  {
+    "zip": "5060",
+    "city": "Moignel\u00e9e"
+  },
+  {
+    "zip": "5060",
+    "city": "Sambreville"
+  },
+  {
+    "zip": "5060",
+    "city": "Tamines"
+  },
+  {
+    "zip": "5060",
+    "city": "Velaine-Sur-Sambre"
+  },
+  {
+    "zip": "5070",
+    "city": "Aisemont"
+  },
+  {
+    "zip": "5070",
+    "city": "Fosses-La-Ville"
+  },
+  {
+    "zip": "5070",
+    "city": "Le Roux"
+  },
+  {
+    "zip": "5070",
+    "city": "Sart-Eustache"
+  },
+  {
+    "zip": "5070",
+    "city": "Sart-Saint-Laurent"
+  },
+  {
+    "zip": "5070",
+    "city": "Vitrival"
+  },
+  {
+    "zip": "5080",
+    "city": "Emines"
+  },
+  {
+    "zip": "5080",
+    "city": "La Bruy\u00e8re"
+  },
+  {
+    "zip": "5080",
+    "city": "Rhisnes"
+  },
+  {
+    "zip": "5080",
+    "city": "Villers-Lez-Heest"
+  },
+  {
+    "zip": "5080",
+    "city": "Warisoulx"
+  },
+  {
+    "zip": "5081",
+    "city": "Bovesse"
+  },
+  {
+    "zip": "5081",
+    "city": "Meux"
+  },
+  {
+    "zip": "5100",
+    "city": "Dave"
+  },
+  {
+    "zip": "5100",
+    "city": "Jambes"
+  },
+  {
+    "zip": "5100",
+    "city": "Naninne"
+  },
+  {
+    "zip": "5100",
+    "city": "W\u00e9pion"
+  },
+  {
+    "zip": "5100",
+    "city": "Wierde"
+  },
+  {
+    "zip": "5101",
+    "city": "Erpent"
+  },
+  {
+    "zip": "5101",
+    "city": "Lives-Sur-Meuse"
+  },
+  {
+    "zip": "5101",
+    "city": "Loyers"
+  },
+  {
+    "zip": "5140",
+    "city": "Boign\u00e9e"
+  },
+  {
+    "zip": "5140",
+    "city": "Ligny"
+  },
+  {
+    "zip": "5140",
+    "city": "Sombreffe"
+  },
+  {
+    "zip": "5140",
+    "city": "Tongrinne"
+  },
+  {
+    "zip": "5150",
+    "city": "Floreffe"
+  },
+  {
+    "zip": "5150",
+    "city": "Floriffoux"
+  },
+  {
+    "zip": "5150",
+    "city": "Frani\u00e8re"
+  },
+  {
+    "zip": "5150",
+    "city": "Soye"
+  },
+  {
+    "zip": "5170",
+    "city": "Arbre"
+  },
+  {
+    "zip": "5170",
+    "city": "Bois-De-Villers"
+  },
+  {
+    "zip": "5170",
+    "city": "Lesve"
+  },
+  {
+    "zip": "5170",
+    "city": "Lustin"
+  },
+  {
+    "zip": "5170",
+    "city": "Profondeville"
+  },
+  {
+    "zip": "5170",
+    "city": "Rivi\u00e8re"
+  },
+  {
+    "zip": "5190",
+    "city": "Bal\u00e2tre"
+  },
+  {
+    "zip": "5190",
+    "city": "Ham-Sur-Sambre"
+  },
+  {
+    "zip": "5190",
+    "city": "Jemeppe-Sur-Sambre"
+  },
+  {
+    "zip": "5190",
+    "city": "Mornimont"
+  },
+  {
+    "zip": "5190",
+    "city": "Moustier-Sur-Sambre"
+  },
+  {
+    "zip": "5190",
+    "city": "Onoz"
+  },
+  {
+    "zip": "5190",
+    "city": "Saint-Martin"
+  },
+  {
+    "zip": "5190",
+    "city": "Spy"
+  },
+  {
+    "zip": "5300",
+    "city": "Andenne"
+  },
+  {
+    "zip": "5300",
+    "city": "Bonneville"
+  },
+  {
+    "zip": "5300",
+    "city": "Coutisse"
+  },
+  {
+    "zip": "5300",
+    "city": "Landenne"
+  },
+  {
+    "zip": "5300",
+    "city": "Maizeret"
+  },
+  {
+    "zip": "5300",
+    "city": "Nam\u00eache"
+  },
+  {
+    "zip": "5300",
+    "city": "Sclayn"
+  },
+  {
+    "zip": "5300",
+    "city": "Seilles"
+  },
+  {
+    "zip": "5300",
+    "city": "Thon"
+  },
+  {
+    "zip": "5300",
+    "city": "Vezin"
+  },
+  {
+    "zip": "5310",
+    "city": "Aische-En-Refail"
+  },
+  {
+    "zip": "5310",
+    "city": "Bolinne"
+  },
+  {
+    "zip": "5310",
+    "city": "Boneffe"
+  },
+  {
+    "zip": "5310",
+    "city": "Branchon"
+  },
+  {
+    "zip": "5310",
+    "city": "Dhuy"
+  },
+  {
+    "zip": "5310",
+    "city": "Eghez\u00e9e"
+  },
+  {
+    "zip": "5310",
+    "city": "Hanret"
+  },
+  {
+    "zip": "5310",
+    "city": "Leuze"
+  },
+  {
+    "zip": "5310",
+    "city": "Liernu"
+  },
+  {
+    "zip": "5310",
+    "city": "Longchamps"
+  },
+  {
+    "zip": "5310",
+    "city": "Mehaigne"
+  },
+  {
+    "zip": "5310",
+    "city": "Noville-Sur-M\u00e9haigne"
+  },
+  {
+    "zip": "5310",
+    "city": "Saint-Germain"
+  },
+  {
+    "zip": "5310",
+    "city": "Taviers"
+  },
+  {
+    "zip": "5310",
+    "city": "Upigny"
+  },
+  {
+    "zip": "5310",
+    "city": "Waret-La-Chauss\u00e9e"
+  },
+  {
+    "zip": "5330",
+    "city": "Assesse"
+  },
+  {
+    "zip": "5330",
+    "city": "Maillen"
+  },
+  {
+    "zip": "5330",
+    "city": "Sart-Bernard"
+  },
+  {
+    "zip": "5332",
+    "city": "Crupet"
+  },
+  {
+    "zip": "5333",
+    "city": "Sorinne-La-Longue"
+  },
+  {
+    "zip": "5334",
+    "city": "Flor\u00e9e"
+  },
+  {
+    "zip": "5336",
+    "city": "Courri\u00e8re"
+  },
+  {
+    "zip": "5340",
+    "city": "Faulx-Les-Tombes"
+  },
+  {
+    "zip": "5340",
+    "city": "Gesves"
+  },
+  {
+    "zip": "5340",
+    "city": "Haltinne"
+  },
+  {
+    "zip": "5340",
+    "city": "Mozet"
+  },
+  {
+    "zip": "5340",
+    "city": "Sor\u00e9e"
+  },
+  {
+    "zip": "5350",
+    "city": "Evelette"
+  },
+  {
+    "zip": "5350",
+    "city": "Ohey"
+  },
+  {
+    "zip": "5351",
+    "city": "Haillot"
+  },
+  {
+    "zip": "5353",
+    "city": "Goesnes"
+  },
+  {
+    "zip": "5354",
+    "city": "Jallet"
+  },
+  {
+    "zip": "5360",
+    "city": "Hamois"
+  },
+  {
+    "zip": "5360",
+    "city": "Natoye"
+  },
+  {
+    "zip": "5361",
+    "city": "Mohiville"
+  },
+  {
+    "zip": "5361",
+    "city": "Scy"
+  },
+  {
+    "zip": "5362",
+    "city": "Achet"
+  },
+  {
+    "zip": "5363",
+    "city": "Emptinne"
+  },
+  {
+    "zip": "5364",
+    "city": "Schaltin"
+  },
+  {
+    "zip": "5370",
+    "city": "Barvaux-Condroz"
+  },
+  {
+    "zip": "5370",
+    "city": "Flostoy"
+  },
+  {
+    "zip": "5370",
+    "city": "Havelange"
+  },
+  {
+    "zip": "5370",
+    "city": "Jeneffe"
+  },
+  {
+    "zip": "5370",
+    "city": "Porcheresse"
+  },
+  {
+    "zip": "5370",
+    "city": "Verl\u00e9e"
+  },
+  {
+    "zip": "5372",
+    "city": "M\u00e9an"
+  },
+  {
+    "zip": "5374",
+    "city": "Maffe"
+  },
+  {
+    "zip": "5376",
+    "city": "Mi\u00e9cret"
+  },
+  {
+    "zip": "5377",
+    "city": "Baillonville"
+  },
+  {
+    "zip": "5377",
+    "city": "Bonsin"
+  },
+  {
+    "zip": "5377",
+    "city": "Heure"
+  },
+  {
+    "zip": "5377",
+    "city": "Hogne"
+  },
+  {
+    "zip": "5377",
+    "city": "Nettinne"
+  },
+  {
+    "zip": "5377",
+    "city": "Noiseux"
+  },
+  {
+    "zip": "5377",
+    "city": "Sinsin"
+  },
+  {
+    "zip": "5377",
+    "city": "Somme-Leuze"
+  },
+  {
+    "zip": "5377",
+    "city": "Waillet"
+  },
+  {
+    "zip": "5380",
+    "city": "Bierwart"
+  },
+  {
+    "zip": "5380",
+    "city": "Cortil-Wodon"
+  },
+  {
+    "zip": "5380",
+    "city": "Fernelmont"
+  },
+  {
+    "zip": "5380",
+    "city": "Forville"
+  },
+  {
+    "zip": "5380",
+    "city": "Franc-Waret"
+  },
+  {
+    "zip": "5380",
+    "city": "Hemptinne"
+  },
+  {
+    "zip": "5380",
+    "city": "Hingeon"
+  },
+  {
+    "zip": "5380",
+    "city": "Marchovelette"
+  },
+  {
+    "zip": "5380",
+    "city": "Noville-Les-Bois"
+  },
+  {
+    "zip": "5380",
+    "city": "Pontillas"
+  },
+  {
+    "zip": "5380",
+    "city": "Tillier"
+  },
+  {
+    "zip": "5500",
+    "city": "Anseremme"
+  },
+  {
+    "zip": "5500",
+    "city": "Bouvignes-Sur-Meuse"
+  },
+  {
+    "zip": "5500",
+    "city": "Dinant"
+  },
+  {
+    "zip": "5500",
+    "city": "Dr\u00e9hance"
+  },
+  {
+    "zip": "5500",
+    "city": "Falmagne"
+  },
+  {
+    "zip": "5500",
+    "city": "Falmignoul"
+  },
+  {
+    "zip": "5500",
+    "city": "Furfooz"
+  },
+  {
+    "zip": "5501",
+    "city": "Lisogne"
+  },
+  {
+    "zip": "5502",
+    "city": "Thynes"
+  },
+  {
+    "zip": "5503",
+    "city": "Sorinnes"
+  },
+  {
+    "zip": "5504",
+    "city": "Foy-Notre-Dame"
+  },
+  {
+    "zip": "5520",
+    "city": "Anth\u00e9e"
+  },
+  {
+    "zip": "5520",
+    "city": "Onhaye"
+  },
+  {
+    "zip": "5521",
+    "city": "Serville"
+  },
+  {
+    "zip": "5522",
+    "city": "Falaen"
+  },
+  {
+    "zip": "5523",
+    "city": "Sommi\u00e8re"
+  },
+  {
+    "zip": "5523",
+    "city": "Weillen"
+  },
+  {
+    "zip": "5524",
+    "city": "Gerin"
+  },
+  {
+    "zip": "5530",
+    "city": "Dorinne"
+  },
+  {
+    "zip": "5530",
+    "city": "Durnal"
+  },
+  {
+    "zip": "5530",
+    "city": "Evrehailles"
+  },
+  {
+    "zip": "5530",
+    "city": "Godinne"
+  },
+  {
+    "zip": "5530",
+    "city": "Houx"
+  },
+  {
+    "zip": "5530",
+    "city": "Mont"
+  },
+  {
+    "zip": "5530",
+    "city": "Purnode"
+  },
+  {
+    "zip": "5530",
+    "city": "Spontin"
+  },
+  {
+    "zip": "5530",
+    "city": "Yvoir"
+  },
+  {
+    "zip": "5537",
+    "city": "Anh\u00e9e"
+  },
+  {
+    "zip": "5537",
+    "city": "Annevoie-Rouillon"
+  },
+  {
+    "zip": "5537",
+    "city": "Bioul"
+  },
+  {
+    "zip": "5537",
+    "city": "Den\u00e9e"
+  },
+  {
+    "zip": "5537",
+    "city": "Haut-Le-Wastia"
+  },
+  {
+    "zip": "5537",
+    "city": "Sosoye"
+  },
+  {
+    "zip": "5537",
+    "city": "Warnant"
+  },
+  {
+    "zip": "5540",
+    "city": "Hasti\u00e8re"
+  },
+  {
+    "zip": "5540",
+    "city": "Hasti\u00e8re-Lavaux"
+  },
+  {
+    "zip": "5540",
+    "city": "Hermeton-Sur-Meuse"
+  },
+  {
+    "zip": "5540",
+    "city": "Waulsort"
+  },
+  {
+    "zip": "5541",
+    "city": "Hasti\u00e8re-Par-Del\u00e0"
+  },
+  {
+    "zip": "5542",
+    "city": "Blaimont"
+  },
+  {
+    "zip": "5543",
+    "city": "Heer"
+  },
+  {
+    "zip": "5544",
+    "city": "Agimont"
+  },
+  {
+    "zip": "5550",
+    "city": "Alle"
+  },
+  {
+    "zip": "5550",
+    "city": "Bagimont"
+  },
+  {
+    "zip": "5550",
+    "city": "Bohan"
+  },
+  {
+    "zip": "5550",
+    "city": "Chairi\u00e8re"
+  },
+  {
+    "zip": "5550",
+    "city": "Laforet"
+  },
+  {
+    "zip": "5550",
+    "city": "Membre"
+  },
+  {
+    "zip": "5550",
+    "city": "Mouzaive"
+  },
+  {
+    "zip": "5550",
+    "city": "Nafraiture"
+  },
+  {
+    "zip": "5550",
+    "city": "Orchimont"
+  },
+  {
+    "zip": "5550",
+    "city": "Pussemange"
+  },
+  {
+    "zip": "5550",
+    "city": "Sugny"
+  },
+  {
+    "zip": "5550",
+    "city": "Vresse-Sur-Semois"
+  },
+  {
+    "zip": "5555",
+    "city": "Baillamont"
+  },
+  {
+    "zip": "5555",
+    "city": "Bellefontaine"
+  },
+  {
+    "zip": "5555",
+    "city": "Bi\u00e8vre"
+  },
+  {
+    "zip": "5555",
+    "city": "Cornimont"
+  },
+  {
+    "zip": "5555",
+    "city": "Graide"
+  },
+  {
+    "zip": "5555",
+    "city": "Gros-Fays"
+  },
+  {
+    "zip": "5555",
+    "city": "Monceau-En-Ardenne"
+  },
+  {
+    "zip": "5555",
+    "city": "Naom\u00e9"
+  },
+  {
+    "zip": "5555",
+    "city": "Oizy"
+  },
+  {
+    "zip": "5555",
+    "city": "Petit-Fays"
+  },
+  {
+    "zip": "5560",
+    "city": "Ciergnon"
+  },
+  {
+    "zip": "5560",
+    "city": "Finnevaux"
+  },
+  {
+    "zip": "5560",
+    "city": "Houyet"
+  },
+  {
+    "zip": "5560",
+    "city": "Hulsonniaux"
+  },
+  {
+    "zip": "5560",
+    "city": "Mesnil-Eglise"
+  },
+  {
+    "zip": "5560",
+    "city": "Mesnil-Saint-Blaise"
+  },
+  {
+    "zip": "5561",
+    "city": "Celles"
+  },
+  {
+    "zip": "5562",
+    "city": "Custinne"
+  },
+  {
+    "zip": "5563",
+    "city": "Hour"
+  },
+  {
+    "zip": "5564",
+    "city": "Wanlin"
+  },
+  {
+    "zip": "5570",
+    "city": "Baronville"
+  },
+  {
+    "zip": "5570",
+    "city": "Beauraing"
+  },
+  {
+    "zip": "5570",
+    "city": "Dion"
+  },
+  {
+    "zip": "5570",
+    "city": "Felenne"
+  },
+  {
+    "zip": "5570",
+    "city": "Feschaux"
+  },
+  {
+    "zip": "5570",
+    "city": "Honnay"
+  },
+  {
+    "zip": "5570",
+    "city": "Javingue"
+  },
+  {
+    "zip": "5570",
+    "city": "Von\u00eache"
+  },
+  {
+    "zip": "5570",
+    "city": "Wancennes"
+  },
+  {
+    "zip": "5570",
+    "city": "Winenne"
+  },
+  {
+    "zip": "5571",
+    "city": "Wiesme"
+  },
+  {
+    "zip": "5572",
+    "city": "Focant"
+  },
+  {
+    "zip": "5573",
+    "city": "Martouzin-Neuville"
+  },
+  {
+    "zip": "5574",
+    "city": "Pondr\u00f4me"
+  },
+  {
+    "zip": "5575",
+    "city": "Bourseigne-Neuve"
+  },
+  {
+    "zip": "5575",
+    "city": "Bourseigne-Vieille"
+  },
+  {
+    "zip": "5575",
+    "city": "Gedinne"
+  },
+  {
+    "zip": "5575",
+    "city": "Houdremont"
+  },
+  {
+    "zip": "5575",
+    "city": "Louette-Saint-Denis"
+  },
+  {
+    "zip": "5575",
+    "city": "Louette-Saint-Pierre"
+  },
+  {
+    "zip": "5575",
+    "city": "Malvoisin"
+  },
+  {
+    "zip": "5575",
+    "city": "Patignies"
+  },
+  {
+    "zip": "5575",
+    "city": "Rienne"
+  },
+  {
+    "zip": "5575",
+    "city": "Sart-Custinne"
+  },
+  {
+    "zip": "5575",
+    "city": "Vencimont"
+  },
+  {
+    "zip": "5575",
+    "city": "Willerzie"
+  },
+  {
+    "zip": "5576",
+    "city": "Froidfontaine"
+  },
+  {
+    "zip": "5580",
+    "city": "Ave-Et-Auffe"
+  },
+  {
+    "zip": "5580",
+    "city": "Buissonville"
+  },
+  {
+    "zip": "5580",
+    "city": "Eprave"
+  },
+  {
+    "zip": "5580",
+    "city": "Han-Sur-Lesse"
+  },
+  {
+    "zip": "5580",
+    "city": "Jemelle"
+  },
+  {
+    "zip": "5580",
+    "city": "Lessive"
+  },
+  {
+    "zip": "5580",
+    "city": "Mont-Gauthier"
+  },
+  {
+    "zip": "5580",
+    "city": "Rochefort"
+  },
+  {
+    "zip": "5580",
+    "city": "Villers-Sur-Lesse"
+  },
+  {
+    "zip": "5580",
+    "city": "Wavreille"
+  },
+  {
+    "zip": "5590",
+    "city": "Ach\u00eane"
+  },
+  {
+    "zip": "5590",
+    "city": "Braibant"
+  },
+  {
+    "zip": "5590",
+    "city": "Chevetogne"
+  },
+  {
+    "zip": "5590",
+    "city": "Ciney"
+  },
+  {
+    "zip": "5590",
+    "city": "Conneux"
+  },
+  {
+    "zip": "5590",
+    "city": "Haversin"
+  },
+  {
+    "zip": "5590",
+    "city": "Leignon"
+  },
+  {
+    "zip": "5590",
+    "city": "Pessoux"
+  },
+  {
+    "zip": "5590",
+    "city": "Serinchamps"
+  },
+  {
+    "zip": "5590",
+    "city": "Sovet"
+  },
+  {
+    "zip": "5600",
+    "city": "Fagnolle"
+  },
+  {
+    "zip": "5600",
+    "city": "Franchimont"
+  },
+  {
+    "zip": "5600",
+    "city": "Jamagne"
+  },
+  {
+    "zip": "5600",
+    "city": "Jamiolle"
+  },
+  {
+    "zip": "5600",
+    "city": "Merlemont"
+  },
+  {
+    "zip": "5600",
+    "city": "Neuville"
+  },
+  {
+    "zip": "5600",
+    "city": "Omez\u00e9e"
+  },
+  {
+    "zip": "5600",
+    "city": "Philippeville"
+  },
+  {
+    "zip": "5600",
+    "city": "Roly"
+  },
+  {
+    "zip": "5600",
+    "city": "Romedenne"
+  },
+  {
+    "zip": "5600",
+    "city": "Samart"
+  },
+  {
+    "zip": "5600",
+    "city": "Sart-En-Fagne"
+  },
+  {
+    "zip": "5600",
+    "city": "Sautour"
+  },
+  {
+    "zip": "5600",
+    "city": "Surice"
+  },
+  {
+    "zip": "5600",
+    "city": "Villers-En-Fagne"
+  },
+  {
+    "zip": "5600",
+    "city": "Villers-Le-Gambon"
+  },
+  {
+    "zip": "5600",
+    "city": "Vodec\u00e9e"
+  },
+  {
+    "zip": "5620",
+    "city": "Corenne"
+  },
+  {
+    "zip": "5620",
+    "city": "Flavion"
+  },
+  {
+    "zip": "5620",
+    "city": "Florennes"
+  },
+  {
+    "zip": "5620",
+    "city": "Hemptinne-Lez-Florennes"
+  },
+  {
+    "zip": "5620",
+    "city": "Morville"
+  },
+  {
+    "zip": "5620",
+    "city": "Ros\u00e9e"
+  },
+  {
+    "zip": "5620",
+    "city": "Saint-Aubin"
+  },
+  {
+    "zip": "5621",
+    "city": "Hanzinelle"
+  },
+  {
+    "zip": "5621",
+    "city": "Hanzinne"
+  },
+  {
+    "zip": "5621",
+    "city": "Morialm\u00e9"
+  },
+  {
+    "zip": "5630",
+    "city": "Cerfontaine"
+  },
+  {
+    "zip": "5630",
+    "city": "Daussois"
+  },
+  {
+    "zip": "5630",
+    "city": "Senzeille"
+  },
+  {
+    "zip": "5630",
+    "city": "Silenrieux"
+  },
+  {
+    "zip": "5630",
+    "city": "Soumoy"
+  },
+  {
+    "zip": "5630",
+    "city": "Villers-Deux-Eglises"
+  },
+  {
+    "zip": "5640",
+    "city": "Biesme"
+  },
+  {
+    "zip": "5640",
+    "city": "Biesmer\u00e9e"
+  },
+  {
+    "zip": "5640",
+    "city": "Graux"
+  },
+  {
+    "zip": "5640",
+    "city": "Mettet"
+  },
+  {
+    "zip": "5640",
+    "city": "Oret"
+  },
+  {
+    "zip": "5640",
+    "city": "Saint-G\u00e9rard"
+  },
+  {
+    "zip": "5641",
+    "city": "Furnaux"
+  },
+  {
+    "zip": "5644",
+    "city": "Ermeton-Sur-Biert"
+  },
+  {
+    "zip": "5646",
+    "city": "Stave"
+  },
+  {
+    "zip": "5650",
+    "city": "Castillon"
+  },
+  {
+    "zip": "5650",
+    "city": "Chastr\u00e8s"
+  },
+  {
+    "zip": "5650",
+    "city": "Clermont"
+  },
+  {
+    "zip": "5650",
+    "city": "Fontenelle"
+  },
+  {
+    "zip": "5650",
+    "city": "Fraire"
+  },
+  {
+    "zip": "5650",
+    "city": "Pry"
+  },
+  {
+    "zip": "5650",
+    "city": "Vogen\u00e9e"
+  },
+  {
+    "zip": "5650",
+    "city": "Walcourt"
+  },
+  {
+    "zip": "5650",
+    "city": "Yves-Gomez\u00e9e"
+  },
+  {
+    "zip": "5651",
+    "city": "Berz\u00e9e"
+  },
+  {
+    "zip": "5651",
+    "city": "Gourdinne"
+  },
+  {
+    "zip": "5651",
+    "city": "Laneffe"
+  },
+  {
+    "zip": "5651",
+    "city": "Rogn\u00e9e"
+  },
+  {
+    "zip": "5651",
+    "city": "Somz\u00e9e"
+  },
+  {
+    "zip": "5651",
+    "city": "Tarcienne"
+  },
+  {
+    "zip": "5651",
+    "city": "Thy-Le-Ch\u00e2teau"
+  },
+  {
+    "zip": "5660",
+    "city": "Aublain"
+  },
+  {
+    "zip": "5660",
+    "city": "Boussu-En-Fagne"
+  },
+  {
+    "zip": "5660",
+    "city": "Br\u00fbly"
+  },
+  {
+    "zip": "5660",
+    "city": "Br\u00fbly-De-Pesche"
+  },
+  {
+    "zip": "5660",
+    "city": "Couvin"
+  },
+  {
+    "zip": "5660",
+    "city": "Cul-Des-Sarts"
+  },
+  {
+    "zip": "5660",
+    "city": "Dailly"
+  },
+  {
+    "zip": "5660",
+    "city": "Frasnes"
+  },
+  {
+    "zip": "5660",
+    "city": "Gonrieux"
+  },
+  {
+    "zip": "5660",
+    "city": "Mariembourg"
+  },
+  {
+    "zip": "5660",
+    "city": "Pesche"
+  },
+  {
+    "zip": "5660",
+    "city": "Petigny"
+  },
+  {
+    "zip": "5660",
+    "city": "Petite-Chapelle"
+  },
+  {
+    "zip": "5660",
+    "city": "Presgaux"
+  },
+  {
+    "zip": "5670",
+    "city": "Dourbes"
+  },
+  {
+    "zip": "5670",
+    "city": "Le Mesnil"
+  },
+  {
+    "zip": "5670",
+    "city": "Maz\u00e9e"
+  },
+  {
+    "zip": "5670",
+    "city": "Nismes"
+  },
+  {
+    "zip": "5670",
+    "city": "Oignies-En-Thi\u00e9rache"
+  },
+  {
+    "zip": "5670",
+    "city": "Olloy-Sur-Viroin"
+  },
+  {
+    "zip": "5670",
+    "city": "Treignes"
+  },
+  {
+    "zip": "5670",
+    "city": "Vierves-Sur-Viroin"
+  },
+  {
+    "zip": "5670",
+    "city": "Viroinval"
+  },
+  {
+    "zip": "5680",
+    "city": "Doische"
+  },
+  {
+    "zip": "5680",
+    "city": "Gimn\u00e9e"
+  },
+  {
+    "zip": "5680",
+    "city": "Gochen\u00e9e"
+  },
+  {
+    "zip": "5680",
+    "city": "Matagne-La-Grande"
+  },
+  {
+    "zip": "5680",
+    "city": "Matagne-La-Petite"
+  },
+  {
+    "zip": "5680",
+    "city": "Niverl\u00e9e"
+  },
+  {
+    "zip": "5680",
+    "city": "Romer\u00e9e"
+  },
+  {
+    "zip": "5680",
+    "city": "Soulme"
+  },
+  {
+    "zip": "5680",
+    "city": "Vaucelles"
+  },
+  {
+    "zip": "5680",
+    "city": "Vodel\u00e9e"
+  },
+  {
+    "zip": "6000",
+    "city": "Charleroi"
+  },
+  {
+    "zip": "6001",
+    "city": "Marcinelle"
+  },
+  {
+    "zip": "6010",
+    "city": "Couillet"
+  },
+  {
+    "zip": "6020",
+    "city": "Dampremy"
+  },
+  {
+    "zip": "6030",
+    "city": "Goutroux"
+  },
+  {
+    "zip": "6030",
+    "city": "Marchienne-Au-Pont"
+  },
+  {
+    "zip": "6031",
+    "city": "Monceau-Sur-Sambre"
+  },
+  {
+    "zip": "6032",
+    "city": "Mont-Sur-Marchienne"
+  },
+  {
+    "zip": "6040",
+    "city": "Jumet"
+  },
+  {
+    "zip": "6041",
+    "city": "Gosselies"
+  },
+  {
+    "zip": "6042",
+    "city": "Lodelinsart"
+  },
+  {
+    "zip": "6043",
+    "city": "Ransart"
+  },
+  {
+    "zip": "6044",
+    "city": "Roux"
+  },
+  {
+    "zip": "6060",
+    "city": "Gilly"
+  },
+  {
+    "zip": "6061",
+    "city": "Montignies-Sur-Sambre"
+  },
+  {
+    "zip": "6110",
+    "city": "Montigny-Le-Tilleul"
+  },
+  {
+    "zip": "6111",
+    "city": "Landelies"
+  },
+  {
+    "zip": "6120",
+    "city": "Cour-Sur-Heure"
+  },
+  {
+    "zip": "6120",
+    "city": "Ham-Sur-Heure"
+  },
+  {
+    "zip": "6120",
+    "city": "Jamioulx"
+  },
+  {
+    "zip": "6120",
+    "city": "Marbaix"
+  },
+  {
+    "zip": "6120",
+    "city": "Nalinnes"
+  },
+  {
+    "zip": "6140",
+    "city": "Fontaine-L'ev\u00eaque"
+  },
+  {
+    "zip": "6141",
+    "city": "Forchies-La-Marche"
+  },
+  {
+    "zip": "6142",
+    "city": "Leernes"
+  },
+  {
+    "zip": "6150",
+    "city": "Anderlues"
+  },
+  {
+    "zip": "6180",
+    "city": "Courcelles"
+  },
+  {
+    "zip": "6181",
+    "city": "Gouy-Lez-Pi\u00e9ton"
+  },
+  {
+    "zip": "6182",
+    "city": "Souvret"
+  },
+  {
+    "zip": "6183",
+    "city": "Trazegnies"
+  },
+  {
+    "zip": "6200",
+    "city": "Bouffioulx"
+  },
+  {
+    "zip": "6200",
+    "city": "Ch\u00e2telet"
+  },
+  {
+    "zip": "6200",
+    "city": "Ch\u00e2telineau"
+  },
+  {
+    "zip": "6210",
+    "city": "Frasnes-Lez-Gosselies"
+  },
+  {
+    "zip": "6210",
+    "city": "Les Bons Villers"
+  },
+  {
+    "zip": "6210",
+    "city": "R\u00e8ves"
+  },
+  {
+    "zip": "6210",
+    "city": "Villers-Perwin"
+  },
+  {
+    "zip": "6210",
+    "city": "Wayaux"
+  },
+  {
+    "zip": "6211",
+    "city": "Mellet"
+  },
+  {
+    "zip": "6220",
+    "city": "Fleurus"
+  },
+  {
+    "zip": "6220",
+    "city": "Heppignies"
+  },
+  {
+    "zip": "6220",
+    "city": "Lambusart"
+  },
+  {
+    "zip": "6220",
+    "city": "Wangenies"
+  },
+  {
+    "zip": "6221",
+    "city": "Saint-Amand"
+  },
+  {
+    "zip": "6222",
+    "city": "Brye"
+  },
+  {
+    "zip": "6223",
+    "city": "Wagnel\u00e9e"
+  },
+  {
+    "zip": "6224",
+    "city": "Wanferc\u00e9e-Baulet"
+  },
+  {
+    "zip": "6230",
+    "city": "Buzet"
+  },
+  {
+    "zip": "6230",
+    "city": "Obaix"
+  },
+  {
+    "zip": "6230",
+    "city": "Pont-\u00c0-Celles"
+  },
+  {
+    "zip": "6230",
+    "city": "Thim\u00e9on"
+  },
+  {
+    "zip": "6230",
+    "city": "Viesville"
+  },
+  {
+    "zip": "6238",
+    "city": "Liberchies"
+  },
+  {
+    "zip": "6238",
+    "city": "Luttre"
+  },
+  {
+    "zip": "6240",
+    "city": "Farciennes"
+  },
+  {
+    "zip": "6240",
+    "city": "Pironchamps"
+  },
+  {
+    "zip": "6250",
+    "city": "Aiseau"
+  },
+  {
+    "zip": "6250",
+    "city": "Aiseau-Presles"
+  },
+  {
+    "zip": "6250",
+    "city": "Pont-De-Loup"
+  },
+  {
+    "zip": "6250",
+    "city": "Presles"
+  },
+  {
+    "zip": "6250",
+    "city": "Roselies"
+  },
+  {
+    "zip": "6280",
+    "city": "Acoz"
+  },
+  {
+    "zip": "6280",
+    "city": "Gerpinnes"
+  },
+  {
+    "zip": "6280",
+    "city": "Gougnies"
+  },
+  {
+    "zip": "6280",
+    "city": "Joncret"
+  },
+  {
+    "zip": "6280",
+    "city": "Loverval"
+  },
+  {
+    "zip": "6280",
+    "city": "Villers-Poterie"
+  },
+  {
+    "zip": "6440",
+    "city": "Boussu-Lez-Walcourt"
+  },
+  {
+    "zip": "6440",
+    "city": "Fourbechies"
+  },
+  {
+    "zip": "6440",
+    "city": "Froidchapelle"
+  },
+  {
+    "zip": "6440",
+    "city": "Vergnies"
+  },
+  {
+    "zip": "6441",
+    "city": "Erpion"
+  },
+  {
+    "zip": "6460",
+    "city": "Baili\u00e8vre"
+  },
+  {
+    "zip": "6460",
+    "city": "Chimay"
+  },
+  {
+    "zip": "6460",
+    "city": "Robechies"
+  },
+  {
+    "zip": "6460",
+    "city": "Saint-Remy"
+  },
+  {
+    "zip": "6460",
+    "city": "Salles"
+  },
+  {
+    "zip": "6460",
+    "city": "Villers-La-Tour"
+  },
+  {
+    "zip": "6461",
+    "city": "Virelles"
+  },
+  {
+    "zip": "6462",
+    "city": "Vaulx-Lez-Chimay"
+  },
+  {
+    "zip": "6463",
+    "city": "Lompret"
+  },
+  {
+    "zip": "6464",
+    "city": "Baileux"
+  },
+  {
+    "zip": "6464",
+    "city": "Bourlers"
+  },
+  {
+    "zip": "6464",
+    "city": "Forges"
+  },
+  {
+    "zip": "6464",
+    "city": "L'escaill\u00e8re"
+  },
+  {
+    "zip": "6464",
+    "city": "Ri\u00e8zes"
+  },
+  {
+    "zip": "6470",
+    "city": "Grandrieu"
+  },
+  {
+    "zip": "6470",
+    "city": "Montbliart"
+  },
+  {
+    "zip": "6470",
+    "city": "Rance"
+  },
+  {
+    "zip": "6470",
+    "city": "Sautin"
+  },
+  {
+    "zip": "6470",
+    "city": "Sivry"
+  },
+  {
+    "zip": "6470",
+    "city": "Sivry-Rance"
+  },
+  {
+    "zip": "6500",
+    "city": "Barben\u00e7on"
+  },
+  {
+    "zip": "6500",
+    "city": "Beaumont"
+  },
+  {
+    "zip": "6500",
+    "city": "Leugnies"
+  },
+  {
+    "zip": "6500",
+    "city": "Leval-Chaudeville"
+  },
+  {
+    "zip": "6500",
+    "city": "Renlies"
+  },
+  {
+    "zip": "6500",
+    "city": "Solre-Saint-G\u00e9ry"
+  },
+  {
+    "zip": "6500",
+    "city": "Thirimont"
+  },
+  {
+    "zip": "6511",
+    "city": "Str\u00e9e"
+  },
+  {
+    "zip": "6530",
+    "city": "Leers-Et-Fosteau"
+  },
+  {
+    "zip": "6530",
+    "city": "Thuin"
+  },
+  {
+    "zip": "6531",
+    "city": "Biesme-Sous-Thuin"
+  },
+  {
+    "zip": "6532",
+    "city": "Ragnies"
+  },
+  {
+    "zip": "6533",
+    "city": "Bierc\u00e9e"
+  },
+  {
+    "zip": "6534",
+    "city": "Goz\u00e9e"
+  },
+  {
+    "zip": "6536",
+    "city": "Donstiennes"
+  },
+  {
+    "zip": "6536",
+    "city": "Thuillies"
+  },
+  {
+    "zip": "6540",
+    "city": "Lobbes"
+  },
+  {
+    "zip": "6540",
+    "city": "Mont-Sainte-Genevi\u00e8ve"
+  },
+  {
+    "zip": "6542",
+    "city": "Sars-La-Buissi\u00e8re"
+  },
+  {
+    "zip": "6543",
+    "city": "Bienne-Lez-Happart"
+  },
+  {
+    "zip": "6560",
+    "city": "Bersillies-L'abbaye"
+  },
+  {
+    "zip": "6560",
+    "city": "Erquelinnes"
+  },
+  {
+    "zip": "6560",
+    "city": "Grand-Reng"
+  },
+  {
+    "zip": "6560",
+    "city": "Hantes-Wih\u00e9ries"
+  },
+  {
+    "zip": "6560",
+    "city": "Montignies-Saint-Christophe"
+  },
+  {
+    "zip": "6560",
+    "city": "Solre-Sur-Sambre"
+  },
+  {
+    "zip": "6567",
+    "city": "Fontaine-Valmont"
+  },
+  {
+    "zip": "6567",
+    "city": "Labuissi\u00e8re"
+  },
+  {
+    "zip": "6567",
+    "city": "Merbes-Le-Ch\u00e2teau"
+  },
+  {
+    "zip": "6567",
+    "city": "Merbes-Sainte-Marie"
+  },
+  {
+    "zip": "6590",
+    "city": "Momignies"
+  },
+  {
+    "zip": "6591",
+    "city": "Macon"
+  },
+  {
+    "zip": "6592",
+    "city": "Monceau-Imbrechies"
+  },
+  {
+    "zip": "6593",
+    "city": "Macquenoise"
+  },
+  {
+    "zip": "6594",
+    "city": "Beauwelz"
+  },
+  {
+    "zip": "6596",
+    "city": "Forge-Philippe"
+  },
+  {
+    "zip": "6596",
+    "city": "Seloignes"
+  },
+  {
+    "zip": "6600",
+    "city": "Bastogne"
+  },
+  {
+    "zip": "6600",
+    "city": "Longvilly"
+  },
+  {
+    "zip": "6600",
+    "city": "Noville"
+  },
+  {
+    "zip": "6600",
+    "city": "Villers-La-Bonne-Eau"
+  },
+  {
+    "zip": "6600",
+    "city": "Wardin"
+  },
+  {
+    "zip": "6630",
+    "city": "Martelange"
+  },
+  {
+    "zip": "6637",
+    "city": "Fauvillers"
+  },
+  {
+    "zip": "6637",
+    "city": "Hollange"
+  },
+  {
+    "zip": "6637",
+    "city": "Tintange"
+  },
+  {
+    "zip": "6640",
+    "city": "Hompr\u00e9"
+  },
+  {
+    "zip": "6640",
+    "city": "Morhet"
+  },
+  {
+    "zip": "6640",
+    "city": "Nives"
+  },
+  {
+    "zip": "6640",
+    "city": "Sibret"
+  },
+  {
+    "zip": "6640",
+    "city": "Vaux-Lez-Rosi\u00e8res"
+  },
+  {
+    "zip": "6640",
+    "city": "Vaux-Sur-S\u00fbre"
+  },
+  {
+    "zip": "6642",
+    "city": "Juseret"
+  },
+  {
+    "zip": "6660",
+    "city": "Houffalize"
+  },
+  {
+    "zip": "6660",
+    "city": "Nadrin"
+  },
+  {
+    "zip": "6661",
+    "city": "Mont"
+  },
+  {
+    "zip": "6661",
+    "city": "Tailles"
+  },
+  {
+    "zip": "6662",
+    "city": "Tavigny"
+  },
+  {
+    "zip": "6663",
+    "city": "Mabompr\u00e9"
+  },
+  {
+    "zip": "6666",
+    "city": "Wibrin"
+  },
+  {
+    "zip": "6670",
+    "city": "Gouvy"
+  },
+  {
+    "zip": "6670",
+    "city": "Limerl\u00e9"
+  },
+  {
+    "zip": "6671",
+    "city": "Bovigny"
+  },
+  {
+    "zip": "6672",
+    "city": "Beho"
+  },
+  {
+    "zip": "6673",
+    "city": "Cherain"
+  },
+  {
+    "zip": "6674",
+    "city": "Montleban"
+  },
+  {
+    "zip": "6680",
+    "city": "Amberloup"
+  },
+  {
+    "zip": "6680",
+    "city": "Sainte-Ode"
+  },
+  {
+    "zip": "6680",
+    "city": "Tillet"
+  },
+  {
+    "zip": "6681",
+    "city": "Lavacherie"
+  },
+  {
+    "zip": "6686",
+    "city": "Flamierge"
+  },
+  {
+    "zip": "6687",
+    "city": "Bertogne"
+  },
+  {
+    "zip": "6688",
+    "city": "Longchamps"
+  },
+  {
+    "zip": "6690",
+    "city": "Bihain"
+  },
+  {
+    "zip": "6690",
+    "city": "Vielsalm"
+  },
+  {
+    "zip": "6692",
+    "city": "Petit-Thier"
+  },
+  {
+    "zip": "6698",
+    "city": "Grand-Halleux"
+  },
+  {
+    "zip": "6700",
+    "city": "Arlon"
+  },
+  {
+    "zip": "6700",
+    "city": "Bonnert"
+  },
+  {
+    "zip": "6700",
+    "city": "Heinsch"
+  },
+  {
+    "zip": "6700",
+    "city": "Toernich"
+  },
+  {
+    "zip": "6704",
+    "city": "Guirsch"
+  },
+  {
+    "zip": "6706",
+    "city": "Autelbas"
+  },
+  {
+    "zip": "6717",
+    "city": "Attert"
+  },
+  {
+    "zip": "6717",
+    "city": "Nobressart"
+  },
+  {
+    "zip": "6717",
+    "city": "Nothomb"
+  },
+  {
+    "zip": "6717",
+    "city": "Thiaumont"
+  },
+  {
+    "zip": "6717",
+    "city": "Tontelange"
+  },
+  {
+    "zip": "6720",
+    "city": "Habay"
+  },
+  {
+    "zip": "6720",
+    "city": "Habay-La-Neuve"
+  },
+  {
+    "zip": "6720",
+    "city": "Hachy"
+  },
+  {
+    "zip": "6721",
+    "city": "Anlier"
+  },
+  {
+    "zip": "6723",
+    "city": "Habay-La-Vieille"
+  },
+  {
+    "zip": "6724",
+    "city": "Houdemont"
+  },
+  {
+    "zip": "6724",
+    "city": "Rulles"
+  },
+  {
+    "zip": "6730",
+    "city": "Bellefontaine"
+  },
+  {
+    "zip": "6730",
+    "city": "Rossignol"
+  },
+  {
+    "zip": "6730",
+    "city": "Saint-Vincent"
+  },
+  {
+    "zip": "6730",
+    "city": "Tintigny"
+  },
+  {
+    "zip": "6740",
+    "city": "Etalle"
+  },
+  {
+    "zip": "6740",
+    "city": "Sainte-Marie-Sur-Semois"
+  },
+  {
+    "zip": "6740",
+    "city": "Villers-Sur-Semois"
+  },
+  {
+    "zip": "6741",
+    "city": "Vance"
+  },
+  {
+    "zip": "6742",
+    "city": "Chantemelle"
+  },
+  {
+    "zip": "6743",
+    "city": "Buzenol"
+  },
+  {
+    "zip": "6747",
+    "city": "Ch\u00e2tillon"
+  },
+  {
+    "zip": "6747",
+    "city": "Meix-Le-Tige"
+  },
+  {
+    "zip": "6747",
+    "city": "Saint-L\u00e9ger"
+  },
+  {
+    "zip": "6750",
+    "city": "Musson"
+  },
+  {
+    "zip": "6750",
+    "city": "Mussy-La-Ville"
+  },
+  {
+    "zip": "6750",
+    "city": "Signeulx"
+  },
+  {
+    "zip": "6760",
+    "city": "Bleid"
+  },
+  {
+    "zip": "6760",
+    "city": "Ethe"
+  },
+  {
+    "zip": "6760",
+    "city": "Ruette"
+  },
+  {
+    "zip": "6760",
+    "city": "Virton"
+  },
+  {
+    "zip": "6761",
+    "city": "Latour"
+  },
+  {
+    "zip": "6762",
+    "city": "Saint-Mard"
+  },
+  {
+    "zip": "6767",
+    "city": "Dampicourt"
+  },
+  {
+    "zip": "6767",
+    "city": "Harnoncourt"
+  },
+  {
+    "zip": "6767",
+    "city": "Lamorteau"
+  },
+  {
+    "zip": "6767",
+    "city": "Rouvroy"
+  },
+  {
+    "zip": "6767",
+    "city": "Torgny"
+  },
+  {
+    "zip": "6769",
+    "city": "G\u00e9rouville"
+  },
+  {
+    "zip": "6769",
+    "city": "Meix-Devant-Virton"
+  },
+  {
+    "zip": "6769",
+    "city": "Robelmont"
+  },
+  {
+    "zip": "6769",
+    "city": "Sommethonne"
+  },
+  {
+    "zip": "6769",
+    "city": "Villers-La-Loue"
+  },
+  {
+    "zip": "6780",
+    "city": "Hondelange"
+  },
+  {
+    "zip": "6780",
+    "city": "Messancy"
+  },
+  {
+    "zip": "6780",
+    "city": "Wolkrange"
+  },
+  {
+    "zip": "6781",
+    "city": "S\u00e9lange"
+  },
+  {
+    "zip": "6782",
+    "city": "Habergy"
+  },
+  {
+    "zip": "6790",
+    "city": "Aubange"
+  },
+  {
+    "zip": "6791",
+    "city": "Athus"
+  },
+  {
+    "zip": "6792",
+    "city": "Halanzy"
+  },
+  {
+    "zip": "6792",
+    "city": "Rachecourt"
+  },
+  {
+    "zip": "6800",
+    "city": "Bras"
+  },
+  {
+    "zip": "6800",
+    "city": "Freux"
+  },
+  {
+    "zip": "6800",
+    "city": "Libramont-Chevigny"
+  },
+  {
+    "zip": "6800",
+    "city": "Moircy"
+  },
+  {
+    "zip": "6800",
+    "city": "Recogne"
+  },
+  {
+    "zip": "6800",
+    "city": "Remagne"
+  },
+  {
+    "zip": "6800",
+    "city": "Saint-Pierre"
+  },
+  {
+    "zip": "6800",
+    "city": "Sainte-Marie-Chevigny"
+  },
+  {
+    "zip": "6810",
+    "city": "Chiny"
+  },
+  {
+    "zip": "6810",
+    "city": "Izel"
+  },
+  {
+    "zip": "6810",
+    "city": "Jamoigne"
+  },
+  {
+    "zip": "6811",
+    "city": "Les Bulles"
+  },
+  {
+    "zip": "6812",
+    "city": "Suxy"
+  },
+  {
+    "zip": "6813",
+    "city": "Termes"
+  },
+  {
+    "zip": "6820",
+    "city": "Florenville"
+  },
+  {
+    "zip": "6820",
+    "city": "Fontenoille"
+  },
+  {
+    "zip": "6820",
+    "city": "Muno"
+  },
+  {
+    "zip": "6820",
+    "city": "Sainte-C\u00e9cile"
+  },
+  {
+    "zip": "6821",
+    "city": "Lacuisine"
+  },
+  {
+    "zip": "6823",
+    "city": "Villers-Devant-Orval"
+  },
+  {
+    "zip": "6824",
+    "city": "Chassepierre"
+  },
+  {
+    "zip": "6830",
+    "city": "Bouillon"
+  },
+  {
+    "zip": "6830",
+    "city": "Les Hayons"
+  },
+  {
+    "zip": "6830",
+    "city": "Poupehan"
+  },
+  {
+    "zip": "6830",
+    "city": "Rochehaut"
+  },
+  {
+    "zip": "6831",
+    "city": "Noirfontaine"
+  },
+  {
+    "zip": "6832",
+    "city": "Sensenruth"
+  },
+  {
+    "zip": "6833",
+    "city": "Ucimont"
+  },
+  {
+    "zip": "6833",
+    "city": "Vivy"
+  },
+  {
+    "zip": "6834",
+    "city": "Bellevaux"
+  },
+  {
+    "zip": "6836",
+    "city": "Dohan"
+  },
+  {
+    "zip": "6838",
+    "city": "Corbion"
+  },
+  {
+    "zip": "6840",
+    "city": "Grandvoir"
+  },
+  {
+    "zip": "6840",
+    "city": "Grapfontaine"
+  },
+  {
+    "zip": "6840",
+    "city": "Hamipr\u00e9"
+  },
+  {
+    "zip": "6840",
+    "city": "Longlier"
+  },
+  {
+    "zip": "6840",
+    "city": "Neufch\u00e2teau"
+  },
+  {
+    "zip": "6840",
+    "city": "Tournay"
+  },
+  {
+    "zip": "6850",
+    "city": "Carlsbourg"
+  },
+  {
+    "zip": "6850",
+    "city": "Offagne"
+  },
+  {
+    "zip": "6850",
+    "city": "Paliseul"
+  },
+  {
+    "zip": "6851",
+    "city": "Nollevaux"
+  },
+  {
+    "zip": "6852",
+    "city": "Maissin"
+  },
+  {
+    "zip": "6852",
+    "city": "Opont"
+  },
+  {
+    "zip": "6853",
+    "city": "Framont"
+  },
+  {
+    "zip": "6856",
+    "city": "Fays-Les-Veneurs"
+  },
+  {
+    "zip": "6860",
+    "city": "Assenois"
+  },
+  {
+    "zip": "6860",
+    "city": "Ebly"
+  },
+  {
+    "zip": "6860",
+    "city": "L\u00e9glise"
+  },
+  {
+    "zip": "6860",
+    "city": "Mellier"
+  },
+  {
+    "zip": "6860",
+    "city": "Witry"
+  },
+  {
+    "zip": "6870",
+    "city": "Arville"
+  },
+  {
+    "zip": "6870",
+    "city": "Awenne"
+  },
+  {
+    "zip": "6870",
+    "city": "Hatrival"
+  },
+  {
+    "zip": "6870",
+    "city": "Mirwart"
+  },
+  {
+    "zip": "6870",
+    "city": "Saint-Hubert"
+  },
+  {
+    "zip": "6870",
+    "city": "Vesqueville"
+  },
+  {
+    "zip": "6880",
+    "city": "Auby-Sur-Semois"
+  },
+  {
+    "zip": "6880",
+    "city": "Bertrix"
+  },
+  {
+    "zip": "6880",
+    "city": "Cugnon"
+  },
+  {
+    "zip": "6880",
+    "city": "Jehonville"
+  },
+  {
+    "zip": "6880",
+    "city": "Orgeo"
+  },
+  {
+    "zip": "6887",
+    "city": "Herbeumont"
+  },
+  {
+    "zip": "6887",
+    "city": "Saint-M\u00e9dard"
+  },
+  {
+    "zip": "6887",
+    "city": "Straimont"
+  },
+  {
+    "zip": "6890",
+    "city": "Anloy"
+  },
+  {
+    "zip": "6890",
+    "city": "Libin"
+  },
+  {
+    "zip": "6890",
+    "city": "Ochamps"
+  },
+  {
+    "zip": "6890",
+    "city": "Redu"
+  },
+  {
+    "zip": "6890",
+    "city": "Smuid"
+  },
+  {
+    "zip": "6890",
+    "city": "Transinne"
+  },
+  {
+    "zip": "6890",
+    "city": "Villance"
+  },
+  {
+    "zip": "6900",
+    "city": "Aye"
+  },
+  {
+    "zip": "6900",
+    "city": "Hargimont"
+  },
+  {
+    "zip": "6900",
+    "city": "Humain"
+  },
+  {
+    "zip": "6900",
+    "city": "Marche-En-Famenne"
+  },
+  {
+    "zip": "6900",
+    "city": "On"
+  },
+  {
+    "zip": "6900",
+    "city": "Roy"
+  },
+  {
+    "zip": "6900",
+    "city": "Waha"
+  },
+  {
+    "zip": "6920",
+    "city": "Sohier"
+  },
+  {
+    "zip": "6920",
+    "city": "Wellin"
+  },
+  {
+    "zip": "6921",
+    "city": "Chanly"
+  },
+  {
+    "zip": "6922",
+    "city": "Halma"
+  },
+  {
+    "zip": "6924",
+    "city": "Lomprez"
+  },
+  {
+    "zip": "6927",
+    "city": "Bure"
+  },
+  {
+    "zip": "6927",
+    "city": "Grupont"
+  },
+  {
+    "zip": "6927",
+    "city": "Resteigne"
+  },
+  {
+    "zip": "6927",
+    "city": "Tellin"
+  },
+  {
+    "zip": "6929",
+    "city": "Daverdisse"
+  },
+  {
+    "zip": "6929",
+    "city": "Gembes"
+  },
+  {
+    "zip": "6929",
+    "city": "Haut-Fays"
+  },
+  {
+    "zip": "6929",
+    "city": "Porcheresse"
+  },
+  {
+    "zip": "6940",
+    "city": "Durbuy"
+  },
+  {
+    "zip": "6940",
+    "city": "Grandhan"
+  },
+  {
+    "zip": "6940",
+    "city": "Septon"
+  },
+  {
+    "zip": "6940",
+    "city": "W\u00e9ris"
+  },
+  {
+    "zip": "6941",
+    "city": "Bende"
+  },
+  {
+    "zip": "6941",
+    "city": "Bomal-Sur-Ourthe"
+  },
+  {
+    "zip": "6941",
+    "city": "Borlon"
+  },
+  {
+    "zip": "6941",
+    "city": "Heyd"
+  },
+  {
+    "zip": "6941",
+    "city": "Izier"
+  },
+  {
+    "zip": "6941",
+    "city": "Tohogne"
+  },
+  {
+    "zip": "6941",
+    "city": "Villers-Sainte-Gertrude"
+  },
+  {
+    "zip": "6950",
+    "city": "Harsin"
+  },
+  {
+    "zip": "6950",
+    "city": "Nassogne"
+  },
+  {
+    "zip": "6951",
+    "city": "Bande"
+  },
+  {
+    "zip": "6952",
+    "city": "Grune"
+  },
+  {
+    "zip": "6953",
+    "city": "Ambly"
+  },
+  {
+    "zip": "6953",
+    "city": "Forri\u00e8res"
+  },
+  {
+    "zip": "6953",
+    "city": "Lesterny"
+  },
+  {
+    "zip": "6953",
+    "city": "Masbourg"
+  },
+  {
+    "zip": "6960",
+    "city": "Dochamps"
+  },
+  {
+    "zip": "6960",
+    "city": "Grandmenil"
+  },
+  {
+    "zip": "6960",
+    "city": "Harre"
+  },
+  {
+    "zip": "6960",
+    "city": "Malempr\u00e9"
+  },
+  {
+    "zip": "6960",
+    "city": "Manhay"
+  },
+  {
+    "zip": "6960",
+    "city": "Odeigne"
+  },
+  {
+    "zip": "6960",
+    "city": "Vaux-Chavanne"
+  },
+  {
+    "zip": "6970",
+    "city": "Tenneville"
+  },
+  {
+    "zip": "6971",
+    "city": "Champlon"
+  },
+  {
+    "zip": "6972",
+    "city": "Erneuville"
+  },
+  {
+    "zip": "6980",
+    "city": "Beausaint"
+  },
+  {
+    "zip": "6980",
+    "city": "La Roche-En-Ardenne"
+  },
+  {
+    "zip": "6982",
+    "city": "Samr\u00e9e"
+  },
+  {
+    "zip": "6983",
+    "city": "Ortho"
+  },
+  {
+    "zip": "6984",
+    "city": "Hives"
+  },
+  {
+    "zip": "6986",
+    "city": "Halleux"
+  },
+  {
+    "zip": "6987",
+    "city": "Beffe"
+  },
+  {
+    "zip": "6987",
+    "city": "Hodister"
+  },
+  {
+    "zip": "6987",
+    "city": "Marcourt"
+  },
+  {
+    "zip": "6987",
+    "city": "Rendeux"
+  },
+  {
+    "zip": "6990",
+    "city": "Fronville"
+  },
+  {
+    "zip": "6990",
+    "city": "Hampteau"
+  },
+  {
+    "zip": "6990",
+    "city": "Hotton"
+  },
+  {
+    "zip": "6990",
+    "city": "Marenne"
+  },
+  {
+    "zip": "6997",
+    "city": "Amonines"
+  },
+  {
+    "zip": "6997",
+    "city": "Erez\u00e9e"
+  },
+  {
+    "zip": "6997",
+    "city": "Mormont"
+  },
+  {
+    "zip": "6997",
+    "city": "Soy"
+  },
+  {
+    "zip": "7000",
+    "city": "Mons"
+  },
+  {
+    "zip": "7011",
+    "city": "Ghlin"
+  },
+  {
+    "zip": "7012",
+    "city": "Fl\u00e9nu"
+  },
+  {
+    "zip": "7012",
+    "city": "Jemappes"
+  },
+  {
+    "zip": "7020",
+    "city": "Maisi\u00e8res"
+  },
+  {
+    "zip": "7020",
+    "city": "Nimy"
+  },
+  {
+    "zip": "7021",
+    "city": "Havre"
+  },
+  {
+    "zip": "7022",
+    "city": "Harmignies"
+  },
+  {
+    "zip": "7022",
+    "city": "Harveng"
+  },
+  {
+    "zip": "7022",
+    "city": "Hyon"
+  },
+  {
+    "zip": "7022",
+    "city": "Mesvin"
+  },
+  {
+    "zip": "7022",
+    "city": "Nouvelles"
+  },
+  {
+    "zip": "7024",
+    "city": "Ciply"
+  },
+  {
+    "zip": "7030",
+    "city": "Saint-Symphorien"
+  },
+  {
+    "zip": "7031",
+    "city": "Villers-Saint-Ghislain"
+  },
+  {
+    "zip": "7032",
+    "city": "Spiennes"
+  },
+  {
+    "zip": "7033",
+    "city": "Cuesmes"
+  },
+  {
+    "zip": "7034",
+    "city": "Obourg"
+  },
+  {
+    "zip": "7034",
+    "city": "Saint-Denis"
+  },
+  {
+    "zip": "7040",
+    "city": "Asquillies"
+  },
+  {
+    "zip": "7040",
+    "city": "Aulnois"
+  },
+  {
+    "zip": "7040",
+    "city": "Blaregnies"
+  },
+  {
+    "zip": "7040",
+    "city": "Bougnies"
+  },
+  {
+    "zip": "7040",
+    "city": "Genly"
+  },
+  {
+    "zip": "7040",
+    "city": "Goegnies-Chauss\u00e9e"
+  },
+  {
+    "zip": "7040",
+    "city": "Qu\u00e9vy"
+  },
+  {
+    "zip": "7040",
+    "city": "Qu\u00e9vy-Le-Grand"
+  },
+  {
+    "zip": "7040",
+    "city": "Qu\u00e9vy-Le-Petit"
+  },
+  {
+    "zip": "7041",
+    "city": "Givry"
+  },
+  {
+    "zip": "7041",
+    "city": "Havay"
+  },
+  {
+    "zip": "7050",
+    "city": "Erbaut"
+  },
+  {
+    "zip": "7050",
+    "city": "Erbisoeul"
+  },
+  {
+    "zip": "7050",
+    "city": "Herchies"
+  },
+  {
+    "zip": "7050",
+    "city": "Jurbise"
+  },
+  {
+    "zip": "7050",
+    "city": "Masnuy-Saint-Jean"
+  },
+  {
+    "zip": "7050",
+    "city": "Masnuy-Saint-Pierre"
+  },
+  {
+    "zip": "7060",
+    "city": "Horrues"
+  },
+  {
+    "zip": "7060",
+    "city": "Soignies"
+  },
+  {
+    "zip": "7061",
+    "city": "Casteau"
+  },
+  {
+    "zip": "7061",
+    "city": "Thieusies"
+  },
+  {
+    "zip": "7062",
+    "city": "Naast"
+  },
+  {
+    "zip": "7063",
+    "city": "Chauss\u00e9e-Notre-Dame-Louvignies"
+  },
+  {
+    "zip": "7063",
+    "city": "Neufvilles"
+  },
+  {
+    "zip": "7070",
+    "city": "Gottignies"
+  },
+  {
+    "zip": "7070",
+    "city": "Le Roeulx"
+  },
+  {
+    "zip": "7070",
+    "city": "Mignault"
+  },
+  {
+    "zip": "7070",
+    "city": "Thieu"
+  },
+  {
+    "zip": "7070",
+    "city": "Ville-Sur-Haine"
+  },
+  {
+    "zip": "7080",
+    "city": "Eugies"
+  },
+  {
+    "zip": "7080",
+    "city": "Frameries"
+  },
+  {
+    "zip": "7080",
+    "city": "La Bouverie"
+  },
+  {
+    "zip": "7080",
+    "city": "Noirchain"
+  },
+  {
+    "zip": "7080",
+    "city": "Sars-La-Bruy\u00e8re"
+  },
+  {
+    "zip": "7090",
+    "city": "Braine-Le-Comte"
+  },
+  {
+    "zip": "7090",
+    "city": "Hennuy\u00e8res"
+  },
+  {
+    "zip": "7090",
+    "city": "Henripont"
+  },
+  {
+    "zip": "7090",
+    "city": "Petit-Roeulx-Lez-Braine"
+  },
+  {
+    "zip": "7090",
+    "city": "Ronqui\u00e8res"
+  },
+  {
+    "zip": "7090",
+    "city": "Steenkerque"
+  },
+  {
+    "zip": "7100",
+    "city": "Haine-Saint-Paul"
+  },
+  {
+    "zip": "7100",
+    "city": "Haine-Saint-Pierre"
+  },
+  {
+    "zip": "7100",
+    "city": "La Louvi\u00e8re"
+  },
+  {
+    "zip": "7100",
+    "city": "Saint-Vaast"
+  },
+  {
+    "zip": "7100",
+    "city": "Trivi\u00e8res"
+  },
+  {
+    "zip": "7110",
+    "city": "Boussoit"
+  },
+  {
+    "zip": "7110",
+    "city": "Houdeng-Aimeries"
+  },
+  {
+    "zip": "7110",
+    "city": "Houdeng-Goegnies"
+  },
+  {
+    "zip": "7110",
+    "city": "Maurage"
+  },
+  {
+    "zip": "7110",
+    "city": "Str\u00e9py-Bracquegnies"
+  },
+  {
+    "zip": "7120",
+    "city": "Croix-Lez-Rouveroy"
+  },
+  {
+    "zip": "7120",
+    "city": "Estinnes"
+  },
+  {
+    "zip": "7120",
+    "city": "Estinnes-Au-Mont"
+  },
+  {
+    "zip": "7120",
+    "city": "Estinnes-Au-Val"
+  },
+  {
+    "zip": "7120",
+    "city": "Fauroeulx"
+  },
+  {
+    "zip": "7120",
+    "city": "Haulchin"
+  },
+  {
+    "zip": "7120",
+    "city": "Peissant"
+  },
+  {
+    "zip": "7120",
+    "city": "Rouveroy"
+  },
+  {
+    "zip": "7120",
+    "city": "Vellereille-Le-Sec"
+  },
+  {
+    "zip": "7120",
+    "city": "Vellereille-Les-Brayeux"
+  },
+  {
+    "zip": "7130",
+    "city": "Battignies"
+  },
+  {
+    "zip": "7130",
+    "city": "Binche"
+  },
+  {
+    "zip": "7130",
+    "city": "Bray"
+  },
+  {
+    "zip": "7131",
+    "city": "Waudrez"
+  },
+  {
+    "zip": "7133",
+    "city": "Buvrinnes"
+  },
+  {
+    "zip": "7134",
+    "city": "Epinois"
+  },
+  {
+    "zip": "7134",
+    "city": "Leval-Trahegnies"
+  },
+  {
+    "zip": "7134",
+    "city": "P\u00e9ronnes-Lez-Binche"
+  },
+  {
+    "zip": "7134",
+    "city": "Ressaix"
+  },
+  {
+    "zip": "7140",
+    "city": "Morlanwelz"
+  },
+  {
+    "zip": "7140",
+    "city": "Morlanwelz-Mariemont"
+  },
+  {
+    "zip": "7141",
+    "city": "Carni\u00e8res"
+  },
+  {
+    "zip": "7141",
+    "city": "Mont-Sainte-Aldegonde"
+  },
+  {
+    "zip": "7160",
+    "city": "Chapelle-Lez-Herlaimont"
+  },
+  {
+    "zip": "7160",
+    "city": "Godarville"
+  },
+  {
+    "zip": "7160",
+    "city": "Pi\u00e9ton"
+  },
+  {
+    "zip": "7170",
+    "city": "Bellecourt"
+  },
+  {
+    "zip": "7170",
+    "city": "Bois-D'haine"
+  },
+  {
+    "zip": "7170",
+    "city": "Fayt-Lez-Manage"
+  },
+  {
+    "zip": "7170",
+    "city": "La Hestre"
+  },
+  {
+    "zip": "7170",
+    "city": "Manage"
+  },
+  {
+    "zip": "7180",
+    "city": "Seneffe"
+  },
+  {
+    "zip": "7181",
+    "city": "Arquennes"
+  },
+  {
+    "zip": "7181",
+    "city": "Familleureux"
+  },
+  {
+    "zip": "7181",
+    "city": "Feluy"
+  },
+  {
+    "zip": "7181",
+    "city": "Petit-Roeulx-Lez-Nivelles"
+  },
+  {
+    "zip": "7190",
+    "city": "Ecaussinnes"
+  },
+  {
+    "zip": "7190",
+    "city": "Ecaussinnes-D'enghien"
+  },
+  {
+    "zip": "7190",
+    "city": "Marche-Lez-Ecaussinnes"
+  },
+  {
+    "zip": "7191",
+    "city": "Ecaussinnes-Lalaing"
+  },
+  {
+    "zip": "7300",
+    "city": "Boussu"
+  },
+  {
+    "zip": "7301",
+    "city": "Hornu"
+  },
+  {
+    "zip": "7320",
+    "city": "Bernissart"
+  },
+  {
+    "zip": "7321",
+    "city": "Blaton"
+  },
+  {
+    "zip": "7321",
+    "city": "Harchies"
+  },
+  {
+    "zip": "7322",
+    "city": "Pommeroeul"
+  },
+  {
+    "zip": "7322",
+    "city": "Ville-Pommeroeul"
+  },
+  {
+    "zip": "7330",
+    "city": "Saint-Ghislain"
+  },
+  {
+    "zip": "7331",
+    "city": "Baudour"
+  },
+  {
+    "zip": "7332",
+    "city": "Neufmaison"
+  },
+  {
+    "zip": "7332",
+    "city": "Sirault"
+  },
+  {
+    "zip": "7333",
+    "city": "Tertre"
+  },
+  {
+    "zip": "7334",
+    "city": "Hautrage"
+  },
+  {
+    "zip": "7334",
+    "city": "Villerot"
+  },
+  {
+    "zip": "7340",
+    "city": "Colfontaine"
+  },
+  {
+    "zip": "7340",
+    "city": "Paturages"
+  },
+  {
+    "zip": "7340",
+    "city": "Warquignies"
+  },
+  {
+    "zip": "7340",
+    "city": "Wasmes"
+  },
+  {
+    "zip": "7350",
+    "city": "Hainin"
+  },
+  {
+    "zip": "7350",
+    "city": "Hensies"
+  },
+  {
+    "zip": "7350",
+    "city": "Montroeul-Sur-Haine"
+  },
+  {
+    "zip": "7350",
+    "city": "Thulin"
+  },
+  {
+    "zip": "7370",
+    "city": "Blaugies"
+  },
+  {
+    "zip": "7370",
+    "city": "Dour"
+  },
+  {
+    "zip": "7370",
+    "city": "Elouges"
+  },
+  {
+    "zip": "7370",
+    "city": "Wih\u00e9ries"
+  },
+  {
+    "zip": "7380",
+    "city": "Baisieux"
+  },
+  {
+    "zip": "7380",
+    "city": "Qui\u00e9vrain"
+  },
+  {
+    "zip": "7382",
+    "city": "Audregnies"
+  },
+  {
+    "zip": "7387",
+    "city": "Angre"
+  },
+  {
+    "zip": "7387",
+    "city": "Angreau"
+  },
+  {
+    "zip": "7387",
+    "city": "Athis"
+  },
+  {
+    "zip": "7387",
+    "city": "Autreppe"
+  },
+  {
+    "zip": "7387",
+    "city": "Erquennes"
+  },
+  {
+    "zip": "7387",
+    "city": "Fayt-Le-Franc"
+  },
+  {
+    "zip": "7387",
+    "city": "Honnelles"
+  },
+  {
+    "zip": "7387",
+    "city": "Marchipont"
+  },
+  {
+    "zip": "7387",
+    "city": "Montignies-Sur-Roc"
+  },
+  {
+    "zip": "7387",
+    "city": "Onnezies"
+  },
+  {
+    "zip": "7387",
+    "city": "Roisin"
+  },
+  {
+    "zip": "7390",
+    "city": "Quaregnon"
+  },
+  {
+    "zip": "7390",
+    "city": "Wasmuel"
+  },
+  {
+    "zip": "7500",
+    "city": "Ere"
+  },
+  {
+    "zip": "7500",
+    "city": "Saint-Maur"
+  },
+  {
+    "zip": "7500",
+    "city": "Tournai"
+  },
+  {
+    "zip": "7501",
+    "city": "Orcq"
+  },
+  {
+    "zip": "7502",
+    "city": "Esplechin"
+  },
+  {
+    "zip": "7503",
+    "city": "Froyennes"
+  },
+  {
+    "zip": "7504",
+    "city": "Froidmont"
+  },
+  {
+    "zip": "7506",
+    "city": "Willemeau"
+  },
+  {
+    "zip": "7520",
+    "city": "Ramegnies-Chin"
+  },
+  {
+    "zip": "7520",
+    "city": "Templeuve"
+  },
+  {
+    "zip": "7521",
+    "city": "Chercq"
+  },
+  {
+    "zip": "7522",
+    "city": "Blandain"
+  },
+  {
+    "zip": "7522",
+    "city": "Hertain"
+  },
+  {
+    "zip": "7522",
+    "city": "Lamain"
+  },
+  {
+    "zip": "7522",
+    "city": "Marquain"
+  },
+  {
+    "zip": "7530",
+    "city": "Gaurain-Ramecroix"
+  },
+  {
+    "zip": "7531",
+    "city": "Havinnes"
+  },
+  {
+    "zip": "7532",
+    "city": "Beclers"
+  },
+  {
+    "zip": "7533",
+    "city": "Thimougies"
+  },
+  {
+    "zip": "7534",
+    "city": "Barry"
+  },
+  {
+    "zip": "7534",
+    "city": "Maulde"
+  },
+  {
+    "zip": "7536",
+    "city": "Vaulx"
+  },
+  {
+    "zip": "7538",
+    "city": "Vezon"
+  },
+  {
+    "zip": "7540",
+    "city": "Kain"
+  },
+  {
+    "zip": "7540",
+    "city": "Melles"
+  },
+  {
+    "zip": "7540",
+    "city": "Quartes"
+  },
+  {
+    "zip": "7540",
+    "city": "Rumillies"
+  },
+  {
+    "zip": "7542",
+    "city": "Mont-Saint-Aubert"
+  },
+  {
+    "zip": "7543",
+    "city": "Mourcourt"
+  },
+  {
+    "zip": "7548",
+    "city": "Warchin"
+  },
+  {
+    "zip": "7600",
+    "city": "P\u00e9ruwelz"
+  },
+  {
+    "zip": "7601",
+    "city": "Roucourt"
+  },
+  {
+    "zip": "7602",
+    "city": "Bury"
+  },
+  {
+    "zip": "7603",
+    "city": "Bon-Secours"
+  },
+  {
+    "zip": "7604",
+    "city": "Baugnies"
+  },
+  {
+    "zip": "7604",
+    "city": "Braffe"
+  },
+  {
+    "zip": "7604",
+    "city": "Brasmenil"
+  },
+  {
+    "zip": "7604",
+    "city": "Callenelle"
+  },
+  {
+    "zip": "7604",
+    "city": "Wasmes-Audemez-Briffoeil"
+  },
+  {
+    "zip": "7608",
+    "city": "Wiers"
+  },
+  {
+    "zip": "7610",
+    "city": "Rumes"
+  },
+  {
+    "zip": "7611",
+    "city": "La Glanerie"
+  },
+  {
+    "zip": "7618",
+    "city": "Taintignies"
+  },
+  {
+    "zip": "7620",
+    "city": "Bl\u00e9haries"
+  },
+  {
+    "zip": "7620",
+    "city": "Brunehaut"
+  },
+  {
+    "zip": "7620",
+    "city": "Guignies"
+  },
+  {
+    "zip": "7620",
+    "city": "Hollain"
+  },
+  {
+    "zip": "7620",
+    "city": "Jollain-Merlin"
+  },
+  {
+    "zip": "7620",
+    "city": "Wez-Velvain"
+  },
+  {
+    "zip": "7621",
+    "city": "Lesdain"
+  },
+  {
+    "zip": "7622",
+    "city": "Laplaigne"
+  },
+  {
+    "zip": "7623",
+    "city": "Rongy"
+  },
+  {
+    "zip": "7624",
+    "city": "Howardries"
+  },
+  {
+    "zip": "7640",
+    "city": "Antoing"
+  },
+  {
+    "zip": "7640",
+    "city": "Maubray"
+  },
+  {
+    "zip": "7640",
+    "city": "P\u00e9ronnes-Lez-Antoing"
+  },
+  {
+    "zip": "7641",
+    "city": "Bruyelle"
+  },
+  {
+    "zip": "7642",
+    "city": "Calonne"
+  },
+  {
+    "zip": "7643",
+    "city": "Fontenoy"
+  },
+  {
+    "zip": "7700",
+    "city": "Luingne"
+  },
+  {
+    "zip": "7700",
+    "city": "Mouscron"
+  },
+  {
+    "zip": "7711",
+    "city": "Dottignies"
+  },
+  {
+    "zip": "7712",
+    "city": "Herseaux"
+  },
+  {
+    "zip": "7730",
+    "city": "Bailleul"
+  },
+  {
+    "zip": "7730",
+    "city": "Estaimbourg"
+  },
+  {
+    "zip": "7730",
+    "city": "Estaimpuis"
+  },
+  {
+    "zip": "7730",
+    "city": "Evregnies"
+  },
+  {
+    "zip": "7730",
+    "city": "Leers-Nord"
+  },
+  {
+    "zip": "7730",
+    "city": "N\u00e9chin"
+  },
+  {
+    "zip": "7730",
+    "city": "Saint-L\u00e9ger"
+  },
+  {
+    "zip": "7740",
+    "city": "Pecq"
+  },
+  {
+    "zip": "7740",
+    "city": "Warcoing"
+  },
+  {
+    "zip": "7742",
+    "city": "H\u00e9rinnes-Lez-Pecq"
+  },
+  {
+    "zip": "7743",
+    "city": "Esquelmes"
+  },
+  {
+    "zip": "7743",
+    "city": "Obigies"
+  },
+  {
+    "zip": "7750",
+    "city": "Amougies"
+  },
+  {
+    "zip": "7750",
+    "city": "Anseroeul"
+  },
+  {
+    "zip": "7750",
+    "city": "Mont-De-L'enclus"
+  },
+  {
+    "zip": "7750",
+    "city": "Orroir"
+  },
+  {
+    "zip": "7750",
+    "city": "Russeignies"
+  },
+  {
+    "zip": "7760",
+    "city": "Celles"
+  },
+  {
+    "zip": "7760",
+    "city": "Escanaffles"
+  },
+  {
+    "zip": "7760",
+    "city": "Molenbaix"
+  },
+  {
+    "zip": "7760",
+    "city": "Popuelles"
+  },
+  {
+    "zip": "7760",
+    "city": "Pottes"
+  },
+  {
+    "zip": "7760",
+    "city": "Velaines"
+  },
+  {
+    "zip": "7780",
+    "city": "Comines"
+  },
+  {
+    "zip": "7780",
+    "city": "Comines-Warneton"
+  },
+  {
+    "zip": "7781",
+    "city": "Houthem"
+  },
+  {
+    "zip": "7782",
+    "city": "Ploegsteert"
+  },
+  {
+    "zip": "7783",
+    "city": "Bizet"
+  },
+  {
+    "zip": "7784",
+    "city": "Bas-Warneton"
+  },
+  {
+    "zip": "7784",
+    "city": "Warneton"
+  },
+  {
+    "zip": "7800",
+    "city": "Ath"
+  },
+  {
+    "zip": "7800",
+    "city": "Lanquesaint"
+  },
+  {
+    "zip": "7801",
+    "city": "Irchonwelz"
+  },
+  {
+    "zip": "7802",
+    "city": "Ormeignies"
+  },
+  {
+    "zip": "7803",
+    "city": "Bouvignies"
+  },
+  {
+    "zip": "7804",
+    "city": "Ostiches"
+  },
+  {
+    "zip": "7804",
+    "city": "Rebaix"
+  },
+  {
+    "zip": "7810",
+    "city": "Maffle"
+  },
+  {
+    "zip": "7811",
+    "city": "Arbre"
+  },
+  {
+    "zip": "7812",
+    "city": "Houtaing"
+  },
+  {
+    "zip": "7812",
+    "city": "Ligne"
+  },
+  {
+    "zip": "7812",
+    "city": "Mainvault"
+  },
+  {
+    "zip": "7812",
+    "city": "Moulbaix"
+  },
+  {
+    "zip": "7812",
+    "city": "Villers-Notre-Dame"
+  },
+  {
+    "zip": "7812",
+    "city": "Villers-Saint-Amand"
+  },
+  {
+    "zip": "7822",
+    "city": "Ghislenghien"
+  },
+  {
+    "zip": "7822",
+    "city": "Isi\u00e8res"
+  },
+  {
+    "zip": "7822",
+    "city": "Meslin-L'ev\u00eaque"
+  },
+  {
+    "zip": "7823",
+    "city": "Gibecq"
+  },
+  {
+    "zip": "7830",
+    "city": "Bassilly"
+  },
+  {
+    "zip": "7830",
+    "city": "Fouleng"
+  },
+  {
+    "zip": "7830",
+    "city": "Gondregnies"
+  },
+  {
+    "zip": "7830",
+    "city": "Graty"
+  },
+  {
+    "zip": "7830",
+    "city": "Hellebecq"
+  },
+  {
+    "zip": "7830",
+    "city": "Hoves"
+  },
+  {
+    "zip": "7830",
+    "city": "Silly"
+  },
+  {
+    "zip": "7830",
+    "city": "Thoricourt"
+  },
+  {
+    "zip": "7850",
+    "city": "Enghien"
+  },
+  {
+    "zip": "7850",
+    "city": "Marcq"
+  },
+  {
+    "zip": "7850",
+    "city": "Petit-Enghien"
+  },
+  {
+    "zip": "7860",
+    "city": "Lessines"
+  },
+  {
+    "zip": "7861",
+    "city": "Papignies"
+  },
+  {
+    "zip": "7861",
+    "city": "Wannebecq"
+  },
+  {
+    "zip": "7862",
+    "city": "Ogy"
+  },
+  {
+    "zip": "7863",
+    "city": "Ghoy"
+  },
+  {
+    "zip": "7864",
+    "city": "Deux-Acren"
+  },
+  {
+    "zip": "7866",
+    "city": "Bois-De-Lessines"
+  },
+  {
+    "zip": "7866",
+    "city": "Ollignies"
+  },
+  {
+    "zip": "7870",
+    "city": "Bauffe"
+  },
+  {
+    "zip": "7870",
+    "city": "Cambron-Saint-Vincent"
+  },
+  {
+    "zip": "7870",
+    "city": "Lens"
+  },
+  {
+    "zip": "7870",
+    "city": "Lombise"
+  },
+  {
+    "zip": "7870",
+    "city": "Montignies-Lez-Lens"
+  },
+  {
+    "zip": "7880",
+    "city": "Flobecq"
+  },
+  {
+    "zip": "7890",
+    "city": "Ellezelles"
+  },
+  {
+    "zip": "7890",
+    "city": "Lahamaide"
+  },
+  {
+    "zip": "7890",
+    "city": "Wodecq"
+  },
+  {
+    "zip": "7900",
+    "city": "Grandmetz"
+  },
+  {
+    "zip": "7900",
+    "city": "Leuze-En-Hainaut"
+  },
+  {
+    "zip": "7901",
+    "city": "Thieulain"
+  },
+  {
+    "zip": "7903",
+    "city": "Blicquy"
+  },
+  {
+    "zip": "7903",
+    "city": "Chapelle-\u00c0-Oie"
+  },
+  {
+    "zip": "7903",
+    "city": "Chapelle-\u00c0-Wattines"
+  },
+  {
+    "zip": "7904",
+    "city": "Pipaix"
+  },
+  {
+    "zip": "7904",
+    "city": "Tourpes"
+  },
+  {
+    "zip": "7904",
+    "city": "Willaupuis"
+  },
+  {
+    "zip": "7906",
+    "city": "Gallaix"
+  },
+  {
+    "zip": "7910",
+    "city": "Anvaing"
+  },
+  {
+    "zip": "7910",
+    "city": "Arc-Wattripont"
+  },
+  {
+    "zip": "7910",
+    "city": "Cordes"
+  },
+  {
+    "zip": "7910",
+    "city": "Ellignies-Lez-Frasnes"
+  },
+  {
+    "zip": "7910",
+    "city": "Forest"
+  },
+  {
+    "zip": "7910",
+    "city": "Frasnes-Lez-Anvaing"
+  },
+  {
+    "zip": "7910",
+    "city": "Wattripont"
+  },
+  {
+    "zip": "7911",
+    "city": "Buissenal"
+  },
+  {
+    "zip": "7911",
+    "city": "Frasnes-Lez-Buissenal"
+  },
+  {
+    "zip": "7911",
+    "city": "Hacquegnies"
+  },
+  {
+    "zip": "7911",
+    "city": "Herquegies"
+  },
+  {
+    "zip": "7911",
+    "city": "Montroeul-Au-Bois"
+  },
+  {
+    "zip": "7911",
+    "city": "Moustier"
+  },
+  {
+    "zip": "7911",
+    "city": "Oeudeghien"
+  },
+  {
+    "zip": "7912",
+    "city": "Dergneau"
+  },
+  {
+    "zip": "7912",
+    "city": "Saint-Sauveur"
+  },
+  {
+    "zip": "7940",
+    "city": "Brugelette"
+  },
+  {
+    "zip": "7940",
+    "city": "Cambron-Casteau"
+  },
+  {
+    "zip": "7941",
+    "city": "Attre"
+  },
+  {
+    "zip": "7942",
+    "city": "M\u00e9vergnies-Lez-Lens"
+  },
+  {
+    "zip": "7943",
+    "city": "Gages"
+  },
+  {
+    "zip": "7950",
+    "city": "Chi\u00e8vres"
+  },
+  {
+    "zip": "7950",
+    "city": "Grosage"
+  },
+  {
+    "zip": "7950",
+    "city": "Huissignies"
+  },
+  {
+    "zip": "7950",
+    "city": "Ladeuze"
+  },
+  {
+    "zip": "7950",
+    "city": "Tongre-Saint-Martin"
+  },
+  {
+    "zip": "7951",
+    "city": "Tongre-Notre-Dame"
+  },
+  {
+    "zip": "7970",
+    "city": "Beloeil"
+  },
+  {
+    "zip": "7971",
+    "city": "Bas\u00e8cles"
+  },
+  {
+    "zip": "7971",
+    "city": "Ramegnies"
+  },
+  {
+    "zip": "7971",
+    "city": "Thumaide"
+  },
+  {
+    "zip": "7971",
+    "city": "Wadelincourt"
+  },
+  {
+    "zip": "7972",
+    "city": "Aubechies"
+  },
+  {
+    "zip": "7972",
+    "city": "Quevaucamps"
+  },
+  {
+    "zip": "7973",
+    "city": "Grandglise"
+  },
+  {
+    "zip": "7973",
+    "city": "Stambruges"
+  },
+  {
+    "zip": "8000",
+    "city": "Brugge"
+  },
+  {
+    "zip": "8000",
+    "city": "Koolkerke"
+  },
+  {
+    "zip": "8020",
+    "city": "Hertsberge"
+  },
+  {
+    "zip": "8020",
+    "city": "Oostkamp"
+  },
+  {
+    "zip": "8020",
+    "city": "Ruddervoorde"
+  },
+  {
+    "zip": "8020",
+    "city": "Waardamme"
+  },
+  {
+    "zip": "8200",
+    "city": "Sint-Andries"
+  },
+  {
+    "zip": "8200",
+    "city": "Sint-Michiels"
+  },
+  {
+    "zip": "8210",
+    "city": "Loppem"
+  },
+  {
+    "zip": "8210",
+    "city": "Veldegem"
+  },
+  {
+    "zip": "8210",
+    "city": "Zedelgem"
+  },
+  {
+    "zip": "8211",
+    "city": "Aartrijke"
+  },
+  {
+    "zip": "8300",
+    "city": "Knokke"
+  },
+  {
+    "zip": "8300",
+    "city": "Knokke-Heist"
+  },
+  {
+    "zip": "8300",
+    "city": "Westkapelle"
+  },
+  {
+    "zip": "8301",
+    "city": "Ramskapelle"
+  },
+  {
+    "zip": "8310",
+    "city": "Assebroek"
+  },
+  {
+    "zip": "8310",
+    "city": "Sint-Kruis"
+  },
+  {
+    "zip": "8340",
+    "city": "Damme"
+  },
+  {
+    "zip": "8340",
+    "city": "Hoeke"
+  },
+  {
+    "zip": "8340",
+    "city": "Lapscheure"
+  },
+  {
+    "zip": "8340",
+    "city": "Moerkerke"
+  },
+  {
+    "zip": "8340",
+    "city": "Oostkerke"
+  },
+  {
+    "zip": "8340",
+    "city": "Sijsele"
+  },
+  {
+    "zip": "8370",
+    "city": "Blankenberge"
+  },
+  {
+    "zip": "8370",
+    "city": "Uitkerke"
+  },
+  {
+    "zip": "8377",
+    "city": "Houtave"
+  },
+  {
+    "zip": "8377",
+    "city": "Meetkerke"
+  },
+  {
+    "zip": "8377",
+    "city": "Nieuwmunster"
+  },
+  {
+    "zip": "8377",
+    "city": "Zuienkerke"
+  },
+  {
+    "zip": "8380",
+    "city": "Dudzele"
+  },
+  {
+    "zip": "8380",
+    "city": "Lissewege"
+  },
+  {
+    "zip": "8380",
+    "city": "Zeebrugge"
+  },
+  {
+    "zip": "8400",
+    "city": "Oostende"
+  },
+  {
+    "zip": "8400",
+    "city": "Stene"
+  },
+  {
+    "zip": "8400",
+    "city": "Zandvoorde"
+  },
+  {
+    "zip": "8420",
+    "city": "De Haan"
+  },
+  {
+    "zip": "8420",
+    "city": "Klemskerke"
+  },
+  {
+    "zip": "8420",
+    "city": "Wenduine"
+  },
+  {
+    "zip": "8421",
+    "city": "Vlissegem"
+  },
+  {
+    "zip": "8430",
+    "city": "Middelkerke"
+  },
+  {
+    "zip": "8431",
+    "city": "Wilskerke"
+  },
+  {
+    "zip": "8432",
+    "city": "Leffinge"
+  },
+  {
+    "zip": "8433",
+    "city": "Mannekensvere"
+  },
+  {
+    "zip": "8433",
+    "city": "Schore"
+  },
+  {
+    "zip": "8433",
+    "city": "Sint-Pieters-Kapelle"
+  },
+  {
+    "zip": "8433",
+    "city": "Slijpe"
+  },
+  {
+    "zip": "8434",
+    "city": "Lombardsijde"
+  },
+  {
+    "zip": "8434",
+    "city": "Westende"
+  },
+  {
+    "zip": "8450",
+    "city": "Bredene"
+  },
+  {
+    "zip": "8460",
+    "city": "Ettelgem"
+  },
+  {
+    "zip": "8460",
+    "city": "Oudenburg"
+  },
+  {
+    "zip": "8460",
+    "city": "Roksem"
+  },
+  {
+    "zip": "8460",
+    "city": "Westkerke"
+  },
+  {
+    "zip": "8470",
+    "city": "Gistel"
+  },
+  {
+    "zip": "8470",
+    "city": "Moere"
+  },
+  {
+    "zip": "8470",
+    "city": "Snaaskerke"
+  },
+  {
+    "zip": "8470",
+    "city": "Zevekote"
+  },
+  {
+    "zip": "8480",
+    "city": "Bekegem"
+  },
+  {
+    "zip": "8480",
+    "city": "Eernegem"
+  },
+  {
+    "zip": "8480",
+    "city": "Ichtegem"
+  },
+  {
+    "zip": "8490",
+    "city": "Jabbeke"
+  },
+  {
+    "zip": "8490",
+    "city": "Snellegem"
+  },
+  {
+    "zip": "8490",
+    "city": "Stalhille"
+  },
+  {
+    "zip": "8490",
+    "city": "Varsenare"
+  },
+  {
+    "zip": "8490",
+    "city": "Zerkegem"
+  },
+  {
+    "zip": "8500",
+    "city": "Kortrijk"
+  },
+  {
+    "zip": "8501",
+    "city": "Bissegem"
+  },
+  {
+    "zip": "8501",
+    "city": "Heule"
+  },
+  {
+    "zip": "8510",
+    "city": "Bellegem"
+  },
+  {
+    "zip": "8510",
+    "city": "Kooigem"
+  },
+  {
+    "zip": "8510",
+    "city": "Marke"
+  },
+  {
+    "zip": "8510",
+    "city": "Rollegem"
+  },
+  {
+    "zip": "8511",
+    "city": "Aalbeke"
+  },
+  {
+    "zip": "8520",
+    "city": "Kuurne"
+  },
+  {
+    "zip": "8530",
+    "city": "Harelbeke"
+  },
+  {
+    "zip": "8531",
+    "city": "Bavikhove"
+  },
+  {
+    "zip": "8531",
+    "city": "Hulste"
+  },
+  {
+    "zip": "8540",
+    "city": "Deerlijk"
+  },
+  {
+    "zip": "8550",
+    "city": "Zwevegem"
+  },
+  {
+    "zip": "8551",
+    "city": "Heestert"
+  },
+  {
+    "zip": "8552",
+    "city": "Moen"
+  },
+  {
+    "zip": "8553",
+    "city": "Otegem"
+  },
+  {
+    "zip": "8554",
+    "city": "Sint-Denijs"
+  },
+  {
+    "zip": "8560",
+    "city": "Gullegem"
+  },
+  {
+    "zip": "8560",
+    "city": "Moorsele"
+  },
+  {
+    "zip": "8560",
+    "city": "Wevelgem"
+  },
+  {
+    "zip": "8570",
+    "city": "Anzegem"
+  },
+  {
+    "zip": "8570",
+    "city": "Gijzelbrechtegem"
+  },
+  {
+    "zip": "8570",
+    "city": "Ingooigem"
+  },
+  {
+    "zip": "8570",
+    "city": "Vichte"
+  },
+  {
+    "zip": "8572",
+    "city": "Kaster"
+  },
+  {
+    "zip": "8573",
+    "city": "Tiegem"
+  },
+  {
+    "zip": "8580",
+    "city": "Avelgem"
+  },
+  {
+    "zip": "8581",
+    "city": "Kerkhove"
+  },
+  {
+    "zip": "8581",
+    "city": "Waarmaarde"
+  },
+  {
+    "zip": "8582",
+    "city": "Outrijve"
+  },
+  {
+    "zip": "8583",
+    "city": "Bossuit"
+  },
+  {
+    "zip": "8587",
+    "city": "Espierres"
+  },
+  {
+    "zip": "8587",
+    "city": "Espierres-Helchin"
+  },
+  {
+    "zip": "8587",
+    "city": "Helchin"
+  },
+  {
+    "zip": "8600",
+    "city": "Beerst"
+  },
+  {
+    "zip": "8600",
+    "city": "Diksmuide"
+  },
+  {
+    "zip": "8600",
+    "city": "Driekapellen"
+  },
+  {
+    "zip": "8600",
+    "city": "Esen"
+  },
+  {
+    "zip": "8600",
+    "city": "Kaaskerke"
+  },
+  {
+    "zip": "8600",
+    "city": "Keiem"
+  },
+  {
+    "zip": "8600",
+    "city": "Lampernisse"
+  },
+  {
+    "zip": "8600",
+    "city": "Leke"
+  },
+  {
+    "zip": "8600",
+    "city": "Nieuwkapelle"
+  },
+  {
+    "zip": "8600",
+    "city": "Oostkerke"
+  },
+  {
+    "zip": "8600",
+    "city": "Oudekapelle"
+  },
+  {
+    "zip": "8600",
+    "city": "Pervijze"
+  },
+  {
+    "zip": "8600",
+    "city": "Stuivekenskerke"
+  },
+  {
+    "zip": "8600",
+    "city": "Vladslo"
+  },
+  {
+    "zip": "8600",
+    "city": "Woumen"
+  },
+  {
+    "zip": "8610",
+    "city": "Handzame"
+  },
+  {
+    "zip": "8610",
+    "city": "Kortemark"
+  },
+  {
+    "zip": "8610",
+    "city": "Werken"
+  },
+  {
+    "zip": "8610",
+    "city": "Zarren"
+  },
+  {
+    "zip": "8620",
+    "city": "Nieuwpoort"
+  },
+  {
+    "zip": "8620",
+    "city": "Ramskapelle"
+  },
+  {
+    "zip": "8620",
+    "city": "Sint-Joris"
+  },
+  {
+    "zip": "8630",
+    "city": "Avekapelle"
+  },
+  {
+    "zip": "8630",
+    "city": "Booitshoeke"
+  },
+  {
+    "zip": "8630",
+    "city": "Bulskamp"
+  },
+  {
+    "zip": "8630",
+    "city": "De Moeren"
+  },
+  {
+    "zip": "8630",
+    "city": "Eggewaartskapelle"
+  },
+  {
+    "zip": "8630",
+    "city": "Houtem"
+  },
+  {
+    "zip": "8630",
+    "city": "Steenkerke"
+  },
+  {
+    "zip": "8630",
+    "city": "Veurne"
+  },
+  {
+    "zip": "8630",
+    "city": "Vinkem"
+  },
+  {
+    "zip": "8630",
+    "city": "Wulveringem"
+  },
+  {
+    "zip": "8630",
+    "city": "Zoutenaaie"
+  },
+  {
+    "zip": "8640",
+    "city": "Oostvleteren"
+  },
+  {
+    "zip": "8640",
+    "city": "Vleteren"
+  },
+  {
+    "zip": "8640",
+    "city": "Westvleteren"
+  },
+  {
+    "zip": "8640",
+    "city": "Woesten"
+  },
+  {
+    "zip": "8647",
+    "city": "Lo"
+  },
+  {
+    "zip": "8647",
+    "city": "Lo-Reninge"
+  },
+  {
+    "zip": "8647",
+    "city": "Noordschote"
+  },
+  {
+    "zip": "8647",
+    "city": "Pollinkhove"
+  },
+  {
+    "zip": "8647",
+    "city": "Reninge"
+  },
+  {
+    "zip": "8650",
+    "city": "Houthulst"
+  },
+  {
+    "zip": "8650",
+    "city": "Klerken"
+  },
+  {
+    "zip": "8650",
+    "city": "Merkem"
+  },
+  {
+    "zip": "8660",
+    "city": "Adinkerke"
+  },
+  {
+    "zip": "8660",
+    "city": "De Panne"
+  },
+  {
+    "zip": "8670",
+    "city": "Koksijde"
+  },
+  {
+    "zip": "8670",
+    "city": "Oostduinkerke"
+  },
+  {
+    "zip": "8670",
+    "city": "Wulpen"
+  },
+  {
+    "zip": "8680",
+    "city": "Bovekerke"
+  },
+  {
+    "zip": "8680",
+    "city": "Koekelare"
+  },
+  {
+    "zip": "8680",
+    "city": "Zande"
+  },
+  {
+    "zip": "8690",
+    "city": "Alveringem"
+  },
+  {
+    "zip": "8690",
+    "city": "Hoogstade"
+  },
+  {
+    "zip": "8690",
+    "city": "Oeren"
+  },
+  {
+    "zip": "8690",
+    "city": "Sint-Rijkers"
+  },
+  {
+    "zip": "8691",
+    "city": "Gijverinkhove"
+  },
+  {
+    "zip": "8691",
+    "city": "Izenberge"
+  },
+  {
+    "zip": "8691",
+    "city": "Leisele"
+  },
+  {
+    "zip": "8691",
+    "city": "Stavele"
+  },
+  {
+    "zip": "8700",
+    "city": "Aarsele"
+  },
+  {
+    "zip": "8700",
+    "city": "Kanegem"
+  },
+  {
+    "zip": "8700",
+    "city": "Schuiferskapelle"
+  },
+  {
+    "zip": "8700",
+    "city": "Tielt"
+  },
+  {
+    "zip": "8710",
+    "city": "Ooigem"
+  },
+  {
+    "zip": "8710",
+    "city": "Sint-Baafs-Vijve"
+  },
+  {
+    "zip": "8710",
+    "city": "Wielsbeke"
+  },
+  {
+    "zip": "8720",
+    "city": "Dentergem"
+  },
+  {
+    "zip": "8720",
+    "city": "Markegem"
+  },
+  {
+    "zip": "8720",
+    "city": "Oeselgem"
+  },
+  {
+    "zip": "8720",
+    "city": "Wakken"
+  },
+  {
+    "zip": "8730",
+    "city": "Beernem"
+  },
+  {
+    "zip": "8730",
+    "city": "Oedelem"
+  },
+  {
+    "zip": "8730",
+    "city": "Sint-Joris"
+  },
+  {
+    "zip": "8740",
+    "city": "Egem"
+  },
+  {
+    "zip": "8740",
+    "city": "Pittem"
+  },
+  {
+    "zip": "8750",
+    "city": "Wingene"
+  },
+  {
+    "zip": "8750",
+    "city": "Zwevezele"
+  },
+  {
+    "zip": "8755",
+    "city": "Ruiselede"
+  },
+  {
+    "zip": "8760",
+    "city": "Meulebeke"
+  },
+  {
+    "zip": "8770",
+    "city": "Ingelmunster"
+  },
+  {
+    "zip": "8780",
+    "city": "Oostrozebeke"
+  },
+  {
+    "zip": "8790",
+    "city": "Waregem"
+  },
+  {
+    "zip": "8791",
+    "city": "Beveren"
+  },
+  {
+    "zip": "8792",
+    "city": "Desselgem"
+  },
+  {
+    "zip": "8793",
+    "city": "Sint-Eloois-Vijve"
+  },
+  {
+    "zip": "8800",
+    "city": "Beveren"
+  },
+  {
+    "zip": "8800",
+    "city": "Oekene"
+  },
+  {
+    "zip": "8800",
+    "city": "Roeselare"
+  },
+  {
+    "zip": "8800",
+    "city": "Rumbeke"
+  },
+  {
+    "zip": "8810",
+    "city": "Lichtervelde"
+  },
+  {
+    "zip": "8820",
+    "city": "Torhout"
+  },
+  {
+    "zip": "8830",
+    "city": "Gits"
+  },
+  {
+    "zip": "8830",
+    "city": "Hooglede"
+  },
+  {
+    "zip": "8840",
+    "city": "Oostnieuwkerke"
+  },
+  {
+    "zip": "8840",
+    "city": "Staden"
+  },
+  {
+    "zip": "8840",
+    "city": "Westrozebeke"
+  },
+  {
+    "zip": "8850",
+    "city": "Ardooie"
+  },
+  {
+    "zip": "8851",
+    "city": "Koolskamp"
+  },
+  {
+    "zip": "8860",
+    "city": "Lendelede"
+  },
+  {
+    "zip": "8870",
+    "city": "Emelgem"
+  },
+  {
+    "zip": "8870",
+    "city": "Izegem"
+  },
+  {
+    "zip": "8870",
+    "city": "Kachtem"
+  },
+  {
+    "zip": "8880",
+    "city": "Ledegem"
+  },
+  {
+    "zip": "8880",
+    "city": "Rollegem-Kapelle"
+  },
+  {
+    "zip": "8880",
+    "city": "Sint-Eloois-Winkel"
+  },
+  {
+    "zip": "8890",
+    "city": "Dadizele"
+  },
+  {
+    "zip": "8890",
+    "city": "Moorslede"
+  },
+  {
+    "zip": "8900",
+    "city": "Brielen"
+  },
+  {
+    "zip": "8900",
+    "city": "Dikkebus"
+  },
+  {
+    "zip": "8900",
+    "city": "Ieper"
+  },
+  {
+    "zip": "8900",
+    "city": "Sint-Jan"
+  },
+  {
+    "zip": "8902",
+    "city": "Hollebeke"
+  },
+  {
+    "zip": "8902",
+    "city": "Voormezele"
+  },
+  {
+    "zip": "8902",
+    "city": "Zillebeke"
+  },
+  {
+    "zip": "8904",
+    "city": "Boezinge"
+  },
+  {
+    "zip": "8904",
+    "city": "Zuidschote"
+  },
+  {
+    "zip": "8906",
+    "city": "Elverdinge"
+  },
+  {
+    "zip": "8908",
+    "city": "Vlamertinge"
+  },
+  {
+    "zip": "8920",
+    "city": "Bikschote"
+  },
+  {
+    "zip": "8920",
+    "city": "Langemark"
+  },
+  {
+    "zip": "8920",
+    "city": "Langemark-Poelkapelle"
+  },
+  {
+    "zip": "8920",
+    "city": "Poelkapelle"
+  },
+  {
+    "zip": "8930",
+    "city": "Lauwe"
+  },
+  {
+    "zip": "8930",
+    "city": "Menen"
+  },
+  {
+    "zip": "8930",
+    "city": "Rekkem"
+  },
+  {
+    "zip": "8940",
+    "city": "Geluwe"
+  },
+  {
+    "zip": "8940",
+    "city": "Wervik"
+  },
+  {
+    "zip": "8950",
+    "city": "Heuvelland"
+  },
+  {
+    "zip": "8950",
+    "city": "Nieuwkerke"
+  },
+  {
+    "zip": "8951",
+    "city": "Dranouter"
+  },
+  {
+    "zip": "8952",
+    "city": "Wulvergem"
+  },
+  {
+    "zip": "8953",
+    "city": "Wijtschate"
+  },
+  {
+    "zip": "8954",
+    "city": "Westouter"
+  },
+  {
+    "zip": "8956",
+    "city": "Kemmel"
+  },
+  {
+    "zip": "8957",
+    "city": "Messines"
+  },
+  {
+    "zip": "8958",
+    "city": "Loker"
+  },
+  {
+    "zip": "8970",
+    "city": "Poperinge"
+  },
+  {
+    "zip": "8970",
+    "city": "Reningelst"
+  },
+  {
+    "zip": "8972",
+    "city": "Krombeke"
+  },
+  {
+    "zip": "8972",
+    "city": "Proven"
+  },
+  {
+    "zip": "8972",
+    "city": "Roesbrugge-Haringe"
+  },
+  {
+    "zip": "8978",
+    "city": "Watou"
+  },
+  {
+    "zip": "8980",
+    "city": "Beselare"
+  },
+  {
+    "zip": "8980",
+    "city": "Geluveld"
+  },
+  {
+    "zip": "8980",
+    "city": "Passendale"
+  },
+  {
+    "zip": "8980",
+    "city": "Zandvoorde"
+  },
+  {
+    "zip": "8980",
+    "city": "Zonnebeke"
+  },
+  {
+    "zip": "9000",
+    "city": "Gent"
+  },
+  {
+    "zip": "9030",
+    "city": "Mariakerke"
+  },
+  {
+    "zip": "9031",
+    "city": "Drongen"
+  },
+  {
+    "zip": "9032",
+    "city": "Wondelgem"
+  },
+  {
+    "zip": "9040",
+    "city": "Sint-Amandsberg"
+  },
+  {
+    "zip": "9041",
+    "city": "Oostakker"
+  },
+  {
+    "zip": "9042",
+    "city": "Desteldonk"
+  },
+  {
+    "zip": "9042",
+    "city": "Mendonk"
+  },
+  {
+    "zip": "9042",
+    "city": "Sint-Kruis-Winkel"
+  },
+  {
+    "zip": "9050",
+    "city": "Gentbrugge"
+  },
+  {
+    "zip": "9050",
+    "city": "Ledeberg"
+  },
+  {
+    "zip": "9051",
+    "city": "Afsnee"
+  },
+  {
+    "zip": "9051",
+    "city": "Sint-Denijs-Westrem"
+  },
+  {
+    "zip": "9052",
+    "city": "Zwijnaarde"
+  },
+  {
+    "zip": "9060",
+    "city": "Zelzate"
+  },
+  {
+    "zip": "9070",
+    "city": "Destelbergen"
+  },
+  {
+    "zip": "9070",
+    "city": "Heusden"
+  },
+  {
+    "zip": "9080",
+    "city": "Beervelde"
+  },
+  {
+    "zip": "9080",
+    "city": "Lochristi"
+  },
+  {
+    "zip": "9080",
+    "city": "Zaffelare"
+  },
+  {
+    "zip": "9080",
+    "city": "Zeveneken"
+  },
+  {
+    "zip": "9090",
+    "city": "Gontrode"
+  },
+  {
+    "zip": "9090",
+    "city": "Melle"
+  },
+  {
+    "zip": "9100",
+    "city": "Nieuwkerken-Waas"
+  },
+  {
+    "zip": "9100",
+    "city": "Sint-Niklaas"
+  },
+  {
+    "zip": "9111",
+    "city": "Belsele"
+  },
+  {
+    "zip": "9112",
+    "city": "Sinaai-Waas"
+  },
+  {
+    "zip": "9120",
+    "city": "Haasdonk"
+  },
+  {
+    "zip": "9120",
+    "city": "Kallo"
+  },
+  {
+    "zip": "9120",
+    "city": "Melsele"
+  },
+  {
+    "zip": "9120",
+    "city": "Vrasene"
+  },
+  {
+    "zip": "9130",
+    "city": "Doel"
+  },
+  {
+    "zip": "9130",
+    "city": "Kallo"
+  },
+  {
+    "zip": "9130",
+    "city": "Kieldrecht"
+  },
+  {
+    "zip": "9130",
+    "city": "Verrebroek"
+  },
+  {
+    "zip": "9140",
+    "city": "Elversele"
+  },
+  {
+    "zip": "9140",
+    "city": "Steendorp"
+  },
+  {
+    "zip": "9140",
+    "city": "Temse"
+  },
+  {
+    "zip": "9140",
+    "city": "Tielrode"
+  },
+  {
+    "zip": "9150",
+    "city": "Bazel"
+  },
+  {
+    "zip": "9150",
+    "city": "Kruibeke"
+  },
+  {
+    "zip": "9150",
+    "city": "Rupelmonde"
+  },
+  {
+    "zip": "9160",
+    "city": "Daknam"
+  },
+  {
+    "zip": "9160",
+    "city": "Eksaarde"
+  },
+  {
+    "zip": "9160",
+    "city": "Lokeren"
+  },
+  {
+    "zip": "9170",
+    "city": "De Klinge"
+  },
+  {
+    "zip": "9170",
+    "city": "Meerdonk"
+  },
+  {
+    "zip": "9170",
+    "city": "Sint-Gillis-Waas"
+  },
+  {
+    "zip": "9170",
+    "city": "Sint-Pauwels"
+  },
+  {
+    "zip": "9180",
+    "city": "Moerbeke-Waas"
+  },
+  {
+    "zip": "9185",
+    "city": "Wachtebeke"
+  },
+  {
+    "zip": "9190",
+    "city": "Kemzeke"
+  },
+  {
+    "zip": "9190",
+    "city": "Stekene"
+  },
+  {
+    "zip": "9200",
+    "city": "Appels"
+  },
+  {
+    "zip": "9200",
+    "city": "Baasrode"
+  },
+  {
+    "zip": "9200",
+    "city": "Dendermonde"
+  },
+  {
+    "zip": "9200",
+    "city": "Grembergen"
+  },
+  {
+    "zip": "9200",
+    "city": "Mespelare"
+  },
+  {
+    "zip": "9200",
+    "city": "Oudegem"
+  },
+  {
+    "zip": "9200",
+    "city": "Schoonaarde"
+  },
+  {
+    "zip": "9200",
+    "city": "Sint-Gillis-Dendermonde"
+  },
+  {
+    "zip": "9220",
+    "city": "Hamme"
+  },
+  {
+    "zip": "9220",
+    "city": "Moerzeke"
+  },
+  {
+    "zip": "9230",
+    "city": "Massemen"
+  },
+  {
+    "zip": "9230",
+    "city": "Westrem"
+  },
+  {
+    "zip": "9230",
+    "city": "Wetteren"
+  },
+  {
+    "zip": "9240",
+    "city": "Zele"
+  },
+  {
+    "zip": "9250",
+    "city": "Waasmunster"
+  },
+  {
+    "zip": "9255",
+    "city": "Buggenhout"
+  },
+  {
+    "zip": "9255",
+    "city": "Opdorp"
+  },
+  {
+    "zip": "9260",
+    "city": "Schellebelle"
+  },
+  {
+    "zip": "9260",
+    "city": "Serskamp"
+  },
+  {
+    "zip": "9260",
+    "city": "Wichelen"
+  },
+  {
+    "zip": "9270",
+    "city": "Kalken"
+  },
+  {
+    "zip": "9270",
+    "city": "Laarne"
+  },
+  {
+    "zip": "9280",
+    "city": "Denderbelle"
+  },
+  {
+    "zip": "9280",
+    "city": "Lebbeke"
+  },
+  {
+    "zip": "9280",
+    "city": "Wieze"
+  },
+  {
+    "zip": "9290",
+    "city": "Berlare"
+  },
+  {
+    "zip": "9290",
+    "city": "Overmere"
+  },
+  {
+    "zip": "9290",
+    "city": "Uitbergen"
+  },
+  {
+    "zip": "9300",
+    "city": "Aalst"
+  },
+  {
+    "zip": "9308",
+    "city": "Gijzegem"
+  },
+  {
+    "zip": "9308",
+    "city": "Hofstade"
+  },
+  {
+    "zip": "9310",
+    "city": "Baardegem"
+  },
+  {
+    "zip": "9310",
+    "city": "Herdersem"
+  },
+  {
+    "zip": "9310",
+    "city": "Meldert"
+  },
+  {
+    "zip": "9310",
+    "city": "Moorsel"
+  },
+  {
+    "zip": "9320",
+    "city": "Erembodegem"
+  },
+  {
+    "zip": "9320",
+    "city": "Nieuwerkerken"
+  },
+  {
+    "zip": "9340",
+    "city": "Impe"
+  },
+  {
+    "zip": "9340",
+    "city": "Lede"
+  },
+  {
+    "zip": "9340",
+    "city": "Oordegem"
+  },
+  {
+    "zip": "9340",
+    "city": "Smetlede"
+  },
+  {
+    "zip": "9340",
+    "city": "Wanzele"
+  },
+  {
+    "zip": "9400",
+    "city": "Appelterre-Eichem"
+  },
+  {
+    "zip": "9400",
+    "city": "Denderwindeke"
+  },
+  {
+    "zip": "9400",
+    "city": "Lieferinge"
+  },
+  {
+    "zip": "9400",
+    "city": "Nederhasselt"
+  },
+  {
+    "zip": "9400",
+    "city": "Ninove"
+  },
+  {
+    "zip": "9400",
+    "city": "Okegem"
+  },
+  {
+    "zip": "9400",
+    "city": "Voorde"
+  },
+  {
+    "zip": "9401",
+    "city": "Pollare"
+  },
+  {
+    "zip": "9402",
+    "city": "Meerbeke"
+  },
+  {
+    "zip": "9403",
+    "city": "Neigem"
+  },
+  {
+    "zip": "9404",
+    "city": "Aspelare"
+  },
+  {
+    "zip": "9406",
+    "city": "Outer"
+  },
+  {
+    "zip": "9420",
+    "city": "Aaigem"
+  },
+  {
+    "zip": "9420",
+    "city": "Bambrugge"
+  },
+  {
+    "zip": "9420",
+    "city": "Burst"
+  },
+  {
+    "zip": "9420",
+    "city": "Erondegem"
+  },
+  {
+    "zip": "9420",
+    "city": "Erpe"
+  },
+  {
+    "zip": "9420",
+    "city": "Erpe-Mere"
+  },
+  {
+    "zip": "9420",
+    "city": "Mere"
+  },
+  {
+    "zip": "9420",
+    "city": "Ottergem"
+  },
+  {
+    "zip": "9450",
+    "city": "Denderhoutem"
+  },
+  {
+    "zip": "9450",
+    "city": "Haaltert"
+  },
+  {
+    "zip": "9450",
+    "city": "Heldergem"
+  },
+  {
+    "zip": "9451",
+    "city": "Kerksken"
+  },
+  {
+    "zip": "9470",
+    "city": "Denderleeuw"
+  },
+  {
+    "zip": "9472",
+    "city": "Iddergem"
+  },
+  {
+    "zip": "9473",
+    "city": "Welle"
+  },
+  {
+    "zip": "9500",
+    "city": "Geraardsbergen"
+  },
+  {
+    "zip": "9500",
+    "city": "Goeferdinge"
+  },
+  {
+    "zip": "9500",
+    "city": "Moerbeke"
+  },
+  {
+    "zip": "9500",
+    "city": "Nederboelare"
+  },
+  {
+    "zip": "9500",
+    "city": "Onkerzele"
+  },
+  {
+    "zip": "9500",
+    "city": "Ophasselt"
+  },
+  {
+    "zip": "9500",
+    "city": "Overboelare"
+  },
+  {
+    "zip": "9500",
+    "city": "Viane"
+  },
+  {
+    "zip": "9500",
+    "city": "Zarlardinge"
+  },
+  {
+    "zip": "9506",
+    "city": "Grimminge"
+  },
+  {
+    "zip": "9506",
+    "city": "Idegem"
+  },
+  {
+    "zip": "9506",
+    "city": "Nieuwenhove"
+  },
+  {
+    "zip": "9506",
+    "city": "Schendelbeke"
+  },
+  {
+    "zip": "9506",
+    "city": "Smeerebbe-Vloerzegem"
+  },
+  {
+    "zip": "9506",
+    "city": "Waarbeke"
+  },
+  {
+    "zip": "9506",
+    "city": "Zandbergen"
+  },
+  {
+    "zip": "9520",
+    "city": "Bavegem"
+  },
+  {
+    "zip": "9520",
+    "city": "Oombergen"
+  },
+  {
+    "zip": "9520",
+    "city": "Sint-Lievens-Houtem"
+  },
+  {
+    "zip": "9520",
+    "city": "Vlierzele"
+  },
+  {
+    "zip": "9520",
+    "city": "Zonnegem"
+  },
+  {
+    "zip": "9521",
+    "city": "Letterhoutem"
+  },
+  {
+    "zip": "9550",
+    "city": "Herzele"
+  },
+  {
+    "zip": "9550",
+    "city": "Hillegem"
+  },
+  {
+    "zip": "9550",
+    "city": "Sint-Antelinks"
+  },
+  {
+    "zip": "9550",
+    "city": "Sint-Lievens-Esse"
+  },
+  {
+    "zip": "9550",
+    "city": "Steenhuize-Wijnhuize"
+  },
+  {
+    "zip": "9550",
+    "city": "Woubrechtegem"
+  },
+  {
+    "zip": "9551",
+    "city": "Ressegem"
+  },
+  {
+    "zip": "9552",
+    "city": "Borsbeke"
+  },
+  {
+    "zip": "9570",
+    "city": "Deftinge"
+  },
+  {
+    "zip": "9570",
+    "city": "Lierde"
+  },
+  {
+    "zip": "9570",
+    "city": "Sint-Maria-Lierde"
+  },
+  {
+    "zip": "9571",
+    "city": "Hemelveerdegem"
+  },
+  {
+    "zip": "9572",
+    "city": "Sint-Martens-Lierde"
+  },
+  {
+    "zip": "9600",
+    "city": "Renaix"
+  },
+  {
+    "zip": "9620",
+    "city": "Elene"
+  },
+  {
+    "zip": "9620",
+    "city": "Erwetegem"
+  },
+  {
+    "zip": "9620",
+    "city": "Godveerdegem"
+  },
+  {
+    "zip": "9620",
+    "city": "Grotenberge"
+  },
+  {
+    "zip": "9620",
+    "city": "Leeuwergem"
+  },
+  {
+    "zip": "9620",
+    "city": "Oombergen"
+  },
+  {
+    "zip": "9620",
+    "city": "Sint-Goriks-Oudenhove"
+  },
+  {
+    "zip": "9620",
+    "city": "Sint-Maria-Oudenhove"
+  },
+  {
+    "zip": "9620",
+    "city": "Strijpen"
+  },
+  {
+    "zip": "9620",
+    "city": "Velzeke-Ruddershove"
+  },
+  {
+    "zip": "9620",
+    "city": "Zottegem"
+  },
+  {
+    "zip": "9630",
+    "city": "Beerlegem"
+  },
+  {
+    "zip": "9630",
+    "city": "Dikkele"
+  },
+  {
+    "zip": "9630",
+    "city": "Hundelgem"
+  },
+  {
+    "zip": "9630",
+    "city": "Meilegem"
+  },
+  {
+    "zip": "9630",
+    "city": "Munkzwalm"
+  },
+  {
+    "zip": "9630",
+    "city": "Paulatem"
+  },
+  {
+    "zip": "9630",
+    "city": "Roborst"
+  },
+  {
+    "zip": "9630",
+    "city": "Rozebeke"
+  },
+  {
+    "zip": "9630",
+    "city": "Sint-Blasius-Boekel"
+  },
+  {
+    "zip": "9630",
+    "city": "Sint-Denijs-Boekel"
+  },
+  {
+    "zip": "9630",
+    "city": "Sint-Maria-Latem"
+  },
+  {
+    "zip": "9630",
+    "city": "Zwalm"
+  },
+  {
+    "zip": "9636",
+    "city": "Nederzwalm-Hermelgem"
+  },
+  {
+    "zip": "9660",
+    "city": "Brakel"
+  },
+  {
+    "zip": "9660",
+    "city": "Elst"
+  },
+  {
+    "zip": "9660",
+    "city": "Everbeek"
+  },
+  {
+    "zip": "9660",
+    "city": "Michelbeke"
+  },
+  {
+    "zip": "9660",
+    "city": "Nederbrakel"
+  },
+  {
+    "zip": "9660",
+    "city": "Opbrakel"
+  },
+  {
+    "zip": "9660",
+    "city": "Sint-Maria-Oudenhove"
+  },
+  {
+    "zip": "9660",
+    "city": "Zegelsem"
+  },
+  {
+    "zip": "9661",
+    "city": "Parike"
+  },
+  {
+    "zip": "9667",
+    "city": "Horebeke"
+  },
+  {
+    "zip": "9667",
+    "city": "Sint-Kornelis-Horebeke"
+  },
+  {
+    "zip": "9667",
+    "city": "Sint-Maria-Horebeke"
+  },
+  {
+    "zip": "9680",
+    "city": "Etikhove"
+  },
+  {
+    "zip": "9680",
+    "city": "Maarke-Kerkem"
+  },
+  {
+    "zip": "9680",
+    "city": "Maarkedal"
+  },
+  {
+    "zip": "9681",
+    "city": "Nukerke"
+  },
+  {
+    "zip": "9688",
+    "city": "Schorisse"
+  },
+  {
+    "zip": "9690",
+    "city": "Berchem"
+  },
+  {
+    "zip": "9690",
+    "city": "Kluisbergen"
+  },
+  {
+    "zip": "9690",
+    "city": "Kwaremont"
+  },
+  {
+    "zip": "9690",
+    "city": "Ruien"
+  },
+  {
+    "zip": "9690",
+    "city": "Zulzeke"
+  },
+  {
+    "zip": "9700",
+    "city": "Bevere"
+  },
+  {
+    "zip": "9700",
+    "city": "Edelare"
+  },
+  {
+    "zip": "9700",
+    "city": "Eine"
+  },
+  {
+    "zip": "9700",
+    "city": "Ename"
+  },
+  {
+    "zip": "9700",
+    "city": "Heurne"
+  },
+  {
+    "zip": "9700",
+    "city": "Leupegem"
+  },
+  {
+    "zip": "9700",
+    "city": "Mater"
+  },
+  {
+    "zip": "9700",
+    "city": "Melden"
+  },
+  {
+    "zip": "9700",
+    "city": "Mullem"
+  },
+  {
+    "zip": "9700",
+    "city": "Nederename"
+  },
+  {
+    "zip": "9700",
+    "city": "Ooike"
+  },
+  {
+    "zip": "9700",
+    "city": "Oudenaarde"
+  },
+  {
+    "zip": "9700",
+    "city": "Volkegem"
+  },
+  {
+    "zip": "9700",
+    "city": "Welden"
+  },
+  {
+    "zip": "9750",
+    "city": "Huise"
+  },
+  {
+    "zip": "9750",
+    "city": "Ouwegem"
+  },
+  {
+    "zip": "9750",
+    "city": "Zingem"
+  },
+  {
+    "zip": "9770",
+    "city": "Kruishoutem"
+  },
+  {
+    "zip": "9771",
+    "city": "Nokere"
+  },
+  {
+    "zip": "9772",
+    "city": "Wannegem-Lede"
+  },
+  {
+    "zip": "9790",
+    "city": "Elsegem"
+  },
+  {
+    "zip": "9790",
+    "city": "Moregem"
+  },
+  {
+    "zip": "9790",
+    "city": "Ooike"
+  },
+  {
+    "zip": "9790",
+    "city": "Petegem-Aan-De-Schelde"
+  },
+  {
+    "zip": "9790",
+    "city": "Wortegem"
+  },
+  {
+    "zip": "9790",
+    "city": "Wortegem-Petegem"
+  },
+  {
+    "zip": "9800",
+    "city": "Astene"
+  },
+  {
+    "zip": "9800",
+    "city": "Bachte-Maria-Leerne"
+  },
+  {
+    "zip": "9800",
+    "city": "Deinze"
+  },
+  {
+    "zip": "9800",
+    "city": "Gottem"
+  },
+  {
+    "zip": "9800",
+    "city": "Grammene"
+  },
+  {
+    "zip": "9800",
+    "city": "Meigem"
+  },
+  {
+    "zip": "9800",
+    "city": "Petegem-Aan-De-Leie"
+  },
+  {
+    "zip": "9800",
+    "city": "Sint-Martens-Leerne"
+  },
+  {
+    "zip": "9800",
+    "city": "Vinkt"
+  },
+  {
+    "zip": "9800",
+    "city": "Wontergem"
+  },
+  {
+    "zip": "9800",
+    "city": "Zeveren"
+  },
+  {
+    "zip": "9810",
+    "city": "Eke"
+  },
+  {
+    "zip": "9810",
+    "city": "Nazareth"
+  },
+  {
+    "zip": "9820",
+    "city": "Bottelare"
+  },
+  {
+    "zip": "9820",
+    "city": "Lemberge"
+  },
+  {
+    "zip": "9820",
+    "city": "Melsen"
+  },
+  {
+    "zip": "9820",
+    "city": "Merelbeke"
+  },
+  {
+    "zip": "9820",
+    "city": "Munte"
+  },
+  {
+    "zip": "9820",
+    "city": "Schelderode"
+  },
+  {
+    "zip": "9830",
+    "city": "Sint-Martens-Latem"
+  },
+  {
+    "zip": "9831",
+    "city": "Deurle"
+  },
+  {
+    "zip": "9840",
+    "city": "De Pinte"
+  },
+  {
+    "zip": "9840",
+    "city": "Zevergem"
+  },
+  {
+    "zip": "9850",
+    "city": "Hansbeke"
+  },
+  {
+    "zip": "9850",
+    "city": "Landegem"
+  },
+  {
+    "zip": "9850",
+    "city": "Merendree"
+  },
+  {
+    "zip": "9850",
+    "city": "Nevele"
+  },
+  {
+    "zip": "9850",
+    "city": "Poesele"
+  },
+  {
+    "zip": "9850",
+    "city": "Vosselare"
+  },
+  {
+    "zip": "9860",
+    "city": "Balegem"
+  },
+  {
+    "zip": "9860",
+    "city": "Gijzenzele"
+  },
+  {
+    "zip": "9860",
+    "city": "Landskouter"
+  },
+  {
+    "zip": "9860",
+    "city": "Moortsele"
+  },
+  {
+    "zip": "9860",
+    "city": "Oosterzele"
+  },
+  {
+    "zip": "9860",
+    "city": "Scheldewindeke"
+  },
+  {
+    "zip": "9870",
+    "city": "Machelen"
+  },
+  {
+    "zip": "9870",
+    "city": "Olsene"
+  },
+  {
+    "zip": "9870",
+    "city": "Zulte"
+  },
+  {
+    "zip": "9880",
+    "city": "Aalter"
+  },
+  {
+    "zip": "9880",
+    "city": "Lotenhulle"
+  },
+  {
+    "zip": "9880",
+    "city": "Poeke"
+  },
+  {
+    "zip": "9881",
+    "city": "Bellem"
+  },
+  {
+    "zip": "9890",
+    "city": "Baaigem"
+  },
+  {
+    "zip": "9890",
+    "city": "Dikkelvenne"
+  },
+  {
+    "zip": "9890",
+    "city": "Gavere"
+  },
+  {
+    "zip": "9890",
+    "city": "Vurste"
+  },
+  {
+    "zip": "9900",
+    "city": "Eeklo"
+  },
+  {
+    "zip": "9910",
+    "city": "Knesselare"
+  },
+  {
+    "zip": "9910",
+    "city": "Ursel"
+  },
+  {
+    "zip": "9920",
+    "city": "Lovendegem"
+  },
+  {
+    "zip": "9921",
+    "city": "Vinderhoute"
+  },
+  {
+    "zip": "9930",
+    "city": "Zomergem"
+  },
+  {
+    "zip": "9931",
+    "city": "Oostwinkel"
+  },
+  {
+    "zip": "9932",
+    "city": "Ronsele"
+  },
+  {
+    "zip": "9940",
+    "city": "Ertvelde"
+  },
+  {
+    "zip": "9940",
+    "city": "Evergem"
+  },
+  {
+    "zip": "9940",
+    "city": "Kluizen"
+  },
+  {
+    "zip": "9940",
+    "city": "Sleidinge"
+  },
+  {
+    "zip": "9950",
+    "city": "Waarschoot"
+  },
+  {
+    "zip": "9960",
+    "city": "Assenede"
+  },
+  {
+    "zip": "9961",
+    "city": "Boekhoute"
+  },
+  {
+    "zip": "9968",
+    "city": "Bassevelde"
+  },
+  {
+    "zip": "9968",
+    "city": "Oosteeklo"
+  },
+  {
+    "zip": "9970",
+    "city": "Kaprijke"
+  },
+  {
+    "zip": "9971",
+    "city": "Lembeke"
+  },
+  {
+    "zip": "9980",
+    "city": "Sint-Laureins"
+  },
+  {
+    "zip": "9981",
+    "city": "Sint-Margriete"
+  },
+  {
+    "zip": "9982",
+    "city": "Sint-Jan-In-Eremo"
+  },
+  {
+    "zip": "9988",
+    "city": "Waterland-Oudeman"
+  },
+  {
+    "zip": "9988",
+    "city": "Watervliet"
+  },
+  {
+    "zip": "9990",
+    "city": "Maldegem"
+  },
+  {
+    "zip": "9991",
+    "city": "Adegem"
+  },
+  {
+    "zip": "9992",
+    "city": "Middelburg"
+  }
+]

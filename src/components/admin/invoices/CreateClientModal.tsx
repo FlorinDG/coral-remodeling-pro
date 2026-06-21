@@ -1,7 +1,9 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useState } from 'react';
 import { X, Search, Loader2, Building2 } from 'lucide-react';
+import postcodesData from '@/lib/belgian-postcodes.json';
 
 interface CreateClientModalProps {
     isOpen: boolean;
@@ -28,6 +30,8 @@ export default function CreateClientModal({ isOpen, onClose, onCreated, createPa
     const [form, setForm] = useState<Record<string, string>>({ country: 'België' });
     const [isSearching, setIsSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
+    const [suggestions, setSuggestions] = useState<{ zip: string; city: string }[]>([]);
+    const [activeInput, setActiveInput] = useState<'postal' | 'city' | null>(null);
 
     if (!isOpen) return null;
 
@@ -116,15 +120,71 @@ export default function CreateClientModal({ isOpen, onClose, onCreated, createPa
                 {/* Fields */}
                 <div className="px-6 py-3 grid grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto">
                     {FIELD_DEFS.map(f => (
-                        <div key={f.id} className={f.id === 'notes' || f.id === 'title' ? 'col-span-2' : ''}>
+                        <div key={f.id} className={`relative ${f.id === 'notes' || f.id === 'title' ? 'col-span-2' : ''}`}>
                             <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-0.5 block">{f.label}</label>
                             <input
                                 type={f.type}
                                 value={form[f.id] || ''}
-                                onChange={(e) => update(f.id, e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    update(f.id, val);
+                                    if (f.id === 'postal') {
+                                        setActiveInput('postal');
+                                        if (val.trim()) {
+                                            const matches = (postcodesData as { zip: string; city: string }[])
+                                                .filter(p => p.zip.startsWith(val.trim()))
+                                                .slice(0, 8);
+                                            setSuggestions(matches);
+                                        } else {
+                                            setSuggestions([]);
+                                        }
+                                    } else if (f.id === 'city') {
+                                        setActiveInput('city');
+                                        if (val.trim().length >= 2) {
+                                            const term = val.toLowerCase().trim();
+                                            const matches = (postcodesData as { zip: string; city: string }[])
+                                                .filter(p => p.city.toLowerCase().includes(term))
+                                                .slice(0, 8);
+                                            setSuggestions(matches);
+                                        } else {
+                                            setSuggestions([]);
+                                        }
+                                    }
+                                }}
+                                onFocus={() => {
+                                    if (f.id === 'postal' || f.id === 'city') {
+                                        setActiveInput(f.id as 'postal' | 'city');
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (f.id === 'postal' || f.id === 'city') {
+                                        setSuggestions([]);
+                                        setActiveInput(null);
+                                    }
+                                }}
                                 placeholder={f.placeholder}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-900 dark:text-white placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
                             />
+                            {(f.id === 'postal' || f.id === 'city') && activeInput === f.id && suggestions.length > 0 && (
+                                <div className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg shadow-xl divide-y divide-neutral-100 dark:divide-white/5">
+                                    {suggestions.map((s, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onMouseDown={(e) => {
+                                                // Prevent blur on input before click registers
+                                                e.preventDefault();
+                                                setForm(prev => ({ ...prev, postal: s.zip, city: s.city }));
+                                                setSuggestions([]);
+                                                setActiveInput(null);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 font-semibold transition-colors"
+                                        >
+                                            {s.zip} {s.city}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

@@ -462,7 +462,15 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        e.stopPropagation(); // (2) stop propagation
+        e.stopPropagation(); // Stop React synthetic propagation
+        e.nativeEvent.stopPropagation(); // Stop native keydown bubbling to window/document (DSG listeners)
+        
+        if (e.key === 'Escape') {
+            onClose();
+            e.preventDefault();
+            return;
+        }
+
         if (e.key === 'Tab' && modalRef.current) {
             const focusable = modalRef.current.querySelectorAll<HTMLElement>(
                 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'

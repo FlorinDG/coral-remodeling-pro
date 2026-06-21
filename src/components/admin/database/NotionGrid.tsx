@@ -797,7 +797,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 {isReady ? (
                     <div 
                         className={`w-full h-full flex flex-col pt-9 relative ${activePageId ? 'pointer-events-none' : ''}`}
-                        {...(activePageId ? { inert: "" } as any : {})}
+                        inert={activePageId ? true : undefined}
                     >
                         {/* Custom Floating Header context to override native grid pointer events */}
                         <div

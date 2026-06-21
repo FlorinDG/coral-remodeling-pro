@@ -1128,7 +1128,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     <div className="flex flex-col w-full h-full min-w-0 min-h-0 bg-transparent relative">
       <div 
         className={`flex-1 min-w-0 min-h-0 w-full h-full relative ${projectIdParam || openParam ? 'pointer-events-none' : ''}`}
-        {...(projectIdParam || openParam ? { inert: "" } as any : {})}
+        inert={projectIdParam || openParam ? true : undefined}
       >
         {activeView.type === 'table' && <NotionGridDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} lockedSchema={isLockedSchemaDB && !isUngated && !hasDatabases} preventDelete={databaseId === 'db-invoices' || databaseId.startsWith('db-invoices-') ? (row: Record<string, unknown>) => { const s = String((row?.properties as Record<string, unknown>)?.status || row?.status || 'opt-draft'); return s !== 'opt-draft'; } : undefined} hideFooterNew={!!hideFooterNew} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} />}
         {activeView.type === 'board' && <KanbanViewDynamic databaseId={database.id} viewId={activeView.id} renderTabs={headerTabs} hardFilter={defaultFilter} onOpenRecord={onOpenRecord} onOpenEditor={handleOpenEditor} />}

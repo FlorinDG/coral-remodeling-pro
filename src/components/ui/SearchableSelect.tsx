@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, ChevronDown, X } from 'lucide-react';
 
 interface Option {
@@ -34,13 +35,50 @@ export default function SearchableSelect({
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const [pos, setPos] = useState<{ top: number; left: number; minWidth: number; placement: 'bottom' | 'top' } | null>(null);
+
+    // Calculate position and handle responsive resize/scroll repositioning
+    useLayoutEffect(() => {
+        if (isOpen && containerRef.current) {
+            const updatePosition = () => {
+                if (!containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const left = Math.max(10, Math.min(rect.left, window.innerWidth - 220));
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const placement = spaceBelow < 250 && rect.top > spaceBelow ? 'top' : 'bottom';
+                setPos({
+                    top: placement === 'top' ? rect.top - 4 : rect.bottom + 4,
+                    left,
+                    minWidth: Math.max(rect.width, 200),
+                    placement
+                });
+            };
+
+            updatePosition();
+
+            window.addEventListener('resize', updatePosition);
+            window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
+
+            return () => {
+                window.removeEventListener('resize', updatePosition);
+                window.removeEventListener('scroll', updatePosition, { capture: true });
+            };
+        } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPos(null);
+        }
+    }, [isOpen]);
 
     // Close on outside click
     useEffect(() => {
         if (!isOpen) return;
         const handleClick = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            if (
+                containerRef.current && !containerRef.current.contains(e.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+            ) {
                 setIsOpen(false);
                 setSearch('');
             }
@@ -97,8 +135,15 @@ export default function SearchableSelect({
             </button>
 
             {/* Dropdown */}
-            {isOpen && (
-                <div className="absolute z-[100] mt-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5">
+            {isOpen && pos && typeof document !== 'undefined' && createPortal(
+                <div
+                    ref={dropdownRef}
+                    className="fixed z-[99999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5"
+                    style={pos.placement === 'top'
+                        ? { bottom: window.innerHeight - pos.top, left: pos.left, minWidth: pos.minWidth }
+                        : { top: pos.top, left: pos.left, minWidth: pos.minWidth }
+                    }
+                >
                     {/* Search input */}
                     {options.length > 5 && (
                         <div className="p-2 border-b border-neutral-100 dark:border-white/5">
@@ -141,7 +186,8 @@ export default function SearchableSelect({
                             ))
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -1535,7 +1535,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 <div className={`sticky ${isMobileRoute ? 'bottom-16 md:bottom-0' : 'bottom-0'} z-30 border-t border-neutral-200 dark:border-white/10 bg-white/95 dark:bg-black/95 backdrop-blur-xl px-4 py-3 shrink-0`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 max-w-[1400px] mx-auto w-full">
                         {/* Primary action buttons */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-full overflow-hidden">
                             <button
                                 onClick={handleSendEmailClick}
                                 disabled={isSending || !clientId}

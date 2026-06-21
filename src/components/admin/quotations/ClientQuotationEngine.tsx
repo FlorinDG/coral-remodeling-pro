@@ -1094,11 +1094,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 <div className={`sticky ${isMobileRoute ? 'bottom-16 md:bottom-0' : 'bottom-0'} z-30 border-t border-neutral-200 dark:border-white/10 bg-white/95 dark:bg-black/95 backdrop-blur-xl px-4 py-3 shrink-0`}>
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 max-w-[1400px] mx-auto w-full">
                         {/* Primary action buttons */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-full overflow-hidden">
                             <button
                                 onClick={handleSendEmailClick}
                                 disabled={isSending || !clientId}
-                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] w-full sm:w-auto shrink-0 whitespace-nowrap"
+                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap overflow-hidden text-ellipsis"
                                 style={{
                                     backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
                                     borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
@@ -1188,7 +1188,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     }
                                 }}
                                 disabled={isDownloading}
-                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap"
+                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap overflow-hidden text-ellipsis"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
                                 <FileText className="w-3.5 h-3.5" />
@@ -1200,7 +1200,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             {/* Dropdown for other actions */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <button className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 active:scale-[0.97] cursor-pointer w-full sm:w-auto shrink-0 whitespace-nowrap">
+                                    <button className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 active:scale-[0.97] cursor-pointer w-full sm:w-auto shrink-0 whitespace-nowrap overflow-hidden text-ellipsis">
                                         <MoreHorizontal className="w-4 h-4 text-neutral-500" />
                                         <span>Meer acties</span>
                                     </button>

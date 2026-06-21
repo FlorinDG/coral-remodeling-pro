@@ -626,7 +626,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         <select
                             value={block.unit || 'stuk'}
                             onChange={(e) => onUpdate({ unit: e.target.value })}
-                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
                             style={{ textAlign: 'right', textAlignLast: 'right' }}
                         >
                             <option value="u">u</option>
@@ -737,9 +737,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 5.5. Unit Price (P.U. HT) — Selling price per unit before quantity */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Unit Price driven by subcomponents' : 'Selling price per unit (exclusive of VAT)'}>
+                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
                         <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">P.U. HT</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                        <div className="relative w-24 md:w-full flex justify-end items-center">
+                            <span className="absolute left-0 top-[3px] text-xs font-semibold text-neutral-400 pointer-events-none select-none">€</span>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -762,9 +763,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                     }
                                 }}
                                 readOnly={childrenTotal !== undefined}
-                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 pr-1 pl-4 py-0.5 cursor-text w-full disabled:cursor-not-allowed"
                             />
-                            <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                         </div>
                     </div>
 
@@ -788,7 +788,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             <select
                                 value={block.vatRate ?? 21}
                                 onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
-                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
                                 style={{ textAlign: 'right', textAlignLast: 'right' }}
                             >
                                 <option value={21}>21%</option>

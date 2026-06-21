@@ -422,7 +422,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                     setQtyText('');
                                 }
                             }}
-                            className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 pr-1 w-24 md:w-full"
                         />
                     </div>
 
@@ -432,7 +432,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         <select
                             value={block.unit || 'stuk'}
                             onChange={(e) => onUpdate({ unit: e.target.value })}
-                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
                             style={{ textAlign: 'right', textAlignLast: 'right' }}
                         >
                             <option value="u">u</option>
@@ -451,7 +451,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     {/* 4. Unit Price excl. VAT (EENHEIDSPRIJS) */}
                     <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
                         <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Prijs</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                        <div className="relative w-24 md:w-full flex justify-end items-center">
+                            <span className="absolute left-0 top-[3px] text-xs font-semibold text-neutral-400 pointer-events-none select-none">€</span>
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -496,7 +497,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                         onUpdate({ vatRate: parseFloat(val), vatMedecontractant: false });
                                     }
                                 }}
-                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
                                 style={{ textAlign: 'right', textAlignLast: 'right' }}
                             >
                                 <option value={21}>21%</option>
@@ -510,7 +511,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                     {/* 6. Total excl. VAT = Qty × Unit Price */}
                     <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[110px] shrink-0 self-start mt-0.5 relative py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Totaal</label>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right md:pr-4 cursor-default">Totaal</label>
                         <div className="w-24 md:w-full flex justify-end items-center pr-1 py-0.5">
                             <span className={`font-medium text-lg tracking-tight tabular-nums ${
                                 (() => {

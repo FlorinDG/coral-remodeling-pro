@@ -83,6 +83,9 @@ body {
   font-family: var(--font-oxanium), sans-serif;
   user-select: text !important;
   -webkit-user-select: text !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* Content font — legible IBM Plex Sans for data-heavy areas */
@@ -133,4 +136,16 @@ input, textarea, select, table, td, th,
 .overflow-x-auto,
 .dsg-container {
   overscroll-behavior-x: contain;
+}
+
+/* Prevent subpixel antialiasing shifts, blurry text, and 1px jumps on hover transitions */
+.transition-all,
+[class*="transition-"],
+[class*="hover:scale-"],
+[class*="active:scale-"],
+button,
+a,
+.glass-morphism {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }

@@ -1070,13 +1070,15 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                 {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
                 {showProperties && (
-                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">
+                    <aside className="w-80 lg:w-96 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden flex flex-col">
                         <div className="flex-1 overflow-y-auto">
                             <ErrorBoundary componentName="DbPropertiesPanel">
                                 <DbPropertiesPanel
                                     databaseId={quotationsDbId}
                                     pageId={id}
                                     title={ti18n('engine_record_properties', locale)}
+                                    liveProperties={quotation?.properties}
+                                    onChange={(propId, newVal) => handleUpdateProperty(propId, newVal)}
                                 />
                             </ErrorBoundary>
                         </div>

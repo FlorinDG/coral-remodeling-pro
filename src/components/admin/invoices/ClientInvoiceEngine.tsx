@@ -1518,12 +1518,14 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
                 {/* DB Properties Panel — shows all record fields including Excel-imported ones */}
                 {showProperties && (
-                    <aside className="w-72 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
+                    <aside className="w-80 lg:w-96 flex-shrink-0 border-l border-neutral-200 dark:border-white/10 overflow-hidden">
                         <ErrorBoundary componentName="DbPropertiesPanel">
                             <DbPropertiesPanel
                                 databaseId={invoicesDbId}
                                 pageId={id}
                                 title="Record Properties"
+                                liveProperties={invoice?.properties}
+                                onChange={(propId, newVal) => handleUpdateProperty(propId, newVal)}
                             />
                         </ErrorBoundary>
                     </aside>

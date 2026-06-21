@@ -692,9 +692,19 @@ interface DbPropertiesPanelProps {
     skipIds?: string[];
     title?: string;
     readOnly?: boolean;
+    liveProperties?: Record<string, any>;
+    onChange?: (propId: string, newVal: any) => void;
 }
 
-export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], title = 'Properties', readOnly = false }: DbPropertiesPanelProps) {
+export default function DbPropertiesPanel({ 
+    databaseId, 
+    pageId, 
+    skipIds = [], 
+    title = 'Properties', 
+    readOnly = false,
+    liveProperties,
+    onChange
+}: DbPropertiesPanelProps) {
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
 
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
@@ -715,8 +725,14 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
     const editable  = properties.filter(p => !READ_ONLY_TYPES.has(p.type));
     const computed  = properties.filter(p =>  READ_ONLY_TYPES.has(p.type));
 
+    const pageProperties = liveProperties || page.properties || {};
+
     const handleChange = (propId: string, newVal: PropertyValue) => {
-        updatePageProperty(databaseId, pageId, propId, newVal);
+        if (onChange) {
+            onChange(propId, newVal);
+        } else {
+            updatePageProperty(databaseId, pageId, propId, newVal);
+        }
     };
 
     const toggle = (section: string) => {
@@ -755,7 +771,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         props={editable} 
                         collapsed={collapsed} 
                         onToggle={toggle} 
-                        pageProperties={page.properties || {}} 
+                        pageProperties={pageProperties} 
                         onChange={handleChange} 
                         forceReadOnly={readOnly}
                         allPropertyDefs={properties}
@@ -766,7 +782,7 @@ export default function DbPropertiesPanel({ databaseId, pageId, skipIds = [], ti
                         props={computed} 
                         collapsed={collapsed} 
                         onToggle={toggle} 
-                        pageProperties={page.properties || {}} 
+                        pageProperties={pageProperties} 
                         onChange={handleChange} 
                         forceReadOnly={readOnly}
                         allPropertyDefs={properties}

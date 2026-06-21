@@ -1,11 +1,13 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element */
+
 import React, { useState, useMemo, useRef } from 'react';
 import { useDatabaseStore } from '../store';
 import { SelectOption, Page, Property } from '../types';
 import {
     DndContext, closestCenter, DragOverlay, DragStartEvent, DragEndEvent,
-    useSensor, useSensors, PointerSensor, KeyboardSensor,
+    useSensor, useSensors, PointerSensor, TouchSensor, KeyboardSensor,
     UniqueIdentifier,
     DragOverEvent,
     useDroppable,
@@ -284,7 +286,7 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
         }
     };
 
-    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: 'pan-x pan-y' };
+    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: isDragging ? 'none' : 'pan-x pan-y' };
     const title = String(page.properties['title'] || 'Untitled');
 
     // Card Cover
@@ -418,7 +420,7 @@ function SortableColumn({
         data: { type: 'column', column: col }
     });
 
-    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, touchAction: 'pan-x pan-y' };
+    const style: React.CSSProperties = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, touchAction: isDragging ? 'none' : 'pan-x pan-y' };
     const c = getColor(col.color);
     const isOverLimit = col.wipLimit && col.pages.length > col.wipLimit;
 
@@ -444,7 +446,7 @@ function SortableColumn({
 
     return (
         <div ref={setNodeRef} style={style} className="flex flex-col h-full min-w-[300px] max-w-[300px] shrink-0 group">
-            <div className="flex items-center gap-2 mb-3 px-1" {...attributes} {...listeners}>
+            <div className="flex items-center gap-2 mb-3 px-1" style={{ touchAction: 'none' }} {...attributes} {...listeners}>
                 <button onClick={(e) => { e.stopPropagation(); toggleCollapse(col.id); }} className="p-0.5 text-neutral-400 hover:text-neutral-600 transition-colors"><ChevronDown className="w-3.5 h-3.5" /></button>
                 <div className={cn("px-2.5 py-0.5 rounded-md text-xs font-semibold", c.header, c.text)}>{col.name}</div>
                 <span className={cn("text-xs font-medium", isOverLimit ? 'text-red-500' : 'text-neutral-400')}>
@@ -523,6 +525,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
         useSensor(KeyboardSensor)
     );
 
@@ -546,8 +549,8 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
         }
         return [];
     }, [isValidGroup, groupProperty, getDatabase]);
-    const collapsedCols = view?.config?.kanbanCollapsedColumns || [];
-    const wipLimits = view?.config?.kanbanWipLimits || {};
+    const collapsedCols = useMemo(() => view?.config?.kanbanCollapsedColumns || [], [view?.config?.kanbanCollapsedColumns]);
+    const wipLimits = useMemo(() => view?.config?.kanbanWipLimits || {}, [view?.config?.kanbanWipLimits]);
     const coverPropId = view?.config?.kanbanCardCoverPropertyId;
     const coverProp = database?.properties.find(p => p.id === coverPropId);
 
@@ -565,7 +568,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
             cols.push({ id: 'no-status', name: 'No Status', color: 'gray', pages: unassigned, isCollapsed: collapsedCols.includes('no-status') });
         }
         return cols;
-    }, [filteredPages, options, groupProperty?.id, isValidGroup, collapsedCols, wipLimits]);
+    }, [filteredPages, options, database, groupProperty, isValidGroup, collapsedCols, wipLimits]);
 
     const priorityProp = useMemo(() => database?.properties.find(p => p.name.toLowerCase().includes('priority') || p.name.toLowerCase().includes('prioriteit')), [database?.properties]);
     const dateProp = useMemo(() => database?.properties.find(p => p.type === 'date'), [database?.properties]);
@@ -779,7 +782,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
                             >
                                 <DropdownMenuRadioItem value="none" className="text-xs italic text-neutral-400">None</DropdownMenuRadioItem>
                                 {database.properties
-                                    .filter(p => p.type === 'url' || p.type === 'text' || (p.type as any) === 'files')
+                                    .filter(p => p.type === 'url' || p.type === 'text' || (p.type as string) === 'files')
                                     .map(p => (
                                         <DropdownMenuRadioItem key={p.id} value={p.id} className="text-xs">
                                             {p.name}

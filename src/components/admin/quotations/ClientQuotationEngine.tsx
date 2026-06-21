@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye, MoreHorizontal } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';
@@ -47,6 +48,8 @@ interface TenantProfile {
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const isMobileRoute = pathname.includes('/m/');
     const { activeModules, planType, resolveDbId, tenant } = useTenant();
     const hasProjects  = activeModules.includes('PROJECTS');
     // Library access: PRO+ feature (article search, save-to-library, PDF library import)
@@ -717,7 +720,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     return (
         <ErrorBoundary componentName="QuotationEngine">
-            <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
+            <div className="flex flex-col w-full min-h-screen md:h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
                 {/* Row 1: Back + Title + Actions */}
@@ -729,14 +732,16 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
-                    <Link
-                        href="/admin/quotations"
-                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
-                        title="Naar Offertes database"
-                    >
-                        <Database className="w-4 h-4" />
-                        <span className="hidden sm:inline">Database</span>
-                    </Link>
+                    {!isMobileRoute && (
+                        <Link
+                            href="/admin/quotations"
+                            className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
+                            title="Naar Offertes database"
+                        >
+                            <Database className="w-4 h-4" />
+                            <span className="hidden sm:inline">Database</span>
+                        </Link>
+                    )}
                     <div className="flex flex-col min-w-0 flex-1">
                         <input
                             type="text"
@@ -957,9 +962,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             )}
 
             {/* Main Canvas + optional Properties Panel */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-visible md:overflow-hidden">
                 {/* Canvas */}
-                <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
+                <div className="flex-1 overflow-y-visible md:overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
                     <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                         {/* Mathematical Blocks */}
@@ -1067,262 +1072,233 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 )}
             </div>
 
-            {/* ── Sticky Bottom Action Bar ── */}
+                 {/* ── Sticky Bottom Action Bar ── */}
             {isHydrated && (
-                <div className="sticky bottom-0 z-30 border-t border-neutral-200 dark:border-white/10 bg-white/80 dark:bg-black/80 backdrop-blur-xl px-4 py-2.5 shrink-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {/* Handover — only when accepted */}
-                        {(() => {
-                            const db = getDatabase(quotationsDbId);
-                            const statusProp = db?.properties.find(p => p.id === 'status');
-                            const acceptedOpt = statusProp?.config?.options?.[2]?.id;
-                            const currentStatus = String(quotation?.properties?.['status'] || '');
-                            const isAccepted = currentStatus === 'ACCEPTED' || currentStatus === 'opt-accepted' || (acceptedOpt && currentStatus === acceptedOpt);
-                            return hasProjects && isAccepted ? (
-                                <button
-                                    onClick={handleHandover}
-                                    className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                        color: 'var(--brand-color, #d35400)',
-                                    }}
-                                >
-                                    <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
-                                </button>
-                            ) : null;
-                        })()}
-
-                        {/* Convert to Invoice — only when accepted */}
-                        {(() => {
-                            const currentStatus = String(quotation?.properties?.['status'] || '');
-                            const isAccepted = currentStatus === 'opt-accepted';
-                            return isAccepted ? (
-                                <button
-                                    onClick={handleConvertToInvoice}
-                                    className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, #16a34a 10%, white)',
-                                        borderColor: 'color-mix(in srgb, #16a34a 25%, transparent)',
-                                        color: '#16a34a',
-                                    }}
-                                >
-                                    <Receipt className="w-3.5 h-3.5" /> Factureren
-                                </button>
-                            ) : null;
-                        })()}
-
-                        {/* Create Vorderingstaat — only when a project is linked */}
-                        {projectId && project && (
+                <div className={`sticky ${isMobileRoute ? 'bottom-16 md:bottom-0' : 'bottom-0'} z-30 border-t border-neutral-200 dark:border-white/10 bg-white/95 dark:bg-black/95 backdrop-blur-xl px-4 py-3 shrink-0`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 max-w-[1400px] mx-auto w-full">
+                        {/* Primary action buttons */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
                             <button
-                                onClick={() => setIsVorderingModalOpen(true)}
-                                className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
-                                style={{
-                                    backgroundColor: 'color-mix(in srgb, #6366f1 10%, white)',
-                                    borderColor: 'color-mix(in srgb, #6366f1 25%, transparent)',
-                                    color: '#6366f1',
-                                }}
-                                id="create-vorderingstaat-btn"
-                            >
-                                <ClipboardCheck className="w-3.5 h-3.5" /> Create Vorderingstaat
-                            </button>
-                        )}
-
-                        {/* Addendum */}
-                        <button
-                            onClick={handleCreateAddendum}
-                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
-                            style={{
-                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                color: 'var(--brand-color, #d35400)',
-                            }}
-                        >
-                            <FilePlus2 className="w-3.5 h-3.5" /> {ti18n('engine_create_addendum', locale)}
-                        </button>
-
-                        {/* Send */}
-                        <button
-                            onClick={handleSendEmailClick}
-                            disabled={isSending || !clientId}
-                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
-                            style={{
-                                backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                            }}
-                        >
-                            <Mail className="w-3.5 h-3.5" /> {isSending ? ti18n('engine_sending', locale) : ti18n('engine_send', locale)}
-                        </button>
-
-                        {/* Drive */}
-                        {hasProjects && (
-                            <button
-                                onClick={handleSaveToDrive}
-                                disabled={isSavingToDrive || !clientId}
-                                className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border disabled:opacity-40 disabled:cursor-not-allowed"
+                                onClick={handleSendEmailClick}
+                                disabled={isSending || !clientId}
+                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] w-full sm:w-auto shrink-0 whitespace-nowrap"
                                 style={{
                                     backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
                                     borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
                                     color: clientId ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
-                                <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? ti18n('engine_saving', locale) : ti18n('engine_drive', locale)}
+                                <Mail className="w-3.5 h-3.5" /> {isSending ? ti18n('engine_sending', locale) : ti18n('engine_send', locale)}
                             </button>
-                        )}
 
-                        {/* AI PDF Import */}
-                        <button
-                            onClick={() => setIsImportModalOpen(true)}
-                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border"
-                            style={{
-                                backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 6%, white)',
-                                borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)',
-                                color: 'var(--brand-color, #d35400)',
-                            }}
-                        >
-                            <Bot className="w-3.5 h-3.5" /> {ti18n('engine_ai_import', locale)}
-                        </button>
+                            <button
+                                onClick={async () => {
+                                    if (isPreviewing) return;
+                                    setIsPreviewing(true);
+                                    try {
+                                        const doc = (
+                                            <QuotationPDFTemplate
+                                                blocks={blocks}
+                                                quotationTitle={String(quotationTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenant}
+                                                templateId={tenant?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                                showSubcomponents={false}
+                                                vatCalcMode={vatCalcMode}
+                                                vatRegime={vatRegime}
+                                                billingRule={billingRule}
+                                                paymentTerms={paymentTerms}
+                                            />
+                                        );
+                                        const blob = await generatePdfBlob(doc, tenant);
+                                        const url = URL.createObjectURL(blob);
+                                        window.open(url, '_blank');
+                                    } catch (e) {
+                                        console.error('[PDF] preview failed:', e);
+                                        toast.error('PDF preview mislukt.');
+                                    } finally {
+                                        setIsPreviewing(false);
+                                    }
+                                }}
+                                disabled={isPreviewing}
+                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-white/5 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap"
+                            >
+                                <Eye className="w-3.5 h-3.5" />
+                                {isPreviewing ? ti18n('engine_generating', locale) : (locale === 'fr' ? 'Aperçu PDF' : locale === 'en' ? 'Preview PDF' : 'Voorbeeld PDF')}
+                            </button>
 
-                        <div className="flex-1" />
+                            <button
+                                onClick={async () => {
+                                    if (isDownloading) return;
+                                    setIsDownloading(true);
+                                    try {
+                                        const doc = (
+                                            <QuotationPDFTemplate
+                                                blocks={blocks}
+                                                quotationTitle={String(quotationTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={buildClientInfo()}
+                                                projectId={String(projectId)}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={useDatabaseStore.getState()}
+                                                tenantProfile={tenant}
+                                                templateId={tenant?.documentTemplate || 't1'}
+                                                language={docLanguage}
+                                                showSubcomponents={false}
+                                                vatCalcMode={vatCalcMode}
+                                                vatRegime={vatRegime}
+                                                billingRule={billingRule}
+                                                paymentTerms={paymentTerms}
+                                            />
+                                        );
+                                        const blob = await generatePdfBlob(doc, tenant);
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Offerte_${quotationTitle || 'Draft'}.pdf`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                    } catch (e) {
+                                        console.error('[PDF] export failed:', e);
+                                        toast.error('PDF genereren mislukt.');
+                                    } finally {
+                                        setIsDownloading(false);
+                                    }
+                                }}
+                                disabled={isDownloading}
+                                className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap"
+                                style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
+                            >
+                                <FileText className="w-3.5 h-3.5" />
+                                {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
+                            </button>
 
-                        {/* Detailed Offerte — secondary action */}
-                        <button
-                            onClick={async () => {
-                                if (isDownloading) return;
-                                setIsDownloading(true);
-                                try {
-                                    const doc = (
-                                        <QuotationPDFTemplate
-                                            blocks={blocks}
-                                            quotationTitle={String(quotationTitle)}
-                                            betreft={String(betreft)}
-                                            clientInfo={buildClientInfo()}
-                                            projectId={String(projectId)}
-                                            grandTotal={grandTotal}
-                                            databaseStoreState={useDatabaseStore.getState()}
-                                            tenantProfile={tenant}
-                                            templateId={tenant?.documentTemplate || 't1'}
-                                            language={docLanguage}
-                                            showSubcomponents={true}
-                                            vatCalcMode={vatCalcMode}
-                                            vatRegime={vatRegime}
-                                            billingRule={billingRule}
-                                            paymentTerms={paymentTerms}
-                                        />
-                                    );
-                                    const blob = await generatePdfBlob(doc, tenant);
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `Offerte_Detail_${quotationTitle || 'Draft'}.pdf`;
-                                    a.click();
-                                    setTimeout(() => URL.revokeObjectURL(url), 10000);
-                                } catch (e) {
-                                    console.error('[PDF] detailed export failed:', e);
-                                    toast.error('PDF genereren mislukt.');
-                                } finally {
-                                    setIsDownloading(false);
-                                }
-                            }}
-                            disabled={isDownloading}
-                            className="text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border hover:bg-neutral-50 dark:hover:bg-white/5 disabled:opacity-60"
-                            style={{ 
-                                borderColor: 'var(--brand-color, #d35400)',
-                                color: 'var(--brand-color, #d35400)',
-                            }}
-                        >
-                            <FileText className="w-3.5 h-3.5" />
-                            {ti18n('engine_export_detailed', locale)}
-                        </button>
- 
-                        <button
-                            onClick={async () => {
-                                if (isPreviewing) return;
-                                setIsPreviewing(true);
-                                try {
-                                    const doc = (
-                                        <QuotationPDFTemplate
-                                            blocks={blocks}
-                                            quotationTitle={String(quotationTitle)}
-                                            betreft={String(betreft)}
-                                            clientInfo={buildClientInfo()}
-                                            projectId={String(projectId)}
-                                            grandTotal={grandTotal}
-                                            databaseStoreState={useDatabaseStore.getState()}
-                                            tenantProfile={tenant}
-                                            templateId={tenant?.documentTemplate || 't1'}
-                                            language={docLanguage}
-                                            showSubcomponents={false}
-                                            vatCalcMode={vatCalcMode}
-                                            vatRegime={vatRegime}
-                                            billingRule={billingRule}
-                                            paymentTerms={paymentTerms}
-                                        />
-                                    );
-                                    const blob = await generatePdfBlob(doc, tenant);
-                                    const url = URL.createObjectURL(blob);
-                                    window.open(url, '_blank');
-                                } catch (e) {
-                                    console.error('[PDF] preview failed:', e);
-                                    toast.error('PDF preview mislukt.');
-                                } finally {
-                                    setIsPreviewing(false);
-                                }
-                            }}
-                            disabled={isPreviewing}
-                            className="text-xs font-semibold px-5 py-2.5 rounded-lg transition-all flex items-center gap-1.5 border dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-white/5 disabled:opacity-60"
-                        >
-                            <Eye className="w-3.5 h-3.5" />
-                            {isPreviewing ? ti18n('engine_generating', locale) : (locale === 'fr' ? 'Aperçu PDF' : locale === 'en' ? 'Preview PDF' : 'Voorbeeld PDF')}
-                        </button>
+                            <div className="hidden sm:block flex-1" />
 
-                        {/* Export PDF — primary action */}
-                        <button
-                            onClick={async () => {
-                                if (isDownloading) return;
-                                setIsDownloading(true);
-                                try {
-                                    const doc = (
-                                        <QuotationPDFTemplate
-                                            blocks={blocks}
-                                            quotationTitle={String(quotationTitle)}
-                                            betreft={String(betreft)}
-                                            clientInfo={buildClientInfo()}
-                                            projectId={String(projectId)}
-                                            grandTotal={grandTotal}
-                                            databaseStoreState={useDatabaseStore.getState()}
-                                            tenantProfile={tenant}
-                                            templateId={tenant?.documentTemplate || 't1'}
-                                            language={docLanguage}
-                                            showSubcomponents={false}
-                                            vatCalcMode={vatCalcMode}
-                                            vatRegime={vatRegime}
-                                            billingRule={billingRule}
-                                            paymentTerms={paymentTerms}
-                                        />
-                                    );
-                                    const blob = await generatePdfBlob(doc, tenant);
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `Offerte_${quotationTitle || 'Draft'}.pdf`;
-                                    a.click();
-                                    setTimeout(() => URL.revokeObjectURL(url), 10000);
-                                } catch (e) {
-                                    console.error('[PDF] export failed:', e);
-                                    toast.error('PDF genereren mislukt.');
-                                } finally {
-                                    setIsDownloading(false);
-                                }
-                            }}
-                            disabled={isDownloading}
-                            className="text-xs font-semibold px-5 py-2.5 rounded-lg transition-all flex items-center gap-1.5 text-white hover:opacity-90 disabled:opacity-60"
-                            style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-                        >
-                            <FileText className="w-3.5 h-3.5" />
-                            {isDownloading ? ti18n('engine_generating', locale) : ti18n('engine_export_pdf', locale)}
-                        </button>
+                            {/* Dropdown for other actions */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 active:scale-[0.97] cursor-pointer w-full sm:w-auto shrink-0 whitespace-nowrap">
+                                        <MoreHorizontal className="w-4 h-4 text-neutral-500" />
+                                        <span>Meer acties</span>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-[150]">
+                                    {(() => {
+                                        const db = getDatabase(quotationsDbId);
+                                        const statusProp = db?.properties.find(p => p.id === 'status');
+                                        const acceptedOpt = statusProp?.config?.options?.[2]?.id;
+                                        const currentStatus = String(quotation?.properties?.['status'] || '');
+                                        const isAccepted = currentStatus === 'ACCEPTED' || currentStatus === 'opt-accepted' || (acceptedOpt && currentStatus === acceptedOpt);
+                                        
+                                        return (
+                                            <>
+                                                {hasProjects && isAccepted && (
+                                                    <DropdownMenuItem
+                                                        onClick={handleHandover}
+                                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                                    >
+                                                        <Briefcase className="w-3.5 h-3.5" /> {ti18n('engine_handover', locale)}
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {isAccepted && (
+                                                    <DropdownMenuItem
+                                                        onClick={handleConvertToInvoice}
+                                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                                    >
+                                                        <Receipt className="w-3.5 h-3.5" /> Factureren
+                                                    </DropdownMenuItem>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+
+                                    {projectId && project && (
+                                        <DropdownMenuItem
+                                            onClick={() => setIsVorderingModalOpen(true)}
+                                            className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                        >
+                                            <ClipboardCheck className="w-3.5 h-3.5" /> Create Vorderingstaat
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    <DropdownMenuItem
+                                        onClick={handleCreateAddendum}
+                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                    >
+                                        <FilePlus2 className="w-3.5 h-3.5" /> {ti18n('engine_create_addendum', locale)}
+                                    </DropdownMenuItem>
+
+                                    {hasProjects && (
+                                        <DropdownMenuItem
+                                            onClick={handleSaveToDrive}
+                                            disabled={isSavingToDrive || !clientId}
+                                            className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
+                                        >
+                                            <CloudUpload className="w-3.5 h-3.5" /> {isSavingToDrive ? ti18n('engine_saving', locale) : ti18n('engine_drive', locale)}
+                                        </DropdownMenuItem>
+                                    )}
+
+                                    <DropdownMenuItem
+                                        onClick={() => setIsImportModalOpen(true)}
+                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                    >
+                                        <Bot className="w-3.5 h-3.5" /> {ti18n('engine_ai_import', locale)}
+                                    </DropdownMenuItem>
+
+                                    <DropdownMenuSeparator className="my-1 border-t border-neutral-100 dark:border-white/5" />
+
+                                    <DropdownMenuItem
+                                        onClick={async () => {
+                                            if (isDownloading) return;
+                                            setIsDownloading(true);
+                                            try {
+                                                const doc = (
+                                                    <QuotationPDFTemplate
+                                                        blocks={blocks}
+                                                        quotationTitle={String(quotationTitle)}
+                                                        betreft={String(betreft)}
+                                                        clientInfo={buildClientInfo()}
+                                                        projectId={String(projectId)}
+                                                        grandTotal={grandTotal}
+                                                        databaseStoreState={useDatabaseStore.getState()}
+                                                        tenantProfile={tenant}
+                                                        templateId={tenant?.documentTemplate || 't1'}
+                                                        language={docLanguage}
+                                                        showSubcomponents={true}
+                                                        vatCalcMode={vatCalcMode}
+                                                        vatRegime={vatRegime}
+                                                        billingRule={billingRule}
+                                                        paymentTerms={paymentTerms}
+                                                    />
+                                                );
+                                                const blob = await generatePdfBlob(doc, tenant);
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement('a');
+                                                a.href = url;
+                                                a.download = `Offerte_Detail_${quotationTitle || 'Draft'}.pdf`;
+                                                a.click();
+                                                setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                            } catch (e) {
+                                                console.error('[PDF] detailed export failed:', e);
+                                                toast.error('PDF genereren mislukt.');
+                                            } finally {
+                                                setIsDownloading(false);
+                                            }
+                                        }}
+                                        disabled={isDownloading}
+                                        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-60"
+                                    >
+                                        <FileText className="w-3.5 h-3.5" /> {ti18n('engine_export_detailed', locale)}
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </div>
                 </div>
             )}

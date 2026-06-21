@@ -7,12 +7,16 @@ import { useDatabaseStore } from '@/components/admin/database/store';
 import { Camera, Wallet, Plus, Calendar, Receipt, Building2, AlertCircle, Inbox } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import PageModal from '@/components/admin/database/components/PageModal';
 import { Page } from '@/components/admin/database/types';
 
 // Load modal dynamically so we don't block render
 const TicketCaptureModal = dynamic(
     () => import('@/components/admin/expenses/TicketCaptureModal'),
+    { ssr: false }
+);
+
+const PurchaseInvoiceEngine = dynamic(
+    () => import('@/components/admin/expenses/PurchaseInvoiceEngine'),
     { ssr: false }
 );
 
@@ -285,7 +289,7 @@ export default function MobileExpensesPage() {
             )}
 
             {activePageId && (
-                <PageModal
+                <PurchaseInvoiceEngine
                     onClose={() => setActivePageId(null)}
                     databaseId={ticketsDbId}
                     pageId={activePageId}

@@ -14,6 +14,7 @@ import SelectDropdown from '@/components/admin/database/components/SelectDropdow
 interface PurchaseInvoiceEngineProps {
     pageId: string;
     onClose: () => void;
+    databaseId?: string;
 }
 
 interface InvoiceLine {
@@ -90,10 +91,10 @@ function calculateHeaderTotalsFromLines(lines: any[]) {
     };
 }
 
-export default function PurchaseInvoiceEngine({ pageId, onClose }: PurchaseInvoiceEngineProps) {
+export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: PurchaseInvoiceEngineProps) {
     const { resolveDbId, tenant } = useTenant();
     const locale = useLocale();
-    const expensesDbId = resolveDbId('db-expenses');
+    const expensesDbId = databaseId || resolveDbId('db-expenses');
     const suppliersDbId = resolveDbId('db-suppliers');
     const projectsDbId = resolveDbId('db-1');
 

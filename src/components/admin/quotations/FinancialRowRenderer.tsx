@@ -627,6 +627,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             value={block.unit || 'stuk'}
                             onChange={(e) => onUpdate({ unit: e.target.value })}
                             className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            style={{ textAlign: 'right', textAlignLast: 'right' }}
                         >
                             <option value="u">u</option>
                             <option value="stuk">stuk</option>
@@ -788,6 +789,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 value={block.vatRate ?? 21}
                                 onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
                                 className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                                style={{ textAlign: 'right', textAlignLast: 'right' }}
                             >
                                 <option value={21}>21%</option>
                                 <option value={12}>12%</option>

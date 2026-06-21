@@ -458,6 +458,14 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
     const modalRef = useRef<HTMLDivElement>(null);
     const [animationDone, setAnimationDone] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -629,10 +637,10 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             <div
-                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 ${isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
-                style={isMaximized ? {} : { width: `${width}px` }}
+                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 ${isMobile || isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
+                style={isMobile ? { width: '100%' } : (isMaximized ? {} : { width: `${width}px` })}
             >
-                {!isMaximized && (
+                {!isMobile && !isMaximized && (
                     <div
                         className="absolute top-0 left-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/20 active:bg-primary/40 transition-colors z-[110]"
                         onMouseDown={handleMouseDown}
@@ -683,9 +691,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                             <Droppable droppableId="modal-properties-list">
                                 {(provided) => (
                                     <div className="overflow-x-auto">
-                                        <div className="w-full flex flex-col min-w-[600px]">
+                                        <div className="w-full flex flex-col min-w-0 md:min-w-[600px]">
                                             {/* Table Header */}
-                                            <div className="flex items-center bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10 px-4 py-2 font-semibold">
+                                            <div className="items-center bg-neutral-50 dark:bg-black/40 border-b border-neutral-200 dark:border-white/10 px-4 py-2 font-semibold md:flex hidden">
                                                 <div className="w-10 flex-shrink-0"></div>
                                                 <div className="w-[160px] flex-shrink-0 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Property</div>
                                                 <div className="flex-1 text-[10px] font-bold uppercase tracking-wider text-neutral-500">Value</div>
@@ -703,26 +711,55 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                             <div
                                                                 ref={provided.innerRef}
                                                                 {...provided.draggableProps}
-                                                                className={`flex items-center group transition-colors px-4 py-2 ${snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded-xl z-50' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`}
+                                                                className={`flex flex-col md:flex-row md:items-center group transition-colors px-4 py-3 md:py-2 gap-2 md:gap-0 ${snapshot.isDragging ? 'bg-white dark:bg-neutral-800 shadow-xl ring-1 ring-neutral-200 dark:ring-white/20 rounded-xl z-50' : 'hover:bg-neutral-50 dark:hover:bg-white/[0.02]'}`}
                                                                 style={provided.draggableProps.style}
                                                             >
-                                                                <div className="w-10 flex-shrink-0 align-top">
-                                                                    <div
-                                                                        {...provided.dragHandleProps}
-                                                                        className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing w-fit"
-                                                                    >
-                                                                        <GripVertical className="w-3.5 h-3.5" />
+                                                                <div className="flex items-center justify-between w-full md:w-[200px] flex-shrink-0 gap-2 pr-4">
+                                                                    <div className="flex items-center gap-2 min-w-0">
+                                                                        <div
+                                                                            {...provided.dragHandleProps}
+                                                                            className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 cursor-grab active:cursor-grabbing flex-shrink-0"
+                                                                        >
+                                                                            <GripVertical className="w-3.5 h-3.5" />
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                                                            <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate font-semibold">
+                                                                                {prop.name}
+                                                                            </span>
+                                                                            <span className="text-[9px] text-neutral-400 opacity-50 font-mono truncate">{prop.type}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="md:hidden flex-shrink-0">
+                                                                        <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                                <button className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded">
+                                                                                    <MoreHorizontal className="w-3.5 h-3.5" />
+                                                                                </button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent align="end" className="w-48 z-[110]">
+                                                                                <DropdownMenuItem onClick={() => {
+                                                                                    const newName = prompt('Enter new property name:', prop.name);
+                                                                                    if (newName) {
+                                                                                        useDatabaseStore.getState().updateProperty(databaseId, prop.id, { name: newName });
+                                                                                    }
+                                                                                }} className="cursor-pointer">
+                                                                                    <Edit3 className="w-4 h-4 mr-2" />
+                                                                                    Rename Property
+                                                                                </DropdownMenuItem>
+                                                                                <DropdownMenuSeparator />
+                                                                                <DropdownMenuItem onClick={() => {
+                                                                                    if (confirm(`Are you sure you want to delete property "${prop.name}"?`)) {
+                                                                                        useDatabaseStore.getState().deleteProperty(databaseId, prop.id);
+                                                                                    }
+                                                                                }} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20">
+                                                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                                                    Delete Property
+                                                                                </DropdownMenuItem>
+                                                                            </DropdownMenuContent>
+                                                                        </DropdownMenu>
                                                                     </div>
                                                                 </div>
-                                                                <div className="w-[160px] flex-shrink-0 align-top pr-4">
-                                                                    <div className="flex flex-col gap-0.5">
-                                                                        <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider truncate">
-                                                                            {prop.name}
-                                                                        </span>
-                                                                        <span className="text-[9px] text-neutral-400 opacity-50 font-mono truncate">{prop.type}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="flex-1 align-top min-w-0 pr-4">
+                                                                <div className="flex-1 align-top min-w-0 pr-4 pl-8 md:pl-0 w-full">
                                                                     <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100 min-h-[32px] py-1 flex items-center w-full">
                                                                          {(prop.type === 'text' && (prop.id === 'prop-vat-number' || prop.id === 'vat' || prop.name.toLowerCase() === 'btw' || prop.name.toLowerCase() === 'vat number' || prop.name.toLowerCase() === 'btw nummer' || prop.name.toLowerCase() === 'btw-nummer')) ? (
                                                                             <SmartVATLookup
@@ -993,7 +1030,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                                <div className="w-10 flex-shrink-0 text-right align-top pt-1">
+                                                                <div className="w-10 flex-shrink-0 text-right align-top pt-1 md:block hidden">
                                                                     <DropdownMenu>
                                                                         <DropdownMenuTrigger asChild>
                                                                             <button className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1036,6 +1073,20 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     </div>
 
                     <ErrorBoundary componentName="RecordDetails">
+                        {/* Attached Document Preview for Invoices */}
+                        {databaseId.startsWith('db-invoices') && page.properties.receiptUrl && typeof page.properties.receiptUrl === 'string' && (
+                            <div className="mt-6 mb-8 px-6 md:px-0">
+                                <h4 className="text-xs font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider mb-3">Document Preview</h4>
+                                <div className="w-full h-[500px] rounded-xl overflow-hidden border border-neutral-200 dark:border-white/10 bg-white">
+                                    <iframe
+                                        src={page.properties.receiptUrl.startsWith('http') ? page.properties.receiptUrl : `/api/files/${page.properties.receiptUrl}`}
+                                        className="w-full h-full border-none bg-white"
+                                        title="Invoice Document"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         {/* Financial Analysis Inline Component */}
                         <div className="px-6 md:px-0">
                             <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} />

@@ -2,15 +2,16 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, User, Briefcase, FileText, Check, X as XIcon, ReceiptText, PanelRight, Trash2, ExternalLink, Plus, Info, Database, ChevronsUpDown, Scissors, Eye, ClipboardCheck, MoreHorizontal } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { Page, Block, BlockType } from '@/components/admin/database/types';
 import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
@@ -39,6 +40,8 @@ const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientInvoiceEngine({ id, locale }: { id: string, locale: string }) {
     const router = useRouter();
+    const pathname = usePathname();
+    const isMobileRoute = pathname.includes('/m/');
     const { activeModules, resolveDbId, tenant } = useTenant();
     const hasProjects = activeModules.includes('PROJECTS');
     const getDatabase = useDatabaseStore(state => state.getDatabase);
@@ -929,7 +932,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     };
 
     return (
-        <div className="flex flex-col w-full h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
+        <div className="flex flex-col w-full min-h-screen md:h-full bg-white dark:bg-black text-neutral-900 dark:text-white">
             {/* Header Controls */}
             <div className="border-b border-neutral-200 dark:border-white/10 shrink-0">
                 {/* Row 1: Title + Selectors + Actions */}
@@ -942,14 +945,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     >
                         <ArrowLeft className="w-5 h-5 text-neutral-500" />
                     </button>
-                    <Link
-                        href={isCreditNote ? '/admin/financials/income/credit-notes' : '/admin/financials/income/invoices'}
-                        className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
-                        title={isCreditNote ? 'Naar Creditnota\'s database' : 'Naar Facturen database'}
-                    >
-                        <Database className="w-4 h-4" />
-                        <span className="hidden sm:inline">Database</span>
-                    </Link>
+                    {!isMobileRoute && (
+                        <Link
+                            href={isCreditNote ? '/admin/financials/income/credit-notes' : '/admin/financials/income/invoices'}
+                            className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-md transition-colors shrink-0 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-white font-medium"
+                            title={isCreditNote ? 'Naar Creditnota\'s database' : 'Naar Facturen database'}
+                        >
+                            <Database className="w-4 h-4" />
+                            <span className="hidden sm:inline">Database</span>
+                        </Link>
+                    )}
                     <div className="flex flex-col min-w-0 shrink-0">
                         <input
                             type="text"
@@ -1390,9 +1395,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             )}
 
             {/* Main Canvas + optional Properties Panel */}
-            <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-1 overflow-visible md:overflow-hidden">
                 {/* Canvas */}
-                <div className="flex-1 overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
+                <div className="flex-1 overflow-y-visible md:overflow-y-auto p-2 sm:p-4 relative bg-neutral-50/50 dark:bg-black">
                 <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                     {/* Mathematical Blocks */}
@@ -1517,29 +1522,16 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 )}
             </div>
 
-            {/* ── Bottom Action Bar ─────────────────────────────────────── */}
+            {/* ── Sticky Bottom Action Bar ─────────────────────────────────────── */}
             {isHydrated && (
-                <div className="shrink-0 border-t border-neutral-200 dark:border-white/10 bg-white dark:bg-black px-4 py-3">
-                    <div className="flex items-center gap-3 max-w-[1400px] mx-auto">
-                        {/* Left group: document actions */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {(!isCreditNote && !isProforma) && (
-                                <button
-                                    onClick={handleCreateCreditNote}
-                                    className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border hover:opacity-90 active:scale-[0.97]"
-                                    style={{
-                                        backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)',
-                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                                        color: 'var(--brand-color, #d35400)',
-                                    }}
-                                >
-                                    <ReceiptText className="w-4 h-4" /> Credit Nota
-                                </button>
-                            )}
+                <div className={`sticky ${isMobileRoute ? 'bottom-16 md:bottom-0' : 'bottom-0'} z-30 border-t border-neutral-200 dark:border-white/10 bg-white/95 dark:bg-black/95 backdrop-blur-xl px-4 py-3 shrink-0`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 max-w-[1400px] mx-auto w-full">
+                        {/* Primary action buttons */}
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
                             <button
                                 onClick={handleSendEmailClick}
                                 disabled={isSending || !clientId}
-                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
+                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] w-full sm:w-auto shrink-0 whitespace-nowrap"
                                 style={{
                                     backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
                                     borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
@@ -1548,48 +1540,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             >
                                 <Mail className="w-4 h-4" /> {isSending ? 'Sending...' : 'Send'}
                             </button>
-                            <button
-                                onClick={handleSaveToDrive}
-                                disabled={isSavingToDrive || !clientId}
-                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
-                                style={{
-                                    backgroundColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: clientId ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: clientId ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <CloudUpload className="w-4 h-4" /> {isSavingToDrive ? 'Saving...' : 'Drive'}
-                            </button>
-                            <button
-                                onClick={handleValidatePeppol}
-                                disabled={isValidatingPeppol || !clientId || isProforma}
-                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
-                                style={{
-                                    backgroundColor: (clientId && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: (clientId && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: (clientId && !isProforma) ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <ClipboardCheck className="w-4 h-4" /> {isValidatingPeppol ? 'Valideren...' : 'Test / Valideer'}
-                            </button>
-                            <button
-                                onClick={handleSendPeppol}
-                                disabled={isSendingPeppol || !clientId || isLocked || isProforma}
-                                className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97]"
-                                style={{
-                                    backgroundColor: (clientId && !isLocked && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 10%, white)' : undefined,
-                                    borderColor: (clientId && !isLocked && !isProforma) ? 'color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)' : undefined,
-                                    color: (clientId && !isLocked && !isProforma) ? 'var(--brand-color, #d35400)' : undefined,
-                                }}
-                            >
-                                <Send className="w-4 h-4" /> {isSendingPeppol ? 'Sending...' : 'Peppol'}
-                            </button>
-                        </div>
 
-                        <div className="flex-1" />
-
-                        {/* Right group: export + delete */}
-                        <div className="flex items-center gap-2">
                             <button
                                 onClick={async () => {
                                     if (isPreviewing) return;
@@ -1629,7 +1580,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     }
                                 }}
                                 disabled={isPreviewing}
-                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 active:scale-[0.97] disabled:opacity-60 shadow-sm"
+                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap"
                             >
                                 <Eye className="w-4 h-4" />
                                 {isPreviewing ? 'Generating...' : 'Preview PDF'}
@@ -1678,27 +1629,72 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     }
                                 }}
                                 disabled={isDownloading}
-                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm"
+                                className="text-sm font-bold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-white hover:opacity-90 active:scale-[0.97] disabled:opacity-60 shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap"
                                 style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
                             >
                                 <FileText className="w-4 h-4" />
                                 {isDownloading ? 'Generating...' : 'Export PDF'}
                             </button>
 
-                            {isDraft && (
-                                <button
-                                    onClick={() => {
-                                        if (window.confirm('Are you sure you want to permanently delete this draft invoice?')) {
-                                            const deletePage = useDatabaseStore.getState().deletePage;
-                                            deletePage(invoicesDbId, id);
-                                            router.back();
-                                        }
-                                    }}
-                                    className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border text-red-500 border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:hover:bg-red-900/20 active:scale-[0.97]"
-                                >
-                                    <Trash2 className="w-4 h-4" /> Delete
-                                </button>
-                            )}
+                            <div className="hidden sm:block flex-1" />
+
+                            {/* Dropdown for other actions */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 active:scale-[0.97] cursor-pointer w-full sm:w-auto shrink-0 whitespace-nowrap">
+                                        <MoreHorizontal className="w-4 h-4 text-neutral-500" />
+                                        <span>Meer acties</span>
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-xl p-1 z-[150]">
+                                    {(!isCreditNote && !isProforma) && (
+                                        <DropdownMenuItem
+                                            onClick={handleCreateCreditNote}
+                                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200"
+                                        >
+                                            <ReceiptText className="w-4 h-4" /> Credit Nota
+                                        </DropdownMenuItem>
+                                    )}
+                                    <DropdownMenuItem
+                                        onClick={handleSaveToDrive}
+                                        disabled={isSavingToDrive || !clientId}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
+                                    >
+                                        <CloudUpload className="w-4 h-4" /> Drive
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={handleValidatePeppol}
+                                        disabled={isValidatingPeppol || !clientId || isProforma}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
+                                    >
+                                        <ClipboardCheck className="w-4 h-4" /> Test / Valideer
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onClick={handleSendPeppol}
+                                        disabled={isSendingPeppol || !clientId || isLocked || isProforma}
+                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
+                                    >
+                                        <Send className="w-4 h-4" /> Peppol
+                                    </DropdownMenuItem>
+                                    {isDraft && (
+                                        <>
+                                            <DropdownMenuSeparator className="my-1 border-t border-neutral-100 dark:border-white/5" />
+                                            <DropdownMenuItem
+                                                onClick={() => {
+                                                    if (window.confirm('Are you sure you want to permanently delete this draft invoice?')) {
+                                                        const deletePage = useDatabaseStore.getState().deletePage;
+                                                        deletePage(invoicesDbId, id);
+                                                        router.back();
+                                                    }
+                                                }}
+                                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 cursor-pointer"
+                                            >
+                                                <Trash2 className="w-4 h-4" /> Delete
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
                 </div>

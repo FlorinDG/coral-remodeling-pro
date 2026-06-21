@@ -163,12 +163,12 @@ export default function QuotationFooterReport({
             )}
 
             {/* Unified Footer Grid — 3 columns */}
-            <div className="grid grid-cols-[1fr_auto_1.4fr] gap-0 rounded-xl overflow-hidden border shadow-sm"
+            <div className="flex flex-col md:grid md:grid-cols-[1fr_auto_1.4fr] gap-0 rounded-xl overflow-hidden border shadow-sm"
                 style={{ borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 20%, transparent)' }}
             >
 
                 {/* Column 1: Offerte Info */}
-                <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-r border-neutral-200/60 dark:border-white/5">
+                <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-b md:border-b-0 md:border-r border-neutral-200/60 dark:border-white/5">
                     <h4
                         className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3"
                         style={{ color: 'var(--brand-color, #d35400)' }}
@@ -197,7 +197,7 @@ export default function QuotationFooterReport({
                 </div>
 
                 {/* Column 2: BTW Calculation Mode */}
-                <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-r border-neutral-200/60 dark:border-white/5 min-w-[180px]">
+                <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-b md:border-b-0 md:border-r border-neutral-200/60 dark:border-white/5 min-w-0 md:min-w-[180px]">
                     <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3 text-neutral-400 dark:text-neutral-500">
                         {ti18n('footer_vat_calc', language)}
                     </h4>
@@ -271,7 +271,7 @@ export default function QuotationFooterReport({
                 </div>
 
                 {/* Column 3: Totals */}
-                <div className="flex flex-col">
+                <div className="flex flex-col w-full">
                     {/* Subtotal */}
                     <div className="flex items-center justify-between px-5 py-3 bg-neutral-50/80 dark:bg-white/[0.02]">
                         <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">{ti18n('footer_subtotal', language)}</span>

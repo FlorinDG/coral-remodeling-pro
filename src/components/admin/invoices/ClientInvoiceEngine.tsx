@@ -304,6 +304,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const rawClient = invoice?.properties?.['client'];
     const clientId = Array.isArray(rawClient) ? (rawClient[0] || '') : (rawClient as string) || '';
+    const clientRecord = useMemo(() => clients.find(c => c.id === clientId), [clients, clientId]);
+    const clientName = clientRecord ? `${clientRecord.firstName} ${clientRecord.lastName}`.trim() : '';
 
     const docLanguage = useMemo(() => {
         if (!invoice) return 'nl';
@@ -958,8 +960,14 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             className="bg-transparent text-lg font-bold tracking-tight text-neutral-900 dark:text-white outline-none focus:ring-0 placeholder:text-neutral-400 p-0 m-0 w-[280px] disabled:opacity-70"
                         />
                             <div className="flex items-center gap-2">
-                                <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase flex items-center gap-2">
+                                <p className="text-[10px] text-neutral-400 font-mono tracking-wider uppercase flex flex-wrap items-center gap-2">
                                     {isProforma ? 'Proforma' : isCreditNote ? 'Creditnota' : 'Factuur'} {invoiceTitle}
+                                    {clientName && (
+                                        <>
+                                            <span>•</span>
+                                            <span className="text-neutral-500 font-bold">{clientName}</span>
+                                        </>
+                                    )}
                                     {parentInvoiceTitle && (
                                         <>
                                             <span>•</span>
@@ -1066,88 +1074,90 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
                     {/* Selectors */}
                     <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 flex-1 min-w-0 overflow-visible w-full">
-                        {/* Client Selector */}
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
-                            <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                            <div className="flex-1 w-full sm:w-48 pl-6">
-                                <SearchableSelect
-                                    value={clientId}
-                                    onChange={(value) => handleUpdateProperty('client', value)}
-                                    disabled={!isDraft}
-                                    placeholder="Klant selecteren..."
-                                    searchPlaceholder="Zoek klant..."
-                                    emptyLabel="Geen klanten gevonden"
-                                    className="border-none bg-transparent shadow-none ring-0 h-9"
-                                    borderless
-                                    options={clients.map(client => ({
-                                        value: client.id,
-                                        label: `${client.firstName} ${client.lastName}`
-                                    }))}
-                                />
+                        {/* Client Selector Group */}
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                            <div className="flex-1 flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                                <User className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                                <div className="flex-1 w-full sm:w-48 pl-6">
+                                    <SearchableSelect
+                                        value={clientId}
+                                        onChange={(value) => handleUpdateProperty('client', value)}
+                                        disabled={!isDraft}
+                                        placeholder="Klant selecteren..."
+                                        searchPlaceholder="Zoek klant..."
+                                        emptyLabel="Geen klanten gevonden"
+                                        className="border-none bg-transparent shadow-none ring-0 h-9"
+                                        borderless
+                                        options={clients.map(client => ({
+                                            value: client.id,
+                                            label: `${client.firstName} ${client.lastName}`
+                                        }))}
+                                    />
+                                </div>
+                                {clientId && (
+                                    <Link
+                                        href={`/admin/database/${clientsDbId}/${clientId}`}
+                                        className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                        title="Open fiche"
+                                    >
+                                        <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                                    </Link>
+                                )}
                             </div>
-                            {clientId && (
-                                <Link
-                                    href={`/admin/database/${clientsDbId}/${clientId}`}
-                                    className="absolute right-1.5 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                                    title="Open fiche"
+                            {/* New Client Button */}
+                            {isDraft && (
+                                <button
+                                    onClick={() => setShowNewClientModal(true)}
+                                    className="p-2.5 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
+                                    title="Nieuwe klant aanmaken"
                                 >
-                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
-                                </Link>
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
                             )}
                         </div>
-                        {/* New Client Button */}
-                        {isDraft && (
-                            <button
-                                onClick={() => setShowNewClientModal(true)}
-                                className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
-                                title="Nieuwe klant aanmaken"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        )}
 
-                        {/* Project Selector — only for tenants with project management */}
+                        {/* Project Selector Group — only for tenants with project management */}
                         {hasProjects && (
-                        <>
-                        <div className="flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative w-full sm:w-auto">
-                            <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
-                            <div className="flex-1 w-full sm:w-48 pl-6">
-                                <SearchableSelect
-                                    value={projectId}
-                                    onChange={(value) => handleUpdateProperty('project', value)}
-                                    disabled={!isDraft}
-                                    placeholder="Project koppelen..."
-                                    searchPlaceholder="Zoek project..."
-                                    emptyLabel="Geen projecten gevonden"
-                                    className="border-none bg-transparent shadow-none ring-0 h-9"
-                                    borderless
-                                    options={projects.map(project => ({
-                                        value: project.id,
-                                        label: String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')
-                                    }))}
-                                />
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                            <div className="flex-1 flex items-center bg-neutral-50 dark:bg-white/5 rounded-lg border border-neutral-200 dark:border-white/10 relative">
+                                <Briefcase className="w-3.5 h-3.5 text-neutral-400 absolute left-2.5 z-10 pointer-events-none" />
+                                <div className="flex-1 w-full sm:w-48 pl-6">
+                                    <SearchableSelect
+                                        value={projectId}
+                                        onChange={(value) => handleUpdateProperty('project', value)}
+                                        disabled={!isDraft}
+                                        placeholder="Project koppelen..."
+                                        searchPlaceholder="Zoek project..."
+                                        emptyLabel="Geen projecten gevonden"
+                                        className="border-none bg-transparent shadow-none ring-0 h-9"
+                                        borderless
+                                        options={projects.map(project => ({
+                                            value: project.id,
+                                            label: String(project.properties['title'] || project.properties['name'] || 'Unnamed Project')
+                                        }))}
+                                    />
+                                </div>
+                                {projectId && (
+                                    <Link
+                                        href={`/admin/database/${projectDbId}/${projectId}`}
+                                        className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
+                                        title="Open fiche"
+                                    >
+                                        <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
+                                    </Link>
+                                )}
                             </div>
-                            {projectId && (
-                                <Link
-                                    href={`/admin/database/${projectDbId}/${projectId}`}
-                                    className="absolute right-1.5 z-10 p-0.5 rounded hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                                    title="Open fiche"
+                            {/* New Project Button */}
+                            {isDraft && (
+                                <button
+                                    onClick={() => setShowNewProjectModal(true)}
+                                    className="p-2.5 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
+                                    title="Nieuw project aanmaken"
                                 >
-                                    <ExternalLink className="w-3 h-3 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" />
-                                </Link>
+                                    <Plus className="w-3.5 h-3.5" />
+                                </button>
                             )}
                         </div>
-                        {/* New Project Button */}
-                        {isDraft && (
-                            <button
-                                onClick={() => setShowNewProjectModal(true)}
-                                className="p-2 rounded-lg border border-dashed border-neutral-300 dark:border-white/15 hover:border-[var(--brand-color,#d35400)] hover:bg-[var(--brand-color,#d35400)]/5 text-neutral-400 hover:text-[var(--brand-color,#d35400)] transition-all shrink-0"
-                                title="Nieuw project aanmaken"
-                            >
-                                <Plus className="w-3.5 h-3.5" />
-                            </button>
-                        )}
-                        </>
                         )}
                         {/* Custom Offerte Multi-Selector */}
                         <div ref={quotationContainerRef} className="relative shrink-0 w-full sm:w-auto">

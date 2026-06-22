@@ -123,6 +123,7 @@ model Tenant {
   suppliers                Supplier[]
   timeOffRequests          TimeOffRequest[]
   users                    User[]
+  notifications            Notification[]
   userProjectAccesses      UserProjectAccess[]
   workerSchedules          WorkerSchedule[]
 }
@@ -860,4 +861,24 @@ model UserProjectAccess {
   @@unique([userId, projectId])
   @@index([tenantId])
   @@index([userId])
+}
+
+model Notification {
+  id         String    @id @default(cuid())
+  tenantId   String
+  userId     String?
+  type       String
+  title      String
+  body       String
+  entityType String
+  entityId   String
+  href       String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([entityId])
+  @@index([tenantId, userId, readAt, createdAt])
 }

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
 import React, { useRef, useState, useCallback, useEffect } from 'react';
@@ -5,6 +7,9 @@ import dynamic from 'next/dynamic';
 import { acceptQuotation } from '@/app/actions/accept-quote';
 import { Block } from '@/components/admin/database/types';
 import { t } from '@/lib/document-i18n';
+import { generatePdfBlob } from '@/lib/generate-pdf';
+import { QuotationPDFTemplate } from '@/components/admin/quotations/QuotationPDFTemplate';
+import { TemplateId } from '@/components/admin/shared/templateStyles';
 import {
     PenTool, CheckCircle, FileText, AlertCircle,
     Type, Upload, Pencil, Download, Clock, ChevronDown, ChevronUp, Sparkles
@@ -184,6 +189,7 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
     const [showDetails, setShowDetails] = useState(true);
     const [isTouch, setIsTouch] = useState(false);
     const [successAnim, setSuccessAnim] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const parsedBlocks = (Array.isArray(blocks) ? blocks : []) as Block[];
     const betreft = properties?.betreft || t('quotation', lang);
@@ -379,6 +385,54 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                         <div className="min-w-0">
                             <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 break-words">{betreft}</h1>
                             <p className="text-sm text-neutral-500 font-mono mt-1">{t('portal_ref', lang)}: {quoteTitle}</p>
+                            
+                            <button
+                                onClick={async () => {
+                                    if (isDownloading) return;
+                                    setIsDownloading(true);
+                                    try {
+                                        const doc = (
+                                            <QuotationPDFTemplate
+                                                blocks={parsedBlocks}
+                                                quotationTitle={String(quoteTitle)}
+                                                betreft={String(betreft)}
+                                                clientInfo={{ name: properties?.['clientName'] || properties?.['client'] || 'Klant' }}
+                                                projectId={""}
+                                                grandTotal={grandTotal}
+                                                databaseStoreState={{}}
+                                                tenantProfile={tenant}
+                                                templateId={(tenant?.documentTemplate as TemplateId) || 't1'}
+                                                language={lang}
+                                                showSubcomponents={false}
+                                                vatCalcMode={properties?.vatCalcMode || 'lines'}
+                                                vatRegime={properties?.vatRegime || '21'}
+                                            />
+                                        );
+                                        const blob = await generatePdfBlob(doc, tenant);
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `Offerte_${quoteTitle || 'Draft'}.pdf`;
+                                        a.click();
+                                        setTimeout(() => URL.revokeObjectURL(url), 10000);
+                                    } catch (e) {
+                                        console.error('[PDF] export failed:', e);
+                                        setError('PDF download mislukt.');
+                                    } finally {
+                                        setIsDownloading(false);
+                                    }
+                                }}
+                                disabled={isDownloading}
+                                className="mt-4 flex items-center gap-2 text-sm font-medium transition-colors border rounded-lg px-3 py-1.5 shadow-sm active:scale-95 disabled:opacity-50"
+                                style={{
+                                    borderColor: brandAlpha(brandColor, 0.2),
+                                    color: brandColor,
+                                    backgroundColor: brandAlpha(brandColor, 0.05),
+                                }}
+                            >
+                                <Download className="w-4 h-4" />
+                                {isDownloading ? t('portal_processing', lang) : t('portal_download_pdf', lang) || 'Download PDF'}
+                            </button>
                         </div>
                         <div className="text-right shrink-0">
                             <p className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-1">{t('portal_total_investment', lang)}</p>

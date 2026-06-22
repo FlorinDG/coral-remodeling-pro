@@ -73,6 +73,29 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 **ALREADY CODE-COMPLETE (do NOT redo): AGG-1..4, QUOTE-7, SCAN-2, GRID-0/1, CROSS-7, SEND-4, FIN-8.**
 
 **QUEUE (in order):**
+
+### 🔝 FINISH-FIRST — SKIPPED-CLUSTER RE-PASS (Planner 2026-06-22). DO THESE BEFORE ANYTHING ELSE, top to bottom.
+**Why now:** these 10 items have full specs further down this board but were SKIPPED across earlier runs under PER-RUN step 3 ("files mid-change → SKIP") — they collided with the engine / PageModal / TicketCaptureModal / FileManager work that was landing at the same time. **That work is now all committed; the collisions are gone.** They are grouped below by SHARED FILE (Rule 7 — do the items that touch one file together, in one pass, so a fix can't land in one copy and miss the sibling). Find each item's full spec by its ID elsewhere on this board. One commit per item, exactly `<ID>: <imperative>`.
+
+1. **FILES + DB hygiene (highest value — files are invisible / garbage DB recurs):**
+   - **FILES-FIND** — reconcile FileManager UI to the flat Blob model (aggregate `t_{tenant}/` grouped by context; drop the dead Drive folder/root nav). Files saved to Blob are currently INVISIBLE in the UI. Full spec below.
+   - **WORKSPACE-DB-GHOST** — find + stop the source auto-minting "New Workspace"/"New Database". Full spec below.
+2. **TicketCaptureModal — expenses/receipt scan (all four touch the SAME modal → do as one grouped pass, Rule 7):**
+   - **RECEIPT-NOVAT** — receipts are always VAT-inclusive + legally non-deductible → remove VAT entirely (UI + OCR map + persistence) for the receipt path.
+   - **SCAN-FREE-OCR** — FREE tier ticket scan routes to client-side Tesseract (no OpenAI cost).
+   - **SCAN-TEXT-LOC** — localise the "Reading locally"/Tesseract progress strings via `t()`.
+   - **RECEIPT-THUMB** — show the captured receipt thumbnail.
+3. **PageModal / record-open (both touch PageModal + the per-type open routing → grouped pass, Rule 7):**
+   - **MODAL-LAYOUT** — split the modal: Properties | Connected DBs, journal entries in a quadrant under connections.
+   - **MOBILE-RECORD-MODAL** — per-type open routing (expense → PurchaseInvoiceEngine; invoice → generic modal + file under properties; contact → generic modal). Full matrix in the spec below.
+4. **Mobile shell/nav (both touch the mobile shell → grouped pass):**
+   - **GHOST-HAMBURGER** — remove the dead/ghost hamburger on the mobile shell.
+   - **MOB-LOGOUT** — restore a working logout on mobile.
+
+**If any single one still genuinely conflicts (its file is mid-change THIS run), SKIP only that one and continue — do NOT skip the whole block.** After this block, resume the normal queue below.
+
+---
+
 **⚠️ RECOVERED 2026-06-18 (these were clobbered by a working-tree revert; Florin re-committed). Do GRID-12 → GRID-13 → DRIVE-OUT-1 first; SEND-6 is a feature (lower priority, after FIN-7b/SEND-3).**
 
 👉 **GRID-12 — DO NEXT — DATA-INTEGRITY (suppliers DB; SHARED grid primitives → all DBs).**

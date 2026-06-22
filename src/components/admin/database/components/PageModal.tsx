@@ -15,6 +15,7 @@ const PurchaseInvoiceEngine = dynamic(() => import('@/components/admin/expenses/
 import FileManager from '@/components/admin/file-manager/FileManager';
 import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
+import JournalCard from './JournalCard';
 import { Property, VariantsConfig } from '../types';
 import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -685,8 +686,12 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         placeholder="Untitled"
                     />
 
-                    {/* Properties Table */}
-                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm mb-8">
+                    {/* Desktop Split Layout */}
+                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
+                        {/* LEFT HALF: Properties + Content */}
+                        <div className="flex-1 min-w-0 flex flex-col">
+                            {/* Properties Table */}
+                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm mb-8">
                         <DragDropContext onDragEnd={handleDragEnd}>
                             <Droppable droppableId="modal-properties-list">
                                 {(provided) => (
@@ -1100,25 +1105,44 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                 <BlockEditor databaseId={databaseId} pageId={pageId} />
                             )}
                         </div>
-
-                        {/* Connected Records Section */}
-                        <div className="mt-12 pt-8 border-t border-neutral-100 dark:border-white/5 px-6 md:px-0 relative">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2.5 bg-orange-500/10 rounded-2xl">
-                                    <Link2 className="w-5 h-5 text-orange-500" />
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-black tracking-tight text-neutral-900 dark:text-white">Connected Records</h3>
-                                    <p className="text-xs text-neutral-500">Cross-reference and quick-create related items.</p>
-                                </div>
-                            </div>
-                            <LinkedRecords databaseId={databaseId} pageId={pageId} isModal />
-                        </div>
                     </ErrorBoundary>
                 </div>
-                )}
+
+                {/* RIGHT HALF: Connected Records & Journal */}
+                <div className="lg:w-[400px] xl:w-[450px] shrink-0 flex flex-col gap-8">
+                    {/* Connected Records Section */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-orange-500/10 rounded-xl">
+                                <Link2 className="w-4 h-4 text-orange-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Connected Records</h3>
+                            </div>
+                        </div>
+                        <LinkedRecords databaseId={databaseId} pageId={pageId} isModal />
+                    </div>
+
+                    {/* Journal Section */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm flex flex-col" style={{ minHeight: '400px' }}>
+                        <div className="flex items-center gap-3 mb-4 shrink-0">
+                            <div className="p-2 bg-blue-500/10 rounded-xl">
+                                <Clock className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Journal History</h3>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto -mx-2 px-2">
+                            <JournalCard databaseId={databaseId} pageId={pageId} minHeight="100%" />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>,
-        document.body
-    );
+            </div>
+            )}
+        </div>
+    </div>,
+    document.body
+);
 }

@@ -91,3 +91,41 @@ export async function deleteFileAction(key: string) {
     }
 }
 
+export async function listAllTenantFiles() {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+
+    if (!tenantId) {
+        throw new Error('Unauthorized');
+    }
+
+    const prefix = `t_${tenantId}/`;
+
+    try {
+        const list = await storage.list(prefix);
+        return list.map(item => {
+            const basename = item.key.split('/').pop() || item.key;
+            // Extract contextType and contextId from key: t_{tenantId}/{recordType}/{recordId}/filename
+            const parts = item.key.split('/');
+            const contextType = parts.length > 3 ? parts[1] : 'global';
+            const contextId = parts.length > 3 ? parts[2] : 'unknown';
+
+            return {
+                id: item.key,
+                name: basename,
+                type: 'file' as const,
+                size: item.size,
+                url: item.url,
+                parentId: null, // Legacy, kept for typing compatibility if needed
+                createdAt: item.uploadedAt.toISOString(),
+                updatedAt: item.uploadedAt.toISOString(),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                contextType: contextType as any,
+                contextId: contextId,
+            };
+        });
+    } catch (e: unknown) {
+        console.error('Failed to list all tenant files:', e);
+        throw new Error(e instanceof Error ? e.message : 'Failed to list all files');
+    }
+}

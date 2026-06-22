@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { FileNode, FileContextType } from './types';
 import { toast } from 'sonner';
-import { listRecordFiles, deleteFileAction, uploadFileAction } from '@/app/actions/files';
+import { listRecordFiles, listAllTenantFiles, deleteFileAction, uploadFileAction } from '@/app/actions/files';
 
 interface FileManagerState {
     nodes: FileNode[];
@@ -10,13 +10,11 @@ interface FileManagerState {
     error: string | null;
 
     fetchNodes: (contextType: FileContextType, contextId?: string) => Promise<void>;
-    uploadFile: (file: File, parentId: string | null, contextType: FileContextType, contextId?: string) => Promise<void>;
+    uploadFile: (file: File, contextType: FileContextType, contextId?: string) => Promise<void>;
     deleteNode: (id: string) => Promise<void>;
-    initializeContextFolder: (folderName: string, contextType: FileContextType, contextId: string) => Promise<string | null>;
 
     // Selectors
     getNodesByContext: (contextType: FileContextType, contextId?: string) => FileNode[];
-    getChildren: (parentId: string | null, contextType?: FileContextType, contextId?: string) => FileNode[];
 }
 
 export const useFileManagerStore = create<FileManagerState>()(
@@ -29,19 +27,23 @@ export const useFileManagerStore = create<FileManagerState>()(
             fetchNodes: async (contextType, contextId) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const data = await listRecordFiles(contextType, contextId);
-
-                    const contextualNodes: FileNode[] = data.map((n) => ({
-                        ...n,
-                        contextType,
-                        contextId
-                    }));
-
-                    set((state) => {
-                        const otherNodes = state.nodes.filter(n => n.contextType !== contextType || n.contextId !== contextId);
-                        return { nodes: [...otherNodes, ...contextualNodes], isLoading: false };
-                    });
-
+                    let data;
+                    if (contextType === 'global') {
+                        data = await listAllTenantFiles();
+                        // Replace ALL nodes when loading globally to ensure sync
+                        set({ nodes: data, isLoading: false });
+                    } else {
+                        data = await listRecordFiles(contextType, contextId);
+                        const contextualNodes: FileNode[] = data.map((n) => ({
+                            ...n,
+                            contextType,
+                            contextId
+                        }));
+                        set((state) => {
+                            const otherNodes = state.nodes.filter(n => n.contextType !== contextType || n.contextId !== contextId);
+                            return { nodes: [...otherNodes, ...contextualNodes], isLoading: false };
+                        });
+                    }
                 } catch (err) {
                     const message = err instanceof Error ? err.message : String(err);
                     console.error('Failed to fetch Blob files:', err);
@@ -49,12 +51,7 @@ export const useFileManagerStore = create<FileManagerState>()(
                 }
             },
 
-            initializeContextFolder: async () => {
-                // Blob storage is folderless, so this is a no-op
-                return null;
-            },
-
-            uploadFile: async (file, parentId, contextType, contextId) => {
+            uploadFile: async (file, contextType, contextId) => {
                 try {
                     const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2 MB safe serverless payload threshold
                     if (file.size > MAX_FILE_SIZE) {
@@ -76,7 +73,6 @@ export const useFileManagerStore = create<FileManagerState>()(
                         type: 'file' as const,
                         size: file.size,
                         url: `/api/files/${result.key}`,
-                        parentId: null,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         contextType,
@@ -111,24 +107,13 @@ export const useFileManagerStore = create<FileManagerState>()(
             getNodesByContext: (contextType, contextId) => {
                 const { nodes } = get();
                 if (contextType === 'global') {
-                    return nodes.filter(n => n.contextType === 'global');
+                    return nodes; // Return all files in global view
                 }
                 return nodes.filter(n => n.contextType === contextType && n.contextId === contextId);
-            },
-
-            getChildren: (parentId, contextType, contextId) => {
-                const { nodes } = get();
-                let pool = nodes;
-
-                if (contextType) {
-                    pool = get().getNodesByContext(contextType, contextId);
-                }
-
-                return pool.filter(n => n.parentId === parentId);
             }
         }),
         {
-            name: 'file-manager-storage-v1',
+            name: 'file-manager-storage-v2', // bump version to bust cache
             partialize: (state) => ({ nodes: state.nodes }),
         }
     )

@@ -53,6 +53,7 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
                 {/* Content */}
                 <div className="flex-1 w-full bg-[#f8f9fa] dark:bg-neutral-950 relative flex items-center justify-center overflow-hidden">
                     {isImage && previewUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={previewUrl}
                             className="max-w-full max-h-full object-contain p-4"

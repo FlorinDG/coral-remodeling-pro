@@ -1,6 +1,6 @@
-export type FileNodeType = 'file' | 'folder';
+export type FileNodeType = 'file';
 
-export type FileContextType = 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' | 'hr' | 'documents' | 'document';
+export type FileContextType = 'project' | 'task' | 'client' | 'global' | 'invoice' | 'quotation' | 'contract' | 'hr' | 'documents' | 'document' | 'receipt' | 'expense' | 'purchase-invoice';
 
 export interface FileNode {
     id: string;
@@ -11,9 +11,6 @@ export interface FileNode {
     mimeType?: string; // e.g., 'image/png', 'application/pdf', 'text/csv'
     size?: number; // in bytes
     url?: string; // Public or internal URL to the actual asset
-
-    // Hierarchy
-    parentId: string | null; // null for root level nodes
 
     // Contextual Scoping (for embedding in specific modules)
     contextType: FileContextType;

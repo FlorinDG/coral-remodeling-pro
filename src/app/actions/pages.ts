@@ -340,6 +340,25 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
             where: { id: invoiceId },
             data: { properties: updatedProps as Prisma.InputJsonValue }
         });
+
+        if (newStatus === 'opt-paid') {
+            try {
+                const { createNotification } = await import('@/lib/notifications');
+                const invTitle = (invProps.title as string) || 'Factuur';
+                await createNotification({
+                    tenantId,
+                    userId: null,
+                    type: 'INVOICE_PAID',
+                    title: 'Invoice Paid',
+                    body: `Invoice ${invTitle} has been fully paid.`,
+                    entityType: 'invoice',
+                    entityId: invoiceId,
+                    href: `/nl/admin/financials/income/invoices/${invoiceId}`
+                });
+            } catch (err) {
+                console.error('[Automation] Failed to create INVOICE_PAID notification:', err);
+            }
+        }
     }
 }
 

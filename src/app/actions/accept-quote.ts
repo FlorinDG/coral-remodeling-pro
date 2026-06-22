@@ -56,10 +56,24 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                     where: { id: quoteWithDb.database.tenantId }
                 });
 
+                const quoteTitle = (currentProps.betreft as string) || (currentProps.title as string) || 'Offerte';
+
+                // Emit in-app notification
+                const { createNotification } = await import('@/lib/notifications');
+                await createNotification({
+                    tenantId: quoteWithDb.database.tenantId,
+                    userId: null,
+                    type: 'QUOTE_ACCEPTED',
+                    title: 'Quote Accepted',
+                    body: `Quote ${quoteTitle} accepted by ${consentName}`,
+                    entityType: 'quote',
+                    entityId: quoteId,
+                    href: `/nl/admin/financials/income/quotations/${quoteId}`
+                }).catch(e => console.error("Failed to create QUOTE_ACCEPTED notification:", e));
+
                 if (tenant?.email) {
                     const { Resend } = await import('resend');
                     const resend = new Resend(process.env.RESEND_API_KEY || 're_dummy_fallback');
-                    const quoteTitle = (currentProps.betreft as string) || (currentProps.title as string) || 'Offerte';
                     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
                     const quoteLink = `${appUrl}/nl/quote/${quoteId}`;
                     const date = new Date().toLocaleDateString('nl-BE');

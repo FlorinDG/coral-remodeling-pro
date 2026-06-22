@@ -40,6 +40,7 @@ export async function GET(req: Request) {
         for (const db of invoiceDbs) {
             const pages = await prisma.globalPage.findMany({
                 where: { databaseId: db.id },
+                include: { database: { select: { tenantId: true } } }
             });
 
             for (const page of pages) {
@@ -51,6 +52,24 @@ export async function GET(req: Request) {
                             properties: { ...props, status: 'opt-overdue' },
                         },
                     });
+                    
+                    try {
+                        const { createNotification } = await import('@/lib/notifications');
+                        const invTitle = props.title || 'Factuur';
+                        await createNotification({
+                            tenantId: page.database.tenantId,
+                            userId: null,
+                            type: 'INVOICE_OVERDUE',
+                            title: 'Invoice Overdue',
+                            body: `Invoice ${invTitle} is overdue.`,
+                            entityType: 'invoice',
+                            entityId: page.id,
+                            href: `/nl/admin/financials/income/invoices/${page.id}`
+                        });
+                    } catch (e) {
+                        console.error('[Cron] Failed to emit INVOICE_OVERDUE', e);
+                    }
+
                     invoicesUpdated++;
                 }
             }

@@ -536,6 +536,27 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
     const handleUpdateProperty = (key: string, value: any) => {
         if (!invoice) return;
+        
+        // Notification emitters
+        if (key === 'status') {
+            const currentStatus = invoice.properties?.['status'];
+            if (currentStatus !== value) {
+                if (value === 'opt-paid' || value === 'opt-sent') {
+                    import('@/app/actions/notifications').then(({ emitNotificationAction }) => {
+                        emitNotificationAction({
+                            userId: null,
+                            type: value === 'opt-paid' ? 'INVOICE_PAID' : 'INVOICE_SENT',
+                            title: value === 'opt-paid' ? 'Invoice Paid' : 'Invoice Sent',
+                            body: `Invoice ${invoiceTitle} marked as ${value === 'opt-paid' ? 'paid' : 'sent'}.`,
+                            entityType: 'invoice',
+                            entityId: invoice.id,
+                            href: `/nl/admin/financials/income/invoices/${invoice.id}`
+                        }).catch(e => console.error(e));
+                    });
+                }
+            }
+        }
+
         updatePageProperty(invoicesDbId, invoice.id, key, value);
 
         // Auto due-date calculation

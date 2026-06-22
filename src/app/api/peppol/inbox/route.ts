@@ -386,6 +386,23 @@ export async function GET(req: Request) {
             await incrementPeppolReceived(tenantId);
             newlyImportedCount++;
 
+            try {
+                const { createNotification } = await import('@/lib/notifications');
+                const isCreditNote = doc.type === 'credit_note';
+                await createNotification({
+                    tenantId,
+                    userId: null,
+                    type: isCreditNote ? 'CREDIT_NOTE' : 'PEPPOL_RECEIVED',
+                    title: isCreditNote ? 'Credit Note Received' : 'Peppol Invoice Received',
+                    body: `New Peppol ${isCreditNote ? 'credit note' : 'invoice'} from ${parsed.supplierName || 'supplier'}`,
+                    entityType: 'invoice',
+                    entityId: pageId,
+                    href: `/nl/admin/financials/expenses/invoices/${pageId}`
+                });
+            } catch (e) {
+                console.error('[Peppol Inbox] Failed to emit notification', e);
+            }
+
             newlyImportedPages.push({
                 id: saved.id,
                 databaseId: saved.databaseId,

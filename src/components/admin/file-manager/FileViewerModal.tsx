@@ -1,13 +1,16 @@
-import React from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { X, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FileNode } from './types';
 
 interface FileViewerModalProps {
-    file: FileNode;
+    files: FileNode[];
+    index: number;
+    onIndexChange: (newIndex: number) => void;
     onClose: () => void;
 }
 
-export default function FileViewerModal({ file, onClose }: FileViewerModalProps) {
+export default function FileViewerModal({ files, index, onIndexChange, onClose }: FileViewerModalProps) {
+    const file = files[index];
     const isBlobFile = file.url?.startsWith('/api/files/') || file.url?.startsWith('t_');
     const displayUrl = file.url?.startsWith('t_') ? `/api/files/${file.url}` : file.url;
     
@@ -15,8 +18,24 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
     // Changing /view to /preview makes them embeddable in iframes
     const previewUrl = isBlobFile ? displayUrl : file.url?.replace('/view', '/preview');
 
-    const isImage = file.mimeType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name);
-    const isPdf = file.mimeType?.includes('pdf') || /\.pdf$/i.test(file.name);
+    const isImage = file?.mimeType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file?.name || '');
+    const isPdf = file?.mimeType?.includes('pdf') || /\.pdf$/i.test(file?.name || '');
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            } else if (e.key === 'ArrowLeft') {
+                if (index > 0) onIndexChange(index - 1);
+            } else if (e.key === 'ArrowRight') {
+                if (index < files.length - 1) onIndexChange(index + 1);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [index, files.length, onIndexChange, onClose]);
+
+    if (!file) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 md:p-8 animate-in fade-in duration-200">
@@ -24,6 +43,9 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-neutral-950 border-b border-white/10 shrink-0">
                     <div className="flex items-center gap-3 truncate">
+                        <span className="text-xs font-bold text-neutral-500 min-w-[3rem] whitespace-nowrap">
+                            {index + 1} / {files.length}
+                        </span>
                         <span className="font-medium text-white truncate">{file.name}</span>
                         <span className="text-xs text-neutral-400 bg-white/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
                             {file.mimeType?.split('/').pop() || 'File'}
@@ -87,6 +109,24 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
                                 </a>
                             )}
                         </div>
+                    )}
+                    
+                    {/* Navigation Arrows */}
+                    {index > 0 && (
+                        <button
+                            onClick={() => onIndexChange(index - 1)}
+                            className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm border border-white/10 shadow-lg"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </button>
+                    )}
+                    {index < files.length - 1 && (
+                        <button
+                            onClick={() => onIndexChange(index + 1)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/40 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm border border-white/10 shadow-lg"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </button>
                     )}
                 </div>
             </div>

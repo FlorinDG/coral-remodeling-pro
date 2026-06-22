@@ -153,7 +153,7 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
     const uploadFile = useFileManagerStore(state => state.uploadFile);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
-    const [viewingFile, setViewingFile] = useState<FileNode | null>(null);
+    const [viewingFileIndex, setViewingFileIndex] = useState<number | null>(null);
     const [tagFilter, setTagFilter] = useState<FileContextType | null>(null);
 
     const isGlobalMode = !contextType || contextType === 'global';
@@ -303,9 +303,10 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
                             <input
                                 type="file"
                                 className="hidden"
+                                multiple
                                 onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
+                                    const files = Array.from(e.target.files || []);
+                                    for (const file of files) {
                                         await uploadFile(file, contextType || 'global', contextId);
                                     }
                                     e.target.value = ''; // reset
@@ -342,7 +343,10 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
                                 )}
                                 <FileDisplayArea
                                     nodes={nodesInGroup}
-                                    onFileView={(file) => setViewingFile(file)}
+                                    onFileView={(file) => {
+                                        const idx = displayedNodes.findIndex(n => n.id === file.id);
+                                        if (idx !== -1) setViewingFileIndex(idx);
+                                    }}
                                     viewMode={viewMode}
                                 />
                             </div>
@@ -358,10 +362,12 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
                     </div>
                 </div>
 
-                {viewingFile && (
+                {viewingFileIndex !== null && displayedNodes.length > 0 && (
                     <FileViewerModal
-                        file={viewingFile}
-                        onClose={() => setViewingFile(null)}
+                        files={displayedNodes}
+                        index={viewingFileIndex}
+                        onIndexChange={setViewingFileIndex}
+                        onClose={() => setViewingFileIndex(null)}
                     />
                 )}
 

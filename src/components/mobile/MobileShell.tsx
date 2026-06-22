@@ -46,7 +46,6 @@ export default function MobileShell({
         { id: 'clients',  label: t('nav_clients'),   href: '/m/clients',   icon: <Users className="w-5 h-5" /> },
         { id: 'quotes',   label: t('nav_quotes'),    href: '/m/quotes',    icon: <FileSignature className="w-5 h-5" /> },
     ];
-    const [menuOpen, setMenuOpen] = useState(false);
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');
     const [companyName, setCompanyName] = useState('');
@@ -153,96 +152,17 @@ export default function MobileShell({
 
                     <div className="flex items-center gap-1.5">
                         <ThemeToggle />
-                        <button
-                            onClick={() => setMenuOpen(!menuOpen)}
-                            className="p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors text-neutral-950 dark:text-white"
+                        <Link
+                            href="/m/settings?tab=company-info"
+                            className="p-1 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
                         >
-                            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold shadow-inner">
+                                {firstName[0]}
+                            </div>
+                        </Link>
                     </div>
                 </div>
             </header>
-
-            {/* ── Slide-down menu ── */}
-            {menuOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50" onClick={() => setMenuOpen(false)}>
-                    <div
-                        className="bg-white dark:bg-neutral-950 border-b border-neutral-300 dark:border-white/10 shadow-2xl mt-14 animate-in slide-in-from-top-2 duration-200"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="p-4 space-y-1 max-w-lg mx-auto">
-                            {/* User card */}
-                            <div className="flex items-center gap-3 px-4 py-3 mb-2">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
-                                    {firstName[0]}
-                                </div>
-                                <div className="min-w-0">
-                                    <p className="text-sm font-bold truncate text-neutral-950 dark:text-white">{userName}</p>
-                                    <p className="text-[10px] text-neutral-600 dark:text-neutral-300 uppercase tracking-wider font-bold">{planType} {t('shell_plan')}</p>
-                                </div>
-                            </div>
-
-                            {/* Files */}
-                            <Link
-                                href="/m/files"
-                                onClick={() => setMenuOpen(false)}
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
-                            >
-                                <FolderOpen className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
-                                <span>{t('nav_files') || 'Global Library'}</span>
-                            </Link>
-
-                            {/* Settings (collapsible) */}
-                            <button
-                                onClick={() => setSettingsExpanded(!settingsExpanded)}
-                                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <Settings className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
-                                    <span>{t('shell_settings')}</span>
-                                </div>
-                                <ChevronDown className={`w-4 h-4 text-neutral-900 dark:text-neutral-200 transition-transform ${settingsExpanded ? 'rotate-180' : ''}`} />
-                            </button>
-
-                            {settingsExpanded && (
-                                <div className="pl-6 space-y-1 mt-1 border-l-2 border-neutral-200 dark:border-white/10 ml-6 animate-in slide-in-from-left-2 duration-150">
-                                    {[
-                                        { id: "company-info", label: t('settings_tab_identity') },
-                                        { id: "billing", label: t('settings_tab_billing') },
-                                        { id: "ui", label: t('settings_tab_branding') },
-                                        { id: "opt-peppol", label: t('settings_tab_peppol') },
-                                        { id: "opt-templates", label: t('settings_tab_stationery') },
-                                        { id: "accountant", label: t('settings_tab_accountant') },
-                                    ].map(tab => (
-                                        <Link
-                                            key={tab.id}
-                                            href={`/m/settings?tab=${tab.id}`}
-                                            onClick={() => setMenuOpen(false)}
-                                            className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-extrabold text-neutral-700 dark:text-neutral-300 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
-                                        >
-                                            {tab.label}
-                                        </Link>
-                                    ))}
-                                </div>
-                            )}
-
-
-                            {/* Sign out */}
-                            <div className="border-t border-neutral-300 dark:border-white/10 mt-2 pt-2">
-                                <button
-                                    onClick={async () => {
-                                        try { await del('coral-database-storage-v4'); localStorage.removeItem('coral-schema-version'); } catch {}
-                                        signOut({ callbackUrl: "/" });
-                                    }}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                                >
-                                    <LogOut className="w-5 h-5" /> {t('shell_sign_out')}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ── Content ── */}
             <main className="flex-1 pb-20 overflow-y-auto">

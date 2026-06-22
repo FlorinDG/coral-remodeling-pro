@@ -51,7 +51,6 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no expl
   "merchant": "string or null",
   "date": "YYYY-MM-DD or null",
   "totalAmount": number or null,
-  "vatAmount": number or null,
   "category": "one of: cat-fuel, cat-restaurant, cat-office, cat-tools, cat-materials, cat-parking, cat-transport, cat-other — or null"
 }
 Rules:
@@ -442,7 +441,6 @@ export async function POST(req: Request) {
                 title: extracted.merchant || 'Expense',
                 date: extracted.date || new Date().toISOString().split('T')[0],
                 amount: extracted.totalAmount ?? 0,
-                vatAmount: extracted.vatAmount ?? 0,
                 category: extracted.category || '',
                 currency: 'cur-eur',
                 paymentMethod: 'pm-card',

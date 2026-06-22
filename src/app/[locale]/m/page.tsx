@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { getLockedDbId } from '@/lib/lockedDbUtils';
 import { Link } from "@/i18n/routing";
 import {
-    Plus, Camera, Users, Clock,
+    Plus, Camera, Users, Clock, FolderOpen,
     ArrowUpRight, ArrowDownRight, ChevronRight, Building2
 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -251,6 +251,20 @@ export default async function MobileDashboard({ params }: { params: Promise<{ lo
                         <span className="text-[15px] font-black leading-tight">{t('dash_add_client')}</span>
                     </div>
                     <ChevronRight className="w-5 h-5 opacity-80" />
+                </Link>
+
+                {/* Files */}
+                <Link
+                    href="/m/files"
+                    className="flex items-center justify-between gap-3 px-4 py-4 rounded-2xl bg-neutral-100 dark:bg-white/5 text-neutral-900 dark:text-white font-bold shadow-sm active:scale-[0.98] transition-all border border-neutral-200 dark:border-white/10 min-h-[52px]"
+                >
+                    <div className="flex items-center gap-3.5">
+                        <div className="w-11 h-11 rounded-xl bg-neutral-200 dark:bg-white/10 flex items-center justify-center shrink-0">
+                            <FolderOpen className="w-6 h-6" />
+                        </div>
+                        <span className="text-[15px] font-black leading-tight">Global Library</span>
+                    </div>
+                    <ChevronRight className="w-5 h-5 opacity-50" />
                 </Link>
             </div>
 

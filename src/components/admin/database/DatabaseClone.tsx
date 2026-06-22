@@ -427,7 +427,6 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'title',         name: 'Handelaar / Beschrijving', type: 'text' },
       { id: 'date',          name: 'Datum',                    type: 'date'     },
       { id: 'amount',        name: 'Totaal bedrag',            type: 'currency' },
-      { id: 'vatAmount',     name: 'BTW bedrag',               type: 'currency' },
       { id: 'category',      name: 'Categorie', type: 'select', config: { options: [
         { id: 'cat-fuel',       name: 'Brandstof',          color: 'orange' },
         { id: 'cat-restaurant', name: 'Restaurant',         color: 'red'    },

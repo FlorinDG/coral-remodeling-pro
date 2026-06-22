@@ -388,7 +388,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                     <div className="flex items-center gap-3 shrink-0">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
+                            className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors flex-shrink-0 hidden md:flex"
                         >
                             {isSidebarOpen ? <X className="w-3.5 h-3.5" /> : <Menu className="w-3.5 h-3.5" />}
                         </button>

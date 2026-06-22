@@ -161,7 +161,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     merchant: ocrResult.extractedMerchant,
                     date: ocrResult.extractedDate,
                     totalAmount: ocrResult.extractedAmount,
-                    vatAmount: ocrResult.extractedVatAmount,
                     category: null
                 };
             } catch (err: any) {
@@ -204,7 +203,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     merchant: ext.merchant || prev.merchant,
                     date: ext.date || prev.date,
                     amount: ext.totalAmount != null ? String(ext.totalAmount) : prev.amount,
-                    vatAmount: ext.vatAmount != null ? String(ext.vatAmount) : prev.vatAmount,
                     category: ext.category || prev.category,
                 }));
             }
@@ -287,7 +285,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         title: form.merchant || 'Unnamed Expense',
                         date: form.date,
                         amount: parsedAmount,
-                        vatAmount: parsedVat,
                         category: form.category || '',
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
@@ -328,7 +325,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     title: form.merchant || currentProps.title,
                     date: form.date,
                     amount: parsedAmount,
-                    vatAmount: parsedVat,
                     category: form.category || currentProps.category,
                     paymentMethod: form.paymentMethod,
                     notes: form.notes,

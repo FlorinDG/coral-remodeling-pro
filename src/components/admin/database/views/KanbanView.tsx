@@ -264,7 +264,8 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
         data: { type: 'card', page }
     });
     const [isEditing, setIsEditing] = useState(false);
-    const [editTitle, setEditTitle] = useState('');
+    const [editTitle, setEditTitle] = useState(String(page.properties['title'] || 'Untitled'));
+    const [lightboxOpen, setLightboxOpen] = useState(false);
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const createPage = useDatabaseStore(state => state.createPage);
@@ -333,9 +334,34 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
             className="group bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing hover:border-neutral-300 dark:hover:border-white/20 flex flex-col"
         >
             {coverUrl && (
-                <div className="w-full h-32 overflow-hidden border-b border-neutral-100 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800">
+                <>
+                <div 
+                    className="w-full h-32 overflow-hidden border-b border-neutral-100 dark:border-white/5 bg-neutral-100 dark:bg-neutral-800 relative group/cover cursor-zoom-in"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setLightboxOpen(true);
+                    }}
+                >
                     <img src={coverUrl} alt={title} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
+                    <div className="absolute inset-0 bg-black/0 group-hover/cover:bg-black/20 transition-colors flex items-center justify-center">
+                        <Maximize2 className="w-6 h-6 text-white opacity-0 group-hover/cover:opacity-100 transition-opacity drop-shadow-md" />
+                    </div>
                 </div>
+                {lightboxOpen && (
+                    <div 
+                        className="fixed inset-0 z-[999] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm cursor-zoom-out"
+                        onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+                    >
+                        <img src={coverUrl} alt={title} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl" />
+                        <button 
+                            className="absolute top-4 right-4 md:top-8 md:right-8 p-3 bg-black/50 hover:bg-black/80 rounded-full text-white transition-colors"
+                            onClick={(e) => { e.stopPropagation(); setLightboxOpen(false); }}
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                )}
+                </>
             )}
             <div className="p-3">
                 <div className="flex items-start justify-between mb-1">

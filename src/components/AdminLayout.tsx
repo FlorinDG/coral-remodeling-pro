@@ -29,6 +29,7 @@ import MobileBottomNav from "@/components/admin/MobileBottomNav";
 import GlobalLoadingModal from "@/components/admin/GlobalLoadingModal";
 import VersionWatcher from "@/components/admin/VersionWatcher";
 import EnvBadge from "@/components/admin/EnvBadge";
+import NotificationWatcher from "@/components/admin/notifications/NotificationWatcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
@@ -564,6 +565,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             <MobileBottomNav />
             <VersionWatcher />
             <GlobalMentionDateInterceptor />
+            <NotificationWatcher />
             <EnvBadge />
             <Toaster position="top-right" richColors closeButton />
         </div>

@@ -3,8 +3,9 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/routing";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { toast } from "sonner";
+import { del } from "idb-keyval";
 import {
     Building2, CreditCard, Save, RefreshCw, AlertCircle,
     CheckCircle2, Wifi, ArrowLeft, Paintbrush, FileText, Check, Shield, Crown, Zap, Sparkles,
@@ -1095,6 +1096,26 @@ export default function MobileSettingsClient({
                         )}
                     </div>
                 )}
+
+                {/* Global Sign Out Button */}
+                <div className="pt-6 pb-4">
+                    <button
+                        onClick={async () => {
+                            try {
+                                await del('coral-database-storage-v4');
+                                localStorage.removeItem('coral-schema-version');
+                            } catch {}
+                            signOut({ callbackUrl: "/" });
+                        }}
+                        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 font-black shadow-sm border border-red-200 dark:border-red-500/20 active:scale-[0.98] transition-all"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                        {t('shell_sign_out') || 'Sign out'}
+                    </button>
+                    <p className="text-center text-[10px] text-neutral-400 mt-3 font-medium">
+                        CoralOS Mobile Client v2
+                    </p>
+                </div>
 
             </div>
         </div>

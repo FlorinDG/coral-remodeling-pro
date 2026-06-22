@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Paperclip, Send, Loader2, FileText, CheckSquare, Square } from 'lucide-react';
+import { X, Paperclip, Send, Loader2, FileText, CheckSquare, Square, Plus, Upload, HardDrive } from 'lucide-react';
+import { uploadFileAction } from '@/app/actions/files';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/time-tracker/components/ui/dropdown-menu';
 import { listRecordFiles } from '@/app/actions/list-record-files';
 
 interface QuoteSendModalProps {
@@ -34,6 +36,39 @@ export function QuoteSendModal({
     const [availableFiles, setAvailableFiles] = useState<{ key: string, filename: string, size: number }[]>([]);
     const [selectedFileKeys, setSelectedFileKeys] = useState<Set<string>>(new Set());
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+    const [uploadingFiles, setUploadingFiles] = useState<{ filename: string }[]>([]);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setUploadingFiles(prev => [...prev, ...files.map(f => ({ filename: f.name }))]);
+
+        for (const file of files) {
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                const res = await uploadFileAction(formData, documentType || 'quotation', documentId);
+                
+                if (res.success && res.key) {
+                    const newFile = { key: res.key, filename: file.name, size: file.size };
+                    setAvailableFiles(prev => [...prev, newFile]);
+                    setSelectedFileKeys(prev => {
+                        const next = new Set(prev);
+                        next.add(newFile.key);
+                        return next;
+                    });
+                }
+            } catch (err) {
+                console.error('Upload error:', err);
+            } finally {
+                setUploadingFiles(prev => prev.filter(f => f.filename !== file.name));
+            }
+        }
+        
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
 
     useEffect(() => {
         if (isOpen) {
@@ -140,10 +175,36 @@ export function QuoteSendModal({
 
                     {/* Attachments Section */}
                     <div>
-                        <h3 className="text-sm font-medium text-neutral-900 dark:text-white mb-3 flex items-center gap-2">
-                            <Paperclip className="w-4 h-4 text-neutral-400" />
-                            Bijlagen
-                        </h3>
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-2">
+                                <Paperclip className="w-4 h-4 text-neutral-400" />
+                                Bijlagen
+                            </h3>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-colors">
+                                        <Plus className="w-3.5 h-3.5" />
+                                        Bestand toevoegen
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 z-[100000]">
+                                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                                        <HardDrive className="w-4 h-4 mr-2" /> Upload van computer
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem disabled className="text-neutral-400">
+                                        <Upload className="w-4 h-4 mr-2" /> Uit projectbibliotheek/extern
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                            <input 
+                                type="file" 
+                                multiple 
+                                accept="application/pdf,image/*" 
+                                className="hidden" 
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                            />
+                        </div>
                         <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-lg p-2 space-y-1">
                             {/* Primary PDF (Always checked, locked) */}
                             <div className="flex items-center gap-3 p-2 rounded-md bg-blue-50/50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
@@ -190,6 +251,15 @@ export function QuoteSendModal({
                                     Geen extra bestanden in het project.
                                 </div>
                             )}
+                            
+                            {uploadingFiles.map((uf, idx) => (
+                                <div key={`uf-${idx}`} className="flex items-center gap-3 p-2 rounded-md border border-transparent opacity-70">
+                                    <Loader2 className="w-4 h-4 text-neutral-400 animate-spin shrink-0" />
+                                    <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
+                                    <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate flex-1 font-medium">{uf.filename}</span>
+                                    <span className="text-xs text-neutral-400 shrink-0">Uploaden...</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>

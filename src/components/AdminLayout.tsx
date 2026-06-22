@@ -30,6 +30,7 @@ import GlobalLoadingModal from "@/components/admin/GlobalLoadingModal";
 import VersionWatcher from "@/components/admin/VersionWatcher";
 import EnvBadge from "@/components/admin/EnvBadge";
 import NotificationWatcher from "@/components/admin/notifications/NotificationWatcher";
+import NotificationBell from "@/components/admin/notifications/NotificationBell";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useSidebarStore, getIconComponent } from "@/store/useSidebarStore";
@@ -408,6 +409,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
 
                     <div className="flex items-center justify-end gap-2 sm:gap-3 shrink-0">
 
+                        <NotificationBell />
                         <ThemeToggle />
                         <LanguageSwitcher />
 

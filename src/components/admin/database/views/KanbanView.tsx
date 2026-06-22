@@ -278,7 +278,16 @@ function SortableCard({ page, dateProp, priorityProp, coverProp, databaseId, onC
         if (typeof newProps['title'] === 'string') {
             newProps['title'] = `${newProps['title']} (Copy)`;
         }
-        createPage(databaseId, newProps);
+        const cloneBlocks = (blocks: any[]): any[] => {
+            if (!blocks) return [];
+            return blocks.map(block => ({
+                ...block,
+                id: crypto.randomUUID(),
+                children: block.children ? cloneBlocks(block.children) : undefined,
+            }));
+        };
+        const clonedBlocks = page.blocks ? cloneBlocks(page.blocks) : undefined;
+        createPage(databaseId, newProps, undefined, clonedBlocks);
     };
 
     const handleDelete = () => {

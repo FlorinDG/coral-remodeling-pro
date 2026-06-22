@@ -25,7 +25,7 @@ import {
     useSortable 
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2, FileEdit, ExternalLink } from 'lucide-react';
+import { Plus, MoreHorizontal, ChevronRight, ChevronDown, AlertTriangle, User2, Calendar as CalendarIcon, GripHorizontal, Settings2, Image as ImageIcon, LayoutList, Copy, Trash2, Maximize2, FileEdit, ExternalLink, X } from 'lucide-react';
 import { format } from 'date-fns';
 import PageModal from '@/components/admin/database/components/PageModal';
 import { useFilteredPages } from '../hooks/useFilteredPages';

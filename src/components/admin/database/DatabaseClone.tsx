@@ -876,6 +876,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-payments-in') parsedName = 'Received Payments';
     if (databaseId === 'db-payments-out') parsedName = 'Outgoing Payments';
 
+    if (parsedName === 'New Workspace') {
+      setAutoInitializing(false);
+      return;
+    }
+
     const customProps = DEFAULT_PROPERTIES_MAP[databaseId];
     useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps);
   }, [database, databaseId, resolvedId, autoInitializing, hydrated, clientFetchAttempted, DEFAULT_PROPERTIES_MAP]);

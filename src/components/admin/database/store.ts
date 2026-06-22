@@ -331,6 +331,10 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             createDatabase: (name, description, specificId, properties) => {
+                if (name === 'New Workspace' || name === 'New Database') {
+                    console.warn(`[store] Blocked auto-creation of garbage database: ${name}`);
+                    return null as any;
+                }
                 const newDatabase: Database = {
                     id: specificId || uuidv4(),
                     name,

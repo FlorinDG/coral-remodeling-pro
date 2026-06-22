@@ -271,8 +271,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     };
 
     return (
-        <div className="flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
-            <div className="flex flex-col md:flex-row items-stretch md:items-start w-full pt-1 pb-0.5 px-2 gap-4">
+        <div className="@container flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
+            <div className="flex flex-col @[980px]:flex-row items-stretch @[980px]:items-start w-full pt-1 pb-0.5 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
                 <div className="flex flex-col gap-0.5 flex-1 shrink relative mt-0.5 min-w-[280px] w-full">
@@ -397,10 +397,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     );
                 })()}
                 {/* Metric columns group that wraps on narrow screens */}
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 w-full md:w-auto mt-2.5 md:mt-0">
+                <div className="flex flex-col @[600px]:flex-row items-stretch @[600px]:items-center gap-2 @[600px]:gap-3 w-full @[980px]:w-auto mt-2.5 @[980px]:mt-0">
                     {/* 2. Quantity (Qty) */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Qty</label>
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Qty</label>
                         <input
                             type="text"
                             inputMode="decimal"
@@ -422,17 +422,17 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                     setQtyText('');
                                 }
                             }}
-                            className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 pr-1 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-black dark:text-white text-right @[600px]:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 pr-1 w-24 @[600px]:w-full"
                         />
                     </div>
 
                     {/* 3. Unit (EENHEID) */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Unit</label>
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Unit</label>
                         <select
                             value={block.unit || 'stuk'}
                             onChange={(e) => onUpdate({ unit: e.target.value })}
-                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
                             style={{ textAlign: 'right', textAlignLast: 'right' }}
                         >
                             <option value="u">u</option>
@@ -449,9 +449,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 4. Unit Price excl. VAT (EENHEIDSPRIJS) */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Prijs</label>
-                        <div className="relative w-24 md:w-full flex justify-end items-center">
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Prijs</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end items-center">
                             <span className="absolute left-0 top-[3px] text-xs font-semibold text-neutral-400 pointer-events-none select-none">€</span>
                             <input
                                 type="text"
@@ -482,10 +482,10 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 5. BTW Rate per line */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 transition-opacity ${vatCalcMode === 'total' ? 'opacity-30 pointer-events-none' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">BTW</label>
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[90px] shrink-0 self-start mt-0.5 transition-opacity ${vatCalcMode === 'total' ? 'opacity-30 pointer-events-none' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">BTW</label>
                         {vatCalcMode === 'total' ? (
-                            <span className="text-xs text-neutral-400 py-1 pr-4 md:pr-0">—</span>
+                            <span className="text-xs text-neutral-400 py-1 pr-4 @[600px]:pr-0">—</span>
                         ) : (
                             <select
                                 value={block.vatMedecontractant ? 'mc' : (block.vatRate ?? 21)}
@@ -497,7 +497,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                         onUpdate({ vatRate: parseFloat(val), vatMedecontractant: false });
                                     }
                                 }}
-                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
+                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
                                 style={{ textAlign: 'right', textAlignLast: 'right' }}
                             >
                                 <option value={21}>21%</option>
@@ -510,9 +510,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 6. Total excl. VAT = Qty × Unit Price */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[110px] shrink-0 self-start mt-0.5 relative py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right md:pr-4 cursor-default">Totaal</label>
-                        <div className="w-24 md:w-full flex justify-end items-center pr-1 py-0.5">
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[110px] shrink-0 self-start mt-0.5 relative py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-right @[600px]:pr-4 cursor-default">Totaal</label>
+                        <div className="w-24 @[600px]:w-full flex justify-end items-center pr-1 py-0.5">
                             <span className={`font-medium text-lg tracking-tight tabular-nums ${
                                 (() => {
                                     const total = (block.unitPrice || block.verkoopPrice || 0) * (block.quantity || 1);

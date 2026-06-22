@@ -381,8 +381,8 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
     };
 
     return (
-        <div className="flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
-            <div className="flex flex-col md:flex-row items-stretch md:items-start w-full pt-1 pb-0.5 px-2 gap-4">
+        <div className="@container flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
+            <div className="flex flex-col @[980px]:flex-row items-stretch @[980px]:items-start w-full pt-1 pb-0.5 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
                 <div className="flex flex-col gap-0.5 flex-1 shrink relative mt-0.5 min-w-[280px] w-full">
@@ -544,12 +544,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 })()}
 
                 {/* Metric columns group that wraps on narrow screens */}
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3 w-full md:w-auto mt-2.5 md:mt-0">
+                <div className="flex flex-col @[600px]:flex-row items-stretch @[600px]:items-center gap-2 @[600px]:gap-3 w-full @[980px]:w-auto mt-2.5 @[980px]:mt-0">
                     {/* 1.5 Type / Category Selector */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[75px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Type</label>
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[75px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Type</label>
                         <select
-                            className="bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 px-0 w-24 md:w-full"
+                            className="bg-transparent border border-orange-400 dark:border-orange-600/60 rounded-sm text-sm text-orange-600 dark:text-orange-400 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 px-0 w-24 @[600px]:w-full"
                             style={{ textAlign: 'right', textAlignLast: 'right' }}
                             value={block.calculationType || 'loon'}
                             onChange={(e) => onUpdate({ calculationType: e.target.value as any })}
@@ -564,9 +564,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 2. Quantity (Qty) */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Qty</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[65px] shrink-0 self-start mt-0.5 relative group/input border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Qty</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end">
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -588,7 +588,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                         setQtyText('');
                                     }
                                 }}
-                                className="bg-transparent border-none text-base text-black dark:text-white text-right md:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 w-full"
+                                className="bg-transparent border-none text-base text-black dark:text-white text-right @[600px]:text-center focus:outline-none focus:ring-0 font-medium placeholder:text-neutral-300 py-0.5 w-full"
                             />
                             {/* Packaging calculator info */}
                             {(() => {
@@ -609,7 +609,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                                 if (packsNeeded <= 1 && waste === 0) return null;
 
                                 return (
-                                    <div className="absolute top-full right-0 md:left-1/2 md:right-auto md:-translate-x-1/2 mt-0.5 w-[180px] text-center z-10" title={`${packsNeeded} pak × ${perPack} ${block.unit || 'eeh'}/pak = ${adjustedQty} ${block.unit || 'eeh'}`}>
+                                    <div className="absolute top-full right-0 @[600px]:left-1/2 @[600px]:right-auto @[600px]:-translate-x-1/2 mt-0.5 w-[180px] text-center z-10" title={`${packsNeeded} pak × ${perPack} ${block.unit || 'eeh'}/pak = ${adjustedQty} ${block.unit || 'eeh'}`}>
                                         <div className="text-[9px] font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded px-1.5 py-0.5 border border-blue-200 dark:border-blue-800/40 whitespace-nowrap">
                                             📦 {packsNeeded} pak → {adjustedQty} {block.unit || 'eeh'}
                                             {waste > 0 && <span className="text-blue-400 dark:text-blue-500"> (+{waste})</span>}
@@ -621,12 +621,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 3. Unit (UNITÉ) */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center">Unit</label>
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[55px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Unit</label>
                         <select
                             value={block.unit || 'stuk'}
                             onChange={(e) => onUpdate({ unit: e.target.value })}
-                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
+                            className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
                             style={{ textAlign: 'right', textAlignLast: 'right' }}
                         >
                             <option value="u">u</option>
@@ -641,9 +641,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 4. Bruto Price (Bruto) */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[90px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Price driven by subcomponents' : ''}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Bruto</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[90px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`} title={childrenTotal !== undefined ? 'Price driven by subcomponents' : ''}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Bruto</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end">
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -673,9 +673,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 4.5. Supplier Discount — Reduction tenant receives from supplier */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Discount driven by subcomponents' : 'Supplier discount — the reduction you receive from your supplier (not client-facing)'}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default" title={t('col_supplier_discount_tooltip', language)}>{t('col_supplier_discount', language)}</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`} title={childrenTotal !== undefined ? 'Discount driven by subcomponents' : 'Supplier discount — the reduction you receive from your supplier (not client-facing)'}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default" title={t('col_supplier_discount_tooltip', language)}>{t('col_supplier_discount', language)}</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end">
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -705,9 +705,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 5. Margin / Custom TVA Equivalent */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`} title={childrenTotal !== undefined ? 'Margin driven by subcomponents' : ''}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Marge</label>
-                        <div className="relative w-24 md:w-full flex justify-end">
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[70px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`} title={childrenTotal !== undefined ? 'Margin driven by subcomponents' : ''}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Marge</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end">
                             <input
                                 type="text"
                                 inputMode="decimal"
@@ -737,9 +737,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 5.5. Unit Price (P.U. HT) — Selling price per unit before quantity */}
-                    <div className={`flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0`}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">P.U. HT</label>
-                        <div className="relative w-24 md:w-full flex justify-end items-center">
+                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`}>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">P.U. HT</label>
+                        <div className="relative w-24 @[600px]:w-full flex justify-end items-center">
                             <span className="absolute left-0 top-[3px] text-xs font-semibold text-neutral-400 pointer-events-none select-none">€</span>
                             <input
                                 type="text"
@@ -769,9 +769,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                     </div>
 
                     {/* 6. Total (TOTAL HT) */}
-                    <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[100px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 md:border-b-0 py-1.5 md:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-right md:pr-4 cursor-default">Total</label>
-                        <div className="w-24 md:w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
+                    <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Total</label>
+                        <div className="w-24 @[600px]:w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
                             <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
                                 {childrenTotal !== undefined
                                     ? (childrenTotal * (block.quantity || 1)).toFixed(2)
@@ -783,12 +783,12 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                     {/* 7. Per-line VAT rate selector (only visible in 'per line' mode) */}
                     {vatCalcMode === 'lines' && (
-                        <div className="flex flex-row items-center justify-between w-full md:flex-col md:gap-0.5 md:w-[58px] shrink-0 self-start mt-0.5 py-1.5 md:py-0">
-                            <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left md:text-center" title={t('vat', language)}>{t('vat', language)}</label>
+                        <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[58px] shrink-0 self-start mt-0.5 py-1.5 @[600px]:py-0">
+                            <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center" title={t('vat', language)}>{t('vat', language)}</label>
                             <select
                                 value={block.vatRate ?? 21}
                                 onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
-                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right md:text-center py-0.5 pr-1 pl-0 w-24 md:w-full"
+                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
                                 style={{ textAlign: 'right', textAlignLast: 'right' }}
                             >
                                 <option value={21}>21%</option>

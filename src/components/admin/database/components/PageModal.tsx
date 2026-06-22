@@ -678,7 +678,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         </ErrorBoundary>
                     </div>
                 ) : (
-                <div className="flex-1 px-8 pt-2 pb-6 max-w-[1200px] mx-auto w-full">
+                <div className="flex-1 px-4 md:px-8 pt-2 pb-6 max-w-[1200px] mx-auto w-full">
                     {/* Title */}
                     <input
                         className="w-full text-4xl font-bold mb-4 text-neutral-900 dark:text-white outline-none bg-transparent placeholder:text-neutral-300 dark:placeholder:text-neutral-700"

@@ -507,10 +507,10 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className={`relative w-full max-w-7xl h-[90vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`relative w-full max-w-7xl md:h-[90vh] bg-white dark:bg-neutral-900 rounded-none md:rounded-2xl shadow-2xl border-0 md:border border-neutral-200 dark:border-white/10 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden min-h-screen md:min-h-0 ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`} onClick={(e) => e.stopPropagation()}>
                 
                 {/* Left Pane (Metadata & Lines) */}
-                <div className="w-[55%] flex flex-col border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900">
+                <div className="w-full md:w-[55%] flex flex-col border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/10 relative bg-white dark:bg-neutral-900 shrink-0">
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
                         <div className="flex items-center gap-3 min-w-0">
@@ -541,7 +541,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0 xl:hidden block">
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-neutral-200/80 dark:hover:bg-white/10 text-neutral-400 hover:text-neutral-600 transition-colors shrink-0 block">
                             <X className="w-5 h-5" />
                         </button>
                     </div>

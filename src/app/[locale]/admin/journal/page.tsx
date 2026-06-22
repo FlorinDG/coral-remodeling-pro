@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Block, BlockType } from '@/components/admin/database/types';
+import { Block, Block } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
-    Users, Layout, ArrowRight, Table, Plus, X,
+    Users, Layout, Table, Plus, X,
     ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
     CheckSquare, List, BookOpen, Globe, Notebook,
     Heading1, Heading2, Heading3, Code, ListOrdered, Minus,
-    Link2, ExternalLink, Type
+    Link2, ExternalLink, 
 } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -18,16 +18,17 @@ import { Link } from '@/i18n/routing';
 import { useTenant } from '@/context/TenantContext';
 import { v4 as uuidv4 } from 'uuid';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import BlockEditor from '@/components/admin/database/components/BlockEditor';
 
-type ModuleType = 'projects' | 'clients' | 'crm' | 'general' | 'all';
-type ViewType = 'feed' | 'database';
+type Module = 'projects' | 'clients' | 'crm' | 'general' | 'all';
+type View = 'feed' | 'database';
 
 interface JournalEntry {
     id: string;
     title: string;
     databaseId: string;
     databaseName: string;
-    module: ModuleType;
+    module: Module;
     updatedAt: Date;
     blocks: Block[];
     author?: string;
@@ -62,7 +63,7 @@ function groupEntriesByDate(entries: JournalEntry[]): { label: string; entries: 
 const GENERAL_DB_ID = 'db-journal-general';
 
 // ── Block type options for the new entry form ────────────────────────────
-const BLOCK_TYPE_OPTIONS: { type: BlockType; label: string; icon: React.ReactNode }[] = [
+const BLOCK_TYPE_OPTIONS: { type: Block; label: string; icon: React.ReactNode }[] = [
     { type: 'paragraph',          label: 'Text',    icon: <AlignLeft className="w-3.5 h-3.5" /> },
     { type: 'heading_1',          label: 'H1',      icon: <Heading1 className="w-3.5 h-3.5" /> },
     { type: 'heading_2',          label: 'H2',      icon: <Heading2 className="w-3.5 h-3.5" /> },
@@ -89,23 +90,22 @@ const LINKABLE_DB_IDS = [
 ];
 
 export default function JournalModulePage() {
-    const { databases, updatePageBlocks, createPage, createDatabase } = useDatabaseStore();
+    const { databases } = useDatabaseStore();
     const { resolveDbId } = useTenant();
     
     // Core Navigation & View States
-    const [viewType, setViewType] = useState<ViewType>('feed');
-    const [activeTab, setActiveTab] = useState<ModuleType>('all');
+    const [view, setView] = useState<View>('feed');
+    const [activeTab, setActiveTab] = useState<Module>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Modal creation states
-    const [selectedBlockType, setSelectedBlockType] = useState<BlockType>('paragraph');
-    const [newEntryContent, setNewEntryContent] = useState('');
     const [newEntryTitle, setNewEntryTitle] = useState('');
     const [authorName, setAuthorName] = useState('');
     // Link states
     const [linkDatabaseId, setLinkDatabaseId] = useState('');
     const [linkRecordId, setLinkRecordId] = useState('');
+    const [draftId, setDraftId] = useState<string | null>(null);
 
     const loading = databases.length === 0;
 
@@ -114,10 +114,10 @@ export default function JournalModulePage() {
 
     // Database Mapping for module tabs
     const moduleMap = useMemo(() => ({
-        [resolveDbId('db-1') || 'db-1']: 'projects' as ModuleType,
-        [resolveDbId('db-clients') || 'db-clients']: 'clients' as ModuleType,
-        [resolveDbId('db-crm') || 'db-crm']: 'crm' as ModuleType,
-        [GENERAL_DB_ID]: 'general' as ModuleType,
+        [resolveDbId('db-1') || 'db-1']: 'projects' as Module,
+        [resolveDbId('db-clients') || 'db-clients']: 'clients' as Module,
+        [resolveDbId('db-crm') || 'db-crm']: 'crm' as Module,
+        [GENERAL_DB_ID]: 'general' as Module,
     }), [resolveDbId]);
 
     // Resolve linkable DBs for the modal
@@ -149,8 +149,8 @@ export default function JournalModulePage() {
     
     // 1. Entries from module DBs (legacy: blocks embedded in pages)
     databases.forEach(db => {
-        const modType = moduleMap[db.id];
-        if (!modType) return;
+        const mod = moduleMap[db.id];
+        if (!mod) return;
         if (db.id === GENERAL_DB_ID) return; // Handle journal DB separately below
 
         db.pages.forEach(page => {
@@ -161,7 +161,7 @@ export default function JournalModulePage() {
                     title: String(props?.title || props?.name || 'Untitled Record'),
                     databaseId: db.id,
                     databaseName: db.name,
-                    module: modType,
+                    module: mod,
                     updatedAt: new Date(page.updatedAt),
                     blocks: page.blocks,
                     author: (props?.['prop-owner'] as string[])?.[0] || (props?.['author'] as string) || 'System',
@@ -178,7 +178,7 @@ export default function JournalModulePage() {
             const linkedDbId = props?.linkedDatabaseId as string | undefined;
             const linkedRecId = props?.linkedRecordId as string | undefined;
             let linkedRecTitle = props?.linkedRecordTitle as string | undefined;
-            let resolvedModule: ModuleType = 'general';
+            let resolvedModule: Module = 'general';
 
             // Resolve module from linked database
             if (linkedDbId && moduleMap[linkedDbId]) {
@@ -230,29 +230,7 @@ export default function JournalModulePage() {
     // Handle saving new journal entry — always creates in journal DB with optional link
     const handleSaveNewEntry = (e: React.FormEvent) => {
         e.preventDefault();
-        if (selectedBlockType !== 'divider' && !newEntryContent.trim()) return;
-
-        const newBlock: Block = {
-            id: uuidv4(),
-            type: selectedBlockType,
-            content: selectedBlockType === 'divider' ? '' : newEntryContent,
-            properties: {
-                createdAt: new Date().toISOString(),
-                author: authorName || 'System',
-                reactions: {},
-                comments: []
-            }
-        };
-
-        // Ensure journal DB exists
-        let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
-        if (!db) {
-            db = createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
-                { id: 'title', name: 'Title', type: 'text' },
-                { id: 'author', name: 'Author', type: 'text' },
-                { id: 'created', name: 'Created', type: 'created_time' },
-            ]);
-        }
+        if (!draftId) return;
 
         // Build page properties
         const pageProps: Record<string, any> = {
@@ -270,18 +248,28 @@ export default function JournalModulePage() {
             pageProps.linkedRecordTitle = String(linkedProps?.title || linkedProps?.name || 'Untitled');
         }
 
-        createPage(GENERAL_DB_ID, pageProps, undefined, [newBlock]);
+        // Update the page with the final properties
+        for (const [k, v] of Object.entries(pageProps)) {
+            useDatabaseStore.getState().updatePageProperty(GENERAL_DB_ID, draftId, k, v);
+        }
 
         // Reset & Close Modal
-        setNewEntryContent('');
+        setDraftId(null);
         setNewEntryTitle('');
-        setSelectedBlockType('paragraph');
         setLinkDatabaseId('');
         setLinkRecordId('');
         setIsAddModalOpen(false);
     };
+    
+    const handleCancelEntry = () => {
+        if (draftId) {
+            useDatabaseStore.getState().deletePage(GENERAL_DB_ID, draftId);
+            setDraftId(null);
+        }
+        setIsAddModalOpen(false);
+    };
 
-    const tabs: { id: ModuleType; label: string; icon: React.ReactNode }[] = [
+    const tabs: { id: Module; label: string; icon: React.ReactNode }[] = [
         { id: 'all',      label: 'All',       icon: <Layout className="w-4 h-4" /> },
         { id: 'general',  label: 'General',   icon: <Notebook className="w-4 h-4" /> },
         { id: 'projects', label: 'Projects',  icon: <Briefcase className="w-4 h-4" /> },
@@ -335,18 +323,18 @@ export default function JournalModulePage() {
                             />
                         </div>
 
-                        {/* View Type Toggle */}
+                        {/* View  Toggle */}
                         <div className="flex items-center bg-neutral-100 dark:bg-white/5 p-1 rounded-xl gap-1">
                             <button 
-                                onClick={() => setViewType('feed')}
-                                className={`p-2 rounded-lg transition-all ${viewType === 'feed' ? 'bg-white dark:bg-neutral-800 text-orange-500 shadow-sm' : 'text-neutral-500'}`}
+                                onClick={() => setView('feed')}
+                                className={`p-2 rounded-lg transition-all ${view === 'feed' ? 'bg-white dark:bg-neutral-800 text-orange-500 shadow-sm' : 'text-neutral-500'}`}
                                 title="Notion Feed View"
                             >
                                 <Layout className="w-4 h-4" />
                             </button>
                             <button 
-                                onClick={() => setViewType('database')}
-                                className={`p-2 rounded-lg transition-all ${viewType === 'database' ? 'bg-white dark:bg-neutral-800 text-orange-500 shadow-sm' : 'text-neutral-500'}`}
+                                onClick={() => setView('database')}
+                                className={`p-2 rounded-lg transition-all ${view === 'database' ? 'bg-white dark:bg-neutral-800 text-orange-500 shadow-sm' : 'text-neutral-500'}`}
                                 title="Database View"
                             >
                                 <Table className="w-4 h-4" />
@@ -356,9 +344,28 @@ export default function JournalModulePage() {
                         {/* "New Entry" Trigger */}
                         <Button 
                             onClick={() => {
+                                const newDraftId = uuidv4();
+                                setDraftId(newDraftId);
                                 setIsAddModalOpen(true);
                                 setLinkDatabaseId('');
                                 setLinkRecordId('');
+                                setNewEntryTitle('');
+                                
+                                // Ensure journal DB exists
+                                let db = useDatabaseStore.getState().databases.find(d => d.id === GENERAL_DB_ID);
+                                if (!db) {
+                                    db = useDatabaseStore.getState().createDatabase('General Journal', 'Free-form internal notes and journal entries', GENERAL_DB_ID, [
+                                        { id: 'title', name: 'Title', type: 'text' },
+                                        { id: 'author', name: 'Author', type: 'text' },
+                                        { id: 'created', name: 'Created', type: 'created_time' },
+                                    ]);
+                                }
+
+                                // Create the draft page so BlockEditor can attach to it
+                                useDatabaseStore.getState().createPage(GENERAL_DB_ID, {
+                                    title: `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
+                                    author: authorName || 'System',
+                                }, undefined, undefined, newDraftId);
                             }}
                             className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all"
                         >
@@ -394,7 +401,7 @@ export default function JournalModulePage() {
                     </div>
                 ) : (
                     <div className="max-w-4xl mx-auto pb-20">
-                        {viewType === 'feed' ? (
+                        {view === 'feed' ? (
                             <>
                                 {dateGroupedEntries.length === 0 && (
                                     <div className="text-center py-20">
@@ -443,14 +450,14 @@ export default function JournalModulePage() {
             {/* ── New Entry Modal (centered) ── */}
             {isAddModalOpen && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200">
-                    <div className="w-full max-w-xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
+                    <div className="w-full max-w-3xl bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh]">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5">
                             <h2 className="text-base font-black tracking-tight uppercase flex items-center gap-2">
                                 <Plus className="w-5 h-5 text-orange-500" /> New Journal Entry
                             </h2>
                             <button 
-                                onClick={() => setIsAddModalOpen(false)}
+                                onClick={handleCancelEntry}
                                 className="p-1.5 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-all"
                             >
                                 <X className="w-5 h-5" />
@@ -509,28 +516,6 @@ export default function JournalModulePage() {
                                     )}
                                 </div>
 
-                                {/* Entry Style Selector */}
-                                <div>
-                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Block Type</label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {BLOCK_TYPE_OPTIONS.map(style => (
-                                            <button
-                                                key={style.type}
-                                                type="button"
-                                                onClick={() => setSelectedBlockType(style.type)}
-                                                className={`py-1.5 px-2.5 text-[9px] font-black uppercase tracking-wider rounded-lg border flex items-center gap-1 transition-all ${
-                                                    selectedBlockType === style.type
-                                                        ? 'bg-orange-500/10 border-orange-500 text-orange-500'
-                                                        : 'border-neutral-200 dark:border-white/10 text-neutral-500 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                                }`}
-                                            >
-                                                {style.icon}
-                                                {style.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
                                 {/* Author name */}
                                 <div>
                                     <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Author</label>
@@ -543,18 +528,12 @@ export default function JournalModulePage() {
                                     />
                                 </div>
 
-                                {/* Content */}
-                                {selectedBlockType !== 'divider' && (
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5">Note</label>
-                                        <textarea
-                                            value={newEntryContent}
-                                            onChange={(e) => setNewEntryContent(e.target.value)}
-                                            rows={6}
-                                            className={`w-full bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 resize-none leading-relaxed ${selectedBlockType === 'code' ? 'font-mono text-xs' : 'font-serif'}`}
-                                            placeholder={selectedBlockType === 'quote' ? 'Write a quote...' : selectedBlockType === 'code' ? 'Write code...' : 'Write your note or progress update...'}
-                                            required
-                                        />
+                                {/* BlockEditor */}
+                                {draftId && (
+                                    <div className="border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden mt-4">
+                                        <div className="bg-white dark:bg-[#191919] min-h-[300px] overflow-y-auto max-h-[50vh]">
+                                            <BlockEditor databaseId={GENERAL_DB_ID} pageId={draftId} />
+                                        </div>
                                     </div>
                                 )}
 
@@ -562,14 +541,13 @@ export default function JournalModulePage() {
                                     <Button 
                                         type="submit" 
                                         className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 uppercase tracking-wider text-xs rounded-xl"
-                                        disabled={selectedBlockType !== 'divider' && !newEntryContent.trim()}
                                     >
                                         Publish Entry
                                     </Button>
                                     <Button 
                                         type="button" 
                                         variant="outline" 
-                                        onClick={() => setIsAddModalOpen(false)}
+                                        onClick={handleCancelEntry}
                                         className="flex-1 border-neutral-200 dark:border-white/10 py-2.5 uppercase tracking-wider text-xs rounded-xl"
                                     >
                                         Cancel

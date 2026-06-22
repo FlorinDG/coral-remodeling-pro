@@ -10,6 +10,7 @@ import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/page
 import { uploadFileAction } from '@/app/actions/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { parseDecimal } from '@/lib/decimal-parser';
+import { useTenant } from '@/context/TenantContext';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -54,6 +55,11 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const { data: session } = useSession();
     const planType = (session?.user as any)?.planType ?? 'FREE';
     const isFree = planType === 'FREE';
+    
+    const { tenant } = useTenant();
+    const scanCount = tenant?.scanCount || 0;
+    const scanQuota = tenant?.scanQuota || 30;
+    const scansLeft = Math.max(0, scanQuota - scanCount);
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const createPage = useDatabaseStore(s => s.createPage);
@@ -378,7 +384,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             </h2>
                             <p className="text-xs text-neutral-500">
                                 {step === 'capture' && !isLoading && 'Upload or scan a document'}
-                                {isLoading && (isFree ? 'Reading your document locally…' : 'AI is reading your document…')}
+                                {isLoading && 'Extracting data...'}
                                 {step === 'review' && (scanResult ? 'Review extracted data' : 'Enter details manually')}
                                 {step === 'split-confirm' && `Multi-page PDF — ${pdfPageCount} pages`}
                                 {step === 'saving' && 'Saving to database…'}
@@ -409,11 +415,19 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                     </div>
                                     <div className="text-center">
                                         <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                                            {isFree ? 'Reading locally…' : 'Analysing with AI…'}
+                                            Extracting data...
                                         </p>
                                         <p className="text-xs text-neutral-500 mt-1">
-                                            {isFree ? 'Tesseract.js is reading the document' : 'GPT-4o is reading the document'}
+                                            Extracting details from your document...
                                         </p>
+                                        {isFree && (
+                                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30">
+                                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                                                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                                                    AI scans left: {scansLeft}/{scanQuota}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                     {previewUrl && (
                                         <img src={previewUrl} alt="Preview" className="w-28 h-auto rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm" />
@@ -517,7 +531,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl px-4 py-3">
                                     <Sparkles className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
                                     <p className="text-xs font-medium text-green-700 dark:text-green-400">
-                                        AI extracted the data below — review and confirm before saving.
+                                        Please review the extracted data below before saving.
                                     </p>
                                 </div>
                             )}
@@ -588,57 +602,58 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 </div>
                             </div>
 
-                            {/* VAT */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="relative">
-                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                        VAT Amount {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={form.vatAmount}
-                                        onChange={e => {
-                                            const v = e.target.value;
-                                            if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                                updateForm('vatAmount', v);
-                                            }
-                                        }}
-                                        placeholder="0.00"
-                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
-                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
-                                        }`}
-                                    />
-                                    {/* Auto-calc quick actions */}
-                                    <div className="flex gap-1.5 mt-1.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAutoCalcVat(21)}
-                                            className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
-                                        >
-                                            Calc 21%
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAutoCalcVat(6)}
-                                            className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
-                                        >
-                                            Calc 6%
-                                        </button>
+                            {/* VAT and Payment */}
+                            {isInvoiceMode ? (
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="relative">
+                                        <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                            VAT Amount {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={form.vatAmount}
+                                            onChange={e => {
+                                                const v = e.target.value;
+                                                if (/^-?[\d.,]*$/.test(v) || v === '') {
+                                                    updateForm('vatAmount', v);
+                                                }
+                                            }}
+                                            placeholder="0.00"
+                                            className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                                scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                            }`}
+                                        />
+                                        {/* Auto-calc quick actions */}
+                                        <div className="flex gap-1.5 mt-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAutoCalcVat(21)}
+                                                className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
+                                            >
+                                                Calc 21%
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleAutoCalcVat(6)}
+                                                className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
+                                            >
+                                                Calc 6%
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                {!isInvoiceMode && (
-                                    <div>
-                                        <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment</label>
-                                        <SearchableSelect
-                                            options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
-                                            value={form.paymentMethod}
-                                            onChange={(v) => updateForm('paymentMethod', v)}
-                                            placeholder="Method"
-                                        />
-                                    </div>
-                                )}
-                            </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment</label>
+                                    <SearchableSelect
+                                        options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
+                                        value={form.paymentMethod}
+                                        onChange={(v) => updateForm('paymentMethod', v)}
+                                        placeholder="Method"
+                                    />
+                                </div>
+                            )}
 
                             {/* Category (tickets only) */}
                             {!isInvoiceMode && (

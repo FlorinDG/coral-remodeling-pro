@@ -17,7 +17,7 @@ import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import JournalCard from './JournalCard';
 import { Property, VariantsConfig } from '../types';
-import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator } from 'lucide-react';
+import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator, TrendingUp } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
@@ -26,6 +26,7 @@ import LinkedRecords from './LinkedRecords';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Checkbox } from '@/components/common/Checkbox';
 import postcodesData from '@/lib/belgian-postcodes.json';
+import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 
 const isPostalField = (name: string, id: string) => {
     const n = name.toLowerCase();
@@ -690,6 +691,20 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
                         {/* LEFT HALF: Properties + Content */}
                         <div className="flex-1 min-w-0 flex flex-col">
+                            {/* Quotations: Bespoke Summary */}
+                            {(databaseId === 'db-quotations' || databaseId.startsWith('db-quotations')) && (
+                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm mb-8">
+                                    <div className="flex items-center gap-2 mb-4 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
+                                        <TrendingUp className="w-4 h-4 text-emerald-500" /> Quotation Summary
+                                    </div>
+                                    <PageFinancialAnalysis
+                                        databaseId={databaseId}
+                                        pageId={pageId}
+                                        quotationTotal={calculateInvoiceTotals(page.blocks || [], { vatCalcMode: (page.properties['vatCalcMode'] as 'lines' | 'total') || 'lines', vatRegime: String(page.properties['vatRegime'] || '21') }).totalInclVAT}
+                                    />
+                                </div>
+                            )}
+
                             {/* Properties Table */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm mb-8">
                         <DragDropContext onDragEnd={handleDragEnd}>
@@ -1101,6 +1116,19 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                         <div className="mt-8 mb-12 px-6 md:px-0">
                             {databaseId === 'db-expenses' ? (
                                 <PurchaseInvoiceSheet databaseId={databaseId} pageId={pageId} />
+                            ) : (databaseId === 'db-quotations' || databaseId.startsWith('db-quotations')) ? (
+                                <div className="p-12 text-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-2xl bg-neutral-50/50 dark:bg-white/5">
+                                    <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-2">Quotation Editor</h3>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto mb-6 leading-relaxed">
+                                        Line items for this quotation cannot be edited in the basic property view.
+                                    </p>
+                                    <a
+                                        href={`/nl/admin/quotations`}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-bold hover:opacity-90 transition-opacity shadow-sm"
+                                    >
+                                        Open Quotation Builder
+                                    </a>
+                                </div>
                             ) : (
                                 <BlockEditor databaseId={databaseId} pageId={pageId} />
                             )}

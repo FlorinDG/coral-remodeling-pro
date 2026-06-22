@@ -1124,7 +1124,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                     </div>
 
                     {/* Journal Section */}
-                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm flex flex-col" style={{ minHeight: '400px' }}>
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm flex flex-col">
                         <div className="flex items-center gap-3 mb-4 shrink-0">
                             <div className="p-2 bg-blue-500/10 rounded-xl">
                                 <Clock className="w-4 h-4 text-blue-500" />
@@ -1133,7 +1133,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                 <h3 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Journal History</h3>
                             </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto -mx-2 px-2">
+                        <div className="flex-1 -mx-2 px-2">
                             <JournalCard databaseId={databaseId} pageId={pageId} minHeight="100%" />
                         </div>
                     </div>

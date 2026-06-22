@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useDatabaseStore } from '../store';
 import { Block, BlockType } from '../types';
 import {
@@ -32,27 +32,43 @@ const BLOCK_TYPES: { type: BlockType; label: string; icon: React.ReactNode }[] =
     { type: 'divider',            label: 'Line',   icon: <Minus className="w-3 h-3" /> },
 ];
 
+function htmlToText(html: string): string {
+    if (!html) return '';
+    return html
+        .replace(/<[^>]*>?/gm, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 // ── Rich block renderer ──────────────────────────────────────────────────
 function RichBlock({ block, onToggleTodo }: { block: Block; onToggleTodo?: (blockId: string) => void }) {
+    const text = block.type === 'code' ? block.content : htmlToText(block.content);
+
     switch (block.type) {
         case 'heading_1':
-            return <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-white">{block.content}</h2>;
+            return <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-white">{text}</h2>;
         case 'heading_2':
-            return <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100">{block.content}</h3>;
+            return <h3 className="text-sm font-bold text-neutral-800 dark:text-neutral-100">{text}</h3>;
         case 'heading_3':
-            return <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-200">{block.content}</h4>;
+            return <h4 className="text-xs font-bold text-neutral-700 dark:text-neutral-200">{text}</h4>;
         case 'bulleted_list_item':
             return (
                 <div className="flex items-start gap-2">
                     <span className="text-neutral-400 mt-0.5 text-xs">•</span>
-                    <span className="text-xs leading-relaxed">{block.content}</span>
+                    <span className="text-xs leading-relaxed">{text}</span>
                 </div>
             );
         case 'numbered_list_item':
             return (
                 <div className="flex items-start gap-2">
                     <span className="text-neutral-400 mt-0.5 text-xs font-mono">#</span>
-                    <span className="text-xs leading-relaxed">{block.content}</span>
+                    <span className="text-xs leading-relaxed">{text}</span>
                 </div>
             );
         case 'todo':
@@ -65,33 +81,33 @@ function RichBlock({ block, onToggleTodo }: { block: Block; onToggleTodo?: (bloc
                         className="mt-0.5 w-3.5 h-3.5 cursor-pointer accent-orange-500 rounded flex-shrink-0"
                     />
                     <span className={`text-xs leading-relaxed ${block.properties?.checked ? 'line-through text-neutral-400' : ''}`}>
-                        {block.content}
+                        {text}
                     </span>
                 </div>
             );
         case 'quote':
             return (
                 <blockquote className="pl-3 border-l-2 border-orange-400 italic text-xs text-neutral-500 dark:text-neutral-400">
-                    {block.content}
+                    {text}
                 </blockquote>
             );
         case 'callout':
             return (
                 <div className="flex gap-2 bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 p-2 rounded-lg">
                     <AlertCircle className="w-3.5 h-3.5 text-orange-500 flex-shrink-0 mt-0.5" />
-                    <span className="text-xs text-orange-950 dark:text-orange-200">{block.content}</span>
+                    <span className="text-xs text-orange-950 dark:text-orange-200">{text}</span>
                 </div>
             );
         case 'code':
             return (
                 <pre className="bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg px-3 py-2 text-[11px] font-mono text-neutral-700 dark:text-neutral-300 overflow-x-auto whitespace-pre-wrap">
-                    {block.content}
+                    {text}
                 </pre>
             );
         case 'divider':
             return <hr className="border-neutral-200 dark:border-white/10 my-1" />;
         default:
-            return <p className="text-xs leading-relaxed">{block.content}</p>;
+            return <p className="text-xs leading-relaxed">{text}</p>;
     }
 }
 
@@ -164,7 +180,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
 
     const allDisplayBlocks = [...contentBlocks, ...linkedBlocks];
 
-    const handleAddQuickEntry = useCallback(() => {
+    const handleAddQuickEntry = () => {
         if (quickBlockType !== 'divider' && !quickContent.trim()) return;
 
         const newBlock: Block = {
@@ -183,7 +199,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         setQuickContent('');
         setQuickBlockType('paragraph');
         setShowQuickEntry(false);
-    }, [quickContent, quickBlockType, page?.blocks, databaseId, pageId, updatePageBlocks]);
+    };
 
     // ── Inline edit handlers ──
     const startEditing = (block: Block) => {
@@ -193,7 +209,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         setEditBlockType(block.type);
     };
 
-    const saveEdit = useCallback(() => {
+    const saveEdit = () => {
         if (!editingBlockId || !page) return;
         const trimmed = editDraft.trim();
         if (!trimmed && editBlockType !== 'divider') {
@@ -207,24 +223,24 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         }
         setEditingBlockId(null);
         setEditDraft('');
-    }, [editingBlockId, editDraft, editBlockType, blocks, databaseId, pageId, updatePageBlocks, page]);
+    };
 
     const cancelEdit = () => {
         setEditingBlockId(null);
         setEditDraft('');
     };
 
-    const deleteBlock = useCallback((blockId: string) => {
+    const deleteBlock = (blockId: string) => {
         const updatedBlocks = blocks.filter(b => b.id !== blockId);
         updatePageBlocks(databaseId, pageId, updatedBlocks);
-    }, [blocks, databaseId, pageId, updatePageBlocks]);
+    };
 
-    const toggleTodo = useCallback((blockId: string) => {
+    const toggleTodo = (blockId: string) => {
         const updatedBlocks = blocks.map(b =>
             b.id === blockId ? { ...b, properties: { ...b.properties, checked: !b.properties?.checked } } : b
         );
         updatePageBlocks(databaseId, pageId, updatedBlocks);
-    }, [blocks, databaseId, pageId, updatePageBlocks]);
+    };
 
     // Format created timestamp
     const formatEntryDate = (block: Block) => {
@@ -240,7 +256,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
 
     return (
         <div
-            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden flex flex-col shadow-sm"
+            className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl flex flex-col shadow-sm"
             style={{ minHeight }}
         >
             {/* Header */}
@@ -305,7 +321,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
 
             {/* Entry List */}
             {totalEntries > 0 ? (
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1">
                     <button
                         onClick={() => setShowEntries(!showEntries)}
                         className="w-full flex items-center gap-2 px-5 py-2 text-[10px] font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors"
@@ -315,7 +331,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                     </button>
 
                     {showEntries && (
-                        <div className="max-h-[400px] overflow-y-auto divide-y divide-neutral-100 dark:divide-white/5">
+                        <div className="divide-y divide-neutral-100 dark:divide-white/5">
                             {allDisplayBlocks.map(block => {
                                 const dateStr = formatEntryDate(block);
                                 const author = block.properties?.author as string | undefined;

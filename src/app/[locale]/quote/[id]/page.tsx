@@ -85,7 +85,7 @@ export default async function PublicQuotePage({ params }: { params: Promise<{ lo
     });
 
     // Ensure it's a valid quote payload
-    if (!quote || quote.database.id !== 'db-quotations') {
+    if (!quote || !quote.database.id.includes('db-quotations')) {
         return notFound();
     }
 

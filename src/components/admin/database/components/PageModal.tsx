@@ -1011,20 +1011,29 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                                 {prop.id === 'receiptUrl' && (
                                                                                     <label className="flex-shrink-0 p-1.5 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 text-neutral-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" title="Upload receipt/document">
                                                                                         <Upload className="w-4 h-4" />
-                                                                                        <input type="file" accept="image/*,application/pdf" className="hidden" onChange={async (e) => {
-                                                                                            const file = e.target.files?.[0];
-                                                                                            if (!file) return;
-                                                                                            const fd = new FormData();
-                                                                                            fd.append('file', file);
+                                                                                        <input type="file" multiple accept="image/*,application/pdf" className="hidden" onChange={async (e) => {
+                                                                                            const files = Array.from(e.target.files || []);
+                                                                                            if (files.length === 0) return;
+                                                                                            
                                                                                             try {
-                                                                                                toast.loading('Uploading document...', { id: 'upload' });
+                                                                                                toast.loading(`Uploading ${files.length} document(s)...`, { id: 'upload' });
                                                                                                 const { uploadFileAction } = await import('@/app/actions/files');
-                                                                                                const res = await uploadFileAction(fd, databaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageId);
-                                                                                                if (res.success && res.key) {
-                                                                                                    updatePageProperty(databaseId, pageId, prop.id, res.key);
-                                                                                                    toast.success('Document uploaded and attached', { id: 'upload' });
-                                                                                                } else {
-                                                                                                    toast.error(res.error || 'Upload failed', { id: 'upload' });
+                                                                                                
+                                                                                                let lastKey = null;
+                                                                                                for (const file of files) {
+                                                                                                    const fd = new FormData();
+                                                                                                    fd.append('file', file);
+                                                                                                    const res = await uploadFileAction(fd, databaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageId);
+                                                                                                    if (res.success && res.key) {
+                                                                                                        lastKey = res.key;
+                                                                                                    } else {
+                                                                                                        toast.error(res.error || `Upload failed for ${file.name}`);
+                                                                                                    }
+                                                                                                }
+                                                                                                
+                                                                                                if (lastKey) {
+                                                                                                    updatePageProperty(databaseId, pageId, prop.id, lastKey);
+                                                                                                    toast.success('Document(s) uploaded and attached', { id: 'upload' });
                                                                                                 }
                                                                                             } catch (err: unknown) {
                                                                                                 toast.error(err instanceof Error ? err.message : 'Upload error', { id: 'upload' });

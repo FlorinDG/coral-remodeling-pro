@@ -7,7 +7,7 @@ import { TenantProvider } from '@/context/TenantContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
     LayoutDashboard, FileText, Wallet, Users,
-    Menu, X, LogOut, Settings, FileSignature, ChevronDown
+    Menu, X, LogOut, Settings, FileSignature, ChevronDown, FolderOpen, Loader2
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { del } from 'idb-keyval';
@@ -50,6 +50,31 @@ export default function MobileShell({
     const [settingsExpanded, setSettingsExpanded] = useState(false);
     const [brandColor, setBrandColor] = useState('#d35400');
     const [companyName, setCompanyName] = useState('');
+    const [isTenantChecked, setIsTenantChecked] = useState(false);
+
+    useEffect(() => {
+        // Prevent IDB ghosting on tenant switch
+        if (!tenant?.id) {
+            setIsTenantChecked(true);
+            return;
+        }
+
+        const lastTenantId = localStorage.getItem('mobile-last-tenant-id');
+        if (lastTenantId && lastTenantId !== tenant.id) {
+            console.warn('[MobileShell] Tenant switched. Clearing IDB storage...');
+            del('coral-database-storage-v4').then(() => {
+                localStorage.setItem('mobile-last-tenant-id', tenant.id);
+                // Hard reload to wipe memory state from previous tenant
+                window.location.reload();
+            }).catch(() => {
+                localStorage.setItem('mobile-last-tenant-id', tenant.id);
+                setIsTenantChecked(true);
+            });
+        } else {
+            localStorage.setItem('mobile-last-tenant-id', tenant.id);
+            setIsTenantChecked(true);
+        }
+    }, [tenant?.id]);
 
 
     useEffect(() => {
@@ -101,6 +126,14 @@ export default function MobileShell({
         return pathname.startsWith(href);
     };
 
+    if (!isTenantChecked) {
+        return (
+            <div className="min-h-screen w-full bg-neutral-50 dark:bg-black flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+            </div>
+        );
+    }
+
     return (
         <div
             className="min-h-screen w-full bg-neutral-50 dark:bg-black text-neutral-950 dark:text-white flex flex-col overflow-x-hidden"
@@ -148,6 +181,16 @@ export default function MobileShell({
                                     <p className="text-[10px] text-neutral-600 dark:text-neutral-300 uppercase tracking-wider font-bold">{planType} {t('shell_plan')}</p>
                                 </div>
                             </div>
+
+                            {/* Files */}
+                            <Link
+                                href="/m/files"
+                                onClick={() => setMenuOpen(false)}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-neutral-900 dark:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors border border-transparent hover:border-neutral-200 dark:hover:border-white/5"
+                            >
+                                <FolderOpen className="w-5 h-5 text-neutral-900 dark:text-neutral-200" />
+                                <span>{t('nav_files') || 'Global Library'}</span>
+                            </Link>
 
                             {/* Settings (collapsible) */}
                             <button

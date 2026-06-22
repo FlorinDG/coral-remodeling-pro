@@ -146,26 +146,36 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         setStep('capture'); // keep on capture to show spinner
 
         let clientExtracted: Record<string, any> | null = null;
-        if (isFree && file.type.startsWith('image/')) {
-            try {
-                const { recognizeReceipt } = await import('@/lib/ocr');
-                const ocrResult = await recognizeReceipt(file);
+        if (isFree) {
+            if (file.type.startsWith('application/pdf') || file.name.toLowerCase().endsWith('.pdf')) {
+                setScanError('PDF scanning requires a PRO plan. Please upload an image or enter details manually.');
+                setStep('capture');
+                return;
+            }
 
-                clientExtracted = isInvoiceMode ? {
-                    supplierName: ocrResult.extractedMerchant,
-                    issueDate: ocrResult.extractedDate,
-                    totalExVat: ocrResult.extractedAmount,
-                    totalVat: ocrResult.extractedVatAmount,
-                    lines: []
-                } : {
-                    merchant: ocrResult.extractedMerchant,
-                    date: ocrResult.extractedDate,
-                    totalAmount: ocrResult.extractedAmount,
-                    category: null
-                };
-            } catch (err: any) {
-                console.error('[TicketCaptureModal] Client-side OCR error:', err);
-                clientExtracted = null;
+            if (file.type.startsWith('image/')) {
+                try {
+                    const { recognizeReceipt } = await import('@/lib/ocr');
+                    const ocrResult = await recognizeReceipt(file);
+
+                    clientExtracted = isInvoiceMode ? {
+                        supplierName: ocrResult.extractedMerchant,
+                        issueDate: ocrResult.extractedDate,
+                        totalExVat: ocrResult.extractedAmount,
+                        totalVat: ocrResult.extractedVatAmount,
+                        lines: []
+                    } : {
+                        merchant: ocrResult.extractedMerchant,
+                        date: ocrResult.extractedDate,
+                        totalAmount: ocrResult.extractedAmount,
+                        category: null
+                    };
+                } catch (err: any) {
+                    console.error('[TicketCaptureModal] Client-side OCR error:', err);
+                    setScanError('Client-side text extraction failed. Please try a clearer image or enter manually.');
+                    setStep('capture');
+                    return;
+                }
             }
         }
 

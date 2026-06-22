@@ -72,7 +72,7 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 - **NEVER EDIT/AUTHOR `board-v2.md` content** (Planner-only, pd.md rule 6) — no rewording, no status changes, no marking ✅ (only Florin sets ✅). The ONE allowed board git action is the **content-preserving persist commit in PER-RUN STEP 0** (saving the Planner's pending edits verbatim). Report your own work only via `<ID>:` commit names.
 - Items below the `── SUPERVISED LINE ──` are OFF-LIMITS unattended (need Florin) — do not start them.
 
-**ALREADY CODE-COMPLETE (do NOT redo): AGG-1..4, QUOTE-7, SCAN-2, GRID-0/1, CROSS-7, SEND-4, FIN-8 · GRID-12a/b · SCROLL-TRAP · MOBILE-DRAG · SELECT-PORTAL · POSTAL-SEARCH · PROJ-DBKEY · QUOTE-CONVERT-404 · INV-OGM · PAY-1/2/3/4 · INV-HEADER-CLIP · INV-PDF-POLISH · INV-DUEDATE · PEPPOL-SEND-VALIDATE-1/2/3 · SELECT-UNIFY · FIN-NUM · FIN-7b-APPLY · FIN-9 · GRID-2/3/4/5/9/10/13 · SEND-3/5/5b/6 · PROFILE-3 · DRIVE-OUT-1/2/3/4/5 · PROJ-FILTER-SAFETY · PREVIEW-PDF · QUOTE-LINES · QUOTE-LINES-FIX · ACCT-EXPORT · PI-1/2/3/4-7/8/9 · PI-RICH · PI-2-FIX-A/B/C · PROJ-8/9/10 · CROSS-1/2 · EDITOR-1 · DATE-LOC · QUOTE-LINK-404 · WORKSPACE-DB-GHOST · MODAL-LAYOUT · MOB-LOGOUT · RECEIPT-THUMB · SCAN-TEXT-LOC · SCAN-FREE-OCR · FILES-FIND(mobile) · FILES-FIND(desktop)/FILES-FIND-2 · QUOTE-DUPE-BLOCKS · JOURNAL-PLAINTEXT · JOURNAL-UNBOX · QUOTE-DETAIL-GRAPH · ENGINE-ROW-BREAK · PROJ-FILTER-SAFETY · **SEND-UPLOAD · SIGN-DOWNLOAD** (Planner audit 2026-06-23 — full git scan confirms all committed; SEND-UPLOAD `e847758` + SIGN-DOWNLOAD `64c1ca6` added from coder batch 2026-06-23).**
+**ALREADY CODE-COMPLETE (do NOT redo): AGG-1..4, QUOTE-7, SCAN-2, GRID-0/1, CROSS-7, SEND-4, FIN-8 · GRID-12a/b · SCROLL-TRAP · MOBILE-DRAG · SELECT-PORTAL · POSTAL-SEARCH · PROJ-DBKEY · QUOTE-CONVERT-404 · INV-OGM · PAY-1/2/3/4 · INV-HEADER-CLIP · INV-PDF-POLISH · INV-DUEDATE · PEPPOL-SEND-VALIDATE-1/2/3 · SELECT-UNIFY · FIN-NUM · FIN-7b-APPLY · FIN-9 · GRID-2/3/4/5/9/10/13 · SEND-3/5/5b/6 · PROFILE-3 · DRIVE-OUT-1/2/3/4/5 · PROJ-FILTER-SAFETY · PREVIEW-PDF · QUOTE-LINES · QUOTE-LINES-FIX · ACCT-EXPORT · PI-1/2/3/4-7/8/9 · PI-RICH · PI-2-FIX-A/B/C · PROJ-8/9/10 · CROSS-1/2 · EDITOR-1 · DATE-LOC · QUOTE-LINK-404 · WORKSPACE-DB-GHOST · MODAL-LAYOUT · MOB-LOGOUT · RECEIPT-THUMB · SCAN-TEXT-LOC · SCAN-FREE-OCR · FILES-FIND(mobile) · FILES-FIND(desktop)/FILES-FIND-2 · QUOTE-DUPE-BLOCKS · JOURNAL-PLAINTEXT · JOURNAL-UNBOX · QUOTE-DETAIL-GRAPH · ENGINE-ROW-BREAK · PROJ-FILTER-SAFETY · **SEND-UPLOAD · SIGN-DOWNLOAD** (Planner audit 2026-06-23 — full git scan confirms all committed; SEND-UPLOAD `e847758` + SIGN-DOWNLOAD `64c1ca6` added from coder batch 2026-06-23). **MOBILE-RECORD-MODAL `55e048c` · SELECT-MODAL-DISMISS `1c4156b` · JOURNAL-EDITOR `f4418f1` · MULTI-UPLOAD `0a9b620` · FILES-CAROUSEL `2726c4e`** (Planner audit 2026-06-23 second pass — all committed in coder batch; MOBILE-RECORD-MODAL was committed BEFORE last board persist but board incorrectly called it "SKIPPED: no commit" — corrected now).**
 
 **QUEUE (in order):**
 
@@ -99,6 +99,27 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 ---
 
 ### ~~🟠 SIGN-DOWNLOAD~~ — COMMITTED `64c1ca6` (Planner audit 2026-06-23). `QuotationViewer.tsx` now has a Download button in both SIGNING and SUCCESS states; client-side `generatePdfBlob` + `QuotationPDFTemplate`, triggers `URL.createObjectURL` download. Awaiting Florin verify: open a quote link → Download button present; clicking it downloads the quote PDF; after signing, shows the signed copy.
+
+### ~~🟠 JOURNAL-EDITOR~~ — COMMITTED `f4418f1` (Planner audit 2026-06-23 second pass). Full BlockEditor in a roomier modal replaces the dead textarea + block-type buttons in New Journal Entry. Awaiting Florin verify: open New Journal Entry → roomy modal with block editor; add heading + bullets + todo; Publish → entry renders all blocks; Cancel → no orphan draft page.
+
+---
+
+### ~~🔴 SELECT-MODAL-DISMISS~~ — COMMITTED `1c4156b` (Planner audit 2026-06-23 second pass). `onPointerDown + onMouseDown e.stopPropagation()` added to portaled container in SearchableSelect. Awaiting Florin verify: Schedule New Shift → open Project → click search field + type → modal stays open, list filters, picking works.
+
+---
+
+### ~~🟠 MULTI-UPLOAD~~ — COMMITTED `0a9b620` (Planner audit 2026-06-23 second pass). `multiple` + iterate `Array.from(e.target.files)` + per-file uploading indicator added to PageModal attachment surface. Awaiting Florin verify: select 3 files at once in a record's attachments → all 3 upload and appear; signature/logo inputs still accept exactly one.
+
+---
+
+### ~~🟠 FILES-CAROUSEL~~ — COMMITTED `2726c4e` (Planner audit 2026-06-23 second pass). FileViewerModal now receives ordered list + index + onIndexChange; left/right chevron buttons + position counter + ArrowLeft/ArrowRight keys; FileManager passes list+index+callback. Awaiting Florin verify: open a file → arrows + ←/→ keys move through files with counter; disable at ends; Esc closes; images + PDFs preview correctly.
+
+---
+
+### 🔴 QUEUE DRY — awaiting Florin decision on SEND-PWA-CAPTURE (Planner audit 2026-06-23 second pass).
+All unattended-safe items above the SUPERVISED LINE have been committed (MOBILE-RECORD-MODAL `55e048c` + SELECT-MODAL-DISMISS `1c4156b` + JOURNAL-EDITOR `f4418f1` + MULTI-UPLOAD `0a9b620` + FILES-CAROUSEL `2726c4e`). The only remaining item is SEND-PWA-CAPTURE which explicitly requires Florin's decision on manifest scope approach before any code change. **Coder: stop and wait for queue refill.**
+
+---
 
 ### 🟡 SEND-PWA-CAPTURE — installed CoralOS PWA hijacks the emailed quote link on desktop (Planner 2026-06-22, Florin live: "launches coralOS to view and sign; i have to right-click → open with…"). NOT client-facing-blocking — flagged lower; needs care (touches manifest + routing).
 **Measured root:** `public/manifest.json` (`scope:"/"`, start_url `/admin/dashboard`) and `public/manifest-workhub.json` (`scope:"/"`) make the installed PWA capture the ENTIRE origin → on a machine where CoralOS is installed, a public `/{locale}/quote/…` (or `/invoice/…`) link deep-links into the APP window instead of the browser. **A real client (no PWA installed) is UNAFFECTED — they get the browser; mobile already correct.** So this only bites tenants who installed the app (e.g. Florin testing). **Why it's fiddly:** a manifest `scope` is a single path prefix and CANNOT exclude a sub-path, and the app's routes are locale-prefixed (`/nl/admin`, `/fr/admin`…) so there's no clean app-only prefix to scope to. **MEASURE-FIRST, then pick (Florin to weigh in):** (a) narrow the installed-app `scope`/`start_url` if a prefix exists that covers the app surface but NOT `/quote|/invoice` (likely not, given locale prefixes) — investigate; (b) **bulletproof option:** serve the public quote/invoice viewers from a host with no PWA (e.g. the marketing/`www` host or a dedicated `sign.coral-group.be`) so those links ALWAYS open in the browser — bigger change, touches the email link builder (`send-quote.ts`/`send-invoice.ts`) + routing; (c) try the `launch_handler`/`capture_links` manifest hints (limited browser support) as a lightweight mitigation; (d) accept + document if none is clean, since clients are unaffected. **Do NOT guess-change the manifest scope and risk breaking the installed app's routing — REPRODUCE + measure which option holds.** **VERIFY:** on a machine with CoralOS installed, clicking an emailed quote link opens the DEFAULT BROWSER public signing page, not the app window; the installed app still launches/route correctly from its own icon. **Commit (per chosen path):** `SEND-PWA-CAPTURE: public viewer links open in browser not installed PWA`.
@@ -133,22 +154,12 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 
 ---
 
-### 🔝 FINISH-FIRST — SKIPPED-CLUSTER RE-PASS (Planner 2026-06-22). ALL COMMITTED (Planner audit 2026-06-22 updated).
-**Status:** WORKSPACE-DB-GHOST `254f5e2` ✓ · RECEIPT-NOVAT + GHOST-HAMBURGER `d12c817` ✓ · SCAN-FREE-OCR `73fd2f2` ✓ · SCAN-TEXT-LOC `c941c11` ✓ · RECEIPT-THUMB `02911b6` ✓ · MODAL-LAYOUT `998bed3` ✓ · MOB-LOGOUT `3aa3dcb` ✓ · **FILES-FIND(desktop) `d6cb069` ✓** (Planner re-audit: the commit that posted as FILES-FIND did do the full desktop FileManager Blob reconciliation). **ONE STILL SKIPPED:**
-- **MOBILE-RECORD-MODAL — SKIPPED:** no commit. Full spec below (line ~549): expense→PurchaseInvoiceEngine; invoice modal+file; contact generic modal; responsive full-screen at 380px. **Commit:** `MOBILE-RECORD-MODAL: per-type record open (responsive modal; expense→engine; invoice shows file)`.
+### ~~🔝 FINISH-FIRST — SKIPPED-CLUSTER RE-PASS~~ — ALL COMMITTED (Planner audit 2026-06-23 second pass — COMPLETE).
+**Status:** WORKSPACE-DB-GHOST `254f5e2` ✓ · RECEIPT-NOVAT + GHOST-HAMBURGER `d12c817` ✓ · SCAN-FREE-OCR `73fd2f2` ✓ · SCAN-TEXT-LOC `c941c11` ✓ · RECEIPT-THUMB `02911b6` ✓ · MODAL-LAYOUT `998bed3` ✓ · MOB-LOGOUT `3aa3dcb` ✓ · FILES-FIND(desktop) `d6cb069` ✓ · **MOBILE-RECORD-MODAL `55e048c` ✓** (was incorrectly called "SKIPPED" in prior board — commit exists, confirmed by Planner this run).
 
-1. **FILES + DB hygiene:** FILES-FIND(mobile) `f926452` ✓ · FILES-FIND(desktop) `d6cb069` ✓ · WORKSPACE-DB-GHOST `254f5e2` ✓
-2. **TicketCaptureModal:** RECEIPT-NOVAT ✓ · SCAN-FREE-OCR ✓ · SCAN-TEXT-LOC ✓ · RECEIPT-THUMB ✓
-3. **PageModal / record-open:** MODAL-LAYOUT ✓ · **MOBILE-RECORD-MODAL — SKIPPED (one remaining)**
-4. **Mobile shell/nav:** GHOST-HAMBURGER ✓ · MOB-LOGOUT ✓
+All FINISH-FIRST items complete. **Queue above SUPERVISED LINE is now DRY.** SEND-PWA-CAPTURE awaiting Florin's decision. No new items can be added without Florin.
 
-### 🔴 DO NEXT — SELECT-MODAL-DISMISS then MOBILE-RECORD-MODAL (Planner audit 2026-06-23).
-Coder completed SEND-UPLOAD + SIGN-DOWNLOAD (both committed 2026-06-23). MOBILE-RECORD-MODAL remains a persistent skip.
-1. **SELECT-MODAL-DISMISS** (🔴 regression — topmost uncommitted item in file) — SearchableSelect portaled dropdown trips Radix DismissableLayer outside-close. Fix: `onPointerDown + onMouseDown e.stopPropagation()` on portaled container in `SearchableSelect.tsx` L141. Full spec above (line ~119). **Commit:** `SELECT-MODAL-DISMISS: stop dropdown pointer events from closing parent dialog`.
-2. **MOBILE-RECORD-MODAL** (persistent skip, last outstanding FINISH-FIRST item) — `m/expenses/page.tsx` L288: route expenses to `PurchaseInvoiceEngine` (mirror desktop AGG-1, `onOpenRecord` pattern). Invoice modal: show the document/file below properties. `PageModal` at mobile width: full-screen single-column, no split panes, scrollable. Full spec at line ~549 below. **Commit:** `MOBILE-RECORD-MODAL: per-type record open (responsive modal; expense→engine; invoice shows file)`.
-3. Then JOURNAL-EDITOR → MULTI-UPLOAD → FILES-CAROUSEL (specs above the SUPERVISED LINE).
-
-**After these three, proceed to items below the SUPERVISED LINE only (supervised). The REGRESSION WATCH + PI-FIX + DRIVE-OUT sections are ALL committed as of 2026-06-22 (see ALREADY CODE-COMPLETE). Full specs kept below for Florin verify reference only.**
+**After Florin's next session, proceed to items below the SUPERVISED LINE only (supervised). The REGRESSION WATCH + PI-FIX + DRIVE-OUT sections are ALL committed as of 2026-06-22 (see ALREADY CODE-COMPLETE). Full specs kept below for Florin verify reference only.**
 
 ---
 

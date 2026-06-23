@@ -11,6 +11,7 @@ import { uploadFileAction } from '@/app/actions/files';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { parseDecimal } from '@/lib/decimal-parser';
 import { useTenant } from '@/context/TenantContext';
+import { useTranslations } from 'next-intl';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -52,6 +53,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tickets' }: TicketCaptureModalProps) {
+    const tPlaceholders = useTranslations('Admin.placeholders');
     const { data: session } = useSession();
     const planType = (session?.user as any)?.planType ?? 'FREE';
     const isFree = planType === 'FREE';
@@ -656,7 +658,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                         options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
                                         value={form.paymentMethod}
                                         onChange={(v) => updateForm('paymentMethod', v)}
-                                        placeholder="Method"
+                                        placeholder={tPlaceholders('method')}
                                     />
                                 </div>
                             )}
@@ -692,7 +694,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                     value={form.notes}
                                     onChange={e => updateForm('notes', e.target.value)}
                                     rows={2}
-                                    placeholder="Optional notes…"
+                                    placeholder={tPlaceholders('optionalNotes')}
                                     className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white resize-none transition-all"
                                 />
                             </div>

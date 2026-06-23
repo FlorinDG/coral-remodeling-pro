@@ -8,7 +8,7 @@ import type { Page } from '@/components/admin/database/types';
 import { downloadPurchaseInvoicePDF } from '@/components/admin/expenses/PurchaseInvoicePDF';
 import { useTenant } from '@/context/TenantContext';
 import Link from 'next/link';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 
 interface PurchaseInvoiceEngineProps {
@@ -94,6 +94,7 @@ function calculateHeaderTotalsFromLines(lines: any[]) {
 export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: PurchaseInvoiceEngineProps) {
     const { resolveDbId, tenant } = useTenant();
     const locale = useLocale();
+    const tPlaceholders = useTranslations('Admin.placeholders');
     const expensesDbId = databaseId || resolveDbId('db-expenses');
     const suppliersDbId = resolveDbId('db-suppliers');
     const projectsDbId = resolveDbId('db-1');
@@ -630,7 +631,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             value={editData.project[0] || null}
                                             options={projectOptions}
                                             onChange={(val) => setEditData(p => ({ ...p, project: val ? [val] : [] }))}
-                                            placeholder="Selecteer een project..."
+                                            placeholder={tPlaceholders('selectProject')}
                                         />
                                     </div>
                                 ) : (
@@ -661,7 +662,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             value={editData.category || null}
                                             options={getOptionsForProperty('category')}
                                             onChange={(val) => setEditData(p => ({ ...p, category: val || '' }))}
-                                            placeholder="Selecteer categorie..."
+                                            placeholder={tPlaceholders('selectCategory')}
                                         />
                                     ) : (
                                         <OptionDisplay value={page.properties.category as string} options={getOptionsForProperty('category')} />
@@ -680,7 +681,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             value={editData.currency || null}
                                             options={getOptionsForProperty('currency')}
                                             onChange={(val) => setEditData(p => ({ ...p, currency: val || '' }))}
-                                            placeholder="Selecteer munteenheid..."
+                                            placeholder={tPlaceholders('selectCurrency')}
                                         />
                                     ) : (
                                         <OptionDisplay value={page.properties.currency as string} options={getOptionsForProperty('currency')} />
@@ -693,7 +694,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             value={editData.vatRegime || null}
                                             options={getOptionsForProperty('vatRegime')}
                                             onChange={(val) => setEditData(p => ({ ...p, vatRegime: val || '' }))}
-                                            placeholder="Selecteer BTW-regime..."
+                                            placeholder={tPlaceholders('selectVatRegime')}
                                         />
                                     ) : (
                                         <OptionDisplay value={page.properties.vatRegime as string} options={getOptionsForProperty('vatRegime')} />
@@ -713,7 +714,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                             value={editData.paymentMethod || null}
                                             options={getOptionsForProperty('paymentMethod')}
                                             onChange={(val) => setEditData(p => ({ ...p, paymentMethod: val || '' }))}
-                                            placeholder="Selecteer betaalwijze..."
+                                            placeholder={tPlaceholders('selectPaymentMethod')}
                                         />
                                     ) : (
                                         <OptionDisplay value={page.properties.paymentMethod as string} options={getOptionsForProperty('paymentMethod')} />
@@ -735,7 +736,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         onChange={e => setEditData(p => ({ ...p, notes: e.target.value }))}
                                         rows={3}
                                         className="w-full px-2.5 py-2 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/30"
-                                        placeholder="Voeg interne opmerkingen toe..."
+                                        placeholder={tPlaceholders('addInternalNotes')}
                                     />
                                 ) : (
                                     <p className="text-sm text-neutral-900 dark:text-white font-medium whitespace-pre-wrap">{page.properties.notes || '—'}</p>
@@ -819,7 +820,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                                         l[i].category = val || '';
                                                                         setEditData({ ...editData, lines: l });
                                                                     }}
-                                                                    placeholder="Categorie..."
+                                                                    placeholder={tPlaceholders('category')}
                                                                     compact
                                                                 />
                                                                 <input
@@ -830,7 +831,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                                         l[i].ledgerAccount = e.target.value;
                                                                         setEditData({ ...editData, lines: l });
                                                                     }}
-                                                                    placeholder="Grootboek..."
+                                                                    placeholder={tPlaceholders('ledger')}
                                                                     className="w-full px-2 py-1 bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-xs"
                                                                 />
                                                             </div>

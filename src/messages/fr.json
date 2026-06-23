@@ -526,7 +526,26 @@
       }
     },
     "banner_try_mobile": "Essayez notre nouvelle vue mobile optimisée !",
-    "banner_open_app": "Ouvrir l'application mobile"
+    "banner_open_app": "Ouvrir l'application mobile",
+    "placeholders": {
+      "selectClient": "Sélectionner un client...",
+      "linkProject": "Associer un projet...",
+      "searchQuote": "Rechercher un devis...",
+      "paymentTerms": "Conditions de paiement",
+      "billingMethod": "Méthode de facturation",
+      "selectCategory": "Sélectionner la catégorie...",
+      "selectCurrency": "Sélectionner la devise...",
+      "selectVatRegime": "Sélectionner le régime de TVA...",
+      "selectPaymentMethod": "Sélectionner le mode de paiement...",
+      "addInternalNotes": "Ajouter des notes internes...",
+      "category": "Catégorie...",
+      "ledger": "Grand livre...",
+      "fillVatLookup": "Numéro de TVA pour la recherche auto...",
+      "method": "Méthode",
+      "optionalNotes": "Notes optionnelles...",
+      "ddMmYyyy": "JJ/MM/AAAA",
+      "selectProject": "Sélectionner un projet..."
+    }
   },
   "Footer": {
     "copy": "&copy; 2026 CORAL ENTERPRISES. TOUS DROITS RÉSERVÉS.",

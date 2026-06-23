@@ -527,7 +527,26 @@
       }
     },
     "banner_try_mobile": "Probeer onze nieuwe mobiele weergave!",
-    "banner_open_app": "Open Mobiele App"
+    "banner_open_app": "Open Mobiele App",
+    "placeholders": {
+      "selectClient": "Klant selecteren...",
+      "linkProject": "Project koppelen...",
+      "searchQuote": "Zoek offerte...",
+      "paymentTerms": "Betalingsvoorwaarden",
+      "billingMethod": "Facturatiemethode",
+      "selectCategory": "Selecteer categorie...",
+      "selectCurrency": "Selecteer munteenheid...",
+      "selectVatRegime": "Selecteer BTW-regime...",
+      "selectPaymentMethod": "Selecteer betaalwijze...",
+      "addInternalNotes": "Voeg interne opmerkingen toe...",
+      "category": "Categorie...",
+      "ledger": "Grootboek...",
+      "fillVatLookup": "BTW-nummer invullen voor auto-lookup...",
+      "method": "Methode",
+      "optionalNotes": "Optionele opmerkingen...",
+      "ddMmYyyy": "DD/MM/JJJJ",
+      "selectProject": "Selecteer een project..."
+    }
   },
   "Footer": {
     "copy": "&copy; 2026 CORAL ENTERPRISES. ALLE RECHTEN VOORBEHOUDEN.",

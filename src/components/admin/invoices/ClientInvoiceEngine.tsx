@@ -36,10 +36,12 @@ import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Bot, Mail, CloudUpload, Send, AlertTriangle, ChevronDown, Search, Type, ImageIcon } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
+import { useTranslations } from 'next-intl';
 
 const FALLBACK_PAGES: Page[] = [];
 
 export default function ClientInvoiceEngine({ id, locale }: { id: string, locale: string }) {
+    const tPlaceholders = useTranslations('Admin.placeholders');
     const router = useRouter();
     const pathname = usePathname();
     const isMobileRoute = pathname.includes('/m/');
@@ -1112,7 +1114,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         value={clientId}
                                         onChange={(value) => handleUpdateProperty('client', value)}
                                         disabled={!isDraft}
-                                        placeholder="Klant selecteren..."
+                                        placeholder={tPlaceholders('selectClient')}
                                         searchPlaceholder="Zoek klant..."
                                         emptyLabel="Geen klanten gevonden"
                                         className="border-none bg-transparent shadow-none ring-0 h-9"
@@ -1155,7 +1157,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         value={projectId}
                                         onChange={(value) => handleUpdateProperty('project', value)}
                                         disabled={!isDraft}
-                                        placeholder="Project koppelen..."
+                                        placeholder={tPlaceholders('linkProject')}
                                         searchPlaceholder="Zoek project..."
                                         emptyLabel="Geen projecten gevonden"
                                         className="border-none bg-transparent shadow-none ring-0 h-9"
@@ -1214,7 +1216,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-neutral-400" />
                                         <input
                                             type="text"
-                                            placeholder="Zoek offerte..."
+                                            placeholder={tPlaceholders('searchQuote')}
                                             value={quotationSearch}
                                             onChange={(e) => setQuotationSearch(e.target.value)}
                                             className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-500 transition-colors text-neutral-900 dark:text-white"
@@ -1309,7 +1311,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                         value={paymentTerms}
                                         options={paymentOptions}
                                         onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
-                                        placeholder="Betalingsvoorwaarden"
+                                        placeholder={tPlaceholders('paymentTerms')}
                                         compact
                                     />
                                 </div>

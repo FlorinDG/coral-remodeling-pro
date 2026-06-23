@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { X, Search, Loader2, Building2 } from 'lucide-react';
 import postcodesData from '@/lib/belgian-postcodes.json';
+import { useTranslations } from 'next-intl';
 
 interface CreateClientModalProps {
     isOpen: boolean;
@@ -27,6 +28,7 @@ const FIELD_DEFS = [
 ];
 
 export default function CreateClientModal({ isOpen, onClose, onCreated, createPage, clientsDbId }: CreateClientModalProps) {
+    const tPlaceholders = useTranslations('Admin.placeholders');
     const [form, setForm] = useState<Record<string, string>>({ country: 'België' });
     const [isSearching, setIsSearching] = useState(false);
     const [searchError, setSearchError] = useState('');
@@ -100,7 +102,7 @@ export default function CreateClientModal({ isOpen, onClose, onCreated, createPa
                                 type="text"
                                 value={form.vat || ''}
                                 onChange={(e) => update('vat', e.target.value)}
-                                placeholder="BTW-nummer invullen voor auto-lookup..."
+                                placeholder={tPlaceholders('fillVatLookup')}
                                 className="w-full text-sm px-3 py-2 rounded-lg border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 text-neutral-900 dark:text-white placeholder:text-neutral-400 outline-none focus:ring-2 focus:ring-[var(--brand-color,#d35400)]/30"
                             />
                         </div>

@@ -30,6 +30,7 @@ import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import InternalTasklist from './InternalTasklist';
 
@@ -47,6 +48,7 @@ interface TenantProfile {
 }
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
+    const tPlaceholders = useTranslations('Admin.placeholders');
     const router = useRouter();
     const pathname = usePathname();
     const isMobileRoute = pathname.includes('/m/');
@@ -915,7 +917,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     value={billingRule}
                                     options={billingOptions}
                                     onChange={(v) => handleUpdateProperty('prop-billing-rule', v ?? 'opt-fixed')}
-                                    placeholder="Facturatiemethode"
+                                    placeholder={tPlaceholders('billingMethod')}
                                     compact
                                 />
                             </div>
@@ -941,7 +943,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                     value={paymentTerms}
                                     options={paymentOptions}
                                     onChange={(v) => handleUpdateProperty('prop-payment-method', v ?? 'pay-30')}
-                                    placeholder="Betalingsvoorwaarden"
+                                    placeholder={tPlaceholders('paymentTerms')}
                                     compact
                                 />
                             </div>

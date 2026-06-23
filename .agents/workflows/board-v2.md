@@ -157,9 +157,7 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 
 ---
 
-### 🔴 DO NEXT — STRAY-PY-DELETE-2 (Planner 2026-06-23 cron #6)
-**2 untracked stray Python files from a prior coder session:** `fix_board.py` and `fix_scan_modal.py` in the repo root. Neither was committed; neither is needed. Same pattern as STRAY-PY-DELETE (b328b6a).
-**FIX:** `rm fix_board.py fix_scan_modal.py` so `git status` is clean. **Commit:** `STRAY-PY-DELETE-2: remove stray coder script artifacts`.
+### ~~🟠 STRAY-PY-DELETE-2~~ — COMMITTED `ef1e562` (Planner audit 2026-06-23 cron #6).
 
 ---
 

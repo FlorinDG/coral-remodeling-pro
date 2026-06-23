@@ -117,7 +117,16 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 ---
 
 ### ~~🔴🔴 DO NEXT (Planner re-pin 2026-06-23)~~ — ALL COMMITTED (Planner audit 2026-06-23 cron #2).
-**Status update:** NOTIF-0 `e538432` ✓ · NOTIF-1 `c731b46` ✓ · NOTIF-2 `a000ce5` ✓ · NOTIF-3 `42b542b` ✓ · **NOTIF-4 `52ec82d` ✓** (bell icon + dropdown history panel; NotificationBell.tsx 152 lines committed + wired into AdminLayout) · **GRID-9b-b `63f6dd4` ✓** (cron reminders route 59 lines; fires NOTIF at reminder date). **Queue above SUPERVISED LINE is now DRY. Coder is idle. Next items need Florin.**
+**Status update:** NOTIF-0 `e538432` ✓ · NOTIF-1 `c731b46` ✓ · NOTIF-2 `a000ce5` ✓ · NOTIF-3 `42b542b` ✓ · **NOTIF-4 `52ec82d` ✓** (bell icon + dropdown history panel; NotificationBell.tsx wired into AdminLayout.tsx L412) · **GRID-9b-b `63f6dd4` ✓** (cron reminders route 59 lines; fires NOTIF at reminder date). Queue refilled below (Planner cron 2026-06-23 #3).
+
+---
+
+### 🔴 DO NEXT — JOURNAL-EDITOR-CLEANUP + STRAY-FILES (Planner re-pin 2026-06-23 cron #3)
+Two isolated hygiene fixes. No decisions needed — pure cleanup.
+
+**JOURNAL-EDITOR-CLEANUP** — dead `BLOCK_TYPE_OPTIONS` in `journal/page.tsx` (left by the JOURNAL-EDITOR commit). Confirmed by Planner (code-measured this run): `BLOCK_TYPE_OPTIONS` is defined at L66–78 but NEVER referenced anywhere else in the file. The block-type button row it powered was removed by JOURNAL-EDITOR. The constant and all its JSX-icon expressions (`AlignLeft`, `Heading1`, `Heading2`, `Heading3`, `List` in that context, `ListOrdered`, `CheckSquare`, `Quote`, `AlertCircle`, `Code`, `Minus`) are now dead. **FIX:** delete lines 66–78 (`const BLOCK_TYPE_OPTIONS = [...]`), then check the lucide-react import block at lines 9–11 and remove any icons imported SOLELY for that array (verify each against the rest of the file before removing — `CheckSquare` and `Quote` are used elsewhere at L719; `AlertCircle` may be used for callout rendering; remove ONLY those that are exclusively in the dead array). **tsc/lint must be green before committing.** **Commit:** `JOURNAL-EDITOR-CLEANUP: remove dead BLOCK_TYPE_OPTIONS constant`.
+
+**STRAY-PY-DELETE** — 4 untracked Python files in the repo root are abandoned coder artifacts from attempted-but-aborted changes: `fix_journal_vars.py`, `fix_pagemodal.py`, `fix_pie.py`, `update_journal.py`. None were committed; none are needed. **FIX:** `git rm --force fix_journal_vars.py fix_pagemodal.py fix_pie.py update_journal.py` (or plain `rm` since they're untracked — just delete them so `git status` is clean). **Commit:** `STRAY-PY-DELETE: remove abandoned coder script artifacts`.
 
 ### ~~🟠 NOTIF-4~~ — COMMITTED `52ec82d` (Planner audit 2026-06-23 cron #2). Bell icon + dropdown history panel in AdminLayout. Awaiting Florin verify: bell icon visible in AdminLayout header, unread badge shows count, dropdown lists history newest-first, mark-all-read works.
 

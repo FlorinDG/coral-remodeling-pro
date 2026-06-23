@@ -139,7 +139,7 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 
 ---
 
-### 🔴 DO NEXT — SCAN-3 (Planner re-pin 2026-06-23 cron #4)
+### ~~🟠 SCAN-3~~ — COMMITTED `6ef638a` (Planner audit 2026-06-23 cron #4).
 
 **SCAN-3 — receipt detail modal cleanup.** GRID-6 removed standalone detail pages (committed `6309516`); the `TicketCaptureModal` still shows a dead journal-entry section and has no receipt-image viewer and no project link. Three targeted changes to `src/components/admin/expenses/TicketCaptureModal.tsx`:
 

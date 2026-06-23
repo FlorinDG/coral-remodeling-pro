@@ -129,9 +129,23 @@ Per-step real status (code-inspected). **Launch blockers = the ⛔ rows.**
 **STRAY-PY-DELETE** — 4 untracked Python files in the repo root are abandoned coder artifacts from attempted-but-aborted changes: `fix_journal_vars.py`, `fix_pagemodal.py`, `fix_pie.py`, `update_journal.py`. None were committed; none are needed. **FIX:** `git rm --force fix_journal_vars.py fix_pagemodal.py fix_pie.py update_journal.py` (or plain `rm` since they're untracked — just delete them so `git status` is clean). **Commit:** `STRAY-PY-DELETE: remove abandoned coder script artifacts`.
 
 ### 🔴 DO NEXT — LOCALE-AUDIT-1 (Planner re-pin 2026-06-23 cron #3)
-One small, safe, zero-decision task: fix key parity across the four message files.
+**STATUS (Planner audit 2026-06-23 cron #4): coder MID-WORK — `src/messages/ro.json` modified in working tree, NOT yet committed.** Planner measured the working-tree file: 3 keys added correctly, ro.json now at 598 keys (= nl/fr/en). Change is correct; coder just needs to commit. Once committed, queue above SUPERVISED LINE is dry → proceed to LOCALE-AUDIT-2 below.
 
 **LOCALE-AUDIT-1 — i18n key parity (ro.json missing 3 keys, Planner measured this run).** `src/messages/ro.json` is missing 3 keys that exist in nl/fr/en: `LeadForm.errors.required`, `Mobile.banner_open_app`, `Mobile.banner_try_mobile`. **FIX:** copy the English values for those 3 keys into `ro.json` at the correct JSON path (keep existing structure; do NOT add a translation pass — just add the English string as a placeholder so the UI doesn't leak raw key strings in Romanian). Run a quick diff to confirm no other key gaps remain (nl:598 = fr:598 = en:598 keys; ro should reach 598 after this fix). **tsc/lint must be green.** **Commit:** `LOCALE-AUDIT-1: add 3 missing i18n keys to ro.json`.
+
+---
+
+### 🔴 DO NEXT AFTER LOCALE-AUDIT-1 — LOCALE-AUDIT-2 + LOCALE-AUDIT-3 (Planner re-pin 2026-06-23 cron #4)
+Two sequential sweeps, each its own commit. Queue will be dry after LOCALE-AUDIT-1 commits — take these in order.
+
+**LOCALE-AUDIT-2 — hardcoded user-facing strings (sweep `src/components/admin/` for literals not via `t()`).** The board spec (LOCALE-AUDIT workstream, GRID-9 section) documents ~104 untranslated `placeholder=` literals in admin components. **FIX (two steps):**
+1. **`grep -r 'placeholder="[A-Z]' src/components/admin/ --include="*.tsx" -l`** to list files with capitalised (user-facing) hardcoded placeholders. For each file, replace the literal with a `t('KEY')` call and add the key+English value to `messages/{nl,fr,en,ro}.json` (keep ro as English placeholder — same policy as LOCALE-AUDIT-1). **Start with the highest-traffic surfaces:** engine header inputs (company/VAT/IBAN/address), the client/supplier create/edit forms, receipt capture modal, and any date pickers with hardcoded `placeholder="DD/MM/YYYY"` or `"Selecteer…"`. Work through files until the scope gets large; commit what's clean — do NOT over-scope a single commit.
+2. **`grep -r 'title="[A-Z]' src/components/admin/ --include="*.tsx" -l`** and similarly for `label=` + button text strings that are clearly user-facing (`"Save"`, `"Cancel"`, `"Export"`, etc.) hardcoded in JSX without `t()`. Apply the same pattern: key → message files.
+**SCOPE GUARD:** do NOT touch `console.log/error`, internal `data-testid`, or strings that are already English in a genuinely English-only context (e.g. technical labels). **tsc/lint must be green.** **Commit:** `LOCALE-AUDIT-2: i18n sweep — placeholder and label strings in admin components`.
+
+**LOCALE-AUDIT-3 — leaked raw keys + hardcoded locale in email links.** Two targeted fixes:
+1. **`send-quote.ts` L33 hardcodes `/nl/`** in the emailed quote link → French/Romanian clients always get a Dutch URL. **FIX:** replace `/nl/` with the document/tenant language (the `lang` param already passed to `sendQuotationToClient`; use it directly: `'/' + lang + '/quote/...'`). Same fix in `send-invoice.ts` if it has a hardcoded locale in the public link. **VERIFY:** a French quote email link contains `/fr/`, not `/nl/`.
+2. **Scan for leaked raw i18n keys** in the UI: `grep -r "Admin.nav.pages.manualTicket\|invoice_legal\|t('" src/components/admin/ --include="*.tsx"` — identify any `{t('raw.key.path')}` that renders visibly because the key is missing from a locale file (post LOCALE-AUDIT-1 these should be zero for ro; confirm nl/fr/en also clean). If any raw keys still leak, add the missing entries. **VERIFY:** switch UI locale to all 4 languages (nl/fr/en/ro) → no raw `dot.separated.key` strings visible; French/Romanian quote emails have locale-correct URLs. **Commit:** `LOCALE-AUDIT-3: fix hardcoded /nl/ locale in email links + verify no leaked keys`.
 
 ---
 

@@ -27,7 +27,7 @@ interface TicketFormData {
     category: string;
     currency: string;
     paymentMethod: string;
-    notes: string;
+    project: string;
 }
 
 interface ScanResult {
@@ -66,6 +66,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
+    const pages = useDatabaseStore(s => s.pages);
+    const projects = React.useMemo(() => Object.values(pages).filter(p => p.databaseId === 'db-1'), [pages]);
 
     const [animationDone, setAnimationDone] = useState(false);
 
@@ -96,7 +98,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         category: '',
         currency: 'cur-eur',
         paymentMethod: 'pm-card',
-        notes: '',
+        project: '',
     });
 
     const [lastSavedDetails, setLastSavedDetails] = useState<{ merchant: string; amount: string } | null>(null);
@@ -123,7 +125,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             category: '',
             currency: 'cur-eur',
             paymentMethod: 'pm-card',
-            notes: '',
+            project: '',
         });
         setPreviewUrl(null);
         setScanResult(null);
@@ -139,7 +141,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         setScanError('');
 
         // Image preview (images only, not PDFs)
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith('image/') || file.type === 'application/pdf') {
             setPreviewUrl(URL.createObjectURL(file));
         } else {
             setPreviewUrl(null);
@@ -290,6 +292,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         totalVat: parsedVat,
                         totalIncVat: parsedAmount + parsedVat,
                         receiptUrl: receiptUrl,
+                        project: form.project ? [form.project] : [],
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
@@ -300,8 +303,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         category: form.category || '',
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
-                        notes: form.notes,
                         receiptUrl: receiptUrl,
+                        project: form.project ? [form.project] : [],
                     });
                     if (result.success) addConfirmedPage(result.page);
                 }
@@ -330,6 +333,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     totalIncVat: parsedAmount + parsedVat,
                     status: 'opt-unpaid',
                 };
+                if (form.project) updatedProps.project = [form.project];
                 if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
             } else {
                 updatedProps = {
@@ -339,8 +343,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     amount: parsedAmount,
                     category: form.category || currentProps.category,
                     paymentMethod: form.paymentMethod,
-                    notes: form.notes,
-                };
+                    };
+                if (form.project) updatedProps.project = [form.project];
                 if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
             }
 
@@ -544,13 +548,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 </div>
                             )}
 
-                            {/* Preview thumbnail */}
-                            {previewUrl && (
-                                <div className="flex justify-center">
-                                    <img src={previewUrl} alt="Document" className="h-24 w-auto rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm object-cover" />
-                                </div>
-                            )}
-
                             {/* Save error */}
                             {saveError && (
                                 <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-xl px-4 py-3">
@@ -687,17 +684,27 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 </div>
                             )}
 
-                            {/* Notes */}
+                            {/* Project */}
                             <div>
-                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Notes</label>
-                                <textarea
-                                    value={form.notes}
-                                    onChange={e => updateForm('notes', e.target.value)}
-                                    rows={2}
-                                    placeholder={tPlaceholders('optionalNotes')}
-                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white resize-none transition-all"
+                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Project</label>
+                                <SearchableSelect
+                                    options={projects.map(p => ({ value: p.id, label: String(p.properties.title || 'Untitled') }))}
+                                    value={form.project}
+                                    onChange={(v) => updateForm('project', v)}
+                                    placeholder="Link to project"
                                 />
                             </div>
+
+                            {/* Document Preview */}
+                            {previewUrl && (
+                                <div className="mt-4 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                                    {lastFileRef.current?.type === 'application/pdf' ? (
+                                        <iframe src={previewUrl} className="w-full h-80 border-0" />
+                                    ) : (
+                                        <img src={previewUrl} alt="Document" className="w-full h-auto object-contain max-h-[500px]" />
+                                    )}
+                                </div>
+                            )}
 
                             {/* Actions */}
                             <div className="flex gap-3 pt-1">

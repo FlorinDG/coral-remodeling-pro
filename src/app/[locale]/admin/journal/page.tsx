@@ -6,9 +6,8 @@ import { Block, Block } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
     Users, Layout, Table, Plus, X,
-    ChevronDown, ChevronUp, AlertCircle, Quote, AlignLeft, 
-    CheckSquare, List, BookOpen, Globe, Notebook,
-    Heading1, Heading2, Heading3, Code, ListOrdered, Minus,
+    ChevronDown, ChevronUp, AlertCircle,
+    CheckSquare, BookOpen, Globe, Notebook,
     Link2, ExternalLink, 
 } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
@@ -62,20 +61,7 @@ function groupEntriesByDate(entries: JournalEntry[]): { label: string; entries: 
 
 const GENERAL_DB_ID = 'db-journal-general';
 
-// ── Block type options for the new entry form ────────────────────────────
-const BLOCK_TYPE_OPTIONS: { type: Block; label: string; icon: React.ReactNode }[] = [
-    { type: 'paragraph',          label: 'Text',    icon: <AlignLeft className="w-3.5 h-3.5" /> },
-    { type: 'heading_1',          label: 'H1',      icon: <Heading1 className="w-3.5 h-3.5" /> },
-    { type: 'heading_2',          label: 'H2',      icon: <Heading2 className="w-3.5 h-3.5" /> },
-    { type: 'heading_3',          label: 'H3',      icon: <Heading3 className="w-3.5 h-3.5" /> },
-    { type: 'bulleted_list_item', label: 'Bullet',  icon: <List className="w-3.5 h-3.5" /> },
-    { type: 'numbered_list_item', label: 'Number',  icon: <ListOrdered className="w-3.5 h-3.5" /> },
-    { type: 'todo',               label: 'Todo',    icon: <CheckSquare className="w-3.5 h-3.5" /> },
-    { type: 'quote',              label: 'Quote',   icon: <Quote className="w-3.5 h-3.5" /> },
-    { type: 'callout',            label: 'Callout', icon: <AlertCircle className="w-3.5 h-3.5" /> },
-    { type: 'code',               label: 'Code',    icon: <Code className="w-3.5 h-3.5" /> },
-    { type: 'divider',            label: 'Divider', icon: <Minus className="w-3.5 h-3.5" /> },
-];
+
 
 // ── Linkable databases (all user-facing) ─────────────────────────────────
 const LINKABLE_DB_IDS = [

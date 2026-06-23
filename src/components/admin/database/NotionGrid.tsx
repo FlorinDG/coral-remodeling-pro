@@ -46,7 +46,7 @@ function AddColumnButton({ databaseId }: { databaseId: string }) {
                 ref={btnRef}
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-200 dark:hover:bg-white/10 transition-colors"
-                title="Add column"
+                title={t('placeholders.addColumn')}
             >
                 <Plus className="w-4 h-4" />
             </button>
@@ -651,7 +651,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                         setAcctDateTo('');
                                     }
                                 }}
-                                placeholder="Period..."
+                                placeholder={t('placeholders.period')}
                             />
                         </div>
 
@@ -663,7 +663,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     value={acctDateFrom}
                                     onChange={e => setAcctDateFrom(e.target.value)}
                                     className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                                    placeholder="From"
+                                    placeholder={t('placeholders.from')}
                                 />
                                 <span className="text-xs text-neutral-400">&rarr;</span>
                                 <input
@@ -671,7 +671,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                                     value={acctDateTo}
                                     onChange={e => setAcctDateTo(e.target.value)}
                                     className="text-xs px-2 py-1.5 rounded-lg border border-neutral-200 dark:border-white/10 bg-white dark:bg-white/5 text-neutral-700 dark:text-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                                    placeholder="To"
+                                    placeholder={t('placeholders.to')}
                                 />
                             </>
                         )}

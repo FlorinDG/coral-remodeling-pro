@@ -545,7 +545,21 @@
       "method": "Methode",
       "optionalNotes": "Optionele opmerkingen...",
       "ddMmYyyy": "DD/MM/JJJJ",
-      "selectProject": "Selecteer een project..."
+      "selectProject": "Selecteer een project...",
+      "addColumn": "Add column",
+      "period": "Period...",
+      "from": "From",
+      "to": "To",
+      "createNewPortal": "Create New Portal",
+      "clientName": "Client Name",
+      "clientEmail": "Client Email",
+      "newProjectTitle": "New Project Title (e.g. Bathroom Renovation)",
+      "totalBudget": "Total Budget (€)",
+      "paidAmount": "Paid Amount (€)",
+      "clickToEditTitle": "Click to edit title",
+      "openTaskDetail": "Open task detail",
+      "openTaskToAddAttachments": "Open task to add attachments",
+      "addCard": "Add card"
     }
   },
   "Footer": {

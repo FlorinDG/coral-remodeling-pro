@@ -1,6 +1,6 @@
 "use client";
-
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
@@ -122,6 +122,7 @@ interface ProjectDetailViewProps {
 }
 
 export default function ProjectDetailView({ databaseId, pageId, locale, onClose }: ProjectDetailViewProps) {
+    const t = useTranslations('Admin.placeholders');
     const { resolveDbId, tenant } = useTenant();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'journal' | 'files' | 'vorderingen'>('overview');
@@ -1184,7 +1185,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                                 <span
                                                     className={`flex-1 text-sm font-medium truncate cursor-text hover:underline decoration-dotted underline-offset-2 ${isDone ? 'line-through text-neutral-400' : 'text-neutral-800 dark:text-neutral-200'}`}
                                                     onClick={(e) => { e.stopPropagation(); setEditingTaskId(task.id); setEditingTitle(taskTitle); }}
-                                                    title="Click to edit title"
+                                                    title={t('clickToEditTitle')}
                                                 >
                                                     {taskTitle}
                                                 </span>
@@ -1205,7 +1206,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                             <a
                                                 href={`/${locale}/admin/database/${tasksDbId}/${task.id}`}
                                                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-100 dark:hover:bg-white/5"
-                                                title="Open task detail"
+                                                title={t('openTaskDetail')}
                                                 onClick={(e) => e.stopPropagation()}
                                             >
                                                 <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400" />
@@ -1237,7 +1238,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                                 <a
                                                     href={`/${locale}/admin/database/${tasksDbId}/${task.id}`}
                                                     className="p-1.5 rounded-lg border border-neutral-200 dark:border-white/10 hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
-                                                    title="Open task to add attachments"
+                                                    title={t('openTaskToAddAttachments')}
                                                 >
                                                     <Paperclip className="w-3.5 h-3.5 text-neutral-400" />
                                                 </a>

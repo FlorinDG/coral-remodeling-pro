@@ -61,13 +61,13 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Create New Portal">
+        <Modal isOpen={isOpen} onClose={onClose} title={t('placeholders.createNewPortal')}>
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
                     <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest px-1">Client Information</label>
                     <input
                         type="text"
-                        placeholder="Client Name"
+                        placeholder={t('placeholders.clientName')}
                         required
                         value={formData.clientName}
                         onChange={e => setFormData({ ...formData, clientName: e.target.value })}
@@ -75,7 +75,7 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                     />
                     <input
                         type="email"
-                        placeholder="Client Email"
+                        placeholder={t('placeholders.clientEmail')}
                         required
                         value={formData.clientEmail}
                         onChange={e => setFormData({ ...formData, clientEmail: e.target.value })}
@@ -98,7 +98,7 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                     {createProject ? (
                         <input
                             type="text"
-                            placeholder="New Project Title (e.g. Bathroom Renovation)"
+                            placeholder={t('placeholders.newProjectTitle')}
                             required
                             value={formData.projectTitle}
                             onChange={e => setFormData({ ...formData, projectTitle: e.target.value, linkedProjectId: '' })}
@@ -125,7 +125,7 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                         <input
                             type="number"
                             step="0.01"
-                            placeholder="Total Budget (€)"
+                            placeholder={t('placeholders.totalBudget')}
                             value={formData.budget}
                             onChange={e => setFormData({ ...formData, budget: e.target.value })}
                             className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"
@@ -133,7 +133,7 @@ export default function CreatePortalModal({ isOpen, onClose, onSuccess }: Create
                         <input
                             type="number"
                             step="0.01"
-                            placeholder="Paid Amount (€)"
+                            placeholder={t('placeholders.paidAmount')}
                             value={formData.paidAmount}
                             onChange={e => setFormData({ ...formData, paidAmount: e.target.value })}
                             className="w-full bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-2xl px-5 py-3.5 text-sm focus:border-[var(--brand-color,#d35400)] outline-none transition-all"

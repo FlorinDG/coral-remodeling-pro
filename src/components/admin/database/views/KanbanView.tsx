@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, @next/next/no-img-element */
 
 import React, { useState, useMemo, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { useDatabaseStore } from '../store';
 import { SelectOption, Page, Property } from '../types';
 import {
@@ -450,6 +451,7 @@ function SortableColumn({
     onOpenEditor?: (id: string) => void;
     visibleProperties?: Property[];
 }) {
+    const t = useTranslations('Admin.placeholders');
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
         id: col.id,
         data: { type: 'column', column: col }
@@ -489,7 +491,7 @@ function SortableColumn({
                 </span>
                 {isOverLimit && <AlertTriangle className="w-3.5 h-3.5 text-red-500" />}
                 <div className="flex-1" />
-                <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(col.id); }} className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded transition-colors" title="Add card"><Plus className="w-3.5 h-3.5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); handleQuickAdd(col.id); }} className="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-white/10 rounded transition-colors" title={t('addCard')}><Plus className="w-3.5 h-3.5" /></button>
             </div>
             
             <SortableContext items={col.pages.map(p => p.id)} strategy={verticalListSortingStrategy}>

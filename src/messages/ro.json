@@ -527,7 +527,26 @@
       }
     },
     "banner_try_mobile": "Încercați noua noastră interfață optimizată pentru mobil!",
-    "banner_open_app": "Deschideți Aplicația Mobilă"
+    "banner_open_app": "Deschideți Aplicația Mobilă",
+    "placeholders": {
+      "selectClient": "Select client...",
+      "linkProject": "Link project...",
+      "searchQuote": "Search quote...",
+      "paymentTerms": "Payment terms",
+      "billingMethod": "Billing method",
+      "selectCategory": "Select category...",
+      "selectCurrency": "Select currency...",
+      "selectVatRegime": "Select VAT regime...",
+      "selectPaymentMethod": "Select payment method...",
+      "addInternalNotes": "Add internal notes...",
+      "category": "Category...",
+      "ledger": "Ledger...",
+      "fillVatLookup": "Enter VAT number for auto-lookup...",
+      "method": "Method",
+      "optionalNotes": "Optional notes...",
+      "ddMmYyyy": "ZZ/LL/AAAA",
+      "selectProject": "Select a project..."
+    }
   },
   "Footer": {
     "copy": "&copy; 2026 CORAL ENTERPRISES. TOATE DREPTURILE REZERVATE.",

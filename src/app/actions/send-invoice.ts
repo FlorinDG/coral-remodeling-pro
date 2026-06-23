@@ -32,7 +32,7 @@ export async function sendInvoiceToClient(
     try {
         const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
-        const magicLinkUrl = `${appUrl}/nl/invoice/${invoiceId}`;
+        const magicLinkUrl = `${appUrl}/${lang}/invoice/${invoiceId}`;
         const finalSubject = subjectOverride || `${t('subject_invoice', lang)}: ${projectName} — ${company}`;
 
         const emailAttachments = [

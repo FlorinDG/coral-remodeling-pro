@@ -32,7 +32,7 @@ export async function sendQuotationToClient(
     try {
         const pdfBuffer = Buffer.from(pdfBufferBase64, 'base64');
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.coral-group.be';
-        const magicLinkUrl = `${appUrl}/nl/quote/${quoteId}`;
+        const magicLinkUrl = `${appUrl}/${lang}/quote/${quoteId}`;
         const finalSubject = subjectOverride || `${t('subject_quote', lang)}: ${projectName} — ${company}`;
 
         const emailAttachments = [

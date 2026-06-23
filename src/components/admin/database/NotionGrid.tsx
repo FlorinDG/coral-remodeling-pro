@@ -33,6 +33,7 @@ import { useExportCSV } from './hooks/useExportCSV';
 
 // ── Add Column Button (rendered at the end of the header row) ───────────────
 function AddColumnButton({ databaseId }: { databaseId: string }) {
+    const t = useTranslations('Admin');
     const [isOpen, setIsOpen] = useState(false);
     const btnRef = useRef<HTMLButtonElement>(null);
     const addProperty = useDatabaseStore(state => state.addProperty);

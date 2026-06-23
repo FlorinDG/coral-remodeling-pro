@@ -156,7 +156,8 @@
     },
     "errors": {
       "generic": "Ceva nu a mers bine. Vă rugăm să încercați din nou.",
-      "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea."
+      "connection": "Nu s-a putut contacta serverul. Vă rugăm să verificați conexiunea.",
+      "required": "This field is required"
     },
     "timeFormat": "HH:mm",
     "directContact": {
@@ -610,6 +611,8 @@
     "cli_empty_desc": "Adăugați primul dvs. client pentru a începe să creați facturi.",
     "cli_call": "Sună",
     "cli_email": "Trimite Email",
+    "banner_try_mobile": "Try our new mobile-optimized view!",
+    "banner_open_app": "Open Mobile App",
     "nav_quotes": "Oferte",
     "dash_add_client": "Adaugă Client",
     "peppol_inbox": "Inbox Peppol",

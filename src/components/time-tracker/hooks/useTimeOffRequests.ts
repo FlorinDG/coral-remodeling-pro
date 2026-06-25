@@ -34,6 +34,7 @@ export function useTimeOffRequests() {
     startDate: string;
     endDate: string;
     notes?: string;
+    userId?: string;
   }) => {
     try {
       const req = await hrCreate<TimeOffRequest>('time-off', data);

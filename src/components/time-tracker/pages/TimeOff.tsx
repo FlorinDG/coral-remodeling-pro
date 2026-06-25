@@ -1,9 +1,12 @@
 // @ts-nocheck
 "use client";
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
+import { hrList } from '@/components/time-tracker/lib/hr-api';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
 import { Header } from '@/components/time-tracker/components/Header';
 import { Button } from '@/components/ui/button';
@@ -32,6 +35,15 @@ export default function TimeOff() {
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const { isAdmin } = useUserRoles();
+  const [employees, setEmployees] = useState<{ id: string, firstName: string, lastName: string }[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+
+  useEffect(() => {
+    if (isAdmin) {
+      hrList('employees').then(data => setEmployees(data)).catch(console.error);
+    }
+  }, [isAdmin]);
 
   if (authLoading) {
     return (
@@ -60,7 +72,13 @@ export default function TimeOff() {
     }
 
     setSubmitting(true);
-    const { data, error } = await createRequest(requestType, startDate, endDate, notes);
+    const { data, error } = await createRequest({
+      requestType,
+      startDate,
+      endDate,
+      notes,
+      ...(isAdmin && selectedUserId ? { userId: selectedUserId } : {})
+    });
     setSubmitting(false);
 
     if (error) {
@@ -125,6 +143,21 @@ export default function TimeOff() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  
+                  {isAdmin && (
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Employee (Admin only)</Label>
+                      <SearchableSelect
+                        options={[
+                          { value: '', label: '— Current User (Self) —' },
+                          ...employees.map(emp => ({ value: emp.id, label: `${emp.firstName} ${emp.lastName}`.trim() }))
+                        ]}
+                        value={selectedUserId}
+                        onChange={setSelectedUserId}
+                        placeholder="Select an employee..."
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="type">Request Type</Label>
                     <Select value={requestType} onValueChange={setRequestType}>

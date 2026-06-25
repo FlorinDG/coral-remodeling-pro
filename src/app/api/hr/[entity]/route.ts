@@ -140,6 +140,11 @@ export async function GET(
 
     if (userId) where.userId = userId;
 
+    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
+    if ((entity === 'time-off' || entity === 'clock-entries') && !isAdminRole) {
+        where.userId = ctx.userId;
+    }
+
     // For shift-tasks and shift-attachments, scope by shiftId from query
     if (entity === 'shift-tasks' || entity === 'shift-attachments') {
         const shiftId = url.searchParams.get('shiftId');
@@ -374,7 +379,7 @@ export async function POST(
     }
 
     // Auto-inject userId if not provided (only for entities that have userId)
-    const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules'];
+    const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules', 'time-off'];
     if (!data.userId && entitiesWithUserId.includes(entity)) {
         data.userId = ctx.userId;
     }

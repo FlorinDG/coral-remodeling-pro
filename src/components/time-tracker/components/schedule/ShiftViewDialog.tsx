@@ -429,7 +429,7 @@ export function ShiftViewDialog({
                       }`}
                     >
                       {shiftTask.status === 'completed' ? (
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
                       ) : (
                         <AlertCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       )}
@@ -449,7 +449,7 @@ export function ShiftViewDialog({
                             </Badge>
                           )}
                           {shiftTask.status === 'completed' && (
-                            <Badge variant="outline" className="text-xs text-green-600">Completed</Badge>
+                            <Badge variant="outline" className="text-xs text-primary">Completed</Badge>
                           )}
                         </div>
                       </div>

@@ -211,7 +211,7 @@ function ClockButtonComponent() {
               w-full max-w-sm h-16 md:h-20 px-6 md:px-12 text-base md:text-xl font-bold rounded-xl md:rounded-2xl transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]
               ${isClockedIn 
                 ? 'btn-clock-out bg-rose-600 hover:bg-rose-500 text-white animate-pulse' 
-                : 'btn-clock-in bg-emerald-600 hover:bg-emerald-500 text-white'
+                : 'btn-clock-in bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white'
               }
             `}
           >

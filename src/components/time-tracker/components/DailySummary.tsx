@@ -181,8 +181,8 @@ export function DailySummary() {
               onClick={() => openMapsApp(todayShift.project!.address!)}
               className="w-full flex items-center gap-4 p-3 -mx-3 rounded-xl hover:bg-primary/5 transition-colors group"
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20 transition-colors">
-                <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                <MapPin className="w-5 h-5 text-[var(--brand-color,#d35400)]" />
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm text-muted-foreground">Location</p>

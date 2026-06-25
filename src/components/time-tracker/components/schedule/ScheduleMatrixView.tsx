@@ -50,7 +50,7 @@ function getStatusDot(status: string) {
   switch (status) {
     case 'in-progress':
     case 'Active':
-      return 'bg-emerald-400';
+      return 'bg-[var(--brand-color,#d35400)]';
     case 'completed':
     case 'Completed':
       return 'bg-blue-400';

@@ -48,7 +48,7 @@ function ShiftCard({ shift, profile, isNextShift, activeEntry, onClockIn, isCloc
   const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
 
   return (
-    <Card className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t ${isClockedIn ? 'ring-2 ring-green-500' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}>
+    <Card className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t ${isClockedIn ? 'ring-2 ring-[var(--brand-color,#d35400)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2 flex-1">

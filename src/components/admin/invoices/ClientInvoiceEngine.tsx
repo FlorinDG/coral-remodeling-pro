@@ -651,7 +651,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         toast.success(`${offerteImportDialog.lineCount} regels geïmporteerd uit "${offerteImportDialog.quotationTitle}".`);
     };
 
-    const grandTotal = totals.subtotal;
+    const grandTotalExcl = totals.subtotal;
+    const grandTotalIncl = totals.totalInclVAT;
+    const vatAmount = totals.totalVAT;
 
     // Helper: build resolved client info for PDF templates
     const buildClientInfo = () => {
@@ -699,7 +701,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     betreft={String(betreft)}
                     clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
-                    grandTotal={grandTotal}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={grandTotalIncl}
+                    vatAmount={vatAmount}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
@@ -742,7 +746,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         try {
             const response = await sendInvoiceToClient(
                 id, clientEmail, clientName, String(projectName),
-                `€${grandTotal.toFixed(2)}`, sendModalPdfBase64,
+                `€${grandTotalIncl.toFixed(2)}`, sendModalPdfBase64,
                 bodyOverride,
                 String(tenant?.commercialName || tenant?.companyName || ''),
                 docLanguage,
@@ -780,7 +784,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     betreft={String(betreft)}
                     clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
-                    grandTotal={grandTotal}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={grandTotalIncl}
+                    vatAmount={vatAmount}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
@@ -1586,7 +1592,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 betreft={String(betreft)}
                                                 clientInfo={buildClientInfo()}
                                                 projectId={String(projectId)}
-                                                grandTotal={grandTotal}
+                                                grandTotalExcl={grandTotalExcl}
+                                                grandTotalIncl={grandTotalIncl}
+                                                vatAmount={vatAmount}
                                                 databaseStoreState={useDatabaseStore.getState()}
                                                 tenantProfile={tenant}
                                                 templateId={tenant?.documentTemplate || 't1'}
@@ -1631,7 +1639,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 betreft={String(betreft)}
                                                 clientInfo={buildClientInfo()}
                                                 projectId={String(projectId)}
-                                                grandTotal={grandTotal}
+                                                grandTotalExcl={grandTotalExcl}
+                                                grandTotalIncl={grandTotalIncl}
+                                                vatAmount={vatAmount}
                                                 databaseStoreState={useDatabaseStore.getState()}
                                                 tenantProfile={tenant}
                                                 templateId={tenant?.documentTemplate || 't1'}

@@ -80,7 +80,9 @@ interface InvoicePDFProps {
     betreft: string;
     clientInfo: ClientInfo;
     projectId: string;
-    grandTotal: number;
+    grandTotalExcl: number;
+    grandTotalIncl: number;
+    vatAmount: number;
     databaseStoreState: any;
     tenantProfile?: any;
     templateId?: TemplateId;
@@ -114,7 +116,7 @@ function generateEpcQrPayload(companyName: string, iban: string, bic: string | u
 }
 
 export const InvoicePDFTemplate = ({
-    blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotal,
+    blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
     vatCalcMode = 'lines', vatRegime = '21',
@@ -294,10 +296,10 @@ export const InvoicePDFTemplate = ({
         return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
     }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
 
-    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotal;
+    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
-    const totalVAT = totals.totalVAT;
-    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + totalVAT);
+    const totalVAT = blocks && blocks.length > 0 ? totals.totalVAT : vatAmount;
+    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : grandTotalIncl;
     const hasMedecontractant = totals.hasMedecontractant;
     const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 

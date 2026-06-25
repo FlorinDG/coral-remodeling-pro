@@ -199,9 +199,9 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
     const validUntil = properties?.validUntil;
 
     const brandColor = tenant.brandColor || '#d35400';
-    const grandTotal = calculateGrandTotal(parsedBlocks);
-    const vatAmount = grandTotal * 0.21;
-    const totalInclVat = grandTotal + vatAmount;
+    const grandTotalExcl = Number(properties?.totalExVat) || calculateGrandTotal(parsedBlocks);
+    const vatAmount = Number(properties?.totalVat) || (grandTotalExcl * 0.21);
+    const totalInclVat = Number(properties?.totalIncVat) || (grandTotalExcl + vatAmount);
 
     // Check expiration
     const isExpired = validUntil ? new Date(validUntil) < new Date() : false;
@@ -398,7 +398,9 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                                 betreft={String(betreft)}
                                                 clientInfo={{ name: properties?.['clientName'] || properties?.['client'] || 'Klant' }}
                                                 projectId={""}
-                                                grandTotal={grandTotal}
+                                                grandTotalExcl={grandTotalExcl}
+                                                grandTotalIncl={totalInclVat}
+                                                vatAmount={vatAmount}
                                                 databaseStoreState={{}}
                                                 tenantProfile={tenant}
                                                 templateId={(tenant?.documentTemplate as TemplateId) || 't1'}
@@ -465,7 +467,7 @@ export default function QuotationViewer({ quoteId, properties, blocks, tenant, l
                                 <div className="flex flex-col gap-2 max-w-xs ml-auto">
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_subtotal', lang)}</span>
-                                        <span className="tabular-nums font-medium">€  {grandTotal.toFixed(2)}</span>
+                                        <span className="tabular-nums font-medium">€  {grandTotalExcl.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_vat_21', lang)}</span>

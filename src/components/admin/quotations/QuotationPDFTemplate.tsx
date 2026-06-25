@@ -41,7 +41,9 @@ interface QuotationPDFProps {
     betreft: string;
     clientInfo: ClientInfo;
     projectId: string;
-    grandTotal: number;
+    grandTotalExcl: number;
+    grandTotalIncl: number;
+    vatAmount: number;
     databaseStoreState: any;
     tenantProfile?: any;
     templateId?: TemplateId;
@@ -54,7 +56,7 @@ interface QuotationPDFProps {
 }
 
 export const QuotationPDFTemplate = ({
-    blocks, quotationTitle, betreft, clientInfo, projectId, grandTotal,
+    blocks, quotationTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     showSubcomponents = false,
     vatCalcMode = 'lines',
@@ -237,10 +239,10 @@ export const QuotationPDFTemplate = ({
         return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
     }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
 
-    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotal;
+    const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
-    const taxAmount = totals.totalVAT;
-    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : (grandTotal + taxAmount);
+    const taxAmount = blocks && blocks.length > 0 ? totals.totalVAT : vatAmount;
+    const totalInclTax = blocks && blocks.length > 0 ? totals.totalInclVAT : grandTotalIncl;
     const hasLineMedecontractant = totals.hasMedecontractant;
     const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 

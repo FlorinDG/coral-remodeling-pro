@@ -162,9 +162,9 @@ export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, l
     const dueDate = properties?.dueDate;
 
     const brandColor = tenant.brandColor || '#d35400';
-    const grandTotal = calculateGrandTotal(parsedBlocks);
-    const vatAmount = grandTotal * 0.21;
-    const totalInclVat = grandTotal + vatAmount;
+    const grandTotalExcl = Number(properties?.totalExVat) || calculateGrandTotal(parsedBlocks);
+    const vatAmount = Number(properties?.totalVat) || (grandTotalExcl * 0.21);
+    const totalInclVat = Number(properties?.totalIncVat) || (grandTotalExcl + vatAmount);
 
     const isOverdue = dueDate ? new Date(dueDate) < new Date() : false;
 
@@ -325,7 +325,7 @@ export default function InvoiceViewer({ invoiceId, properties, blocks, tenant, l
                                 <div className="flex flex-col gap-2 max-w-xs ml-auto">
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_subtotal', lang)}</span>
-                                        <span className="tabular-nums font-medium">€  {grandTotal.toFixed(2)}</span>
+                                        <span className="tabular-nums font-medium">€  {grandTotalExcl.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-neutral-600">
                                         <span>{t('portal_vat_21', lang)}</span>

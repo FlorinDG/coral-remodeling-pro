@@ -278,7 +278,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
     }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
 
-    const grandTotal = totals.subtotal;
+    const grandTotalExcl = totals.subtotal;
     const vatAmount = totals.totalVAT;
     const totalIncVat = totals.totalInclVAT;
 
@@ -483,7 +483,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     betreft={String(betreft)}
                     clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
-                    grandTotal={grandTotal}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={totalIncVat}
+                    vatAmount={vatAmount}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
@@ -522,7 +524,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         try {
             const response = await sendQuotationToClient(
                 id, clientEmail, clientName, String(projectName),
-                `€${grandTotal.toFixed(2)}`, sendModalPdfBase64,
+                `€${totalIncVat.toFixed(2)}`, sendModalPdfBase64,
                 bodyOverride,
                 String(tenant?.commercialName || tenant?.companyName || ''),
                 docLanguage,
@@ -559,7 +561,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     betreft={String(betreft)}
                     clientInfo={buildClientInfo()}
                     projectId={String(projectId)}
-                    grandTotal={grandTotal}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={totalIncVat}
+                    vatAmount={vatAmount}
                     databaseStoreState={useDatabaseStore.getState()}
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
@@ -605,7 +609,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             'prop-execution-status': 'opt-to-do',
             'prop-financial-status': 'opt-quote',
             'prop-client': [clientId],
-            'prop-budget': grandTotal,
+            'prop-budget': grandTotalExcl,
             'prop-start-date': quotationDate || '',
             'prop-end-date': quotationDate || '',
             'prop-billing-rule': billingRule,
@@ -669,7 +673,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 status: 'opt-draft',
                 invoiceDate: today,
                 deliveryDate: today,
-                totalExVat: Math.round((quotation?.properties?.['totalExVat'] as number || grandTotal) * 100) / 100,
+                totalExVat: Math.round((quotation?.properties?.['totalExVat'] as number || grandTotalExcl) * 100) / 100,
                 totalVat: Math.round((quotation?.properties?.['totalVat'] as number || vatAmount) * 100) / 100,
                 totalIncVat: Math.round((quotation?.properties?.['totalIncVat'] as number || totalIncVat) * 100) / 100,
             });
@@ -1124,7 +1128,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 betreft={String(betreft)}
                                                 clientInfo={buildClientInfo()}
                                                 projectId={String(projectId)}
-                                                grandTotal={grandTotal}
+                                                grandTotalExcl={grandTotalExcl}
+                                                grandTotalIncl={totalIncVat}
+                                                vatAmount={vatAmount}
                                                 databaseStoreState={useDatabaseStore.getState()}
                                                 tenantProfile={tenant}
                                                 templateId={tenant?.documentTemplate || 't1'}
@@ -1165,7 +1171,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 betreft={String(betreft)}
                                                 clientInfo={buildClientInfo()}
                                                 projectId={String(projectId)}
-                                                grandTotal={grandTotal}
+                                                grandTotalExcl={grandTotalExcl}
+                                                grandTotalIncl={totalIncVat}
+                                                vatAmount={vatAmount}
                                                 databaseStoreState={useDatabaseStore.getState()}
                                                 tenantProfile={tenant}
                                                 templateId={tenant?.documentTemplate || 't1'}
@@ -1286,7 +1294,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                         betreft={String(betreft)}
                                                         clientInfo={buildClientInfo()}
                                                         projectId={String(projectId)}
-                                                        grandTotal={grandTotal}
+                                                        grandTotalExcl={grandTotalExcl}
+                                                        grandTotalIncl={totalIncVat}
+                                                        vatAmount={vatAmount}
                                                         databaseStoreState={useDatabaseStore.getState()}
                                                         tenantProfile={tenant}
                                                         templateId={tenant?.documentTemplate || 't1'}

@@ -18,6 +18,7 @@ import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 import { useTeams } from '@/components/time-tracker/hooks/useTeams';
 import { UserCard } from './UserCard';
 import { UserDetailView } from './UserDetailView';
+import { hrList, hrCreate } from '@/components/time-tracker/lib/hr-api';
 
 interface UserProfile {
   id: string;
@@ -45,29 +46,21 @@ export function UserManager() {
     setLoading(true);
     
     try {
-      const res = await fetch('/api/tenant/users');
-      if (!res.ok) {
-        console.error('Error fetching users:', await res.text());
-        setLoading(false);
-        return;
-      }
+      const employees = await hrList<any>('employees');
       
-      const data = await res.json();
-      
-      // Map Prisma user format to UserProfile format
-      const usersWithRoles: UserProfile[] = (data.users || []).map((user: any) => ({
-        id: user.id,
-        user_id: user.id,
-        full_name: user.name || 'Unknown User',
-        hourly_rate: 0,
-        created_at: user.invitedAt || new Date().toISOString(),
-        roles: [user.role?.toLowerCase() as AppRole].filter(Boolean),
+      const usersWithRoles: UserProfile[] = employees.map(emp => ({
+        id: emp.id,
+        user_id: emp.id,
+        full_name: `${emp.firstName} ${emp.lastName}`.trim(),
+        hourly_rate: emp.hourlyCost || 0,
+        created_at: emp.createdAt || new Date().toISOString(),
+        roles: [(emp.role?.toLowerCase() || 'employee') as AppRole],
         teams: [],
       }));
 
       setUsers(usersWithRoles);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error fetching employees:', error);
     } finally {
       setLoading(false);
     }
@@ -88,38 +81,31 @@ export function UserManager() {
     setCreating(true);
     
     try {
-      const res = await fetch('/api/tenant/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: newEmail,
-          name: newFullName,
-          role: 'EMPLOYEE',
-        }),
+      const nameParts = newFullName.trim().split(' ');
+      const firstName = nameParts[0] || 'Unknown';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      await hrCreate('employees', {
+        firstName,
+        lastName,
+        email: newEmail,
+        role: 'EMPLOYEE',
+        status: 'ACTIVE'
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (data.error === 'SEAT_LIMIT_REACHED') {
-          toast.error(data.message || 'Seat limit reached. Upgrade your plan.');
-        } else if (res.status === 409) {
-          toast.error('A user with this email already exists');
-        } else {
-          toast.error(data.error || 'Failed to create user');
-        }
-        return;
-      }
-
-      toast.success('User invited successfully! An invite email has been sent.');
+      toast.success('Employee added successfully!');
       setNewEmail('');
       setNewFullName('');
       setCreateDialogOpen(false);
       
-      // Refresh the user list
+      // Refresh the employee list
       setTimeout(fetchUsers, 500);
-    } catch (error) {
-      toast.error('Failed to create user');
+    } catch (error: any) {
+      if (error.message?.includes('already exists')) {
+        toast.error('An employee with this email already exists');
+      } else {
+        toast.error('Failed to add employee');
+      }
     } finally {
       setCreating(false);
     }
@@ -169,20 +155,20 @@ export function UserManager() {
             <div className="flex items-center gap-3">
               <Users className="h-5 w-5 text-primary" />
               <div>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>{users.length} users</CardDescription>
+                <CardTitle>Employee Management</CardTitle>
+                <CardDescription>{users.length} employees</CardDescription>
               </div>
             </div>
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              Invite User
+              Add Employee
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No users found
+              No employees found
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -198,13 +184,13 @@ export function UserManager() {
         </CardContent>
       </Card>
 
-      {/* Invite User Dialog */}
+      {/* Add Employee Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite New User</DialogTitle>
+            <DialogTitle>Add New Employee</DialogTitle>
             <DialogDescription>
-              Send an invitation email to add a new team member.
+              Add a new member to the workforce.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateUser} className="space-y-4">
@@ -237,7 +223,7 @@ export function UserManager() {
               </Button>
               <Button type="submit" disabled={creating}>
                 {creating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                Send Invitation
+                Add Employee
               </Button>
             </DialogFooter>
           </form>

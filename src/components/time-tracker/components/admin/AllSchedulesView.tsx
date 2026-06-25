@@ -6,9 +6,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/time-tracker/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/time-tracker/components/ui/table';
 import { useWorkerSchedules } from '@/components/time-tracker/hooks/useWorkerSchedules';
+import { hrList } from '@/components/time-tracker/lib/hr-api';
+import { useState, useEffect } from 'react';
 
 export function AllSchedulesView() {
-  const { allWorkers, loading, DAY_NAMES } = useWorkerSchedules();
+  const { allWorkers, loading: schedulesLoading, DAY_NAMES } = useWorkerSchedules();
+  const [employeeMap, setEmployeeMap] = useState<Record<string, string>>({});
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const employees = await hrList<{ id: string; firstName: string; lastName: string }>('employees');
+        const map: Record<string, string> = {};
+        employees.forEach(e => {
+          map[e.id] = `${e.firstName} ${e.lastName}`;
+        });
+        setEmployeeMap(map);
+      } catch (err) {
+        console.error('[AllSchedulesView] failed to fetch employees:', err);
+      } finally {
+        setEmployeesLoading(false);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -18,7 +40,7 @@ export function AllSchedulesView() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  if (loading) {
+  if (schedulesLoading || employeesLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
@@ -32,7 +54,7 @@ export function AllSchedulesView() {
   const allSchedules = allWorkers.flatMap(worker =>
     worker.schedules.map(schedule => ({
       ...schedule,
-      workerName: worker.full_name,
+      workerName: employeeMap[worker.user_id] || worker.user_id,
     }))
   ).sort((a, b) => {
     // Sort by day of week first, then by start time
@@ -97,9 +119,9 @@ export function AllSchedulesView() {
           <h3 className="text-lg font-semibold text-foreground mb-4">Summary by Worker</h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allWorkers.map(worker => (
-              <Card key={worker.id} className="bg-muted/20">
+              <Card key={worker.user_id} className="bg-muted/20">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{worker.full_name}</CardTitle>
+                  <CardTitle className="text-base">{employeeMap[worker.user_id] || worker.user_id}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {worker.schedules.length === 0 ? (

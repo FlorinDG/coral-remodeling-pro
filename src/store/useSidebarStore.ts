@@ -72,6 +72,7 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'calendar',   iconName: 'Calendar',         label: 'CALENDAR',   href: '/admin/calendar' },
     { id: 'tasks',      iconName: 'BriefcaseBusiness',label: 'TASKS',      href: '/admin/tasks' },
     { id: 'files',      iconName: 'Library',          label: 'FILES',      href: '/admin/files' },
+    { id: 'team',       iconName: 'UserCog',          label: 'USERS / TEAM', href: '/admin/settings/team' },
     { id: 'settings',   iconName: 'Settings',         label: 'SETTINGS',   href: '/admin/settings/company-info' },
 ];
 
@@ -90,9 +91,9 @@ export const useSidebarStore = create<SidebarStore>()(
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 19, // bump: force reset — fix stale sidebar across browsers (CROSS-7)
+            version: 20, // bump: force reset to include Users / Team link
             migrate: (persistedState: any, version: number) => {
-                if (version < 19) {
+                if (version < 20) {
                     return { items: defaultSidebarItems };
                 }
                 return persistedState as SidebarStore;

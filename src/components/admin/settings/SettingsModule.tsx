@@ -46,7 +46,7 @@ const NAV_ITEMS: NavItem[] = [
 
     // ── Tenant/User Settings (business-level, user-facing) ──
     { id: 'company-profile',   label: 'Company Profile',   icon: <Building2 className="w-4 h-4" />, tier: 'tenant', description: 'Business name, VAT, IBAN, logo' },
-    { id: 'team-members',      label: 'Team Members',      icon: <Users className="w-4 h-4" />, tier: 'tenant', description: 'Invite users, assign roles' },
+    { id: 'team-members',      label: 'Users / Team',      icon: <Users className="w-4 h-4" />, tier: 'tenant', description: 'Manage ERP login accounts and roles' },
     { id: 'billing',           label: 'Plan & Billing',    icon: <CreditCard className="w-4 h-4" />, tier: 'tenant', description: 'Current plan, usage, upgrade' },
     { id: 'ui-preferences',    label: 'UI & Appearance',   icon: <Palette className="w-4 h-4" />, tier: 'tenant', description: 'Theme, brand color, layout density' },
     { id: 'notifications',     label: 'Notifications',     icon: <Bell className="w-4 h-4" />, tier: 'tenant', description: 'Email digests, in-app alerts, webhooks' },
@@ -566,11 +566,11 @@ function UiPreferencesPanel() {
 
 function TeamMembersPanel() {
     return (
-        <SectionShell title="Team Members" description="Invite users and assign roles.">
+        <SectionShell title="Users / Team" description="Manage ERP login accounts and assign system access.">
             <SettingsCard>
-                <p className="text-sm text-neutral-500 mb-4">Navigate to the Team management page.</p>
+                <p className="text-sm text-neutral-500 mb-4">Navigate to the ERP User & Team management page. Note: This manages system access, which is distinct from the HR Workforce list.</p>
                 <a href="/admin/settings/team" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
-                    <Users className="w-4 h-4" /> Manage Team
+                    <Users className="w-4 h-4" /> Manage Users / Team
                 </a>
             </SettingsCard>
         </SectionShell>

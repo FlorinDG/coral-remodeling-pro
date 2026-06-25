@@ -3,11 +3,11 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState } from 'react';
 import { Loader2, Clock, MapPin, CalendarDays } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Switch } from '@/components/time-tracker/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -15,14 +15,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';

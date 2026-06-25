@@ -3,17 +3,17 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useEffect } from 'react';
 import { Loader2, Clock, MapPin, FileText, Paperclip, ListTodo, Pencil, Image, Download, Check, AlertCircle, Play } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { ScrollArea } from '@/components/time-tracker/components/ui/scroll-area';
-import { Separator } from '@/components/time-tracker/components/ui/separator';
-import { AttachmentLink, AttachmentImage } from '@/components/time-tracker/components/ui/attachment-link';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,13 +23,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/time-tracker/components/ui/tabs';
+} from '@/components/ui/tabs';
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';

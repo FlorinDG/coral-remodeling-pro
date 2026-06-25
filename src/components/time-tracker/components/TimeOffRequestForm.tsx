@@ -6,23 +6,23 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/time-tracker/components/ui/dialog';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Calendar } from '@/components/time-tracker/components/ui/calendar';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/time-tracker/components/ui/popover';
+} from '@/components/ui/popover';
 import { CalendarDays, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/components/time-tracker/lib/utils';

@@ -5,14 +5,14 @@ import {
   FileText, Download, Check, Clock, AlertCircle,
   ChevronRight, X, Pen, Loader2, Eye
 } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';

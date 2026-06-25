@@ -8,7 +8,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { MapPin, Shield } from 'lucide-react';
 
 interface LocationPermissionDialogProps {

@@ -6,7 +6,7 @@ import {
     Column
 } from 'react-datasheet-grid';
 import { GripVertical, Trash, Copy, Maximize2 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/common/Checkbox';
 import { selectColumn } from '../columns/SelectColumn';
 import { dateColumn } from '../columns/DateColumn';

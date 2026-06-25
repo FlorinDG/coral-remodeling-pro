@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/time-tracker/components/ui/popover';
-import { Calendar } from '@/components/time-tracker/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfWeek, nextMonday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Clock } from 'lucide-react';

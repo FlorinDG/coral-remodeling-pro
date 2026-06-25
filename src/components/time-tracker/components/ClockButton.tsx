@@ -3,7 +3,7 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useEffect, useRef, memo } from 'react';
 import { Play, Square, MapPin, Loader2, Calendar, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useTimer } from '@/components/time-tracker/hooks/useTimer';
 import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';

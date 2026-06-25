@@ -2,9 +2,9 @@
 "use client";
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { Loader2, Calendar, Clock } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/time-tracker/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useWorkerSchedules } from '@/components/time-tracker/hooks/useWorkerSchedules';
 import { hrList } from '@/components/time-tracker/lib/hr-api';
 import { useState, useEffect } from 'react';

@@ -32,7 +32,7 @@ import PageModal from '@/components/admin/database/components/PageModal';
 import { useFilteredPages } from '../hooks/useFilteredPages';
 
 import { cn } from '@/components/time-tracker/lib/utils';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
 
 // Custom collision detection: tries pointerWithin first (most precise),
 // falls back to rectIntersection (works for empty columns)

@@ -3,12 +3,12 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState } from 'react';
 import { Calendar, Clock, Loader2, Plus, Trash2, User } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/time-tracker/components/ui/select';
-import { Switch } from '@/components/time-tracker/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useWorkerSchedules, WorkerWithProfile } from '@/components/time-tracker/hooks/useWorkerSchedules';
 import { toast } from 'sonner';
 

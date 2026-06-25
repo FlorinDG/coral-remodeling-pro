@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Download, FileText } from 'lucide-react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/time-tracker/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 
 interface AttachmentViewerModalProps {
     attachment: {

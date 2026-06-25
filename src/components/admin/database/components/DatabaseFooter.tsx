@@ -6,7 +6,7 @@ import { Plus, ChevronDown } from 'lucide-react';
 import { useDatabaseStore } from '../store';
 import { useLocale } from 'next-intl';
 import { Property } from '../types';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { createPageServerFirst } from '@/app/actions/pages';
 
 type SummaryType = 'none' | 'count' | 'sum' | 'average' | 'min' | 'max';

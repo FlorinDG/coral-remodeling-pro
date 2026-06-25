@@ -9,8 +9,8 @@ import {
     CalendarIcon, MapPin, Clock, Award, ChevronRight, FileText, Building2,
     Shield, Heart, GraduationCap, MoreHorizontal, ArrowLeft, Save, User
 } from "lucide-react";
-import { Calendar } from '@/components/time-tracker/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/time-tracker/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 
 interface Employee {

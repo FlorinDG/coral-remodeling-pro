@@ -6,7 +6,7 @@ import { useRouter } from "@/i18n/routing";
 
 import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Briefcase, User, FileText, ExternalLink, Coffee, Upload, X, Paperclip } from 'lucide-react';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Header } from '@/components/time-tracker/components/Header';
 import { ScheduleCalendar } from '@/components/time-tracker/components/schedule/ScheduleCalendar';
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
@@ -17,18 +17,18 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
-import { Checkbox } from '@/components/time-tracker/components/ui/checkbox';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { toast } from 'sonner';

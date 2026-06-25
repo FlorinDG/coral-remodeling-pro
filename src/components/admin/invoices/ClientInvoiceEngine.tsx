@@ -11,7 +11,7 @@ import { Page, Block, BlockType } from '@/components/admin/database/types';
 import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';

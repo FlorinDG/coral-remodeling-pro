@@ -4,7 +4,7 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from "@/config/tabs";
 import { Building2, Save, MapPin, Globe, CreditCard, AlertCircle, RefreshCw, Hash, FileText, Palette, CheckCircle2, Wifi } from "lucide-react";
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { Button } from "@/components/time-tracker/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import DocumentTemplatesModule from '@/components/admin/settings/DocumentTemplatesModule';
 import { useTranslations, useLocale } from 'next-intl';

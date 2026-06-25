@@ -4,37 +4,37 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Checkbox } from '@/components/time-tracker/components/ui/checkbox';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/time-tracker/components/ui/tabs';
+} from '@/components/ui/tabs';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/time-tracker/components/ui/popover';
+} from '@/components/ui/popover';
 import { Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/components/time-tracker/lib/hr-api';

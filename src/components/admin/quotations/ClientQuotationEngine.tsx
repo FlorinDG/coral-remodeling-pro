@@ -11,7 +11,7 @@ import { Page, Block, PropertyValue } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { sendQuotationToClient } from '@/app/actions/send-quote';
 import { QuotationPDFTemplate } from './QuotationPDFTemplate';
 import PDFImportModal from './PDFImportModal';

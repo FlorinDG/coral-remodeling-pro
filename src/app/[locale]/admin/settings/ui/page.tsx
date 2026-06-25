@@ -19,7 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 import { DraggableSidebarItem } from "@/components/admin/settings/DraggableSidebarItem";
-import { Button } from "@/components/time-tracker/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useTabStore } from "@/store/useTabStore";

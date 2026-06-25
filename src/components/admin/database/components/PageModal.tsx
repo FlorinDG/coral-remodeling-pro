@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useDatabaseStore } from '../store';
 import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/time-tracker/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
 import BlockEditor from './BlockEditor';
 import dynamic from 'next/dynamic';

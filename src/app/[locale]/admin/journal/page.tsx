@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { useTenant } from '@/context/TenantContext';
 import { v4 as uuidv4 } from 'uuid';

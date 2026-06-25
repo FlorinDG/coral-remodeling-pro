@@ -1,11 +1,11 @@
 "use client";
 import { useState } from 'react';
 import { Loader2, Check, X, Clock, FileText, Calendar, ClipboardList, CheckCheck } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/time-tracker/components/ui/tabs';
-import { Checkbox } from '@/components/time-tracker/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -13,7 +13,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/time-tracker/components/ui/table';
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { useApprovalRequests, ApprovalRequest } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';

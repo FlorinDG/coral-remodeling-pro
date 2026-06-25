@@ -4,27 +4,27 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
-import { AttachmentLink, AttachmentImage } from '@/components/time-tracker/components/ui/attachment-link';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { ScrollArea } from '@/components/time-tracker/components/ui/scroll-area';
+import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,18 +35,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/time-tracker/components/ui/popover';
+} from '@/components/ui/popover';
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@/components/time-tracker/components/ui/tabs';
+} from '@/components/ui/tabs';
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';

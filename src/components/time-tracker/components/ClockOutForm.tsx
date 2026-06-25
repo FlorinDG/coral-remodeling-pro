@@ -6,12 +6,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/time-tracker/components/ui/dialog';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Checkbox } from '@/components/time-tracker/components/ui/checkbox';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Clock, FileText, Camera, X, Upload, Coffee } from 'lucide-react';
 
 interface ClockOutFormProps {

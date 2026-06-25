@@ -6,7 +6,7 @@ import { hrList } from '@/components/time-tracker/lib/hr-api';
 import { Loader2, ArrowLeft, Printer, Download, Clock, Calendar, User, ClipboardList } from 'lucide-react';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 
 interface Employee {

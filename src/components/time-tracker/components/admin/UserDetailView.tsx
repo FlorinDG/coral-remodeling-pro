@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { ArrowLeft, Loader2, User, KeyRound, Users2, Euro, Trash2, X } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { Separator } from '@/components/time-tracker/components/ui/separator';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,14 +25,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 import { Team } from '@/components/time-tracker/hooks/useTeams';

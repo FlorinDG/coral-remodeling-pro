@@ -3,8 +3,8 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useMemo, useState, DragEvent } from 'react';
 import { ChevronLeft, ChevronRight, GripVertical, Plus, Copy, Printer, Clock, Search } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScheduledShift, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { toast } from 'sonner';

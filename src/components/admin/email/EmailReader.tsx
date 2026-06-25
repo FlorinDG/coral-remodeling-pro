@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useEmailStore } from "./store";
 import { format } from "date-fns";
 import { MoreVertical, Trash2, Paperclip, Reply, ReplyAll, Forward, Archive, Mail, Download } from "lucide-react";
-import { Button } from "@/components/time-tracker/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/time-tracker/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu";
 import { AttachmentViewerModal } from "./AttachmentViewerModal";
 
 export function EmailReader() {

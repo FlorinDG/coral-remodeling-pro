@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/time-tracker/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Save, AlertTriangle, ArrowRight, Check } from 'lucide-react';
 import { Block, Database } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';

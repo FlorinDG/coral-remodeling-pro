@@ -4,8 +4,8 @@ import { Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -13,20 +13,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/time-tracker/components/ui/table';
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/time-tracker/components/ui/dropdown-menu';
+} from '@/components/ui/dropdown-menu';
 import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInMinutes } from 'date-fns';

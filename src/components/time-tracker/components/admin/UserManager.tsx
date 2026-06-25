@@ -1,10 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { Loader2, Users, Plus, Mail } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 import { useTeams } from '@/components/time-tracker/hooks/useTeams';

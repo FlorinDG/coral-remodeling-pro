@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from "@/config/tabs";
 import { useTenant } from "@/context/TenantContext";
-import { Button } from "@/components/time-tracker/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { toast } from 'sonner';
 import { CreditCard, Save, RefreshCw, Key, Shield, HelpCircle, ExternalLink } from "lucide-react";
 import { canAccess } from '@/lib/feature-flags';

@@ -11,12 +11,12 @@ import { UserManager } from '@/components/time-tracker/components/admin/UserMana
 import { RoleManager } from '@/components/time-tracker/components/admin/RoleManager';
 import { ScheduleManagement } from '@/components/time-tracker/components/admin/ScheduleManagement';
 import { ApprovalManager } from '@/components/time-tracker/components/admin/ApprovalManager';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/time-tracker/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Input } from '@/components/time-tracker/components/ui/input';
-import { Label } from '@/components/time-tracker/components/ui/label';
-import { Textarea } from '@/components/time-tracker/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/time-tracker/components/ui/dialog';
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +34,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/time-tracker/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 
 export default function Admin() {
   const router = useRouter();

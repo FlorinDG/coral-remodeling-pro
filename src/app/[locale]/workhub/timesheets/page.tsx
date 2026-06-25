@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/components/time-tracker/contexts/AuthContext";
 import { ThemeProvider } from "@/components/time-tracker/contexts/ThemeContext";
-import { TooltipProvider } from "@/components/time-tracker/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "@/app/[locale]/admin/hr/time-tracker/time-tracker.css";
 import dynamic from "next/dynamic";
 

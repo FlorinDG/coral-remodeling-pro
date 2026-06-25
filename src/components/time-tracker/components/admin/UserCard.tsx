@@ -1,7 +1,7 @@
 "use client";
 import { User } from 'lucide-react';
-import { Card, CardContent } from '@/components/time-tracker/components/ui/card';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import type { AppRole } from '@/components/time-tracker/hooks/useUserRoles';
 
 interface UserCardProps {

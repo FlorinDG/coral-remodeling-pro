@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/time-tracker/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Upload, FileText, Bot, AlertCircle, Check, ArrowRight, Loader2, Database, ClipboardList } from 'lucide-react';
 import { Block } from '@/components/admin/database/types';
 import { useDatabaseStore } from '@/components/admin/database/store';

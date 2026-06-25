@@ -2,8 +2,8 @@
 "use client";
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { Bell, BellOff, Loader2 } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePushNotifications } from '@/components/time-tracker/hooks/usePushNotifications';
 import { toast } from 'sonner';
 

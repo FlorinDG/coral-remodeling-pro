@@ -3,10 +3,10 @@
 // @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Calendar, Clock, MapPin, Briefcase, Loader2, CheckSquare, Play, User } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/time-tracker/components/ui/card';
-import { Badge } from '@/components/time-tracker/components/ui/badge';
-import { Button } from '@/components/time-tracker/components/ui/button';
-import { ScrollArea } from '@/components/time-tracker/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';

@@ -4,8 +4,8 @@ import { Block, BlockType, VariantsConfig } from '@/components/admin/database/ty
 import { MoreVertical, Folder, FolderOpen, AlertCircle, PlaySquare, Calculator, Search, AlignLeft, Text, Box, Tag, Zap, Database, Layers, CheckSquare, ListTodo, Plus, ChevronDown, ChevronRight, FileMinus, FileText, Settings, Image as ImageIcon, Video, File, Hash, MousePointerClick, Calendar, User, ToggleLeft, ArrowRightSquare, Table, Ban, CircleDollarSign, Percent, Grid, ArrowDownToLine, ArrowUpToLine, Wand2, Copy, Link, Shield, Lock, FileBox, GripVertical, Type, Maximize2, Trash, ExternalLink, Check, Save, Minus, ChevronsUpDown, Scissors } from 'lucide-react';
 import PageModal from '@/components/admin/database/components/PageModal';
 import SaveToLibraryModal from './SaveToLibraryModal';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/time-tracker/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/time-tracker/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import FinancialRowRenderer from './FinancialRowRenderer';
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { useDatabaseStore } from '@/components/admin/database/store';

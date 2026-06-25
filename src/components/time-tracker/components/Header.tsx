@@ -1,14 +1,14 @@
 "use client";
 import { Clock, User, LogOut, Globe, Check } from 'lucide-react';
-import { Button } from '@/components/time-tracker/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/time-tracker/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/time-tracker/components/ui/avatar';
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { Link } from "@/i18n/routing";
 import { usePathname } from "@/i18n/routing";

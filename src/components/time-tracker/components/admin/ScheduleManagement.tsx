@@ -13,7 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/time-tracker/components/ui/select';
+} from '@/components/ui/select';
 import { hrList } from '@/components/time-tracker/lib/hr-api';
 
 interface WorkerOption {

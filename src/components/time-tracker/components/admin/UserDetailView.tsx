@@ -288,8 +288,15 @@ export function UserDetailView({
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Header */}
+      <Dialog open={true} onOpenChange={(open) => { if (!open) onBack(); }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{currentUser.full_name}</DialogTitle>
+            <DialogDescription>User details and profile editing</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onBack}>
             <ArrowLeft className="h-5 w-5" />
@@ -464,6 +471,8 @@ export function UserDetailView({
           </CardContent>
         </Card>
       </div>
+      </DialogContent>
+      </Dialog>
 
       {/* Reset Password Dialog */}
       <Dialog 

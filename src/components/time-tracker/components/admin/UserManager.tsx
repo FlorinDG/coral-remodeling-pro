@@ -131,24 +131,21 @@ export function UserManager() {
     );
   }
 
-  // Detail view when a user is selected
-  if (selectedUser) {
-    return (
-      <UserDetailView
-        user={selectedUser}
-        teams={teams}
-        onBack={() => setSelectedUser(null)}
-        onUpdate={handleUserUpdate}
-        onDelete={handleUserDelete}
-        addTeamMember={addTeamMember}
-        removeTeamMember={removeTeamMember}
-      />
-    );
-  }
-
   // Card list view
   return (
     <>
+      {selectedUser && (
+        <UserDetailView
+          user={selectedUser}
+          teams={teams}
+          onBack={() => setSelectedUser(null)}
+          onUpdate={handleUserUpdate}
+          onDelete={handleUserDelete}
+          addTeamMember={addTeamMember}
+          removeTeamMember={removeTeamMember}
+        />
+      )}
+
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">

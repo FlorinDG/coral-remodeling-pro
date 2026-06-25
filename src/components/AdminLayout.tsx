@@ -20,6 +20,7 @@ import {
     SlidersHorizontal,
     ExternalLink,
     Building2,
+    Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import GlobalMentionDateInterceptor from '@/components/admin/database/components/GlobalMentionDateInterceptor';
@@ -276,6 +277,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
                             {([
                                 { href: '/superadmin',                  label: 'Superadmin',    Icon: ShieldCheck },
                                 { href: '/admin/settings/company-info', label: 'ERP Config',    Icon: SlidersHorizontal },
+                                { href: '/admin/settings/team',         label: 'Users & Team',  Icon: Users },
                                 { href: '/admin/content',               label: 'Website CMS',   Icon: Building2 },
                             ] as const).map(({ href, label, Icon }) => (
                                 <a

@@ -161,7 +161,7 @@ export function useScheduledShifts() {
     try {
       const shift = await hrCreate<ScheduledShift>('shifts', normalized);
       setRawShifts(prev => [addSnakeCase(shift), ...prev]);
-      void fetchAll();
+      // Removed void fetchAll() to prevent matrix flash
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
       return { data: null, error: err };
@@ -178,11 +178,17 @@ export function useScheduledShifts() {
     if ('project_id' in data) { if (!data.projectId) normalized.projectId = data.project_id; delete normalized.project_id; }
 
     try {
+      // Optimistic update
+      setRawShifts(prev => prev.map(s => s.id === id ? { ...s, ...normalized } : s));
+      
       const shift = await hrUpdate<ScheduledShift>('shifts', id, normalized);
       setRawShifts(prev => prev.map(s => s.id === id ? addSnakeCase({ ...s, ...shift }) : s));
-      void fetchAll();
+      // Removing fetchAll() here to prevent full redraws. The background sync or other hooks will handle refresh if needed.
+      // void fetchAll();
       return { data: addSnakeCase(shift), error: null };
     } catch (err: any) {
+      // Revert on error (could be improved by keeping old state)
+      void fetchAll();
       return { data: null, error: err };
     }
   }, [fetchAll]);

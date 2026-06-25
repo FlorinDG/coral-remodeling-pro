@@ -377,12 +377,12 @@ export function ScheduleMatrixView({
             <thead>
               <tr>
                 <th 
-                  className="border border-border bg-muted/50 p-2 text-left font-semibold text-xs sticky left-0 bg-card z-10"
+                  className="border-b border-r border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-neutral-900/50 p-3 text-left font-black text-[10px] uppercase tracking-widest text-neutral-500 sticky left-0 z-10"
                   style={{ width: '185px', minWidth: '185px' }}
                 >
                   <div className="flex items-center justify-between">
                     <span>Employee</span>
-                    <span className="text-[10px] font-normal text-muted-foreground">Hrs</span>
+                    <span className="text-[10px] font-black text-neutral-400">HRS</span>
                   </div>
                 </th>
                 {dates.map((date, i) => {
@@ -393,34 +393,34 @@ export function ScheduleMatrixView({
                     <th
                       key={i}
                       className={cn(
-                        "border border-border p-1.5 text-center font-medium text-xs",
-                        today && "bg-primary/10 ring-1 ring-inset ring-primary/30",
-                        weekend && !today && "bg-muted/40"
+                        "border-b border-r border-neutral-200 dark:border-white/10 p-2 text-center",
+                        today && "bg-primary/5 border-b-primary",
+                        weekend && !today && "bg-neutral-50 dark:bg-white/5"
                       )}
                       style={{ width: '120px', minWidth: '120px' }}
                     >
                       <div className={cn(
-                        "text-[10px] uppercase tracking-wider",
-                        today ? "text-primary font-bold" : weekend ? "text-muted-foreground" : "text-muted-foreground"
+                        "text-[10px] font-black uppercase tracking-widest",
+                        today ? "text-primary" : "text-neutral-400"
                       )}>
                         {day}
                       </div>
                       <div className={cn(
-                        "text-base leading-tight",
-                        today ? "text-primary font-bold" : "text-foreground"
+                        "text-lg font-black leading-tight mt-0.5",
+                        today ? "text-primary" : "text-neutral-900 dark:text-white"
                       )}>
                         {num}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">{month}</div>
+                      <div className="text-[10px] font-bold text-neutral-400">{month}</div>
                     </th>
                   );
                 })}
               </tr>
 
               {/* Daily totals row */}
-              <tr className="bg-muted/30">
+              <tr className="bg-neutral-50 dark:bg-neutral-900/30">
                 <td 
-                  className="border border-border p-1.5 text-xs font-medium text-muted-foreground sticky left-0 bg-muted/30 z-10"
+                  className="border-b border-r border-neutral-200 dark:border-white/10 p-2 text-[10px] font-black uppercase tracking-widest text-neutral-500 sticky left-0 bg-neutral-50 dark:bg-[#111] z-10"
                   style={{ width: '185px', minWidth: '185px' }}
                 >
                   <div className="flex items-center justify-between">
@@ -435,13 +435,13 @@ export function ScheduleMatrixView({
                     <td
                       key={i}
                       className={cn(
-                        "border border-border p-1.5 text-center text-[10px]",
-                        isToday(date) && "bg-primary/10"
+                        "border-b border-r border-neutral-200 dark:border-white/10 p-2 text-center text-[10px]",
+                        isToday(date) && "bg-primary/5"
                       )}
                     >
-                      <div className="font-semibold text-foreground">{totals.hours.toFixed(1)}h</div>
-                      <div className="text-muted-foreground">€{totals.cost.toFixed(0)}</div>
-                      <div className="text-muted-foreground">{totals.headcount} 👷</div>
+                      <div className="font-bold text-neutral-900 dark:text-white">{totals.hours.toFixed(1)}h</div>
+                      <div className="text-neutral-500">€{totals.cost.toFixed(0)}</div>
+                      <div className="text-neutral-500 font-bold">{totals.headcount} <span className="opacity-70">👷</span></div>
                     </td>
                   );
                 })}
@@ -450,9 +450,9 @@ export function ScheduleMatrixView({
             <tbody>
               {filteredWorkers.length === 0 ? (
                 <tr>
-                  <td colSpan={daysCount + 1} className="border border-border p-8 text-center text-muted-foreground">
+                  <td colSpan={daysCount + 1} className="p-8 text-center text-neutral-500 border-b border-neutral-200 dark:border-white/10">
                     <div className="space-y-2">
-                      <p className="font-medium">No employees found matching the search criteria</p>
+                      <p className="text-sm font-bold">No employees found matching the search criteria</p>
                     </div>
                   </td>
                 </tr>
@@ -460,16 +460,16 @@ export function ScheduleMatrixView({
                 filteredWorkers.map(worker => {
                   const weeklyHrs = employeeWeeklyHours[worker.id] || 0;
                   return (
-                    <tr key={worker.id} className="group/row hover:bg-muted/20 transition-colors">
+                    <tr key={worker.id} className="group/row hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors">
                       <td 
-                        className="border border-border p-2 sticky left-0 bg-card z-10 font-sans"
+                        className="border-b border-r border-neutral-200 dark:border-white/10 p-3 sticky left-0 bg-white dark:bg-black z-10 font-sans"
                         style={{ width: '185px', minWidth: '185px' }}
                       >
                         <div className="flex items-center justify-between gap-2">
                           <div>
-                            <div className="font-medium text-sm truncate max-w-[120px]">{worker.full_name}</div>
+                            <div className="font-bold text-sm text-neutral-900 dark:text-white truncate max-w-[120px]">{worker.full_name}</div>
                             {(worker.hourly_rate || 0) > 0 && (
-                              <div className="text-[10px] text-muted-foreground">€{worker.hourly_rate}/hr</div>
+                              <div className="text-[10px] font-bold text-neutral-400">€{worker.hourly_rate}/hr</div>
                             )}
                           </div>
                           <div className={cn(
@@ -492,10 +492,10 @@ export function ScheduleMatrixView({
                           <td
                             key={i}
                             className={cn(
-                              "border border-border p-0.5 align-top transition-colors relative",
+                              "border-b border-r border-neutral-200 dark:border-white/10 p-1 align-top transition-colors relative",
                               isToday(date) && "bg-primary/5",
-                              weekend && !isToday(date) && "bg-muted/20",
-                              isTarget && "bg-primary/20 ring-2 ring-primary ring-inset",
+                              weekend && !isToday(date) && "bg-neutral-50 dark:bg-white/5",
+                              isTarget && "bg-primary/10 ring-2 ring-primary ring-inset",
                             )}
                             onDragOver={canManage ? (e) => handleDragOver(e, worker.id, dateStr) : undefined}
                             onDragLeave={canManage ? handleDragLeave : undefined}
@@ -521,35 +521,36 @@ export function ScheduleMatrixView({
                                       onShiftClick?.(shift);
                                     }}
                                     className={cn(
-                                      "text-[11px] p-1.5 rounded-md cursor-pointer transition-all border-l-[3px]",
+                                      "text-[11px] p-2 rounded-lg cursor-pointer transition-all border",
                                       canManage && "cursor-grab active:cursor-grabbing",
                                       isDragging && "opacity-40 scale-95",
-                                      "hover:ring-1 hover:ring-primary/40",
+                                      "hover:shadow-sm hover:border-primary/40",
                                       projectColor
-                                        ? "bg-white/80 dark:bg-neutral-900/80"
-                                        : "bg-muted/60 border-l-neutral-400"
+                                        ? "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/10"
+                                        : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10"
                                     )}
                                     style={projectColor ? {
                                       borderLeftColor: projectColor,
+                                      borderLeftWidth: '3px'
                                     } : undefined}
                                   >
                                     <div className="flex items-start gap-1">
                                       {canManage && (
-                                        <GripVertical className="h-3 w-3 opacity-0 group-hover/cell:opacity-40 flex-shrink-0 mt-0.5 print:hidden" />
+                                        <GripVertical className="h-3.5 w-3.5 opacity-0 group-hover/cell:opacity-40 flex-shrink-0 mt-0.5 print:hidden text-neutral-400" />
                                       )}
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1.5 mb-0.5">
                                           <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getStatusDot(status))} />
-                                          <span className="font-semibold">
+                                          <span className="font-bold text-neutral-900 dark:text-white">
                                             {formatTime(ss)}–{formatTime(se)}
                                           </span>
                                         </div>
                                         {shift.project && (
-                                          <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                          <div className="text-[10px] font-medium text-neutral-500 truncate mb-1">
                                             {shift.project.name}
                                           </div>
                                         )}
-                                        <div className="text-[10px] text-muted-foreground">{hours.toFixed(1)}h</div>
+                                        <div className="text-[10px] font-black text-neutral-400">{hours.toFixed(1)}h</div>
                                       </div>
                                     </div>
                                   </div>

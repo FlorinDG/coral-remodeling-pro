@@ -127,6 +127,7 @@ model Tenant {
   userProjectAccesses        UserProjectAccess[]
   workerSchedules            WorkerSchedule[]
   hrAnnouncements            HrAnnouncement[]
+  hrDocuments                HrDocument[]
 }
 
 model Lead {
@@ -289,36 +290,37 @@ model Session {
 }
 
 model User {
-  id                   String               @id @default(cuid())
-  tenantId             String?
-  name                 String?
-  email                String?              @unique
-  emailVerified        DateTime?
-  image                String?
-  password             String?
-  role                 String               @default("TENANT_ADMIN")
-  environmentLanguage  String?              @default("en")
-  verificationSentAt   DateTime?
-  verificationToken    String?
-  passwordResetExpires DateTime?
-  passwordResetToken   String?
-  inviteAccepted       Boolean              @default(false)
-  inviteToken          String?              @unique
-  invitedAt            DateTime?
-  invitedBy            String?
-  moduleAccess         Json                 @default("{}")
-  employeeStatus       String?              @default("ACTIVE")
-  hireDate             DateTime?
-  hourlyCost           Float?
-  phone                String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @default(now()) @updatedAt
-  accounts             Account[]
-  events               Event[]
-  sessions             Session[]
-  tenant               Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  employee             Employee?
-  hrAnnouncementReads  HrAnnouncementRead[]
+  id                        String                     @id @default(cuid())
+  tenantId                  String?
+  name                      String?
+  email                     String?                    @unique
+  emailVerified             DateTime?
+  image                     String?
+  password                  String?
+  role                      String                     @default("TENANT_ADMIN")
+  environmentLanguage       String?                    @default("en")
+  verificationSentAt        DateTime?
+  verificationToken         String?
+  passwordResetExpires      DateTime?
+  passwordResetToken        String?
+  inviteAccepted            Boolean                    @default(false)
+  inviteToken               String?                    @unique
+  invitedAt                 DateTime?
+  invitedBy                 String?
+  moduleAccess              Json                       @default("{}")
+  employeeStatus            String?                    @default("ACTIVE")
+  hireDate                  DateTime?
+  hourlyCost                Float?
+  phone                     String?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @default(now()) @updatedAt
+  accounts                  Account[]
+  events                    Event[]
+  sessions                  Session[]
+  tenant                    Tenant?                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employee                  Employee?
+  hrAnnouncementReads       HrAnnouncementRead[]
+  hrDocumentAcknowledgments HrDocumentAcknowledgment[]
 }
 
 model VerificationToken {
@@ -915,4 +917,37 @@ model HrAnnouncementRead {
 
   @@unique([userId, announcementId])
   @@index([announcementId])
+}
+
+model HrDocument {
+  id                String    @id @default(cuid())
+  tenantId          String
+  title             String
+  description       String?
+  fileUrl           String?
+  content           String?
+  requiresSignature Boolean   @default(false)
+  deadline          DateTime?
+  createdBy         String // userId of author
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tenant          Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  acknowledgments HrDocumentAcknowledgment[]
+
+  @@index([tenantId, createdAt])
+}
+
+model HrDocumentAcknowledgment {
+  id            String   @id @default(cuid())
+  documentId    String
+  userId        String
+  signatureData String?
+  readAt        DateTime @default(now())
+
+  document HrDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([documentId])
 }

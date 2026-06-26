@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { getHrDocuments, acknowledgeHrDocument } from '@/app/actions/hr-documents';
 import { format, parseISO, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -159,60 +159,25 @@ export function Documents() {
   const [acknowledging, setAcknowledging] = useState(false);
 
   const fetchDocuments = useCallback(async () => {
-    if (!user?.id) return;
     setLoading(true);
 
     try {
-      const { data: docs, error } = await supabase
-        .from('company_documents')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.warn('[Documents] Table may not exist:', error.message);
-        setDocuments([]);
-        setLoading(false);
-        return;
-      }
-
-      // Check acknowledgment status
-      const { data: acks } = await supabase
-        .from('document_acknowledgments')
-        .select('document_id, acknowledged_at')
-        .eq('user_id', user.id);
-
-      const ackMap = new Map(
-        (acks || []).map(a => [a.document_id, a.acknowledged_at])
-      );
-
-      const enriched: Document[] = (docs || []).map(d => ({
-        id: d.id,
-        title: d.title,
-        description: d.description,
-        file_url: d.file_url,
-        content: d.content,
-        requires_signature: d.requires_signature ?? false,
-        deadline: d.deadline,
-        created_at: d.created_at,
-        acknowledged: ackMap.has(d.id),
-        acknowledged_at: ackMap.get(d.id) || null,
-      }));
-
-      setDocuments(enriched);
+      const data = await getHrDocuments();
+      setDocuments(data as unknown as Document[]);
     } catch (err) {
       console.warn('[Documents] Error:', err);
       setDocuments([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     fetchDocuments();
   }, [fetchDocuments]);
 
   const handleAcknowledge = async () => {
-    if (!user?.id || !selectedDoc) return;
+    if (!selectedDoc) return;
 
     if (selectedDoc.requires_signature && !signatureData) {
       toast.error('Please provide your signature');
@@ -221,15 +186,7 @@ export function Documents() {
 
     setAcknowledging(true);
     try {
-      const { error } = await supabase
-        .from('document_acknowledgments')
-        .insert({
-          document_id: selectedDoc.id,
-          user_id: user.id,
-          signature_data: signatureData || null,
-        });
-
-      if (error) throw error;
+      await acknowledgeHrDocument(selectedDoc.id, signatureData);
 
       toast.success('Document acknowledged');
       setSelectedDoc(null);

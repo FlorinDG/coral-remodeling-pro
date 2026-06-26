@@ -12,6 +12,7 @@ import { ScheduleCalendar } from '@/components/time-tracker/components/schedule/
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useProjects } from '@/components/time-tracker/hooks/useProjects';
+import { uploadFileAction } from '@/app/actions/files';
 import {
   Dialog,
   DialogContent,
@@ -488,22 +489,21 @@ export default function Schedule() {
 
                         // Upload files if any
                         for (const file of selectedFiles) {
-                          const filePath = generateSafeFilePath(`schedules/${selectedShift.id}`, file);
-                          const { error: uploadError } = await supabase.storage
-                            .from('project-files')
-                            .upload(filePath, file);
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          
+                          const uploadRes = await uploadFileAction(formData, 'schedules', selectedShift.id);
 
-                          if (!uploadError) {
-                            await supabase
-                              .from('schedule_attachments')
-                              .insert({
-                                shift_id: selectedShift.id,
-                                file_name: file.name,
-                                file_path: filePath,
-                                file_type: getSafeFileType(file),
-                                file_size: file.size,
-                                uploaded_by: user.id,
-                              });
+                          if (uploadRes.success && uploadRes.key) {
+                            await hrApi.create('shift-attachments', {
+                                shiftId: selectedShift.id,
+                                name: file.name,
+                                url: uploadRes.key, // We store the Blob key as the URL
+                                type: file.type || 'application/octet-stream',
+                                size: file.size,
+                            });
+                          } else {
+                            console.error('Failed to upload file:', uploadRes.error);
                           }
                         }
 

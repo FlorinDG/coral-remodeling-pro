@@ -19,7 +19,7 @@ import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
 import { useCompletedTasks } from '@/components/time-tracker/hooks/useTasks';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+
 import { Loader2, CheckSquare, Clock, Users, CalendarIcon, CalendarCheck, CalendarX, Euro, CalendarPlus, ArrowLeft, Calendar as CalendarLucide } from 'lucide-react';
 import { Link } from "@/i18n/routing";
 import { useRouter } from "@/i18n/routing";
@@ -69,15 +69,22 @@ export default function Performance() {
       if (!canViewAllUsers) return;
       
       setUsersLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, hourly_rate')
-        .order('full_name');
-      
-      if (!error && data) {
-        setAllUsers(data);
+      try {
+        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
+        const data = await hrList<any>('employees');
+        if (data) {
+          setAllUsers(data.map((u: any) => ({
+            id: u.id,
+            user_id: u.userId,
+            full_name: `${u.firstName} ${u.lastName}`.trim(),
+            hourly_rate: u.hourlyRate || 0
+          })).sort((a: any, b: any) => a.full_name.localeCompare(b.full_name)));
+        }
+      } catch (err) {
+        console.error('Failed to fetch users', err);
+      } finally {
+        setUsersLoading(false);
       }
-      setUsersLoading(false);
     };
 
     fetchUsers();
@@ -90,34 +97,29 @@ export default function Performance() {
       
       setStatsLoading(true);
 
-      // Fetch clock entries and user's hourly rate in parallel
-      const [entriesResult, profileResult] = await Promise.all([
-        supabase
-          .from('clock_entries')
-          .select('clock_in_time, clock_out_time')
-          .eq('user_id', targetUserId)
-          .gte('clock_in_time', startDate.toISOString())
-          .lte('clock_in_time', endDate.toISOString()),
-        supabase
-          .from('profiles')
-          .select('hourly_rate')
-          .eq('user_id', targetUserId)
-          .single()
-      ]);
+      try {
+        const { getTimesheetData } = await import('@/app/actions/timesheets');
+        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
 
-      const rate = profileResult.data?.hourly_rate || 0;
-      setHourlyRate(rate);
+        // Fetch clock entries via server action
+        const entriesResult = await getTimesheetData(targetUserId, startDate.toISOString(), endDate.toISOString());
 
-      if (!entriesResult.error && entriesResult.data) {
+        // Fetch user profile (employee) to get hourly rate
+        const profiles = await hrList<any>(`employees?userId=${targetUserId}`);
+        const profile = profiles?.[0];
+
+        const rate = profile?.hourlyRate || 0;
+        setHourlyRate(rate);
+
         // Calculate unique days present
         const uniqueDays = new Set(
-          entriesResult.data.map(entry => format(parseISO(entry.clock_in_time), 'yyyy-MM-dd'))
+          entriesResult.map(entry => format(parseISO(entry.clock_in_time), 'yyyy-MM-dd'))
         );
         const daysPresent = uniqueDays.size;
 
         // Calculate total hours
         let totalMins = 0;
-        entriesResult.data.forEach(entry => {
+        entriesResult.forEach(entry => {
           if (entry.clock_out_time) {
             totalMins += differenceInMinutes(parseISO(entry.clock_out_time), parseISO(entry.clock_in_time));
           }
@@ -142,8 +144,11 @@ export default function Performance() {
           hoursWorked,
           amountToBePaid: Math.round(hoursWorked * rate * 100) / 100,
         });
+      } catch (err) {
+        console.warn('Failed to fetch stats:', err);
+      } finally {
+        setStatsLoading(false);
       }
-      setStatsLoading(false);
     };
 
     fetchStats();

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+
 import { ArrowLeft, Loader2, User, KeyRound, Users2, Euro, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -118,19 +118,16 @@ export function UserDetailView({
 
     setSavingName(true);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: editName.trim() })
-      .eq('id', currentUser.id);
-
-    if (error) {
-      toast.error('Failed to update name');
-      console.error(error);
-    } else {
+    try {
+      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      await hrUpdate('employees', currentUser.id, { firstName: editName.trim().split(' ')[0], lastName: editName.trim().split(' ').slice(1).join(' ') });
       toast.success('Name updated');
       const updated = { ...currentUser, full_name: editName.trim() };
       setCurrentUser(updated);
       onUpdate(updated);
+    } catch (error) {
+      toast.error('Failed to update name');
+      console.error(error);
     }
     
     setSavingName(false);
@@ -145,19 +142,16 @@ export function UserDetailView({
 
     setSavingRate(true);
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({ hourly_rate: rate })
-      .eq('id', currentUser.id);
-
-    if (error) {
-      toast.error('Failed to update hourly rate');
-      console.error(error);
-    } else {
+    try {
+      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      await hrUpdate('employees', currentUser.id, { hourlyRate: rate });
       toast.success('Hourly rate updated');
       const updated = { ...currentUser, hourly_rate: rate };
       setCurrentUser(updated);
       onUpdate(updated);
+    } catch (error) {
+      toast.error('Failed to update hourly rate');
+      console.error(error);
     }
     
     setSavingRate(false);
@@ -194,24 +188,12 @@ export function UserDetailView({
     setResettingPassword(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { resetEmployeePassword } = await import('@/app/actions/hr-admin');
       
-      if (!session) {
-        toast.error('You must be logged in to perform this action');
-        return;
-      }
-
-      const response = await supabase.functions.invoke('admin-reset-password', {
-        body: {
-          user_id: currentUser.user_id,
-          new_password: resetPassword,
-        },
-      });
+      const response = await resetEmployeePassword(currentUser.user_id, resetPassword);
 
       if (response.error) {
-        toast.error(response.error.message || 'Failed to reset password');
-      } else if (response.data?.error) {
-        toast.error(response.data.error);
+        toast.error(response.error || 'Failed to reset password');
       } else {
         toast.success('Password reset successfully');
         setResetDialogOpen(false);
@@ -230,24 +212,14 @@ export function UserDetailView({
     setDeleting(true);
     
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('You must be logged in to perform this action');
-        setDeleting(false);
-        return;
-      }
+      const { deleteEmployee } = await import('@/app/actions/hr-admin');
 
-      const response = await supabase.functions.invoke('admin-delete-user', {
-        body: { user_id: currentUser.user_id },
-      });
+      const response = await deleteEmployee(currentUser.user_id);
 
       if (response.error) {
-        toast.error(response.error.message || 'Failed to delete user');
+        toast.error(response.error || 'Failed to delete user');
         console.error(response.error);
         setDeleting(false);
-      } else if (response.data?.error) {
-        toast.error(response.data.error);
         setDeleting(false);
       } else {
         toast.success('User deleted successfully');

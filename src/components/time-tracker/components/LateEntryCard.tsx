@@ -27,7 +27,7 @@ import { useScheduledShifts, NOTION_COLORS } from '@/components/time-tracker/hoo
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+
 import { toast } from 'sonner';
 import { format, parseISO, isAfter, startOfDay } from 'date-fns';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
@@ -69,12 +69,20 @@ export function LateEntryCard() {
     const fetchUsers = async () => {
       if (!isAdmin) return;
       setUsersLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name')
-        .order('full_name');
-      if (!error && data) setAllUsers(data);
-      setUsersLoading(false);
+      try {
+        const { hrList } = await import('@/components/time-tracker/lib/hr-api');
+        const data = await hrList<any>('employees');
+        if (data) {
+          setAllUsers(data.map((u: any) => ({
+            user_id: u.userId,
+            full_name: `${u.firstName} ${u.lastName}`.trim()
+          })).sort((a: any, b: any) => a.full_name.localeCompare(b.full_name)));
+        }
+      } catch (error) {
+        console.error('Failed to fetch users', error);
+      } finally {
+        setUsersLoading(false);
+      }
     };
 
     fetchUsers();
@@ -96,114 +104,38 @@ export function LateEntryCard() {
       // Determine target user (admin may submit on behalf of another user)
       const targetUserId = isAdmin && selectedUserId ? selectedUserId : user?.id;
 
-      // Create clock entry with pending approval
-      const clockInTime = new Date(`${date}T${clockIn}`);
-      const clockOutTime = new Date(`${date}T${clockOut}`);
-
-      const { data: clockEntry, error: clockError } = await supabase
-        .from('clock_entries')
-        .insert([{
-          user_id: targetUserId,
-          clock_in_time: clockInTime.toISOString(),
-          clock_out_time: clockOutTime.toISOString(),
-          clock_in_latitude: includeLocation ? location?.latitude : null,
-          clock_in_longitude: includeLocation ? location?.longitude : null,
-          clock_out_latitude: includeLocation ? location?.latitude : null,
-          clock_out_longitude: includeLocation ? location?.longitude : null,
-          task_description: taskDescription || null,
-          requires_approval: true,
-          approval_status: 'pending',
-        }])
-        .select()
-        .single();
-
-      if (clockError) throw clockError;
-
-      let shiftId: string | null = null;
-
-      // If project selected, try to find an existing scheduled shift for this user/date/project
-      if (projectId) {
-        const { data: existingShifts } = await supabase
-          .from('scheduled_shifts')
-          .select('*')
-          .eq('user_id', targetUserId)
-          .eq('shift_date', date)
-          .eq('project_id', projectId)
-          .limit(1);
-
-        if (existingShifts && existingShifts.length > 0) {
-          shiftId = existingShifts[0].id;
-          // Link clock entry to existing shift and mark pending approval
-          await supabase
-            .from('scheduled_shifts')
-            .update({
-              clock_entry_id: clockEntry.id,
-              shift_start: clockIn,
-              shift_end: clockOut,
-              status: 'Pending Approval',
-              last_edited_by: user?.id,
-            })
-            .eq('id', shiftId);
-
-          // If task selected, assign it to the shift
-          if (taskId) {
-            await supabase
-              .from('shift_tasks')
-              .insert([{
-                shift_id: shiftId,
-                task_id: taskId,
-                status: 'completed',
-                completed_at: clockOutTime.toISOString(),
-                completed_by: user?.id,
-              }]);
-          }
-        } else {
-          // Do not create new scheduled shifts when adding hours manually
-          shiftId = null;
-        }
-      }
-
-      // Upload files if any and there's a linked shift
-      if (files.length > 0 && shiftId) {
+      // Upload files first if any
+      const filesData: Array<{ key: string; name: string; type: string; size: number }> = [];
+      if (files.length > 0) {
+        const { uploadFileAction } = await import('@/app/actions/files');
         for (const file of files) {
-          const filePath = generateSafeFilePath(`shifts/${shiftId}`, file);
-          const { error: uploadError } = await supabase.storage
-            .from('project-files')
-            .upload(filePath, file);
-
-          if (!uploadError) {
-            await supabase.from('schedule_attachments').insert({
-              shift_id: shiftId,
-              file_name: file.name,
-              file_path: filePath,
-              file_type: getSafeFileType(file),
-              file_size: file.size,
-              uploaded_by: user.id,
-              source_project_id: projectId || null,
-            });
+          const formData = new FormData();
+          formData.append('file', file);
+          const result = await uploadFileAction(formData, 'shifts');
+          if (result.success && result.key) {
+            filesData.push({ key: result.key, name: file.name, type: file.type, size: file.size });
           }
         }
-      } else if (files.length > 0 && !shiftId) {
-        toast('Files were not attached because no scheduled shift exists for this date/project');
       }
 
-      // Create approval request
-      await createRequest(
-        'late_entry',
-        clockEntry.id,
-        'clock_entry',
-        targetUserId || user!.id,
-        {
-          date,
-          clock_in: clockIn,
-          clock_out: clockOut,
-          project_id: projectId || null,
-          task_id: taskId || null,
-          task_description: taskDescription || null,
-          files_count: files.length,
-        },
-        'Late timesheet entry submission'
-      );
+      // Submit the entry
+      const { submitLateEntry } = await import('@/app/actions/timesheets');
+      const result = await submitLateEntry({
+        targetUserId: targetUserId || user.id,
+        clockInTime: `${date}T${clockIn}`,
+        clockOutTime: `${date}T${clockOut}`,
+        includeLocation,
+        location,
+        taskDescription,
+        projectId,
+        taskId,
+        filesCount: files.length,
+        filesData,
+      });
+
+      if (!result.success) {
+        throw new Error('Failed to submit late entry');
+      }
 
       toast.success('Late entry submitted for approval');
       
@@ -216,7 +148,9 @@ export function LateEntryCard() {
       setTaskDescription('');
       setIncludeLocation(false);
       setFiles([]);
+      setSelectedUserId('');
       setIsOpen(false);
+      
     } catch (error) {
       console.error('Error submitting late entry:', error);
       toast.error('Failed to submit late entry');

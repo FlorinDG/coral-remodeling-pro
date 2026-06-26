@@ -35,6 +35,8 @@ const ENTITY_MAP: Record<string, string> = {
     // 'employees' now handled by standard Prisma Employee model
     'shift-tasks':      'shiftTask',
     'shift-attachments': 'shiftAttachment',
+    'approval-requests': 'hrApprovalRequest',
+    'support-messages':  'hrSupportMessage',
 };
 
 // Roles that count as "employees" in HR context (queryable via /api/hr/employees)

@@ -19,7 +19,7 @@ import { useTheme } from '@/components/time-tracker/contexts/ThemeContext';
 import { useUserPreferences } from '@/components/time-tracker/hooks/useUserPreferences';
 import { languages } from '@/components/time-tracker/i18n';
 import { toast } from '@/components/time-tracker/hooks/use-toast';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+
 import { translateToEnglish } from '@/components/time-tracker/lib/translateService';
 import { useState } from 'react';
 
@@ -72,15 +72,15 @@ export default function Profile() {
     
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('approval_requests').insert({
-        user_id: user.id,
-        requested_by: user.id,
-        entity_type: 'email_change',
-        request_type: 'email_change',
-        request_data: { new_email: newEmail, old_email: user.email },
+      const { hrCreate } = await import('@/components/time-tracker/lib/hr-api');
+      await hrCreate('approval-requests', {
+        userId: user.id,
+        requestedBy: user.id,
+        entityType: 'email_change',
+        requestType: 'email_change',
+        requestData: { new_email: newEmail, old_email: user.email },
       });
       
-      if (error) throw error;
       toast({ title: t('common.success'), description: t('profile.emailChangeRequested') });
       setNewEmail('');
     } catch (err: unknown) {
@@ -97,15 +97,15 @@ export default function Profile() {
     try {
       const translatedMessage = await translateToEnglish(supportMessage, i18n.language);
       
-      const { error } = await supabase.from('support_messages').insert({
-        user_id: user.id,
+      const { hrCreate } = await import('@/components/time-tracker/lib/hr-api');
+      await hrCreate('support-messages', {
+        userId: user.id,
         subject: supportSubject,
         message: supportMessage,
-        original_language: i18n.language,
-        translated_message: translatedMessage,
+        originalLanguage: i18n.language,
+        translatedMessage: translatedMessage,
       });
       
-      if (error) throw error;
       toast({ title: t('common.success'), description: t('profile.messageSent') });
       setSupportSubject('');
       setSupportMessage('');

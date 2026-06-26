@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Check, X, Clock, FileText, Calendar, ClipboardList, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useApprovalRequests, ApprovalRequest } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useTimeOffRequests } from '@/components/time-tracker/hooks/useTimeOffRequests';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 
@@ -54,32 +55,41 @@ export function ApprovalManager() {
   const [timeOffLoading, setTimeOffLoading] = useState(true);
 
   // Fetch time off requests
-  useState(() => {
+  useEffect(() => {
     const fetchTimeOffRequests = async () => {
       setTimeOffLoading(true);
-      const { data, error } = await supabase
-        .from('time_off_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+      try {
+        const data = await hrList<any>('time-off');
 
-      if (!error && data) {
-        // Get profiles
-        const userIds = [...new Set(data.map(r => r.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name')
-          .in('user_id', userIds.length > 0 ? userIds : ['no-match']);
-
-        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-        setTimeOffRequests(data.map(r => ({
-          ...r,
-          user_profile: profileMap.get(r.user_id) || null,
-        })));
+        if (data) {
+          // Get profiles from employees endpoint
+          const userIds = Array.from(new Set(data.map((r: any) => r.userId)));
+          const profiles = await hrList<any>('employees');
+          
+          const profileMap = new Map(profiles?.map((p: any) => [p.userId, p]) || []);
+          setTimeOffRequests(data.map((r: any) => ({
+            id: r.id,
+            user_id: r.userId,
+            request_type: r.requestType,
+            start_date: r.startDate,
+            end_date: r.endDate,
+            notes: r.notes,
+            status: r.status,
+            created_at: r.createdAt,
+            user_profile: (() => {
+                const emp = profileMap.get(r.userId) as any;
+                return emp ? { full_name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
+            })(),
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch time off requests', err);
+      } finally {
+        setTimeOffLoading(false);
       }
-      setTimeOffLoading(false);
     };
     fetchTimeOffRequests();
-  });
+  }, []);
 
   const handleApprove = async () => {
     if (!confirmAction) return;
@@ -109,31 +119,24 @@ export function ApprovalManager() {
     setConfirmAction(null);
   };
 
-  const handleBulkAction = async () => {
-    if (!bulkConfirmAction || selectedRequests.size === 0) return;
+  const handleBulkAction = async (action: 'approve' | 'reject') => {
+    if (selectedRequests.size === 0) return;
     setBulkProcessing(true);
 
     const ids = Array.from(selectedRequests);
-    
-    if (bulkConfirmAction === 'approve') {
-      const { error, successCount } = await bulkApprove(ids);
-      if (error) {
-        toast.error('Failed to approve some requests');
-      } else {
-        toast.success(`${successCount} request(s) approved`);
-      }
+    const { error, successCount } = action === 'approve' 
+      ? await bulkApprove(ids)
+      : await bulkReject(ids);
+
+    if (error) {
+      toast.error(`Failed to ${action} some requests`);
     } else {
-      const { error, successCount } = await bulkReject(ids);
-      if (error) {
-        toast.error('Failed to reject some requests');
-      } else {
-        toast.success(`${successCount} request(s) rejected`);
-      }
+      toast.success(`${successCount} request(s) ${action}d`);
     }
 
     setSelectedRequests(new Set());
-    setBulkProcessing(false);
     setBulkConfirmAction(null);
+    setBulkProcessing(false);
   };
 
   const handleBulkTimeOffAction = async (action: 'Approved' | 'Rejected') => {
@@ -142,18 +145,15 @@ export function ApprovalManager() {
 
     const ids = Array.from(selectedTimeOff);
     
-    const { error } = await supabase
-      .from('time_off_requests')
-      .update({ status: action })
-      .in('id', ids);
-
-    if (error) {
-      toast.error(`Failed to ${action.toLowerCase()} some requests`);
-    } else {
+    try {
+      await Promise.all(ids.map(id => hrUpdate('time-off', id, { status: action })));
+      
       toast.success(`${ids.length} request(s) ${action.toLowerCase()}`);
       setTimeOffRequests(prev => prev.map(r => 
         ids.includes(r.id) ? { ...r, status: action } : r
       ));
+    } catch (err) {
+      toast.error(`Failed to ${action.toLowerCase()} some requests`);
     }
 
     setSelectedTimeOff(new Set());
@@ -162,16 +162,12 @@ export function ApprovalManager() {
 
   const handleTimeOffAction = async (id: string, action: 'Approved' | 'Rejected') => {
     setProcessingId(id);
-    const { error } = await supabase
-      .from('time_off_requests')
-      .update({ status: action })
-      .eq('id', id);
-
-    if (error) {
-      toast.error(`Failed to ${action.toLowerCase()} request`);
-    } else {
+    try {
+      await hrUpdate('time-off', id, { status: action });
       toast.success(`Request ${action.toLowerCase()}`);
       setTimeOffRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
+    } catch (err) {
+      toast.error(`Failed to ${action.toLowerCase()} request`);
     }
     setProcessingId(null);
   };

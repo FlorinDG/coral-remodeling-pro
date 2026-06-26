@@ -128,6 +128,8 @@ model Tenant {
   workerSchedules            WorkerSchedule[]
   hrAnnouncements            HrAnnouncement[]
   hrDocuments                HrDocument[]
+  hrApprovalRequests         HrApprovalRequest[]
+  hrSupportMessages          HrSupportMessage[]
 }
 
 model Lead {
@@ -409,6 +411,39 @@ model CMS_ProjectImage {
   isBefore  Boolean     @default(false)
   order     Int         @default(0)
   project   CMS_Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+
+
+model HrApprovalRequest {
+  id           String   @id @default(cuid())
+  tenantId     String
+  userId       String
+  requestedBy  String
+  entityType   String
+  requestType  String
+  requestData  Json
+  status       String   @default("pending")
+  notes        String?
+  reviewedBy   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model HrSupportMessage {
+  id                String   @id @default(cuid())
+  tenantId          String
+  userId            String
+  subject           String
+  message           String
+  originalLanguage  String
+  translatedMessage String?
+  status            String   @default("unread")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tenant            Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
 
 model PromotionalBanner {

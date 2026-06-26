@@ -9,123 +9,124 @@ datasource db {
 }
 
 model Tenant {
-  id                       String                  @id @default(cuid())
-  companyName              String
-  vatNumber                String?
-  iban                     String?
-  logoUrl                  String?
-  planType                 String                  @default("FREE")
-  peppolId                 String?
-  createdAt                DateTime                @default(now())
-  updatedAt                DateTime                @updatedAt
-  driveFolderId            String?
-  activeModules            String[]                @default(["INVOICING"])
-  subscriptionStatus       String                  @default("ACTIVE")
-  city                     String?
-  email                    String?
-  postalCode               String?
-  street                   String?
-  bic                      String?
-  commercialName           String?
-  deliveryCity             String?
-  deliveryPostalCode       String?
-  deliveryStreet           String?
-  directorFirstName        String?
-  directorLastName         String?
-  headquartersCity         String?
-  headquartersPostalCode   String?
-  headquartersStreet       String?
-  documentLanguage         String?
-  brandColor               String?
-  documentTemplate         String?                 @default("t1")
-  invoiceConnector         String?                 @default("-")
-  invoiceDateFormat        String?                 @default("YYYY")
-  invoiceNextNumber        Int?                    @default(1)
-  invoiceNumberWidth       Int?                    @default(3)
-  invoicePrefix            String?                 @default("INV")
-  quotationConnector       String?                 @default("-")
-  quotationDateFormat      String?                 @default("YYYY")
-  quotationNextNumber      Int?                    @default(1)
-  quotationNumberWidth     Int?                    @default(3)
-  quotationPrefix          String?                 @default("OFF")
-  creditnoteConnector      String?                 @default("-")
-  creditnoteDateFormat     String?                 @default("YYYY")
-  creditnoteNextNumber     Int?                    @default(1)
-  creditnoteNumberWidth    Int?                    @default(3)
-  creditnotePrefix         String?                 @default("CN")
-  eInvoiceApiKey           String?
-  eInvoiceTenantId         String?
-  peppolRegistered         Boolean                 @default(false)
-  peppolCounterResetAt     DateTime                @default(now())
-  peppolReceivedThisMonth  Int                     @default(0)
-  peppolSentThisMonth      Int                     @default(0)
-  ocrEngine                String                  @default("GPT4O")
-  scanCount                Int                     @default(0)
-  scanCountResetAt         DateTime                @default(now())
-  scanQuota                Int                     @default(30)
-  lockedDbIds              Json                    @default("{}")
-  documentMode             String?                 @default("dynamic")
-  stationeryUrl            String?
-  billingCycle             String                  @default("MONTHLY")
-  billingStartedAt         DateTime?
-  cancellationEffectiveAt  DateTime?
-  cancellationNoticeMonths Int?
-  cancellationRequestedAt  DateTime?
-  extraUserCount           Int                     @default(0)
-  stripeCustomerId         String?                 @unique
-  stripePriceId            String?
-  stripeSubscriptionId     String?
-  trialEndsAt              DateTime?
-  trialNotifiedAt          DateTime?
-  workforceUserCount       Int                     @default(0)
-  bordereauPrefix          String?                 @default("BOR")
-  defaultCalendarView      String?                 @default("month")
-  defaultEventDuration     Int?                    @default(60)
-  defaultPaymentTermDays   Int?                    @default(30)
-  defaultPaymentMethod     String?                 @default("transfer")
-  defaultPaymentDueModel   String?                 @default("net")
+  id                         String                  @id @default(cuid())
+  companyName                String
+  vatNumber                  String?
+  iban                       String?
+  logoUrl                    String?
+  planType                   String                  @default("FREE")
+  peppolId                   String?
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
+  driveFolderId              String?
+  activeModules              String[]                @default(["INVOICING"])
+  subscriptionStatus         String                  @default("ACTIVE")
+  city                       String?
+  email                      String?
+  postalCode                 String?
+  street                     String?
+  bic                        String?
+  commercialName             String?
+  deliveryCity               String?
+  deliveryPostalCode         String?
+  deliveryStreet             String?
+  directorFirstName          String?
+  directorLastName           String?
+  headquartersCity           String?
+  headquartersPostalCode     String?
+  headquartersStreet         String?
+  documentLanguage           String?
+  brandColor                 String?
+  documentTemplate           String?                 @default("t1")
+  invoiceConnector           String?                 @default("-")
+  invoiceDateFormat          String?                 @default("YYYY")
+  invoiceNextNumber          Int?                    @default(1)
+  invoiceNumberWidth         Int?                    @default(3)
+  invoicePrefix              String?                 @default("INV")
+  quotationConnector         String?                 @default("-")
+  quotationDateFormat        String?                 @default("YYYY")
+  quotationNextNumber        Int?                    @default(1)
+  quotationNumberWidth       Int?                    @default(3)
+  quotationPrefix            String?                 @default("OFF")
+  creditnoteConnector        String?                 @default("-")
+  creditnoteDateFormat       String?                 @default("YYYY")
+  creditnoteNextNumber       Int?                    @default(1)
+  creditnoteNumberWidth      Int?                    @default(3)
+  creditnotePrefix           String?                 @default("CN")
+  eInvoiceApiKey             String?
+  eInvoiceTenantId           String?
+  peppolRegistered           Boolean                 @default(false)
+  peppolCounterResetAt       DateTime                @default(now())
+  peppolReceivedThisMonth    Int                     @default(0)
+  peppolSentThisMonth        Int                     @default(0)
+  ocrEngine                  String                  @default("GPT4O")
+  scanCount                  Int                     @default(0)
+  scanCountResetAt           DateTime                @default(now())
+  scanQuota                  Int                     @default(30)
+  lockedDbIds                Json                    @default("{}")
+  documentMode               String?                 @default("dynamic")
+  stationeryUrl              String?
+  billingCycle               String                  @default("MONTHLY")
+  billingStartedAt           DateTime?
+  cancellationEffectiveAt    DateTime?
+  cancellationNoticeMonths   Int?
+  cancellationRequestedAt    DateTime?
+  extraUserCount             Int                     @default(0)
+  stripeCustomerId           String?                 @unique
+  stripePriceId              String?
+  stripeSubscriptionId       String?
+  trialEndsAt                DateTime?
+  trialNotifiedAt            DateTime?
+  workforceUserCount         Int                     @default(0)
+  bordereauPrefix            String?                 @default("BOR")
+  defaultCalendarView        String?                 @default("month")
+  defaultEventDuration       Int?                    @default(60)
+  defaultPaymentTermDays     Int?                    @default(30)
+  defaultPaymentMethod       String?                 @default("transfer")
+  defaultPaymentDueModel     String?                 @default("net")
   defaultPaymentLateClauseNL String?
   defaultPaymentLateClauseFR String?
-  defaultVatRate           Int?                    @default(21)
-  poPrefix                 String?                 @default("PO")
-  vatCalcMode              String?                 @default("lines")
-  paymentProvider          String                  @default("bank_transfer")
-  stripeSecretKey          String?
-  stripePublishableKey     String?
-  workHoursPerDay          Float?                  @default(8.0)
-  peppolOptOut             Boolean                 @default(false)
-  mindeeApiKey             String?
-  veryfiApiKey             String?
-  trialGraceEndsAt         DateTime?
-  documentFont             String?                 @default("Helvetica")
-  documentFontSize         Int?                    @default(10)
-  bookings                 Booking[]
-  cmsProjects              CMS_Project[]
-  cmsServices              CMS_Service[]
-  clientPortals            ClientPortal[]
-  clockEntries             ClockEntry[]
-  connectedEmailAccounts   ConnectedEmailAccount[]
-  contacts                 Contact[]
-  employees                Employee[]
-  events                   Event[]
-  globalDatabases          GlobalDatabase[]
-  hrProjects               HrProject[]
-  hrTeams                  HrTeam[]
-  internalProjects         InternalProject[]
-  invoices                 Invoice[]
-  leads                    Lead[]
-  notionConnections        NotionConnection[]
-  promotionalBanners       PromotionalBanner[]
-  quotations               Quotation[]
-  scheduledShifts          ScheduledShift[]
-  shiftTemplates           ShiftTemplate[]
-  siteContents             SiteContent[]
-  suppliers                Supplier[]
-  timeOffRequests          TimeOffRequest[]
-  users                    User[]
-  notifications            Notification[]
-  userProjectAccesses      UserProjectAccess[]
-  workerSchedules          WorkerSchedule[]
+  defaultVatRate             Int?                    @default(21)
+  poPrefix                   String?                 @default("PO")
+  vatCalcMode                String?                 @default("lines")
+  paymentProvider            String                  @default("bank_transfer")
+  stripeSecretKey            String?
+  stripePublishableKey       String?
+  workHoursPerDay            Float?                  @default(8.0)
+  peppolOptOut               Boolean                 @default(false)
+  mindeeApiKey               String?
+  veryfiApiKey               String?
+  trialGraceEndsAt           DateTime?
+  documentFont               String?                 @default("Helvetica")
+  documentFontSize           Int?                    @default(10)
+  bookings                   Booking[]
+  cmsProjects                CMS_Project[]
+  cmsServices                CMS_Service[]
+  clientPortals              ClientPortal[]
+  clockEntries               ClockEntry[]
+  connectedEmailAccounts     ConnectedEmailAccount[]
+  contacts                   Contact[]
+  employees                  Employee[]
+  events                     Event[]
+  globalDatabases            GlobalDatabase[]
+  hrProjects                 HrProject[]
+  hrTeams                    HrTeam[]
+  internalProjects           InternalProject[]
+  invoices                   Invoice[]
+  leads                      Lead[]
+  notionConnections          NotionConnection[]
+  promotionalBanners         PromotionalBanner[]
+  quotations                 Quotation[]
+  scheduledShifts            ScheduledShift[]
+  shiftTemplates             ShiftTemplate[]
+  siteContents               SiteContent[]
+  suppliers                  Supplier[]
+  timeOffRequests            TimeOffRequest[]
+  users                      User[]
+  notifications              Notification[]
+  userProjectAccesses        UserProjectAccess[]
+  workerSchedules            WorkerSchedule[]
+  hrAnnouncements            HrAnnouncement[]
 }
 
 model Lead {
@@ -288,35 +289,36 @@ model Session {
 }
 
 model User {
-  id                   String    @id @default(cuid())
+  id                   String               @id @default(cuid())
   tenantId             String?
   name                 String?
-  email                String?   @unique
+  email                String?              @unique
   emailVerified        DateTime?
   image                String?
   password             String?
-  role                 String    @default("TENANT_ADMIN")
-  environmentLanguage  String?   @default("en")
+  role                 String               @default("TENANT_ADMIN")
+  environmentLanguage  String?              @default("en")
   verificationSentAt   DateTime?
   verificationToken    String?
   passwordResetExpires DateTime?
   passwordResetToken   String?
-  inviteAccepted       Boolean   @default(false)
-  inviteToken          String?   @unique
+  inviteAccepted       Boolean              @default(false)
+  inviteToken          String?              @unique
   invitedAt            DateTime?
   invitedBy            String?
-  moduleAccess         Json      @default("{}")
-  employeeStatus       String?   @default("ACTIVE")
+  moduleAccess         Json                 @default("{}")
+  employeeStatus       String?              @default("ACTIVE")
   hireDate             DateTime?
   hourlyCost           Float?
   phone                String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @default(now()) @updatedAt
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @default(now()) @updatedAt
   accounts             Account[]
   events               Event[]
   sessions             Session[]
-  tenant               Tenant?   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant               Tenant?              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   employee             Employee?
+  hrAnnouncementReads  HrAnnouncementRead[]
 }
 
 model VerificationToken {
@@ -879,9 +881,38 @@ model Notification {
   readAt     DateTime?
   createdAt  DateTime  @default(now())
 
-  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
   @@index([entityId])
   @@index([tenantId, userId, readAt, createdAt])
+}
+
+model HrAnnouncement {
+  id        String   @id @default(cuid())
+  tenantId  String
+  title     String
+  content   String
+  priority  String   @default("normal") // normal, important, urgent
+  createdBy String // userId of author
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  reads  HrAnnouncementRead[]
+
+  @@index([tenantId, createdAt])
+}
+
+model HrAnnouncementRead {
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  readAt         DateTime @default(now())
+
+  announcement HrAnnouncement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, announcementId])
+  @@index([announcementId])
 }

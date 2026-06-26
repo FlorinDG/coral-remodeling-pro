@@ -1,10 +1,8 @@
 "use client";
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useSession } from 'next-auth/react';
 
-// We intentionally mock this profile to allow the TimeTracker UI to render
-// Since this is embedded in an Admin Dashboard protected by NextAuth,
-// we just need the TimeTracker module to think a user is logged in.
 interface Profile {
   id: string;
   user_id: string;
@@ -22,34 +20,11 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
 }
 
-const mockUser: User = {
-  id: '00000000-0000-0000-0000-000000000000',
-  app_metadata: {},
-  user_metadata: {},
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-};
-
-const mockProfile: Profile = {
-  id: '00000000-0000-0000-0000-000000000000',
-  user_id: '00000000-0000-0000-0000-000000000000',
-  full_name: 'Admin User',
-};
-
-const mockSession: Session = {
-  access_token: 'mock-token',
-  refresh_token: 'mock-refresh-token',
-  expires_in: 3600,
-  expires_at: Math.floor(Date.now() / 1000) + 3600,
-  token_type: 'bearer',
-  user: mockUser,
-};
-
 const mockAuthContext: AuthContextType = {
-  user: mockUser,
-  session: mockSession,
-  profile: mockProfile,
-  loading: false,
+  user: null,
+  session: null,
+  profile: null,
+  loading: true,
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => { },
@@ -59,9 +34,56 @@ const mockAuthContext: AuthContextType = {
 const AuthContext = createContext<AuthContextType>(mockAuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  // Pass the mocked context down to bypass Supabase login UI
+  const { data: nextSession, status } = useSession();
+
+  const authValue = useMemo(() => {
+    if (status === 'loading') return mockAuthContext;
+
+    if (!nextSession?.user) {
+      return {
+        ...mockAuthContext,
+        loading: false,
+      };
+    }
+
+    // Bridge NextAuth session into Supabase-like shape for the TimeTracker
+    const bridgedUser = {
+      id: nextSession.user.id,
+      app_metadata: {},
+      user_metadata: { tenantId: (nextSession.user as any).tenantId },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    } as User;
+
+    const bridgedProfile: Profile = {
+      id: nextSession.user.id,
+      user_id: nextSession.user.id,
+      full_name: nextSession.user.name || 'User',
+    };
+
+    const bridgedSession = {
+      access_token: 'bridged-token',
+      refresh_token: 'bridged-token',
+      expires_in: 3600,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      token_type: 'bearer',
+      user: bridgedUser,
+    } as Session;
+
+    return {
+      user: bridgedUser,
+      session: bridgedSession,
+      profile: bridgedProfile,
+      loading: false,
+      signIn: async () => ({ error: null }),
+      signUp: async () => ({ error: null }),
+      signOut: async () => { },
+      resetPassword: async () => ({ error: null }),
+    };
+  }, [nextSession, status]);
+
   return (
-    <AuthContext.Provider value={mockAuthContext}>
+    <AuthContext.Provider value={authValue}>
       {children}
     </AuthContext.Provider>
   );
@@ -74,4 +96,3 @@ export function useAuth() {
   }
   return context;
 }
-

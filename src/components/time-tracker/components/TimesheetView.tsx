@@ -27,7 +27,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+import { getTimesheetData } from '@/app/actions/timesheets';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, parseISO, differenceInMinutes } from 'date-fns';
 
@@ -79,7 +79,7 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
   }, []);
 
   useEffect(() => {
-    const fetchEntries = async () => {
+    const fetchTimesheetData = async () => {
       if (!targetUserId) return;
       
       setLoading(true);
@@ -87,50 +87,18 @@ export function TimesheetView({ userId }: TimesheetViewProps) {
       const start = startOfMonth(new Date(year, month - 1));
       const end = endOfMonth(new Date(year, month - 1));
 
-      // Fetch clock entries
-      const { data: clockData, error: clockError } = await supabase
-        .from('clock_entries')
-        .select('id, clock_in_time, clock_out_time, task_description')
-        .eq('user_id', targetUserId)
-        .gte('clock_in_time', start.toISOString())
-        .lte('clock_in_time', end.toISOString())
-        .order('clock_in_time', { ascending: true });
-
-      if (clockError || !clockData) {
+      try {
+        const enriched = await getTimesheetData(targetUserId, start.toISOString(), end.toISOString());
+        setEntries(enriched as TimesheetEntry[]);
+      } catch (err) {
+        console.warn('[TimesheetView] fetch error:', err);
+        setEntries([]);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      // Fetch shifts linked to these clock entries to get project info
-      const clockEntryIds = clockData.map(e => e.id);
-      const { data: shiftsData } = await supabase
-        .from('scheduled_shifts')
-        .select('clock_entry_id, project_id, projects(name)')
-        .in('clock_entry_id', clockEntryIds.length > 0 ? clockEntryIds : ['no-match']);
-
-      // Create a map of clock_entry_id to project info
-      const shiftProjectMap = new Map<string, { project_id: string | null; project_name: string | null }>();
-      shiftsData?.forEach(shift => {
-        if (shift.clock_entry_id) {
-          shiftProjectMap.set(shift.clock_entry_id, {
-            project_id: shift.project_id,
-            project_name: (shift.projects as { name: string } | null)?.name || null,
-          });
-        }
-      });
-
-      // Merge clock entries with project info
-      const entriesWithProjects: TimesheetEntry[] = clockData.map(entry => ({
-        ...entry,
-        project_id: shiftProjectMap.get(entry.id)?.project_id || null,
-        project_name: shiftProjectMap.get(entry.id)?.project_name || null,
-      }));
-
-      setEntries(entriesWithProjects);
-      setLoading(false);
     };
 
-    fetchEntries();
+    fetchTimesheetData();
   }, [targetUserId, selectedMonth]);
 
   // Consolidate entries by date and project, calculate breaks

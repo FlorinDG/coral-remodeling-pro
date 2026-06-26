@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from "@/i18n/routing";
 
 import { ArrowLeft, Loader2, Calendar, Clock, MapPin, Briefcase, User, FileText, ExternalLink, Coffee, Upload, X, Paperclip } from 'lucide-react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
+
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/time-tracker/components/Header';
 import { ScheduleCalendar } from '@/components/time-tracker/components/schedule/ScheduleCalendar';
@@ -458,34 +458,25 @@ export default function Schedule() {
                           hadBreak ? '[Break taken]' : ''
                         ].filter(Boolean).join('\n');
 
-                        const { data: clockEntry, error: clockError } = await supabase
-                          .from('clock_entries')
-                          .insert([{
-                            user_id: selectedShift.user_id,
-                            clock_in_time: clockInTime.toISOString(),
-                            clock_out_time: clockOutTime.toISOString(),
-                            requires_approval: true,
-                            approval_status: 'pending',
-                            task_description: taskDescription || null,
-                          }])
-                          .select()
-                          .single();
-
-                        if (clockError) throw clockError;
+                        const clockEntry = await hrApi.create('clock-entries', {
+                          userId: selectedShift.user_id,
+                          clockInTime: clockInTime.toISOString(),
+                          clockOutTime: clockOutTime.toISOString(),
+                          requiresApproval: true,
+                          approvalStatus: 'pending',
+                          taskDescription: taskDescription || null,
+                        });
 
                         // Link clock entry to the selected shift and update project
-                        await supabase
-                          .from('scheduled_shifts')
-                          .update({
-                            clock_entry_id: clockEntry.id,
-                            shift_start: manualClockIn,
-                            shift_end: manualClockOut,
-                            status: 'Pending Approval',
-                            last_edited_by: user.id,
-                            project_id: selectedProjectId || null,
-                            notes: notes || null,
-                          })
-                          .eq('id', selectedShift.id);
+                        await hrApi.update('shifts', selectedShift.id, {
+                          clockEntryId: clockEntry.id,
+                          shiftStart: manualClockIn,
+                          shiftEnd: manualClockOut,
+                          status: 'Pending Approval',
+                          lastEditedBy: user.id,
+                          projectId: selectedProjectId || null,
+                          notes: notes || null,
+                        });
 
                         // Upload files if any
                         for (const file of selectedFiles) {

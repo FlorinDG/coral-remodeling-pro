@@ -21,6 +21,7 @@ import { languages } from '@/components/time-tracker/i18n';
 import { toast } from '@/components/time-tracker/hooks/use-toast';
 
 import { translateToEnglish } from '@/components/time-tracker/lib/translateService';
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 import { useState } from 'react';
 
 const timezones = [
@@ -32,6 +33,7 @@ const timezones = [
 export default function Profile() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { t, i18n } = useTranslation();
   const { user, profile, loading, resetPassword } = useAuth();
   const { theme } = useTheme();
@@ -44,9 +46,9 @@ export default function Profile() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/hr/time-tracker/auth");
+      router.push(`${basePath}/auth`);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, basePath]);
 
   if (loading) {
     return (
@@ -120,7 +122,7 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <Button variant="ghost" onClick={() => router.push("/admin/hr/time-tracker")} className="mb-6">
+        <Button variant="ghost" onClick={() => router.push(basePath)} className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" /> {t('common.back')}
         </Button>
         

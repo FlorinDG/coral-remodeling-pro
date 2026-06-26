@@ -3,9 +3,12 @@ import { usePathname } from "@/i18n/routing";
 
 import { useEffect } from "react";
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 const NotFound = () => {
   const pathname = usePathname();
   const location = usePathname();
+  const basePath = useAppBasePath();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", pathname);
@@ -16,7 +19,7 @@ const NotFound = () => {
       <div className="text-center">
         <h1 className="mb-4 text-4xl font-bold">404</h1>
         <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/admin/hr/time-tracker" className="text-primary underline hover:text-primary/90">
+        <a href={basePath} className="text-primary underline hover:text-primary/90">
           Return to Home
         </a>
       </div>

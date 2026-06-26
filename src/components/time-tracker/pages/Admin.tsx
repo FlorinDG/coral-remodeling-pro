@@ -7,6 +7,7 @@ import { Loader2, ArrowLeft, Shield, Plus, Users2, Pencil, Trash2, ClipboardChec
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useTeams, Team } from '@/components/time-tracker/hooks/useTeams';
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 import { UserManager } from '@/components/time-tracker/components/admin/UserManager';
 import { RoleManager } from '@/components/time-tracker/components/admin/RoleManager';
 import { ScheduleManagement } from '@/components/time-tracker/components/admin/ScheduleManagement';
@@ -39,6 +40,7 @@ import {
 export default function Admin() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { user, loading } = useAuth();
   const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { teams, loading: teamsLoading, createTeam, updateTeam, deleteTeam } = useTeams();
@@ -80,15 +82,15 @@ export default function Admin() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/hr/time-tracker/auth");
+      router.push(`${basePath}/auth`);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, basePath]);
 
   useEffect(() => {
     if (!loading && !rolesLoading && user && !isAdmin) {
-      router.push("/admin/hr/time-tracker");
+      router.push(basePath);
     }
-  }, [user, loading, rolesLoading, isAdmin, navigate]);
+  }, [user, loading, rolesLoading, isAdmin, navigate, basePath]);
 
   if (loading || rolesLoading) {
     return (
@@ -108,7 +110,7 @@ export default function Admin() {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-4 flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin/hr/time-tracker">
+            <Link href={basePath}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -331,7 +333,7 @@ export default function Admin() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/hr/time-tracker" 
+            href={basePath} 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />

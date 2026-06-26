@@ -47,7 +47,7 @@ const quickLinks: QuickLink[] = [
     title: 'Time Off',
     description: 'Request vacation and leave',
     icon: <Calendar className="w-6 h-6" />,
-    url: '/admin/hr/time-tracker/time-off',
+    url: '/time-off',
     gradient: 'bg-primary',
     isInternal: true,
   },
@@ -56,7 +56,7 @@ const quickLinks: QuickLink[] = [
     title: 'Performance',
     description: 'Track your stats and request time off',
     icon: <TrendingUp className="w-6 h-6" />,
-    url: '/admin/hr/time-tracker/performance',
+    url: '/performance',
     gradient: 'bg-primary',
     isInternal: true,
   },
@@ -65,15 +65,18 @@ const quickLinks: QuickLink[] = [
     title: 'My Profile',
     description: 'Settings, preferences, and support',
     icon: <User className="w-6 h-6" />,
-    url: '/admin/hr/time-tracker/profile',
+    url: '/profile',
     gradient: 'bg-secondary',
     isInternal: true,
   },
 ];
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 export function QuickLinks() {
   const pathname = usePathname();
   const isWorkhub = pathname.startsWith('/workhub');
+  const basePath = useAppBasePath();
   
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
@@ -90,6 +93,9 @@ export function QuickLinks() {
   const getLinkUrl = (linkObj) => {
     if (isWorkhub) {
       if (linkObj.id === 'timeoff') return '/workhub/leave';
+    }
+    if (linkObj.isInternal) {
+      return `${basePath}${linkObj.url}`;
     }
     return linkObj.url;
   };
@@ -120,7 +126,7 @@ export function QuickLinks() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {/* My Schedule Card */}
         <Link
-          href={isWorkhub ? "/workhub/schedule" : "/admin/hr/time-tracker/schedule"}
+          href={`${basePath}/schedule`}
           className="link-card group animate-fade-in"
         >
           <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-secondary-foreground mb-4 group-hover:scale-110 transition-transform duration-300">

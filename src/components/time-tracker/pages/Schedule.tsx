@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { toast } from 'sonner';
 import { validateFile, validateFiles, getSafeFileType, generateSafeFilePath, ALLOWED_EXTENSIONS } from '@/components/time-tracker/lib/fileValidation';
@@ -73,6 +74,7 @@ function openMapsApp(address: string) {
 export default function Schedule() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { user, loading: authLoading } = useAuth();
   const { shifts, loading, updateShiftStatus } = useScheduledShifts();
   const { projects } = useProjects();
@@ -122,9 +124,9 @@ export default function Schedule() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push("/admin/hr/time-tracker/auth");
+      router.push(`${basePath}/auth`);
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, basePath]);
 
   if (authLoading || loading) {
     return (
@@ -140,7 +142,7 @@ export default function Schedule() {
       
       <main className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/admin/hr/time-tracker")}>
+          <Button variant="ghost" size="icon" onClick={() => router.push(basePath)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>

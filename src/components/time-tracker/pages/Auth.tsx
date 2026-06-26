@@ -12,6 +12,8 @@ import { Clock, Loader2, Mail, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string()
   .min(8, 'Password must be at least 8 characters')
@@ -23,6 +25,7 @@ const nameSchema = z.string().min(2, 'Name must be at least 2 characters');
 export default function Auth() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { user, signIn, signUp, resetPassword, loading: authLoading } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -38,9 +41,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      router.push("/admin/hr/time-tracker");
+      router.push(basePath);
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, basePath]);
 
   const validateField = (field: string, value: string) => {
     try {
@@ -81,7 +84,7 @@ export default function Auth() {
       }
     } else {
       toast.success('Welcome back!');
-      router.push("/admin/hr/time-tracker");
+      router.push(basePath);
     }
   };
 

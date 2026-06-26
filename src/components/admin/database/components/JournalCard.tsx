@@ -78,6 +78,7 @@ function RichBlock({ block, onToggleTodo }: { block: Block; onToggleTodo?: (bloc
                         type="checkbox"
                         checked={!!block.properties?.checked}
                         onChange={() => onToggleTodo?.(block.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="mt-0.5 w-3.5 h-3.5 cursor-pointer accent-orange-500 rounded flex-shrink-0"
                     />
                     <span className={`text-xs leading-relaxed ${block.properties?.checked ? 'line-through text-neutral-400' : ''}`}>
@@ -171,7 +172,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     const linkedBlocks: (Block & { isLinked?: boolean; linkedPageId?: string })[] = linkedJournalEntries.flatMap(entry =>
         (entry.blocks || [])
             .filter(b => b.type === 'divider' || (b.content && b.content.trim() !== ''))
-            .map(b => ({ ...b, isLinked: true, linkedPageId: entry.id }))
+            .map(b => ({ ...b, linkedPageId: entry.id }))
     );
 
     const allDisplayBlocks = linkedBlocks;
@@ -302,6 +303,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
             {showQuickEntry && (
                 <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-orange-50/50 dark:bg-orange-500/5 animate-in fade-in slide-in-from-top-1 duration-150">
                     <BlockTypePills selected={quickBlockType} onChange={setQuickBlockType} />
+                    <p className="text-[9px] text-neutral-400 mb-2 mt-0 italic">Format applies to the entire entry/block.</p>
                     {quickBlockType !== 'divider' ? (
                         <textarea
                             autoFocus
@@ -366,6 +368,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                                             {isEditing ? (
                                                 <div>
                                                     <BlockTypePills selected={editBlockType} onChange={setEditBlockType} />
+                                                    <p className="text-[9px] text-neutral-400 mb-2 mt-0 italic">Format applies to the entire entry/block.</p>
                                                     <textarea
                                                         autoFocus
                                                         value={editDraft}

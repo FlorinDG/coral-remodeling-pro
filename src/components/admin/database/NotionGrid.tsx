@@ -596,6 +596,56 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         updatePageProperty,
     });
 
+    const handleAccountantExport = () => {
+        const now = new Date();
+        let from = acctDateFrom;
+        let to = acctDateTo;
+        const y = now.getFullYear();
+        const m = now.getMonth();
+
+        if (acctDatePreset !== 'custom') {
+            switch (acctDatePreset) {
+                case 'last-month': {
+                    const d = new Date(y, m - 1, 1);
+                    from = d.toISOString().split('T')[0];
+                    to = new Date(y, m, 0).toISOString().split('T')[0];
+                    break;
+                }
+                case 'last-trimester': {
+                    const qStart = Math.floor(m / 3) * 3;
+                    from = new Date(y, qStart - 3, 1).toISOString().split('T')[0];
+                    to = new Date(y, qStart, 0).toISOString().split('T')[0];
+                    break;
+                }
+                case 'last-semester': {
+                    if (m < 6) {
+                        from = `${y - 1}-07-01`;
+                        to = `${y - 1}-12-31`;
+                    } else {
+                        from = `${y}-01-01`;
+                        to = `${y}-06-30`;
+                    }
+                    break;
+                }
+                case 'this-year':
+                    from = `${y}-01-01`;
+                    to = now.toISOString().split('T')[0];
+                    break;
+                case 'last-year':
+                case 'last-calendar-year':
+                    from = `${y - 1}-01-01`;
+                    to = `${y - 1}-12-31`;
+                    break;
+            }
+        }
+
+        const url = new URL('/api/financials/export', window.location.origin);
+        if (from) url.searchParams.set('startDate', from);
+        if (to) url.searchParams.set('endDate', to);
+        
+        window.location.href = url.toString();
+    };
+
     // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>
 
     if (!database || !hasHydrated) return null;
@@ -684,11 +734,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
                         {/* Export button */}
                         <button
-                            onClick={handleExportCSV}
+                            onClick={handleAccountantExport}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                         >
                             <Download className="w-3.5 h-3.5" />
-                            Export CSV
+                            Export ZIP
                         </button>
                     </div>
                     )}

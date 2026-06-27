@@ -140,6 +140,7 @@ export default function SearchableSelect({
                     ref={dropdownRef}
                     onPointerDown={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
+                    data-portal-dropdown="true"
                     className="fixed z-[99999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5"
                     style={pos.placement === 'top'
                         ? { bottom: window.innerHeight - pos.top, left: pos.left, minWidth: pos.minWidth }

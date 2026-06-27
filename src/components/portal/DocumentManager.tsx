@@ -21,24 +21,47 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
     const t = useTranslations('Portal');
     const [docs, setDocs] = useState(initialDocs);
     const [isAdding, setIsAdding] = useState(false);
-    const [formData, setFormData] = useState({ name: '', url: '' });
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleAddDoc = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.name || !formData.url) return;
+        const fileInput = document.getElementById('doc-upload') as HTMLInputElement;
+        const files = fileInput?.files;
+        if (!files || files.length === 0) return;
 
-        // Simple type inference
-        const type = formData.url.endsWith('.pdf') ? 'PDF' : 'DOC';
+        setIsUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('portalId', portalId);
+            
+            const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
+            if (pwd && pwd !== 'true') {
+                fd.append('password', pwd);
+            }
 
-        const res = await fetch('/api/portals/documents', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ portalId, name: formData.name, url: formData.url, type })
-        });
-        const doc = await res.json();
-        setDocs([...docs, doc]);
-        setFormData({ name: '', url: '' });
-        setIsAdding(false);
+            for (let i = 0; i < files.length; i++) {
+                fd.append('file', files[i]);
+            }
+
+            const res = await fetch('/api/portals/documents', {
+                method: 'POST',
+                body: fd
+            });
+            
+            const result = await res.json();
+            if (result.success && result.documents) {
+                setDocs([...docs, ...result.documents]);
+                setIsAdding(false);
+            } else {
+                console.error(result.error);
+                alert(`Upload failed: ${result.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Upload failed.');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -64,20 +87,13 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
                         </div>
                         <form onSubmit={handleAddDoc} className="space-y-4">
                             <input
-                                autoFocus
-                                value={formData.name}
-                                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                placeholder="Document name..."
-                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
+                                id="doc-upload"
+                                type="file"
+                                multiple
+                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors text-neutral-700 dark:text-neutral-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#d75d00]/10 file:text-[#d75d00] hover:file:bg-[#d75d00]/20"
                             />
-                            <input
-                                value={formData.url}
-                                onChange={e => setFormData({ ...formData, url: e.target.value })}
-                                placeholder="Link to document (PDF, Google Drive, etc.)..."
-                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
-                            />
-                            <button type="submit" className="w-full bg-[#d75d00] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all">
-                                Add Document
+                            <button type="submit" disabled={isUploading} className="w-full bg-[#d75d00] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all disabled:opacity-50">
+                                {isUploading ? 'Uploading...' : 'Add Document'}
                             </button>
                         </form>
                     </div>

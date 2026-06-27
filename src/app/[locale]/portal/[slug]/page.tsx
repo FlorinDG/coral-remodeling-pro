@@ -48,7 +48,7 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
         const result = await res.json();
         if (result.success) {
             setIsAuthenticated(true);
-            sessionStorage.setItem(`portal_auth_${portal.id}`, 'true');
+            sessionStorage.setItem(`portal_auth_${portal.id}`, password);
         } else {
             setLoginError('Invalid password');
         }

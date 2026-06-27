@@ -22,25 +22,52 @@ export default function MediaManager({ portalId, initialMedia, readOnly = false 
     const [media, setMedia] = useState(initialMedia);
     const [isAdding, setIsAdding] = useState(false);
     const [formData, setFormData] = useState({ url: '', caption: '' });
+    const [isUploading, setIsUploading] = useState(false);
 
     const handleAddMedia = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.url) return;
+        const fileInput = document.getElementById('media-upload') as HTMLInputElement;
+        const files = fileInput?.files;
+        if (!files || files.length === 0) return;
 
-        const res = await fetch('/api/portals/media', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                portalId,
-                url: formData.url,
-                caption: formData.caption,
-                type: 'IMAGE'
-            })
-        });
-        const newMedia = await res.json();
-        setMedia([newMedia, ...media]);
-        setFormData({ url: '', caption: '' });
-        setIsAdding(false);
+        setIsUploading(true);
+        try {
+            const fd = new FormData();
+            fd.append('portalId', portalId);
+            
+            const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
+            if (pwd && pwd !== 'true') {
+                fd.append('password', pwd);
+            }
+            
+            if (formData.caption) {
+                fd.append('caption', formData.caption);
+            }
+
+            for (let i = 0; i < files.length; i++) {
+                fd.append('file', files[i]);
+            }
+
+            const res = await fetch('/api/portals/media', {
+                method: 'POST',
+                body: fd
+            });
+            
+            const result = await res.json();
+            if (result.success && result.media) {
+                setMedia([...result.media, ...media]);
+                setFormData({ url: '', caption: '' });
+                setIsAdding(false);
+            } else {
+                console.error(result.error);
+                alert(`Upload failed: ${result.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Upload failed.');
+        } finally {
+            setIsUploading(false);
+        }
     };
 
     return (
@@ -69,11 +96,11 @@ export default function MediaManager({ portalId, initialMedia, readOnly = false 
                         </div>
                         <form onSubmit={handleAddMedia} className="space-y-4">
                             <input
-                                autoFocus
-                                value={formData.url}
-                                onChange={e => setFormData({ ...formData, url: e.target.value })}
-                                placeholder="Image URL..."
-                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
+                                id="media-upload"
+                                type="file"
+                                multiple
+                                accept="image/*"
+                                className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors text-neutral-700 dark:text-neutral-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-[#d75d00]/10 file:text-[#d75d00] hover:file:bg-[#d75d00]/20"
                             />
                             <input
                                 value={formData.caption}
@@ -81,8 +108,8 @@ export default function MediaManager({ portalId, initialMedia, readOnly = false 
                                 placeholder="Caption (optional)..."
                                 className="w-full bg-white dark:bg-black/40 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm focus:border-[#d75d00] outline-none transition-colors"
                             />
-                            <button type="submit" className="w-full bg-[#d75d00] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all">
-                                Upload Photo
+                            <button type="submit" disabled={isUploading} className="w-full bg-[#d75d00] text-white py-3 rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-neutral-900 transition-all disabled:opacity-50">
+                                {isUploading ? 'Uploading...' : 'Upload Photo'}
                             </button>
                         </form>
                     </div>

@@ -13,11 +13,12 @@ interface Media {
 
 interface MediaManagerProps {
     portalId: string;
+    projectId?: string | null;
     initialMedia: Media[];
     readOnly?: boolean;
 }
 
-export default function MediaManager({ portalId, initialMedia, readOnly = false }: MediaManagerProps) {
+export default function MediaManager({ portalId, projectId, initialMedia, readOnly = false }: MediaManagerProps) {
     const t = useTranslations('Portal');
     const [media, setMedia] = useState(initialMedia);
     const [isAdding, setIsAdding] = useState(false);
@@ -34,6 +35,9 @@ export default function MediaManager({ portalId, initialMedia, readOnly = false 
         try {
             const fd = new FormData();
             fd.append('portalId', portalId);
+            if (projectId) {
+                fd.append('projectId', projectId);
+            }
             
             const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
             if (pwd && pwd !== 'true') {

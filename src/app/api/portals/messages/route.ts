@@ -8,11 +8,12 @@ export async function POST(request: Request) {
         const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
-        const { portalId, content, sender, fileUrl, replyToId } = body;
+        const { portalId, projectId, content, sender, fileUrl, replyToId } = body;
 
         const message = await prisma.message.create({
             data: {
                 portalId,
+                projectId,
                 content,
                 sender,
                 fileUrl,

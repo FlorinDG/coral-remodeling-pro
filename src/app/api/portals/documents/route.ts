@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const portalId = formData.get('portalId') as string;
+        const projectId = formData.get('projectId') as string | null;
         const password = formData.get('password') as string | null;
         const files = formData.getAll('file') as File[];
 
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
             const document = await prisma.document.create({
                 data: {
                     portalId: portal.id,
+                    projectId: projectId || null,
                     url: blob.url,
                     name: file.name,
                     type: file.type || 'application/octet-stream'

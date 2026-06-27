@@ -13,11 +13,12 @@ interface Document {
 
 interface DocumentManagerProps {
     portalId: string;
+    projectId?: string | null;
     initialDocs: Document[];
     readOnly?: boolean;
 }
 
-export default function DocumentManager({ portalId, initialDocs, readOnly = false }: DocumentManagerProps) {
+export default function DocumentManager({ portalId, projectId, initialDocs, readOnly = false }: DocumentManagerProps) {
     const t = useTranslations('Portal');
     const [docs, setDocs] = useState(initialDocs);
     const [isAdding, setIsAdding] = useState(false);
@@ -33,6 +34,9 @@ export default function DocumentManager({ portalId, initialDocs, readOnly = fals
         try {
             const fd = new FormData();
             fd.append('portalId', portalId);
+            if (projectId) {
+                fd.append('projectId', projectId);
+            }
             
             const pwd = sessionStorage.getItem(`portal_auth_${portalId}`);
             if (pwd && pwd !== 'true') {

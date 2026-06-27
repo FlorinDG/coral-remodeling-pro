@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     try {
         const formData = await request.formData();
         const portalId = formData.get('portalId') as string;
+        const projectId = formData.get('projectId') as string | null;
         const password = formData.get('password') as string | null;
         const caption = formData.get('caption') as string;
         const files = formData.getAll('file') as File[];
@@ -47,6 +48,7 @@ export async function POST(request: Request) {
             const projectMedia = await prisma.projectMedia.create({
                 data: {
                     portalId: portal.id,
+                    projectId: projectId || null,
                     url: blob.url,
                     caption: caption || null,
                     type: 'IMAGE' // Defaulting to IMAGE, could inspect file.type

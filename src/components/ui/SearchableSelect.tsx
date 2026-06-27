@@ -71,9 +71,10 @@ export default function SearchableSelect({
         }
     }, [isOpen]);
 
-    // Close on outside click
+    // Close on outside click and Escape
     useEffect(() => {
         if (!isOpen) return;
+        
         const handleClick = (e: MouseEvent) => {
             if (
                 containerRef.current && !containerRef.current.contains(e.target as Node) &&
@@ -83,8 +84,22 @@ export default function SearchableSelect({
                 setSearch('');
             }
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsOpen(false);
+                setSearch('');
+            }
+        };
+
+        // Use capture phase (true) so we intercept events before any element can call e.stopPropagation()
+        document.addEventListener('mousedown', handleClick, true);
+        document.addEventListener('keydown', handleKeyDown, true);
+        
+        return () => {
+            document.removeEventListener('mousedown', handleClick, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
     }, [isOpen]);
 
     // Auto-focus search when dropdown opens

@@ -67,7 +67,16 @@ export async function createTaskPage(input: {
             properties: {
                 title:                  input.title,
                 'prop-task-status':     input.status    || 'opt-todo',
-                'prop-task-priority':   input.priority  || 'opt-low',
+                'prop-task-priority':   (() => {
+                    const p = input.priority;
+                    if (!p) return 'opt-p4';
+                    const val = p.toLowerCase();
+                    if (val.includes('p1') || val.includes('urgent')) return 'opt-p1';
+                    if (val.includes('p2') || val.includes('high')) return 'opt-p2';
+                    if (val.includes('p3') || val.includes('normal') || val.includes('med')) return 'opt-p3';
+                    if (val.includes('p4') || val.includes('low')) return 'opt-p4';
+                    return 'opt-p4';
+                })(),
                 'prop-task-project':    input.projectId ? [input.projectId] : [],
                 'prop-task-assignee':   input.assignee  ? [input.assignee]  : [],
                 'prop-task-due':        input.dueDate   || '',

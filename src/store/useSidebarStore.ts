@@ -78,6 +78,7 @@ export const defaultSidebarItems: SidebarItem[] = [
 
 interface SidebarStore {
     items: SidebarItem[];
+    removedIds: string[];
     setItems: (items: SidebarItem[]) => void;
     resetToDefault: () => void;
 }
@@ -86,17 +87,44 @@ export const useSidebarStore = create<SidebarStore>()(
     persist(
         (set) => ({
             items: defaultSidebarItems,
-            setItems: (items) => set({ items }),
-            resetToDefault: () => set({ items: defaultSidebarItems }),
+            removedIds: [],
+            setItems: (items) => set(() => {
+                const currentIds = new Set(items.map(i => i.id));
+                const removedIds = defaultSidebarItems
+                    .map(di => di.id)
+                    .filter(id => !currentIds.has(id));
+                return { items, removedIds };
+            }),
+            resetToDefault: () => set({ items: defaultSidebarItems, removedIds: [] }),
         }),
         {
             name: 'admin-sidebar-storage',
-            version: 20, // bump: force reset to include Users / Team link
+            version: 21, // bump: non-destructive migration
             migrate: (persistedState: any, version: number) => {
-                if (version < 20) {
-                    return { items: defaultSidebarItems };
+                const state = persistedState || {};
+                let items = Array.isArray(state.items) ? [...state.items] : [];
+                const removedIds = new Set(Array.isArray(state.removedIds) ? state.removedIds : []);
+
+                if (items.length === 0) {
+                    items = [...defaultSidebarItems];
+                } else {
+                    const existingIds = new Set(items.map(i => i.id));
+                    
+                    defaultSidebarItems.forEach((defaultItem, defaultIndex) => {
+                        if (!existingIds.has(defaultItem.id) && !removedIds.has(defaultItem.id)) {
+                            // Insert missing item near its original default position
+                            const insertAt = Math.min(defaultIndex, items.length);
+                            items.splice(insertAt, 0, defaultItem);
+                            existingIds.add(defaultItem.id);
+                        }
+                    });
                 }
-                return persistedState as SidebarStore;
+
+                return {
+                    ...state,
+                    items,
+                    removedIds: Array.from(removedIds)
+                } as SidebarStore;
             }
         }
     )

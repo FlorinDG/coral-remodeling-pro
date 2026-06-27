@@ -18,13 +18,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -363,44 +358,27 @@ export function EditShiftDialog({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Employee</Label>
-                <Select value={userId} onValueChange={setUserId} disabled={!canManage}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workers.map(worker => (
-                      <SelectItem key={worker.id} value={worker.id}>
-                        {worker.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={workers.map(w => ({ value: w.id, label: w.full_name }))}
+                  value={userId}
+                  onChange={setUserId}
+                  placeholder="Select employee"
+                  disabled={!canManage}
+                />
               </div>
 
               <div>
                 <Label>Project</Label>
-                <Select value={projectId || "none"} onValueChange={(v) => setProjectId(v === "none" ? "" : v)} disabled={!canManage}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select project (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No project</SelectItem>
-                    {projects.map(project => {
-                      const color = getNotionColor(project.color);
-                      return (
-                        <SelectItem key={project.id} value={project.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: project.isErp ? 'var(--brand-color, #d35400)' : color.value }}
-                            />
-                            {project.name}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  options={[
+                    { value: '', label: '— No project —' },
+                    ...projects.map(p => ({ value: p.id, label: p.name }))
+                  ]}
+                  value={projectId || ''}
+                  onChange={setProjectId}
+                  placeholder="Select project (optional)"
+                  disabled={!canManage}
+                />
               </div>
 
               <div>

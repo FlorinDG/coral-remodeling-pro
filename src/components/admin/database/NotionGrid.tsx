@@ -639,6 +639,11 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             }
         }
 
+        if (!from && !to) {
+            toast.error('Selecteer een periode');
+            return;
+        }
+
         const url = new URL('/api/financials/export', window.location.origin);
         if (from) url.searchParams.set('startDate', from);
         if (to) url.searchParams.set('endDate', to);
@@ -737,8 +742,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             onClick={handleAccountantExport}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition"
                         >
-                            <Download className="w-3.5 h-3.5" />
-                            Export ZIP
+                            📦 Boekhouder export
                         </button>
                     </div>
                     )}

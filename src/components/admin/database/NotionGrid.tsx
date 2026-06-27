@@ -100,6 +100,9 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const committedWidthsRef = useRef<Map<string, number>>(new Map());
     const [gridKeySuffix, setGridKeySuffix] = useState(0);
 
+    const [isEditing, setIsEditing] = useState(false);
+    const frozenPagesRef = useRef<Page[] | null>(null);
+
     // ── Accountant date range filter ───────────────────────────────────
     const [acctDatePreset, setAcctDatePreset] = useState<string>('this-year');
     const [acctDateFrom, setAcctDateFrom] = useState<string>('');
@@ -165,6 +168,12 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             gridContainer.scrollLeft = 0;
         }
     }, [activeViewId]);
+
+    // Reset editing states on database or view switch
+    useEffect(() => {
+        setIsEditing(false);
+        frozenPagesRef.current = null;
+    }, [databaseId, activeViewId]);
 
     // ── Global Ctrl+Z / ⌘+Z undo handler ────────────────────────────────
     const handleUndo = useCallback((e: KeyboardEvent) => {
@@ -496,8 +505,33 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
         // Combine new pages at the very top (sorted newest first) followed by sorted regular pages
         newPages.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        return [...newPages, ...sortedRegular];
-    }, [database, filteredPages, activeView?.sorts]);
+        const naturalSorted = [...newPages, ...sortedRegular];
+
+        if (isEditing) {
+            if (!frozenPagesRef.current) {
+                frozenPagesRef.current = naturalSorted;
+            }
+            const naturalMap = new Map(naturalSorted.map(p => [p.id, p]));
+            const ordered: Page[] = [];
+
+            frozenPagesRef.current.forEach(fp => {
+                const latestPage = naturalMap.get(fp.id);
+                if (latestPage) {
+                    ordered.push(latestPage);
+                    naturalMap.delete(fp.id);
+                }
+            });
+
+            naturalMap.forEach(p => {
+                ordered.push(p);
+            });
+
+            return ordered;
+        } else {
+            frozenPagesRef.current = null;
+            return naturalSorted;
+        }
+    }, [database, filteredPages, activeView?.sorts, isEditing]);
 
     // ── Accountant date range filtering (applied after sort) ──────────────
     const acctDateFilteredPages = useMemo(() => {
@@ -960,6 +994,17 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             ref={gridAreaRef} 
                             className="flex-1 w-full relative z-10 min-h-0"
                             style={resizingProperty ? { width: `calc(100% - ${resizeOffset % 2 ? 0.2 : 0}px)` } : undefined}
+                            onFocus={() => {
+                                if (!isEditing) {
+                                    setIsEditing(true);
+                                }
+                            }}
+                            onBlur={(e) => {
+                                if (gridAreaRef.current && !gridAreaRef.current.contains(e.relatedTarget as Node)) {
+                                    setIsEditing(false);
+                                    frozenPagesRef.current = null;
+                                }
+                            }}
                         >
                             <DataSheetGrid
                                 key={`${databaseIdRef}-${activeViewId || ''}-${gridKeySuffix}`}

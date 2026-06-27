@@ -200,8 +200,15 @@ Delete `integrations/supabase/*`, `vite-env.d.ts`, `App.css`/`index.css` remnant
 
 **Status:** Completed `37f64b9`.
 
-### 🟠 PROJ-SUPPLIER-QUOTES — attach supplier quotations to a project (Florin live 2026-06-22: "add to projects a way to attach supplier quotations"). Lightweight attach + metadata; growth path to comparison.
-**Context (measured):** `ProjectDetailView.tsx` has tabs overview/tasks/journal/files/vorderingen + resolves OUTGOING client quotations (db-quotations) linked to the project. There is NO supplier-quotation concept (quotes received FROM suppliers for materials/subcontracting). The Blob upload (`uploadFileAction(formData, recordType, recordId)`) + the suppliers DB (`db-suppliers`) already exist. **SCOPE (first step — ATTACH, distinct from the generic Files tab):** a "Leveranciersoffertes / Supplier Quotations" section in the project detail (own card in overview, or a sub-section) where the user adds a supplier quotation = upload a file (PDF/image) + light metadata: **supplier** (SearchableSelect over `db-suppliers`, free-text fallback), **amount** (€, excl. VAT), optional **note/reference**. **Storage:** file → Blob via `uploadFileAction(fd, 'supplier-quote', projectId)`; metadata → a project page property array `supplierQuotations: [{ id, supplierId|supplierName, amount, fileKey, note, uploadedAt }]` (use the existing `updatePageProperty`, tenant-scoped via the record). List each entry with supplier + amount, open/download via `/api/files/{fileKey}`, and delete (removes Blob file + array entry). Support multiple (ties MULTI-UPLOAD). **GROWTH PATH (note, NOT now):** side-by-side comparison of competing supplier quotes + "convert chosen → purchase order / expense" — design the data shape so that's addable later. **VERIFY:** in a project, add 2 supplier quotations (each: file + supplier + amount) → both listed with supplier/amount, files open from Blob, persist across reload, each deletable; appears only on that project (tenant-scoped). **Commit:** `PROJ-SUPPLIER-QUOTES: attach supplier quotations (file + supplier + amount) to projects`.
+### ~~🟠 PROJ-SUPPLIER-QUOTES~~ — COMMITTED `08e269c`
+**State:** `08e269c` ✅ DONE (2026-06-27)
+**Why:** Provide a lightweight way to attach supplier quotations directly on the project for visibility and future tracking.
+**How:**
+- Implemented `SupplierQuotationsCard` in the project Overview tab.
+- Supports picking from `db-suppliers` + free-text.
+- Uses `uploadFileAction` for Blobs (`t_{tenant}/supplier-quote/{id}/{name}`).
+- Saves array metadata in `page.properties.supplierQuotations`.
+**Status:** Completed `08e269c`.
 
 ### 🔴 ACCT-EXPORT-UI — wire a "Boekhouder export" download button to the existing structured export API (Planner follow-up 2026-06-23 cron #7 — PARTIAL of ACCT-EXPORT `9ffc972`).
 

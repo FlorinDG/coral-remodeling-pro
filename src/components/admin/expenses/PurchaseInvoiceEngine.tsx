@@ -248,10 +248,19 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 totalIncVat = computed.totalIncVat;
             }
 
+            const relVal = page.properties.supplier;
+            const supplierId = Array.isArray(relVal) && relVal.length > 0 ? relVal[0] : null;
+            const supplierRecord = supplierId && suppliersDb
+                ? suppliersDb.pages.find((p: Page) => p.id === supplierId)
+                : null;
+
+            const initialSupplierName = String(page.properties.supplierName || '') || (supplierRecord ? String(supplierRecord.properties.title || '') : '');
+            const initialSupplierVat = String(page.properties.supplierVat || '') || (supplierRecord ? String(supplierRecord.properties.vat || supplierRecord.properties.vatNumber || '') : '');
+
             setEditData({
                 title: String(page.properties.title || ''),
-                supplierName: String(page.properties.supplierName || ''),
-                supplierVat: String(page.properties.supplierVat || ''),
+                supplierName: initialSupplierName,
+                supplierVat: initialSupplierVat,
                 betreft: String(page.properties.betreft || ''),
                 ogm: String(page.properties.ogm || ''),
                 contact: String(page.properties.contact || ''),
@@ -278,7 +287,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 fetchPeppolDetail(String(page.properties.peppolDocId));
             }
         }
-    }, [page, peppolDetail]);
+    }, [page, peppolDetail, suppliersDb]);
 
     const fetchPeppolDetail = async (docId: string) => {
         setLoadingPeppol(true);
@@ -562,13 +571,13 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                             <div className="grid grid-cols-2 gap-4">
                                 <InfoField
                                     label="Leverancier"
-                                    value={isEditing ? String(editData.supplierName || '') : (resolvedSupplier ? String(resolvedSupplier.properties.title || '') : String(page.properties.supplierName || '') || '—')}
+                                    value={isEditing ? String(editData.supplierName || '') : String(page.properties.supplierName || resolvedSupplier?.properties.title || '—')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierName: v }))}
                                 />
                                 <InfoField
                                     label="BTW-nummer leverancier"
-                                    value={isEditing ? String(editData.supplierVat || '') : (resolvedSupplier ? String(resolvedSupplier.properties.vatNumber || '') : String(page.properties.supplierVat || peppolDetail?.supplierVat || ''))}
+                                    value={isEditing ? String(editData.supplierVat || '') : String(page.properties.supplierVat || resolvedSupplier?.properties.vat || resolvedSupplier?.properties.vatNumber || peppolDetail?.supplierVat || '')}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, supplierVat: v }))}
                                 />

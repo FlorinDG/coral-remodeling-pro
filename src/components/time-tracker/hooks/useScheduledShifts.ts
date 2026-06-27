@@ -123,12 +123,15 @@ export function useScheduledShifts() {
       const projectMap = new Map(allProjects.map(p => [p.id, p]));
       const employeeMap = new Map(employeesData.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
 
-      const enriched = shiftsData.map(s => addSnakeCase({
+      const validShifts = shiftsData.filter(s => {
+        const uid = s.userId || s.user_id;
+        return uid && employeeMap.has(uid);
+      });
+
+      const enriched = validShifts.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
-        profile: s.userId && employeeMap.has(s.userId)
-          ? { full_name: employeeMap.get(s.userId)! }
-          : s.profile || s.profiles || null,
+        profile: { full_name: employeeMap.get(s.userId || s.user_id || '')! },
       }));
 
       setRawShifts(enriched);

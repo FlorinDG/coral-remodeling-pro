@@ -87,6 +87,26 @@ export default function SearchableSelect({
         return () => document.removeEventListener('mousedown', handleClick);
     }, [isOpen]);
 
+    // Stop native event propagation on the dropdown to prevent Radix dialog dismissal
+    useEffect(() => {
+        const dropdown = dropdownRef.current;
+        if (!dropdown || !isOpen) return;
+
+        const stopNativePropagation = (e: Event) => {
+            e.stopPropagation();
+        };
+
+        dropdown.addEventListener('pointerdown', stopNativePropagation);
+        dropdown.addEventListener('mousedown', stopNativePropagation);
+        dropdown.addEventListener('click', stopNativePropagation);
+
+        return () => {
+            dropdown.removeEventListener('pointerdown', stopNativePropagation);
+            dropdown.removeEventListener('mousedown', stopNativePropagation);
+            dropdown.removeEventListener('click', stopNativePropagation);
+        };
+    }, [isOpen]);
+
     // Auto-focus search when dropdown opens
     useEffect(() => {
         if (isOpen && searchInputRef.current) {

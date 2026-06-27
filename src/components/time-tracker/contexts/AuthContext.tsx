@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // Bridge NextAuth session into Supabase-like shape for the TimeTracker
+    // Bridge NextAuth session into legacy shape for the TimeTracker
     const bridgedUser = {
       id: nextSession.user.id,
       app_metadata: {},

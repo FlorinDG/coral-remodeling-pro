@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useMemo } from 'react';
 import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';

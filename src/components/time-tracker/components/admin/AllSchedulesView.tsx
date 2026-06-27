@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { Loader2, Calendar, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';

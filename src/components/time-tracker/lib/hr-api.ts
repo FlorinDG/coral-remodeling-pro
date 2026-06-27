@@ -1,6 +1,6 @@
 /**
- * HR API client — replaces direct Supabase calls.
- * All hooks import from here instead of the Supabase client.
+ * HR API client — replaces direct DB calls.
+ * All hooks import from here instead of the legacy client.
  */
 
 const BASE = '/api/hr';

@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/components/time-tracker/integrations/supabase/client';
 
 interface AttachmentLinkProps {
   filePath: string;
@@ -18,26 +17,15 @@ export function AttachmentLink({ filePath, children, className }: AttachmentLink
       return;
     }
 
-    if (filePath.startsWith('http') || filePath.startsWith('/api/files/') || filePath.startsWith('t_')) {
-      const url = filePath.startsWith('t_') ? `/api/files/${filePath}` : filePath;
-      setSignedUrl(url);
-      setLoading(false);
-      return;
+    if (filePath.startsWith('http')) {
+      setSignedUrl(filePath);
+    } else if (filePath.startsWith('/api/files/')) {
+      setSignedUrl(filePath);
+    } else {
+      // Assume Blob storage path or legacy path, use api route
+      setSignedUrl(`/api/files/${filePath.replace(/^\/+/, '')}`);
     }
-
-    const fetchSignedUrl = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.storage
-        .from('project-files')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-      
-      if (!error && data) {
-        setSignedUrl(data.signedUrl);
-      }
-      setLoading(false);
-    };
-
-    fetchSignedUrl();
+    setLoading(false);
   }, [filePath]);
 
   if (loading || !signedUrl) {
@@ -73,26 +61,15 @@ export function AttachmentImage({ filePath, alt, className, fallback }: Attachme
       return;
     }
 
-    if (filePath.startsWith('http') || filePath.startsWith('/api/files/') || filePath.startsWith('t_')) {
-      const url = filePath.startsWith('t_') ? `/api/files/${filePath}` : filePath;
-      setSignedUrl(url);
-      setLoading(false);
-      return;
+    if (filePath.startsWith('http')) {
+      setSignedUrl(filePath);
+    } else if (filePath.startsWith('/api/files/')) {
+      setSignedUrl(filePath);
+    } else {
+      // Assume Blob storage path or legacy path, use api route
+      setSignedUrl(`/api/files/${filePath.replace(/^\/+/, '')}`);
     }
-
-    const fetchSignedUrl = async () => {
-      setLoading(true);
-      const { data, error } = await supabase.storage
-        .from('project-files')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-      
-      if (!error && data) {
-        setSignedUrl(data.signedUrl);
-      }
-      setLoading(false);
-    };
-
-    fetchSignedUrl();
+    setLoading(false);
   }, [filePath]);
 
   if (loading) {

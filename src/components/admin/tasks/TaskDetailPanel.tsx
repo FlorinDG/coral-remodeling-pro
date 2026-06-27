@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import {
     X, ExternalLink, ChevronDown, Calendar, AlertTriangle,
     Circle, CircleDot, Eye, CheckCircle2, XCircle,
@@ -281,9 +282,10 @@ interface TaskDetailPanelProps {
 interface TaskAttachment {
     id: string;
     name: string;
-    url: string; // Base64 data URL
+    url: string; // Base64 data URL or Blob key
     type: string; // mime type
     size?: number; // size in bytes
+    uploading?: boolean;
 }
 
 const statusOptions = Object.entries(STATUS_CONFIG).map(([id, cfg]) => ({ id, ...cfg }));
@@ -430,26 +432,59 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
     const attachments = (props['prop-task-attachments'] as TaskAttachment[]) || [];
 
     // File Upload Handler
-    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (!files) return;
+        if (!files || files.length === 0) return;
 
-        const newAttachments = [...attachments];
+        const filesArray = Array.from(files);
+        const { uploadFileAction } = await import('@/app/actions/files');
 
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newAttachments.push({
-                    id: 'attach-' + Math.random().toString(36).substr(2, 9),
-                    name: file.name,
-                    url: reader.result as string,
-                    type: file.type || 'application/octet-stream',
-                    size: file.size
-                });
-                update('prop-task-attachments', newAttachments);
-            };
-            reader.readAsDataURL(file);
-        });
+        // Create temporary attachments to show uploading state
+        const tempAttachments = filesArray.map(file => ({
+            id: 'temp-' + Math.random().toString(36).substr(2, 9),
+            name: file.name,
+            url: '',
+            type: file.type || 'application/octet-stream',
+            size: file.size,
+            uploading: true
+        }));
+
+        let currentAttachments = [...attachments, ...tempAttachments];
+        update('prop-task-attachments', currentAttachments);
+
+        // Upload in parallel
+        await Promise.all(filesArray.map(async (file, index) => {
+            const tempId = tempAttachments[index].id;
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await uploadFileAction(formData, 'task', page.id);
+                if (res.success && res.key) {
+                    currentAttachments = currentAttachments.map(att => 
+                        att.id === tempId 
+                            ? {
+                                id: 'attach-' + Math.random().toString(36).substr(2, 9),
+                                name: file.name,
+                                url: res.key,
+                                type: file.type || 'application/octet-stream',
+                                size: file.size
+                              }
+                            : att
+                    );
+                } else {
+                    toast.error(`Fout bij uploaden van ${file.name}: ${res.error || 'Onbekende fout'}`);
+                    currentAttachments = currentAttachments.filter(att => att.id !== tempId);
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error(`Fout bij uploaden van ${file.name}`);
+                currentAttachments = currentAttachments.filter(att => att.id !== tempId);
+            }
+
+            update('prop-task-attachments', currentAttachments);
+        }));
+
         // Reset file input
         e.target.value = '';
     };
@@ -468,8 +503,16 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
         return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
     };
 
-    const photos = attachments.filter(a => a.type.startsWith('image/'));
-    const docFiles = attachments.filter(a => !a.type.startsWith('image/'));
+    const getAttachmentUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('data:') || url.startsWith('http') || url.startsWith('/api/files/')) return url;
+        if (url.startsWith('t_')) return `/api/files/${url}`;
+        return `/api/files/${url}`;
+    };
+
+    const photos = attachments.filter(a => a.type.startsWith('image/') && !a.uploading);
+    const docFiles = attachments.filter(a => !a.type.startsWith('image/') && !a.uploading);
+    const uploadingList = attachments.filter(a => a.uploading);
 
     return (
         <div className="h-full flex flex-col bg-white dark:bg-neutral-950 border-l border-neutral-300 dark:border-white/20 shadow-xl">
@@ -649,7 +692,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                     <div className="grid grid-cols-3 gap-2.5">
                                         {photos.map(p => (
                                             <div key={p.id} className="group/photo relative aspect-square border border-neutral-300 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900 shadow-sm transition-all hover:scale-[1.02]">
-                                                <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
+                                                <img src={getAttachmentUrl(p.url)} alt={p.name} className="w-full h-full object-cover" />
                                                 <div className="absolute inset-0 backdrop-blur-sm bg-black/40 opacity-0 group-hover/photo:opacity-100 transition-opacity flex flex-col justify-between p-2">
                                                     <button
                                                         onClick={() => handleDeleteAttachment(p.id)}
@@ -659,7 +702,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
                                                     <a
-                                                        href={p.url}
+                                                        href={getAttachmentUrl(p.url)}
                                                         download={p.name}
                                                         className="block text-[9px] font-bold text-white truncate text-center hover:underline"
                                                         title={p.name}
@@ -680,7 +723,7 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                     <div className="space-y-2">
                                         {docFiles.map(d => (
                                             <div key={d.id} className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-200 dark:border-white/10 bg-neutral-50/40 dark:bg-white/[0.01] hover:border-orange-300 dark:hover:border-orange-500/30 transition-all shadow-sm">
-                                                <a href={d.url} download={d.name} className="flex items-center gap-2.5 flex-1 min-w-0 hover:underline text-neutral-800 dark:text-neutral-200">
+                                                <a href={getAttachmentUrl(d.url)} download={d.name} className="flex items-center gap-2.5 flex-1 min-w-0 hover:underline text-neutral-800 dark:text-neutral-200">
                                                     <FileText className="w-4 h-4 text-neutral-550 dark:text-neutral-400 flex-shrink-0" />
                                                     <div className="min-w-0">
                                                         <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">{d.name}</p>
@@ -694,6 +737,31 @@ export function TaskDetailPanel({ page, onClose, onUpdate, onDelete, onOpenFullP
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
                                                 </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Uploading Files List */}
+                            {uploadingList.length > 0 && (
+                                <div className="space-y-2">
+                                    <h4 className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                                        Uploading...
+                                    </h4>
+                                    <div className="space-y-2">
+                                        {uploadingList.map(u => (
+                                            <div key={u.id} className="flex items-center justify-between p-2.5 rounded-xl border border-neutral-250 dark:border-white/15 bg-neutral-50/20 dark:bg-white/[0.005]">
+                                                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                                                    <div className="w-4 h-4 flex items-center justify-center">
+                                                        <div className="w-3.5 h-3.5 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 truncate">{u.name}</p>
+                                                        <p className="text-[9px] text-neutral-400 dark:text-neutral-500 font-semibold">{formatSize(u.size)}</p>
+                                                    </div>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

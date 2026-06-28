@@ -171,8 +171,9 @@ export function CreateShiftForm({
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [templateName, setTemplateName] = useState('');
 
-  // Schedule type (single or recurring)
-  const [scheduleType, setScheduleType] = useState<'single' | 'recurring'>('single');
+  // Schedule type (single, recurring, or leave)
+  const [scheduleType, setScheduleType] = useState<'single' | 'recurring' | 'leave'>('single');
+  const [leaveReason, setLeaveReason] = useState('Vacation');
 
   // Attachments
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
@@ -476,6 +477,21 @@ export function CreateShiftForm({
         }
 
         toast.success(`Created ${shiftsToCreate.length} recurring shifts across ${userIds.length} employee(s)`);
+      } else if (scheduleType === 'leave') {
+        for (const uid of userIds) {
+          await onCreateShift({
+            user_id: uid,
+            project_id: null,
+            shift_date: shiftDate,
+            shift_start: '08:00',
+            shift_end: '17:00',
+            role: null,
+            notes: `Leave: ${leaveReason}${notes ? ` - ${notes}` : ''}`,
+            status: 'leave',
+          });
+        }
+
+        toast.success(`Created leave for ${userIds.length} employee(s) successfully`);
       } else {
         for (const uid of userIds) {
           const result = await onCreateShift({
@@ -628,7 +644,7 @@ export function CreateShiftForm({
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="details">Details</TabsTrigger>
-                    <TabsTrigger value="tasks" className="flex items-center gap-1">
+                    <TabsTrigger value="tasks" disabled={!projectId || scheduleType === 'leave'} className="flex items-center gap-1">
                       <CheckSquare className="h-3 w-3" />
                       Tasks
                       {selectedTasks.length > 0 && (
@@ -637,7 +653,7 @@ export function CreateShiftForm({
                         </Badge>
                       )}
                     </TabsTrigger>
-                    <TabsTrigger value="attachments" className="flex items-center gap-1">
+                    <TabsTrigger value="attachments" disabled={scheduleType === 'leave'} className="flex items-center gap-1">
                       <Paperclip className="h-3 w-3" />
                       Files
                       {pendingAttachments.length > 0 && (
@@ -673,10 +689,20 @@ export function CreateShiftForm({
                         <Repeat className="h-4 w-4" />
                         Recurring
                       </button>
+                      <button
+                        type="button"
+                        className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${scheduleType === 'leave'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted hover:bg-muted/80'
+                          }`}
+                        onClick={() => setScheduleType('leave')}
+                      >
+                        🌴 Leave
+                      </button>
                     </div>
 
                     {/* Templates */}
-                    {templates.length > 0 && (
+                    {scheduleType !== 'leave' && templates.length > 0 && (
                       <div>
                         <Label className="flex items-center gap-1">
                           <FileText className="h-4 w-4" />
@@ -734,18 +760,20 @@ export function CreateShiftForm({
                       </Popover>
                     </div>
 
-                    <div>
-                      <Label>Project</Label>
-                      <SearchableSelect
-                        options={[
-                          { value: '', label: '— No project —' },
-                          ...projects.map(p => ({ value: p.id, label: p.name }))
-                        ]}
-                        value={projectId}
-                        onChange={setProjectId}
-                        placeholder="Search projects..."
-                      />
-                    </div>
+                    {scheduleType !== 'leave' && (
+                      <div>
+                        <Label>Project</Label>
+                        <SearchableSelect
+                          options={[
+                            { value: '', label: '— No project —' },
+                            ...projects.map(p => ({ value: p.id, label: p.name }))
+                          ]}
+                          value={projectId}
+                          onChange={setProjectId}
+                          placeholder="Search projects..."
+                        />
+                      </div>
+                    )}
 
                     {scheduleType === 'single' && (
                       <div className="flex flex-col gap-2">
@@ -843,40 +871,89 @@ export function CreateShiftForm({
                       </>
                     )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="shiftStart">Start Time</Label>
-                        <Input
-                          id="shiftStart"
-                          type="time"
-                          value={shiftStart}
-                          onChange={(e) => setShiftStart(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="shiftEnd">End Time</Label>
-                        <Input
-                          id="shiftEnd"
-                          type="time"
-                          value={shiftEnd}
-                          onChange={(e) => setShiftEnd(e.target.value)}
-                        />
-                      </div>
-                    </div>
+                    {scheduleType === 'leave' && (
+                      <>
+                        <div className="flex flex-col gap-2">
+                          <Label>Date of Leave *</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !shiftDate && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={getParsedDate(shiftDate)}
+                                onSelect={(date) => setShiftDate(formatDateStr(date))}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
 
-                    <div>
-                      <Label>Role</Label>
-                      <Select value={role} onValueChange={setRole}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select role (optional)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLE_OPTIONS.map(r => (
-                            <SelectItem key={r} value={r}>{r}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        <div>
+                          <Label htmlFor="leaveReason">Leave Reason *</Label>
+                          <Select value={leaveReason} onValueChange={setLeaveReason}>
+                            <SelectTrigger id="leaveReason">
+                              <SelectValue placeholder="Select reason" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Vacation">🏖️ Vacation</SelectItem>
+                              <SelectItem value="Sick Leave">🏥 Sick Leave</SelectItem>
+                              <SelectItem value="Personal">👤 Personal</SelectItem>
+                              <SelectItem value="Other">📋 Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
+
+                    {scheduleType !== 'leave' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="shiftStart">Start Time</Label>
+                            <Input
+                              id="shiftStart"
+                              type="time"
+                              value={shiftStart}
+                              onChange={(e) => setShiftStart(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="shiftEnd">End Time</Label>
+                            <Input
+                              id="shiftEnd"
+                              type="time"
+                              value={shiftEnd}
+                              onChange={(e) => setShiftEnd(e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label>Role</Label>
+                          <Select value={role} onValueChange={setRole}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select role (optional)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ROLE_OPTIONS.map(r => (
+                                <SelectItem key={r} value={r}>{r}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    )}
 
                     <div>
                       <Label htmlFor="notes">Notes</Label>
@@ -890,27 +967,29 @@ export function CreateShiftForm({
                     </div>
 
                     {/* Save as template option */}
-                    <div className="border-t pt-4 space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="saveAsTemplate"
-                          checked={saveAsTemplate}
-                          onCheckedChange={(checked) => setSaveAsTemplate(checked as boolean)}
-                        />
-                        <Label htmlFor="saveAsTemplate" className="flex items-center gap-1 cursor-pointer">
-                          <Save className="h-4 w-4" />
-                          Save as template
-                        </Label>
-                      </div>
+                    {scheduleType !== 'leave' && (
+                      <div className="border-t pt-4 space-y-3">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="saveAsTemplate"
+                            checked={saveAsTemplate}
+                            onCheckedChange={(checked) => setSaveAsTemplate(checked as boolean)}
+                          />
+                          <Label htmlFor="saveAsTemplate" className="flex items-center gap-1 cursor-pointer">
+                            <Save className="h-4 w-4" />
+                            Save as template
+                          </Label>
+                        </div>
 
-                      {saveAsTemplate && (
-                        <Input
-                          placeholder="Template name"
-                          value={templateName}
-                          onChange={(e) => setTemplateName(e.target.value)}
-                        />
-                      )}
-                    </div>
+                        {saveAsTemplate && (
+                          <Input
+                            placeholder="Template name"
+                            value={templateName}
+                            onChange={(e) => setTemplateName(e.target.value)}
+                          />
+                        )}
+                      </div>
+                    )}
                   </TabsContent>
 
                   {/* Tasks Tab */}
@@ -1125,7 +1204,7 @@ export function CreateShiftForm({
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="tasks" className="flex items-center gap-1">
+                  <TabsTrigger value="tasks" disabled={!projectId || scheduleType === 'leave'} className="flex items-center gap-1">
                     <CheckSquare className="h-3 w-3" />
                     Tasks
                     {selectedTasks.length > 0 && (
@@ -1134,7 +1213,7 @@ export function CreateShiftForm({
                       </Badge>
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="attachments" className="flex items-center gap-1">
+                  <TabsTrigger value="attachments" disabled={scheduleType === 'leave'} className="flex items-center gap-1">
                     <Paperclip className="h-3 w-3" />
                     Files
                     {pendingAttachments.length > 0 && (
@@ -1170,10 +1249,20 @@ export function CreateShiftForm({
                       <Repeat className="h-4 w-4" />
                       Recurring
                     </button>
+                    <button
+                      type="button"
+                      className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${scheduleType === 'leave'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      onClick={() => setScheduleType('leave')}
+                    >
+                      🌴 Leave
+                    </button>
                   </div>
 
                   {/* Templates */}
-                  {templates.length > 0 && (
+                  {scheduleType !== 'leave' && templates.length > 0 && (
                     <div>
                       <Label className="flex items-center gap-1">
                         <FileText className="h-4 w-4" />
@@ -1231,18 +1320,20 @@ export function CreateShiftForm({
                     </Popover>
                   </div>
 
-                  <div>
-                    <Label>Project</Label>
-                    <SearchableSelect
-                      options={[
-                        { value: '', label: '— No project —' },
-                        ...projects.map(p => ({ value: p.id, label: p.name }))
-                      ]}
-                      value={projectId}
-                      onChange={setProjectId}
-                      placeholder="Search projects..."
-                    />
-                  </div>
+                  {scheduleType !== 'leave' && (
+                    <div>
+                      <Label>Project</Label>
+                      <SearchableSelect
+                        options={[
+                          { value: '', label: '— No project —' },
+                          ...projects.map(p => ({ value: p.id, label: p.name }))
+                        ]}
+                        value={projectId}
+                        onChange={setProjectId}
+                        placeholder="Search projects..."
+                      />
+                    </div>
+                  )}
 
                   {scheduleType === 'single' && (
                     <div className="flex flex-col gap-2">
@@ -1339,41 +1430,89 @@ export function CreateShiftForm({
                       </div>
                     </>
                   )}
+                  {scheduleType === 'leave' && (
+                    <>
+                      <div className="flex flex-col gap-2">
+                        <Label>Date of Leave *</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !shiftDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={getParsedDate(shiftDate)}
+                              onSelect={(date) => setShiftDate(formatDateStr(date))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="shiftStart2">Start Time</Label>
-                      <Input
-                        id="shiftStart2"
-                        type="time"
-                        value={shiftStart}
-                        onChange={(e) => setShiftStart(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="shiftEnd2">End Time</Label>
-                      <Input
-                        id="shiftEnd2"
-                        type="time"
-                        value={shiftEnd}
-                        onChange={(e) => setShiftEnd(e.target.value)}
-                      />
-                    </div>
-                  </div>
+                      <div>
+                        <Label htmlFor="leaveReason2">Leave Reason *</Label>
+                        <Select value={leaveReason} onValueChange={setLeaveReason}>
+                          <SelectTrigger id="leaveReason2">
+                            <SelectValue placeholder="Select reason" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Vacation">🏖️ Vacation</SelectItem>
+                            <SelectItem value="Sick Leave">🏥 Sick Leave</SelectItem>
+                            <SelectItem value="Personal">👤 Personal</SelectItem>
+                            <SelectItem value="Other">📋 Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
-                  <div>
-                    <Label>Role</Label>
-                    <Select value={role} onValueChange={setRole}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ROLE_OPTIONS.map(r => (
-                          <SelectItem key={r} value={r}>{r}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {scheduleType !== 'leave' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="shiftStart2">Start Time</Label>
+                          <Input
+                            id="shiftStart2"
+                            type="time"
+                            value={shiftStart}
+                            onChange={(e) => setShiftStart(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shiftEnd2">End Time</Label>
+                          <Input
+                            id="shiftEnd2"
+                            type="time"
+                            value={shiftEnd}
+                            onChange={(e) => setShiftEnd(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label>Role</Label>
+                        <Select value={role} onValueChange={setRole}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select role (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROLE_OPTIONS.map(r => (
+                              <SelectItem key={r} value={r}>{r}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <Label htmlFor="notes2">Notes</Label>
@@ -1387,27 +1526,29 @@ export function CreateShiftForm({
                   </div>
 
                   {/* Save as template option */}
-                  <div className="border-t pt-4 space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="saveAsTemplate2"
-                        checked={saveAsTemplate}
-                        onCheckedChange={(checked) => setSaveAsTemplate(checked as boolean)}
-                      />
-                      <Label htmlFor="saveAsTemplate2" className="flex items-center gap-1 cursor-pointer">
-                        <Save className="h-4 w-4" />
-                        Save as template
-                      </Label>
-                    </div>
+                  {scheduleType !== 'leave' && (
+                    <div className="border-t pt-4 space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="saveAsTemplate2"
+                          checked={saveAsTemplate}
+                          onCheckedChange={(checked) => setSaveAsTemplate(checked as boolean)}
+                        />
+                        <Label htmlFor="saveAsTemplate2" className="flex items-center gap-1 cursor-pointer">
+                          <Save className="h-4 w-4" />
+                          Save as template
+                        </Label>
+                      </div>
 
-                    {saveAsTemplate && (
-                      <Input
-                        placeholder="Template name"
-                        value={templateName}
-                        onChange={(e) => setTemplateName(e.target.value)}
-                      />
-                    )}
-                  </div>
+                      {saveAsTemplate && (
+                        <Input
+                          placeholder="Template name"
+                          value={templateName}
+                          onChange={(e) => setTemplateName(e.target.value)}
+                        />
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
 
                 {/* Tasks Tab */}

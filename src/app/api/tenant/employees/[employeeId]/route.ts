@@ -64,34 +64,50 @@ export async function PUT(
             },
         });
 
-        // Sync to Employee model
-        const empRecord = await prisma.employee.upsert({
-            where: { userId: employeeId },
-            update: {
-                firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
-                lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
-                email: email ?? existing.email,
-                phone: phone ?? existing.phone,
-                role: role ?? existing.role,
-                status: status ?? existing.employeeStatus ?? 'ACTIVE',
-                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
-                hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
-                ...(schedule !== undefined && { schedule: Boolean(schedule) }),
-            },
-            create: {
-                tenantId: user.tenantId,
-                firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
-                lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
-                email: email ?? existing.email,
-                phone: phone ?? existing.phone,
-                role: role ?? existing.role,
-                status: status ?? existing.employeeStatus ?? 'ACTIVE',
-                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
-                hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
-                schedule: schedule !== undefined ? Boolean(schedule) : true,
-                userId: employeeId,
+        // Find existing Employee record by userId or email
+        const existingEmployee = await prisma.employee.findFirst({
+            where: {
+                OR: [
+                    { userId: employeeId },
+                    { email: email ?? existing.email }
+                ]
             }
         });
+
+        let empRecord;
+        if (existingEmployee) {
+            empRecord = await prisma.employee.update({
+                where: { id: existingEmployee.id },
+                data: {
+                    firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
+                    lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
+                    email: email ?? existing.email,
+                    phone: phone ?? existing.phone,
+                    role: role ?? existing.role,
+                    status: status ?? existing.employeeStatus ?? 'ACTIVE',
+                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                    hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
+                    userId: employeeId,
+                    ...(schedule !== undefined && { schedule: Boolean(schedule) }),
+                }
+            });
+        } else {
+            empRecord = await prisma.employee.create({
+                data: {
+                    tenantId: user.tenantId,
+                    firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
+                    lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
+                    email: email ?? existing.email,
+                    phone: phone ?? existing.phone,
+                    role: role ?? existing.role,
+                    status: status ?? existing.employeeStatus ?? 'ACTIVE',
+                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                    hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
+                    schedule: schedule !== undefined ? Boolean(schedule) : true,
+                    userId: employeeId,
+                }
+            });
+        }
 
         const employee = {
             id: updated.id,

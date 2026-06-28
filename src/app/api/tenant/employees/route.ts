@@ -127,22 +127,43 @@ export async function POST(req: Request) {
             },
         });
 
-        // Create matching Employee record
-        await prisma.employee.create({
-            data: {
-                tenantId: user.tenantId,
-                firstName,
-                lastName,
-                email,
-                phone: phone || null,
-                role: role || 'TENANT_ENTERPRISE_WORKFORCE',
-                status: 'ACTIVE',
-                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
-                hireDate: hireDate ? new Date(hireDate) : null,
-                schedule: schedule !== undefined ? Boolean(schedule) : true,
-                userId: newUser.id,
-            }
+        // Create or link matching Employee record
+        const existingEmployee = await prisma.employee.findUnique({
+            where: { email }
         });
+
+        if (existingEmployee) {
+            await prisma.employee.update({
+                where: { id: existingEmployee.id },
+                data: {
+                    firstName,
+                    lastName,
+                    phone: phone || null,
+                    role: role || 'TENANT_ENTERPRISE_WORKFORCE',
+                    status: 'ACTIVE',
+                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                    hireDate: hireDate ? new Date(hireDate) : null,
+                    schedule: schedule !== undefined ? Boolean(schedule) : true,
+                    userId: newUser.id,
+                }
+            });
+        } else {
+            await prisma.employee.create({
+                data: {
+                    tenantId: user.tenantId,
+                    firstName,
+                    lastName,
+                    email,
+                    phone: phone || null,
+                    role: role || 'TENANT_ENTERPRISE_WORKFORCE',
+                    status: 'ACTIVE',
+                    hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                    hireDate: hireDate ? new Date(hireDate) : null,
+                    schedule: schedule !== undefined ? Boolean(schedule) : true,
+                    userId: newUser.id,
+                }
+            });
+        }
 
         const employee = {
             id: newUser.id,

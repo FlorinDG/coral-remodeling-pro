@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useMemo } from 'react';
 
 import { Header } from '@/components/time-tracker/components/Header';
@@ -33,9 +33,12 @@ interface UserProfile {
   hourly_rate: number | null;
 }
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 export default function Performance() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { user, profile, loading } = useAuth();
   const { isAdmin, isManager } = useUserRoles();
   const { requests } = useTimeOffRequests();
@@ -161,9 +164,9 @@ export default function Performance() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push("/admin/hr/time-tracker/auth");
+      router.push(`${basePath}/auth`);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, basePath]);
 
   if (loading) {
     return (
@@ -184,7 +187,7 @@ export default function Performance() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <Link 
-            href="/admin/hr/time-tracker" 
+            href={basePath} 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -434,7 +437,7 @@ export default function Performance() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/hr/time-tracker" 
+            href={basePath} 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

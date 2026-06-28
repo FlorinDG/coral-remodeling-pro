@@ -52,7 +52,7 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
         const relationIds = page.properties?.[rollupPropertyId] as string[];
         if (!relationIds || !Array.isArray(relationIds) || relationIds.length === 0) return [];
 
-        const results: string[] = [];
+        const results: any[] = [];
         for (const targetPageId of relationIds) {
             const targetDb = databases.find(db => db.pages.some(p => p.id === targetPageId));
             if (targetDb) {
@@ -60,7 +60,11 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
                 if (targetPage) {
                     const val = targetPage.properties[rollupTargetPropertyId];
                     if (val !== undefined && val !== null && String(val).trim() !== '') {
-                        results.push(String(val));
+                        results.push({
+                            value: String(val),
+                            targetDbId: targetDb.id,
+                            targetPageId: targetPage.id
+                        });
                     }
                 }
             }
@@ -75,9 +79,9 @@ const PageRollupViewer = ({ databaseId, pageId, property }: { databaseId: string
     return (
         <div className="w-full h-full flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
             <Search className="w-3 h-3 text-neutral-400 flex-shrink-0 mr-1" />
-            {aggregatedValues.map((val: string, i: number) => (
+            {aggregatedValues.map((val: any, i: number) => (
                 <span key={i} className="px-1.5 py-0.5 bg-neutral-200 dark:bg-neutral-800 border border-neutral-300 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
-                    {val}
+                    {val.value}
                 </span>
             ))}
         </div>

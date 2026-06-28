@@ -1,7 +1,23 @@
 "use client";
 import { createContext, useContext, ReactNode, useMemo } from 'react';
-import { User, Session } from '@supabase/supabase-js';
 import { useSession } from 'next-auth/react';
+
+export interface User {
+  id: string;
+  app_metadata: any;
+  user_metadata: any;
+  aud: string;
+  created_at: string;
+}
+
+export interface Session {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  expires_at: number;
+  token_type: string;
+  user: User;
+}
 
 interface Profile {
   id: string;
@@ -46,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    // Bridge NextAuth session into Supabase-like shape for the TimeTracker
+    // Bridge NextAuth session into legacy shape for the TimeTracker
     const bridgedUser = {
       id: nextSession.user.id,
       app_metadata: {},

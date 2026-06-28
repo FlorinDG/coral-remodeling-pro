@@ -2,7 +2,9 @@ import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from 're
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
-import { Link, Search } from 'lucide-react';
+import { Link, Search, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 interface RelationComponentProps extends CellProps<any, any> {
     relationDatabaseId: string;
@@ -71,11 +73,14 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
     // Subscribe to the target database to fetch titles
     const targetDatabase = useDatabaseStore(state => state.getDatabase(relationDatabaseId));
 
-    const selectedTitles = useMemo(() => {
+    const selectedItems = useMemo(() => {
         if (!targetDatabase || value.length === 0) return [];
         return value.map(id => {
             const page = targetDatabase.pages.find(p => p.id === id);
-            return (page?.properties[displayPropertyId] as string) || 'Untitled';
+            return {
+                id,
+                title: (page?.properties[displayPropertyId] as string) || 'Untitled'
+            };
         });
     }, [targetDatabase, value, displayPropertyId]);
 
@@ -89,16 +94,29 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
         });
     }, [targetDatabase, searchQuery, displayPropertyId]);
 
+    const router = useRouter();
+    const locale = useLocale();
+
     if (!focus && !active) {
-        if (selectedTitles.length === 0) {
+        if (selectedItems.length === 0) {
             return <div className="w-full h-full p-2 flex items-center text-neutral-400 text-sm">Empty</div>;
         }
         return (
             <div className="w-full h-full p-2 flex items-center gap-1 overflow-x-auto no-scrollbar">
-                {selectedTitles.map((title, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
-                        <Link className="w-3 h-3" />
-                        {title}
+                {selectedItems.map((item, i) => (
+                    <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap group">
+                        <Link className="w-3 h-3 opacity-50" />
+                        <span className="px-0.5">{item.title}</span>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/${locale}/admin/database/${relationDatabaseId}/${item.id}`);
+                            }}
+                            className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
+                            title="Open related record"
+                        >
+                            <ExternalLink className="w-3 h-3" />
+                        </button>
                     </span>
                 ))}
             </div>

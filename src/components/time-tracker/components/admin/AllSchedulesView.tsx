@@ -1,36 +1,14 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { Loader2, Calendar, Clock } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useWorkerSchedules } from '@/components/time-tracker/hooks/useWorkerSchedules';
-import { hrList } from '@/components/time-tracker/lib/hr-api';
-import { useState, useEffect } from 'react';
 
 export function AllSchedulesView() {
   const { allWorkers, loading: schedulesLoading, DAY_NAMES } = useWorkerSchedules();
-  const [employeeMap, setEmployeeMap] = useState<Record<string, string>>({});
-  const [employeesLoading, setEmployeesLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const employees = await hrList<{ id: string; firstName: string; lastName: string }>('employees');
-        const map: Record<string, string> = {};
-        employees.forEach(e => {
-          map[e.id] = `${e.firstName} ${e.lastName}`;
-        });
-        setEmployeeMap(map);
-      } catch (err) {
-        console.error('[AllSchedulesView] failed to fetch employees:', err);
-      } finally {
-        setEmployeesLoading(false);
-      }
-    };
-    fetchEmployees();
-  }, []);
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -40,7 +18,7 @@ export function AllSchedulesView() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  if (schedulesLoading || employeesLoading) {
+  if (schedulesLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
@@ -54,7 +32,7 @@ export function AllSchedulesView() {
   const allSchedules = allWorkers.flatMap(worker =>
     worker.schedules.map(schedule => ({
       ...schedule,
-      workerName: employeeMap[worker.user_id] || worker.user_id,
+      workerName: worker.full_name,
     }))
   ).sort((a, b) => {
     // Sort by day of week first, then by start time

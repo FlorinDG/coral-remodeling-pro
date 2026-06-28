@@ -191,6 +191,7 @@ model ClientPortal {
 model ProjectUpdate {
   id        String       @id @default(cuid())
   portalId  String
+  projectId String?
   title     String
   content   String
   imageUrl  String?
@@ -235,6 +236,7 @@ model Event {
 model Document {
   id        String       @id @default(cuid())
   portalId  String
+  projectId String?
   name      String
   url       String
   type      String
@@ -245,6 +247,7 @@ model Document {
 model ProjectMedia {
   id        String       @id @default(cuid())
   portalId  String
+  projectId String?
   url       String
   caption   String?
   type      String       @default("IMAGE")
@@ -255,6 +258,7 @@ model ProjectMedia {
 model Message {
   id        String       @id @default(cuid())
   portalId  String
+  projectId String?
   content   String
   sender    String
   replyToId String?

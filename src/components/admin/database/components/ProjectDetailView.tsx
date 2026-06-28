@@ -25,6 +25,7 @@ const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/FileManagerCard'), { ssr: false });
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
+const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
 
 // ── Status configuration ──────────────────────────────────────────────
 const EXEC_STATUS_MAP: Record<string, { label: string; color: string; icon: React.ReactNode; bg: string }> = {
@@ -162,6 +163,22 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         const progress = total > 0 ? Math.round((done / total) * 100) : 0;
         return { total, done, busy, todo, progress };
     }, [projectTasks]);
+
+    // ── Supplier Data Resolution ──────────────────────────────────────────
+    const suppliers = useMemo(() => {
+        const suppliersDb = allDatabases.find(d => d.id === 'db-suppliers' || d.id.startsWith('db-suppliers'));
+        if (!suppliersDb) return [];
+        return suppliersDb.pages.map(p => ({
+            value: p.id,
+            label: String(p.properties['title'] || p.properties['name'] || 'Unknown')
+        }));
+    }, [allDatabases]);
+
+    const supplierQuotations = useMemo(() => {
+        const raw = page?.properties?.['supplierQuotations'];
+        if (Array.isArray(raw)) return raw;
+        return [];
+    }, [page?.properties]);
 
     // ── Quotation Data Resolution ─────────────────────────────────────────
     const quotationsDbId = resolveDbId('db-quotations');
@@ -888,6 +905,20 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                     </div>
                                 </div>
                             </button>
+                        </div>
+
+                        {/* Supplier Quotations */}
+                        <div className="xl:col-span-2">
+                            <SupplierQuotationsCard 
+                                projectId={pageId}
+                                quotations={supplierQuotations}
+                                suppliers={suppliers}
+                                onUpdate={(newQuotations) => {
+                                    if (updatePageProperty) {
+                                        updatePageProperty(databaseId, pageId, 'supplierQuotations', newQuotations);
+                                    }
+                                }}
+                            />
                         </div>
 
                         {/* Right sidebar — Project Info */}

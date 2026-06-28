@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
@@ -23,9 +23,12 @@ import { useRouter } from "@/i18n/routing";
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 export default function TimeOff() {
   const router = useRouter();
   const navigate = useRouter();
+  const basePath = useAppBasePath();
   const { user, loading: authLoading } = useAuth();
   const { requests, loading, createRequest, deleteRequest, refetch } = useTimeOffRequests();
   
@@ -54,7 +57,7 @@ export default function TimeOff() {
   }
 
   if (!user) {
-    router.push("/admin/hr/time-tracker/auth");
+    router.push(`${basePath}/auth`);
     return null;
   }
 
@@ -116,7 +119,7 @@ export default function TimeOff() {
       <main className="container mx-auto px-4 py-8">
         {/* Top back button */}
         <Link 
-          href="/admin/hr/time-tracker" 
+          href={basePath} 
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -273,7 +276,7 @@ export default function TimeOff() {
         {/* Bottom back button */}
         <div className="mt-8 flex justify-center">
           <Link 
-            href="/admin/hr/time-tracker" 
+            href={basePath} 
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

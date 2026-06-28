@@ -78,6 +78,7 @@ function RichBlock({ block, onToggleTodo }: { block: Block; onToggleTodo?: (bloc
                         type="checkbox"
                         checked={!!block.properties?.checked}
                         onChange={() => onToggleTodo?.(block.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="mt-0.5 w-3.5 h-3.5 cursor-pointer accent-orange-500 rounded flex-shrink-0"
                     />
                     <span className={`text-xs leading-relaxed ${block.properties?.checked ? 'line-through text-neutral-400' : ''}`}>
@@ -145,6 +146,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
         state.databases.find(db => db.id === databaseId)?.pages.find(p => p.id === pageId)
     );
     const updatePageBlocks = useDatabaseStore(state => state.updatePageBlocks);
+    const createPage = useDatabaseStore(state => state.createPage);
 
     // ── Linked journal entries from db-journal-general ──
     const journalDbPages = useDatabaseStore(state =>
@@ -166,19 +168,14 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     const [editDraft, setEditDraft] = useState('');
     const [editBlockType, setEditBlockType] = useState<BlockType>('paragraph');
 
-    const blocks = page?.blocks || [];
-
-    // Get entries that have content (filter out empty paragraphs, keep dividers)
-    const contentBlocks = blocks.filter(b => b.type === 'divider' || (b.content && b.content.trim() !== ''));
-
     // Merge linked journal entries as virtual blocks for display
     const linkedBlocks: (Block & { isLinked?: boolean; linkedPageId?: string })[] = linkedJournalEntries.flatMap(entry =>
         (entry.blocks || [])
             .filter(b => b.type === 'divider' || (b.content && b.content.trim() !== ''))
-            .map(b => ({ ...b, isLinked: true, linkedPageId: entry.id }))
+            .map(b => ({ ...b, linkedPageId: entry.id }))
     );
 
-    const allDisplayBlocks = [...contentBlocks, ...linkedBlocks];
+    const allDisplayBlocks = linkedBlocks;
 
     const handleAddQuickEntry = () => {
         if (quickBlockType !== 'divider' && !quickContent.trim()) return;
@@ -193,8 +190,12 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
             }
         };
 
-        const existingBlocks = page?.blocks || [];
-        updatePageBlocks(databaseId, pageId, [newBlock, ...existingBlocks]);
+        createPage('db-journal-general', {
+            linkedRecordId: pageId,
+            linkedDatabaseId: databaseId,
+            author: 'System',
+            createdAt: new Date().toISOString()
+        }, undefined, [newBlock]);
 
         setQuickContent('');
         setQuickBlockType('paragraph');
@@ -210,16 +211,23 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     };
 
     const saveEdit = () => {
-        if (!editingBlockId || !page) return;
+        if (!editingBlockId) return;
+        const targetBlock = linkedBlocks.find(b => b.id === editingBlockId);
+        if (!targetBlock || !targetBlock.linkedPageId) return;
+
+        const linkedPage = journalDbPages?.find(p => p.id === targetBlock.linkedPageId);
+        if (!linkedPage) return;
+        const linkedPageBlocks = linkedPage.blocks || [];
+
         const trimmed = editDraft.trim();
         if (!trimmed && editBlockType !== 'divider') {
-            const updatedBlocks = blocks.filter(b => b.id !== editingBlockId);
-            updatePageBlocks(databaseId, pageId, updatedBlocks);
+            const updatedBlocks = linkedPageBlocks.filter(b => b.id !== editingBlockId);
+            updatePageBlocks('db-journal-general', targetBlock.linkedPageId, updatedBlocks);
         } else {
-            const updatedBlocks = blocks.map(b =>
+            const updatedBlocks = linkedPageBlocks.map(b =>
                 b.id === editingBlockId ? { ...b, content: trimmed, type: editBlockType } : b
             );
-            updatePageBlocks(databaseId, pageId, updatedBlocks);
+            updatePageBlocks('db-journal-general', targetBlock.linkedPageId, updatedBlocks);
         }
         setEditingBlockId(null);
         setEditDraft('');
@@ -231,15 +239,29 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
     };
 
     const deleteBlock = (blockId: string) => {
-        const updatedBlocks = blocks.filter(b => b.id !== blockId);
-        updatePageBlocks(databaseId, pageId, updatedBlocks);
+        const targetBlock = linkedBlocks.find(b => b.id === blockId);
+        if (!targetBlock || !targetBlock.linkedPageId) return;
+        
+        const linkedPage = journalDbPages?.find(p => p.id === targetBlock.linkedPageId);
+        if (!linkedPage) return;
+        const linkedPageBlocks = linkedPage.blocks || [];
+
+        const updatedBlocks = linkedPageBlocks.filter(b => b.id !== blockId);
+        updatePageBlocks('db-journal-general', targetBlock.linkedPageId, updatedBlocks);
     };
 
     const toggleTodo = (blockId: string) => {
-        const updatedBlocks = blocks.map(b =>
+        const targetBlock = linkedBlocks.find(b => b.id === blockId);
+        if (!targetBlock || !targetBlock.linkedPageId) return;
+        
+        const linkedPage = journalDbPages?.find(p => p.id === targetBlock.linkedPageId);
+        if (!linkedPage) return;
+        const linkedPageBlocks = linkedPage.blocks || [];
+
+        const updatedBlocks = linkedPageBlocks.map(b =>
             b.id === blockId ? { ...b, properties: { ...b.properties, checked: !b.properties?.checked } } : b
         );
-        updatePageBlocks(databaseId, pageId, updatedBlocks);
+        updatePageBlocks('db-journal-general', targetBlock.linkedPageId, updatedBlocks);
     };
 
     // Format created timestamp
@@ -281,6 +303,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
             {showQuickEntry && (
                 <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-orange-50/50 dark:bg-orange-500/5 animate-in fade-in slide-in-from-top-1 duration-150">
                     <BlockTypePills selected={quickBlockType} onChange={setQuickBlockType} />
+                    <p className="text-[9px] text-neutral-400 mb-2 mt-0 italic">Format applies to the entire entry/block.</p>
                     {quickBlockType !== 'divider' ? (
                         <textarea
                             autoFocus
@@ -345,6 +368,7 @@ export default function JournalCard({ databaseId, pageId, minHeight = '360px' }:
                                             {isEditing ? (
                                                 <div>
                                                     <BlockTypePills selected={editBlockType} onChange={setEditBlockType} />
+                                                    <p className="text-[9px] text-neutral-400 mb-2 mt-0 italic">Format applies to the entire entry/block.</p>
                                                     <textarea
                                                         autoFocus
                                                         value={editDraft}

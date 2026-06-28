@@ -1,6 +1,6 @@
 // @ts-nocheck
 "use client";
-// @ts-nocheck — Legacy Supabase component, progressive migration to camelCase
+// @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';

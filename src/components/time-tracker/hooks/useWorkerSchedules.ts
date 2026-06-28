@@ -24,13 +24,18 @@ export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'
 
 export function useWorkerSchedules() {
   const [schedules, setSchedules] = useState<WorkerSchedule[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchSchedules = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await hrList<WorkerSchedule>('worker-schedules');
-      setSchedules(data);
+      const [scheduleData, employeeData] = await Promise.all([
+        hrList<WorkerSchedule>('worker-schedules'),
+        hrList<{ id: string; firstName: string; lastName: string; status: string }>('employees').catch(() => [])
+      ]);
+      setSchedules(scheduleData);
+      setEmployees(employeeData.filter(e => e.status === 'ACTIVE'));
     } catch (err) {
       console.error('[useWorkerSchedules] error:', err);
     } finally {
@@ -42,19 +47,17 @@ export function useWorkerSchedules() {
     fetchSchedules();
   }, [fetchSchedules]);
 
-  // Group schedules by userId to derive worker list
+  // Group schedules by userId to derive worker list, only for active employees
   const allWorkers = useMemo(() => {
-    const map = new Map<string, WorkerSchedule[]>();
-    schedules.forEach(s => {
-      if (!map.has(s.userId)) map.set(s.userId, []);
-      map.get(s.userId)!.push(s);
+    return employees.map(emp => {
+      const userSchedules = schedules.filter(s => s.userId === emp.id);
+      return {
+        user_id: emp.id,
+        full_name: `${emp.firstName} ${emp.lastName}`,
+        schedules: userSchedules,
+      };
     });
-    return Array.from(map.entries()).map(([userId, userSchedules]) => ({
-      user_id: userId,
-      full_name: userId, // Will be resolved by UI from db-employees
-      schedules: userSchedules,
-    }));
-  }, [schedules]);
+  }, [schedules, employees]);
 
   const createSchedule = useCallback(async (data: {
     userId: string;

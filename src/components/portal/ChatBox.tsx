@@ -16,11 +16,12 @@ interface Message {
 
 interface ChatBoxProps {
     portalId: string;
+    projectId?: string | null;
     initialMessages: Message[];
     currentUserType: 'ADMIN' | 'CLIENT';
 }
 
-export default function ChatBox({ portalId, initialMessages, currentUserType }: ChatBoxProps) {
+export default function ChatBox({ portalId, projectId, initialMessages, currentUserType }: ChatBoxProps) {
     const t = useTranslations('Portal');
     const [messages, setMessages] = useState(initialMessages);
     const [newMessage, setNewMessage] = useState('');
@@ -43,6 +44,7 @@ export default function ChatBox({ portalId, initialMessages, currentUserType }: 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 portalId,
+                projectId,
                 content: newMessage,
                 sender: currentUserType,
                 fileUrl: fileUrl || null,

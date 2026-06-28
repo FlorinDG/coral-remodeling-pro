@@ -51,9 +51,12 @@ const NavLink = forwardRef<HTMLAnchorElement, NavLinkCompatProps>(
   },
 );
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 export function Header() {
   const { profile, signOut } = useAuth();
   const { i18n } = useTranslation();
+  const basePath = useAppBasePath();
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
@@ -67,7 +70,7 @@ export function Header() {
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.href = "/";
+    window.location.href = basePath;
   };
 
   return (
@@ -132,7 +135,7 @@ export function Header() {
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => window.location.href = "/admin/hr/time-tracker/profile"}>
+              <DropdownMenuItem onClick={() => window.location.href = `${basePath}/profile`}>
                 <User className="mr-2 h-4 w-4 text-primary" />
                 Profile
               </DropdownMenuItem>

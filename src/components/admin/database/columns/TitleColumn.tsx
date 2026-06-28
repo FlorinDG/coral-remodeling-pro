@@ -76,6 +76,19 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
         <div
             className={`w-full h-full px-2 py-1 flex items-center relative text-sm font-medium ${active ? 'text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800' : 'text-neutral-900 dark:text-neutral-100'
                 }`}
+            onClick={(e) => {
+                if (!focus) {
+                    // Force DSG into edit mode on single click
+                    e.currentTarget.dispatchEvent(
+                        new MouseEvent('dblclick', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window,
+                        })
+                    );
+                }
+            }}
+            style={{ cursor: 'text' }}
         >
             {/* Text Value */}
             <span className="truncate flex-1 pr-16" style={{ pointerEvents: 'none' }}>

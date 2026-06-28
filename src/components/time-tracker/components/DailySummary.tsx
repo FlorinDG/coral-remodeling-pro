@@ -45,9 +45,12 @@ function formatTime12(time: string): string {
   return `${displayHour}:${minutes} ${suffix}`;
 }
 
+import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
+
 export function DailySummary() {
   const { user } = useAuth();
   const { shifts, loading } = useScheduledShifts();
+  const basePath = useAppBasePath();
 
   // Find today's shift for the current user
   const todayShift = useMemo(() => {
@@ -91,7 +94,7 @@ export function DailySummary() {
               </p>
             </div>
             <Link
-              href="/admin/hr/time-tracker/schedule"
+              href={`${basePath}/schedule`}
               className="text-primary text-sm font-medium flex items-center gap-1 hover:underline"
             >
               Schedule
@@ -266,7 +269,7 @@ export function DailySummary() {
               {tomorrowShift.project?.name && ` · ${tomorrowShift.project.name}`}
             </div>
             <Link
-              href="/admin/hr/time-tracker/schedule"
+              href={`${basePath}/schedule`}
               className="text-primary text-xs font-medium flex items-center gap-0.5 hover:underline"
             >
               View

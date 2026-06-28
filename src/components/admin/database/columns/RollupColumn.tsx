@@ -3,23 +3,33 @@ import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
 import { Search } from 'lucide-react';
 
-export function applyRollupAggregation(results: string[], aggregation?: string): string[] {
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { ExternalLink } from 'lucide-react';
+
+export interface RollupResult {
+    value: string;
+    targetDbId?: string;
+    targetPageId?: string;
+}
+
+export function applyRollupAggregation(results: RollupResult[], aggregation?: string): RollupResult[] {
     if (!results || results.length === 0) return [];
     const agg = aggregation || 'show_original';
 
     switch (agg) {
         case 'extract_numbers':
-            return results.map(r => r.replace(/[^\d+]/g, '')).filter(Boolean);
+            return results.map(r => ({ ...r, value: r.value.replace(/[^\d+]/g, '') })).filter(r => Boolean(r.value));
         case 'sum': {
-            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.replace(/[^\d.-]/g, '')) || 0), 0);
-            return [String(sum)];
+            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.value.replace(/[^\d.-]/g, '')) || 0), 0);
+            return [{ value: String(sum) }];
         }
         case 'average': {
-            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.replace(/[^\d.-]/g, '')) || 0), 0);
-            return [String(Number((sum / results.length).toFixed(2)))];
+            const sum = results.reduce((acc, curr) => acc + (parseFloat(curr.value.replace(/[^\d.-]/g, '')) || 0), 0);
+            return [{ value: String(Number((sum / results.length).toFixed(2))) }];
         }
         case 'count':
-            return [String(results.length)];
+            return [{ value: String(results.length) }];
         case 'show_original':
         default:
             return results;
@@ -33,32 +43,30 @@ interface RollupComponentProps extends CellProps<any, any> {
 }
 
 const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, rollupAggregation }: RollupComponentProps) => {
-    // A Rollup requires read-access to the entire DB registry to cross-reference
     const databases = useDatabaseStore(state => state.databases);
+    const router = useRouter();
+    const locale = useLocale();
 
     const aggregatedValues = useMemo(() => {
         if (!rowData || !rollupPropertyId || !rollupTargetPropertyId) return [];
 
-        // 1. Get the relation IDs from the current row
         const relationIds = rowData.properties?.[rollupPropertyId] as string[];
         if (!relationIds || !Array.isArray(relationIds) || relationIds.length === 0) return [];
 
-        // 2. We need to figure out WHICH database these relation IDs belong to.
-        // We can do this by inspecting the schema of our OWN database, but since we don't 
-        // receive our databaseId in props by default, we just scan all DBs for the page IDs.
-        // (A more optimized approach would pass the relation config down).
-
-        const results: string[] = [];
+        const results: RollupResult[] = [];
 
         for (const targetPageId of relationIds) {
-            // Find the database containing this page
             const targetDb = databases.find(db => db.pages.some(p => p.id === targetPageId));
             if (targetDb) {
                 const targetPage = targetDb.pages.find(p => p.id === targetPageId);
                 if (targetPage) {
                     const val = targetPage.properties[rollupTargetPropertyId];
                     if (val !== undefined && val !== null && String(val).trim() !== '') {
-                        results.push(String(val));
+                        results.push({
+                            value: String(val),
+                            targetDbId: targetDb.id,
+                            targetPageId: targetPage.id
+                        });
                     }
                 }
             }
@@ -74,9 +82,21 @@ const RollupComponent = ({ rowData, rollupPropertyId, rollupTargetPropertyId, ro
     return (
         <div className="w-full h-full p-2 flex items-center gap-1 overflow-x-auto no-scrollbar">
             <Search className="w-3 h-3 text-neutral-400 flex-shrink-0 mr-1" />
-            {aggregatedValues.map((val, i) => (
-                <span key={i} className="px-1.5 py-0.5 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap">
-                    {val}
+            {aggregatedValues.map((item, i) => (
+                <span key={i} className="px-1.5 py-0.5 bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 text-neutral-700 dark:text-neutral-300 rounded text-xs whitespace-nowrap inline-flex items-center group">
+                    {item.value}
+                    {item.targetDbId && item.targetPageId && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/${locale}/admin/database/${item.targetDbId}/${item.targetPageId}`);
+                            }}
+                            className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-all ml-0.5 text-orange-500 hover:text-orange-600"
+                            title="Open related record"
+                        >
+                            <ExternalLink className="w-3 h-3" />
+                        </button>
+                    )}
                 </span>
             ))}
         </div>

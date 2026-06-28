@@ -35,7 +35,13 @@ function getMonday(date: Date): Date {
 
 export function ScheduleManagement() {
   const { shifts, projects, loading, createShift, createProject, updateShift, updateShiftStatus, deleteShift, canManage } = useScheduledShifts();
-  const [workers, setWorkers] = useState<WorkerOption[]>([]);
+  const [workers, setWorkers] = useState<WorkerOption[]>([
+    {
+      id: 'unassigned',
+      full_name: 'Unassigned Shifts',
+      hourly_rate: 0,
+    }
+  ]);
   const [viewMode, setViewMode] = useState<ViewMode>('matrix');
   const [weekStart, setWeekStart] = useState<Date>(() => getMonday(new Date()));
   const [weekCount, setWeekCount] = useState<1 | 2>(1);

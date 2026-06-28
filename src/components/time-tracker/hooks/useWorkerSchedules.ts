@@ -32,10 +32,10 @@ export function useWorkerSchedules() {
       setLoading(true);
       const [scheduleData, employeeData] = await Promise.all([
         hrList<WorkerSchedule>('worker-schedules'),
-        hrList<{ id: string; firstName: string; lastName: string; status: string }>('employees').catch(() => [])
+        hrList<{ id: string; firstName: string; lastName: string; status: string; schedule?: boolean }>('employees').catch(() => [])
       ]);
       setSchedules(scheduleData);
-      setEmployees(employeeData.filter(e => e.status === 'ACTIVE'));
+      setEmployees(employeeData.filter(e => e.schedule !== false));
     } catch (err) {
       console.error('[useWorkerSchedules] error:', err);
     } finally {

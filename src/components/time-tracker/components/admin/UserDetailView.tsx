@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { ArrowLeft, Loader2, User, KeyRound, Users2, Euro, Trash2, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,6 +46,7 @@ interface UserProfile {
   created_at: string;
   roles: AppRole[];
   teams: { id: string; name: string; role: string }[];
+  schedule?: boolean;
 }
 
 interface UserDetailViewProps {
@@ -155,6 +157,20 @@ export function UserDetailView({
     }
     
     setSavingRate(false);
+  };
+
+  const handleToggleSchedule = async (checked: boolean) => {
+    try {
+      const { hrUpdate } = await import('@/components/time-tracker/lib/hr-api');
+      await hrUpdate('employees', currentUser.id, { schedule: checked });
+      toast.success(checked ? 'Added to scheduler' : 'Removed from scheduler');
+      const updated = { ...currentUser, schedule: checked };
+      setCurrentUser(updated);
+      onUpdate(updated);
+    } catch (error) {
+      toast.error('Failed to update schedule status');
+      console.error(error);
+    }
   };
 
   const handleResetPassword = async () => {
@@ -333,6 +349,27 @@ export function UserDetailView({
                     {savingRate ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="flex items-center space-x-2 py-2">
+              <Checkbox 
+                id="schedule" 
+                checked={currentUser.schedule !== false}
+                onCheckedChange={(checked) => handleToggleSchedule(!!checked)}
+              />
+              <div className="grid gap-1.5 leading-none">
+                <Label 
+                  htmlFor="schedule"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Show in Scheduler
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Gates employee presence in the scheduler matrix and selection list.
+                </p>
               </div>
             </div>
           </CardContent>

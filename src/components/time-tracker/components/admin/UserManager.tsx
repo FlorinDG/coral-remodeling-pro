@@ -28,6 +28,7 @@ interface UserProfile {
   created_at: string;
   roles: AppRole[];
   teams: { id: string; name: string; role: string }[];
+  schedule: boolean;
 }
 
 export function UserManager() {
@@ -56,6 +57,7 @@ export function UserManager() {
         created_at: emp.createdAt || new Date().toISOString(),
         roles: [(emp.role?.toLowerCase() || 'employee') as AppRole],
         teams: [],
+        schedule: emp.schedule !== false,
       }));
 
       setUsers(usersWithRoles);

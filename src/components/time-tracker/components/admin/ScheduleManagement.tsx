@@ -57,10 +57,11 @@ export function ScheduleManagement() {
           lastName: string;
           status: string;
           hourlyCost: number | null;
+          schedule?: boolean;
         }>('employees');
 
         const activeWorkers = employees
-          .filter(e => e.status === 'ACTIVE')
+          .filter(e => e.schedule !== false)
           .map(e => ({
             id: e.id,
             full_name: `${e.firstName} ${e.lastName}`,

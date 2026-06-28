@@ -39,6 +39,7 @@ import { Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useSched
 import { useTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { hrList, hrCreate, hrDelete as hrDeleteEntity } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
+import { listRecordFiles, uploadFileAction } from '@/app/actions/files';
 
 interface WorkerOption {
   id: string;
@@ -208,8 +209,19 @@ export function CreateShiftForm({
         setProjectAttachments([]);
         return;
       }
-      // project_attachments not yet in Prisma — skip silently
-      setProjectAttachments([]);
+      try {
+        const files = await listRecordFiles('project', projectId);
+        setProjectAttachments(files.map(f => ({
+          id: f.id,
+          file_name: f.name,
+          file_path: f.url,
+          file_size: f.size,
+          file_type: f.name.split('.').pop() || '',
+        })));
+      } catch (err) {
+        console.error('Failed to fetch project attachments:', err);
+        setProjectAttachments([]);
+      }
     };
 
     fetchProjectAttachments();
@@ -325,21 +337,26 @@ export function CreateShiftForm({
     try {
       for (const attachment of pendingAttachments) {
         if (attachment.type === 'file' && attachment.file) {
-          // Mock upload
-          await hrCreate('shift-attachments', {
-            shiftId,
-            name: attachment.name,
-            url: `/uploads/${attachment.name}`,
-            type: attachment.file.type,
-            size: attachment.file.size,
-          });
+          // Upload to Vercel Blob via uploadFileAction
+          const formData = new FormData();
+          formData.append('file', attachment.file);
+          const uploadRes = await uploadFileAction(formData, 'hr-shift', shiftId);
+          if (uploadRes && uploadRes.success && uploadRes.key) {
+            await hrCreate('shift-attachments', {
+              shiftId,
+              name: attachment.name,
+              url: uploadRes.key,
+              type: attachment.file.type,
+              size: attachment.file.size,
+            });
+          }
         } else if (attachment.type === 'project' && attachment.projectAttachment) {
           await hrCreate('shift-attachments', {
             shiftId,
             name: attachment.projectAttachment.file_name,
             url: attachment.projectAttachment.file_path,
-            type: attachment.projectAttachment.file_type,
-            size: attachment.projectAttachment.file_size,
+            type: attachment.projectAttachment.file_type || 'application/octet-stream',
+            size: attachment.projectAttachment.file_size || null,
           });
         }
       }

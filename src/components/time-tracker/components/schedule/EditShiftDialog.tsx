@@ -46,6 +46,7 @@ import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracke
 import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
+import { listRecordFiles } from '@/app/actions/files';
 
 interface ProjectAttachment {
   id: string;
@@ -176,8 +177,20 @@ export function EditShiftDialog({
         return;
       }
       
-      const data = await hrList<ProjectAttachment>('erp-attachments', { projectId: pid }).catch(() => []);
-      setProjectAttachments(data || []);
+      try {
+        const files = await listRecordFiles('project', pid);
+        setProjectAttachments(files.map(f => ({
+          id: f.id,
+          project_id: pid,
+          file_name: f.name,
+          file_path: f.url,
+          file_type: f.name.split('.').pop() || '',
+          file_size: f.size,
+        })));
+      } catch (err) {
+        console.error('Failed to fetch project attachments:', err);
+        setProjectAttachments([]);
+      }
     };
     
     if (open) {

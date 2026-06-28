@@ -19,13 +19,15 @@
 
 ---
 
-## 🔴⚡ DO THIS FIRST — TWO-STEP (Planner re-pin updated 2026-06-28T2)
+## 🔴⚡ DO THIS FIRST — TWO-STEP (Planner re-pin updated 2026-06-28T3)
 
-**SELECT-DIALOG-FOCUS** landed (7dd45db). **WORKHUB-PROJ-SELECT-REVERIFY** is now unblocked — do it first (quick, commit only if still broken), then immediately do **WORKHUB-PROJECT-LINK**.
+**Both SELECT-DIALOG-FOCUS** (7dd45db) **and SELECT-DIALOG-OPTION-CLICK** (c4c3d9d — the keystone) have landed. **WORKHUB-SCHEDULE-FLAG** (60ab6de) also landed. The shift-modal select stack is fully patched. **WORKHUB-PROJ-SELECT-REVERIFY** and **WORKHUB-PROJECT-LINK** are the only remaining two-step before moving to cross-cutting.
 
-**Step 1 — WORKHUB-PROJ-SELECT-REVERIFY** (≤ 5 min): now that SELECT-DIALOG-FOCUS is committed, re-test the shift-modal project picker end-to-end: open a shift → open the project SearchableSelect → click its search field → type → list filters → pick a value → it binds to the shift. If working → no commit needed, proceed to step 2. If still broken → read the full spec in FULL SPECS → 🔴 HOTFIX → **WORKHUB-PROJ-SELECT-REVERIFY** and commit `WORKHUB-PROJ-SELECT-2: bind project picker value in shift modal`.
+**Step 1 — WORKHUB-PROJ-SELECT-REVERIFY** (≤ 5 min): now that BOTH dialog fixes are committed, re-test the shift-modal project picker end-to-end: open a shift → open the project SearchableSelect → click its search field → type → list filters → pick a value → it binds to the shift. If working → no commit needed, proceed to step 2. If still broken → read the full spec in FULL SPECS → 🔴 HOTFIX → **WORKHUB-PROJ-SELECT-REVERIFY** and commit `WORKHUB-PROJ-SELECT-2: bind project picker value in shift modal`.
 
-**Step 2 — WORKHUB-PROJECT-LINK** (priority 0, was skipped last session): Full spec in FULL SPECS → HR WORKFORCE SCHEDULER → **WORKHUB-PROJECT-LINK**. Summary: add a read-only "Scheduled Labour" card to `PageModal.tsx` fetching `prisma.scheduledShift.findMany({ where: { projectId: page.id, tenantId: ctx.tenantId }, orderBy: { shiftDate: 'asc' } })` via new server action, rendering employee name + date + start/end + role per shift. Tenant-scoped. VERIFY: create a shift linked to a project → open that project's detail modal → shift appears; other tenants' shifts don't. Commit: `WORKHUB-PROJECT-LINK: wire scheduler shifts to projects both directions`.
+**Step 2 — WORKHUB-PROJECT-LINK** (priority 0, was skipped last two sessions): Full spec in FULL SPECS → HR WORKFORCE SCHEDULER → **WORKHUB-PROJECT-LINK**. Summary: add a read-only "Scheduled Labour" card to `PageModal.tsx` fetching `prisma.scheduledShift.findMany({ where: { projectId: page.id, tenantId: ctx.tenantId }, orderBy: { shiftDate: 'asc' } })` via new server action, rendering employee name + date + start/end + role per shift. Tenant-scoped. VERIFY: create a shift linked to a project → open that project's detail modal → shift appears; other tenants' shifts don't. Commit: `WORKHUB-PROJECT-LINK: wire scheduler shifts to projects both directions`.
+
+**After step 2:** proceed to **WORKHUB-MODAL-UPLOAD** (spec in FULL SPECS → HR WORKFORCE SCHEDULER), then cross-cutting items top-to-bottom.
 
 ---
 

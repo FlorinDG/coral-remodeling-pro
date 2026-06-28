@@ -7,7 +7,7 @@ import { hrTabs } from "@/config/tabs";
 import {
     Users, Plus, Mail, Phone, Briefcase, X, Loader2, Pencil, Trash2, Search, Euro,
     CalendarIcon, MapPin, Clock, Award, ChevronRight, FileText, Building2,
-    Shield, Heart, GraduationCap, MoreHorizontal, ArrowLeft, Save, User
+    Shield, GraduationCap, MoreHorizontal, ArrowLeft, Save, User
 } from "lucide-react";
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -29,8 +29,6 @@ interface Employee {
 interface EmployeeProfile extends Employee {
     department?: string;
     employmentType?: string;
-    emergencyContact?: string;
-    emergencyPhone?: string;
     address?: string;
     birthDate?: string;
     certifications?: string[];
@@ -76,7 +74,7 @@ const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contractor", "Intern", "Tem
 const emptyForm = {
     firstName: "", lastName: "", email: "", phone: "", role: "TENANT_ENTERPRISE_EMPLOYEE", status: "ACTIVE",
     hourlyCost: "", hireDate: "", department: "", employmentType: "Full-time",
-    emergencyContact: "", emergencyPhone: "", address: "", birthDate: "", notes: ""
+    address: "", birthDate: "", notes: ""
 };
 
 // ── Stat helpers ──────────────────────────────────────────────────────
@@ -157,7 +155,6 @@ export default function EmployeesPage() {
             phone: emp.phone || "", role: emp.role, status: emp.status,
             hourlyCost: emp.hourlyCost?.toString() || "", hireDate: emp.hireDate?.split("T")[0] || "",
             department: profile.department || "", employmentType: profile.employmentType || "Full-time",
-            emergencyContact: profile.emergencyContact || "", emergencyPhone: profile.emergencyPhone || "",
             address: profile.address || "", birthDate: profile.birthDate || "", notes: profile.notes || ""
         });
         setError("");
@@ -180,8 +177,6 @@ export default function EmployeesPage() {
                 saveProfile(empId, {
                     department: form.department,
                     employmentType: form.employmentType,
-                    emergencyContact: form.emergencyContact,
-                    emergencyPhone: form.emergencyPhone,
                     address: form.address,
                     birthDate: form.birthDate,
                     notes: form.notes,
@@ -316,18 +311,8 @@ export default function EmployeesPage() {
                             </div>
                         </div>
 
-                        {/* Bottom Row: Emergency + Certifications + Quick Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {/* Emergency Contact */}
-                            <div className="bg-red-50/50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-xl p-5">
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-red-500 mb-4 flex items-center gap-2">
-                                    <Heart className="w-3.5 h-3.5" /> Emergency Contact
-                                </h3>
-                                <div className="space-y-3">
-                                    <DetailRow icon={<User className="w-4 h-4 text-red-400" />} label="Name" value={loadProfile(emp.id).emergencyContact || 'Not set'} />
-                                    <DetailRow icon={<Phone className="w-4 h-4 text-red-400" />} label="Phone" value={loadProfile(emp.id).emergencyPhone || 'Not set'} />
-                                </div>
-                            </div>
+                        {/* Bottom Row: Certifications + Quick Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                             {/* Certifications */}
                             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5">
@@ -609,14 +594,7 @@ export default function EmployeesPage() {
                                 </div>
                             </div>
 
-                            {/* Emergency Contact Section */}
-                            <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-3">Emergency Contact</p>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <Field label="Contact Name" value={form.emergencyContact} onChange={v => setForm(f => ({ ...f, emergencyContact: v }))} />
-                                    <Field label="Contact Phone" type="tel" value={form.emergencyPhone} onChange={v => setForm(f => ({ ...f, emergencyPhone: v }))} />
-                                </div>
-                            </div>
+
 
                             {/* Notes */}
                             <div className="pt-4 border-t border-neutral-200 dark:border-white/10">

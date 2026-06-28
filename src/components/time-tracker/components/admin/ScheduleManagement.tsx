@@ -69,7 +69,13 @@ export function ScheduleManagement() {
           }))
           .sort((a, b) => a.full_name.localeCompare(b.full_name));
 
-        setWorkers(activeWorkers);
+        const unassignedWorker = {
+          id: 'unassigned',
+          full_name: 'Unassigned Shifts',
+          hourly_rate: 0,
+        };
+
+        setWorkers([unassignedWorker, ...activeWorkers]);
       } catch (err) {
         console.error('[ScheduleManagement] Failed to fetch employees:', err);
       }

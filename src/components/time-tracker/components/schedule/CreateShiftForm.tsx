@@ -2,7 +2,7 @@
 "use client";
 // @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2 } from 'lucide-react';
+import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2, Calendar as CalendarIcon } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/components/time-tracker/lib/utils';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -103,6 +106,20 @@ const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frid
 function getNotionColor(colorName: string) {
   return NOTION_COLORS.find(c => c.name === colorName) || NOTION_COLORS[6];
 }
+
+const getParsedDate = (dateStr: string) => {
+  if (!dateStr) return undefined;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatDateStr = (date: Date | undefined) => {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 export function CreateShiftForm({
   projects,
@@ -731,27 +748,59 @@ export function CreateShiftForm({
                     </div>
 
                     {scheduleType === 'single' && (
-                      <div>
-                        <Label htmlFor="shiftDate">Date *</Label>
-                        <Input
-                          id="shiftDate"
-                          type="date"
-                          value={shiftDate}
-                          onChange={(e) => setShiftDate(e.target.value)}
-                        />
+                      <div className="flex flex-col gap-2">
+                        <Label>Date *</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !shiftDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={getParsedDate(shiftDate)}
+                              onSelect={(date) => setShiftDate(formatDateStr(date))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     )}
 
                     {scheduleType === 'recurring' && (
                       <>
-                        <div>
-                          <Label htmlFor="startDate">Starting From</Label>
-                          <Input
-                            id="startDate"
-                            type="date"
-                            value={shiftDate}
-                            onChange={(e) => setShiftDate(e.target.value)}
-                          />
+                        <div className="flex flex-col gap-2">
+                          <Label>Starting From</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                className={cn(
+                                  'w-full justify-start text-left font-normal',
+                                  !shiftDate && 'text-muted-foreground'
+                                )}
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={getParsedDate(shiftDate)}
+                                onSelect={(date) => setShiftDate(formatDateStr(date))}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
                         </div>
 
                         <div>
@@ -1196,27 +1245,59 @@ export function CreateShiftForm({
                   </div>
 
                   {scheduleType === 'single' && (
-                    <div>
-                      <Label htmlFor="shiftDate2">Date *</Label>
-                      <Input
-                        id="shiftDate2"
-                        type="date"
-                        value={shiftDate}
-                        onChange={(e) => setShiftDate(e.target.value)}
-                      />
+                    <div className="flex flex-col gap-2">
+                      <Label>Date *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'w-full justify-start text-left font-normal',
+                              !shiftDate && 'text-muted-foreground'
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={getParsedDate(shiftDate)}
+                            onSelect={(date) => setShiftDate(formatDateStr(date))}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   )}
 
                   {scheduleType === 'recurring' && (
                     <>
-                      <div>
-                        <Label htmlFor="startDate2">Starting From</Label>
-                        <Input
-                          id="startDate2"
-                          type="date"
-                          value={shiftDate}
-                          onChange={(e) => setShiftDate(e.target.value)}
-                        />
+                      <div className="flex flex-col gap-2">
+                        <Label>Starting From</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !shiftDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={getParsedDate(shiftDate)}
+                              onSelect={(date) => setShiftDate(formatDateStr(date))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       <div>

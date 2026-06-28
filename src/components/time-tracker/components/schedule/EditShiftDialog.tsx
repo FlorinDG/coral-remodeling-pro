@@ -2,7 +2,7 @@
 "use client";
 // @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash } from 'lucide-react';
+import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/components/time-tracker/lib/utils';
+import { format } from 'date-fns';
 import {
   Dialog,
   DialogContent,
@@ -100,6 +103,20 @@ function getFileIcon(fileType: string) {
   if (fileType.startsWith('image/')) return Image;
   return FileText;
 }
+
+const getParsedDate = (dateStr: string) => {
+  if (!dateStr) return undefined;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatDateStr = (date: Date | undefined) => {
+  if (!date) return '';
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
 
 export function EditShiftDialog({
   shift,
@@ -394,15 +411,32 @@ export function EditShiftDialog({
                 />
               </div>
 
-              <div>
-                <Label htmlFor="editShiftDate">Date</Label>
-                <Input
-                  id="editShiftDate"
-                  type="date"
-                  value={shiftDate}
-                  onChange={(e) => setShiftDate(e.target.value)}
-                  disabled={!canManage}
-                />
+              <div className="flex flex-col gap-2">
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={!canManage}
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !shiftDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {shiftDate ? format(getParsedDate(shiftDate)!, 'PPP') : 'Select date'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={getParsedDate(shiftDate)}
+                      onSelect={(date) => setShiftDate(formatDateStr(date))}
+                      initialFocus
+                      disabled={!canManage}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

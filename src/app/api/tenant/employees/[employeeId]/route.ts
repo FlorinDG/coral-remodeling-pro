@@ -26,7 +26,7 @@ export async function PUT(
 
         const { employeeId } = await params;
         const body = await req.json();
-        const { firstName, lastName, email, phone, role, status, hourlyCost, hireDate } = body;
+        const { firstName, lastName, email, phone, role, status, hourlyCost, hireDate, schedule } = body;
 
         if (role && !Object.values(ROLES).includes(role)) {
             return NextResponse.json({ error: 'Invalid role provided' }, { status: 400 });
@@ -64,6 +64,35 @@ export async function PUT(
             },
         });
 
+        // Sync to Employee model
+        const empRecord = await prisma.employee.upsert({
+            where: { userId: employeeId },
+            update: {
+                firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
+                lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
+                email: email ?? existing.email,
+                phone: phone ?? existing.phone,
+                role: role ?? existing.role,
+                status: status ?? existing.employeeStatus ?? 'ACTIVE',
+                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
+                ...(schedule !== undefined && { schedule: Boolean(schedule) }),
+            },
+            create: {
+                tenantId: user.tenantId,
+                firstName: firstName ?? existing.name?.split(' ')[0] ?? '',
+                lastName: lastName ?? existing.name?.split(' ').slice(1).join(' ') ?? '',
+                email: email ?? existing.email,
+                phone: phone ?? existing.phone,
+                role: role ?? existing.role,
+                status: status ?? existing.employeeStatus ?? 'ACTIVE',
+                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : (existing.hourlyCost ?? null),
+                hireDate: hireDate ? new Date(hireDate) : (existing.hireDate ?? null),
+                schedule: schedule !== undefined ? Boolean(schedule) : true,
+                userId: employeeId,
+            }
+        });
+
         const employee = {
             id: updated.id,
             firstName: updated.name?.split(' ')[0] || '',
@@ -74,6 +103,7 @@ export async function PUT(
             status: updated.employeeStatus || 'ACTIVE',
             hourlyCost: updated.hourlyCost,
             hireDate: updated.hireDate,
+            schedule: empRecord.schedule !== false,
         };
 
         // Sync seat quantities

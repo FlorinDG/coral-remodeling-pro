@@ -46,6 +46,11 @@ export async function GET() {
                 id: true, name: true, email: true, phone: true,
                 role: true, hourlyCost: true, hireDate: true,
                 employeeStatus: true, image: true,
+                employee: {
+                    select: {
+                        schedule: true
+                    }
+                }
             },
             orderBy: { name: 'asc' },
         });
@@ -63,6 +68,7 @@ export async function GET() {
                 status: u.employeeStatus || 'ACTIVE',
                 hourlyCost: u.hourlyCost,
                 hireDate: u.hireDate,
+                schedule: u.employee?.schedule !== false,
             };
         });
 
@@ -89,7 +95,7 @@ export async function POST(req: Request) {
         }
 
         const body = await req.json();
-        const { firstName, lastName, email, phone, role, hourlyCost, hireDate } = body;
+        const { firstName, lastName, email, phone, role, hourlyCost, hireDate, schedule } = body;
 
         if (!firstName || !lastName || !email) {
             return NextResponse.json({ error: 'First name, last name, and email are required' }, { status: 400 });
@@ -121,6 +127,23 @@ export async function POST(req: Request) {
             },
         });
 
+        // Create matching Employee record
+        await prisma.employee.create({
+            data: {
+                tenantId: user.tenantId,
+                firstName,
+                lastName,
+                email,
+                phone: phone || null,
+                role: role || 'TENANT_ENTERPRISE_WORKFORCE',
+                status: 'ACTIVE',
+                hourlyCost: hourlyCost ? parseFloat(hourlyCost) : null,
+                hireDate: hireDate ? new Date(hireDate) : null,
+                schedule: schedule !== undefined ? Boolean(schedule) : true,
+                userId: newUser.id,
+            }
+        });
+
         const employee = {
             id: newUser.id,
             firstName: newUser.name?.split(' ')[0] || '',
@@ -131,6 +154,7 @@ export async function POST(req: Request) {
             status: newUser.employeeStatus || 'ACTIVE',
             hourlyCost: newUser.hourlyCost,
             hireDate: newUser.hireDate,
+            schedule: schedule !== undefined ? Boolean(schedule) : true,
         };
 
         // Sync seat quantities

@@ -23,6 +23,7 @@ interface Employee {
     status: string;
     hourlyCost: number | null;
     hireDate: string | null;
+    schedule: boolean;
 }
 
 // Extended profile fields (stored locally for now, will be API-backed)
@@ -74,7 +75,7 @@ const EMPLOYMENT_TYPES = ["Full-time", "Part-time", "Contractor", "Intern", "Tem
 const emptyForm = {
     firstName: "", lastName: "", email: "", phone: "", role: "TENANT_ENTERPRISE_EMPLOYEE", status: "ACTIVE",
     hourlyCost: "", hireDate: "", department: "", employmentType: "Full-time",
-    address: "", birthDate: "", notes: ""
+    address: "", birthDate: "", notes: "", schedule: true
 };
 
 // ── Stat helpers ──────────────────────────────────────────────────────
@@ -155,7 +156,8 @@ export default function EmployeesPage() {
             phone: emp.phone || "", role: emp.role, status: emp.status,
             hourlyCost: emp.hourlyCost?.toString() || "", hireDate: emp.hireDate?.split("T")[0] || "",
             department: profile.department || "", employmentType: profile.employmentType || "Full-time",
-            address: profile.address || "", birthDate: profile.birthDate || "", notes: profile.notes || ""
+            address: profile.address || "", birthDate: profile.birthDate || "", notes: profile.notes || "",
+            schedule: emp.schedule !== false
         });
         setError("");
         setShowDialog(true);
@@ -198,6 +200,7 @@ export default function EmployeesPage() {
                     status: form.status,
                     hourlyCost: form.hourlyCost ? parseFloat(form.hourlyCost) : null,
                     hireDate: form.hireDate || null,
+                    schedule: form.schedule,
                 });
             }
         } catch { setError("Network error"); } finally { setSaving(false); }
@@ -295,6 +298,7 @@ export default function EmployeesPage() {
                                     <DetailRow icon={<Building2 className="w-4 h-4" />} label="Department" value={loadProfile(emp.id).department || 'Not set'} />
                                     <DetailRow icon={<CalendarIcon className="w-4 h-4" />} label="Hire Date" value={emp.hireDate ? new Date(emp.hireDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'} />
                                     {tenure && <DetailRow icon={<Clock className="w-4 h-4" />} label="Tenure" value={tenure} />}
+                                    <DetailRow icon={<Clock className="w-4 h-4" />} label="Show in Scheduler" value={emp.schedule ? "Yes" : "No"} />
                                 </div>
                             </div>
 
@@ -541,6 +545,18 @@ export default function EmployeesPage() {
                                             onChange={v => setForm(f => ({ ...f, status: v }))}
                                             placeholder="Select status..."
                                         />
+                                        <div className="flex items-center space-x-2 mt-2.5">
+                                            <input
+                                                type="checkbox"
+                                                id="schedule"
+                                                checked={form.schedule}
+                                                onChange={(e) => setForm(f => ({ ...f, schedule: e.target.checked }))}
+                                                className="h-4 w-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)]"
+                                            />
+                                            <label htmlFor="schedule" className="text-xs font-bold text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                                                Show in Scheduler
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4 mt-4">

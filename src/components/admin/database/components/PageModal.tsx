@@ -17,7 +17,7 @@ import PageFinancialAnalysis from './PageFinancialAnalysis';
 import VariantsPropertyEditor from './VariantsPropertyEditor';
 import JournalCard from './JournalCard';
 import { Property, VariantsConfig } from '../types';
-import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Euro, Percent, CheckSquare, Calendar, Hash, Calculator, TrendingUp } from 'lucide-react';
+import { Search, Loader2, Check, GripVertical, Globe, Clock, User, Users, Euro, Percent, CheckSquare, Calendar, Hash, Calculator, TrendingUp } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
 import SmartVATLookup from './SmartVATLookup';
@@ -27,6 +27,7 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { Checkbox } from '@/components/common/Checkbox';
 import postcodesData from '@/lib/belgian-postcodes.json';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
+import { getProjectScheduledShifts, getProjectLaborStats } from '@/app/actions/timesheets';
 
 const isPostalField = (name: string, id: string) => {
     const n = name.toLowerCase();
@@ -453,6 +454,103 @@ const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; page
         </div>
     );
 };
+
+function ScheduledLabourCard({ pageId }: { pageId: string }) {
+    const [shifts, setShifts] = useState<any[]>([]);
+    const [stats, setStats] = useState<{ quotedHours: number; quotedCost: number; realizedHours: number; realizedCost: number } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let active = true;
+        setLoading(true);
+        Promise.all([
+            getProjectScheduledShifts(pageId),
+            getProjectLaborStats(pageId)
+        ]).then(([shiftsData, statsData]) => {
+            if (active) {
+                setShifts(shiftsData);
+                setStats(statsData);
+                setLoading(false);
+            }
+        }).catch(err => {
+            console.error("Failed to load project shifts & stats:", err);
+            if (active) setLoading(false);
+        });
+        return () => { active = false; };
+    }, [pageId]);
+
+    return (
+        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm flex flex-col">
+            <div className="flex items-center gap-3 mb-4 shrink-0">
+                <div className="p-2 bg-purple-500/10 rounded-xl">
+                    <Users className="w-4 h-4 text-purple-500" />
+                </div>
+                <div>
+                    <h3 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Scheduled Labour</h3>
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="py-8 flex justify-center">
+                    <Loader2 className="w-5 h-5 animate-spin text-neutral-400" />
+                </div>
+            ) : (
+                <>
+                    {stats && (
+                        <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-100 dark:border-neutral-800/50">
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Budgeted Labor</p>
+                                <p className="text-xs font-black text-neutral-800 dark:text-neutral-200 mt-0.5">
+                                    €{stats.quotedCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                                <p className="text-[10px] text-neutral-500">{stats.quotedHours.toFixed(1)} hrs</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] font-bold uppercase tracking-wider text-neutral-400">Realized Labor</p>
+                                <p className={`text-xs font-black mt-0.5 ${stats.realizedCost > stats.quotedCost ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                    €{stats.realizedCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                                <p className="text-[10px] text-neutral-500">{stats.realizedHours.toFixed(1)} hrs</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {shifts.length === 0 ? (
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 py-3 text-center">
+                            Geen geplande ploegen voor dit project.
+                        </p>
+                    ) : (
+                        <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                            {shifts.map((shift: any) => (
+                                <div key={shift.id} className="p-2.5 bg-neutral-50 dark:bg-white/5 rounded-xl border border-neutral-100 dark:border-neutral-800/50 flex flex-col gap-1 hover:border-purple-500/30 transition-colors">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                                            {shift.employeeName}
+                                        </span>
+                                        {shift.role && (
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-white/5 px-2 py-0.5 rounded">
+                                                {shift.role}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="w-3 h-3 text-neutral-400" />
+                                            {shift.shiftDate}
+                                        </span>
+                                        <span>
+                                            {shift.shiftStart} - {shift.shiftEnd}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
 
 interface PageModalProps {
     databaseId: string;
@@ -1151,6 +1249,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
                 {/* RIGHT HALF: Connected Records & Journal */}
                 <div className="lg:w-[400px] xl:w-[450px] shrink-0 flex flex-col gap-8">
+                    {(databaseId === 'db-1' || databaseId.startsWith('db-1')) && (
+                        <ScheduledLabourCard pageId={pageId} />
+                    )}
                     {/* Connected Records Section */}
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl p-5 shadow-sm">
                         <div className="flex items-center gap-3 mb-4">

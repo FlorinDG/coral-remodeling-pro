@@ -38,18 +38,39 @@ export async function createTaskPage(input: {
     const tasksDbId = locked['tasks'] || 'db-tasks';
 
     // Ensure the GlobalDatabase exists in Postgres for this tenant.
-    // If it doesn't (first session before sync), we cannot create the page —
-    // the store's syncDb must have run at least once first.
-    const db = await prisma.globalDatabase.findFirst({
+    // If it doesn't, we automatically initialize/create it on the fly!
+    let db = await prisma.globalDatabase.findFirst({
         where: { id: tasksDbId, tenantId },
         select: { id: true }
     });
 
     if (!db) {
-        throw new Error(
-            `Tasks database '${tasksDbId}' not found for tenant '${tenantId}'. ` +
-            `Open the Tasks module in the admin panel first to initialize it.`
-        );
+        db = await prisma.globalDatabase.create({
+            data: {
+                id: tasksDbId,
+                tenantId,
+                name: 'Tasks',
+                ownerId: userId,
+                properties: {
+                    title: { id: 'title', name: 'Title', type: 'title' },
+                    'prop-task-status': { id: 'prop-task-status', name: 'Status', type: 'select', options: [
+                        { id: 'opt-todo', name: 'Todo', color: 'gray' },
+                        { id: 'opt-in-prog', name: 'In Progress', color: 'blue' },
+                        { id: 'opt-done', name: 'Done', color: 'green' }
+                    ]},
+                    'prop-task-priority': { id: 'prop-task-priority', name: 'Priority', type: 'select', options: [
+                        { id: 'opt-p1', name: 'Urgent', color: 'red' },
+                        { id: 'opt-p2', name: 'High', color: 'orange' },
+                        { id: 'opt-p3', name: 'Normal', color: 'blue' },
+                        { id: 'opt-p4', name: 'Low', color: 'gray' }
+                    ]},
+                    'prop-task-project': { id: 'prop-task-project', name: 'Project', type: 'relation', databaseId: 'db-projects' },
+                    'prop-task-assignee': { id: 'prop-task-assignee', name: 'Assignee', type: 'person' },
+                    'prop-task-due': { id: 'prop-task-due', name: 'Due Date', type: 'date' }
+                }
+            },
+            select: { id: true }
+        });
     }
 
     // Get current page count for order assignment

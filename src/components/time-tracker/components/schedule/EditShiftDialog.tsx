@@ -158,7 +158,6 @@ export function EditShiftDialog({
   const { tasks: projectTasks, loading: tasksLoading, createTask } = useTasks(projectId || shift?.project_id || null);
   const { shiftTasks, loading: shiftTasksLoading, assignTask, removeTask, completeShiftTask, refetch: refetchShiftTasks } = useShiftTasks(shift?.id || null);
   const [taskPopoverOpen, setTaskPopoverOpen] = useState(false);
-  const [showQuickCreate, setShowQuickCreate] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState('normal');
   const [creatingTask, setCreatingTask] = useState(false);
@@ -292,7 +291,6 @@ export function EditShiftDialog({
         await assignTask(result.data.id);
         setNewTaskTitle('');
         setNewTaskPriority('normal');
-        setShowQuickCreate(false);
         toast.success('Task created and assigned');
       } else {
         toast.error(result?.error || 'Failed to create task');
@@ -590,54 +588,30 @@ export function EditShiftDialog({
                       </PopoverContent>
                     </Popover>
                     
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowQuickCreate(!showQuickCreate)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Quick Create
-                    </Button>
-                  </div>
-                )}
-
-                {/* Quick create form */}
-                {showQuickCreate && canManage && (
-                  <div className="p-3 rounded-lg border bg-muted/50 space-y-3">
-                    <Input
-                      placeholder="Task title..."
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                    />
-                    <div className="flex gap-2">
-                      <Select value={newTaskPriority} onValueChange={setNewTaskPriority}>
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low Priority</SelectItem>
-                          <SelectItem value="normal">Normal Priority</SelectItem>
-                          <SelectItem value="high">High Priority</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="sm"
-                        onClick={handleQuickCreateTask}
-                        disabled={!newTaskTitle.trim() || creatingTask}
-                      >
-                        {creatingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setShowQuickCreate(false);
-                          setNewTaskTitle('');
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                    {/* Quick create task form */}
+                    {canManage && (
+                      <div className="space-y-2 mt-4">
+                        <Label className="text-xs font-bold text-neutral-500 uppercase tracking-wider block">Quick create new task</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Enter task title..."
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickCreateTask())}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={handleQuickCreateTask}
+                            disabled={!newTaskTitle.trim() || creatingTask}
+                          >
+                            {creatingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -107,3 +107,114 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
         };
     });
 }
+
+export async function getProjectScheduledShifts(projectId: string) {
+    const session = await auth();
+    if (!session?.user?.id) {
+        throw new Error("Unauthorized");
+    }
+
+    const tenantId = (session.user as any).tenantId;
+    if (!tenantId) {
+        throw new Error("No tenant context");
+    }
+
+    const shifts = await prisma.scheduledShift.findMany({
+        where: { projectId, tenantId },
+        orderBy: { shiftDate: 'asc' }
+    });
+
+    const employeeIds = Array.from(new Set(shifts.map(s => s.userId).filter(Boolean))) as string[];
+
+    const employees = await prisma.employee.findMany({
+        where: {
+            id: { in: employeeIds },
+            tenantId
+        },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true
+        }
+    });
+
+    const empMap = new Map(employees.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
+
+    return shifts.map(s => ({
+        id: s.id,
+        employeeName: empMap.get(s.userId) || s.userId,
+        shiftDate: s.shiftDate,
+        shiftStart: s.shiftStart,
+        shiftEnd: s.shiftEnd,
+        role: s.role || null,
+        status: s.status
+    }));
+}
+
+export async function getProjectLaborStats(projectId: string) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    const tenantId = (session.user as any).tenantId;
+    if (!tenantId) throw new Error("No tenant context");
+
+    const shifts = await prisma.scheduledShift.findMany({
+        where: { projectId, tenantId }
+    });
+
+    const employeeIds = Array.from(new Set(shifts.map(s => s.userId).filter(Boolean))) as string[];
+
+    const employees = await prisma.employee.findMany({
+        where: { id: { in: employeeIds }, tenantId },
+        select: { id: true, hourlyCost: true }
+    });
+
+    const ratesMap = new Map(employees.map(e => [e.id, e.hourlyCost || 0]));
+
+    let totalQuotedHours = 0;
+    let totalQuotedCost = 0;
+
+    const parseTimeToHours = (timeStr: string): number => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return (isNaN(h) ? 0 : h) + (isNaN(m) ? 0 : m) / 60;
+    };
+
+    shifts.forEach(s => {
+        if (!s.shiftStart || !s.shiftEnd) return;
+        const start = parseTimeToHours(s.shiftStart);
+        const end = parseTimeToHours(s.shiftEnd);
+        const hours = Math.max(0, end - start);
+        const rate = ratesMap.get(s.userId) || 0;
+        totalQuotedHours += hours;
+        totalQuotedCost += hours * rate;
+    });
+
+    const shiftIds = shifts.map(s => s.id);
+    const clockEntries = await prisma.clockEntry.findMany({
+        where: { shiftId: { in: shiftIds }, tenantId }
+    });
+
+    const userIds = Array.from(new Set(clockEntries.map(c => c.userId).filter(Boolean))) as string[];
+    const users = await prisma.user.findMany({
+        where: { id: { in: userIds }, tenantId },
+        select: { id: true, hourlyCost: true }
+    });
+    const userRatesMap = new Map(users.map(u => [u.id, u.hourlyCost || 0]));
+
+    let totalRealizedHours = 0;
+    let totalRealizedCost = 0;
+
+    clockEntries.forEach(c => {
+        if (!c.clockInTime || !c.clockOutTime) return;
+        const hours = Math.max(0, (c.clockOutTime.getTime() - c.clockInTime.getTime()) / (1000 * 60 * 60));
+        const rate = userRatesMap.get(c.userId) || ratesMap.get(c.userId) || 0;
+        totalRealizedHours += hours;
+        totalRealizedCost += hours * rate;
+    });
+
+    return {
+        quotedHours: totalQuotedHours,
+        quotedCost: totalQuotedCost,
+        realizedHours: totalRealizedHours,
+        realizedCost: totalRealizedCost
+    };
+}

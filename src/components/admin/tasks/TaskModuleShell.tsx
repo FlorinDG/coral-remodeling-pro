@@ -197,7 +197,7 @@ export default function TaskModuleShell() {
     }
 
     return (
-        <div className="flex-1 w-full min-h-0 flex bg-white dark:bg-neutral-950 overflow-hidden relative select-none">
+        <div className="flex-1 w-full h-full min-h-0 flex bg-white dark:bg-neutral-950 overflow-hidden relative select-none">
             {/* Left Sidebar */}
             <div className="w-64 border-r border-neutral-200 dark:border-white/10 hidden md:block">
                 <TaskSidebar

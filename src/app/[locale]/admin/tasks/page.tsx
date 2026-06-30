@@ -39,7 +39,7 @@ export default function TasksPage() {
                         description="Create, assign, and track tasks across your workspace. PRO gets standalone task management; ENTERPRISE adds relations, rollups, and workforce assignment."
                     />
                 ) : (
-                    <div className="flex-1 w-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate">
+                    <div className="flex-1 w-full h-full min-h-0 bg-white dark:bg-black rounded-2xl shadow-sm border border-neutral-200 dark:border-white/10 overflow-hidden relative isolate flex flex-col">
                         <TaskModuleShellDynamic />
                     </div>
                 )}

@@ -115,12 +115,10 @@ export default function SearchableSelect({
 
         dropdown.addEventListener('pointerdown', stopNativePropagation);
         dropdown.addEventListener('mousedown', stopNativePropagation);
-        dropdown.addEventListener('click', stopNativePropagation);
 
         return () => {
             dropdown.removeEventListener('pointerdown', stopNativePropagation);
             dropdown.removeEventListener('mousedown', stopNativePropagation);
-            dropdown.removeEventListener('click', stopNativePropagation);
         };
     }, [isOpen]);
 

@@ -56,6 +56,9 @@ function getStatusDot(status: string) {
       return 'bg-blue-400';
     case 'Cancelled':
       return 'bg-red-400';
+    case 'leave':
+    case 'Leave':
+      return 'bg-purple-500';
     default:
       return 'bg-neutral-400';
   }
@@ -527,7 +530,9 @@ export function ScheduleMatrixView({
                                       "hover:shadow-sm hover:border-primary/40",
                                       projectColor
                                         ? "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/10"
-                                        : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10"
+                                        : (status === 'leave' || status === 'Leave')
+                                          ? "bg-purple-50/60 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/30"
+                                          : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10"
                                     )}
                                     style={projectColor ? {
                                       borderLeftColor: projectColor,
@@ -545,11 +550,15 @@ export function ScheduleMatrixView({
                                             {formatTime(ss)}–{formatTime(se)}
                                           </span>
                                         </div>
-                                        {shift.project && (
+                                        {shift.project ? (
                                           <div className="text-[10px] font-medium text-neutral-500 truncate mb-1">
                                             {shift.project.name}
                                           </div>
-                                        )}
+                                        ) : (status === 'leave' || status === 'Leave') ? (
+                                          <div className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 truncate mb-1 uppercase tracking-wider flex items-center gap-1">
+                                            🌴 {shift.notes || 'Leave'}
+                                          </div>
+                                        ) : null}
                                         <div className="text-[10px] font-black text-neutral-400">{hours.toFixed(1)}h</div>
                                       </div>
                                     </div>

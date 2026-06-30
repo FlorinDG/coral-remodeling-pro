@@ -84,6 +84,8 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
         });
     }, [targetDatabase, value, displayPropertyId]);
 
+    const selectedTitles = useMemo(() => selectedItems.map(item => item.title), [selectedItems]);
+
     const filteredTargetPages = useMemo(() => {
         if (!targetDatabase) return [];
         if (!searchQuery.trim()) return targetDatabase.pages;

@@ -201,16 +201,12 @@ export default function SearchableSelect({
                                     <button
                                         key={option.value}
                                         type="button"
-                                        onPointerDown={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                        }}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             onChange(option.value);
-                                            setIsOpen(false);
                                             setSearch('');
+                                            setTimeout(() => setIsOpen(false), 50);
                                         }}
                                         className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                                             option.value === value

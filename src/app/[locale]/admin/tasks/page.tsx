@@ -17,7 +17,7 @@ export default function TasksPage() {
     const { planType, isPro } = useTenant();
 
     return (
-        <div className="flex flex-col w-full h-full">
+        <div className="flex flex-col w-full h-[calc(100vh-120px)] lg:h-[calc(100vh-130px)] min-h-[500px]">
             <div className="w-full h-full p-4 lg:p-6 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">

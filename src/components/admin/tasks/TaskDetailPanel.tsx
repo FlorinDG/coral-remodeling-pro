@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import {
     X, ExternalLink, ChevronDown, Calendar, AlertTriangle,
@@ -54,16 +55,45 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
         }
     }
 
+    const [pos, setPos] = useState<{ top: number; left: number; placement: 'bottom' | 'top' } | null>(null);
+
+    useLayoutEffect(() => {
+        if (open && ref.current) {
+            const updatePosition = () => {
+                if (!ref.current) return;
+                const rect = ref.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const placement = spaceBelow < 350 && rect.top > spaceBelow ? 'top' : 'bottom';
+                setPos({
+                    top: placement === 'top' ? rect.top - 6 : rect.bottom + 6,
+                    left: Math.max(10, Math.min(rect.left, window.innerWidth - 300)),
+                    placement
+                });
+            };
+            updatePosition();
+            window.addEventListener('resize', updatePosition);
+            window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
+            return () => {
+                window.removeEventListener('resize', updatePosition);
+                window.removeEventListener('scroll', updatePosition, { capture: true });
+            };
+        }
+    }, [open]);
+
     useEffect(() => {
         const clickAway = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
+            const popover = document.querySelector('[data-datepicker-popover="true"]');
+            if (
+                ref.current && !ref.current.contains(e.target as Node) &&
+                popover && !popover.contains(e.target as Node)
+            ) {
                 setOpen(false);
             }
         };
         if (open) {
-            document.addEventListener('mousedown', clickAway);
+            document.addEventListener('mousedown', clickAway, true);
         }
-        return () => document.removeEventListener('mousedown', clickAway);
+        return () => document.removeEventListener('mousedown', clickAway, true);
     }, [open]);
 
     const handlePrevMonth = (e: React.MouseEvent) => {
@@ -198,8 +228,15 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500 opacity-60" />
             </button>
 
-            {open && (
-                <div className="absolute top-full mt-1.5 left-0 z-[110] bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-72 select-none animate-in fade-in slide-in-from-top-1 duration-150">
+            {open && pos && typeof document !== 'undefined' && createPortal(
+                <div
+                    data-datepicker-popover="true"
+                    className="fixed z-[99999] bg-white/95 dark:bg-neutral-950/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-2xl p-4 w-72 select-none animate-in fade-in slide-in-from-top-1 duration-150"
+                    style={pos.placement === 'top'
+                        ? { bottom: window.innerHeight - pos.top, left: pos.left }
+                        : { top: pos.top, left: pos.left }
+                    }
+                >
                     <div className="flex items-center justify-between mb-4">
                         <button
                             type="button"
@@ -265,7 +302,8 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
                             </button>
                         </div>
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -303,32 +341,54 @@ function Select({ value, options, onChange, renderIcon }: {
     renderIcon?: (id: string) => React.ReactNode;
 }) {
     const [open, setOpen] = useState(false);
-    const [dropUp, setDropUp] = useState(false);
+    const [pos, setPos] = useState<{ top: number; left: number; width: number; placement: 'bottom' | 'top' } | null>(null);
     const ref = useRef<HTMLDivElement>(null);
     const current = options.find(o => o.id === value);
 
-    useEffect(() => {
-        const h = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener('mousedown', h);
-        return () => document.removeEventListener('mousedown', h);
-    }, []);
-
-    // Check if dropdown would clip below the viewport
-    const handleToggle = () => {
-        if (!open && ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            setDropUp(spaceBelow < 260); // 260px is approx dropdown height
+    useLayoutEffect(() => {
+        if (open && ref.current) {
+            const updatePosition = () => {
+                if (!ref.current) return;
+                const rect = ref.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const placement = spaceBelow < 260 && rect.top > spaceBelow ? 'top' : 'bottom';
+                setPos({
+                    top: placement === 'top' ? rect.top - 6 : rect.bottom + 6,
+                    left: rect.left,
+                    width: Math.max(rect.width, 180),
+                    placement
+                });
+            };
+            updatePosition();
+            window.addEventListener('resize', updatePosition);
+            window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
+            return () => {
+                window.removeEventListener('resize', updatePosition);
+                window.removeEventListener('scroll', updatePosition, { capture: true });
+            };
         }
-        setOpen(o => !o);
-    };
+    }, [open]);
+
+    useEffect(() => {
+        const clickAway = (e: MouseEvent) => {
+            const popover = document.querySelector('[data-select-popover="true"]');
+            if (
+                ref.current && !ref.current.contains(e.target as Node) &&
+                popover && !popover.contains(e.target as Node)
+            ) {
+                setOpen(false);
+            }
+        };
+        if (open) {
+            document.addEventListener('mousedown', clickAway, true);
+        }
+        return () => document.removeEventListener('mousedown', clickAway, true);
+    }, [open]);
 
     return (
         <div ref={ref} className="relative">
             <button
-                onClick={handleToggle}
+                onClick={() => setOpen(!open)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-300 dark:border-white/10 text-xs font-bold hover:border-orange-400 dark:hover:border-orange-500/50 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-all bg-white dark:bg-neutral-900 text-neutral-850 dark:text-neutral-200 shadow-sm active:scale-98"
                 style={{ color: current?.color }}
             >
@@ -336,20 +396,32 @@ function Select({ value, options, onChange, renderIcon }: {
                 {current?.label || value}
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />
             </button>
-            {open && (
-                <div className={`absolute ${dropUp ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} left-0 z-[100] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-xl py-1.5 min-w-[180px] max-h-[220px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150`}>
+            {open && pos && typeof document !== 'undefined' && createPortal(
+                <div
+                    data-select-popover="true"
+                    className="fixed z-[99999] bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md border border-neutral-300 dark:border-white/10 rounded-2xl shadow-xl py-1.5 min-w-[180px] max-h-[220px] overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150"
+                    style={pos.placement === 'top'
+                        ? { bottom: window.innerHeight - pos.top, left: pos.left, width: pos.width }
+                        : { top: pos.top, left: pos.left, width: pos.width }
+                    }
+                >
                     {options.map(o => (
                         <button
                             key={o.id}
                             className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold hover:bg-neutral-100 dark:hover:bg-white/10 transition-colors text-left"
                             style={{ color: o.color }}
-                            onClick={() => { onChange(o.id); setOpen(false); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange(o.id);
+                                setOpen(false);
+                            }}
                         >
                             {renderIcon && renderIcon(o.id)}
                             {o.label}
                         </button>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

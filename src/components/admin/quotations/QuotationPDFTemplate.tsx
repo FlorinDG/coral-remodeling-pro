@@ -113,10 +113,10 @@ export const QuotationPDFTemplate = ({
     };
 
     // ── Recursive block renderer ────────────────────────────────────────────
-    const renderBlocks = (nodes: Block[], depth = 0): React.ReactNode[] => {
+    const renderBlocks = (nodes: Block[], depth = 0, isInactive = false): React.ReactNode[] => {
         let rows: React.ReactNode[] = [];
         nodes.forEach(block => {
-            if (block.isOptional) return;
+            const currentInactive = isInactive || !!block.isOptional;
             const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
             const cleanContent = stripHtml(block.content);
             
@@ -149,8 +149,38 @@ export const QuotationPDFTemplate = ({
                 return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
             };
 
-            const blockTotal = getBlockTotalRecursive(block);
+            const getBlockTotalRecursiveVisual = (b: Block): number => {
+                if (b.children && b.children.length > 0) {
+                    const childrenSum = b.children.reduce((sum, child) => sum + getBlockTotalRecursiveVisual(child), 0);
+                    return childrenSum * (b.quantity || 1);
+                }
+                
+                let vDeltas = (b as any).variantPriceDelta || 0;
+                if (b.selectedVariants && b.articleId && databaseStoreState?.databases) {
+                    const db = databaseStoreState.databases.find((d: any) => d.id === 'db-articles');
+                    const page = db?.pages.find((p: any) => p.id === b.articleId);
+                    const vProp = db?.properties.find((p: any) => p.type === 'variants');
+                    if (page && vProp) {
+                        const vConfig = page.properties[vProp.id];
+                        if (vConfig && Array.isArray(vConfig)) {
+                            vDeltas = 0;
+                            Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
+                                const axis = vConfig.find((a: any) => a.id === axisId);
+                                const opt = axis?.options.find((o: any) => o.id === optId);
+                                if (opt) vDeltas += opt.priceDelta;
+                            });
+                        }
+                    }
+                }
+                return ((b.verkoopPrice || 0) + vDeltas) * (b.quantity || 1);
+            };
+
+            const blockTotal = currentInactive ? getBlockTotalRecursiveVisual(block) : getBlockTotalRecursive(block);
             const hasChildren = block.children && block.children.length > 0;
+
+            const inactiveStyle = currentInactive
+                ? { opacity: 0.55, textDecoration: 'line-through' as const }
+                : {};
 
             // Stationery mode uses minimal styling
             const baseRowStyle = isStationery
@@ -165,31 +195,31 @@ export const QuotationPDFTemplate = ({
                     ? { fontWeight: 'bold' as const, color: accent, fontSize: 10, textTransform: 'uppercase' as const }
                     : s.sectionText;
                 rows.push(
-                    <View key={block.id} style={sectionStyle}>
-                        <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
+                    <View key={block.id} style={{ ...sectionStyle, ...inactiveStyle }}>
+                        <Text style={{ ...colDesc, ...textStyle, ...inactiveStyle }}>{cleanContent.toUpperCase()}{block.isOptional ? ' [OPTIONAL]' : ''}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, ...textStyle, ...inactiveStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
                 rows.push(
-                    <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
-                        <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
+                    <View key={block.id} style={{ ...(isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow), ...inactiveStyle }}>
+                        <Text style={{ ...colDesc, fontWeight: 'bold', ...inactiveStyle }}>{cleanContent}{block.isOptional ? ' [OPTIONAL]' : ''}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, fontWeight: 'bold', ...inactiveStyle, textAlign: 'right' }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             } else if (block.type === 'image') {
                 if (block.content && (block.content.startsWith('http') || block.content.startsWith('data:'))) {
                     rows.push(
-                        <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, flexDirection: 'column' as const, gap: 4 }}>
+                        <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, flexDirection: 'column' as const, gap: 4, ...inactiveStyle }}>
                             <Image src={block.content} style={{ width: 180, height: 120, borderRadius: 4, marginTop: 4, marginBottom: 4 }} />
                         </View>
                     );
                 }
             } else if (block.type === 'divider') {
                 rows.push(
-                    <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8 }}>
+                    <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), paddingVertical: 8, ...inactiveStyle }}>
                         <View style={{ width: '100%', height: 1, backgroundColor: '#cccccc' }} />
                     </View>
                 );
@@ -204,32 +234,32 @@ export const QuotationPDFTemplate = ({
                 );
             } else if (block.type === 'text') {
                 rows.push(
-                    <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6) }}>
-                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9 }}>
-                            {renderRichText(block.content, { fontStyle: 'italic', color: '#555', fontSize: 9 })}
+                    <View key={block.id} style={{ ...baseRowStyle, borderBottom: undefined, paddingLeft: depth * 10 + (isStationery ? 40 : 6), ...inactiveStyle }}>
+                        <Text style={{ flex: 1, fontStyle: 'italic', color: '#555', fontSize: 9, ...inactiveStyle }}>
+                            {renderRichText(block.content, { fontStyle: 'italic', color: '#555', fontSize: 9, ...inactiveStyle })}
                         </Text>
                     </View>
                 );
             } else {
                 const pad = isStationery ? 40 : (isT1 || isT4 ? 28 : 6);
                 const unitPrice = blockTotal / (block.quantity || 1);
-                const descStyle = { fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' };
+                const descStyle = { fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle };
                 rows.push(
-                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad, backgroundColor: depth > 0 ? '#fafafa' : undefined }}>
+                    <View key={block.id} style={{ ...baseRowStyle, paddingLeft: depth > 0 ? depth * 10 + pad : pad, backgroundColor: depth > 0 ? '#fafafa' : undefined, ...inactiveStyle }}>
                         <Text style={{ ...colDesc, ...descStyle }}>
-                            {renderRichText(block.content, descStyle)}
+                            {renderRichText(block.content, descStyle)}{block.isOptional ? ' (Optional)' : ''}
                         </Text>
-                        <Text style={{ ...colQty, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.quantity || 1}</Text>
-                        <Text style={{ ...colUnit, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>{block.unit || 'stk'}</Text>
-                        <Text style={{ ...colPrice, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111' }}>€  {unitPrice.toFixed(2)}</Text>
-                        <Text style={{ ...colTotal, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', fontWeight: depth > 0 ? 'normal' : 'bold' }}>€  {blockTotal.toFixed(2)}</Text>
+                        <Text style={{ ...colQty, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle }}>{block.quantity || 1}</Text>
+                        <Text style={{ ...colUnit, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle }}>{block.unit || 'stk'}</Text>
+                        <Text style={{ ...colPrice, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', ...inactiveStyle }}>€  {unitPrice.toFixed(2)}</Text>
+                        <Text style={{ ...colTotal, fontSize: depth > 0 ? 8 : 9, color: depth > 0 ? '#666' : '#111', fontWeight: depth > 0 ? 'normal' : 'bold', ...inactiveStyle }}>€  {blockTotal.toFixed(2)}</Text>
                     </View>
                 );
             }
 
             // Only recurse for containers (Sections/Subsections/Posts), hide subcomponents of Lines UNLESS showSubcomponents is true
             if (hasChildren && (isContainer || showSubcomponents)) {
-                rows = rows.concat(renderBlocks(block.children!, depth + 1));
+                rows = rows.concat(renderBlocks(block.children!, depth + 1, currentInactive));
             }
         });
         return rows;

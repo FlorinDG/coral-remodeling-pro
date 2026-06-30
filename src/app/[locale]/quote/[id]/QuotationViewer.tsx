@@ -82,15 +82,17 @@ function TypedSignature({ name, color }: { name: string; color: string }) {
 
 // --- Quotation Line Item Table (Read-Only) ---
 function QuoteLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang: string; brandColor: string }) {
-    const renderBlock = (block: Block, depth: number = 0): React.ReactNode => {
+    const renderBlock = (block: Block, depth: number = 0, isInactive: boolean = false): React.ReactNode => {
+        const currentInactive = isInactive || !!block.isOptional;
+
         if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
-            const sectionTotal = calculateBlockTotal(block);
+            const sectionTotal = currentInactive ? calculateBlockTotalVisual(block) : calculateBlockTotal(block);
             return (
                 <React.Fragment key={block.id}>
-                    <tr className={`${depth === 0 ? 'border-t-2' : 'border-t'} border-neutral-200`}>
+                    <tr className={`${depth === 0 ? 'border-t-2' : 'border-t'} border-neutral-200 ${currentInactive ? 'opacity-50 bg-neutral-50/20' : ''}`}>
                         <td
                             colSpan={3}
-                            className={`py-3 font-bold ${depth === 0 ? 'text-base' : 'text-sm text-neutral-600'}`}
+                            className={`py-3 font-bold ${depth === 0 ? 'text-base' : 'text-sm'} ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-600'}`}
                             style={{ paddingLeft: `${depth * 20 + 16}px` }}
                         >
                             <span dangerouslySetInnerHTML={{ __html: block.content || t('portal_section', lang) }} />
@@ -100,31 +102,35 @@ function QuoteLineItems({ blocks, lang, brandColor }: { blocks: Block[]; lang: s
                                 </span>
                             )}
                         </td>
-                        <td className="py-3 text-right font-bold pr-4 tabular-nums whitespace-nowrap" style={{ color: brandColor }}>
-                            {!block.isOptional && `€  ${sectionTotal.toFixed(2)}`}
+                        <td className={`py-3 text-right font-bold pr-4 tabular-nums whitespace-nowrap ${currentInactive ? 'text-neutral-400 line-through' : ''}`} style={currentInactive ? {} : { color: brandColor }}>
+                            {`€  ${sectionTotal.toFixed(2)}`}
                         </td>
                     </tr>
-                    {(block.children || []).map(child => renderBlock(child, depth + 1))}
+                    {(block.children || []).map(child => renderBlock(child, depth + 1, currentInactive))}
                 </React.Fragment>
             );
         }
 
         // Regular line item
         const lineTotal = (block.verkoopPrice || 0) * (block.quantity || 1);
-        if (block.isOptional) return null; // Hide optional items from client view
 
         return (
-            <tr key={block.id} className="border-t border-neutral-100 hover:bg-neutral-50/50 transition-colors">
-                <td className="py-2.5 text-sm text-neutral-700" style={{ paddingLeft: `${depth * 20 + 16}px` }}>
+            <tr key={block.id} className={`border-t border-neutral-100 hover:bg-neutral-50/50 transition-colors ${currentInactive ? 'opacity-50 bg-neutral-50/10' : ''}`}>
+                <td className={`py-2.5 text-sm ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-700'}`} style={{ paddingLeft: `${depth * 20 + 16}px` }}>
                     <span dangerouslySetInnerHTML={{ __html: block.content || '—' }} />
+                    {block.isOptional && (
+                        <span className="ml-2 text-[10px] font-normal text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                            {t('portal_optional', lang)}
+                        </span>
+                    )}
                 </td>
-                <td className="py-2.5 text-sm text-neutral-500 text-center tabular-nums whitespace-nowrap">
+                <td className={`py-2.5 text-sm text-center tabular-nums whitespace-nowrap ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-500'}`}>
                     {block.quantity || 1} {block.unit || ''}
                 </td>
-                <td className="py-2.5 text-sm text-neutral-500 text-right tabular-nums whitespace-nowrap pr-2">
+                <td className={`py-2.5 text-sm text-right tabular-nums whitespace-nowrap pr-2 ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-500'}`}>
                     €  {((block.verkoopPrice || 0) + ((block as any).variantPriceDelta || 0)).toFixed(2)}
                 </td>
-                <td className="py-2.5 text-sm text-neutral-900 text-right font-medium tabular-nums whitespace-nowrap pr-4">
+                <td className={`py-2.5 text-sm text-right font-medium tabular-nums whitespace-nowrap pr-4 ${currentInactive ? 'text-neutral-400 line-through' : 'text-neutral-900'}`}>
                     €  {lineTotal.toFixed(2)}
                 </td>
             </tr>
@@ -163,6 +169,21 @@ function calculateBlockTotal(block: Block): number {
         unitTotal = block.children.reduce((sum, child) => sum + (child ? calculateBlockTotal(child) : 0), 0);
     } else {
         // Use verkoopPrice plus the variant deltas injected by the server
+        unitTotal = (block.verkoopPrice || 0) + ((block as any).variantPriceDelta || 0);
+    }
+
+    return unitTotal * (block.quantity || 1);
+}
+
+function calculateBlockTotalVisual(block: Block): number {
+    if (block.type === 'section' || block.type === 'subsection' || block.type === 'post') {
+        return (block.children || []).reduce((sum, child) => sum + (child ? calculateBlockTotalVisual(child) : 0), 0);
+    }
+
+    let unitTotal = 0;
+    if (block.children && block.children.length > 0) {
+        unitTotal = block.children.reduce((sum, child) => sum + (child ? calculateBlockTotalVisual(child) : 0), 0);
+    } else {
         unitTotal = (block.verkoopPrice || 0) + ((block as any).variantPriceDelta || 0);
     }
 

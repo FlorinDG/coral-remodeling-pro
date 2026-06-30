@@ -20,9 +20,11 @@ interface QuotationRowProps {
     vatCalcMode?: 'lines' | 'total';
     language?: string;
     isDraggingGlobal?: boolean;
+    isInactive?: boolean;
 }
 
-export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl', isDraggingGlobal = false }: QuotationRowProps) {
+export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl', isDraggingGlobal = false, isInactive = false }: QuotationRowProps) {
+    const currentInactive = isInactive || !!block.isOptional;
     const [isExpanded, setIsExpanded] = useState(true);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -286,7 +288,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                         ref={mergeRefs(provided.innerRef, rowRef)}
                         {...provided.draggableProps}
                         className={`group relative w-full transition-all py-1.5 rounded flex flex-col 
-                        ${block.isOptional ? 'opacity-50 grayscale' : ''} 
+                        ${currentInactive ? 'opacity-50 grayscale' : ''} 
                         ${!isContainer ? 'bg-black/[0.03] dark:bg-white/[0.03] mb-2 border border-neutral-200/50 dark:border-neutral-800/50 shadow-sm' : ''}
                         ${snapshot.isDragging ? 'z-50 shadow-2xl bg-white dark:bg-neutral-900 border border-orange-500' : ''}
                     `}
@@ -445,6 +447,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     vatCalcMode={vatCalcMode}
                                                     language={language}
                                                     isDraggingGlobal={isDraggingGlobal}
+                                                    isInactive={currentInactive}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}
@@ -633,6 +636,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                                 vatCalcMode={vatCalcMode}
                                                                 language={language}
                                                                 isDraggingGlobal={isDraggingGlobal}
+                                                                isInactive={currentInactive}
                                                             />
                                                         ))}
                                                         <div className={!(block.children && block.children.length > 0) ? 'hidden' : ''}>
@@ -872,6 +876,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     vatCalcMode={vatCalcMode}
                                                     language={language}
                                                     isDraggingGlobal={isDraggingGlobal}
+                                                    isInactive={currentInactive}
                                                 />
                                             ))}
                                             {providedDroppable.placeholder}

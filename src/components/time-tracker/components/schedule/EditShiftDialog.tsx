@@ -392,6 +392,7 @@ export function EditShiftDialog({
                   onChange={setUserId}
                   placeholder="Select employee"
                   disabled={!canManage}
+                  usePortal={false}
                 />
               </div>
 
@@ -406,6 +407,7 @@ export function EditShiftDialog({
                   onChange={setProjectId}
                   placeholder="Select project (optional)"
                   disabled={!canManage}
+                  usePortal={false}
                 />
               </div>
 

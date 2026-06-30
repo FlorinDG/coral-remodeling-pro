@@ -19,6 +19,7 @@ interface SearchableSelectProps {
     className?: string;
     disabled?: boolean;
     borderless?: boolean;
+    usePortal?: boolean;
 }
 
 export default function SearchableSelect({
@@ -31,6 +32,7 @@ export default function SearchableSelect({
     className = '',
     disabled = false,
     borderless = false,
+    usePortal = true,
 }: SearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -170,65 +172,93 @@ export default function SearchableSelect({
             </button>
 
             {/* Dropdown */}
-            {isOpen && pos && typeof document !== 'undefined' && createPortal(
-                <div
-                    ref={dropdownRef}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    data-portal-dropdown="true"
-                    className="fixed z-[99999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5"
-                    style={pos.placement === 'top'
-                        ? { bottom: window.innerHeight - pos.top, left: pos.left, width: pos.minWidth, maxWidth: '400px' }
-                        : { top: pos.top, left: pos.left, width: pos.minWidth, maxWidth: '400px' }
-                    }
-                >
-                    {/* Search input */}
-                    {options.length > 5 && (
-                        <div className="p-2 border-b border-neutral-100 dark:border-white/5">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
-                                <input
-                                    ref={searchInputRef}
-                                    type="text"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder={searchPlaceholder}
-                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500/20 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
-                                />
+            {isOpen && (() => {
+                const dropdownContent = (
+                    <>
+                        {/* Search input */}
+                        {options.length > 5 && (
+                            <div className="p-2 border-b border-neutral-100 dark:border-white/5">
+                                <div className="relative">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-400" />
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder={searchPlaceholder}
+                                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-400 focus:ring-1 focus:ring-orange-500/20 transition-colors text-neutral-900 dark:text-white placeholder:text-neutral-400"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* Options list */}
-                    <div className="max-h-60 overflow-y-auto p-1">
-                        {filtered.length === 0 ? (
-                            <div className="px-3 py-4 text-center text-xs text-neutral-400 italic">{emptyLabel}</div>
-                        ) : (
-                            filtered.map(option => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    onPointerDown={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        onChange(option.value);
-                                        setIsOpen(false);
-                                        setSearch('');
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                                        option.value === value
-                                            ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
-                                            : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                    }`}
-                                >
-                                    {option.label}
-                                </button>
-                            ))
                         )}
+
+                        {/* Options list */}
+                        <div className="max-h-60 overflow-y-auto p-1">
+                            {filtered.length === 0 ? (
+                                <div className="px-3 py-4 text-center text-xs text-neutral-400 italic">{emptyLabel}</div>
+                            ) : (
+                                filtered.map(option => (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onPointerDown={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                        }}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onChange(option.value);
+                                            setIsOpen(false);
+                                            setSearch('');
+                                        }}
+                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                                            option.value === value
+                                                ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
+                                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                        }`}
+                                    >
+                                        {option.label}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </>
+                );
+
+                if (usePortal) {
+                    return pos && typeof document !== 'undefined' && createPortal(
+                        <div
+                            ref={dropdownRef}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                            onClick={(e) => e.stopPropagation()}
+                            data-portal-dropdown="true"
+                            className="fixed z-[99999] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5"
+                            style={pos.placement === 'top'
+                                ? { bottom: window.innerHeight - pos.top, left: pos.left, width: pos.minWidth, maxWidth: '400px' }
+                                : { top: pos.top, left: pos.left, width: pos.minWidth, maxWidth: '400px' }
+                            }
+                        >
+                            {dropdownContent}
+                        </div>,
+                        document.body
+                    );
+                }
+
+                return (
+                    <div
+                        ref={dropdownRef}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute z-[99] left-0 mt-1 w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 ring-4 ring-black/5 dark:ring-white/5"
+                        style={{ minWidth: '200px' }}
+                    >
+                        {dropdownContent}
                     </div>
-                </div>,
-                document.body
-            )}
+                );
+            })()}
         </div>
     );
 }

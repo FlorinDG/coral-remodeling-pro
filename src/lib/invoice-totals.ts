@@ -39,7 +39,7 @@ export function calculateInvoiceTotals(
             if (page && vProp) {
                 const vConfig = page.properties[vProp.id];
                 if (vConfig && Array.isArray(vConfig)) {
-                    Object.entries(b.selectedVariants).forEach(([axisId, optId]) => {
+                    Object.entries(b.selectedVariants || {}).forEach(([axisId, optId]) => {
                         const axis = vConfig.find((a: any) => a.id === axisId);
                         const opt = axis?.options.find((o: any) => o.id === optId);
                         if (opt) vDeltas += opt.priceDelta;

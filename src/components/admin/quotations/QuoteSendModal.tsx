@@ -70,15 +70,6 @@ export function QuoteSendModal({
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    useEffect(() => {
-        if (isOpen) {
-            setSubject(defaultSubject);
-            setBody(defaultBody);
-            setSelectedFileKeys(new Set());
-            loadFiles();
-        }
-    }, [isOpen, defaultSubject, defaultBody, loadFiles]);
-
     const loadFiles = useCallback(async () => {
         setIsLoadingFiles(true);
         try {
@@ -107,6 +98,15 @@ export function QuoteSendModal({
             setIsLoadingFiles(false);
         }
     }, [projectId, documentId, documentType]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setSubject(defaultSubject);
+            setBody(defaultBody);
+            setSelectedFileKeys(new Set());
+            loadFiles();
+        }
+    }, [isOpen, defaultSubject, defaultBody, loadFiles]);
 
     if (!isOpen) return null;
 

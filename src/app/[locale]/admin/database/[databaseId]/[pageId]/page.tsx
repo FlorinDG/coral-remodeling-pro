@@ -5,7 +5,7 @@ interface Props {
 }
 
 export default async function DatabaseRecordPage({ params }: Props) {
-    const { databaseId, pageId } = await params;
+    const { databaseId, pageId, locale } = await params;
     
     // Determine the base database prefix/id to map to its parent module
     // Database IDs can have tenant suffix, e.g. "db-clients-cmneyas2"
@@ -61,5 +61,5 @@ export default async function DatabaseRecordPage({ params }: Props) {
             break;
     }
 
-    redirect(parentPath);
+    redirect(`/${locale}${parentPath}`);
 }

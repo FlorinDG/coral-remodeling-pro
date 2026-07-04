@@ -261,8 +261,10 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                             });
                             
                             setSearchQuery('');
-                            // Optionally stop editing or leave open
-                            // stopEditing({ nextRow: false });
+                            // Dispatch event to open the page modal for required info
+                            window.dispatchEvent(new CustomEvent('open-relation-modal', {
+                                detail: { databaseId: resolvedDbId, pageId: newPage.id }
+                            }));
                         }}
                         className="w-full text-left px-2 py-2 mt-1 border-t border-neutral-100 dark:border-white/5 text-sm transition-colors text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium flex items-center gap-1.5"
                     >

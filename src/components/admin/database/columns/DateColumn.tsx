@@ -26,39 +26,46 @@ function isToday(year: number, month: number, day: number) {
 /** Normalise any date value stored in the DB to a plain YYYY-MM-DD string. */
 function normaliseDateValue(raw: string): string {
     if (!raw) return '';
-    // Already a clean YYYY-MM-DD? Return as-is.
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    // Already a clean YYYY-MM-DD or YYYY-MM-DD 🔔? Return as-is.
+    if (/^\d{4}-\d{2}-\d{2}( 🔔)?$/.test(raw)) return raw;
+    
+    // Strip the bell for parsing if present
+    const cleanRaw = raw.replace(' 🔔', '');
+    
     // Full ISO-8601 with 'T' (e.g. 2026-02-20T23:00:00.000Z) → strip time.
-    if (raw.includes('T')) {
-        const d = new Date(raw);
+    if (cleanRaw.includes('T')) {
+        const d = new Date(cleanRaw);
         if (!isNaN(d.getTime())) {
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const dateOnly = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
         }
     }
-    // European DD/MM/YYYY or DD-MM-YYYY
-    const euMatch = raw.match(/^(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})$/);
-    if (euMatch) return `${euMatch[3]}-${euMatch[2].padStart(2, '0')}-${euMatch[1].padStart(2, '0')}`;
-    // US MM/DD/YYYY
-    const usMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (usMatch) {
-        const m = parseInt(usMatch[1]), d = parseInt(usMatch[2]);
-        if (m > 12) return `${usMatch[3]}-${usMatch[2].padStart(2, '0')}-${usMatch[1].padStart(2, '0')}`; // actually DD/MM
-        return `${usMatch[3]}-${usMatch[1].padStart(2, '0')}-${usMatch[2].padStart(2, '0')}`;
+    
+    // European formats (DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY)
+    const euMatch = cleanRaw.match(/^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/);
+    if (euMatch) {
+        const dateOnly = `${euMatch[3]}-${euMatch[2].padStart(2, '0')}-${euMatch[1].padStart(2, '0')}`;
+        return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
     }
-    // Fallback: try native Date parse
-    const fallback = new Date(raw);
-    if (!isNaN(fallback.getTime())) {
-        return `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, '0')}-${String(fallback.getDate()).padStart(2, '0')}`;
+
+    // Try native Date parsing for fallback
+    const d = new Date(cleanRaw);
+    if (!isNaN(d.getTime())) {
+        const dateOnly = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return raw.includes('🔔') ? `${dateOnly} 🔔` : dateOnly;
     }
+    
     return raw;
 }
 
-function formatDisplayDate(dateStr: string) {
+function formatDisplayDate(dateStr: string): string {
     if (!dateStr) return '';
-    const normalised = normaliseDateValue(dateStr);
+    const hasBell = dateStr.includes('🔔');
+    const normalised = normaliseDateValue(dateStr).replace(' 🔔', '');
     const d = new Date(normalised + 'T00:00:00');
     if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const formatted = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return hasBell ? `${formatted} 🔔` : formatted;
 }
 
 interface CalendarPickerProps {
@@ -73,6 +80,7 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
     const parsed = normVal ? new Date(normVal + 'T00:00:00') : new Date();
     const [viewYear, setViewYear] = useState(parsed.getFullYear());
     const [viewMonth, setViewMonth] = useState(parsed.getMonth());
+    const [isReminder, setIsReminder] = useState(normVal.includes('🔔'));
     const panelRef = useRef<HTMLDivElement>(null);
 
     const selectedYear = value ? parsed.getFullYear() : null;
@@ -147,9 +155,20 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
         const y = d.month < 0 ? d.year : d.month > 11 ? d.year : d.year;
         const m = ((d.month % 12) + 12) % 12;
         const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d.day).padStart(2, '0')}`;
-        onChange(dateStr);
+        onChange(isReminder ? `${dateStr} 🔔` : dateStr);
         // Delay close so the grid commits the value before stopEditing
         setTimeout(() => onClose(), 0);
+    };
+
+    const toggleReminder = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const next = !isReminder;
+        setIsReminder(next);
+        if (value) {
+            const cleanRaw = value.replace(' 🔔', '');
+            onChange(next ? `${cleanRaw} 🔔` : cleanRaw);
+        }
     };
 
     // Position: below the cell, or above if not enough space
@@ -212,6 +231,21 @@ const CalendarPicker = ({ value, onChange, onClose, anchorRect }: CalendarPicker
                         </button>
                     );
                 })}
+            </div>
+
+            {/* Reminder Toggle */}
+            <div className="px-3 py-2 border-t border-neutral-100 dark:border-white/5 bg-neutral-50/50 dark:bg-black/20">
+                <button
+                    onClick={toggleReminder}
+                    className={`flex items-center gap-2 text-xs font-medium px-2 py-1.5 rounded-md transition-colors w-full ${
+                        isReminder 
+                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" 
+                            : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/10"
+                    }`}
+                >
+                    <span className="text-[10px]">🔔</span>
+                    {isReminder ? "Reminder ON" : "Set reminder"}
+                </button>
             </div>
 
             {/* Footer */}

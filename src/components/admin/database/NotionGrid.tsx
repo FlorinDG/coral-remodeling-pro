@@ -90,6 +90,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     const clearFilters = useDatabaseStore(state => state.clearFilters);
     const undo = useDatabaseStore(state => state.undo);
     const [activePageId, setActivePageId] = useState<string | null>(null);
+    const [externalModal, setExternalModal] = useState<{ databaseId: string, pageId: string } | null>(null);
     const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [resizingProperty, setResizingProperty] = useState<string | null>(null);
@@ -132,6 +133,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
     const [isReady, setIsReady] = useState(false);
     const [hasHydrated, setHasHydrated] = useState(false);
+
+    useEffect(() => {
+        const handleOpenRelation = (e: CustomEvent) => {
+            setExternalModal({ databaseId: e.detail.databaseId, pageId: e.detail.pageId });
+        };
+        window.addEventListener('open-relation-modal', handleOpenRelation as EventListener);
+        return () => window.removeEventListener('open-relation-modal', handleOpenRelation as EventListener);
+    }, []);
+
     const isMounted = useRef(false);
     const headerScrollRef = useRef<HTMLDivElement>(null);
     const footerScrollRef = useRef<HTMLDivElement>(null);
@@ -885,8 +895,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
             >
                 {isReady ? (
                     <div 
-                        className={`w-full h-full flex flex-col pt-9 relative ${activePageId ? 'pointer-events-none' : ''}`}
-                        inert={activePageId ? true : undefined}
+                        className={`w-full h-full flex flex-col pt-9 relative ${(activePageId || externalModal) ? 'pointer-events-none' : ''}`}
+                        inert={(activePageId || externalModal) ? true : undefined}
                     >
                         {/* Custom Floating Header context to override native grid pointer events */}
                         <div
@@ -1136,11 +1146,14 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                 )}
 
                 {/* Side-peek Modal */}
-                {activePageId && (
+                {(activePageId || externalModal) && (
                     <PageModal
-                        databaseId={database.id}
-                        pageId={activePageId}
-                        onClose={() => setActivePageId(null)}
+                        databaseId={externalModal?.databaseId || database.id}
+                        pageId={externalModal?.pageId || activePageId!}
+                        onClose={() => {
+                            setActivePageId(null);
+                            setExternalModal(null);
+                        }}
                     />
                 )}
 

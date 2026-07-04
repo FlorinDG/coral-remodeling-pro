@@ -53,7 +53,7 @@ export default function NotificationBell() {
             await fetch('/api/notifications/mark-read', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ids: 'all' })
+                body: JSON.stringify({ all: true })
             });
             setUnreadCount(0);
             setNotifications(prev => prev.map(n => ({ ...n, status: 'READ' })));

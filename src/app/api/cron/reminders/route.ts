@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     }
 
     const todayStr = format(new Date(), 'dd/MM/yyyy'); // Matches GlobalMentionDateInterceptor format
+    const isoStr = format(new Date(), 'yyyy-MM-dd');   // Matches Grid DateColumn format
     const reminderFlag = '🔔';
     let remindersSent = 0;
 
@@ -23,7 +24,11 @@ export async function GET(req: Request) {
         for (const page of pages) {
             // Check if blocks or properties contain the date string
             const pageText = JSON.stringify({ props: page.properties, blocks: page.blocks });
-            if (pageText.includes(`${todayStr} ${reminderFlag}`)) {
+            
+            const hasMentionReminder = pageText.includes(`${todayStr} ${reminderFlag}`);
+            const hasGridReminder = pageText.includes(`${isoStr} ${reminderFlag}`);
+            
+            if (hasMentionReminder || hasGridReminder) {
                 // Determine a title for the notification
                 const props = page.properties as any;
                 const title = props?.title || props?.name || 'Item';

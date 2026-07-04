@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format, addDays, startOfWeek, nextMonday } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Bell } from 'lucide-react';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { useParams } from 'next/navigation';
 import { t } from '@/lib/document-i18n';
@@ -26,6 +26,7 @@ export default function GlobalMentionDateInterceptor() {
     const [open, setOpen] = useState(false);
     const [pos, setPos] = useState<MentionPosition | null>(null);
     const [date, setDate] = useState<Date | undefined>(undefined);
+    const [isReminder, setIsReminder] = useState(false);
 
     useEffect(() => {
         const handleInput = (e: Event) => {
@@ -88,7 +89,10 @@ export default function GlobalMentionDateInterceptor() {
 
     const insertDate = (selectedDate: Date) => {
         if (!pos) return;
-        const dateStr = format(selectedDate, 'dd/MM/yyyy'); // e.g. Apr 15, 2026
+        let dateStr = format(selectedDate, 'dd/MM/yyyy'); // e.g. Apr 15, 2026
+        if (isReminder) {
+            dateStr += ' 🔔';
+        }
         
         const isInput = pos.target.tagName === 'INPUT' || pos.target.tagName === 'TEXTAREA';
         if (isInput) {
@@ -149,14 +153,34 @@ export default function GlobalMentionDateInterceptor() {
                                 {t('in_30_days', localeStr)}
                             </button>
                         </div>
-                        <Calendar
-                            mode="single"
-                            selected={date}
-                            onSelect={(d) => d && insertDate(d)}
-                            initialFocus
-                            locale={fnsLocale}
-                            weekStartsOn={1}
-                        />
+                        <div className="flex flex-col">
+                            <Calendar
+                                mode="single"
+                                selected={date}
+                                onSelect={(d) => d && insertDate(d)}
+                                initialFocus
+                                locale={fnsLocale}
+                                weekStartsOn={1}
+                            />
+                            <div className="p-3 border-t border-neutral-100 dark:border-white/5 flex items-center gap-2 bg-neutral-50/50 dark:bg-black/20">
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsReminder(!isReminder);
+                                    }}
+                                    className={cn(
+                                        "flex items-center gap-2 text-xs font-medium px-2 py-1.5 rounded-md transition-colors w-full",
+                                        isReminder 
+                                            ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400" 
+                                            : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-white/10"
+                                    )}
+                                >
+                                    <Bell className="w-3.5 h-3.5" />
+                                    {isReminder ? "Reminder ON" : "Set reminder"}
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </PopoverContent>
             </Popover>

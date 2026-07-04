@@ -77,9 +77,9 @@ export function QuoteSendModal({
             setSelectedFileKeys(new Set());
             loadFiles();
         }
-    }, [isOpen, defaultSubject, defaultBody, projectId, documentId]);
+    }, [isOpen, defaultSubject, defaultBody, loadFiles]);
 
-    const loadFiles = async () => {
+    const loadFiles = useCallback(async () => {
         setIsLoadingFiles(true);
         try {
             const allFiles: { key: string, filename: string, size: number }[] = [];
@@ -102,11 +102,11 @@ export function QuoteSendModal({
 
             setAvailableFiles(allFiles);
         } catch (e) {
-            console.error(e);
+            console.error('Failed to load files:', e);
         } finally {
             setIsLoadingFiles(false);
         }
-    };
+    }, [projectId, documentId, documentType]);
 
     if (!isOpen) return null;
 

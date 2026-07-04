@@ -246,7 +246,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             if (isMatch) return true; // Follow explicit link
             return false;
         });
-    }, [invoice, id]);
+    }, [invoice, id, invoicesDbId]);
 
     const creditedTotal = creditNotes.reduce((sum, cn) => sum + Math.abs(Number(cn.properties['totalIncVat']) || 0), 0);
     const creditNoteInfos = creditNotes.map(cn => ({
@@ -297,7 +297,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (invoice.properties?.['creditedPercent'] !== creditedDisplay) {
             updatePageProperty(invoicesDbId, invoice.id, 'creditedPercent', creditedDisplay);
         }
-    }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime'], isHydrated, creditedTotal]);
+    }, [
+        invoice,
+        isHydrated,
+        creditedTotal,
+        invoicesDbId,
+        updatePageProperty
+    ]);
 
     const rawQuotation = invoice?.properties?.['quotation'];
     const linkedQuotations = useMemo<string[]>(() => {
@@ -333,7 +339,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const vatMode = 'total' as 'lines' | 'total';
         const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
         return calculateInvoiceTotals(blks, { vatCalcMode: vatMode, vatRegime: vatReg });
-    }, [invoice?.blocks, invoice?.properties?.['vatCalcMode'], invoice?.properties?.['vatRegime']]);
+    }, [invoice]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
     if (!invoice && !hydrationAttempted) return <div className="flex h-screen items-center justify-center">Syncing invoice data...</div>;
@@ -741,12 +747,15 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const clientEmail = String(clientRecord?.email || '');
         const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
         const projectName = betreft || invoiceTitle || 'Factuur';
+        
+        const remainingDue = Math.max(0, grandTotalIncl - creditedTotal);
+        const displayTotal = isCreditNote ? grandTotalIncl : remainingDue;
 
         setIsSending(true);
         try {
             const response = await sendInvoiceToClient(
                 id, clientEmail, clientName, String(projectName),
-                `€${grandTotalIncl.toFixed(2)}`, sendModalPdfBase64,
+                `€${displayTotal.toFixed(2)}`, sendModalPdfBase64,
                 bodyOverride,
                 String(tenant?.commercialName || tenant?.companyName || ''),
                 docLanguage,
@@ -836,12 +845,33 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
             const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
 
+            // Generate PDF base64 for embedding in UBL
+            const doc = (
+                <InvoicePDFTemplate
+                    invoiceId={id}
+                    tenant={tenant as any}
+                    client={selectedClient}
+                    blocks={blocks}
+                    properties={invoice?.properties}
+                    totals={totals}
+                    invoiceTitle={String(invoiceTitle || '')}
+                    vatCalcMode={vatCalcMode}
+                    structuredComm={invoice?.properties?.['structuredComm'] as string}
+                />
+            );
+            const blob = await generatePdfBlob(doc, tenant);
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            await new Promise(r => { reader.onloadend = r; });
+            const pdfBase64 = (reader.result as string).split(',')[1];
+
             const res = await fetch('/api/peppol/send', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     invoiceId: id,
                     invoiceTitle: String(invoiceTitle),
+                    pdfBase64: pdfBase64,
                     betreft: betreft,
                     invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,

@@ -18,6 +18,7 @@ export function useUserPreferences<T>(key: string, defaultValue: T): [T, (val: T
         try {
             const item = window.localStorage.getItem(storageKey);
             if (item) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setStoredValue(JSON.parse(item));
             }
         } catch (error) {

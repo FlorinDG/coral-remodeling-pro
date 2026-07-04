@@ -178,6 +178,7 @@ export default function DocumentTemplatesModule() {
     const router = useRouter();
 
     // Load saved settings
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (tenant) {
             if (tenant.brandColor) setPrimaryColor(tenant.brandColor);
@@ -190,6 +191,7 @@ export default function DocumentTemplatesModule() {
             setHydrated(true);
         }
     }, [tenant]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleSaveSettings = async () => {
         // PROFILE-2: Gate save on hydration — never persist un-hydrated defaults

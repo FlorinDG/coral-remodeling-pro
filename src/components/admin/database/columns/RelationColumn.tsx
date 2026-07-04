@@ -2,7 +2,7 @@ import React, { useMemo, useRef, useState, useLayoutEffect, useEffect } from 're
 import { createPortal } from 'react-dom';
 import { CellProps, Column } from 'react-datasheet-grid';
 import { useDatabaseStore } from '../store';
-import { Link, Search, ExternalLink } from 'lucide-react';
+import { Link, Search, ExternalLink, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 
@@ -238,6 +238,38 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                         })
                     )}
                 </div>
+
+                {searchQuery.trim() && filteredTargetPages.length === 0 && (
+                    <button
+                        onPointerDown={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const { createPage } = useDatabaseStore.getState();
+                            
+                            // Determine the actual Target DB ID resolving references
+                            const dbState = useDatabaseStore.getState();
+                            let resolvedDbId = relationDatabaseId;
+                            
+                            const newPage = createPage(resolvedDbId, {
+                                [displayPropertyId]: searchQuery.trim()
+                            });
+
+                            const nextValue = [...value, newPage.id];
+                            setRowData({
+                                ...rowData,
+                                properties: { ...(rowData?.properties || {}), [propId]: nextValue }
+                            });
+                            
+                            setSearchQuery('');
+                            // Optionally stop editing or leave open
+                            // stopEditing({ nextRow: false });
+                        }}
+                        className="w-full text-left px-2 py-2 mt-1 border-t border-neutral-100 dark:border-white/5 text-sm transition-colors text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 font-medium flex items-center gap-1.5"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Create "{searchQuery.trim()}"
+                    </button>
+                )}
             </div>
         </div>
     ) : null;

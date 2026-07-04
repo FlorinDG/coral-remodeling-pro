@@ -165,6 +165,16 @@ export function generatePeppolUBL(data: UBLInvoiceData): string {
         add('    </cac:InvoiceDocumentReference>');
         add('  </cac:BillingReference>');
     }
+    
+    if (data.pdfBase64) {
+        add('  <cac:AdditionalDocumentReference>');
+        add(`    <cbc:ID>${escapeXml(data.invoiceId)}</cbc:ID>`);
+        add('    <cac:Attachment>');
+        add(`      <cbc:EmbeddedDocumentBinaryObject mimeCode="application/pdf" filename="${escapeXml(data.invoiceId)}.pdf">${data.pdfBase64}</cbc:EmbeddedDocumentBinaryObject>`);
+        add('    </cac:Attachment>');
+        add('  </cac:AdditionalDocumentReference>');
+    }
+    
     add('');
 
     // ── Supplier (AccountingSupplierParty) ──

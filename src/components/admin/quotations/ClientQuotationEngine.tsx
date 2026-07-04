@@ -114,7 +114,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     // Read the resolved clients database from Zustand
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
 
-    const blocks = quotation?.blocks || [];
+    const blocks = useMemo(() => quotation?.blocks || [], [quotation?.blocks]);
 
     useEffect(() => {
         historyRef.current = history;
@@ -137,7 +137,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         };
     }, []);
 
-    const savePendingHistoryImmediate = () => {
+    const savePendingHistoryImmediate = useCallback(() => {
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
             debounceTimeoutRef.current = null;
@@ -146,7 +146,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             pushToHistory(pendingHistoryBlocksRef.current);
             pendingHistoryBlocksRef.current = null;
         }
-    };
+    }, [pushToHistory]);
 
     const pushToHistoryDebounced = (currentBlocks: Block[]) => {
         if (!pendingHistoryBlocksRef.current) {
@@ -160,7 +160,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }, 800);
     };
 
-    const pushToHistory = (currentBlocks: Block[]) => {
+    const pushToHistory = useCallback((currentBlocks: Block[]) => {
         const clone = JSON.parse(JSON.stringify(currentBlocks)) as Block[];
         setHistory(prev => {
             if (prev.length > 0 && JSON.stringify(prev[prev.length - 1]) === JSON.stringify(clone)) {
@@ -172,9 +172,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             }
             return next;
         });
-    };
+    }, []);
 
-    const handleUndo = () => {
+    const handleUndo = useCallback(() => {
         savePendingHistoryImmediate();
         const currentHistory = historyRef.current;
         if (currentHistory.length === 0) return;
@@ -188,7 +188,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             updatePageBlocks(quotationsDbIdRef.current, idRef.current, previousState);
             toast.success('Bewerking ongedaan gemaakt');
         }
-    };
+    }, [savePendingHistoryImmediate, updatePageBlocks]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -206,7 +206,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, []);
+    }, [handleUndo]);
 
     const isStructuralChange = (oldBlocks: Block[], newBlocks: Block[]): boolean => {
         const getStructure = (nodes: Block[]): string => {
@@ -258,7 +258,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (quotation.properties?.['totalExVat'] !== roundedEx) updatePageProperty(quotationsDbId, quotation.id, 'totalExVat', roundedEx);
         if (quotation.properties?.['totalVat'] !== roundedVat) updatePageProperty(quotationsDbId, quotation.id, 'totalVat', roundedVat);
         if (quotation.properties?.['totalIncVat'] !== roundedInc) updatePageProperty(quotationsDbId, quotation.id, 'totalIncVat', roundedInc);
-    }, [quotation?.blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime'], isHydrated, quotationsDbId, updatePageProperty]);
+    }, [quotation, isHydrated, quotationsDbId, updatePageProperty]);
 
     const rawProject = quotation?.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
@@ -275,7 +275,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const vatMode = 'total' as 'lines' | 'total';
         const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
         return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
-    }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
+    }, [blocks, quotation]);
 
     const grandTotalExcl = totals.subtotal;
     const vatAmount = totals.totalVAT;
@@ -521,9 +521,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
         setIsSending(true);
         try {
+            const formattedTotal = new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalIncVat);
             const response = await sendQuotationToClient(
                 id, clientEmail, clientName, String(projectName),
-                `€${totalIncVat.toFixed(2)}`, sendModalPdfBase64,
+                `€${formattedTotal}`, sendModalPdfBase64,
                 bodyOverride,
                 String(tenant?.commercialName || tenant?.companyName || ''),
                 docLanguage,

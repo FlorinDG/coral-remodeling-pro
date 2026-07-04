@@ -353,7 +353,7 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
                     body: `Invoice ${invTitle} has been fully paid.`,
                     entityType: 'invoice',
                     entityId: invoiceId,
-                    href: `/nl/admin/financials/income/invoices/${invoiceId}`
+                    href: `/nl/admin/database/db-invoices/${invoiceId}`
                 });
             } catch (err) {
                 console.error('[Automation] Failed to create INVOICE_PAID notification:', err);

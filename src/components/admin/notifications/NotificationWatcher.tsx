@@ -9,7 +9,7 @@ export default function NotificationWatcher() {
     const shownIdsRef = useRef<Set<string>>(new Set());
     const [unreadCount, setUnreadCount] = useState(0);
 
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         try {
             const res = await fetch('/api/notifications?status=unread');
             if (!res.ok) return;
@@ -53,12 +53,13 @@ export default function NotificationWatcher() {
         } catch (e) {
             console.error('Failed to fetch notifications', e);
         }
-    };
+    }, [router]);
 
     useEffect(() => {
         fetchNotifications();
 
         const interval = setInterval(() => {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchNotifications();
         }, 30000); // 30s poll
 
@@ -78,7 +79,7 @@ export default function NotificationWatcher() {
             window.removeEventListener('focus', handleFocus);
             window.removeEventListener('notif-refresh', handleRefresh);
         };
-    }, []);
+    }, [fetchNotifications]);
 
     return null;
 }

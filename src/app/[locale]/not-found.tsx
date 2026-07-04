@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 export default function NotFound() {
     return (
@@ -8,9 +9,9 @@ export default function NotFound() {
                 <p className="text-lg text-neutral-500 font-medium">Page Not Found</p>
                 <p className="text-sm text-neutral-400">The page you're trying to reach doesn't exist or was moved.</p>
                 <div className="pt-2">
-                    <a href="/" className="inline-flex items-center justify-center px-4 py-2 bg-[#d75d00] text-white rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#b04500] transition-colors">
+                    <Link href="/" className="inline-flex items-center justify-center px-4 py-2 bg-[#d75d00] text-white rounded-lg text-sm font-bold tracking-widest uppercase hover:bg-[#b04500] transition-colors">
                         Return Dashboard
-                    </a>
+                    </Link>
                 </div>
             </div>
         </div>

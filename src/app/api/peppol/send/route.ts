@@ -139,6 +139,7 @@ export async function POST(req: Request) {
                 items: ublItems,
                 type: isCreditNote ? '381' : '380',
                 parentInvoiceNumber,
+                pdfBase64: invoicePayload.pdfBase64,
             });
 
             // Email the UBL XML to the platform admin for manual handling
@@ -150,6 +151,17 @@ export async function POST(req: Request) {
                     const resend = new Resend(resendKey);
                     const customerName = invoicePayload.customer_name;
                     const invoiceNum = invoicePayload.invoice_id;
+
+                    const attachments = [{
+                        filename: `${invoiceNum}_peppol.xml`,
+                        content: Buffer.from(ublXml, 'utf-8'),
+                    }];
+                    if (invoicePayload.pdfBase64) {
+                        attachments.push({
+                            filename: `${invoiceNum}.pdf`,
+                            content: Buffer.from(invoicePayload.pdfBase64, 'base64'),
+                        });
+                    }
 
                     await resend.emails.send({
                         from: 'Coral Peppol <noreply@coral-group.be>',
@@ -165,13 +177,10 @@ export async function POST(req: Request) {
                             `Bedrag excl. BTW: €${items.reduce((s, i) => s + i.amount, 0).toFixed(2)}`,
                             `Tenant: ${tenant.companyName} (${vendorVat})`,
                             ``,
-                            `Het UBL XML bestand is als bijlage toegevoegd.`,
+                            `Het UBL XML bestand en de factuur PDF zijn als bijlagen toegevoegd.`,
                             `Upload dit naar het Peppol Access Point portaal voor verzending.`,
                         ].join('\n'),
-                        attachments: [{
-                            filename: `${invoiceNum}_peppol.xml`,
-                            content: Buffer.from(ublXml, 'utf-8'),
-                        }],
+                        attachments: attachments,
                     });
                     console.log(`[Peppol] UBL XML emailed to admin (${adminEmail}) for invoice ${invoiceNum}`);
                 } catch (emailErr) {

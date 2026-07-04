@@ -68,7 +68,7 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                     body: `Quote ${quoteTitle} accepted by ${consentName}`,
                     entityType: 'quote',
                     entityId: quoteId,
-                    href: `/nl/admin/financials/income/quotations/${quoteId}`
+                    href: `/nl/admin/database/db-quotations/${quoteId}`
                 }).catch(e => console.error("Failed to create QUOTE_ACCEPTED notification:", e));
 
                 if (tenant?.email) {

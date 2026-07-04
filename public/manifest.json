@@ -32,5 +32,9 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "capture_links": "none",
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  }
 }

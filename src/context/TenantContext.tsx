@@ -55,6 +55,7 @@ export const TenantProvider = ({
     // The server select omits branding/numbering fields — overwriting with it
     // causes settings to visually flash to defaults.
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (initialTenant && !hasFetchedFull) setTenant(initialTenant);
     }, [initialTenant, hasFetchedFull]);
 

@@ -18,6 +18,7 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
     const [isSaving, setIsSaving] = useState(false);
     const [propMap, setPropMap] = useState<Record<string, string>>({});
 
+    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         if (!isOpen) return;
 
@@ -70,7 +71,8 @@ export default function SaveToLibraryModal({ isOpen, onClose, block, onSaveSucce
                 setMatchedByTitle(false);
             }
         }
-    }, [isOpen, block.articleId, block.content]);
+    }, [isOpen, block]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleConfirm = () => {
         if (!db) return;

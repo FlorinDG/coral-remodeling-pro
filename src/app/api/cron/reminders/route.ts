@@ -10,6 +10,7 @@ export async function GET(req: Request) {
     }
 
     const todayStr = format(new Date(), 'dd/MM/yyyy'); // Matches GlobalMentionDateInterceptor format
+    const reminderFlag = '🔔';
     let remindersSent = 0;
 
     try {
@@ -22,19 +23,12 @@ export async function GET(req: Request) {
         for (const page of pages) {
             // Check if blocks or properties contain the date string
             const pageText = JSON.stringify({ props: page.properties, blocks: page.blocks });
-            if (pageText.includes(todayStr)) {
+            if (pageText.includes(`${todayStr} ${reminderFlag}`)) {
                 // Determine a title for the notification
                 const props = page.properties as any;
                 const title = props?.title || props?.name || 'Item';
                 
-                // Determine href
-                let href = `/admin/dashboard`; // Default fallback
-                const dbId = page.databaseId;
-                if (dbId.includes('db-invoices')) href = `/admin/financials/income/invoices/${page.id}`;
-                else if (dbId.includes('db-clients')) href = `/admin/contacts/clients/${page.id}`;
-                else if (dbId.includes('db-suppliers')) href = `/admin/contacts/suppliers/${page.id}`;
-                else if (dbId.includes('db-expenses')) href = `/admin/financials/expenses/invoices/${page.id}`;
-                else if (dbId.includes('db-quotations')) href = `/admin/financials/income/quotations/${page.id}`;
+                const href = `/nl/admin/database/${page.databaseId}/${page.id}`;
                 
                 await createNotification({
                     tenantId: page.database.tenantId,

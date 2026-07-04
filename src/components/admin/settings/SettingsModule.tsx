@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
     Settings, Calendar as CalendarIcon, RefreshCw, Check, AlertCircle, Trash2,
@@ -248,9 +249,9 @@ function DatabaseSchemaPanel() {
         <SectionShell title="Database Schema" description="Manage locked databases, properties, and relationships between them.">
             <SettingsCard>
                 <p className="text-sm text-neutral-500 mb-4">Navigate to the dedicated Database Schema editor for full control.</p>
-                <a href="/admin/settings/databases" className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition-colors">
+                <Link href="/admin/settings/databases" className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition-colors">
                     <DbIcon className="w-4 h-4" /> Open Schema Editor
-                </a>
+                </Link>
             </SettingsCard>
         </SectionShell>
     );
@@ -556,9 +557,9 @@ function UiPreferencesPanel() {
         <SectionShell title="UI & Appearance" description="Theme, brand color, and layout density.">
             <SettingsCard>
                 <p className="text-sm text-neutral-500 mb-4">Navigate to the dedicated UI settings page for full control.</p>
-                <a href="/admin/settings/ui" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
+                <Link href="/admin/settings/ui" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
                     <Palette className="w-4 h-4" /> Open UI Settings
-                </a>
+                </Link>
             </SettingsCard>
         </SectionShell>
     );
@@ -569,9 +570,9 @@ function TeamMembersPanel() {
         <SectionShell title="Users / Team" description="Manage ERP login accounts and assign system access.">
             <SettingsCard>
                 <p className="text-sm text-neutral-500 mb-4">Navigate to the ERP User & Team management page. Note: This manages system access, which is distinct from the HR Workforce list.</p>
-                <a href="/admin/settings/team" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
+                <Link href="/admin/settings/team" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
                     <Users className="w-4 h-4" /> Manage Users / Team
-                </a>
+                </Link>
             </SettingsCard>
         </SectionShell>
     );
@@ -582,9 +583,9 @@ function BillingPanel() {
         <SectionShell title="Plan & Billing" description="Your current subscription and usage.">
             <SettingsCard>
                 <p className="text-sm text-neutral-500 mb-4">Navigate to the billing management page.</p>
-                <a href="/admin/settings/billing" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
+                <Link href="/admin/settings/billing" className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 rounded-lg text-sm font-bold transition-colors hover:opacity-90">
                     <CreditCard className="w-4 h-4" /> Manage Billing
-                </a>
+                </Link>
             </SettingsCard>
         </SectionShell>
     );
@@ -595,9 +596,9 @@ function TemplatesPanel() {
         <SectionShell title="Document Templates" description="Manage invoice, quotation, and report templates.">
             <SettingsCard>
                 <p className="text-sm text-neutral-500 mb-4">Navigate to the templates editor.</p>
-                <a href="/admin/settings/templates" className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition-colors">
+                <Link href="/admin/settings/templates" className="inline-flex items-center gap-2 px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white rounded-lg text-sm font-bold transition-colors">
                     <FileText className="w-4 h-4" /> Open Template Editor
-                </a>
+                </Link>
             </SettingsCard>
         </SectionShell>
     );

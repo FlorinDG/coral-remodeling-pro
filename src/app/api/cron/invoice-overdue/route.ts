@@ -64,7 +64,7 @@ export async function GET(req: Request) {
                             body: `Invoice ${invTitle} is overdue.`,
                             entityType: 'invoice',
                             entityId: page.id,
-                            href: `/nl/admin/financials/income/invoices/${page.id}`
+                            href: `/nl/admin/database/db-invoices/${page.id}`
                         });
                     } catch (e) {
                         console.error('[Cron] Failed to emit INVOICE_OVERDUE', e);

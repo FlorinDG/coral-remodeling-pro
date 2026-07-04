@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { X, Cookie } from "lucide-react";
 
 export default function CookieConsent() {
@@ -54,9 +55,9 @@ export default function CookieConsent() {
                                             <React.Fragment key={i}>
                                                 {part}
                                                 {i !== arr.length - 1 && (
-                                                    <a href="/legal/cookies" className="text-[#d75d00] hover:underline font-medium">
+                                                    <Link href="/legal/cookies" className="text-[#d75d00] hover:underline font-medium">
                                                         {t("linkText")}
-                                                    </a>
+                                                    </Link>
                                                 )}
                                             </React.Fragment>
                                         ))

@@ -397,7 +397,7 @@ export async function GET(req: Request) {
                     body: `New Peppol ${isCreditNote ? 'credit note' : 'invoice'} from ${parsed.supplierName || 'supplier'}`,
                     entityType: 'invoice',
                     entityId: pageId,
-                    href: `/nl/admin/financials/expenses/invoices/${pageId}`
+                    href: `/nl/admin/database/db-expenses/${pageId}`
                 });
             } catch (e) {
                 console.error('[Peppol Inbox] Failed to emit notification', e);

@@ -14,16 +14,9 @@ export default function ExcelClone({ initialData }: ExcelCloneProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsClient(true);
     }, []);
-
-    if (!isClient) {
-        return <div className="flex h-full min-h-[600px] items-center justify-center text-neutral-500">Loading Spreadsheet...</div>;
-    }
-
-    // We need to require it conditionally inside the render when we are on the client
-    const { Workbook } = require('@fortune-sheet/react');
-
     const defaultData = React.useMemo(() => [
         {
             name: "Sheet1",
@@ -41,6 +34,13 @@ export default function ExcelClone({ initialData }: ExcelCloneProps) {
             defaultColWidth: 120,
         }
     ], []);
+
+    if (!isClient) {
+        return <div className="flex h-full min-h-[600px] items-center justify-center text-neutral-500">Loading Spreadsheet...</div>;
+    }
+
+    // We need to require it conditionally inside the render when we are on the client
+    const { Workbook } = require('@fortune-sheet/react');
 
     return (
         <div className="flex flex-col h-full min-h-[calc(100vh-8rem)] bg-white dark:bg-black w-full border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">

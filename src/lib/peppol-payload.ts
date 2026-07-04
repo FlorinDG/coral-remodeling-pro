@@ -47,6 +47,7 @@ export interface BuildPayloadParams {
         bic: string | null;
     };
     userEmail?: string;
+    pdfBase64?: string;
 }
 
 /** Maps internal unit strings to UN/CEFACT codes required by e-invoice.be */
@@ -138,7 +139,8 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         parentInvoiceNumber,
         structuredComm,
         tenant,
-        userEmail
+        userEmail,
+        pdfBase64
     } = params;
 
     const today = new Date().toISOString().split('T')[0];
@@ -191,6 +193,22 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         // Payment terms
         payment_term: 'Net 30 days',
     };
+
+    if (params.vatRegime === 'medecontractant') {
+        invoicePayload.tax_code = 'AE';
+        invoicePayload.vatex = 'VATEX-EU-AE';
+        invoicePayload.vatex_note = 'Reverse charge - Art. 196 EU VAT Directive';
+    }
+
+    if (pdfBase64) {
+        invoicePayload.attachments = [
+            {
+                file_name: `${String(invoiceTitle || invoiceId)}.pdf`,
+                file_type: 'application/pdf',
+                file_data: pdfBase64
+            }
+        ];
+    }
 
     if (customerVat) {
         invoicePayload.customer_tax_id = customerVat;

@@ -27,6 +27,7 @@ import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import InlineDialog from '@/components/admin/shared/InlineDialog';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { performLocalPreflight } from '@/lib/peppol-payload';
 import { toast } from 'sonner';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { t } from '@/lib/document-i18n';
@@ -837,13 +838,37 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const selectedClient = clients.find(c => c.id === clientId);
         if (!selectedClient) return toast.error('Klant niet gevonden in database.');
 
+        const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
+        const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
+        const isCreditNote = Boolean(invoice?.properties?.['isCreditNote']);
+
+        const preflight = performLocalPreflight({
+            invoiceId: id,
+            blocks: blocks,
+            client: selectedClient,
+            invoiceTitle: String(invoiceTitle || ''),
+            vatRegime: invoice?.properties?.['vatRegime'] as string | undefined,
+            isCreditNote,
+            tenant: tenant as any
+        });
+
+        if (!preflight.isValid) {
+            toast.error(
+                <div className="flex flex-col gap-1">
+                    <p className="font-bold">Factuur is onvolledig voor Peppol:</p>
+                    <ul className="list-disc pl-4 text-xs">
+                        {preflight.errors.map((e, i) => <li key={i}>{e}</li>)}
+                    </ul>
+                </div>, 
+                { duration: 8000 }
+            );
+            return;
+        }
+
         setIsSendingPeppol(true);
         try {
             // Wait for DB sync to ensure all row calculations are mathematically synced with the backend store
             await new Promise(r => setTimeout(r, 800));
-
-            const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
-            const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
 
             // Generate PDF base64 for embedding in UBL
             const doc = (

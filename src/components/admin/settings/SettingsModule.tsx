@@ -512,15 +512,27 @@ function PeppolPanel() {
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center justify-between">
-                        <p className="text-sm text-neutral-500">{!status?.hasVatNumber ? 'Add VAT number in Company Profile first.' : 'Not yet connected.'}</p>
-                        <button onClick={handleConnect} disabled={connecting || !status?.hasVatNumber}
-                            className="px-4 py-2 text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2 hover:opacity-90 disabled:opacity-50"
-                            style={{ backgroundColor: 'var(--brand-color, #10B981)' }}
-                        >
-                            {connecting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                            {connecting ? 'Connecting...' : 'Activate Peppol'}
-                        </button>
+                    <div className="flex flex-col gap-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 rounded-full bg-neutral-400" />
+                                <div>
+                                    <p className="text-sm font-bold">Manual Dispatch Mode</p>
+                                    <p className="text-[10px] text-neutral-500">Invoices will be sent to the admin queue for manual processing.</p>
+                                </div>
+                            </div>
+                            <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 text-[10px] font-bold uppercase">Unregistered</span>
+                        </div>
+                        <div className="flex items-center justify-between pt-3 border-t border-neutral-100 dark:border-neutral-800">
+                            <p className="text-sm text-neutral-500">{!status?.hasVatNumber ? 'Add VAT number in Company Profile first to automate.' : 'Activate to send directly via Peppol API.'}</p>
+                            <button onClick={handleConnect} disabled={connecting || !status?.hasVatNumber}
+                                className="px-4 py-2 text-white rounded-lg text-sm font-bold transition-all shadow-sm flex items-center gap-2 hover:opacity-90 disabled:opacity-50"
+                                style={{ backgroundColor: 'var(--brand-color, #10B981)' }}
+                            >
+                                {connecting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                                {connecting ? 'Connecting...' : 'Activate Peppol'}
+                            </button>
+                        </div>
                     </div>
                 )}
             </SettingsCard>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
@@ -21,11 +22,10 @@ interface ShiftCardProps {
   profile: any;
   isNextShift: boolean;
   activeEntry: any;
-  onClockIn: (shiftId: string) => void;
-  isClockingIn: boolean;
+  onClick: () => void;
 }
 
-function ShiftCard({ shift, profile, isNextShift, activeEntry, onClockIn, isClockingIn }: ShiftCardProps) {
+function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps) {
   const { t } = useTranslation();
   const { shiftTasks, loading: tasksLoading } = useShiftTasks(shift.id);
   
@@ -37,18 +37,15 @@ function ShiftCard({ shift, profile, isNextShift, activeEntry, onClockIn, isCloc
   const pendingTasks = shiftTasks.filter(st => st.status !== 'completed');
   const completedTasks = shiftTasks.filter(st => st.status === 'completed');
 
-  const canClockIn = shift && 
-    isToday(parseISO(shift.shift_date)) && 
-    !shift.clock_entry_id && 
-    !activeEntry &&
-    shift.status !== 'Completed';
-
   const isClockedIn = activeEntry && shift?.clock_entry_id === activeEntry.id;
   const shiftDate = parseISO(shift.shift_date);
   const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
 
   return (
-    <Card className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t ${isClockedIn ? 'ring-2 ring-[var(--brand-color,#d35400)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}>
+    <Card 
+      className={`rounded-none border-x-0 border-t-0 border-b md:rounded-xl md:border-x md:border-t cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900/50 transition-colors ${isClockedIn ? 'ring-2 ring-[var(--brand-color,#d35400)]' : ''} ${isNextShift ? 'border-primary' : ''} ${isPast ? 'opacity-60' : ''}`}
+      onClick={onClick}
+    >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-2 flex-1">
@@ -86,38 +83,7 @@ function ShiftCard({ shift, profile, isNextShift, activeEntry, onClockIn, isCloc
                 <span className="leading-tight">{(shift.project.address || shift.project.name || '').replace(/^\[ERP\]\s*/i, '')}</span>
               </div>
             )}
-
-            {/* Worker Name */}
-            <div className="flex items-center gap-3 text-sm">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium">{shift.profile?.full_name || profile?.full_name || t('schedule.unknown')}</span>
-            </div>
-
-            {/* Role */}
-            {shift.role && (
-              <div className="flex items-center gap-3 text-sm">
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
-                <span>{shift.role}</span>
-              </div>
-            )}
           </div>
-
-          {/* Clock In Button */}
-          {canClockIn && (
-            <Button
-              size="sm"
-              onClick={() => onClockIn(shift.id)}
-              disabled={isClockingIn}
-              className="flex items-center gap-1 shrink-0"
-            >
-              {isClockingIn ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
-              {t('schedule.clockIn', 'Clock In')}
-            </Button>
-          )}
         </div>
 
         {/* Tasks Section */}
@@ -161,12 +127,14 @@ function ShiftCard({ shift, profile, isNextShift, activeEntry, onClockIn, isCloc
 
 export function MySchedule() {
   const { t } = useTranslation();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { shifts, loading } = useScheduledShifts();
-  const { activeEntry, clockIn } = useClockEntries();
+  const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
-  const [clockingShiftId, setClockingShiftId] = useState<string | null>(null);
+  const [isClockingOut, setIsClockingOut] = useState(false);
+  const [selectedShift, setSelectedShift] = useState<any>(null);
+  const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const scrollRef = useRef<HTMLDivElement>(null);
   const nextShiftRef = useRef<HTMLDivElement>(null);
 
@@ -204,15 +172,34 @@ export function MySchedule() {
     }
   }, [loading, nextShiftIndex]);
 
+  // Live timer effect using persisted activeEntry
+  useEffect(() => {
+    if (!activeEntry) {
+      setElapsedTime('00:00:00');
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const start = new Date(activeEntry.clock_in_time).getTime();
+      const now = new Date().getTime();
+      const diff = now - start;
+
+      const h = Math.floor(diff / (1000 * 60 * 60));
+      const m = Math.floor((diff / 1000 / 60) % 60);
+      const s = Math.floor((diff / 1000) % 60);
+      setElapsedTime(
+        `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+      );
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeEntry]);
+
   const handleClockIn = async (shiftId: string) => {
-    const shift = filteredShifts.find(s => s.id === shiftId);
-    if (!shift) return;
-    
     setIsClockingIn(true);
-    setClockingShiftId(shiftId);
     try {
       await requestLocation();
-      const { error } = await clockIn(location, shift.id);
+      const { error } = await clockIn(location, shiftId);
       
       if (error) {
         toast.error('Failed to clock in');
@@ -223,7 +210,28 @@ export function MySchedule() {
       toast.error('Failed to clock in');
     } finally {
       setIsClockingIn(false);
-      setClockingShiftId(null);
+    }
+  };
+
+  const handleClockOut = async () => {
+    setIsClockingOut(true);
+    try {
+      await requestLocation();
+      const { error } = await clockOut({
+        clockOutLatitude: location?.latitude,
+        clockOutLongitude: location?.longitude,
+      });
+      
+      if (error) {
+        toast.error('Failed to clock out');
+      } else {
+        toast.success('Clocked out successfully');
+        setSelectedShift(null); // Close dialog on clock out
+      }
+    } catch (err) {
+      toast.error('Failed to clock out');
+    } finally {
+      setIsClockingOut(false);
     }
   };
 
@@ -273,11 +281,10 @@ export function MySchedule() {
                 >
                   <ShiftCard
                     shift={shift}
-                    profile={profile}
+                    profile={user}
                     isNextShift={shift.id === nextShift?.id}
                     activeEntry={activeEntry}
-                    onClockIn={handleClockIn}
-                    isClockingIn={isClockingIn && clockingShiftId === shift.id}
+                    onClick={() => setSelectedShift(shift)}
                   />
                 </div>
               ))}
@@ -285,6 +292,78 @@ export function MySchedule() {
           </ScrollArea>
         )}
       </CardContent>
+
+      {/* Shift Detail Dialog (WF-6) */}
+      <Dialog open={!!selectedShift} onOpenChange={() => setSelectedShift(null)}>
+        <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden">
+          {selectedShift && (
+            <>
+              <DialogHeader className="p-6 pb-2 border-b">
+                <DialogTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
+                  {isToday(parseISO(selectedShift.shift_date)) 
+                    ? t('schedule.today') 
+                    : format(parseISO(selectedShift.shift_date), 'EEE, d MMM yyyy')}
+                </DialogTitle>
+                <div className="flex flex-col gap-2 mt-4 text-sm">
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4 text-muted-foreground" />
+                    <span>{selectedShift.shift_start} - {selectedShift.shift_end}</span>
+                  </div>
+                  {selectedShift.project && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <span>{(selectedShift.project.address || selectedShift.project.name || '').replace(/^\[ERP\]\s*/i, '')}</span>
+                    </div>
+                  )}
+                </div>
+              </DialogHeader>
+              
+              <div className="p-6 bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center">
+                {activeEntry && selectedShift.clock_entry_id === activeEntry.id ? (
+                  <>
+                    <div className="text-4xl font-mono font-bold text-[var(--brand-color,#d35400)] mb-4 tracking-wider animate-pulse">
+                      {elapsedTime}
+                    </div>
+                    <Button 
+                      className="w-full h-16 text-lg font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md transition-all active:scale-95"
+                      onClick={handleClockOut}
+                      disabled={isClockingOut}
+                    >
+                      {isClockingOut ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Play className="w-6 h-6 mr-2 fill-current rotate-90" />}
+                      {t('clock.clockOut', 'CLOCK OUT')}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-4xl font-mono font-bold text-neutral-400 mb-4 tracking-wider">
+                      00:00:00
+                    </div>
+                    <Button 
+                      className="w-full h-16 text-lg font-bold bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white shadow-md transition-all active:scale-95"
+                      onClick={() => handleClockIn(selectedShift.id)}
+                      disabled={
+                        isClockingIn || 
+                        selectedShift.status === 'Completed' ||
+                        !!selectedShift.clock_entry_id ||
+                        !!activeEntry
+                      }
+                    >
+                      {isClockingIn ? <Loader2 className="w-6 h-6 animate-spin mr-2" /> : <Play className="w-6 h-6 mr-2 fill-current" />}
+                      {t('clock.clockIn', 'CLOCK IN')}
+                    </Button>
+                    {(selectedShift.clock_entry_id || selectedShift.status === 'Completed') && (
+                      <p className="text-xs text-muted-foreground mt-3 font-medium uppercase tracking-wider">
+                        Shift completed
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react';
 import { Header } from '@/components/time-tracker/components/Header';
 import { ClockButton } from '@/components/time-tracker/components/ClockButton';
 import { QuickLinks } from '@/components/time-tracker/components/QuickLinks';
-import { DailySummary } from '@/components/time-tracker/components/DailySummary';
+import { MySchedule } from '@/components/time-tracker/components/MySchedule';
 import { Announcements } from '@/components/time-tracker/components/Announcements';
 import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
@@ -54,9 +54,9 @@ export default function Index({ embedded = false }: IndexProps) {
           </div>
         </section>
 
-        {/* Today's Overview */}
+        {/* Scheduled Shifts */}
         <div className="mb-8 md:mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>
-          <DailySummary />
+          <MySchedule />
         </div>
 
         {/* Quick Links Section */}

@@ -352,14 +352,32 @@ export default function TaskModuleShell() {
 
                 {/* Quick Add Bar */}
                 <div className="p-4 bg-white dark:bg-neutral-950 border-t border-neutral-200 dark:border-white/10">
-                    <TaskQuickAdd
-                        onAdd={handleQuickAdd}
-                        placeholder={
-                            perspective.id === 'my-day'
-                                ? 'Add task to My Day… (p1 #urgent tomorrow)'
-                                : 'Add task… (p1 #urgent tomorrow ~30m every monday)'
-                        }
-                    />
+                    <div className="hidden md:block">
+                        <TaskQuickAdd
+                            onAdd={handleQuickAdd}
+                            placeholder={
+                                perspective.id === 'my-day'
+                                    ? 'Add task to My Day… (p1 #urgent tomorrow)'
+                                    : 'Add task… (p1 #urgent tomorrow ~30m every monday)'
+                            }
+                        />
+                    </div>
+                    <div className="md:hidden">
+                        <button
+                            onClick={() => {
+                                const newPage = createPage('db-tasks', {
+                                    title: 'New Task',
+                                    'prop-task-status': 'opt-todo',
+                                    'prop-task-priority': 'opt-p4',
+                                    'prop-task-my-day': perspective.id === 'my-day',
+                                } as Record<string, PropertyValue>);
+                                setSelectedPageId(newPage.id);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" /> New Task
+                        </button>
+                    </div>
                 </div>
             </div>
 

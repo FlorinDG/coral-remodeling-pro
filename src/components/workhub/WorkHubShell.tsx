@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import { useSession } from 'next-auth/react';
 import { Link, usePathname } from '@/i18n/routing';
 import { TenantProvider } from '@/context/TenantContext';
+import { ROLES } from '@/lib/roles';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
     Clock, CalendarDays, CalendarOff, Users, FolderOpen,
@@ -35,7 +36,7 @@ const SECONDARY_ITEMS: NavItem[] = [
     { id: 'team',      label: 'Team Directory',    href: '/workhub/team',      icon: <Users className="w-5 h-5" />,           mobileLabel: 'Team' },
     { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,          mobileLabel: 'Timesheets' },
     { id: 'projects',  label: 'Projects',          href: '/workhub/projects',  icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
-    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/files',     icon: <BookOpen className="w-5 h-5" />,        mobileLabel: 'Wiki' },
+
 ];
 
 // ── Bottom Nav (mobile — 5 tabs max) ──────────────────────────────────
@@ -70,6 +71,13 @@ export default function WorkHubShell({
 
     const userName = session?.user?.name || 'User';
     const firstName = userName.split(' ')[0];
+    const userRole = session?.user?.role;
+    const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE;
+
+    const filteredSecondaryItems = SECONDARY_ITEMS.filter(item => {
+        if (item.id === 'projects' && isWorkforce) return false;
+        return true;
+    });
 
     const isActive = (href: string) => {
         if (href === '/workhub') {
@@ -99,13 +107,7 @@ export default function WorkHubShell({
 
                     <div className="flex items-center gap-2">
                         <ThemeToggle />
-                        {/* Mobile menu button */}
-                        <button
-                            onClick={() => setMenuOpen(!menuOpen)}
-                            className="md:hidden p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/5 transition-colors"
-                        >
-                            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                        </button>
+
                         {/* Desktop: User avatar */}
                         <div className="hidden md:flex items-center gap-2 pl-2 border-l border-neutral-200 dark:border-white/10 ml-2">
                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white text-xs font-bold">
@@ -119,7 +121,7 @@ export default function WorkHubShell({
                 {/* Desktop: Horizontal tab navigation */}
                 <nav className="hidden md:block border-t border-neutral-100 dark:border-white/5">
                     <div className="flex items-center gap-1 px-4 max-w-4xl mx-auto overflow-x-auto hide-scrollbar">
-                        {[...NAV_ITEMS, ...SECONDARY_ITEMS].map(item => (
+                        {[...NAV_ITEMS, ...filteredSecondaryItems].map(item => (
                             <Link
                                 key={item.id}
                                 href={item.href}
@@ -142,7 +144,7 @@ export default function WorkHubShell({
                 <div className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
                     <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-white/10 shadow-2xl mt-14 mx-0 animate-in slide-in-from-top-2 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="p-4 space-y-1">
-                            {[...NAV_ITEMS, ...SECONDARY_ITEMS].map(item => (
+                            {[...NAV_ITEMS, ...filteredSecondaryItems].map(item => (
                                 <Link
                                     key={item.id}
                                     href={item.href}

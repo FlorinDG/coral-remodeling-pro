@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { useDatabaseStore } from '../store';
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
-import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { useTenant } from '@/context/TenantContext';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
@@ -484,9 +483,14 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         try {
             // Generate sequential invoice number
             const numResult = await getNextDocumentNumber('invoice');
-            const invoiceNumber = numResult.success && numResult.number
-                ? numResult.number
-                : generateClientSideDocNumber(tenant, 'invoice');
+            let invoiceNumber: string;
+            if (numResult.success && numResult.number) {
+                invoiceNumber = numResult.number;
+            } else {
+                console.error('getNextDocumentNumber failed for invoice:', numResult.error);
+                toast.error(`Factuur nummer kon niet worden aangemaakt: ${numResult.error || 'onbekende fout'}.`);
+                return;
+            }
 
             // 2. Create the invoice
             const newInvoice = createPage(invoiceDbId, {

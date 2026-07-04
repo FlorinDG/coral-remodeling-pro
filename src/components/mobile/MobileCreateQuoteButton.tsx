@@ -5,8 +5,8 @@ import { Plus, Loader2 } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPageServerFirst } from "@/app/actions/pages";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
-import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { useTenant } from "@/context/TenantContext";
+import { toast } from "sonner";
 import { useState } from "react";
 
 interface MobileCreateQuoteButtonProps {
@@ -27,9 +27,13 @@ export default function MobileCreateQuoteButton({ label }: MobileCreateQuoteButt
             const quotationsDbId = resolveDbId('db-quotations');
 
             const result = await getNextDocumentNumber('quotation');
-            const quoteNumber = result.success && result.number
-                ? result.number
-                : generateClientSideDocNumber(tenant, 'quotation');
+            if (!result.success || !result.number) {
+                console.error('[MobileCreateQuoteButton] getNextDocumentNumber failed:', result.error);
+                toast.error(`Offertenummer kon niet worden aangemaakt: ${result.error || 'onbekende fout'}.`);
+                setIsCreating(false);
+                return;
+            }
+            const quoteNumber = result.number;
 
             const pageResult = await createPageServerFirst(quotationsDbId, {
                 title: quoteNumber,

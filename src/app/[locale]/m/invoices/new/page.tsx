@@ -6,7 +6,6 @@ import { useTenant } from '@/context/TenantContext';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
-import { generateClientSideDocNumber } from '@/lib/docNumberFallback';
 import { createPageServerFirst } from '@/app/actions/pages';
 import CreateClientModal from '@/components/admin/invoices/CreateClientModal';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -96,9 +95,13 @@ export default function MobileCreateInvoicePage() {
         setIsCreating(true);
         try {
             const result = await getNextDocumentNumber('invoice');
-            const invoiceNumber = result.success && result.number
-                ? result.number
-                : generateClientSideDocNumber(tenant, 'invoice');
+            if (!result.success || !result.number) {
+                console.error('[MobileCreateInvoice] getNextDocumentNumber failed:', result.error);
+                toast.error(`Factuur nummer kon niet worden aangemaakt: ${result.error || 'onbekende fout'}.`);
+                setIsCreating(false);
+                return;
+            }
+            const invoiceNumber = result.number;
 
             const pageResult = await createPageServerFirst(invoicesDbId, {
                 title: invoiceNumber,

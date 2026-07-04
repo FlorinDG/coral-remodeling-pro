@@ -5,8 +5,8 @@ import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPageServerFirst } from "@/app/actions/pages";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
-import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { useTenant } from "@/context/TenantContext";
+import { toast } from "sonner";
 import { useState } from "react";
 
 export default function CreateQuotationButton() {
@@ -26,9 +26,13 @@ export default function CreateQuotationButton() {
 
             // Generate the next sequential quotation number
             const result = await getNextDocumentNumber('quotation');
-            const quoteNumber = result.success && result.number
-                ? result.number
-                : generateClientSideDocNumber(tenant, 'quotation');
+            if (!result.success || !result.number) {
+                console.error('[CreateQuotationButton] getNextDocumentNumber failed:', result.error);
+                toast.error(`Offertenummer kon niet worden aangemaakt: ${result.error || 'onbekende fout'}. Controleer de nummeringsinstellingen.`);
+                setIsCreating(false);
+                return;
+            }
+            const quoteNumber = result.number;
 
             // Server-first: persist in Postgres before navigating
             const pageResult = await createPageServerFirst(quotationsDbId, {

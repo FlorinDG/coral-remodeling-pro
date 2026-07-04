@@ -5,11 +5,11 @@ import { Plus } from "lucide-react";
 import { useDatabaseStore } from "@/components/admin/database/store";
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
-import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 import { createPageServerFirst } from "@/app/actions/pages";
 import { useTenant } from "@/context/TenantContext";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 
 export default function CreateInvoiceButton() {
     const router = useRouter();
@@ -24,9 +24,13 @@ export default function CreateInvoiceButton() {
 
         try {
             const result = await getNextDocumentNumber('invoice');
-            const invoiceNumber = result.success && result.number
-                ? result.number
-                : generateClientSideDocNumber(tenant, 'invoice');
+            if (!result.success || !result.number) {
+                console.error('[CreateInvoiceButton] getNextDocumentNumber failed:', result.error);
+                toast.error(`Documentnummer kon niet worden aangemaakt: ${result.error || 'onbekende fout'}. Controleer de nummeringsinstellingen.`);
+                setIsCreating(false);
+                return;
+            }
+            const invoiceNumber = result.number;
 
             // Resolve tenant-scoped DB ID — falls back to bare 'db-invoices' for legacy FOUNDER accounts
             const invoicesDbId = resolveDbId('db-invoices');

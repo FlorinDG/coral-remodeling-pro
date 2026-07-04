@@ -26,7 +26,6 @@ import { t as ti18n } from '@/lib/document-i18n';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
 import { createPrismaInvoice } from "@/app/actions/create-invoice";
 import { getNextDocumentNumber } from "@/app/actions/next-document-number";
-import { generateClientSideDocNumber } from "@/lib/docNumberFallback";
 
 import { Bot, Mail, CloudUpload, AlertTriangle } from 'lucide-react';
 import { Link } from '@/i18n/routing';
@@ -661,9 +660,14 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         try {
             // Generate the next sequential invoice number
             const numResult = await getNextDocumentNumber('invoice');
-            const invoiceNumber = numResult.success && numResult.number
-                ? numResult.number
-                : generateClientSideDocNumber(tenant, 'invoice');
+            let invoiceNumber: string;
+            if (numResult.success && numResult.number) {
+                invoiceNumber = numResult.number;
+            } else {
+                console.error('getNextDocumentNumber failed for invoice:', numResult.error);
+                toast.error(`Factuur nummer kon niet worden aangemaakt: ${numResult.error || 'onbekende fout'}. Controleer de nummeringsinstellingen.`);
+                return;
+            }
 
             // Create invoice with data from quotation
             const newInvoice = createPage(invoiceDbId, {

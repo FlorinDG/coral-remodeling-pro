@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Paperclip, Send, Loader2, FileText, CheckSquare, Square, Plus, Upload, HardDrive } from 'lucide-react';
 import { uploadFileAction } from '@/app/actions/files';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';

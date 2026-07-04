@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';

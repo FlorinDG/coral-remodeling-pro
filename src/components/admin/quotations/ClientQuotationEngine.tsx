@@ -248,7 +248,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (!quotation || !isHydrated) return;
         const currentBlocks = quotation.blocks || [];
 
-        const vatMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatMode = 'total' as 'lines' | 'total';
         const vatReg = (quotation.properties?.['vatRegime'] as string) || '21';
 
         const totals = calculateInvoiceTotals(currentBlocks, { vatCalcMode: vatMode, vatRegime: vatReg });
@@ -273,7 +273,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
-        const vatMode = ((quotation?.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+        const vatMode = 'total' as 'lines' | 'total';
         const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
         return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
     }, [blocks, quotation?.properties?.['vatCalcMode'], quotation?.properties?.['vatRegime']]);
@@ -306,7 +306,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
-    const vatCalcMode = ((quotation.properties?.['vatCalcMode'] as string) || 'lines') as 'lines' | 'total';
+    const vatCalcMode = 'total' as 'lines' | 'total';
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
@@ -1065,7 +1065,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             expiryDate={quotationDate}
                             vatCalcMode={vatCalcMode}
                             vatRegime={vatRegime}
-                            onVatCalcModeChange={(mode) => handleUpdateProperty('vatCalcMode', mode)}
                             onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
                             language={docLanguage}
                             onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}

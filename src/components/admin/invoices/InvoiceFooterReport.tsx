@@ -19,7 +19,6 @@ interface InvoiceFooterReportProps {
     dueDate?: string;
     vatCalcMode: 'lines' | 'total';
     vatRegime: string;
-    onVatCalcModeChange: (mode: 'lines' | 'total') => void;
     onVatRegimeChange: (regime: string) => void;
     onInvoiceDateChange?: (date: string) => void;
     onDueDateChange?: (date: string) => void;
@@ -41,7 +40,6 @@ export default function InvoiceFooterReport({
     dueDate,
     vatCalcMode,
     vatRegime: vatRegimeProp,
-    onVatCalcModeChange,
     onVatRegimeChange,
     onInvoiceDateChange,
     onDueDateChange,
@@ -199,63 +197,7 @@ export default function InvoiceFooterReport({
 
                 {/* Column 2: BTW Calculation Mode */}
                 <div className="bg-neutral-50/80 dark:bg-white/[0.02] p-5 border-b md:border-b-0 md:border-r border-neutral-200/60 dark:border-white/5 min-w-0 md:min-w-[180px]">
-                    <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-3 text-neutral-400 dark:text-neutral-500">
-                        BTW Berekening
-                    </h4>
-
                     <div className="flex flex-col gap-1.5">
-                        <label
-                            className={`flex items-center gap-2 cursor-pointer rounded-md px-2.5 py-2 transition-all text-[13px] ${
-                                isLinesMode
-                                    ? 'bg-white dark:bg-white/5 shadow-sm border'
-                                    : 'border border-transparent hover:bg-white/60 dark:hover:bg-white/[0.03]'
-                            }`}
-                            style={isLinesMode ? { borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)' } : {}}
-                        >
-                            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                isLinesMode ? '' : 'border-neutral-300 dark:border-neutral-600'
-                            }`}
-                                style={isLinesMode ? { borderColor: 'var(--brand-color, #d35400)' } : {}}
-                            >
-                                {isLinesMode && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--brand-color, #d35400)' }} />}
-                            </div>
-                            <div className="flex flex-col leading-tight">
-                                <span className={`font-semibold transition-colors ${isLinesMode ? '' : 'text-neutral-500 dark:text-neutral-400'}`}
-                                    style={isLinesMode ? { color: 'var(--brand-color, #d35400)' } : {}}
-                                >
-                                    Som per lijn
-                                </span>
-                            </div>
-                            <input type="radio" name="vatCalcMode" value="lines" checked={isLinesMode} onChange={() => onVatCalcModeChange('lines')} disabled={isLocked} className="sr-only" />
-                        </label>
-
-                        <label
-                            className={`flex items-center gap-2 cursor-pointer rounded-md px-2.5 py-2 transition-all text-[13px] ${
-                                !isLinesMode
-                                    ? 'bg-white dark:bg-white/5 shadow-sm border'
-                                    : 'border border-transparent hover:bg-white/60 dark:hover:bg-white/[0.03]'
-                            }`}
-                            style={!isLinesMode ? { borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)' } : {}}
-                        >
-                            <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                                !isLinesMode ? '' : 'border-neutral-300 dark:border-neutral-600'
-                            }`}
-                                style={!isLinesMode ? { borderColor: 'var(--brand-color, #d35400)' } : {}}
-                            >
-                                {!isLinesMode && <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--brand-color, #d35400)' }} />}
-                            </div>
-                            <div className="flex flex-col leading-tight">
-                                <span className={`font-semibold transition-colors ${!isLinesMode ? '' : 'text-neutral-500 dark:text-neutral-400'}`}
-                                    style={!isLinesMode ? { color: 'var(--brand-color, #d35400)' } : {}}
-                                >
-                                    % op totaal
-                                </span>
-                            </div>
-                            <input type="radio" name="vatCalcMode" value="total" checked={!isLinesMode} onChange={() => onVatCalcModeChange('total')} disabled={isLocked} className="sr-only" />
-                        </label>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5 mt-4 pt-4 border-t border-neutral-200/50 dark:border-white/5">
                         <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] mb-1.5 text-neutral-400 dark:text-neutral-500">
                             Document Taal
                         </h4>

@@ -67,7 +67,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
     const pages = useDatabaseStore(s => s.pages);
-    const projects = React.useMemo(() => Object.values(pages).filter(p => p.databaseId === 'db-1'), [pages]);
+    const projects = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-1'), [pages]);
 
     const [animationDone, setAnimationDone] = useState(false);
 

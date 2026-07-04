@@ -873,15 +873,26 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             // Generate PDF base64 for embedding in UBL
             const doc = (
                 <InvoicePDFTemplate
-                    invoiceId={id}
-                    tenant={tenant as any}
-                    client={selectedClient}
                     blocks={blocks}
-                    properties={invoice?.properties}
-                    totals={totals}
-                    invoiceTitle={String(invoiceTitle || '')}
-                    vatCalcMode={vatCalcMode}
+                    invoiceTitle={String(invoiceTitle)}
+                    betreft={String(betreft || '')}
+                    clientInfo={buildClientInfo()}
+                    projectId={String(projectId)}
+                    grandTotalExcl={grandTotalExcl}
+                    grandTotalIncl={grandTotalIncl}
+                    vatAmount={vatAmount}
+                    databaseStoreState={useDatabaseStore.getState()}
+                    tenantProfile={tenant}
+                    templateId={tenant?.documentTemplate || 't1'}
+                    language={docLanguage}
+                    invoiceDate={invoiceDateProp}
+                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    dueDate={dueDateProp}
+                    docType={String(invoice?.properties?.['docType'] || '')}
+                    vatCalcMode={'total'}
+                    vatRegime={invoice?.properties?.['vatRegime'] as string}
                     structuredComm={invoice?.properties?.['structuredComm'] as string}
+                    stripeCheckoutUrl={checkoutUrl}
                 />
             );
             const blob = await generatePdfBlob(doc, tenant);

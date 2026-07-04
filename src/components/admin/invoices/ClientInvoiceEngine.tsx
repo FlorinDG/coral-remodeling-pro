@@ -870,6 +870,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             // Wait for DB sync to ensure all row calculations are mathematically synced with the backend store
             await new Promise(r => setTimeout(r, 800));
 
+            const checkoutUrl = await ensureStripeCheckoutUrl(invoice);
+
             // Generate PDF base64 for embedding in UBL
             const doc = (
                 <InvoicePDFTemplate

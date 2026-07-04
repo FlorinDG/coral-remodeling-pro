@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, isCreditNote, parentInvoiceId, structuredComm } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, isCreditNote, parentInvoiceId, structuredComm } = body;
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
@@ -81,6 +81,7 @@ export async function POST(req: Request) {
             betreft,
             invoiceDate,
             dueDate,
+            vatRegime,
             isCreditNote,
             parentInvoiceNumber,
             structuredComm,
@@ -110,6 +111,7 @@ export async function POST(req: Request) {
                 unitPrice: item.unit_price,
                 lineTotal: item.amount,
                 taxRate: parseFloat(item.tax_rate),
+                isReverseCharge: item.isReverseCharge,
             }));
 
             const ublXml = generatePeppolUBL({

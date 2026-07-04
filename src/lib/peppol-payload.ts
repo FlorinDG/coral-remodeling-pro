@@ -7,6 +7,7 @@ export interface InvoiceLinePayload {
     unit_price: number;
     amount: number;
     tax_rate: string;
+    isReverseCharge?: boolean;
 }
 
 export interface InvoiceBlock {
@@ -31,6 +32,7 @@ export interface BuildPayloadParams {
     betreft?: string;
     invoiceDate?: string;
     dueDate?: string;
+    vatRegime?: string;
     isCreditNote?: boolean;
     parentInvoiceNumber?: string;
     structuredComm?: string;
@@ -87,7 +89,7 @@ export function normalizeCountryToCode(country?: string): string {
  * Recursively flattens the block tree into e-invoice.be line items.
  * Only includes priced lines (type: line, article, bestek) that are NOT optional.
  */
-export function flattenBlocksToLineItems(blocks: InvoiceBlock[]): InvoiceLinePayload[] {
+export function flattenBlocksToLineItems(blocks: InvoiceBlock[], globalVatRegime?: string): InvoiceLinePayload[] {
     const items: InvoiceLinePayload[] = [];
 
     const walk = (nodes: InvoiceBlock[]) => {
@@ -102,7 +104,8 @@ export function flattenBlocksToLineItems(blocks: InvoiceBlock[]): InvoiceLinePay
                 if (price === 0 && !block.content) continue; // skip empty lines
 
                 const lineTotal = price * qty;
-                const vatRate = block.vatMedecontractant ? 0 : (block.vatRate ?? 21);
+                const isReverseCharge = globalVatRegime === 'medecontractant' || block.vatMedecontractant;
+                const vatRate = isReverseCharge ? 0 : (block.vatRate ?? 21);
                 const unitCode = mapUnitToCode(block.unit);
 
                 items.push({
@@ -112,6 +115,7 @@ export function flattenBlocksToLineItems(blocks: InvoiceBlock[]): InvoiceLinePay
                     unit_price: Math.round(price * 100) / 100,
                     amount: Math.round(lineTotal * 100) / 100,
                     tax_rate: vatRate.toFixed(2),
+                    isReverseCharge,
                 });
             }
         }
@@ -160,7 +164,7 @@ export function buildPeppolPayload(params: BuildPayloadParams) {
         countryLabel
     ].filter(Boolean).join(', ') || client.address || '';
 
-    const items = flattenBlocksToLineItems(blocks || []);
+    const items = flattenBlocksToLineItems(blocks || [], params.vatRegime);
 
     const invoicePayload: Record<string, any> = {
         document_type: isCreditNote ? 'CREDIT_NOTE' : 'INVOICE',

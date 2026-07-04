@@ -845,6 +845,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     betreft: betreft,
                     invoiceDate: invoiceDateProp ? String(invoiceDateProp) : undefined,
                     dueDate: dueDateProp ? String(dueDateProp) : undefined,
+                    vatRegime: invoice?.properties?.['vatRegime'] as string | undefined,
                     blocks: blocks,
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,

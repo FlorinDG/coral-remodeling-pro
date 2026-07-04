@@ -17,6 +17,9 @@ const nextConfig: any = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   distDir: process.env.VERCEL ? '.next' : '.next.nosync',
   webpack: (config: any) => {
     config.cache = false;

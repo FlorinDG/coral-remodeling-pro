@@ -18,7 +18,11 @@ export async function GET(request: Request, context: any) {
 
         if (!portal) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+        const isContractor = portal.audience === 'CONTRACTOR';
+        const isCustomer = portal.audience === 'CUSTOMER';
+
         // 1. Fetch portal tasks from the generic tasks module
+        // We only fetch tasks explicitly shared with this portal
         const rawTasks = await prisma.globalPage.findMany({
             where: {
                 databaseId: 'db-tasks',
@@ -41,8 +45,10 @@ export async function GET(request: Request, context: any) {
             };
         });
 
-        // 2. Resolve client's projects dynamically
-        const projectsMap = new Map();
+        // 2. Fetch linked project data
+        let linkedProjectData = null;
+        let quotes: any[] = [];
+        let invoices: any[] = [];
 
         if (portal.linkedProjectId) {
             const globalPage = await prisma.globalPage.findUnique({
@@ -50,56 +56,83 @@ export async function GET(request: Request, context: any) {
                 select: { id: true, properties: true }
             });
             if (globalPage) {
-                projectsMap.set(globalPage.id, { id: globalPage.id, ...((globalPage.properties as any) || {}) });
+                const props = (globalPage.properties as any) || {};
+                
+                // Contractor data protection: Strip financial fields from the project data
+                if (isContractor) {
+                    delete props['budget'];
+                    delete props['Budget'];
+                    delete props['paidAmount'];
+                    delete props['invoicedAmount'];
+                    delete props['totalExVat'];
+                }
+                
+                linkedProjectData = { id: globalPage.id, ...props };
             }
-        }
 
-        if (portal.clientEmail) {
-            // Find clients matching this email
-            const clients = await prisma.globalPage.findMany({
-                where: {
-                    databaseId: 'db-clients',
-                    properties: {
-                        path: ['email'],
-                        equals: portal.clientEmail
-                    }
-                },
-                select: { id: true }
-            });
-
-            if (clients.length > 0) {
-                const clientIds = clients.map(c => c.id);
-                // Prisma JSON filtering doesn't support "in" for array_contains easily, so we use OR
-                const projectConditions = clientIds.map(clientId => ({
-                    properties: {
-                        path: ['prop-client'],
-                        array_contains: clientId
-                    }
-                }));
-
-                const dynamicProjects = await prisma.globalPage.findMany({
+            // 3. Fetch financial documents only for CUSTOMER
+            if (isCustomer) {
+                // Fetch Quotes linked to project
+                const rawQuotes = await prisma.globalPage.findMany({
                     where: {
-                        databaseId: 'db-1',
-                        OR: projectConditions
-                    },
-                    select: { id: true, properties: true }
+                        databaseId: 'db-quotations',
+                        properties: {
+                            path: ['prop-quote-project'],
+                            array_contains: portal.linkedProjectId
+                        }
+                    }
+                });
+                
+                quotes = rawQuotes.map(q => {
+                    const props = (q.properties as any) || {};
+                    return {
+                        id: q.id,
+                        title: props['title'] || 'Quote',
+                        status: props['status'] || 'Draft',
+                        total: props['total'] || 0,
+                        date: props['date'] || null
+                    };
                 });
 
-                for (const p of dynamicProjects) {
-                    projectsMap.set(p.id, { id: p.id, ...((p.properties as any) || {}) });
-                }
+                // Fetch Invoices linked to project
+                const rawInvoices = await prisma.globalPage.findMany({
+                    where: {
+                        databaseId: 'db-invoices',
+                        properties: {
+                            path: ['project'],
+                            array_contains: portal.linkedProjectId
+                        }
+                    }
+                });
+                
+                invoices = rawInvoices.map(inv => {
+                    const props = (inv.properties as any) || {};
+                    return {
+                        id: inv.id,
+                        title: props['title'] || 'Invoice',
+                        status: props['status'] || 'Draft',
+                        total: props['total'] || 0,
+                        date: props['date'] || null
+                    };
+                });
             }
         }
 
-        const projects = Array.from(projectsMap.values());
-
         // Don't leak the hashed password, just a flag
-        const { password, ...safePortal } = portal;
+        const { password, budget, paidAmount, ...safePortal } = portal;
+        
+        // Strict Gating: If contractor, explicitly force budget and paidAmount to undefined
+        const finalPortal = isContractor 
+            ? { ...safePortal, budget: undefined, paidAmount: undefined }
+            : { ...safePortal, budget, paidAmount };
+
         return NextResponse.json({
-            ...safePortal,
+            ...finalPortal,
             tasks: mappedTasks,
             hasPassword: !!password,
-            projects
+            linkedProjectData,
+            quotes,
+            invoices
         });
     } catch (error) {
         console.error("Portal fetch error:", error);

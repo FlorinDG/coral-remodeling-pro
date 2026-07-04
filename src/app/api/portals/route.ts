@@ -9,7 +9,7 @@ export async function POST(request: Request) {
         const tenantId = session?.user?.tenantId;
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         const body = await request.json();
-        const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password, createProject, linkedProjectId: providedLinkedProjectId } = body;
+        const { clientName, clientEmail, projectTitle, serviceId, budget, paidAmount, password, createProject, linkedProjectId: providedLinkedProjectId, audience } = body;
 
         let finalLinkedProjectId = providedLinkedProjectId || null;
         const finalLinkedDatabaseId = 'db-1';
@@ -50,7 +50,8 @@ export async function POST(request: Request) {
                 paidAmount: paidAmount || 0,
                 password: hashedPassword,
                 linkedProjectId: finalLinkedProjectId,
-                linkedDatabaseId: projectDbId
+                linkedDatabaseId: projectDbId,
+                audience: audience || 'CUSTOMER'
             },
         });
 
@@ -71,7 +72,7 @@ export async function PATCH(request: Request) {
         if (!tenantId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const body = await request.json();
-        const { id, budget, paidAmount, status, password } = body;
+        const { id, budget, paidAmount, status, password, audience } = body;
 
         // Verify portal belongs to caller's tenant
         const existing = await prisma.clientPortal.findFirst({ where: { id, tenantId } });
@@ -80,6 +81,7 @@ export async function PATCH(request: Request) {
         const updatedData: any = { budget, paidAmount, status };
         if (body.linkedProjectId !== undefined) updatedData.linkedProjectId = body.linkedProjectId;
         if (body.linkedDatabaseId !== undefined) updatedData.linkedDatabaseId = body.linkedDatabaseId;
+        if (audience !== undefined) updatedData.audience = audience;
 
         if (password) {
             const bcrypt = await import('bcryptjs');

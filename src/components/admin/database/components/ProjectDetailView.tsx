@@ -25,6 +25,7 @@ const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/Fi
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
 const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
+const ProjectCockpit = dynamic(() => import('./ProjectCockpit'), { ssr: false });
 
 // ── Status configuration ──────────────────────────────────────────────
 const EXEC_STATUS_MAP: Record<string, { label: string; color: string; icon: React.ReactNode; bg: string }> = {

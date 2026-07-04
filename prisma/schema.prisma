@@ -179,6 +179,7 @@ model ClientPortal {
   serviceId        String?
   linkedDatabaseId String?         @default("db-1")
   linkedProjectId  String?
+  audience         PortalAudience  @default(CUSTOMER)
   service          CMS_Service?    @relation(fields: [serviceId], references: [id])
   tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   documents        Document[]
@@ -990,4 +991,8 @@ model HrDocumentAcknowledgment {
 
   @@unique([userId, documentId])
   @@index([documentId])
+}
+enum PortalAudience { 
+  CUSTOMER
+  CONTRACTOR 
 }

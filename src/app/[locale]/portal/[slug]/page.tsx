@@ -17,8 +17,6 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loginError, setLoginError] = useState('');
 
-    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
     useEffect(() => {
         const loadPortal = async () => {
             const { slug } = await paramsPromise;
@@ -35,11 +33,6 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                 // Check if already authenticated in session
                 const sessionAuth = sessionStorage.getItem(`portal_auth_${data.id}`);
                 if (sessionAuth) setIsAuthenticated(true);
-            }
-            
-            // Auto-select if only 1 project
-            if (data.projects && data.projects.length === 1) {
-                setSelectedProjectId(data.projects[0].id);
             }
 
             setLoading(false);
@@ -69,22 +62,14 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
         return <PortalLogin onLogin={handleLogin} error={loginError} />;
     }
 
-    const projects = portal.projects || [];
-    const showProjectList = projects.length > 1 && !selectedProjectId;
-    
-    let activeProject = null;
-    if (selectedProjectId) {
-        activeProject = projects.find((p: any) => p.id === selectedProjectId) || portal.linkedProjectData;
-    } else if (projects.length === 0) {
-        activeProject = portal.linkedProjectData;
-    }
+    const activeProject = portal.linkedProjectData || {};
 
-    // Filter items by project
-    const activeTasks = portal.tasks?.filter((t: any) => t.projectId === selectedProjectId || !t.projectId) || [];
-    const activeMedia = portal.media?.filter((m: any) => m.projectId === selectedProjectId || !m.projectId) || [];
-    const activeDocs = portal.documents?.filter((d: any) => d.projectId === selectedProjectId || !d.projectId) || [];
-    const activeUpdates = portal.updates?.filter((u: any) => u.projectId === selectedProjectId || !u.projectId) || [];
-    const activeMessages = portal.messages?.filter((m: any) => m.projectId === selectedProjectId || !m.projectId) || [];
+    // Filter items by project (since 1:1, we just take them all)
+    const activeTasks = portal.tasks || [];
+    const activeMedia = portal.media || [];
+    const activeDocs = portal.documents || [];
+    const activeUpdates = portal.updates || [];
+    const activeMessages = portal.messages || [];
 
     const displayBudget = activeProject?.budget || activeProject?.Budget || portal.budget || 0;
     const displayPaid = activeProject?.paidAmount || portal.paidAmount || 0;
@@ -99,56 +84,13 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                     <span className="font-bold tracking-tighter text-lg text-neutral-900 dark:text-white uppercase">CORAL ENTERPRISES CLIENT PORTAL</span>
                 </div>
                 <div className="flex items-center gap-4">
-                    {selectedProjectId && projects.length > 1 && (
-                        <button onClick={() => setSelectedProjectId(null)} className="text-sm font-bold text-[#d75d00] hover:underline">
-                            ← Back to Projects
-                        </button>
-                    )}
                     <div className="text-sm font-bold text-neutral-500 dark:text-white/60">{t('header')}</div>
                 </div>
             </header>
 
             <main className="container mx-auto px-4 md:px-8 pt-32">
-                {showProjectList ? (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-                        <div className="mb-8">
-                            <span className="text-[#d75d00] font-bold tracking-[0.3em] text-[10px] uppercase mb-2 block tracking-widest">{t('navTitle')}</span>
-                            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-neutral-900 dark:text-white mb-4">
-                                {portal.clientName}
-                            </h1>
-                            <p className="text-neutral-500 dark:text-neutral-400 font-medium">Please select a project to view its details.</p>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {projects.map((proj: any) => {
-                                const pBudget = proj.budget || proj.Budget || 0;
-                                const pPaid = proj.paidAmount || 0; // usually not on global page directly unless mapped, we fallback to 0
-                                const progress = pBudget > 0 ? Math.min(100, (pPaid / pBudget) * 100) : 0;
-                                return (
-                                    <div 
-                                        key={proj.id} 
-                                        onClick={() => setSelectedProjectId(proj.id)}
-                                        className="glass-morphism p-6 rounded-[2rem] border border-neutral-200 dark:border-white/10 hover:border-[#d75d00]/50 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer bg-white dark:bg-black/40 group"
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <h3 className="font-bold text-xl group-hover:text-[#d75d00] transition-colors">{proj.title || 'Untitled Project'}</h3>
-                                            <span className="text-[10px] px-2 py-1 bg-neutral-100 dark:bg-white/10 rounded-md font-bold uppercase tracking-widest">{proj.status || proj.Status || 'Active'}</span>
-                                        </div>
-                                        {pBudget > 0 && (
-                                            <div className="mt-4">
-                                                <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest mb-1 text-neutral-400">
-                                                    <span>Budget</span>
-                                                    <span>€{pBudget.toLocaleString()}</span>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4">
-                        <div className="mb-12">
+                <div className="animate-in fade-in slide-in-from-bottom-4">
+                    <div className="mb-12">
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-12">
                                 <div>
                                     <span className="text-[#d75d00] font-bold tracking-[0.3em] text-[10px] uppercase mb-2 block tracking-widest">{t('navTitle')}</span>
@@ -268,7 +210,6 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                             </div>
                         </div>
                     </div>
-                )}
             </main>
         </div>
     );

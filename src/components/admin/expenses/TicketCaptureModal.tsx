@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, Scissors, Copy, CheckCircle, AlertCircle, RefreshCw, AlertTriangle } from 'lucide-react';
+import { X, Camera, Upload, FileText, Loader2, Sparkles, Receipt, CheckCircle, AlertCircle, RefreshCw, AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { Page } from '@/components/admin/database/types';
 import { createPageServerFirst, updatePageServerFirst } from '@/app/actions/pages';
@@ -19,6 +19,13 @@ interface TicketCaptureModalProps {
     targetDatabaseId?: string;
 }
 
+interface TicketFormLine {
+    description: string;
+    quantity: string;
+    unitPrice: string;
+    vatRate: string;
+}
+
 interface TicketFormData {
     merchant: string;
     date: string;
@@ -28,6 +35,13 @@ interface TicketFormData {
     currency: string;
     paymentMethod: string;
     project: string;
+    // Expanded fields
+    invoiceNumber: string;
+    object: string;
+    ogm: string;
+    vatRegime: string;
+    supplierVat: string;
+    lines: TicketFormLine[];
 }
 
 interface ScanResult {
@@ -64,7 +78,6 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const scansLeft = Math.max(0, scanQuota - scanCount);
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
-    const createPage = useDatabaseStore(s => s.createPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
     const pages = useDatabaseStore(s => s.pages);
     const projects = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-1'), [pages]);
@@ -99,11 +112,17 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         currency: 'cur-eur',
         paymentMethod: 'pm-card',
         project: '',
+        invoiceNumber: '',
+        object: '',
+        ogm: '',
+        vatRegime: 'regime-standard',
+        supplierVat: '',
+        lines: [],
     });
 
     const [lastSavedDetails, setLastSavedDetails] = useState<{ merchant: string; amount: string } | null>(null);
 
-    const updateForm = (key: keyof TicketFormData, value: string) => {
+    const updateForm = (key: keyof TicketFormData, value: any) => {
         setForm(prev => ({ ...prev, [key]: value }));
     };
 
@@ -126,6 +145,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             currency: 'cur-eur',
             paymentMethod: 'pm-card',
             project: '',
+            invoiceNumber: '',
+            object: '',
+            ogm: '',
+            vatRegime: 'regime-standard',
+            supplierVat: '',
+            lines: [],
         });
         setPreviewUrl(null);
         setScanResult(null);
@@ -152,8 +177,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         let clientExtracted: Record<string, any> | null = null;
         if (isFree) {
             if (file.type.startsWith('application/pdf') || file.name.toLowerCase().endsWith('.pdf')) {
-                setScanError('PDF scanning requires a PRO plan. Please upload an image or enter details manually.');
-                setStep('capture');
+                setScanError('PDF scanning requires a PRO plan. Falling back to manual entry.');
+                setStep('review');
                 return;
             }
 
@@ -176,8 +201,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     };
                 } catch (err: any) {
                     console.error('[TicketCaptureModal] Client-side OCR error:', err);
-                    setScanError('Client-side text extraction failed. Please try a clearer image or enter manually.');
-                    setStep('capture');
+                    setScanError('Client-side text extraction failed. Please enter details manually.');
+                    setStep('review');
                     return;
                 }
             }
@@ -195,11 +220,15 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                setScanError(data.error || 'Scan failed. Please try again or enter manually.');
+                // EXPENSE-UPLOAD-FIX: graceful degradation to manual entry instead of returning early and blocking
+                setScanError(data.error || 'Scan failed. Please enter details manually.');
+                setScanResult(null);
+                setStep('review');
                 return;
             }
 
             setScanResult(data);
+            setScanError('');
 
             // Pre-fill form from extracted fields
             const ext = data.extracted || {};
@@ -210,6 +239,14 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     date: ext.issueDate || prev.date,
                     amount: ext.totalExVat != null ? String(ext.totalExVat) : prev.amount,
                     vatAmount: ext.totalVat != null ? String(ext.totalVat) : prev.vatAmount,
+                    invoiceNumber: ext.invoiceNumber || prev.invoiceNumber,
+                    supplierVat: ext.supplierVat || prev.supplierVat,
+                    lines: Array.isArray(ext.lines) ? ext.lines.map((l: any) => ({
+                        description: l.description || '',
+                        quantity: l.quantity ? String(l.quantity) : '1',
+                        unitPrice: l.unitPrice ? String(l.unitPrice) : '0',
+                        vatRate: l.vatRate ? String(l.vatRate) : '21',
+                    })) : prev.lines,
                 }));
             } else {
                 setForm(prev => ({
@@ -224,6 +261,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             setStep('review');
         } catch (e: any) {
             setScanError(e?.message || 'Network error. Check your connection and try again.');
+            setScanResult(null);
+            setStep('review');
         }
     }, [targetDatabaseId, isInvoiceMode, isFree]);
 
@@ -278,6 +317,15 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             }
         }
 
+        const linesPayload = form.lines.map(l => ({
+            description: l.description,
+            quantity: parseDecimal(l.quantity) || 1,
+            unitPrice: parseDecimal(l.unitPrice) || 0,
+            vatRate: parseDecimal(l.vatRate) || 21,
+            totalExVat: (parseDecimal(l.quantity) || 1) * (parseDecimal(l.unitPrice) || 0),
+            totalVat: ((parseDecimal(l.quantity) || 1) * (parseDecimal(l.unitPrice) || 0)) * ((parseDecimal(l.vatRate) || 21) / 100),
+        }));
+
         if (!scanResult) {
             // Manual entry — server-first
             try {
@@ -287,17 +335,25 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         source: 'src-manual',
                         status: 'opt-draft',
                         invoiceDate: form.date,
+                        supplierName: form.merchant,
+                        invoiceNumber: form.invoiceNumber,
+                        object: form.object,
+                        ogm: form.ogm,
+                        vatRegime: form.vatRegime,
+                        supplierVat: form.supplierVat,
                         supplier: [],
                         totalExVat: parsedAmount,
                         totalVat: parsedVat,
                         totalIncVat: parsedAmount + parsedVat,
                         receiptUrl: receiptUrl,
                         project: form.project ? [form.project] : [],
+                        lines: linesPayload,
                     });
                     if (result.success) addConfirmedPage(result.page);
                 } else {
                     const result = await createPageServerFirst(targetDatabaseId, {
                         title: form.merchant || 'Unnamed Expense',
+                        merchant: form.merchant,
                         date: form.date,
                         amount: parsedAmount,
                         category: form.category || '',
@@ -328,10 +384,16 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     title: form.merchant || currentProps.title,
                     supplierName: form.merchant || currentProps.supplierName,
                     invoiceDate: form.date,
+                    invoiceNumber: form.invoiceNumber || currentProps.invoiceNumber,
+                    object: form.object || currentProps.object,
+                    ogm: form.ogm || currentProps.ogm,
+                    vatRegime: form.vatRegime || currentProps.vatRegime,
+                    supplierVat: form.supplierVat || currentProps.supplierVat,
                     totalExVat: parsedAmount,
                     totalVat: parsedVat,
                     totalIncVat: parsedAmount + parsedVat,
                     status: 'opt-unpaid',
+                    lines: linesPayload.length > 0 ? linesPayload : currentProps.lines,
                 };
                 if (form.project) updatedProps.project = [form.project];
                 if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
@@ -339,11 +401,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 updatedProps = {
                     ...currentProps,
                     title: form.merchant || currentProps.title,
+                    merchant: form.merchant || currentProps.merchant,
                     date: form.date,
                     amount: parsedAmount,
                     category: form.category || currentProps.category,
                     paymentMethod: form.paymentMethod,
-                    };
+                };
                 if (form.project) updatedProps.project = [form.project];
                 if (receiptUrl) updatedProps.receiptUrl = receiptUrl;
             }
@@ -374,13 +437,13 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4 sm:p-6"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div className={`relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`}>
+            <div className={`relative w-full max-w-[1400px] max-h-[95vh] h-full flex flex-col bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 overflow-hidden ${animationDone ? '' : 'animate-in fade-in zoom-in-95 duration-200'}`}>
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20">
+                <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/20">
                     <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center">
                             {step === 'done'
@@ -410,361 +473,529 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 max-h-[75vh] overflow-y-auto">
-
-                    {/* ── CAPTURE STEP ── */}
-                    {(step === 'capture') && (
-                        <div className="space-y-4">
-                            {/* AI Processing overlay */}
-                            {isLoading && (
-                                <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                                    <div className="relative">
-                                        <div className="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                            <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                {/* Content Container */}
+                <div className="flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+                    
+                    {/* LEFT: PDF / Viewer (Hidden on mobile if no preview, or conditionally shown) */}
+                    {(previewUrl || step === 'capture') && step !== 'done' && step !== 'saving' && (
+                        <div className="hidden md:flex w-1/2 lg:w-3/5 border-r border-neutral-200 dark:border-white/10 bg-neutral-100/50 dark:bg-neutral-950 p-6 flex-col min-h-0 relative">
+                            {previewUrl ? (
+                                <div className="flex-1 rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 shadow-sm relative">
+                                    {lastFileRef.current?.type === 'application/pdf' ? (
+                                        <iframe src={previewUrl} className="w-full h-full border-0 absolute inset-0" />
+                                    ) : (
+                                        <div className="absolute inset-0 overflow-auto flex items-center justify-center bg-neutral-50 dark:bg-black/50">
+                                            <img src={previewUrl} alt="Document" className="max-w-full max-h-full object-contain" />
                                         </div>
-                                        <Sparkles className="w-4 h-4 text-amber-400 absolute -top-1 -right-1 animate-pulse" />
-                                    </div>
-                                    <div className="text-center">
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                                            Extracting data...
-                                        </p>
-                                        <p className="text-xs text-neutral-500 mt-1">
-                                            Extracting details from your document...
-                                        </p>
-                                        {isFree && (
-                                            <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/30">
-                                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">
-                                                    AI scans left: {scansLeft}/{scanQuota}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {previewUrl && (
-                                        <img src={previewUrl} alt="Preview" className="w-28 h-auto rounded-xl border border-neutral-200 dark:border-white/10 shadow-sm" />
                                     )}
                                 </div>
-                            )}
-
-                            {/* Error state */}
-                            {scanError && (
-                                <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 p-4 space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                                        <div>
-                                            <p className="text-sm font-semibold text-red-700 dark:text-red-400">Scan failed</p>
-                                            <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-1">{scanError}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => { setScanError(''); lastFileRef.current = null; }}
-                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
-                                        >
-                                            <RefreshCw className="w-3.5 h-3.5" /> Try again
-                                        </button>
-                                        <button
-                                            onClick={handleSkipToManual}
-                                            className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
-                                        >
-                                            Enter manually
-                                        </button>
-                                    </div>
+                            ) : (
+                                <div className="flex-1 flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 dark:border-white/10 bg-white/50 dark:bg-black/20">
+                                    <FileText className="w-16 h-16 text-neutral-300 dark:text-neutral-700 mb-4" />
+                                    <p className="text-sm font-medium text-neutral-500">No document selected</p>
+                                    <p className="text-xs text-neutral-400 mt-1">Upload a receipt or invoice</p>
                                 </div>
                             )}
-
-                            {/* Upload area (only when not loading and no error) */}
-                            {!isLoading && !scanError && (
-                                <div className="flex flex-col gap-4">
-                                    {/* CAMERA ACTION FIRST */}
-                                    <button
-                                        onClick={() => cameraInputRef.current?.click()}
-                                        className="w-full flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-2xl border border-orange-400 text-white shadow-lg shadow-orange-500/20 active:scale-[0.99] transition-all"
-                                    >
-                                        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
-                                            <Camera className="w-7 h-7 text-white" />
-                                        </div>
-                                        <div className="text-center">
-                                            <span className="text-base font-bold tracking-wide">Take Receipt Photo</span>
-                                            <p className="text-xs text-orange-100 mt-1">Camera-first quick capture</p>
-                                        </div>
-                                    </button>
-
-                                    <div className="flex items-center gap-3 py-2">
-                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
-                                        <span className="text-xs text-neutral-400 font-medium uppercase tracking-wider">or upload files</span>
-                                        <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
-                                    </div>
-
-                                    {/* Upload area */}
-                                    <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        onDragOver={handleDragOver}
-                                        onDragEnter={handleDragOver}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={handleDrop}
-                                        className={`group cursor-pointer border-2 border-dashed rounded-xl p-6 text-center transition-all ${
-                                            isDragging
-                                                ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20 scale-[1.01]'
-                                                : 'border-neutral-300 dark:border-white/20 hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
-                                        }`}
-                                    >
-                                        <Upload className={`w-6 h-6 mx-auto mb-2 transition-colors ${isDragging ? 'text-orange-500' : 'text-neutral-400 group-hover:text-orange-500'}`} />
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-                                            Select existing PDF/Image
-                                        </p>
-                                        <p className="text-xs text-neutral-500 mt-0.5">
-                                            Click or drag file here
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        onClick={handleSkipToManual}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-sm font-medium transition-colors"
-                                    >
-                                        <FileText className="w-4 h-4" />
-                                        Enter details manually
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Hidden inputs */}
-                            <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleInputChange} />
-                            <input ref={cameraInputRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={handleInputChange} />
                         </div>
                     )}
 
-                    {/* ── REVIEW / FORM STEP ── */}
-                    {step === 'review' && (
-                        <div className="space-y-4">
-                            {/* Scan confirmed banner */}
-                            {scanResult && (
-                                <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl px-4 py-3">
-                                    <Sparkles className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
-                                    <p className="text-xs font-medium text-green-700 dark:text-green-400">
-                                        Please review the extracted data below before saving.
-                                    </p>
-                                </div>
-                            )}
+                    {/* RIGHT: Scrollable Form Area */}
+                    <div className="flex-1 w-full md:w-1/2 lg:w-2/5 overflow-y-auto p-6 md:p-8 relative">
 
-                            {/* Save error */}
-                            {saveError && (
-                                <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-xl px-4 py-3">
-                                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
-                                    <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>
-                                </div>
-                            )}
+                        {/* ── CAPTURE STEP ── */}
+                        {(step === 'capture') && (
+                            <div className="space-y-6 max-w-md mx-auto">
+                                {/* AI Processing overlay */}
+                                {isLoading && (
+                                    <div className="flex flex-col items-center justify-center py-10 space-y-4">
+                                        <div className="relative">
+                                            <div className="w-16 h-16 rounded-2xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                                <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                                            </div>
+                                            <Sparkles className="w-4 h-4 text-amber-400 absolute -top-1 -right-1 animate-pulse" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                                                Extracting data...
+                                            </p>
+                                            <p className="text-xs text-neutral-500 mt-1">
+                                                Extracting details from your document...
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* Merchant / Supplier */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                    {isInvoiceMode ? 'Supplier' : 'Merchant'}
-                                </label>
-                                <input
-                                    type="text"
-                                    value={form.merchant}
-                                    onChange={e => updateForm('merchant', e.target.value)}
-                                    placeholder={isInvoiceMode ? 'Supplier name' : 'Shop / vendor name'}
-                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white placeholder:text-neutral-400 transition-all"
-                                />
+                                {/* Error state */}
+                                {scanError && (
+                                    <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 p-4 space-y-3">
+                                        <div className="flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-red-700 dark:text-red-400">Scan failed</p>
+                                                <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-1">{scanError}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => { setScanError(''); lastFileRef.current = null; }}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
+                                            >
+                                                <RefreshCw className="w-3.5 h-3.5" /> Try again
+                                            </button>
+                                            <button
+                                                onClick={handleSkipToManual}
+                                                className="px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+                                            >
+                                                Enter manually
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Upload area (only when not loading and no error) */}
+                                {!isLoading && !scanError && (
+                                    <div className="flex flex-col gap-5">
+                                        {/* CAMERA ACTION FIRST */}
+                                        <button
+                                            onClick={() => cameraInputRef.current?.click()}
+                                            className="w-full flex flex-col items-center justify-center gap-3 px-6 py-8 bg-gradient-to-br from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-2xl border border-orange-400 text-white shadow-lg shadow-orange-500/20 active:scale-[0.99] transition-all"
+                                        >
+                                            <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center shadow-inner">
+                                                <Camera className="w-7 h-7 text-white" />
+                                            </div>
+                                            <div className="text-center">
+                                                <span className="text-base font-bold tracking-wide">Take Receipt Photo</span>
+                                                <p className="text-xs text-orange-100 mt-1">Camera-first quick capture</p>
+                                            </div>
+                                        </button>
+
+                                        <div className="flex items-center gap-3 py-2">
+                                            <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
+                                            <span className="text-xs text-neutral-400 font-medium uppercase tracking-wider">or upload files</span>
+                                            <div className="flex-1 h-px bg-neutral-200 dark:bg-white/10" />
+                                        </div>
+
+                                        {/* Upload area */}
+                                        <div
+                                            onClick={() => fileInputRef.current?.click()}
+                                            onDragOver={handleDragOver}
+                                            onDragEnter={handleDragOver}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={handleDrop}
+                                            className={`group cursor-pointer border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                                                isDragging
+                                                    ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20 scale-[1.01]'
+                                                    : 'border-neutral-300 dark:border-white/20 hover:border-orange-400 dark:hover:border-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
+                                            }`}
+                                        >
+                                            <Upload className={`w-8 h-8 mx-auto mb-3 transition-colors ${isDragging ? 'text-orange-500' : 'text-neutral-400 group-hover:text-orange-500'}`} />
+                                            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                                                Select existing PDF/Image
+                                            </p>
+                                            <p className="text-xs text-neutral-500 mt-1">
+                                                Click or drag file here
+                                            </p>
+                                        </div>
+
+                                        <button
+                                            onClick={handleSkipToManual}
+                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 text-sm font-medium transition-colors"
+                                        >
+                                            <FileText className="w-4 h-4" />
+                                            Enter details manually
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Hidden inputs */}
+                                <input ref={fileInputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={handleInputChange} />
+                                <input ref={cameraInputRef} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={handleInputChange} />
                             </div>
+                        )}
 
-                            {/* Date + Amount row */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="relative">
-                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                        Date {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-                                    </label>
-                                    <input
-                                        type="date"
-                                        value={form.date}
-                                        onChange={e => updateForm('date', e.target.value)}
-                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
-                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
-                                        }`}
-                                    />
-                                </div>
-                                <div className="relative">
-                                    <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                        {isInvoiceMode ? 'Total Excl. VAT' : 'Amount'} {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={form.amount}
-                                        onChange={e => {
-                                            const v = e.target.value;
-                                            if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                                updateForm('amount', v);
-                                            }
-                                        }}
-                                        placeholder="0.00"
-                                        className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
-                                            scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
-                                        }`}
-                                    />
-                                </div>
-                            </div>
+                        {/* ── REVIEW / FORM STEP ── */}
+                        {step === 'review' && (
+                            <div className="space-y-6">
+                                {/* Scan Error / Degradation banner */}
+                                {scanError && !scanResult && (
+                                    <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl px-4 py-3">
+                                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">Scan Unavailable</p>
+                                            <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">{scanError}</p>
+                                        </div>
+                                    </div>
+                                )}
 
-                            {/* VAT and Payment */}
-                            {isInvoiceMode ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                {/* Scan confirmed banner */}
+                                {scanResult && (
+                                    <div className="flex items-center gap-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl px-4 py-3">
+                                        <Sparkles className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+                                        <p className="text-xs font-medium text-green-700 dark:text-green-400">
+                                            Please review the extracted data below before saving.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Save error */}
+                                {saveError && (
+                                    <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 rounded-xl px-4 py-3">
+                                        <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                                        <p className="text-xs text-red-600 dark:text-red-400">{saveError}</p>
+                                    </div>
+                                )}
+
+                                {/* Merchant / Supplier */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                            {isInvoiceMode ? 'Supplier' : 'Merchant'}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={form.merchant}
+                                            onChange={e => updateForm('merchant', e.target.value)}
+                                            placeholder={isInvoiceMode ? 'Supplier name' : 'Shop / vendor name'}
+                                            className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white placeholder:text-neutral-400 transition-all"
+                                        />
+                                    </div>
+
+                                    {/* Date + Amount row */}
                                     <div className="relative">
                                         <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
-                                            VAT Amount {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                            Date {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={form.date}
+                                            onChange={e => updateForm('date', e.target.value)}
+                                            className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                                scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                            }`}
+                                        />
+                                    </div>
+                                    <div className="relative">
+                                        <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                            {isInvoiceMode ? 'Total Excl. VAT' : 'Amount'} {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
                                         </label>
                                         <input
                                             type="text"
                                             inputMode="decimal"
-                                            value={form.vatAmount}
+                                            value={form.amount}
                                             onChange={e => {
                                                 const v = e.target.value;
-                                                if (/^-?[\d.,]*$/.test(v) || v === '') {
-                                                    updateForm('vatAmount', v);
-                                                }
+                                                if (/^-?[\d.,]*$/.test(v) || v === '') updateForm('amount', v);
                                             }}
                                             placeholder="0.00"
                                             className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
                                                 scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
                                             }`}
                                         />
-                                        {/* Auto-calc quick actions */}
-                                        <div className="flex gap-1.5 mt-1.5">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAutoCalcVat(21)}
-                                                className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
-                                            >
-                                                Calc 21%
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleAutoCalcVat(6)}
-                                                className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 dark:hover:bg-orange-950/30 text-neutral-600 dark:text-neutral-300 rounded border border-neutral-200 dark:border-white/10 transition-colors"
-                                            >
-                                                Calc 6%
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
-                            ) : (
+
+                                {/* Expanded Invoice Fields */}
+                                {isInvoiceMode && (
+                                    <>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="relative">
+                                                <label className="flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
+                                                    VAT Amount {scanResult && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={form.vatAmount}
+                                                    onChange={e => {
+                                                        const v = e.target.value;
+                                                        if (/^-?[\d.,]*$/.test(v) || v === '') updateForm('vatAmount', v);
+                                                    }}
+                                                    placeholder="0.00"
+                                                    className={`w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white transition-all ${
+                                                        scanResult ? 'border-amber-400 dark:border-amber-500/60 bg-amber-50/10' : 'border-neutral-200 dark:border-white/10'
+                                                    }`}
+                                                />
+                                                {/* Auto-calc quick actions */}
+                                                <div className="flex gap-1.5 mt-1.5">
+                                                    <button type="button" onClick={() => handleAutoCalcVat(21)} className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 text-neutral-600 rounded border transition-colors">Calc 21%</button>
+                                                    <button type="button" onClick={() => handleAutoCalcVat(6)} className="px-2 py-0.5 text-[10px] font-bold bg-neutral-100 dark:bg-white/5 hover:bg-orange-100 text-neutral-600 rounded border transition-colors">Calc 6%</button>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Invoice Number</label>
+                                                <input
+                                                    type="text"
+                                                    value={form.invoiceNumber}
+                                                    onChange={e => updateForm('invoiceNumber', e.target.value)}
+                                                    placeholder="INV-XXXX"
+                                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-orange-400/50"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Object / Reference</label>
+                                                <input
+                                                    type="text"
+                                                    value={form.object}
+                                                    onChange={e => updateForm('object', e.target.value)}
+                                                    placeholder="e.g. Services rendered"
+                                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-orange-400/50"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">OGM / Structured Comm.</label>
+                                                <input
+                                                    type="text"
+                                                    value={form.ogm}
+                                                    onChange={e => updateForm('ogm', e.target.value)}
+                                                    placeholder="+++123/4567/89012+++"
+                                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-orange-400/50"
+                                                />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">VAT Regime</label>
+                                                <SearchableSelect
+                                                    options={[
+                                                        { value: 'regime-standard', label: 'Standard (21%, 6%, etc)' },
+                                                        { value: 'regime-cocontractor', label: 'Co-contractor (0%)' },
+                                                        { value: 'regime-intra', label: 'Intra-community (0%)' },
+                                                        { value: 'regime-export', label: 'Export (0%)' }
+                                                    ]}
+                                                    value={form.vatRegime}
+                                                    onChange={(v) => updateForm('vatRegime', v)}
+                                                    placeholder="Select VAT Regime"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Supplier VAT Number</label>
+                                                <input
+                                                    type="text"
+                                                    value={form.supplierVat}
+                                                    onChange={e => updateForm('supplierVat', e.target.value)}
+                                                    placeholder="BE 0123.456.789"
+                                                    className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-orange-400/50"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Line Items */}
+                                        <div className="pt-4 border-t border-neutral-200 dark:border-white/10">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Line Items</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => updateForm('lines', [...form.lines, { description: '', quantity: '1', unitPrice: '0', vatRate: '21' }])}
+                                                    className="flex items-center gap-1 px-2 py-1 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 text-neutral-700 dark:text-neutral-300 rounded-md text-xs font-medium transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3" /> Add Line
+                                                </button>
+                                            </div>
+                                            
+                                            <div className="space-y-3">
+                                                {form.lines.map((line, idx) => (
+                                                    <div key={idx} className="flex gap-2 items-start">
+                                                        <div className="flex-1 grid grid-cols-12 gap-2">
+                                                            <div className="col-span-12 md:col-span-5">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="Description"
+                                                                    value={line.description}
+                                                                    onChange={e => {
+                                                                        const newLines = [...form.lines];
+                                                                        newLines[idx].description = e.target.value;
+                                                                        updateForm('lines', newLines);
+                                                                    }}
+                                                                    className="w-full px-2.5 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-orange-400/50"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-4 md:col-span-2">
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="Qty"
+                                                                    value={line.quantity}
+                                                                    onChange={e => {
+                                                                        const newLines = [...form.lines];
+                                                                        newLines[idx].quantity = e.target.value;
+                                                                        updateForm('lines', newLines);
+                                                                    }}
+                                                                    className="w-full px-2.5 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-orange-400/50"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-4 md:col-span-3">
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    placeholder="Price"
+                                                                    value={line.unitPrice}
+                                                                    onChange={e => {
+                                                                        const newLines = [...form.lines];
+                                                                        if (/^-?[\d.,]*$/.test(e.target.value) || e.target.value === '') {
+                                                                            newLines[idx].unitPrice = e.target.value;
+                                                                            updateForm('lines', newLines);
+                                                                        }
+                                                                    }}
+                                                                    className="w-full px-2.5 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-orange-400/50"
+                                                                />
+                                                            </div>
+                                                            <div className="col-span-4 md:col-span-2">
+                                                                <select
+                                                                    value={line.vatRate}
+                                                                    onChange={e => {
+                                                                        const newLines = [...form.lines];
+                                                                        newLines[idx].vatRate = e.target.value;
+                                                                        updateForm('lines', newLines);
+                                                                    }}
+                                                                    className="w-full px-2.5 py-2 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-orange-400/50 appearance-none"
+                                                                >
+                                                                    <option value="21">21%</option>
+                                                                    <option value="6">6%</option>
+                                                                    <option value="12">12%</option>
+                                                                    <option value="0">0%</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const newLines = [...form.lines];
+                                                                newLines.splice(idx, 1);
+                                                                updateForm('lines', newLines);
+                                                            }}
+                                                            className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors shrink-0"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                                {form.lines.length === 0 && (
+                                                    <p className="text-sm text-neutral-500 italic py-2 text-center border-2 border-dashed border-neutral-200 dark:border-white/10 rounded-lg">No line items added. Will use gross totals.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Category and Payment (Tickets only) */}
+                                {!isInvoiceMode && (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment Method</label>
+                                            <SearchableSelect
+                                                options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
+                                                value={form.paymentMethod}
+                                                onChange={(v) => updateForm('paymentMethod', v)}
+                                                placeholder={tPlaceholders('method')}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-2 uppercase tracking-wider">Category</label>
+                                            <div className="grid grid-cols-4 gap-2">
+                                                {CATEGORIES.map(cat => (
+                                                    <button
+                                                        key={cat.id}
+                                                        type="button"
+                                                        onClick={() => updateForm('category', cat.id)}
+                                                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border text-xs font-medium transition-all ${
+                                                            form.category === cat.id
+                                                                ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
+                                                                : 'border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:border-orange-300 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
+                                                        }`}
+                                                    >
+                                                        <span className="text-base">{cat.icon}</span>
+                                                        <span className="leading-tight text-center">{cat.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* Project */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment</label>
+                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Project</label>
                                     <SearchableSelect
-                                        options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
-                                        value={form.paymentMethod}
-                                        onChange={(v) => updateForm('paymentMethod', v)}
-                                        placeholder={tPlaceholders('method')}
+                                        options={projects.map(p => ({ value: p.id, label: String(p.properties.title || 'Untitled') }))}
+                                        value={form.project}
+                                        onChange={(v) => updateForm('project', v)}
+                                        placeholder="Link to project"
                                     />
                                 </div>
-                            )}
 
-                            {/* Category (tickets only) */}
-                            {!isInvoiceMode && (
-                                <div>
-                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-2 uppercase tracking-wider">Category</label>
-                                    <div className="grid grid-cols-4 gap-2">
-                                        {CATEGORIES.map(cat => (
-                                            <button
-                                                key={cat.id}
-                                                type="button"
-                                                onClick={() => updateForm('category', cat.id)}
-                                                className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border text-xs font-medium transition-all ${
-                                                    form.category === cat.id
-                                                        ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
-                                                        : 'border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:border-orange-300 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
-                                                }`}
-                                            >
-                                                <span className="text-base">{cat.icon}</span>
-                                                <span className="leading-tight text-center">{cat.label}</span>
-                                            </button>
-                                        ))}
+                                {/* Mobile Document Preview - only shown on mobile if there's a preview */}
+                                {previewUrl && (
+                                    <div className="md:hidden mt-6 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                                        {lastFileRef.current?.type === 'application/pdf' ? (
+                                            <iframe src={previewUrl} className="w-full h-80 border-0" />
+                                        ) : (
+                                            <img src={previewUrl} alt="Document" className="w-full h-auto object-contain max-h-[500px]" />
+                                        )}
                                     </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-white/10 mt-6 sticky bottom-0 bg-white dark:bg-neutral-900 pb-2">
+                                    <button
+                                        onClick={() => { setScanResult(null); setStep('capture'); setScanError(''); lastFileRef.current = null; }}
+                                        className="flex-1 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
+                                    >
+                                        ← Back
+                                    </button>
+                                    <button
+                                        onClick={handleSave}
+                                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
+                                    >
+                                        {scanResult ? 'Confirm & Save' : 'Save'}
+                                    </button>
                                 </div>
-                            )}
-
-                            {/* Project */}
-                            <div>
-                                <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Project</label>
-                                <SearchableSelect
-                                    options={projects.map(p => ({ value: p.id, label: String(p.properties.title || 'Untitled') }))}
-                                    value={form.project}
-                                    onChange={(v) => updateForm('project', v)}
-                                    placeholder="Link to project"
-                                />
                             </div>
+                        )}
 
-                            {/* Document Preview */}
-                            {previewUrl && (
-                                <div className="mt-4 border border-neutral-200 dark:border-white/10 rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                                    {lastFileRef.current?.type === 'application/pdf' ? (
-                                        <iframe src={previewUrl} className="w-full h-80 border-0" />
-                                    ) : (
-                                        <img src={previewUrl} alt="Document" className="w-full h-auto object-contain max-h-[500px]" />
+                        {/* ── SAVING STEP ── */}
+                        {step === 'saving' && (
+                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
+                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saving to database…</p>
+                                <p className="text-xs text-neutral-500">This will be available on all your devices.</p>
+                            </div>
+                        )}
+
+                        {/* ── DONE STEP ── */}
+                        {step === 'done' && (
+                            <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                                <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <CheckCircle className="w-8 h-8 text-green-600" />
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saved successfully!</p>
+                                    {lastSavedDetails && (
+                                        <p className="text-xs text-neutral-500 mt-1 font-medium">
+                                            {lastSavedDetails.merchant} &middot; €{lastSavedDetails.amount}
+                                        </p>
                                     )}
                                 </div>
-                            )}
 
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-1">
-                                <button
-                                    onClick={() => { setScanResult(null); setStep('capture'); setScanError(''); lastFileRef.current = null; }}
-                                    className="flex-1 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
-                                >
-                                    ← Back
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
-                                >
-                                    {scanResult ? 'Confirm & Save' : 'Save'}
-                                </button>
+                                {/* Loop scanning buttons */}
+                                <div className="flex flex-col gap-2 w-full pt-4 max-w-[240px]">
+                                    <button
+                                        onClick={handleResetFlow}
+                                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
+                                    >
+                                        Scan Another
+                                    </button>
+                                    <button
+                                        onClick={onClose}
+                                        className="w-full py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
+                                    >
+                                        Finish
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {/* ── SAVING STEP ── */}
-                    {step === 'saving' && (
-                        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                            <Loader2 className="w-10 h-10 text-orange-500 animate-spin" />
-                            <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saving to database…</p>
-                            <p className="text-xs text-neutral-500">This will be available on all your devices.</p>
-                        </div>
-                    )}
-
-                    {/* ── DONE STEP ── */}
-                    {step === 'done' && (
-                        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                            <div className="w-16 h-16 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <CheckCircle className="w-8 h-8 text-green-600" />
-                            </div>
-                            <div className="text-center">
-                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Saved successfully!</p>
-                                {lastSavedDetails && (
-                                    <p className="text-xs text-neutral-500 mt-1 font-medium">
-                                        {lastSavedDetails.merchant} &middot; €{lastSavedDetails.amount}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Loop scanning buttons */}
-                            <div className="flex flex-col gap-2 w-full pt-4 max-w-[240px]">
-                                <button
-                                    onClick={handleResetFlow}
-                                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
-                                >
-                                    Scan Another
-                                </button>
-                                <button
-                                    onClick={onClose}
-                                    className="w-full py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
-                                >
-                                    Finish
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

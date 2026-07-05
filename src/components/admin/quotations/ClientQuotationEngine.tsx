@@ -137,6 +137,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         };
     }, []);
 
+    const pushToHistory = useCallback((currentBlocks: Block[]) => {
+        const clone = JSON.parse(JSON.stringify(currentBlocks)) as Block[];
+        setHistory(prev => {
+            if (prev.length > 0 && JSON.stringify(prev[prev.length - 1]) === JSON.stringify(clone)) {
+                return prev;
+            }
+            const next = [...prev, clone];
+            if (next.length > 20) {
+                next.shift();
+            }
+            return next;
+        });
+    }, []);
+
     const savePendingHistoryImmediate = useCallback(() => {
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
@@ -159,20 +173,6 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             savePendingHistoryImmediate();
         }, 800);
     };
-
-    const pushToHistory = useCallback((currentBlocks: Block[]) => {
-        const clone = JSON.parse(JSON.stringify(currentBlocks)) as Block[];
-        setHistory(prev => {
-            if (prev.length > 0 && JSON.stringify(prev[prev.length - 1]) === JSON.stringify(clone)) {
-                return prev;
-            }
-            const next = [...prev, clone];
-            if (next.length > 20) {
-                next.shift();
-            }
-            return next;
-        });
-    }, []);
 
     const handleUndo = useCallback(() => {
         savePendingHistoryImmediate();

@@ -63,6 +63,7 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
     }
 
     const activeProject = portal.linkedProjectData || {};
+    const selectedProjectId = portal.linkedProjectId || activeProject?.id || null;
 
     // Filter items by project (since 1:1, we just take them all)
     const activeTasks = portal.tasks || [];

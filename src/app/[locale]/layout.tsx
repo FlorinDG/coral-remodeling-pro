@@ -143,6 +143,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         },
         icons: {
             icon: '/icon.svg',
+        }
     };
 }
 

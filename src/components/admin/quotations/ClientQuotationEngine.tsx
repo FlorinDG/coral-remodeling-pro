@@ -241,6 +241,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         }));
     }, [clientsDb]);
 
+    const handleUpdateProperty = useCallback((key: string, value: PropertyValue) => {
+        if (!quotation) return;
+        updatePageProperty(quotationsDbId, quotation.id, key, value);
+    }, [quotation, quotationsDbId, updatePageProperty]);
+
     // Sync financial summary back to database properties for the grid view
     // Must be placed before early returns to satisfy Rules of Hooks
     useEffect(() => {
@@ -438,10 +443,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageBlocks(quotationsDbId, id, [...blocks, ...newBlocks]);
     };
 
-    const handleUpdateProperty = (key: string, value: PropertyValue) => {
-        if (!quotation) return;
-        updatePageProperty(quotationsDbId, quotation.id, key, value);
-    };
+
 
 
 
@@ -1379,3 +1381,5 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         </ErrorBoundary>
     );
 }
+
+// Force Vercel Deploy

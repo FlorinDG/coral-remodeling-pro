@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Oxanium, IBM_Plex_Sans } from "next/font/google";
 import { headers } from 'next/headers';
 
@@ -143,9 +143,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         },
         icons: {
             icon: '/icon.svg',
-        },
     };
 }
+
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 import PromotionalBanner from "@/components/PromotionalBanner";
 import CookieConsent from "@/components/CookieConsent";

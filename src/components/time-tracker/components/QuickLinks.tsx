@@ -16,11 +16,7 @@ import {
 import { Link, usePathname } from "@/i18n/routing";
 
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
-
 interface QuickLink {
   id: string;
   title: string;
@@ -35,28 +31,11 @@ interface QuickLink {
 
 const quickLinks: QuickLink[] = [
   {
-    id: 'wiki',
-    title: 'Company Wiki',
-    description: 'Policies, procedures, and resources',
-    icon: <BookOpen className="w-6 h-6" />,
-    url: '#',
-    gradient: 'bg-secondary',
-  },
-  {
     id: 'timeoff',
     title: 'Time Off',
     description: 'Request vacation and leave',
     icon: <Calendar className="w-6 h-6" />,
     url: '/time-off',
-    gradient: 'bg-primary',
-    isInternal: true,
-  },
-  {
-    id: 'performance',
-    title: 'Performance',
-    description: 'Track your stats and request time off',
-    icon: <TrendingUp className="w-6 h-6" />,
-    url: '/performance',
     gradient: 'bg-primary',
     isInternal: true,
   },
@@ -78,10 +57,7 @@ export function QuickLinks() {
   const isWorkhub = pathname.startsWith('/workhub');
   const basePath = useAppBasePath();
   
-  const { user } = useAuth();
   const { isAdmin } = useUserRoles();
-  const { shifts, loading: schedulesLoading } = useScheduledShifts();
-
   const visibleLinks = quickLinks.filter(link => {
     if (isWorkhub) {
       // Unclog the grid: remove wiki (moves to hamburger), performance (crashes), and profile (moves to hamburger)
@@ -100,87 +76,11 @@ export function QuickLinks() {
     return linkObj.url;
   };
 
-  // Get the next upcoming shift for the current user
-  const now = new Date();
-  const nextShift = shifts
-    .filter(s => {
-      if (s.user_id !== user?.id) return false;
-      const shiftDate = parseISO(s.shift_date);
-      return shiftDate >= new Date(now.toDateString());
-    })
-    .sort((a, b) => {
-      const dateA = parseISO(a.shift_date);
-      const dateB = parseISO(b.shift_date);
-      if (dateA.getTime() !== dateB.getTime()) return dateA.getTime() - dateB.getTime();
-      return a.shift_start.localeCompare(b.shift_start);
-    })[0];
-
-  // Get tasks for the next shift
-  const { shiftTasks, loading: tasksLoading } = useShiftTasks(nextShift?.id || '');
-  const pendingTasks = shiftTasks.filter(st => st.status === 'pending');
-
   return (
     <section className="w-full">
       <h2 className="text-xl font-semibold text-foreground mb-6">Quick Access</h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {/* My Schedule Card */}
-        <Link
-          href={`${basePath}/schedule`}
-          className="link-card group animate-fade-in"
-        >
-          <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-secondary-foreground mb-4 group-hover:scale-110 transition-transform duration-300">
-            <Clock className="w-6 h-6" />
-          </div>
-
-          <div className="flex-1">
-            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-              My Schedule
-            </h3>
-            {schedulesLoading ? (
-              <div className="flex items-center gap-2 mt-1">
-                <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Loading...</span>
-              </div>
-            ) : nextShift ? (
-              <div className="text-sm text-muted-foreground mt-1 space-y-1">
-                <div>
-                  <span className="font-medium text-foreground">
-                    {isToday(parseISO(nextShift.shift_date))
-                      ? 'Today'
-                      : isTomorrow(parseISO(nextShift.shift_date))
-                        ? 'Tomorrow'
-                        : format(parseISO(nextShift.shift_date), 'EEEE, MMM d')}
-                  </span>
-                  <span> · {nextShift.shift_start} - {nextShift.shift_end}</span>
-                </div>
-                {nextShift.project?.name && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <MapPin className="h-3 w-3" />
-                    <span className="truncate">{nextShift.project.name}</span>
-                  </div>
-                )}
-                {nextShift.role && (
-                  <div className="flex items-center gap-1 text-xs">
-                    <Users className="h-3 w-3" />
-                    <span>{nextShift.role}</span>
-                  </div>
-                )}
-                {!tasksLoading && pendingTasks.length > 0 && (
-                  <div className="flex items-center gap-1 text-xs text-primary">
-                    <CheckSquare className="h-3 w-3" />
-                    <span>{pendingTasks.length} task{pendingTasks.length !== 1 ? 's' : ''} assigned</span>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-1">
-                No shifts scheduled
-              </p>
-            )}
-          </div>
-        </Link>
-
         {/* Navigation Links */}
         {visibleLinks.map((link, index) => {
           const content = (

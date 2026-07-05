@@ -26,7 +26,6 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
     { id: 'home',     label: 'Work Hub',          href: '/workhub',           icon: <LayoutDashboard className="w-5 h-5" />, mobileLabel: 'Home' },
-    { id: 'schedule', label: 'Schedule',           href: '/workhub/schedule',  icon: <CalendarDays className="w-5 h-5" />,    mobileLabel: 'Schedule' },
     { id: 'leave',    label: 'Leave',              href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Leave' },
     { id: 'tasks',    label: 'My Tasks',           href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,     mobileLabel: 'Tasks' },
     { id: 'files',    label: 'Documents',          href: '/workhub/files',     icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
@@ -206,7 +205,7 @@ export default function WorkHubShell({
                         <Link
                             key={item.id}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3.5 rounded-xl transition-all relative ${
+                            className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
                                 isActive(item.href)
                                     ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
                                     : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'

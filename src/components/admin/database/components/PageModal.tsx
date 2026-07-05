@@ -24,6 +24,8 @@ import SmartVATLookup from './SmartVATLookup';
 import { COLOR_STYLES } from '../columns/SelectColumn';
 import LinkedRecords from './LinkedRecords';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { useTenant } from '@/context/TenantContext';
+import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { Checkbox } from '@/components/common/Checkbox';
 import postcodesData from '@/lib/belgian-postcodes.json';
 import { calculateInvoiceTotals } from '@/lib/invoice-totals';
@@ -383,7 +385,7 @@ const PurchaseInvoiceSheet = ({ databaseId, pageId }: { databaseId: string; page
                 </div>
 
                 {/* Date row */}
-                <div className="grid grid-cols-2 gap-0 divide-x divide-neutral-100 dark:divide-neutral-800 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="grid grid-cols-2 gap-0 divide-x divide-neutral-100 dark:divide-neutral-800 border-b border-neutral-100 dark:divide-neutral-800">
                     <div className="px-8 py-4">
                         <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-0.5">Invoice Date</p>
                         <p className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{fmtDate(invoiceDate)}</p>
@@ -1201,6 +1203,9 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                 )}
                             </Droppable>
                         </DragDropContext>
+                        <div className="mt-8">
+                            <RecordAttachments recordType={databaseId} recordId={pageId} />
+                        </div>
                     </div>
 
                     <ErrorBoundary componentName="RecordDetails">

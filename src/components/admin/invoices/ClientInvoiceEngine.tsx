@@ -14,6 +14,8 @@ import { generatePdfBlob } from '@/lib/generate-pdf';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
+import { ensureStripeCheckoutUrl } from '@/app/actions/stripe-checkout';
+import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
 import { getNextDocumentNumber } from '@/app/actions/next-document-number';
@@ -1608,6 +1610,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
                         structuredComm={invoice?.properties?.['structuredComm'] as string}
                     />
+
+                    <div className="mt-8">
+                        <RecordAttachments recordType="invoice" recordId={id} />
+                    </div>
 
                 </div>
                 </div>

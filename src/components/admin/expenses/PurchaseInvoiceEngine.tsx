@@ -4,7 +4,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Download, Check, XCircle, FileText, Loader2, ExternalLink, ArrowDownToLine, Camera, CheckCircle2, Upload, Trash2 } from 'lucide-react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import type { Page } from '@/components/admin/database/types';
+import { Page, Block } from '@/components/admin/database/types';
+import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { downloadPurchaseInvoicePDF } from '@/components/admin/expenses/PurchaseInvoicePDF';
 import { useTenant } from '@/context/TenantContext';
 import Link from 'next/link';
@@ -1149,6 +1150,9 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                         </button>
                                     </div>
                                 )}
+                                <div className="mt-8">
+                                    <RecordAttachments recordType="expense" recordId={id} />
+                                </div>
                             </div>
                         )}
                     </div>

@@ -18,6 +18,8 @@ import PDFImportModal from './PDFImportModal';
 import CreateVorderingstaatModal from './CreateVorderingstaatModal';
 import { QuoteSendModal } from './QuoteSendModal';
 import { TemplateId } from '@/components/admin/shared/templateStyles';
+import { CreateClientModal } from '@/components/admin/database/components/CreateClientModal';
+import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import DbPropertiesPanel from '@/components/admin/database/components/DbPropertiesPanel';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
 import SearchableSelect from '@/components/ui/SearchableSelect';
@@ -1076,6 +1078,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             language={docLanguage}
                             onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
                         />
+
+                        <div className="mt-8">
+                            <RecordAttachments recordType="quotation" recordId={id} />
+                        </div>
 
                     </div>
                 </div>

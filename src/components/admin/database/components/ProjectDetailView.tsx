@@ -21,7 +21,7 @@ import {
 import { Block, PropertyValue } from '../types';
 
 const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
-const FileManagerCard = dynamic(() => import('@/components/admin/file-manager/FileManagerCard'), { ssr: false });
+import { RecordAttachments } from '@/components/shared/RecordAttachments';
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
 const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
@@ -1542,7 +1542,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                 )}
 
                 {activeTab === 'files' && (
-                    <FileManagerCard contextType="project" contextId={pageId} driveFolderId={boundDriveId} minHeight="500px" />
+                    <RecordAttachments recordType="project" recordId={pageId} />
                 )}
 
             </div>

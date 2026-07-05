@@ -25,6 +25,13 @@ import { format } from 'date-fns';
 
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 
+const formatDateSafe = (dateVal: any) => {
+  if (!dateVal) return 'Unknown Date';
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return 'Invalid Date';
+  return format(d, 'MMM d, yyyy');
+};
+
 export default function TimeOff() {
   const router = useRouter();
   const navigate = useRouter();
@@ -250,7 +257,7 @@ export default function TimeOff() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(request.start_date), 'MMM d, yyyy')} - {format(new Date(request.end_date), 'MMM d, yyyy')}
+                        {formatDateSafe(request.start_date)} - {formatDateSafe(request.end_date)}
                       </p>
                       {request.notes && (
                         <p className="text-sm text-muted-foreground mt-1">{request.notes}</p>

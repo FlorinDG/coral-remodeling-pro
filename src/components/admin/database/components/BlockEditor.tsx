@@ -53,8 +53,12 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
         ? SLASH_COMMANDS.filter(c => c.label.toLowerCase().includes(slashMenu.filter.toLowerCase()))
         : [];
 
-    // Reset index when filter changes
-    useEffect(() => { setSlashIndex(0); }, [slashMenu?.filter]);
+    // Reset index when filter changes (derived state)
+    const [prevFilter, setPrevFilter] = useState(slashMenu?.filter);
+    if (slashMenu?.filter !== prevFilter) {
+        setPrevFilter(slashMenu?.filter);
+        setSlashIndex(0);
+    }
 
     // Close slash menu on outside click
     useEffect(() => {

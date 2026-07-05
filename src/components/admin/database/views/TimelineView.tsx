@@ -132,7 +132,7 @@ export default function TimelineView({ databaseId, viewId, renderTabs }: Timelin
                 };
             })
             .filter(Boolean) as TimelineBar[];
-    }, [database?.pages, startDatePropId, endDatePropId, statusProps]);
+    }, [database, startDatePropId, endDatePropId, statusProps]);
 
     // Calculate timeline range
     const { timelineStart, timelineEnd, columns } = useMemo(() => {

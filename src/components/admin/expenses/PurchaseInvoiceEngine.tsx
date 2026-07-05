@@ -288,7 +288,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 fetchPeppolDetail(String(page.properties.peppolDocId));
             }
         }
-    }, [page, peppolDetail, suppliersDb]);
+    }, [page, peppolDetail, suppliersDb, loadingPeppol]);
 
     const fetchPeppolDetail = async (docId: string) => {
         setLoadingPeppol(true);

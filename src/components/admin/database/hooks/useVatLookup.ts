@@ -54,7 +54,7 @@ export function useVatLookup({ database, rowData, gridAreaRef, updatePagePropert
             })
             .catch(() => setVatLookup(prev => prev ? { ...prev, status: 'error' } : null));
         return () => controller.abort();
-    }, [vatLookup?.status, vatLookup?.vatNumber]);
+    }, [vatLookup]);
 
     // ── Live VAT typing detection via event delegation ────────────────────────
     useEffect(() => {
@@ -124,7 +124,7 @@ export function useVatLookup({ database, rowData, gridAreaRef, updatePagePropert
             gridEl.removeEventListener('input', handleInput, true);
             if (vatDebounceRef.current) clearTimeout(vatDebounceRef.current);
         };
-    }, [database?.id, database?.properties, rowData, gridAreaRef]);
+    }, [database, rowData, gridAreaRef]);
 
     // ── Automatic Background Peppol Verification ──────────────────────────
     useEffect(() => {

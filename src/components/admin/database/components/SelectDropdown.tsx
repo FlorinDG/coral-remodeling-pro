@@ -89,7 +89,10 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
         if (isOpen && searchInputRef.current) {
             searchInputRef.current.focus();
         }
-        if (!isOpen) setSearchQuery('');
+        if (!isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setSearchQuery('');
+        }
     }, [isOpen]);
 
     return (

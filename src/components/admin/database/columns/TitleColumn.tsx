@@ -13,12 +13,13 @@ const TitleComponent = ({ rowData, setRowData, focus, active, stopEditing, onOpe
     const value = (rowData?.properties?.[propId] as string) || '';
     const [inputValue, setInputValue] = useState(value);
 
-    // Keep local input state synced with external value changes (unless focused)
-    useLayoutEffect(() => {
-        if (!focus) {
-            setInputValue(value);
-        }
-    }, [value, focus]);
+    const [prevValue, setPrevValue] = useState(value);
+    
+    // Sync external value when not focused
+    if (!focus && value !== prevValue) {
+        setPrevValue(value);
+        setInputValue(value);
+    }
 
     useLayoutEffect(() => {
         if (focus && inputRef.current) {

@@ -73,7 +73,11 @@ export default function AddColumnFlyout({ anchorRef, isOpen, onClose, onAdd }: A
     }, [anchorRef]);
 
     useEffect(() => {
-        if (!isOpen) { setSearch(''); return; }
+        if (!isOpen) { 
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setSearch(''); 
+            return; 
+        }
         updatePos();
         // Focus the search input
         setTimeout(() => inputRef.current?.focus(), 50);

@@ -104,6 +104,7 @@ export default function GlobalMentionDateInterceptor() {
             el.value = newValue;
             
             // Dispatch input event so React state updates
+            // eslint-disable-next-line react-hooks/immutability
             const event = new Event('input', { bubbles: true });
             el.dispatchEvent(event);
             

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/preserve-manual-memoization, react-hooks/refs */
+/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/refs */
 import React, { useMemo } from 'react';
 import {
     textColumn,
@@ -335,5 +335,5 @@ export function useGridColumns({
             },
             ...mappedProperties
         ]
-    }, [databaseIdRef, activeViewId, viewStateMap, orderedVisibleProperties, resizingProperty, resizeOffset, isBestekReadOnly, preventDelete, router, isFree]);
+    }, [databaseIdRef, activeViewId, viewStateMap, orderedVisibleProperties, resizingProperty, resizeOffset, isBestekReadOnly, preventDelete, router, isFree, committedWidthsRef, createPage, deletePage, setActivePageId, setSelectedRowIds, updatePageOrder, updatePageProperty]);
 }

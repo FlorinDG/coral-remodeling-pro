@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React, { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
@@ -445,7 +445,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
 
             return result;
         });
-    }, [database, activeView?.filters, hardFilter, allDatabases]);
+    }, [database, activeView?.filters, hardFilter, allDatabases, activeFilters]);
 
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
@@ -457,7 +457,6 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         const regularPages: Page[] = [];
 
         filteredPages.forEach(p => {
-            // eslint-disable-next-line react-hooks/purity
             const isRecent = Date.now() - new Date(p.createdAt).getTime() < 120000;
             if (isRecent) {
                 newPages.push(p);

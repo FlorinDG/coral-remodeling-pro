@@ -142,7 +142,7 @@ export default function DatabaseFooter({
         });
 
         return result;
-    }, [pages, orderedVisibleProperties, summaryTypes]);
+    }, [pages, orderedVisibleProperties, summaryTypes, databaseId, getSummaryType, locale]);
 
     const newLabel = NEW_LABELS[locale] || NEW_LABELS.en;
 

@@ -59,7 +59,6 @@ export default function NotificationWatcher() {
         fetchNotifications();
 
         const interval = setInterval(() => {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchNotifications();
         }, 30000); // 30s poll
 

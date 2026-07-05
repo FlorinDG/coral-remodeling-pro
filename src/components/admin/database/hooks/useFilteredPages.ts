@@ -155,5 +155,5 @@ export function useFilteredPages({ database, activeView, hardFilter, allDatabase
 
             return result;
         });
-    }, [database?.pages, database?.properties, activeView?.filters, hardFilter, allDatabases]);
+    }, [database, activeView?.filters, hardFilter, allDatabases]);
 }

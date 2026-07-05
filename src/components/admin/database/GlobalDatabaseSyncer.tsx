@@ -7,7 +7,9 @@ import { Database } from './types';
 export default function GlobalDatabaseSyncer({ databases }: { databases: Database[] }) {
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
-    serverDbs.current = databases;
+    useEffect(() => {
+        serverDbs.current = databases;
+    }, [databases]);
 
     // Single effect: wait for persist to finish, then merge server data.
     // Uses a ref to avoid re-running when databases prop changes (it shouldn't).

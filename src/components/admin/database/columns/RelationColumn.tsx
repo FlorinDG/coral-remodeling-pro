@@ -68,7 +68,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
 
     // Extract relation array directly from the full row object
     const rawValue = rowData?.properties?.[propId];
-    const value = Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []);
+    const value = useMemo(() => Array.isArray(rawValue) ? rawValue : (typeof rawValue === 'string' && rawValue ? [rawValue] : []), [rawValue]);
 
     // Subscribe to the target database to fetch titles
     const targetDatabase = useDatabaseStore(state => state.getDatabase(relationDatabaseId));

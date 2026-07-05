@@ -120,7 +120,7 @@ export default function FormulaEditorModal({
     const database = useDatabaseStore(state => state.databases.find(db => db.id === databaseId));
     const updateProperty = useDatabaseStore(state => state.updateProperty);
 
-    const properties = database?.properties || [];
+    const properties = useMemo(() => database?.properties || [], [database?.properties]);
     const sampleRow = database?.pages?.[0];
 
     // Live preview

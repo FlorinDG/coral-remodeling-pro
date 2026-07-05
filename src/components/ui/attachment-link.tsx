@@ -13,6 +13,7 @@ export function AttachmentLink({ filePath, children, className }: AttachmentLink
 
   useEffect(() => {
     if (!filePath) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -57,6 +58,7 @@ export function AttachmentImage({ filePath, alt, className, fallback }: Attachme
 
   useEffect(() => {
     if (!filePath) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }

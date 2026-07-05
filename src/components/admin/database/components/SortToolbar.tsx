@@ -32,8 +32,8 @@ export default function SortToolbar({ databaseId, viewId }: SortToolbarProps) {
 
     const activeSorts = database
         ? (viewId
-            ? database.views.find(v => v.id === viewId)?.sorts || []
-            : database.activeSorts || [])
+            ? database.views.find(v => v.id === viewId)?.sorts ?? []
+            : [])
         : [];
 
     // Position panel below the trigger button

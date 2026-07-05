@@ -73,8 +73,8 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
 
     const activeFilters = database
         ? (viewId
-            ? database.views.find(v => v.id === viewId)?.filters || []
-            : database.activeFilters || [])
+            ? database.views.find(v => v.id === viewId)?.filters ?? []
+            : [])
         : [];
 
     // Auto-open when first filter is added via the button

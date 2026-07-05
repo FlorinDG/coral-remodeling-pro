@@ -349,6 +349,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             id: uuidv4(), 
                             name: 'Default View', 
                             type: 'table',
+                            filters: [],
                             sorts: [{ id: uuidv4(), propertyId: 'created', direction: 'descending' }]
                         } // Initialize with tabular view
                     ],
@@ -426,7 +427,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId) {
-                            const newView: DatabaseView = { ...view, id: uuidv4() };
+                            const newView: DatabaseView = { filters: [], sorts: [], ...view, id: uuidv4() };
                             return { ...db, views: [...(db.views || []), newView] };
                         }
                         return db;
@@ -1262,18 +1263,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [...(v.filters || []), { ...filter, id: uuidv4() }] } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeFilters: [...(db.activeFilters || []), { ...filter, id: uuidv4() }],
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1283,18 +1279,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).map((f: FilterRule) => f.id === filterId ? { ...f, ...updates } : f) } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeFilters: db.activeFilters.map((f: FilterRule) => f.id === filterId ? { ...f, ...updates } : f),
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1304,18 +1295,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).filter((f: FilterRule) => f.id !== filterId) } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeFilters: db.activeFilters.filter((f: FilterRule) => f.id !== filterId),
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1325,18 +1311,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [] } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeFilters: [],
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1346,18 +1327,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [...(v.sorts || []), { ...sort, id: uuidv4() }] } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeSorts: [...(db.activeSorts || []), { ...sort, id: uuidv4() }],
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1367,18 +1343,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).map((s: SortRule) => s.id === sortId ? { ...s, ...updates } : s) } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeSorts: (db.activeSorts || []).map((s: SortRule) => s.id === sortId ? { ...s, ...updates } : s),
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1388,18 +1359,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).filter((s: SortRule) => s.id !== sortId) } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeSorts: (db.activeSorts || []).filter((s: SortRule) => s.id !== sortId),
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1409,18 +1375,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
-                        if (viewId) {
+                        if (!viewId) return db;
                             return {
                                 ...db,
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [] } : v),
                                 updatedAt: new Date().toISOString()
                             };
                         }
-                        return {
-                            ...db,
-                            activeSorts: [],
-                            updatedAt: new Date().toISOString()
-                        };
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1514,14 +1475,29 @@ export const useDatabaseStore = create<DatabaseState>()(
                         // Strip out legacy view-5 from db-1 to prevent duplicate timeline tabs
                         const mergedViews = (savedDb.views || currentDb.views).filter((v: any) => !(currentDb.id === 'db-1' && v.id === 'view-5'));
 
+                        
+                        let migratedViews = [...mergedViews];
+                        if ((savedDb.activeFilters && savedDb.activeFilters.length > 0) || (savedDb.activeSorts && savedDb.activeSorts.length > 0)) {
+                            if (migratedViews.length > 0) {
+                                const defaultView = migratedViews[0];
+                                if ((!defaultView.filters || defaultView.filters.length === 0) && (!defaultView.sorts || defaultView.sorts.length === 0)) {
+                                    migratedViews[0] = {
+                                        ...defaultView,
+                                        filters: savedDb.activeFilters || [],
+                                        sorts: savedDb.activeSorts || []
+                                    };
+                                }
+                            }
+                        }
+
                         // Inherit new source code properties/views, but keep the user's row data and view customizations
                         return {
                             ...currentDb,
                             properties: mergedProperties,
                             pages: savedDb.pages || [],
-                            activeFilters: savedDb.activeFilters || [],
-                            activeSorts: savedDb.activeSorts || [],
-                            views: mergedViews
+                            activeFilters: [],
+                            activeSorts: [],
+                            views: migratedViews
                         };
                     }
                     return currentDb;

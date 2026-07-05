@@ -19,7 +19,7 @@ interface UseFilteredPagesParams {
 export function useFilteredPages({ database, activeView, hardFilter, allDatabases }: UseFilteredPagesParams): Page[] {
     return useMemo(() => {
         if (!database) return [];
-        const activeFilters = activeView?.filters || database.activeFilters || [];
+        const activeFilters = activeView?.filters ?? [];
 
         // Build lookup helpers once per filter pass
         const propMap = new Map(database.properties.map(p => [p.id, p]));
@@ -155,5 +155,5 @@ export function useFilteredPages({ database, activeView, hardFilter, allDatabase
 
             return result;
         });
-    }, [database?.pages, database?.properties, activeView?.filters, database?.activeFilters, hardFilter, allDatabases]);
+    }, [database?.pages, database?.properties, activeView?.filters, hardFilter, allDatabases]);
 }

@@ -301,8 +301,8 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     });
     const activeFilters = useMemo(() => {
         if (!database) return [];
-        return activeView?.filters || database.activeFilters || [];
-    }, [database, activeView?.filters, database?.activeFilters]);
+        return activeView?.filters ?? [];
+    }, [database, activeView?.filters]);
 
     const filteredPages = useMemo(() => {
         if (!database) return [];
@@ -450,7 +450,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
     // Execute Client-Side Sorting
     const sortedPages = useMemo(() => {
         if (!database) return [];
-        const activeSorts = activeView?.sorts || database.activeSorts || [];
+        const activeSorts = activeView?.sorts ?? [];
 
         // Partition: newly created pages are forced to the top
         const newPages: Page[] = [];

@@ -8,6 +8,7 @@ interface QuoteSendModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSend: (subjectOverride: string, bodyOverride: string, attachmentKeys: string[]) => Promise<void>;
+    onSendPeppol?: () => Promise<void>;
     clientEmail: string;
     defaultSubject: string;
     defaultBody: string;
@@ -16,12 +17,14 @@ interface QuoteSendModalProps {
     documentType: 'quotation' | 'invoice';
     documentFileName: string;
     isSending: boolean;
+    peppolDisabledReason?: string | null;
 }
 
 export function QuoteSendModal({
     isOpen,
     onClose,
     onSend,
+    onSendPeppol,
     clientEmail,
     defaultSubject,
     defaultBody,
@@ -29,10 +32,12 @@ export function QuoteSendModal({
     documentId,
     documentType,
     documentFileName,
-    isSending
+    isSending,
+    peppolDisabledReason
 }: QuoteSendModalProps) {
     const [subject, setSubject] = useState(defaultSubject);
     const [body, setBody] = useState(defaultBody);
+    const [channel, setChannel] = useState<'email' | 'peppol'>('email');
     const [availableFiles, setAvailableFiles] = useState<{ key: string, filename: string, size: number }[]>([]);
     const [selectedFileKeys, setSelectedFileKeys] = useState<Set<string>>(new Set());
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
@@ -129,6 +134,22 @@ export function QuoteSendModal({
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-white/10 shrink-0">
                     <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">Bericht opstellen</h2>
+                    {onSendPeppol && (
+                        <div className="flex bg-neutral-100 dark:bg-neutral-800 rounded-lg p-1 mx-4 border border-neutral-200 dark:border-white/10">
+                            <button
+                                onClick={() => setChannel('email')}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${channel === 'email' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+                            >
+                                E-mail
+                            </button>
+                            <button
+                                onClick={() => setChannel('peppol')}
+                                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${channel === 'peppol' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+                            >
+                                Peppol (UBL)
+                            </button>
+                        </div>
+                    )}
                     <button 
                         onClick={onClose}
                         disabled={isSending}
@@ -138,131 +159,151 @@ export function QuoteSendModal({
                     </button>
                 </div>
 
-                {/* Body */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                    {/* Headers (To / Subject) */}
-                    <div className="space-y-4">
-                        <div className="flex items-center border-b border-neutral-200 dark:border-white/10 pb-2">
-                            <label className="text-sm font-medium text-neutral-500 dark:text-neutral-400 w-24">Aan:</label>
-                            <input 
-                                type="text"
-                                readOnly
-                                value={clientEmail}
-                                className="flex-1 bg-transparent text-sm text-neutral-900 dark:text-white outline-none cursor-not-allowed opacity-80"
-                            />
-                        </div>
-                        <div className="flex items-center border-b border-neutral-200 dark:border-white/10 pb-2">
-                            <label className="text-sm font-medium text-neutral-500 dark:text-neutral-400 w-24">Onderwerp:</label>
-                            <input 
-                                type="text"
-                                value={subject}
-                                onChange={e => setSubject(e.target.value)}
-                                className="flex-1 bg-transparent text-sm font-medium text-neutral-900 dark:text-white outline-none"
-                                placeholder="Onderwerp..."
-                            />
-                        </div>
-                    </div>
-
-                    {/* Email Body */}
-                    <div className="flex flex-col h-48 border border-neutral-200 dark:border-white/10 rounded-lg overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                        <textarea
-                            value={body}
-                            onChange={e => setBody(e.target.value)}
-                            className="flex-1 p-4 bg-transparent text-sm text-neutral-900 dark:text-white outline-none resize-none leading-relaxed"
-                            placeholder="Typ uw bericht hier..."
-                        />
-                    </div>
-
-                    {/* Attachments Section */}
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-2">
-                                <Paperclip className="w-4 h-4 text-neutral-400" />
-                                Bijlagen
-                            </h3>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-colors">
-                                        <Plus className="w-3.5 h-3.5" />
-                                        Bestand toevoegen
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 z-[100000]">
-                                    <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
-                                        <HardDrive className="w-4 h-4 mr-2" /> Upload van computer
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem disabled className="text-neutral-400">
-                                        <Upload className="w-4 h-4 mr-2" /> Uit projectbibliotheek/extern
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <input 
-                                type="file" 
-                                multiple 
-                                accept="application/pdf,image/*" 
-                                className="hidden" 
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                            />
-                        </div>
-                        <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-lg p-2 space-y-1">
-                            {/* Primary PDF (Always checked, locked) */}
-                            <div className="flex items-center gap-3 p-2 rounded-md bg-blue-50/50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
-                                <CheckSquare className="w-4 h-4 text-blue-500 shrink-0" />
-                                <FileText className="w-4 h-4 text-blue-500 shrink-0" />
-                                <span className="text-sm text-neutral-700 dark:text-neutral-200 truncate flex-1 font-medium">{documentFileName}</span>
-                                <span className="text-xs text-neutral-400 shrink-0">Genereert nu...</span>
+                    {/* Body */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {channel === 'peppol' ? (
+                            <div className="flex flex-col items-center justify-center text-center h-full py-12 px-6">
+                                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-6 border border-blue-100 dark:border-blue-800/30">
+                                    <Send className="w-8 h-8 text-blue-500" />
+                                </div>
+                                <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">Verzenden via Peppol</h3>
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-md mx-auto leading-relaxed mb-6">
+                                    {peppolDisabledReason ? (
+                                        <span className="text-red-500 font-medium flex items-center justify-center gap-2">
+                                            <X className="w-4 h-4" /> {peppolDisabledReason}
+                                        </span>
+                                    ) : (
+                                        "Dit document wordt veilig elektronisch verzonden naar uw klant via het Peppol netwerk. Bijlagen en berichttekst worden genegeerd."
+                                    )}
+                                </p>
                             </div>
+                        ) : (
+                            <>
+                                {/* Headers (To / Subject) */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center border-b border-neutral-200 dark:border-white/10 pb-2">
+                                        <label className="text-sm font-medium text-neutral-500 dark:text-neutral-400 w-24">Aan:</label>
+                                        <input 
+                                            type="text"
+                                            readOnly
+                                            value={clientEmail}
+                                            className="flex-1 bg-transparent text-sm text-neutral-900 dark:text-white outline-none cursor-not-allowed opacity-80"
+                                        />
+                                    </div>
+                                    <div className="flex items-center border-b border-neutral-200 dark:border-white/10 pb-2">
+                                        <label className="text-sm font-medium text-neutral-500 dark:text-neutral-400 w-24">Onderwerp:</label>
+                                        <input 
+                                            type="text"
+                                            value={subject}
+                                            onChange={e => setSubject(e.target.value)}
+                                            className="flex-1 bg-transparent text-sm font-medium text-neutral-900 dark:text-white outline-none"
+                                            placeholder="Onderwerp..."
+                                        />
+                                    </div>
+                                </div>
 
-                            {isLoadingFiles ? (
-                                <div className="p-4 flex items-center justify-center">
-                                    <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
+                                {/* Email Body */}
+                                <div className="flex flex-col h-48 border border-neutral-200 dark:border-white/10 rounded-lg overflow-hidden focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
+                                    <textarea
+                                        value={body}
+                                        onChange={e => setBody(e.target.value)}
+                                        className="flex-1 p-4 bg-transparent text-sm text-neutral-900 dark:text-white outline-none resize-none leading-relaxed"
+                                        placeholder="Typ uw bericht hier..."
+                                    />
                                 </div>
-                            ) : availableFiles.length > 0 ? (
-                                availableFiles.map(file => {
-                                    const isSelected = selectedFileKeys.has(file.key);
-                                    return (
-                                        <div 
-                                            key={file.key}
-                                            onClick={() => toggleFile(file.key)}
-                                            className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
-                                                isSelected 
-                                                    ? 'bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-white/10' 
-                                                    : 'hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'
-                                            }`}
-                                        >
-                                            {isSelected ? (
-                                                <CheckSquare className="w-4 h-4 text-blue-500 shrink-0" />
-                                            ) : (
-                                                <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
-                                            )}
-                                            <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-500' : 'text-neutral-400'}`} />
-                                            <span className={`text-sm truncate flex-1 ${isSelected ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                                                {file.filename}
-                                            </span>
-                                            <span className="text-xs text-neutral-400 shrink-0">
-                                                {formatSize(file.size)}
-                                            </span>
+
+                                {/* Attachments Section */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="text-sm font-medium text-neutral-900 dark:text-white flex items-center gap-2">
+                                            <Paperclip className="w-4 h-4 text-neutral-400" />
+                                            Bijlagen
+                                        </h3>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-neutral-100 dark:bg-white/5 hover:bg-neutral-200 dark:hover:bg-white/10 rounded-md transition-colors">
+                                                    <Plus className="w-3.5 h-3.5" />
+                                                    Bestand toevoegen
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-56 z-[100000]">
+                                                <DropdownMenuItem onClick={() => fileInputRef.current?.click()} className="cursor-pointer">
+                                                    <HardDrive className="w-4 h-4 mr-2" /> Upload van computer
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem disabled className="text-neutral-400">
+                                                    <Upload className="w-4 h-4 mr-2" /> Uit projectbibliotheek/extern
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                        <input 
+                                            type="file" 
+                                            multiple 
+                                            accept="application/pdf,image/*" 
+                                            className="hidden" 
+                                            ref={fileInputRef}
+                                            onChange={handleFileSelect}
+                                        />
+                                    </div>
+                                    <div className="bg-neutral-50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/10 rounded-lg p-2 space-y-1">
+                                        {/* Primary PDF (Always checked, locked) */}
+                                        <div className="flex items-center gap-3 p-2 rounded-md bg-blue-50/50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20">
+                                            <CheckSquare className="w-4 h-4 text-blue-500 shrink-0" />
+                                            <FileText className="w-4 h-4 text-blue-500 shrink-0" />
+                                            <span className="text-sm text-neutral-700 dark:text-neutral-200 truncate flex-1 font-medium">{documentFileName}</span>
+                                            <span className="text-xs text-neutral-400 shrink-0">Genereert nu...</span>
                                         </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="p-3 text-sm text-neutral-500 dark:text-neutral-400 italic text-center">
-                                    Geen extra bestanden in het project.
+
+                                        {isLoadingFiles ? (
+                                            <div className="p-4 flex items-center justify-center">
+                                                <Loader2 className="w-5 h-5 text-neutral-400 animate-spin" />
+                                            </div>
+                                        ) : availableFiles.length > 0 ? (
+                                            availableFiles.map(file => {
+                                                const isSelected = selectedFileKeys.has(file.key);
+                                                return (
+                                                    <div 
+                                                        key={file.key}
+                                                        onClick={() => toggleFile(file.key)}
+                                                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer transition-colors ${
+                                                            isSelected 
+                                                                ? 'bg-white dark:bg-neutral-800 shadow-sm border border-neutral-200 dark:border-white/10' 
+                                                                : 'hover:bg-black/5 dark:hover:bg-white/5 border border-transparent'
+                                                        }`}
+                                                    >
+                                                        {isSelected ? (
+                                                            <CheckSquare className="w-4 h-4 text-blue-500 shrink-0" />
+                                                        ) : (
+                                                            <Square className="w-4 h-4 text-neutral-300 dark:text-neutral-600 shrink-0" />
+                                                        )}
+                                                        <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-500' : 'text-neutral-400'}`} />
+                                                        <span className={`text-sm truncate flex-1 ${isSelected ? 'text-neutral-900 dark:text-white font-medium' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                                                            {file.filename}
+                                                        </span>
+                                                        <span className="text-xs text-neutral-400 shrink-0">
+                                                            {formatSize(file.size)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="p-3 text-sm text-neutral-500 dark:text-neutral-400 italic text-center">
+                                                Geen extra bestanden in het project.
+                                            </div>
+                                        )}
+                                        
+                                        {uploadingFiles.map((uf, idx) => (
+                                            <div key={`uf-${idx}`} className="flex items-center gap-3 p-2 rounded-md border border-transparent opacity-70">
+                                                <Loader2 className="w-4 h-4 text-neutral-400 animate-spin shrink-0" />
+                                                <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
+                                                <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate flex-1 font-medium">{uf.filename}</span>
+                                                <span className="text-xs text-neutral-400 shrink-0">Uploaden...</span>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                            )}
-                            
-                            {uploadingFiles.map((uf, idx) => (
-                                <div key={`uf-${idx}`} className="flex items-center gap-3 p-2 rounded-md border border-transparent opacity-70">
-                                    <Loader2 className="w-4 h-4 text-neutral-400 animate-spin shrink-0" />
-                                    <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
-                                    <span className="text-sm text-neutral-600 dark:text-neutral-400 truncate flex-1 font-medium">{uf.filename}</span>
-                                    <span className="text-xs text-neutral-400 shrink-0">Uploaden...</span>
-                                </div>
-                            ))}
-                        </div>
+                            </>
+                        )}
                     </div>
-                </div>
 
                 {/* Footer Controls */}
                 <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200 dark:border-white/10 shrink-0 bg-neutral-50 dark:bg-neutral-900/50">
@@ -274,8 +315,14 @@ export function QuoteSendModal({
                         Annuleren
                     </button>
                     <button
-                        onClick={() => onSend(subject, body, Array.from(selectedFileKeys))}
-                        disabled={isSending || !subject.trim()}
+                        onClick={() => {
+                            if (channel === 'peppol' && onSendPeppol) {
+                                onSendPeppol();
+                            } else {
+                                onSend(subject, body, Array.from(selectedFileKeys));
+                            }
+                        }}
+                        disabled={isSending || (channel === 'peppol' && !!peppolDisabledReason) || (channel === 'email' && !subject.trim())}
                         className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2"
                     >
                         {isSending ? (

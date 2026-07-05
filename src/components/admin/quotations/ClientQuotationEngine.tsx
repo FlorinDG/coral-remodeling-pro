@@ -465,7 +465,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
 
 
-    const handleSendEmailClick = async () => {
+    const handleSendClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
 
         setIsSending(true);
@@ -1116,7 +1116,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                         {/* Primary action buttons */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-full overflow-hidden">
                             <button
-                                onClick={handleSendEmailClick}
+                                onClick={handleSendClick}
                                 disabled={isSending || !clientId}
                                 className="text-xs font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] shadow-sm w-full sm:w-auto shrink-0 whitespace-nowrap overflow-hidden text-ellipsis"
                                 style={{

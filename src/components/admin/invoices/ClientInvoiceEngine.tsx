@@ -686,7 +686,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         };
     };
 
-    const handleSendEmailClick = async () => {
+    const handleSendClick = async () => {
         if (!clientId) return toast.warning('Selecteer eerst een klant om de factuur te versturen.');
 
         setIsSending(true);
@@ -753,12 +753,13 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         
         const remainingDue = Math.max(0, grandTotalIncl - creditedTotal);
         const displayTotal = isCreditNote ? grandTotalIncl : remainingDue;
+        const formattedTotal = new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(displayTotal);
 
         setIsSending(true);
         try {
             const response = await sendInvoiceToClient(
                 id, clientEmail, clientName, String(projectName),
-                `€${displayTotal.toFixed(2)}`, sendModalPdfBase64,
+                `€${formattedTotal}`, sendModalPdfBase64,
                 bodyOverride,
                 String(tenant?.commercialName || tenant?.companyName || ''),
                 docLanguage,
@@ -1641,7 +1642,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         {/* Primary action buttons */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-full overflow-hidden">
                             <button
-                                onClick={handleSendEmailClick}
+                                onClick={handleSendClick}
                                 disabled={isSending || !clientId}
                                 className="text-sm font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 border disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.97] w-full sm:w-auto shrink-0 whitespace-nowrap"
                                 style={{
@@ -1650,7 +1651,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     color: clientId ? 'var(--brand-color, #d35400)' : undefined,
                                 }}
                             >
-                                <Mail className="w-4 h-4" /> {isSending ? 'Sending...' : 'Send'}
+                                <Send className="w-4 h-4" /> {isSending ? 'Laden...' : 'Verzenden'}
                             </button>
 
                             <button
@@ -1785,13 +1786,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                     >
                                         <ClipboardCheck className="w-4 h-4" /> Test / Valideer
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                        onClick={handleSendPeppol}
-                                        disabled={isSendingPeppol || !clientId || isLocked || isProforma}
-                                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 cursor-pointer text-neutral-700 dark:text-neutral-200 disabled:opacity-40"
-                                    >
-                                        <Send className="w-4 h-4" /> Peppol
-                                    </DropdownMenuItem>
+
                                     {isDraft && (
                                         <>
                                             <DropdownMenuSeparator className="my-1 border-t border-neutral-100 dark:border-white/5" />
@@ -1905,6 +1900,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 isOpen={showSendModal}
                 onClose={() => setShowSendModal(false)}
                 onSend={executeSendEmail}
+                onSendPeppol={async () => {
+                    setShowSendModal(false);
+                    await handleSendPeppol();
+                }}
+                peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : null}
                 clientEmail={clients.find(c => c.id === clientId)?.email || ''}
                 defaultSubject={`${t('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
                 defaultBody={t('email_invoice_body', docLanguage)}
@@ -1912,7 +1912,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 documentId={id}
                 documentType="invoice"
                 documentFileName={`${t('invoice', docLanguage)}_${(betreft || invoiceTitle || '').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`}
-                isSending={isSending}
+                isSending={isSending || isSendingPeppol}
             />
 
         </div>

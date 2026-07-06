@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useFileManagerStore } from './store';
 import { FileContextType, FileNode } from './types';
-import { LayoutGrid, List, UploadCloud, Search, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download, PackageOpen, Receipt, FileSignature } from 'lucide-react';
+import { LayoutGrid, List, UploadCloud, Search, FileIcon, ImageIcon, FileText, ChevronRight, MoreVertical, Loader2, Download, PackageOpen, Receipt, FileSignature, Trash2 } from 'lucide-react';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { format } from 'date-fns';
 import FileViewerModal from './FileViewerModal';
@@ -18,6 +18,7 @@ const FileDisplayArea = ({
 }: {
     nodes: FileNode[],
     onFileView: (file: FileNode) => void,
+    onDeleteFile: (file: FileNode) => void,
     viewMode: 'grid' | 'list'
 }) => {
     const getIcon = (node: FileNode) => {
@@ -86,6 +87,16 @@ const FileDisplayArea = ({
                                         <Download className="w-4 h-4" />
                                     </a>
                                 )}
+                                <button
+                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                                    title="Delete File"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteFile(node);
+                                    }}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
                                 <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 rounded-md">
                                     <MoreVertical className="w-4 h-4" />
                                 </button>
@@ -126,6 +137,16 @@ const FileDisplayArea = ({
                                 <Download className="w-4 h-4" />
                             </a>
                         )}
+                        <button
+                            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                            title="Delete File"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteFile(node);
+                            }}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
                         <button className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-all">
                             <MoreVertical className="w-4 h-4" />
                         </button>
@@ -151,6 +172,7 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
     const error = useFileManagerStore(state => state.error);
     const fetchNodes = useFileManagerStore(state => state.fetchNodes);
     const uploadFile = useFileManagerStore(state => state.uploadFile);
+    const deleteNode = useFileManagerStore(state => state.deleteNode);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [viewingFileIndex, setViewingFileIndex] = useState<number | null>(null);
@@ -346,6 +368,11 @@ export default function FileManager({ contextType, contextId }: FileManagerProps
                                     onFileView={(file) => {
                                         const idx = displayedNodes.findIndex(n => n.id === file.id);
                                         if (idx !== -1) setViewingFileIndex(idx);
+                                    }}
+                                    onDeleteFile={(file) => {
+                                        if (window.confirm(`Are you sure you want to delete "${file.name}"?`)) {
+                                            deleteNode(file.id);
+                                        }
                                     }}
                                     viewMode={viewMode}
                                 />

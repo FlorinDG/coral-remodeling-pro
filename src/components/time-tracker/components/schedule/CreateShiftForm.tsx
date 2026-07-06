@@ -665,7 +665,7 @@ export function CreateShiftForm({
                   </TabsList>
 
                   {/* Details Tab */}
-                  <TabsContent value="details" className="space-y-4 mt-4 min-h-[540px]">
+                  <TabsContent value="details" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                     {/* Single / Recurring toggle */}
                     <div className="flex border rounded-md overflow-hidden">
                       <button
@@ -993,7 +993,7 @@ export function CreateShiftForm({
                   </TabsContent>
 
                   {/* Tasks Tab */}
-                  <TabsContent value="tasks" className="space-y-4 mt-4 min-h-[540px]">
+                  <TabsContent value="tasks" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center gap-1 text-base">
                         <CheckSquare className="h-4 w-4" />
@@ -1091,7 +1091,7 @@ export function CreateShiftForm({
                   </TabsContent>
 
                   {/* Attachments Tab */}
-                  <TabsContent value="attachments" className="space-y-4 mt-4 min-h-[540px]">
+                  <TabsContent value="attachments" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                     <div className="flex items-center justify-between">
                       <Label className="flex items-center gap-1 text-base">
                         <Paperclip className="h-4 w-4" />
@@ -1225,7 +1225,7 @@ export function CreateShiftForm({
                 </TabsList>
 
                 {/* Details Tab */}
-                <TabsContent value="details" className="space-y-4 mt-4 min-h-[540px]">
+                <TabsContent value="details" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                   {/* Single / Recurring toggle */}
                   <div className="flex border rounded-md overflow-hidden">
                     <button
@@ -1552,7 +1552,7 @@ export function CreateShiftForm({
                 </TabsContent>
 
                 {/* Tasks Tab */}
-                <TabsContent value="tasks" className="space-y-4 mt-4 min-h-[540px]">
+                <TabsContent value="tasks" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-1 text-base">
                       <CheckSquare className="h-4 w-4" />
@@ -1650,7 +1650,7 @@ export function CreateShiftForm({
                 </TabsContent>
 
                 {/* Attachments Tab */}
-                <TabsContent value="attachments" className="space-y-4 mt-4 min-h-[540px]">
+                <TabsContent value="attachments" className="space-y-4 mt-4 h-[540px] overflow-y-auto">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-1 text-base">
                       <Paperclip className="h-4 w-4" />

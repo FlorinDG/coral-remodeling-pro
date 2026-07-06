@@ -16,12 +16,10 @@ interface FormulaEditorModalProps {
     onClose: () => void;
 }
 
-// ── Property pill component ─────────────────────────────────────────────────
-function PropertyPill({ name }: { name: string }) {
+function PropertyPill({ originalText }: { originalText: string }) {
     return (
-        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300 text-xs font-semibold mx-0.5">
-            <Hash className="w-3 h-3" />
-            {name}
+        <span className="text-purple-600 dark:text-purple-400 font-bold bg-purple-100 dark:bg-purple-900/30 rounded-sm">
+            {originalText}
         </span>
     );
 }
@@ -39,7 +37,7 @@ function HighlightedFormula({ expression, properties }: { expression: string; pr
             // prop("Name") pattern
             const propMatch = remaining.match(/^prop\(['"]([^'"]+)['"]\)/);
             if (propMatch) {
-                result.push(<PropertyPill key={keyIdx++} name={propMatch[1]} />);
+                result.push(<PropertyPill key={keyIdx++} originalText={propMatch[0]} />);
                 remaining = remaining.slice(propMatch[0].length);
                 continue;
             }
@@ -48,7 +46,7 @@ function HighlightedFormula({ expression, properties }: { expression: string; pr
             let foundProp = false;
             for (const name of propNames) {
                 if (remaining.startsWith(name) && (remaining.length === name.length || /[^a-zA-Z0-9_]/.test(remaining[name.length]))) {
-                    result.push(<PropertyPill key={keyIdx++} name={name} />);
+                    result.push(<PropertyPill key={keyIdx++} originalText={name} />);
                     remaining = remaining.slice(name.length);
                     foundProp = true;
                     break;

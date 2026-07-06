@@ -382,7 +382,7 @@ export function EditShiftDialog({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="min-h-[540px]">
+          <TabsContent value="details" className="h-[540px] overflow-y-auto pr-1">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Employee</Label>
@@ -392,7 +392,6 @@ export function EditShiftDialog({
                   onChange={setUserId}
                   placeholder="Select employee"
                   disabled={!canManage}
-                  usePortal={false}
                 />
               </div>
 
@@ -407,7 +406,6 @@ export function EditShiftDialog({
                   onChange={setProjectId}
                   placeholder="Select project (optional)"
                   disabled={!canManage}
-                  usePortal={false}
                 />
               </div>
 
@@ -534,7 +532,7 @@ export function EditShiftDialog({
             </form>
           </TabsContent>
 
-          <TabsContent value="tasks" className="space-y-4 min-h-[540px]">
+          <TabsContent value="tasks" className="space-y-4 h-[540px] overflow-y-auto pr-1">
             {!(projectId || shift?.project_id) ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ListTodo className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -686,7 +684,7 @@ export function EditShiftDialog({
             )}
           </TabsContent>
           
-          <TabsContent value="attachments" className="space-y-4 min-h-[540px]">
+          <TabsContent value="attachments" className="space-y-4 h-[540px] overflow-y-auto pr-1">
             {/* Add attachment buttons */}
             {canManage && (
               <div className="flex gap-2">

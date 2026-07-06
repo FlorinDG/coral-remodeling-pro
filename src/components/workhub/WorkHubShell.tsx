@@ -119,7 +119,7 @@ export default function WorkHubShell({
 
                 {/* Desktop: Horizontal tab navigation */}
                 <nav className="hidden md:block border-t border-neutral-100 dark:border-white/5">
-                    <div className="flex items-center gap-1 px-4 max-w-4xl mx-auto overflow-x-auto hide-scrollbar">
+                    <div className="flex items-center gap-1 px-4 max-w-4xl mx-auto overflow-x-auto">
                         {[...NAV_ITEMS, ...filteredSecondaryItems].map(item => (
                             <Link
                                 key={item.id}

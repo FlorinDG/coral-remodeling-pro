@@ -103,3 +103,51 @@ export async function sendInvoiceToClient(
         return { success: false, error: err.message || "Failed to send email." };
     }
 }
+
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
+import { lookupPeppolParticipant } from '@/lib/e-invoice';
+
+export async function checkClientPeppol(vatNumber: string | null | undefined): Promise<{ isRegistered: boolean; message?: string }> {
+    if (!vatNumber) return { isRegistered: false, message: 'Geen BTW nummer' };
+    
+    // basic format cleanup
+    const cleanVat = vatNumber.replace(/[^A-Za-z0-9]/g, '');
+    let peppolId = cleanVat;
+    
+    // standard BE format logic (0208 scheme)
+    if (cleanVat.startsWith('BE') && cleanVat.length >= 12) {
+        peppolId = `0208:${cleanVat.substring(2)}`;
+    } else if (/^\d{10}$/.test(cleanVat)) {
+        peppolId = `0208:${cleanVat}`;
+    } else {
+        // We only support BE automatic mapping easily, but could extend. 
+        // For now if it's not a clear BE VAT, let's just try 0208:cleanVat anyway
+        peppolId = `0208:${cleanVat}`;
+    }
+
+    try {
+        const session = await auth();
+        // @ts-ignore
+        const tenantId = session?.user?.tenantId;
+        if (!tenantId) return { isRegistered: false, message: 'Niet ingelogd' };
+
+        const tenant = await prisma.tenant.findUnique({
+            where: { id: tenantId },
+            select: { eInvoiceApiKey: true }
+        });
+
+        if (!tenant?.eInvoiceApiKey) {
+            return { isRegistered: false, message: 'Geen Peppol configuratie op dit account' };
+        }
+
+        const lookup = await lookupPeppolParticipant(peppolId, tenant.eInvoiceApiKey);
+        if (lookup && lookup.participant_id) {
+            return { isRegistered: true };
+        }
+        return { isRegistered: false, message: 'Klant is niet geregistreerd op het Peppol netwerk' };
+
+    } catch (e) {
+        return { isRegistered: false, message: 'Fout bij verifiëren van Peppol netwerk status' };
+    }
+}

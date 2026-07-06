@@ -12,8 +12,8 @@ import InvoiceRow from './InvoiceRow';
 import InvoiceFooterReport from './InvoiceFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { getInvoiceById } from '@/app/actions/get-invoice';
+import { sendInvoiceToClient, checkClientPeppol } from '@/app/actions/send-invoice';
 import { ensureStripeCheckoutUrl } from '@/app/actions/stripe-checkout';
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
@@ -346,6 +346,25 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         }
         return tenant?.documentLanguage || 'nl';
     }, [invoice, clients, clientId, tenant?.documentLanguage]);
+
+    const [peppolStatusMessage, setPeppolStatusMessage] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!clientRecord?.vatNumber) {
+            setPeppolStatusMessage('Geen BTW nummer gekend voor deze klant.');
+            return;
+        }
+        checkClientPeppol(clientRecord.vatNumber).then(res => {
+            if (res.isRegistered) {
+                setPeppolStatusMessage(null); // All good
+            } else {
+                setPeppolStatusMessage(res.message || 'Klant is niet geregistreerd op Peppol.');
+            }
+        }).catch(() => {
+            setPeppolStatusMessage('Fout bij verifiëren van Peppol status.');
+        });
+    }, [clientRecord?.vatNumber]);
+
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
         const blks = invoice?.blocks || [];
@@ -1914,7 +1933,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     setShowSendModal(false);
                     await handleSendPeppol();
                 }}
-                peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : null}
+                peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : peppolStatusMessage}
                 clientEmail={clients.find(c => c.id === clientId)?.email || ''}
                 defaultSubject={`${t('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
                 defaultBody={t('email_invoice_body', docLanguage)}

@@ -251,13 +251,13 @@ export default function TimeOff() {
                   <div className="flex items-center gap-4">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-foreground">{request.request_type}</span>
+                        <span className="font-medium text-foreground">{request.requestType}</span>
                         <Badge variant="outline" className={getStatusColor(request.status)}>
                           {request.status}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {formatDateSafe(request.start_date)} - {formatDateSafe(request.end_date)}
+                        {formatDateSafe(request.startDate)} - {formatDateSafe(request.endDate)}
                       </p>
                       {request.notes && (
                         <p className="text-sm text-muted-foreground mt-1">{request.notes}</p>

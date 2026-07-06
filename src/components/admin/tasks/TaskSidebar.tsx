@@ -125,7 +125,7 @@ export function TaskSidebar({
                     }`}
             >
                 <Icon className="w-4 h-4 flex-shrink-0" style={{ color: active ? color : undefined }} />
-                <span className="flex-1 text-left truncate">{t(`sidebar.${label}` as 'sidebar.smartLists') || label}</span>
+                <span className="flex-1 text-left truncate">{t.has(`sidebar.${label}`) ? t(`sidebar.${label}` as any) : perspective.name}</span>
                 {count !== undefined && count > 0 && (
                     <span className={`text-xs px-2 py-0.5 rounded-full font-bold border
                         ${active

@@ -95,11 +95,11 @@ export default function PortalPage({ params: paramsPromise }: { params: Promise<
                             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-12">
                                 <div>
                                     <span className="text-[#d75d00] font-bold tracking-[0.3em] text-[10px] uppercase mb-2 block tracking-widest">{t('navTitle')}</span>
-                                    <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-neutral-900 dark:text-white mb-4">
+                                    <h1 className="text-3xl font-black text-neutral-900 dark:text-white mb-2">
                                         {portal.clientName}
                                     </h1>
                                     <p className="text-neutral-500 dark:text-neutral-400 font-medium max-w-lg">
-                                        {t('welcome')} {displayTitle}. {t('tracking')}
+                                        {t('welcome', { name: displayTitle })} {t('trackProgress')}
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4 flex-wrap justify-end">

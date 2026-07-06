@@ -12,7 +12,13 @@ import { ScheduleCalendar } from '@/components/time-tracker/components/schedule/
 import { useScheduledShifts, ScheduledShift } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { useProjects } from '@/components/time-tracker/hooks/useProjects';
+import { hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 import { uploadFileAction } from '@/app/actions/files';
+
+const hrApi = {
+  create: hrCreate,
+  update: hrUpdate,
+};
 import {
   Dialog,
   DialogContent,

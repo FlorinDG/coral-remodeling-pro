@@ -1,11 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { auth } from '@/auth';
 
 export async function GET(req: Request) {
     try {
+        const session = await auth();
+        const tenantId = session?.user?.tenantId;
+        
+        if (!tenantId) {
+            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+        }
+
         const invoices = await prisma.globalPage.findMany({
             where: {
                 databaseId: { startsWith: 'db-invoices' },
+                database: { tenantId }
             },
         });
 

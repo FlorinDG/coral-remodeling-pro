@@ -45,9 +45,9 @@ export function TimeOffRequestForm({ open, onClose }: TimeOffRequestFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    if (!startDate) newErrors.startDate = 'Start date is required';
-    if (!endDate) newErrors.endDate = 'End date is required';
-    if (startDate && endDate && startDate > endDate) {
+    if (!startDate || isNaN(startDate.getTime())) newErrors.startDate = 'Start date is valid and required';
+    if (!endDate || isNaN(endDate.getTime())) newErrors.endDate = 'End date is valid and required';
+    if (startDate && endDate && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && startDate > endDate) {
       newErrors.endDate = 'End date must be after start date';
     }
     if (!reason.trim()) newErrors.reason = 'Reason is required';
@@ -59,7 +59,7 @@ export function TimeOffRequestForm({ open, onClose }: TimeOffRequestFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validate() || !startDate || !endDate) return;
+    if (!validate() || !startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
 
     // Here you would submit to Notion
     console.log({ startDate, endDate, type, reason });

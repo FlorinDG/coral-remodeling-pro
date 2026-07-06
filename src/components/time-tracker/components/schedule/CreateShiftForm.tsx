@@ -771,7 +771,6 @@ export function CreateShiftForm({
                           value={projectId}
                           onChange={setProjectId}
                           placeholder="Search projects..."
-                          usePortal={false}
                         />
                       </div>
                     )}
@@ -1332,7 +1331,6 @@ export function CreateShiftForm({
                         value={projectId}
                         onChange={setProjectId}
                         placeholder="Search projects..."
-                        usePortal={false}
                       />
                     </div>
                   )}

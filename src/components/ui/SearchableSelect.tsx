@@ -20,6 +20,7 @@ interface SearchableSelectProps {
     disabled?: boolean;
     borderless?: boolean;
     usePortal?: boolean;
+    onCreate?: (searchValue: string) => void;
 }
 
 export default function SearchableSelect({
@@ -33,6 +34,7 @@ export default function SearchableSelect({
     disabled = false,
     borderless = false,
     usePortal = true,
+    onCreate,
 }: SearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -193,28 +195,64 @@ export default function SearchableSelect({
                         {/* Options list */}
                         <div className="max-h-60 overflow-y-auto p-1">
                             {filtered.length === 0 ? (
-                                <div className="px-3 py-4 text-center text-xs text-neutral-400 italic">{emptyLabel}</div>
+                                <div className="px-3 py-4 text-center text-xs text-neutral-400 italic">
+                                    {emptyLabel}
+                                    {onCreate && search.trim() && (
+                                        <div className="mt-3">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    onCreate(search.trim());
+                                                    setSearch('');
+                                                    setIsOpen(false);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-orange-600 bg-orange-50 hover:bg-orange-100 dark:text-orange-400 dark:bg-orange-500/10 dark:hover:bg-orange-500/20 rounded-lg transition-colors w-full justify-center"
+                                            >
+                                                + Add "{search.trim()}"
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             ) : (
-                                filtered.map(option => (
-                                    <button
-                                        key={option.value}
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onChange(option.value);
-                                            setSearch('');
-                                            setTimeout(() => setIsOpen(false), 50);
-                                        }}
-                                        className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
-                                            option.value === value
-                                                ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
-                                                : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
-                                        }`}
-                                    >
-                                        {option.label}
-                                    </button>
-                                ))
+                                <>
+                                    {filtered.map(option => (
+                                        <button
+                                            key={option.value}
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onChange(option.value);
+                                                setSearch('');
+                                                setTimeout(() => setIsOpen(false), 50);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                                                option.value === value
+                                                    ? 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-300 font-semibold'
+                                                    : 'text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5'
+                                            }`}
+                                        >
+                                            {option.label}
+                                        </button>
+                                    ))}
+                                    {onCreate && search.trim() && !filtered.find(o => o.label.toLowerCase() === search.trim().toLowerCase()) && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onCreate(search.trim());
+                                                setSearch('');
+                                                setIsOpen(false);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-sm rounded-lg transition-colors text-orange-600 hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-500/10 font-medium flex items-center gap-2 mt-1 border-t border-neutral-100 dark:border-white/5 pt-2"
+                                        >
+                                            + Add new "{search.trim()}"
+                                        </button>
+                                    )}
+                                </>
                             )}
                         </div>
                     </>

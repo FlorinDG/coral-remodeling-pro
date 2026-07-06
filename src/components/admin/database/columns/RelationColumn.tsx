@@ -239,7 +239,7 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
                     )}
                 </div>
 
-                {searchQuery.trim() && filteredTargetPages.length === 0 && (
+                {searchQuery.trim() && !filteredTargetPages.some(p => String(p.properties[displayPropertyId] || 'Untitled').toLowerCase() === searchQuery.trim().toLowerCase()) && (
                     <button
                         onPointerDown={async (e) => {
                             e.preventDefault();

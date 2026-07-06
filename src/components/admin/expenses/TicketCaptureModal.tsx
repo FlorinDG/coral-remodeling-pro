@@ -12,6 +12,7 @@ import SearchableSelect from '@/components/ui/SearchableSelect';
 import { parseDecimal } from '@/lib/decimal-parser';
 import { useTenant } from '@/context/TenantContext';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
 
 interface TicketCaptureModalProps {
     onClose: () => void;
@@ -81,8 +82,10 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
     const pages = useDatabaseStore(s => s.pages);
     const projects = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-1'), [pages]);
+    const suppliers = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-suppliers'), [pages]);
 
     const [animationDone, setAnimationDone] = useState(false);
+    const router = useRouter();
 
     React.useEffect(() => {
         const timer = setTimeout(() => {
@@ -349,7 +352,12 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         project: form.project ? [form.project] : [],
                         lines: linesPayload,
                     });
-                    if (result.success) addConfirmedPage(result.page);
+                    if (result.success) {
+                        addConfirmedPage(result.page);
+                        onClose();
+                        router.push(`/admin/expenses/${result.page.id}`);
+                        return;
+                    }
                 } else {
                     const result = await createPageServerFirst(targetDatabaseId, {
                         title: form.merchant || 'Unnamed Expense',
@@ -651,12 +659,23 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                         <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">
                                             {isInvoiceMode ? 'Supplier' : 'Merchant'}
                                         </label>
-                                        <input
-                                            type="text"
+                                        <SearchableSelect
+                                            options={suppliers.map(s => ({ value: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown', label: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown' }))}
                                             value={form.merchant}
-                                            onChange={e => updateForm('merchant', e.target.value)}
-                                            placeholder={isInvoiceMode ? 'Supplier name' : 'Shop / vendor name'}
-                                            className="w-full px-3 py-2.5 text-sm bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/50 focus:border-orange-400 text-neutral-900 dark:text-white placeholder:text-neutral-400 transition-all"
+                                            onChange={val => updateForm('merchant', val)}
+                                            placeholder={isInvoiceMode ? 'Select supplier' : 'Select merchant'}
+                                            searchPlaceholder="Search suppliers..."
+                                            usePortal={true}
+                                            onCreate={async (newSupplier) => {
+                                                const res = await createPageServerFirst('db-suppliers', {
+                                                    title: newSupplier,
+                                                    f_companyName: newSupplier,
+                                                });
+                                                if (res.success) {
+                                                    addConfirmedPage(res.page);
+                                                    updateForm('merchant', newSupplier);
+                                                }
+                                            }}
                                         />
                                     </div>
 

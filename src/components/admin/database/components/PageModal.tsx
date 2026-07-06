@@ -7,6 +7,7 @@ import { useDatabaseStore } from '../store';
 import { X, Maximize2, Minimize2, MoreHorizontal, Edit3, Trash2, Plus, Link, Link2, ExternalLink, ChevronDown, Mail, Phone, MapPin, Upload } from 'lucide-react';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { applyRollupAggregation } from '../columns/RollupColumn';
+import { evaluateFormula } from '../formulaEngine';
 import BlockEditor from './BlockEditor';
 import dynamic from 'next/dynamic';
 
@@ -1021,6 +1022,13 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                             </div>
                                                                         ) : prop.type === 'rollup' ? (
                                                                             <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
+                                                                        ) : prop.type === 'formula' ? (
+                                                                            <div className="flex items-center gap-2 w-full px-2 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-md min-h-[36px]">
+                                                                                <Calculator className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                                                                                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                                                                    {String(evaluateFormula(prop.config?.formulaExpression || '', { rowProperties: page.properties, schema: database.properties }) || '—')}
+                                                                                </span>
+                                                                            </div>
                                                                         ) : prop.type === 'variants' ? (
                                                                             <VariantsPropertyEditor
                                                                                 databaseId={databaseId}

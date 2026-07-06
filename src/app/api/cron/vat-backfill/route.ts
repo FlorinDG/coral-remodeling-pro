@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { auth } from '@/auth';
 
 export async function GET(req: Request) {
-    try {
-        const session = await auth();
-        const tenantId = session?.user?.tenantId;
-        
-        if (!tenantId) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
+    // Verify cron secret
+    const authHeader = req.headers.get('authorization');
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    try {
         const invoices = await prisma.globalPage.findMany({
             where: {
-                databaseId: { startsWith: 'db-invoices' },
-                database: { tenantId }
+                databaseId: { startsWith: 'db-invoices' }
             },
         });
 

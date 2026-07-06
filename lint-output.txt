@@ -1,0 +1,4 @@
+
+> coral-remodeling-pro@0.1.0 test:lint
+> eslint src --max-warnings=0
+

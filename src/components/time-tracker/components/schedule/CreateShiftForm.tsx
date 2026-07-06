@@ -92,7 +92,7 @@ interface CreateShiftFormProps {
     role?: string | null;
     notes?: string | null;
   }) => Promise<{ id: string } | unknown>;
-  onCreateProject: (name: string, address: string | null, color: string) => Promise<unknown>;
+  onCreateProject: (data: { name: string; address?: string | null; color?: string; latitude?: number; longitude?: number }) => Promise<unknown>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   prefilledUserId?: string;
@@ -189,6 +189,8 @@ export function CreateShiftForm({
   // New project form state
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectAddress, setNewProjectAddress] = useState('');
+  const [newProjectLatitude, setNewProjectLatitude] = useState('');
+  const [newProjectLongitude, setNewProjectLongitude] = useState('');
   const [newProjectColor, setNewProjectColor] = useState('blue');
 
   // Apply prefilled values when dialog opens
@@ -537,10 +539,18 @@ export function CreateShiftForm({
 
     setLoading(true);
     try {
-      await onCreateProject(newProjectName, newProjectAddress || null, newProjectColor);
+      await onCreateProject({
+        name: newProjectName,
+        address: newProjectAddress || null,
+        color: newProjectColor,
+        latitude: newProjectLatitude ? parseFloat(newProjectLatitude) : undefined,
+        longitude: newProjectLongitude ? parseFloat(newProjectLongitude) : undefined
+      });
       toast.success('Project created successfully');
       setNewProjectName('');
       setNewProjectAddress('');
+      setNewProjectLatitude('');
+      setNewProjectLongitude('');
       setNewProjectColor('blue');
       setProjectDialogOpen(false);
     } catch (error) {
@@ -600,6 +610,51 @@ export function CreateShiftForm({
                     placeholder="e.g., 123 Main St, City"
                   />
                 </div>
+
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="projectLat">Latitude</Label>
+                    <Input
+                      id="projectLat"
+                      type="number"
+                      step="any"
+                      value={newProjectLatitude}
+                      onChange={(e) => setNewProjectLatitude(e.target.value)}
+                      placeholder="e.g., 52.3676"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="projectLng">Longitude</Label>
+                    <Input
+                      id="projectLng"
+                      type="number"
+                      step="any"
+                      value={newProjectLongitude}
+                      onChange={(e) => setNewProjectLongitude(e.target.value)}
+                      placeholder="e.g., 4.9041"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full text-xs mt-1"
+                  onClick={() => {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                          setNewProjectLatitude(pos.coords.latitude.toString());
+                          setNewProjectLongitude(pos.coords.longitude.toString());
+                          toast.success('Location captured');
+                        },
+                        () => toast.error('Failed to get location')
+                      );
+                    }
+                  }}
+                >
+                  Use My Current Location
+                </Button>
 
                 <div>
                   <Label>Color</Label>

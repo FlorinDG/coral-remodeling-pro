@@ -12,6 +12,8 @@ import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
  * components continue to render without errors.
  */
 
+import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+
 export interface ApprovalRequest {
   id: string;
   request_type: string;
@@ -32,8 +34,49 @@ export interface ApprovalRequest {
 
 export function useApprovalRequests() {
   const { isAdmin, userId } = useUserRoles();
-  const [requests] = useState<ApprovalRequest[]>([]);
-  const loading = false;
+  const [requests, setRequests] = useState<ApprovalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRequests = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await hrList<any>('clock-entries');
+      const pending = data.filter((entry: any) => entry.requiresApproval === true && entry.approvalStatus === 'pending');
+      
+      const profiles = await hrList<any>('employees');
+      const profileMap = new Map(profiles?.map((p: any) => [p.userId, p]) || []);
+
+      const mapped: ApprovalRequest[] = pending.map((p: any) => ({
+        id: p.id,
+        request_type: 'clock_entry',
+        entity_id: p.id,
+        entity_type: 'clock_entry',
+        user_id: p.userId,
+        requested_by: p.userId,
+        status: p.approvalStatus,
+        request_data: p,
+        notes: p.taskDescription || null,
+        reviewed_by: null,
+        reviewed_at: null,
+        created_at: p.createdAt,
+        updated_at: p.updatedAt,
+        user_profile: (() => {
+            const emp = profileMap.get(p.userId) as any;
+            return emp ? { full_name: `${emp.firstName} ${emp.lastName}`.trim() } : null;
+        })(),
+      }));
+
+      setRequests(mapped);
+    } catch (err) {
+      console.error('[ApprovalRequests] error fetching requests', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const createRequest = useCallback(async (
     _requestType: string,
@@ -43,31 +86,51 @@ export function useApprovalRequests() {
     _requestData?: Record<string, unknown>,
     _notes?: string
   ) => {
-    // TODO Q4: POST /api/hr/approval-requests
-    console.log('[ApprovalRequests] create — scaffold, no-op');
+    // Scaffold no-op
     return { data: null, error: null };
   }, []);
 
-  const approveRequest = useCallback(async (_requestId: string) => {
+  const approveRequest = useCallback(async (requestId: string) => {
     if (!isAdmin) return { error: new Error('Not authorized') };
-    console.log('[ApprovalRequests] approve — scaffold, no-op');
-    return { error: null };
-  }, [isAdmin]);
+    try {
+      await hrUpdate('clock-entries', requestId, { approvalStatus: 'approved', approvedBy: userId, approvedAt: new Date().toISOString() });
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      return { error: null };
+    } catch (err) {
+      return { error: err };
+    }
+  }, [isAdmin, userId]);
 
-  const rejectRequest = useCallback(async (_requestId: string) => {
+  const rejectRequest = useCallback(async (requestId: string) => {
     if (!isAdmin) return { error: new Error('Not authorized') };
-    return { error: null };
-  }, [isAdmin]);
+    try {
+      await hrUpdate('clock-entries', requestId, { approvalStatus: 'rejected', approvedBy: userId, approvedAt: new Date().toISOString() });
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      return { error: null };
+    } catch (err) {
+      return { error: err };
+    }
+  }, [isAdmin, userId]);
 
   const bulkApprove = useCallback(async (requestIds: string[]) => {
     if (!isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
-    return { error: null, successCount: requestIds.length };
-  }, [isAdmin]);
+    let successCount = 0;
+    for (const id of requestIds) {
+      const res = await approveRequest(id);
+      if (!res.error) successCount++;
+    }
+    return { error: null, successCount };
+  }, [isAdmin, approveRequest]);
 
   const bulkReject = useCallback(async (requestIds: string[]) => {
     if (!isAdmin) return { error: new Error('Not authorized'), successCount: 0 };
-    return { error: null, successCount: requestIds.length };
-  }, [isAdmin]);
+    let successCount = 0;
+    for (const id of requestIds) {
+      const res = await rejectRequest(id);
+      if (!res.error) successCount++;
+    }
+    return { error: null, successCount };
+  }, [isAdmin, rejectRequest]);
 
   return {
     requests,
@@ -77,7 +140,7 @@ export function useApprovalRequests() {
     rejectRequest,
     bulkApprove,
     bulkReject,
-    refetch: async () => {},
-    pendingCount: 0,
+    refetch: fetchRequests,
+    pendingCount: requests.length,
   };
 }

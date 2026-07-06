@@ -7,6 +7,8 @@ export interface Project {
   id: string;
   name: string;
   address: string | null;
+  latitude: number | null;
+  longitude: number | null;
   color: string;
   createdBy: string | null;
   createdAt: string;
@@ -33,7 +35,7 @@ export function useProjects() {
     fetchProjects();
   }, [fetchProjects]);
 
-  const createProject = useCallback(async (data: { name: string; color?: string; address?: string }) => {
+  const createProject = useCallback(async (data: { name: string; color?: string; address?: string; latitude?: number; longitude?: number }) => {
     try {
       const project = await hrCreate<Project>('projects', data);
       setProjects(prev => [...prev, project]);

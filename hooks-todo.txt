@@ -1,0 +1,119 @@
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/admin/projects-management/planning/ProjectTimelineView.tsx
+  19 |     const timelineData = useMemo(() => {  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/admin/settings/calendar/page.tsx
+  29 |         }  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/admin/settings/hr/page.tsx
+  28 |     }, [tenant]);  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/admin/settings/projects/page.tsx
+  29 |         }  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/admin/settings/ui/page.tsx
+  96 |                 .concat(allowedItems.filter(a => !items.some(i => i.id === a.id)))                                                       react-hooks/set-state-in-effect
+  98:8    warning  React Hook useEffect has a missing dependency: 'items'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+  146 |     const handleTabDragEnd = (event: DragEndEvent) => {  react-hooks/set-state-in-effect
+  144:8    warning  React Hook useEffect has a missing dependency: 'getGroupConfig'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/invoice/[id]/InvoiceViewer.tsx
+  176 |     useEffect(() => {  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/m/invoices/new/page.tsx
+  156:8  warning  React Hook useCallback has an unnecessary dependency: 'tenant'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/app/[locale]/superadmin/TenantsGrid.tsx
+  110:8   warning  React Hook useEffect has a missing dependency: 'checkHealth'. Either include it or remove the dependency array                                                                                                                                                                           react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/CookieConsent.tsx
+  19 |  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/PromotionalBanner.tsx
+  23 |         console.error("Failed to load promotional banner:", error);  react-hooks/error-boundaries
+  22 |     } catch (error) {                                                                                                                                                                                                                                                                                                                                                  react-hooks/error-boundaries
+  18 |                     </p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/error-boundaries
+  21 |         );                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/error-boundaries
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/SyncStatusBadge.tsx
+  19 |         }  react-hooks/set-state-in-effect
+  20:8   warning  React Hook useEffect has a missing dependency: 'showSaved'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/calendar/CalendarModule.tsx
+  406:8   warning  React Hook useMemo has a missing dependency: 'isMobile'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/dashboard/DashboardProjectsTable.tsx
+  41 |     if (!isMounted || !db) return <div className="p-8 text-neutral-500 text-sm animate-pulse">Establishing Project Synchronization...</div>;  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/GlobalDatabaseSyncer.tsx
+  13 |     // Uses a ref to avoid re-running when databases prop changes (it shouldn't)  react-hooks/refs
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/NotionGrid.tsx
+  2:1   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  448:8   warning  React Hook useMemo has a missing dependency: 'activeFilters'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  460:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/purity')
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/columns/RelationColumn.tsx
+  71:11   warning  The 'value' conditional could make the dependencies of useMemo Hook (at line 85) change on every render. To fix this, wrap the initialization of 'value' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/columns/TitleColumn.tsx
+  22 |  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/AddColumnFlyout.tsx
+  79 |         setTimeout(() => inputRef.current?.focus(), 50);  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/BlockEditor.tsx
+  60 |     useEffect(() => {  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/ColumnHeader.tsx
+  178 |                 />                                           react-hooks/refs
+  178 |                 />  react-hooks/refs
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/DatabaseFooter.tsx
+  145:8  warning  React Hook useMemo has missing dependencies: 'databaseId', 'getSummaryType', and 'locale'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/FormulaEditorModal.tsx
+  123:11  warning  The 'properties' logical expression could make the dependencies of useMemo Hook (at line 138) change on every render. To fix this, wrap the initialization of 'properties' in its own useMemo() Hook  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/GlobalMentionDateInterceptor.tsx
+  107 |             const event = new Event('input', { bubbles: true });  react-hooks/immutability
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/components/SelectDropdown.tsx
+  95 |     return (  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/hooks/useFilteredPages.ts
+  91 |             if (!activeFilters || activeFilters.length === 0) return true;  react-hooks/purity
+  158:8   warning  React Hook useMemo has a missing dependency: 'database'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/hooks/useGridColumns.tsx
+  1:1   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/preserve-manual-memoization')
+  338:8   warning  React Hook useMemo has missing dependencies: 'committedWidthsRef', 'createPage', 'databaseId', 'deletePage', 'setActivePageId', 'setSelectedRowIds', 'updatePageOrder', and 'updatePageProperty'. Either include them or remove the dependency array. If 'setActivePageId' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/hooks/useVatLookup.ts
+  57:8   warning  React Hook useEffect has a missing dependency: 'vatLookup'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  127:8   warning  React Hook useEffect has a missing dependency: 'database'. Either include it or remove the dependency array   react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/database/views/TimelineView.tsx
+  138 |     const { timelineStart, timelineEnd, columns } = useMemo(() => {  react-hooks/preserve-manual-memoization
+  135:8   warning  React Hook useMemo has a missing dependency: 'database'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/expenses/PurchaseInvoiceEngine.tsx
+  291:8   warning  React Hook useEffect has a missing dependency: 'loadingPeppol'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/notifications/NotificationWatcher.tsx
+  62 |             // eslint-disable-next-line react-hooks/set-state-in-effect  react-hooks/set-state-in-effect
+  62:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/admin/settings/DraggableSidebarItem.tsx
+  32 |         <div  react-hooks/static-components
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/mobile/MobileShell.tsx
+  107:17  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  111:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/ui/attachment-link.tsx
+  19 |  react-hooks/set-state-in-effect
+  63 |  react-hooks/set-state-in-effect
+
+/Users/florin/Documents/GitHub/coral-remodeling-pro/src/components/ui/sidebar.tsx
+  540 |   return (  react-hooks/purity

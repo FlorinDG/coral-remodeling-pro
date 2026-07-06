@@ -217,6 +217,7 @@ export function ApprovalManager() {
       case 'shift_edit': return ClipboardList;
       case 'late_entry': return Clock;
       case 'time_off': return Calendar;
+      case 'clock_entry': return Clock;
       default: return FileText;
     }
   };
@@ -226,6 +227,7 @@ export function ApprovalManager() {
       case 'shift_edit': return 'Shift Edit';
       case 'late_entry': return 'Late Entry';
       case 'time_off': return 'Time Off';
+      case 'clock_entry': return 'Unscheduled Clock';
       default: return type;
     }
   };

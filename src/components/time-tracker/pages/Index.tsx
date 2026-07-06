@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from "@/i18n/routing";
 
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,9 @@ import { MySchedule } from '@/components/time-tracker/components/MySchedule';
 import { Announcements } from '@/components/time-tracker/components/Announcements';
 import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { MapPin } from 'lucide-react';
+import { SiteVisitModal } from '@/components/time-tracker/components/SiteVisitModal';
 
 interface IndexProps {
   /** When true, hides standalone Header/Footer — used when rendered inside AdminLayout */
@@ -19,6 +22,7 @@ interface IndexProps {
 export default function Index({ embedded = false }: IndexProps) {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
+  const [siteVisitOpen, setSiteVisitOpen] = useState(false);
 
   // Native push notifications callout removed per user request.
 
@@ -49,10 +53,19 @@ export default function Index({ embedded = false }: IndexProps) {
             </h1>
           </div>
 
-          <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
+          <div className="animate-fade-in flex flex-col items-center justify-center gap-4" style={{ animationDelay: '200ms' }}>
             <ClockButton />
+            <Button variant="outline" className="rounded-full" onClick={() => setSiteVisitOpen(true)}>
+              <MapPin className="w-4 h-4 mr-2" />
+              Record Site Visit
+            </Button>
           </div>
         </section>
+
+        <SiteVisitModal 
+          open={siteVisitOpen} 
+          onClose={() => setSiteVisitOpen(false)} 
+        />
 
         {/* Scheduled Shifts */}
         <div className="mb-8 md:mb-12 animate-fade-in" style={{ animationDelay: '300ms' }}>

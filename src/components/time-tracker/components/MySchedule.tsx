@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
-import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
+import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
+import { GeofenceWarningDialog } from './GeofenceWarningDialog';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
 import { format, parseISO, isToday, addDays, subDays, isBefore, isAfter, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
@@ -133,6 +134,7 @@ export function MySchedule() {
   const { location, requestLocation } = useGeolocation();
   const [isClockingIn, setIsClockingIn] = useState(false);
   const [isClockingOut, setIsClockingOut] = useState(false);
+  const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any, shiftId: string} | null>(null);
   const [selectedShift, setSelectedShift] = useState<any>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -195,16 +197,51 @@ export function MySchedule() {
     return () => clearInterval(interval);
   }, [activeEntry]);
 
-  const handleClockIn = async (shiftId: string) => {
+  const handleClockIn = async (shiftId: string, overrideShiftWithFallback = false) => {
     setIsClockingIn(true);
     try {
-      await requestLocation();
-      const { error } = await clockIn(location, shiftId);
+      const location = showGeofenceWarning?.location || await requestLocation();
+      const shift = shifts.find(s => s.id === shiftId);
+
+      // Validate Geofence FIRST
+      if (!overrideShiftWithFallback && shift?.project?.latitude && shift?.project?.longitude && location) {
+        const fence = validateGeofence(
+          { latitude: location.latitude, longitude: location.longitude, accuracy: 0 },
+          shift.project.latitude,
+          shift.project.longitude,
+          200
+        );
+        if (!fence.withinFence) {
+          setShowGeofenceWarning({
+            distance: fence.distanceMeters,
+            site: shift.project.name || 'site',
+            location,
+            shiftId
+          });
+          setIsClockingIn(false);
+          return;
+        }
+      }
+
+      const clockInData: Record<string, any> = {};
+      if (location) {
+        clockInData.clockInLatitude = location.latitude;
+        clockInData.clockInLongitude = location.longitude;
+      }
+      if (overrideShiftWithFallback) {
+        clockInData.requiresApproval = true;
+        clockInData.approvalStatus = 'pending';
+      } else {
+        clockInData.shiftId = shiftId;
+      }
+
+      const { error } = await clockIn(clockInData);
       
       if (error) {
         toast.error('Failed to clock in');
       } else {
-        toast.success('Clocked in successfully');
+        toast.success(overrideShiftWithFallback ? 'Clocked in without shift (pending approval)' : 'Clocked in successfully');
+        setShowGeofenceWarning(null);
       }
     } catch (err) {
       toast.error('Failed to clock in');
@@ -364,6 +401,17 @@ export function MySchedule() {
           )}
         </DialogContent>
       </Dialog>
+      <GeofenceWarningDialog
+        open={!!showGeofenceWarning}
+        distanceMeters={showGeofenceWarning?.distance || 0}
+        siteName={showGeofenceWarning?.site || ''}
+        onCancel={() => setShowGeofenceWarning(null)}
+        onClockWithoutShift={() => {
+          if (showGeofenceWarning?.shiftId) {
+            handleClockIn(showGeofenceWarning.shiftId, true);
+          }
+        }}
+      />
     </Card>
   );
 }

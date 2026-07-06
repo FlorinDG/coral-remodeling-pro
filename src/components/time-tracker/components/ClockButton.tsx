@@ -10,6 +10,7 @@ import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { ClockOutForm } from './ClockOutForm';
 import { LocationPermissionDialog } from './LocationPermissionDialog';
+import { GeofenceWarningDialog } from './GeofenceWarningDialog';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +18,7 @@ function ClockButtonComponent() {
   const { t } = useTranslation();
   const [showClockOutForm, setShowClockOutForm] = useState(false);
   const [showLocationDialog, setShowLocationDialog] = useState(false);
+  const [showGeofenceWarning, setShowGeofenceWarning] = useState<{distance: number, site: string, location: any} | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeShiftId, setActiveShiftId] = useState<string | null>(null);
   
@@ -65,17 +67,39 @@ function ClockButtonComponent() {
     await performClockIn();
   };
 
-  const performClockIn = async () => {
+  const performClockIn = async (overrideShiftWithFallback = false) => {
     setIsProcessing(true);
-    const location = await requestLocation();
+    const location = showGeofenceWarning?.location || await requestLocation();
     
-    // Clock in — pass location + shiftId as a single object
+    // Validate Geofence FIRST
+    if (!overrideShiftWithFallback && todayShift?.project?.latitude && todayShift?.project?.longitude && location) {
+      const fence = validateGeofence(
+        { latitude: location.latitude, longitude: location.longitude, accuracy: 0 },
+        todayShift.project.latitude,
+        todayShift.project.longitude,
+        200 // 200m radius
+      );
+      if (!fence.withinFence) {
+        setShowGeofenceWarning({
+          distance: fence.distanceMeters,
+          site: todayShift.project.name || 'site',
+          location
+        });
+        setIsProcessing(false);
+        return; // Halt clock in
+      }
+    }
+
     const clockInData: Record<string, any> = {};
     if (location) {
       clockInData.clockInLatitude = location.latitude;
       clockInData.clockInLongitude = location.longitude;
     }
-    if (todayShift?.id) {
+    
+    if (overrideShiftWithFallback) {
+      clockInData.requiresApproval = true;
+      clockInData.approvalStatus = 'pending';
+    } else if (todayShift?.id) {
       clockInData.shiftId = todayShift.id;
     }
 
@@ -88,44 +112,30 @@ function ClockButtonComponent() {
     }
     
     // If no scheduled shift, create a user-initiated shift
-    if (!todayShift && data) {
+    if (!todayShift && data && !overrideShiftWithFallback) {
       const userShift = await createUserShift();
       if (userShift?.data) {
         setActiveShiftId(userShift.data.id);
       }
-    } else if (todayShift) {
+    } else if (todayShift && !overrideShiftWithFallback) {
       setActiveShiftId(todayShift.id);
     }
 
     await refetchShifts();
     setIsProcessing(false);
+    setShowGeofenceWarning(null);
 
-    // Geofence validation (soft fence — warn but allow)
-    // HrProject stores address string; lat/lng may be available via geocoding
-    if (location && todayShift?.project?.latitude && todayShift?.project?.longitude) {
-      const fence = validateGeofence(
-        { latitude: location.latitude, longitude: location.longitude, accuracy: 0 },
-        todayShift.project.latitude,
-        todayShift.project.longitude,
-        200 // 200m radius
-      );
-      if (!fence.withinFence) {
-        toast.warning(`You are ${fence.distanceMeters}m from the project site`, {
-          description: `Expected within ${fence.radiusMeters}m of ${todayShift.project.name || 'site'}. Clock-in recorded anyway.`,
-          duration: 8000,
-        });
-      } else {
-        toast.success('On-site confirmed', {
-          description: `${fence.distanceMeters}m from ${todayShift.project.name || 'site'}`,
-        });
-      }
-    } else if (location) {
-      toast.success('Location captured', {
-        description: `Lat: ${location.latitude.toFixed(4)}, Lng: ${location.longitude.toFixed(4)}`,
+    if (overrideShiftWithFallback) {
+      toast.success('Clocked in without shift', {
+        description: 'Entry requires manager approval',
       });
+    } else if (location) {
+      toast.success('On-site confirmed', {
+        description: `Clocked into scheduled shift`,
+      });
+    } else {
+      toast.success(hasScheduledShift ? 'Clocked in successfully!' : 'Clocked in without scheduled shift');
     }
-
-    toast.success(hasScheduledShift ? 'Clocked in successfully!' : 'Clocked in without scheduled shift');
   };
 
   const handleLocationPermissionGranted = async () => {
@@ -291,6 +301,14 @@ function ClockButtonComponent() {
         open={showLocationDialog}
         onClose={() => setShowLocationDialog(false)}
         onGranted={handleLocationPermissionGranted}
+      />
+
+      <GeofenceWarningDialog
+        open={!!showGeofenceWarning}
+        distanceMeters={showGeofenceWarning?.distance || 0}
+        siteName={showGeofenceWarning?.site || ''}
+        onCancel={() => setShowGeofenceWarning(null)}
+        onClockWithoutShift={() => performClockIn(true)}
       />
 
       <ClockOutForm

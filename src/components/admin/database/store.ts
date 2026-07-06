@@ -1269,7 +1269,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [...(v.filters || []), { ...filter, id: uuidv4() }] } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1285,7 +1284,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).map((f: FilterRule) => f.id === filterId ? { ...f, ...updates } : f) } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1301,7 +1299,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: (v.filters || []).filter((f: FilterRule) => f.id !== filterId) } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1317,7 +1314,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, filters: [] } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1333,7 +1329,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [...(v.sorts || []), { ...sort, id: uuidv4() }] } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1349,7 +1344,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).map((s: SortRule) => s.id === sortId ? { ...s, ...updates } : s) } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1365,7 +1359,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: (v.sorts || []).filter((s: SortRule) => s.id !== sortId) } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));
@@ -1381,7 +1374,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 views: db.views.map((v: DatabaseView) => v.id === viewId ? { ...v, sorts: [] } : v),
                                 updatedAt: new Date().toISOString()
                             };
-                        }
                     })
                 }));
                 syncDb(get().databases.find(d => d.id === databaseId));

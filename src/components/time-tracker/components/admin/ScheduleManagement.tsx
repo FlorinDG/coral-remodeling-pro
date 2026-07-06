@@ -255,7 +255,7 @@ export function ScheduleManagement() {
         </div>
 
         {canManage && (
-          <>
+          <div className="hidden md:block">
             <CreateShiftForm
               projects={projects}
               workers={workers}
@@ -274,7 +274,7 @@ export function ScheduleManagement() {
               prefilledDate={prefilledDate}
               onClose={handleCreateShiftDialogClose}
             />
-          </>
+          </div>
         )}
       </div>
 

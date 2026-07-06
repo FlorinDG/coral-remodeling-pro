@@ -501,7 +501,7 @@ export function EditShiftDialog({
                 />
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0">
+              <DialogFooter className="hidden md:flex mt-6">
                 {canManage && (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -545,7 +545,7 @@ export function EditShiftDialog({
                   <div className="flex gap-2">
                     <Popover open={taskPopoverOpen} onOpenChange={setTaskPopoverOpen}>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" className="hidden md:inline-flex">
                           <Plus className="h-4 w-4 mr-1" />
                           Add Task
                         </Button>
@@ -669,7 +669,7 @@ export function EditShiftDialog({
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              className="h-8 w-8 text-destructive hover:text-destructive hidden md:flex"
                               onClick={() => handleRemoveTask(shiftTask.id)}
                             >
                               <Trash className="h-4 w-4" />
@@ -696,7 +696,14 @@ export function EditShiftDialog({
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     disabled={uploadingFile}
                   />
-                  <Button variant="outline" size="sm" disabled={uploadingFile}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="hidden md:inline-flex relative"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                  >
                     {uploadingFile ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
@@ -709,7 +716,7 @@ export function EditShiftDialog({
                 {projectAttachments.length > 0 && (
                   <Popover open={attachmentPopoverOpen} onOpenChange={setAttachmentPopoverOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="hidden md:inline-flex">
                         <FolderOpen className="h-4 w-4 mr-1" />
                         From Project
                       </Button>
@@ -806,7 +813,7 @@ export function EditShiftDialog({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            className="h-8 w-8 text-destructive hover:text-destructive hidden md:flex"
                             onClick={() => handleDeleteAttachment(attachment)}
                           >
                             <X className="h-4 w-4" />

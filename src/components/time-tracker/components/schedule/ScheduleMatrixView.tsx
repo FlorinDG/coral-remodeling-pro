@@ -570,7 +570,7 @@ export function ScheduleMatrixView({
                                 <button
                                   onClick={() => onAddShift(worker.id, dateStr)}
                                   className={cn(
-                                    "flex items-center justify-center transition-opacity print:hidden rounded",
+                                    "hidden md:flex items-center justify-center transition-opacity print:hidden rounded",
                                     dayShifts.length === 0
                                       ? "absolute inset-0 opacity-0 group-hover/cell:opacity-100"
                                       : "w-full py-0.5 opacity-0 group-hover/cell:opacity-100 hover:bg-muted/60"

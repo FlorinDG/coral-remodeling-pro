@@ -59,7 +59,7 @@ export function TimeOffRequestForm({ open, onClose }: TimeOffRequestFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validate()) return;
+    if (!validate() || !startDate || !endDate) return;
 
     // Here you would submit to Notion
     console.log({ startDate, endDate, type, reason });

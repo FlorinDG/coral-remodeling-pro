@@ -468,6 +468,7 @@ export default function Schedule() {
 
                         const clockEntry = await hrApi.create('clock-entries', {
                           userId: selectedShift.user_id,
+                          shiftId: selectedShift.id,
                           clockInTime: clockInTime.toISOString(),
                           clockOutTime: clockOutTime.toISOString(),
                           requiresApproval: true,
@@ -477,7 +478,6 @@ export default function Schedule() {
 
                         // Link clock entry to the selected shift and update project
                         await hrApi.update('shifts', selectedShift.id, {
-                          clockEntryId: clockEntry.id,
                           shiftStart: manualClockIn,
                           shiftEnd: manualClockOut,
                           status: 'Pending Approval',

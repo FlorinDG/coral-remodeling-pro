@@ -64,8 +64,8 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
                 setIsOpen(false);
             }
         };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
+        document.addEventListener('mousedown', handler, true);
+        return () => document.removeEventListener('mousedown', handler, true);
     }, [isOpen]);
 
     // Close on Escape
@@ -74,8 +74,8 @@ export default function SelectDropdown({ value, options, onChange, placeholder =
         const handler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') setIsOpen(false);
         };
-        document.addEventListener('keydown', handler);
-        return () => document.removeEventListener('keydown', handler);
+        document.addEventListener('keydown', handler, true);
+        return () => document.removeEventListener('keydown', handler, true);
     }, [isOpen]);
 
     const handleSelect = (optId: string | null) => {

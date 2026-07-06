@@ -63,9 +63,18 @@ export function RecurrenceSelector({ value, onChange }: RecurrenceSelectorProps)
         const h = (e: MouseEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
         };
-        document.addEventListener('mousedown', h);
-        return () => document.removeEventListener('mousedown', h);
-    }, []);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false);
+        };
+        if (open) {
+            document.addEventListener('mousedown', h, true);
+            document.addEventListener('keydown', handleKeyDown, true);
+        }
+        return () => {
+            document.removeEventListener('mousedown', h, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
+    }, [open]);
 
     const handleSelectPattern = (pat: string) => {
         if (pat === 'none') {

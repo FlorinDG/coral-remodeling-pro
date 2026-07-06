@@ -90,10 +90,17 @@ function CustomDatePicker({ value, onChange, min, placeholder = 'Select date', c
                 setOpen(false);
             }
         };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false);
+        };
         if (open) {
             document.addEventListener('mousedown', clickAway, true);
+            document.addEventListener('keydown', handleKeyDown, true);
         }
-        return () => document.removeEventListener('mousedown', clickAway, true);
+        return () => {
+            document.removeEventListener('mousedown', clickAway, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
     }, [open]);
 
     const handlePrevMonth = (e: React.MouseEvent) => {
@@ -379,10 +386,17 @@ function Select({ value, options, onChange, renderIcon }: {
                 setOpen(false);
             }
         };
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setOpen(false);
+        };
         if (open) {
             document.addEventListener('mousedown', clickAway, true);
+            document.addEventListener('keydown', handleKeyDown, true);
         }
-        return () => document.removeEventListener('mousedown', clickAway, true);
+        return () => {
+            document.removeEventListener('mousedown', clickAway, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
     }, [open]);
 
     return (

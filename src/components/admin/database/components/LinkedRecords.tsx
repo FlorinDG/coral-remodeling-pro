@@ -42,18 +42,23 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
     // Fallback selection to the first relation property if selectedPropId is null/unset
     const effectiveSelectedPropId = selectedPropId || relationProps[0]?.id || null;
 
-    // Handle clicking outside the dropdown popover
+    // Handle clicking outside the dropdown popover and Escape key
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setIsOpen(false);
+        };
         if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('mousedown', handleClickOutside, true);
+            document.addEventListener('keydown', handleKeyDown, true);
         }
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('mousedown', handleClickOutside, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
         };
     }, [isOpen]);
 

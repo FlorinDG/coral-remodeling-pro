@@ -95,8 +95,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                 setQuotationSearch('');
             }
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsQuotationDropdownOpen(false);
+                setQuotationSearch('');
+            }
+        };
+        document.addEventListener('mousedown', handleClick, true);
+        document.addEventListener('keydown', handleKeyDown, true);
+        return () => {
+            document.removeEventListener('mousedown', handleClick, true);
+            document.removeEventListener('keydown', handleKeyDown, true);
+        };
     }, [isQuotationDropdownOpen]);
 
     useEffect(() => {

@@ -1239,7 +1239,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                         Line items for this quotation cannot be edited in the basic property view.
                                     </p>
                                     <a
-                                        href={`/nl/admin/quotations`}
+                                        href={`/nl/admin/quotations/${pageId}`}
                                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-bold hover:opacity-90 transition-opacity shadow-sm"
                                     >
                                         Open Quotation Builder

@@ -870,6 +870,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const selectedClient = clients.find(c => c.id === clientId);
         if (!selectedClient) return toast.error('Klant niet gevonden in database.');
 
+        if (!tenant?.peppolRegistered) {
+            return toast.error("Uw bedrijf is niet geconfigureerd voor Peppol. Activeer dit eerst in Instellingen.");
+        }
+
         const invoiceDateProp = invoice?.properties?.['date'] || invoice?.properties?.['datum'] || '';
         const dueDateProp = invoice?.properties?.['dueDate'] || invoice?.properties?.['vervaldatum'] || '';
         const isCreditNote = Boolean(invoice?.properties?.['isCreditNote']);

@@ -257,15 +257,15 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
             {/* Cardinal Button - absolutely placed inside the card header */}
             {relationProps.length > 0 && (
                 <div
-                    className={`absolute z-20 ${
-                        isModal 
-                            ? 'top-8 right-6' 
-                            : 'top-2.5 right-4'
-                    }`}
+                    className="relative flex justify-end mb-2 z-20"
                     ref={dropdownRef}
                 >
                     <button
-                        onClick={() => setIsOpen(!isOpen)}
+                        onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-900 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
                     >
                         <Plus className="w-3 h-3" />

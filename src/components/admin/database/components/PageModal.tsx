@@ -639,7 +639,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
         const onMouseMove = (moveEvent: MouseEvent) => {
             const deltaX = startX - moveEvent.pageX;
-            setWidth(Math.max(600, Math.min(window.innerWidth, startWidth + deltaX)));
+            setWidth(Math.round(Math.max(600, Math.min(window.innerWidth, startWidth + deltaX))));
         };
 
         const onMouseUp = () => {
@@ -743,8 +743,8 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
             <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
             <div
-                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 ${isMobile || isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
-                style={isMobile ? { width: '100%' } : (isMaximized ? {} : { width: `${width}px` })}
+                className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 subpixel-antialiased ${isMobile || isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
+                style={isMobile ? { width: '100%', transform: animationDone ? 'translateZ(0)' : undefined } : (isMaximized ? { transform: animationDone ? 'translateZ(0)' : undefined } : { width: `${width}px`, transform: animationDone ? 'translateZ(0)' : undefined })}
             >
                 {!isMobile && !isMaximized && (
                     <div

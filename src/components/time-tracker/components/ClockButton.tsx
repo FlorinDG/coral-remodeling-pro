@@ -67,9 +67,9 @@ function ClockButtonComponent() {
     await performClockIn();
   };
 
-  const performClockIn = async (overrideShiftWithFallback = false) => {
+  const performClockIn = async (overrideShiftWithFallback = false, skipLocation = false) => {
     setIsProcessing(true);
-    const location = showGeofenceWarning?.location || await requestLocation();
+    const location = skipLocation ? null : (showGeofenceWarning?.location || await requestLocation());
     
     // Validate Geofence FIRST
     if (!overrideShiftWithFallback && todayShift?.project?.latitude && todayShift?.project?.longitude && location) {
@@ -299,7 +299,10 @@ function ClockButtonComponent() {
 
       <LocationPermissionDialog
         open={showLocationDialog}
-        onClose={() => setShowLocationDialog(false)}
+        onClose={() => {
+          setShowLocationDialog(false);
+          performClockIn(false, true);
+        }}
         onGranted={handleLocationPermissionGranted}
       />
 

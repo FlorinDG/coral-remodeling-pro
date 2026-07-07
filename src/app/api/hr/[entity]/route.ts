@@ -109,7 +109,7 @@ export async function GET(
     if (userId) where.userId = userId;
 
     const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
-    if ((entity === 'time-off' || entity === 'clock-entries') && !isAdminRole) {
+    if ((entity === 'time-off' || entity === 'clock-entries' || entity === 'shifts') && !isAdminRole) {
         where.userId = ctx.userId;
     }
 

@@ -288,7 +288,9 @@ export function MySchedule() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {t('schedule.mySchedule')}
+            {['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(user?.role || '') 
+              ? 'Workforce/Team Schedule' 
+              : t('schedule.mySchedule')}
           </CardTitle>
           {activeEntry && (
             <Badge className="bg-primary text-primary-foreground animate-pulse">

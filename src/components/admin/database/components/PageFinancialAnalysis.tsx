@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useDatabaseStore } from '../store';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
 export default function PageFinancialAnalysis({ databaseId, pageId, costs: passedCosts, quotationTotal, invoicedTotal }: { databaseId: string, pageId: string, costs?: number, quotationTotal?: number, invoicedTotal?: number }) {
@@ -56,11 +56,7 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                             axisLine={false}
                             tickLine={false}
                         />
-                        <Tooltip
-                            formatter={(value: any) => [`€${Number(value).toLocaleString()}`, undefined]}
-                            contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'rgba(0,0,0,0.8)', color: 'white', fontWeight: 'bold' }}
-                            cursor={{ fill: 'transparent' }}
-                        />
+
                         <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
                         <Bar dataKey="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                         {quoted > 0 && quoted !== effectiveBudget && <Bar dataKey="Quoted" fill="#8b5cf6" radius={[4, 4, 0, 0]} />}

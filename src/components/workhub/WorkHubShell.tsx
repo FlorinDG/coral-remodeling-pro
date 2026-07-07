@@ -32,7 +32,6 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const SECONDARY_ITEMS: NavItem[] = [
-    { id: 'team',      label: 'Team Directory',    href: '/workhub/team',      icon: <Users className="w-5 h-5" />,           mobileLabel: 'Team' },
     { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,          mobileLabel: 'Timesheets' },
     { id: 'projects',  label: 'Projects',          href: '/workhub/projects',  icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
 
@@ -170,8 +169,8 @@ export default function WorkHubShell({
                                      </div>
                                  </div>
                                  <Link
-                                     href="/workhub/team"
-                                     onClick={() => setMenuOpen(false)}
+                                    href="/profile"
+                                    onClick={() => setMenuOpen(false)}
                                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                                  >
                                      <User className="w-5 h-5 text-neutral-500" /> My Profile

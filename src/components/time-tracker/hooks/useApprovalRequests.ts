@@ -1,17 +1,6 @@
 "use client";
 import { useState, useCallback, useEffect } from 'react';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
-
-/**
- * Approval requests — SCAFFOLD
- * 
- * Currently uses local state. Full workflow with Prisma model
- * will be built in Q4 as part of enterprise tier.
- * 
- * The interface is preserved so the Admin.tsx / ApprovalManager.tsx
- * components continue to render without errors.
- */
-
 import { hrList, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 
 export interface ApprovalRequest {
@@ -40,24 +29,24 @@ export function useApprovalRequests() {
   const fetchRequests = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await hrList<any>('clock-entries');
-      const pending = data.filter((entry: any) => entry.requiresApproval === true && entry.approvalStatus === 'pending');
+      const data = await hrList<any>('approval-requests');
+      const pending = (data || []).filter((entry: any) => entry.status === 'pending');
       
       const profiles = await hrList<any>('employees');
       const profileMap = new Map(profiles?.map((p: any) => [p.userId, p]) || []);
 
       const mapped: ApprovalRequest[] = pending.map((p: any) => ({
         id: p.id,
-        request_type: 'clock_entry',
-        entity_id: p.id,
-        entity_type: 'clock_entry',
+        request_type: p.requestType,
+        entity_id: p.requestData?.entityId || p.id,
+        entity_type: p.entityType,
         user_id: p.userId,
-        requested_by: p.userId,
-        status: p.approvalStatus,
-        request_data: p,
-        notes: p.taskDescription || null,
-        reviewed_by: null,
-        reviewed_at: null,
+        requested_by: p.requestedBy,
+        status: p.status,
+        request_data: p.requestData,
+        notes: p.notes || null,
+        reviewed_by: p.reviewedBy || null,
+        reviewed_at: p.reviewedAt || null,
         created_at: p.createdAt,
         updated_at: p.updatedAt,
         user_profile: (() => {
@@ -78,14 +67,7 @@ export function useApprovalRequests() {
     fetchRequests();
   }, [fetchRequests]);
 
-  const createRequest = useCallback(async (
-    _requestType: string,
-    _entityId: string | null,
-    _entityType: string,
-    _userId: string,
-    _requestData?: Record<string, unknown>,
-    _notes?: string
-  ) => {
+  const createRequest = useCallback(async () => {
     // Scaffold no-op
     return { data: null, error: null };
   }, []);
@@ -93,7 +75,7 @@ export function useApprovalRequests() {
   const approveRequest = useCallback(async (requestId: string) => {
     if (!isAdmin) return { error: new Error('Not authorized') };
     try {
-      await hrUpdate('clock-entries', requestId, { approvalStatus: 'approved', approvedBy: userId, approvedAt: new Date().toISOString() });
+      await hrUpdate('approval-requests', requestId, { status: 'approved', reviewedBy: userId, reviewedAt: new Date().toISOString() });
       setRequests(prev => prev.filter(r => r.id !== requestId));
       return { error: null };
     } catch (err) {
@@ -104,7 +86,7 @@ export function useApprovalRequests() {
   const rejectRequest = useCallback(async (requestId: string) => {
     if (!isAdmin) return { error: new Error('Not authorized') };
     try {
-      await hrUpdate('clock-entries', requestId, { approvalStatus: 'rejected', approvedBy: userId, approvedAt: new Date().toISOString() });
+      await hrUpdate('approval-requests', requestId, { status: 'rejected', reviewedBy: userId, reviewedAt: new Date().toISOString() });
       setRequests(prev => prev.filter(r => r.id !== requestId));
       return { error: null };
     } catch (err) {

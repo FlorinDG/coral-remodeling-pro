@@ -13,6 +13,26 @@
 
 ---
 
+## 🎯🎯 WORKHUB FOCUS — GET WORKFORCE OFF PAPER + ENFORCE ROLE GATING (Florin 2026-07-06, TOP PRIORITY, FULL ATTENTION)
+**Florin: "app state unchanged for workforce members… today I again need to write their hours on paper" + "workforce member roles need enforcement."** The core failure: a worker cannot record hours in the app. Work this list IN ORDER. Cross-cutting rule: the scheduler batch shipped UI with NO backends (manual-hours calls a non-existent server action; approvals is a local-state stub) — for EVERY item below, the server action + Prisma persistence must be BUILT and VERIFIED writing to the DB. A form that renders is NOT a working feature.
+
+**TIER A — HOURS MUST WORK (the reason workers are on paper — do first):**
+- **A1 · WORKHUB-MANUAL-HOURS-SUBMIT** 🟥 — implement the MISSING `submitLateEntry` server action in `src/app/actions/timesheets.ts` (Planner-traced: it doesn't exist → `TypeError: s is not a function` → "Failed to submit late entry"). Create a PENDING `ClockEntry` from the input LateEntryCard already sends (targetUserId, clockIn/OutTime, location, projectId, taskId, filesData). Full spec below in FLOW/NEW.
+- **A2 · CLOCK-IN-PERSIST** 🟥 — "Clock In Without Shift" prompts for location then, on "Maybe Later", returns to un-clocked with nothing saved. VERIFY/FIX: clocking in must create+persist a `ClockEntry` and flip the button to "Clock Out" + a live running timer that survives refresh; clock-out closes the entry and records hours. A worker who declines location must STILL be able to clock in (location optional, captured when granted).
+- **A3 · CLOCK-SHIFT-LINK / WF-6** 🟠 — when a shift exists, the big button clocks INTO the next scheduled shift (set `ClockEntry.shiftId`); start/stop from inside the shift card; live timer reads the active entry.
+- **A4 · WORKHUB-LEAVE-DATES** 🟠 — leave requests must persist real dates (currently save/display "Unknown Date").
+
+**TIER B — WORKFORCE ROLE GATING (Florin: "workforce member roles need enforcement" — must be REAL, server-side + UI):**
+- **B1 · WORKFORCE-ROLE-GATING / WF-3** — enforce role `TENANT_ENTERPRISE_WORKFORCE`: crew sees ONLY items assigned to them OR self-created (tasks, shifts); Projects appears read-only + assigned-only in selects; owner/admin items hidden from crew. Team-leader = own + team; owner = all. Server-side query scoping AND UI gating — not just hidden nav links.
+- **B2 · WORKFORCE-VIEW-VERIFY** — the WF-1..6 redesign must actually render for the WORKFORCE role (Florin tests as admin; the workforce view may be unchanged — that's the "app state unchanged for workforce members" report). Verify logged in AS a workforce member.
+- **B3 · Schedule scoping/label** — worker's "My Schedule" shows only their shifts; admin sees the team but labeled "Workforce/Team Schedule", not "My Schedule".
+
+**TIER C — WORKHUB CLEANUP (scattered UI points, both feedback batches):** WORKHUB-DECOUPLE-FROM-HR · WORKHUB-DIRECTORY-REMOVE · WORKHUB-SCHEDULE-DUP · WORKHUB-NAV-NO-HSCROLL · SCHEDULING-DESKTOP-ONLY. (Already landed: WORKHUB-SCHEDULE-TAB, WORKHUB-WIKI-KILL, WORKHUB-BOTTOMNAV-SAFEAREA, WORKHUB-TIMESHEET-USEEFFECT-CRASH.)
+
+**TIER D — LARGER (after A+B):** CLOCK-GEOFENCE · CLOCK-APPROVAL (real Prisma workflow, not the scaffold) · PROJECT-LOCATION-FIELD (+propagate +schedule-location) · SITE-VISIT-TEMPLATE.
+
+---
+
 **Purpose:** the cleanup list to reach a clean baseline ("ground zero"), then tag a version and move on.
 **Workflow (locked):** all fixes authored on `develop` → promote to `staging` → test on the staging webapp install → promote to `main` → tag. One-way only. Coder lives on `develop`.
 **Severity legend:** 🟥 data-integrity / crash (fix on sight, per the GENERAL rule) · 🟧 broken feature · 🟨 polish/UX · 🟦 larger build-out · ⟳ = RECURRENCE of an item previously marked "committed" (verification gap — must be confirmed on the staging install, not trusted from a commit).

@@ -218,3 +218,45 @@ export async function getProjectLaborStats(projectId: string) {
         realizedCost: totalRealizedCost
     };
 }
+
+export async function submitLateEntry(params: {
+    targetUserId: string;
+    clockInTime: string;
+    clockOutTime: string;
+    includeLocation?: boolean;
+    location?: { lat: number; lng: number; address: string };
+    taskDescription?: string;
+    projectId?: string | null;
+}) {
+    const session = await auth();
+    if (!session?.user?.id) throw new Error("Unauthorized");
+    const tenantId = (session.user as any).tenantId;
+    if (!tenantId) throw new Error("No tenant context");
+
+    const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId } = params;
+
+    try {
+        const entry = await prisma.hrApprovalRequest.create({
+            data: {
+                tenantId,
+                userId: targetUserId,
+                requestedBy: session.user.id,
+                entityType: 'clock_entry',
+                requestType: 'manual_hours',
+                requestData: {
+                    clockInTime,
+                    clockOutTime,
+                    taskDescription,
+                    projectId,
+                    includeLocation,
+                    location
+                }
+            }
+        });
+
+        return { success: true, data: entry, error: null };
+    } catch (err: any) {
+        console.error("submitLateEntry error:", err);
+        return { success: false, data: null, error: err.message };
+    }
+}

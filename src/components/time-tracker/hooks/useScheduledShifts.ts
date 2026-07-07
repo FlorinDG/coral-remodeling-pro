@@ -101,7 +101,7 @@ export function useScheduledShifts() {
       const [shiftsData, projectsData, erpProjectsData, employeesData] = await Promise.all([
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
-        hrList<{ id: string; name: string }>('erp-projects').catch(() => []),
+        hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects').catch(() => []),
         hrList<{ id: string; firstName: string; lastName: string }>('employees').catch(() => []),
       ]);
 
@@ -109,9 +109,9 @@ export function useScheduledShifts() {
       const normalizedErpProjects: Project[] = erpProjectsData.map(p => ({
         id: p.id,
         name: `[ERP] ${p.name}`,
-        address: null,
-        latitude: null,
-        longitude: null,
+        address: p.address || null,
+        latitude: p.latitude || null,
+        longitude: p.longitude || null,
         color: 'indigo', // Default color for ERP projects
         createdBy: 'system',
         createdAt: new Date().toISOString(),

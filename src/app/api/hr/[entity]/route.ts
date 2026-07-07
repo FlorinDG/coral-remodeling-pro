@@ -153,9 +153,13 @@ export async function GET(
                 const merged = [
                     ...dynamicProjects.map(p => {
                         const props = p.properties as Record<string, unknown>;
+                        const loc = props['location'] as { address?: string; lat?: number; lng?: number } | undefined;
                         return {
                             id: p.id,
                             name: String(props?.title || props?.name || 'Untitled'),
+                            address: loc?.address || null,
+                            latitude: loc?.lat || null,
+                            longitude: loc?.lng || null,
                             source: 'dynamic',
                             createdAt: p.createdAt,
                         };
@@ -334,6 +338,44 @@ export async function PATCH(
         const record = await model.update({ where: { id }, data });
 
         // ── PATCH Automations ──────────────────────────────────────────
+        // Approval of manual hours -> creates actual ClockEntry
+        if (entity === 'approval-requests' && data.status === 'approved') {
+            try {
+                const approval = record as any;
+                if (approval.entityType === 'clock_entry' && approval.requestType === 'manual_hours') {
+                    const reqData = approval.requestData as any || {};
+                    const entry = await prisma.clockEntry.create({
+                        data: {
+                            tenantId: approval.tenantId,
+                            userId: approval.userId,
+                            clockInTime: new Date(reqData.clockInTime),
+                            clockOutTime: new Date(reqData.clockOutTime),
+                            taskDescription: reqData.taskDescription || '',
+                            notes: reqData.includeLocation && reqData.location ? `Location: ${reqData.location.address}` : undefined,
+                            approvalStatus: 'approved',
+                            approvedBy: approval.reviewedBy || ctx.userId,
+                            approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date()
+                        }
+                    });
+                    if (reqData.projectId) {
+                        await prisma.scheduledShift.create({
+                            data: {
+                                tenantId: approval.tenantId,
+                                userId: approval.userId,
+                                projectId: reqData.projectId,
+                                clockEntryId: entry.id,
+                                startTime: new Date(reqData.clockInTime),
+                                endTime: new Date(reqData.clockOutTime),
+                                status: 'completed',
+                            }
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to process approved manual hours request:", err);
+            }
+        }
+
         // Clock-out (clockOutTime set) → set shift status to 'completed'
         if (entity === 'clock-entries' && data.clockOutTime && (record as { shiftId?: string }).shiftId) {
             try {

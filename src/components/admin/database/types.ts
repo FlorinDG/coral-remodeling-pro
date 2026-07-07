@@ -20,7 +20,8 @@ export type PropertyType =
     | 'created_by'
     | 'last_edited_time'
     | 'last_edited_by'
-    | 'variants';
+    | 'variants'
+    | 'location';
 
 export interface SelectOption {
     id: string;

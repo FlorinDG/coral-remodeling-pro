@@ -201,7 +201,7 @@ export default function SearchableSelect({
                                         <div className="mt-3">
                                             <button
                                                 type="button"
-                                                onClick={(e) => {
+                                                onPointerDown={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     onCreate(search.trim());
@@ -221,7 +221,7 @@ export default function SearchableSelect({
                                         <button
                                             key={option.value}
                                             type="button"
-                                            onClick={(e) => {
+                                            onPointerDown={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 onChange(option.value);
@@ -240,7 +240,7 @@ export default function SearchableSelect({
                                     {onCreate && search.trim() && !filtered.find(o => o.label.toLowerCase() === search.trim().toLowerCase()) && (
                                         <button
                                             type="button"
-                                            onClick={(e) => {
+                                            onPointerDown={(e) => {
                                                 e.preventDefault();
                                                 e.stopPropagation();
                                                 onCreate(search.trim());

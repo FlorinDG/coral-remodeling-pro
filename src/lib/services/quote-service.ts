@@ -55,6 +55,7 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                 order,
                 properties: {
                     title: `[EXEC] ${title}`,
+                    location: props.location || null,
                     'prop-execution-status': 'opt-to-do',
                     'prop-financial-status': 'opt-quote',
                     'prop-client': clientId ? [clientId] : [],

@@ -227,15 +227,36 @@ export async function submitLateEntry(params: {
     location?: { lat: number; lng: number; address: string };
     taskDescription?: string;
     projectId?: string | null;
+    taskId?: string | null;
+    filesCount?: number;
+    filesData?: any;
 }) {
     const session = await auth();
     if (!session?.user?.id) throw new Error("Unauthorized");
     const tenantId = (session.user as any).tenantId;
     if (!tenantId) throw new Error("No tenant context");
 
-    const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId } = params;
+    const { targetUserId, clockInTime, clockOutTime, includeLocation, location, taskDescription, projectId, taskId, filesData } = params;
 
     try {
+        const clockEntry = await prisma.clockEntry.create({
+            data: {
+                tenantId,
+                userId: targetUserId,
+                clockInTime: new Date(clockInTime),
+                clockOutTime: new Date(clockOutTime),
+                taskDescription,
+                requiresApproval: true,
+                approvalStatus: 'pending',
+                clockInLatitude: location?.lat || null,
+                clockInLongitude: location?.lng || null,
+                clockOutLatitude: location?.lat || null,
+                clockOutLongitude: location?.lng || null,
+                shiftId: projectId, // Use projectId temporarily or ignore if manual doesn't link to shift
+                photos: filesData || null
+            }
+        });
+
         const entry = await prisma.hrApprovalRequest.create({
             data: {
                 tenantId,
@@ -244,12 +265,15 @@ export async function submitLateEntry(params: {
                 entityType: 'clock_entry',
                 requestType: 'manual_hours',
                 requestData: {
+                    clockEntryId: clockEntry.id,
                     clockInTime,
                     clockOutTime,
                     taskDescription,
                     projectId,
+                    taskId,
                     includeLocation,
-                    location
+                    location,
+                    filesData
                 }
             }
         });

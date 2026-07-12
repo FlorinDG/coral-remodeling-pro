@@ -98,8 +98,8 @@ export default function AddColumnFlyout({ anchorRef, isOpen, onClose, onAdd }: A
             if (panelRef.current?.contains(target)) return;
             onClose();
         }
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('mousedown', handleClick, true);
+        return () => document.removeEventListener('mousedown', handleClick, true);
     }, [isOpen, onClose, anchorRef]);
 
     if (!isOpen || !pos) return null;

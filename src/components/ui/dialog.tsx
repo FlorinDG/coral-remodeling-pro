@@ -36,6 +36,18 @@ const DialogContent = React.forwardRef<
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onFocusOutside={(e) => {
+        const target = e.target as HTMLElement;
+        if (target && target.closest('[data-portal-dropdown="true"]')) {
+          e.preventDefault();
+        }
+      }}
+      onInteractOutside={(e) => {
+        const target = e.target as HTMLElement;
+        if (target && target.closest('[data-portal-dropdown="true"]')) {
+          e.preventDefault();
+        }
+      }}
       onPointerDownOutside={(e) => {
         const target = e.target as HTMLElement;
         if (target && target.closest('[data-portal-dropdown="true"]')) {

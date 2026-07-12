@@ -217,7 +217,7 @@ export default function QuotationFooterReport({
                     {/* Subtotal */}
                     <div className="flex items-center justify-between px-5 py-3 bg-neutral-50/80 dark:bg-white/[0.02]">
                         <span className="text-[13px] font-medium text-neutral-500 dark:text-neutral-400">{ti18n('footer_subtotal', language)}</span>
-                        <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-200 tabular-nums">{formatCurrency(subtotal)}</span>
+                        <span className="text-[15px] font-bold text-neutral-800 dark:text-neutral-200 tabular-nums text-right min-w-[120px]">{formatCurrency(subtotal)}</span>
                     </div>
 
                     {/* BTW rows */}
@@ -234,7 +234,7 @@ export default function QuotationFooterReport({
                                             ({ti18n('footer_on_base', language)} {formatCurrency(base)})
                                         </span>
                                     </div>
-                                    <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(vat)}</span>
+                                    <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(vat)}</span>
                                 </div>
                             ))}
                         </>
@@ -256,7 +256,7 @@ export default function QuotationFooterReport({
                                 <option value="0">{ti18n('footer_vat_0', language)}</option>
                                 <option value="medecontractant">{ti18n('footer_vat_medecontractant', language)}</option>
                             </select>
-                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
+                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(totalVAT)}</span>
                         </div>
                     )}
 
@@ -275,7 +275,7 @@ export default function QuotationFooterReport({
                             {ti18n('footer_grand_total', language)}
                         </span>
                         <span
-                            className="text-xl font-extrabold tabular-nums"
+                            className="text-xl font-extrabold tabular-nums text-right min-w-[120px]"
                             style={{ color: 'var(--brand-color, #d35400)' }}
                         >
                             {formatCurrency(totalInclVAT)}

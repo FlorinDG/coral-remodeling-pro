@@ -119,8 +119,8 @@ export default function FilterToolbar({ databaseId, viewId }: FilterToolbarProps
             if (panelRef.current?.contains(e.target as Node)) return;
             setIsOpen(false);
         };
-        document.addEventListener('mousedown', listener);
-        return () => document.removeEventListener('mousedown', listener);
+        document.addEventListener('mousedown', listener, true);
+        return () => document.removeEventListener('mousedown', listener, true);
     }, [isOpen]);
 
     // Close on Escape

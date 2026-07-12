@@ -60,10 +60,10 @@ export function TaskContextMenu({
             if (ref.current && !ref.current.contains(e.target as Node)) onClose();
         };
         const keyHandler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-        document.addEventListener('mousedown', handler);
+        document.addEventListener('mousedown', handler, true);
         document.addEventListener('keydown', keyHandler);
         return () => {
-            document.removeEventListener('mousedown', handler);
+            document.removeEventListener('mousedown', handler, true);
             document.removeEventListener('keydown', keyHandler);
         };
     }, [onClose]);

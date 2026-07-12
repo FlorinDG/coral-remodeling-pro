@@ -38,8 +38,6 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     // ── Slash command state ───────────────────────────────────────────────────
     const [slashMenu, setSlashMenu] = useState<{ blockId: string; filter: string; top: number; left: number } | null>(null);
     const [slashIndex, setSlashIndex] = useState(0);
-    const [showOnboarding, setShowOnboarding] = useState(true);
-
     // ── @prop / @this_page mention flyout state ─────────────────────────────
     const [mentionFlyout, setMentionFlyout] = useState<{
         blockId: string;
@@ -70,10 +68,10 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
 
     // Ensure at least one empty block exists
     useEffect(() => {
-        if (blocks.length === 0 && !showOnboarding) {
+        if (blocks.length === 0) {
             updatePageBlocks(databaseId, pageId, [{ id: uuidv4(), type: 'paragraph', content: '' }]);
         }
-    }, [blocks.length, databaseId, pageId, updatePageBlocks, showOnboarding]);
+    }, [blocks.length, databaseId, pageId, updatePageBlocks]);
 
     if (!database || !page) return null;
 
@@ -263,40 +261,6 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     };
 
     // ── Journal onboarding placeholder ────────────────────────────────────────
-    if (blocks.length === 0 && showOnboarding) {
-        return (
-            <div className="w-full flex flex-col items-center justify-center py-20 px-8">
-                <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
-                    style={{
-                        backgroundColor: 'color-mix(in srgb, var(--brand-color, #d35400) 10%, transparent)',
-                        border: '1px solid color-mix(in srgb, var(--brand-color, #d35400) 25%, transparent)',
-                    }}
-                >
-                    <PenLine className="w-8 h-8" style={{ color: 'var(--brand-color, #d35400)' }} />
-                </div>
-                <h3 className="text-xl font-bold tracking-tight mb-2 text-neutral-900 dark:text-white">
-                    Start your project journal
-                </h3>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-sm text-center mb-6 leading-relaxed">
-                    Add notes, checklists, and documentation for this record. Use it to track progress, decisions, and ideas.
-                </p>
-                <ul className="text-xs text-neutral-400 dark:text-neutral-500 space-y-2 mb-8">
-                    <li className="flex items-center gap-2"><span className="text-neutral-300">📝</span> Progress notes &amp; meeting summaries</li>
-                    <li className="flex items-center gap-2"><span className="text-neutral-300">✅</span> Task checklists &amp; action items</li>
-                    <li className="flex items-center gap-2"><span className="text-neutral-300">💡</span> Key decisions &amp; design rationale</li>
-                </ul>
-                <button
-                    onClick={startJournal}
-                    className="px-5 py-2.5 rounded-lg text-white text-sm font-bold hover:opacity-90 transition-opacity"
-                    style={{ backgroundColor: 'var(--brand-color, #d35400)' }}
-                >
-                    Start Writing
-                </button>
-            </div>
-        );
-    }
-
     const handleMentionSelect = (result: MentionResult) => {
         if (!mentionFlyout) return;
         const { blockId } = mentionFlyout;

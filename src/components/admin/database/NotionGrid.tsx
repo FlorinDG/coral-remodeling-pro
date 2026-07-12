@@ -1057,19 +1057,15 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                             ref={gridAreaRef} 
                             className="flex-1 w-full relative z-10 min-h-0"
                             style={resizingProperty ? { width: `calc(100% - ${resizeOffset % 2 ? 0.2 : 0}px)` } : undefined}
-                            onFocus={() => {
-                                if (!isEditing) {
-                                    setIsEditing(true);
-                                }
-                            }}
-                            onBlur={(e) => {
-                                if (gridAreaRef.current && !gridAreaRef.current.contains(e.relatedTarget as Node)) {
-                                    setIsEditing(false);
-                                    frozenPagesRef.current = null;
-                                }
-                            }}
                         >
                             <DataSheetGrid
+                                onActiveCellChange={(opts) => {
+                                    const isActive = !!opts?.cell;
+                                    setIsEditing(isActive);
+                                    if (!isActive) {
+                                        frozenPagesRef.current = null;
+                                    }
+                                }}
                                 key={`${databaseIdRef}-${activeViewId || ''}-${gridKeySuffix}`}
                                 value={rowData}
                                 onChange={(newRows) => {

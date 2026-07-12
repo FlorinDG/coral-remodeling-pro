@@ -50,6 +50,7 @@ export function useClockEntries() {
       user_id: e.userId,
       clock_in_time: e.clockInTime,
       clock_out_time: e.clockOutTime,
+      shift_id: e.shiftId,
       clock_in_latitude: e.clockInLatitude,
       clock_in_longitude: e.clockInLongitude,
       clock_out_latitude: e.clockOutLatitude,

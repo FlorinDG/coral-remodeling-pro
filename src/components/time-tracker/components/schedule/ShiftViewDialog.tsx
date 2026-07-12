@@ -35,6 +35,7 @@ import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tr
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
 import { useApprovalRequests } from '@/components/time-tracker/hooks/useApprovalRequests';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
+import { useTimer } from '@/components/time-tracker/hooks/useTimer';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { hrList } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ interface ClockEntry {
   clock_out_latitude: number | null;
   clock_out_longitude: number | null;
   task_description: string | null;
+  shift_id?: string | null;
 }
 
 interface ShiftViewDialogProps {
@@ -95,7 +97,7 @@ export function ShiftViewDialog({
   const { attachments, loading: attachmentsLoading, fetchAttachments } = useScheduleAttachments(shift?.id || null);
   const { shiftTasks, loading: shiftTasksLoading } = useShiftTasks(shift?.id || null);
   const { createRequest } = useApprovalRequests();
-  const { activeEntry, clockIn } = useClockEntries();
+  const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
 
   // Check if shift has clock entry (hours attached)
@@ -182,6 +184,24 @@ export function ShiftViewDialog({
     !activeEntry &&
     shift.status !== 'Completed';
 
+  const isClockedIntoThisShift = activeEntry && activeEntry.shift_id === shift?.id;
+  const canClockOut = isClockedIntoThisShift;
+
+  // Use the same timer hook as ClockButton
+  const { isRunning, formattedTime, setStartTime, startTimer, resetTimer } = useTimer();
+
+  useEffect(() => {
+    if (isClockedIntoThisShift && activeEntry) {
+      const clockInTime = new Date(activeEntry.clock_in_time);
+      setStartTime(clockInTime);
+      if (!isRunning) {
+        startTimer(clockInTime);
+      }
+    } else {
+      resetTimer();
+    }
+  }, [isClockedIntoThisShift, activeEntry]);
+
   const handleClockIn = async () => {
     if (!shift) return;
     
@@ -204,6 +224,28 @@ export function ShiftViewDialog({
       }
     } catch (err) {
       toast.error('Failed to clock in');
+    } finally {
+      setIsClockingIn(false);
+    }
+  };
+
+  const handleClockOut = async () => {
+    if (!activeEntry) return;
+    setIsClockingIn(true);
+    try {
+      const loc = await requestLocation();
+      const { error } = await clockOut({
+        clockOutLatitude: loc?.latitude,
+        clockOutLongitude: loc?.longitude,
+      });
+      if (error) {
+        toast.error('Failed to clock out');
+      } else {
+        toast.success('Clocked out successfully');
+        onClockIn?.();
+      }
+    } catch (err) {
+      toast.error('Failed to clock out');
     } finally {
       setIsClockingIn(false);
     }
@@ -256,6 +298,28 @@ export function ShiftViewDialog({
                   )}
                   Clock In
                 </Button>
+              )}
+              {canClockOut && (
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Active Clock</span>
+                    <span className="font-mono font-bold text-primary">{formattedTime}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleClockOut}
+                    disabled={isClockingIn}
+                    className="flex items-center gap-1"
+                  >
+                    {isClockingIn ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <div className="w-3 h-3 bg-current rounded-sm" />
+                    )}
+                    Clock Out
+                  </Button>
+                </div>
               )}
               <Button
                 variant="outline"

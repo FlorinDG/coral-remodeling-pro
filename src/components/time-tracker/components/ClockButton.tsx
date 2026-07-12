@@ -106,6 +106,7 @@ function ClockButtonComponent() {
     const { data, error } = await clockIn(clockInData);
     
     if (error) {
+      console.error('[ClockButton] Clock-in failed:', error);
       setIsProcessing(false);
       toast.error('Failed to clock in. Please try again.');
       return;
@@ -116,6 +117,17 @@ function ClockButtonComponent() {
       const userShift = await createUserShift();
       if (userShift?.data) {
         setActiveShiftId(userShift.data.id);
+        
+        // Link the newly created shift to the clock entry
+        try {
+          await fetch(`/api/hr/clock-entries?id=${data.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shiftId: userShift.data.id }),
+          });
+        } catch (patchErr) {
+          console.error('[ClockButton] Failed to link shift to clock entry:', patchErr);
+        }
       }
     } else if (todayShift && !overrideShiftWithFallback) {
       setActiveShiftId(todayShift.id);
@@ -243,7 +255,7 @@ function ClockButtonComponent() {
             ) : (
               <div className="flex items-center">
                 <Play className="w-5 h-5 md:w-6 h-6 mr-3 fill-current" />
-                <span>{hasScheduledShift ? t('clock.clockIn') : t('clock.clockInWithoutShift')}</span>
+                <span>{hasScheduledShift ? `Clock in to ${todayShift?.project?.name || todayShift?.shift_name || 'Shift'}` : t('clock.clockInWithoutShift')}</span>
               </div>
             )}
           </Button>
@@ -299,7 +311,8 @@ function ClockButtonComponent() {
 
       <LocationPermissionDialog
         open={showLocationDialog}
-        onClose={() => {
+        onClose={() => setShowLocationDialog(false)}
+        onDecline={() => {
           setShowLocationDialog(false);
           performClockIn(false, true);
         }}

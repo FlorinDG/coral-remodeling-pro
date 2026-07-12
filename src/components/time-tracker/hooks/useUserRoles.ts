@@ -22,6 +22,9 @@ const ROLE_MAP: Record<string, AppRole> = {
   'TENANT_PRO_WORKFORCE': 'user',
   'TENANT_ENTERPRISE_WORKFORCE': 'user',
   'TENANT_FREE_USER': 'user',
+  'TEAMLEAD': 'manager',
+  'PROJECT_MANAGER': 'manager',
+  'crew': 'user',
 };
 
 export function useUserRoles() {

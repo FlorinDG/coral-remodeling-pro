@@ -53,8 +53,8 @@ export default function PropertiesDropdown({ databaseId, viewId }: PropertiesDro
             if (panelRef.current?.contains(target)) return;
             setIsOpen(false);
         }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        document.addEventListener('mousedown', handleClickOutside, true);
+        return () => document.removeEventListener('mousedown', handleClickOutside, true);
     }, [isOpen]);
 
     if (!database || !activeView) return null;

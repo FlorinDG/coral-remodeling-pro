@@ -24,22 +24,20 @@ interface NavItem {
     mobileLabel: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-    { id: 'home',     label: 'Work Hub',          href: '/workhub',           icon: <LayoutDashboard className="w-5 h-5" />, mobileLabel: 'Home' },
-    { id: 'leave',    label: 'Leave',              href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Leave' },
-    { id: 'tasks',    label: 'My Tasks',           href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,     mobileLabel: 'Tasks' },
-    { id: 'files',    label: 'Documents',          href: '/workhub/files',     icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
+const PRIMARY_ITEMS: NavItem[] = [
+    { id: 'home',     label: 'Dashboard',         href: '/workhub',           icon: <LayoutDashboard className="w-5 h-5" />, mobileLabel: 'Home' },
+    { id: 'leave',    label: 'Leave',             href: '/workhub/leave',     icon: <CalendarOff className="w-5 h-5" />,     mobileLabel: 'Leave' },
+    { id: 'tasks',    label: 'My Tasks',          href: '/workhub/tasks',     icon: <CheckSquare className="w-5 h-5" />,     mobileLabel: 'Tasks' },
+    { id: 'files',    label: 'Documents',         href: '/workhub/files',     icon: <FileText className="w-5 h-5" />,        mobileLabel: 'Files' },
 ];
 
 const SECONDARY_ITEMS: NavItem[] = [
     { id: 'timesheets', label: 'Timesheets',       href: '/workhub/timesheets', icon: <Clock className="w-5 h-5" />,          mobileLabel: 'Timesheets' },
     { id: 'projects',  label: 'Projects',          href: '/workhub/projects',  icon: <FolderOpen className="w-5 h-5" />,      mobileLabel: 'Projects' },
-
+    { id: 'wiki',      label: 'Company Wiki',      href: '/workhub/wiki',      icon: <BookOpen className="w-5 h-5" />,        mobileLabel: 'Wiki' },
 ];
 
-// ── Bottom Nav (mobile — 5 tabs max) ──────────────────────────────────
-const BOTTOM_TABS = NAV_ITEMS.slice(0, 5);
-
+// Bottom Nav logic moved inside component to handle state/filtering
 export default function WorkHubShell({
     children,
     activeModules,
@@ -70,12 +68,22 @@ export default function WorkHubShell({
     const userName = session?.user?.name || 'User';
     const firstName = userName.split(' ')[0];
     const userRole = session?.user?.role;
-    const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE;
+    const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE || userRole === 'TENANT_PRO_WORKFORCE' || userRole === 'crew';
 
-    const filteredSecondaryItems = SECONDARY_ITEMS.filter(item => {
-        if (item.id === 'projects' && isWorkforce) return false;
+    const filteredPrimaryItems = PRIMARY_ITEMS.filter(item => {
+        if (isWorkforce && item.id === 'files') return false;
         return true;
     });
+
+    const filteredSecondaryItems = SECONDARY_ITEMS.filter(item => {
+        if (isWorkforce && ['projects', 'team', 'wiki'].includes(item.id)) return false;
+        return true;
+    });
+
+    const mobileTabs = [
+        ...filteredPrimaryItems.slice(0, 4),
+        { id: 'menu', label: 'Menu', href: '#', icon: <Menu className="w-5 h-5" />, mobileLabel: 'Menu' }
+    ];
 
     const isActive = (href: string) => {
         if (href === '/workhub') {
@@ -96,7 +104,7 @@ export default function WorkHubShell({
         >
             {/* ── Top Bar ── */}
             <header className="sticky top-0 z-50 bg-white/80 dark:bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-200 dark:border-white/10">
-                <div className="flex items-center justify-between h-14 px-4 max-w-4xl mx-auto w-full">
+                <div className="flex items-center justify-between h-14 px-4 w-full px-4 w-full">
                     <div className="flex items-center gap-2">
                         <h1 className="text-sm font-black tracking-tight" style={{ color: brandColor }}>WorkHub</h1>
                         <span className="text-xs font-bold text-neutral-350 dark:text-neutral-700">•</span>
@@ -118,8 +126,8 @@ export default function WorkHubShell({
 
                 {/* Desktop: Horizontal tab navigation */}
                 <nav className="hidden md:block border-t border-neutral-100 dark:border-white/5">
-                    <div className="flex items-center gap-1 px-4 max-w-4xl mx-auto overflow-x-auto">
-                        {[...NAV_ITEMS, ...filteredSecondaryItems].map(item => (
+                    <div className="flex items-center gap-1 px-4 w-full px-4 flex-wrap justify-center">
+                        {[...filteredPrimaryItems, ...filteredSecondaryItems].map(item => (
                             <Link
                                 key={item.id}
                                 href={item.href}
@@ -142,7 +150,7 @@ export default function WorkHubShell({
                 <div className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={() => setMenuOpen(false)}>
                     <div className="bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-white/10 shadow-2xl mt-14 mx-0 animate-in slide-in-from-top-2 duration-200" onClick={e => e.stopPropagation()}>
                         <div className="p-4 space-y-1">
-                            {[...NAV_ITEMS, ...filteredSecondaryItems].map(item => (
+                            {[...filteredPrimaryItems, ...filteredSecondaryItems].map(item => (
                                 <Link
                                     key={item.id}
                                     href={item.href}
@@ -169,7 +177,7 @@ export default function WorkHubShell({
                                      </div>
                                  </div>
                                  <Link
-                                    href="/profile"
+                                    href="/workhub/profile"
                                     onClick={() => setMenuOpen(false)}
                                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors"
                                  >
@@ -178,7 +186,7 @@ export default function WorkHubShell({
                                  <button
                                      onClick={async () => {
                                          try { await del('coral-database-storage-v4'); localStorage.removeItem('coral-schema-version'); } catch {}
-                                         signOut({ callbackUrl: "/" });
+                                         signOut({ callbackUrl: "/login" });
                                      }}
                                      className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                  >
@@ -200,24 +208,47 @@ export default function WorkHubShell({
             {/* ── Mobile Bottom Nav ── */}
             <nav className="fixed bottom-0 inset-x-0 z-50 md:hidden border-t border-emerald-500/20 bg-emerald-600 dark:bg-emerald-800 backdrop-blur-xl shadow-lg">
                 <div className="flex items-center justify-around h-16 px-1" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-                    {BOTTOM_TABS.map(item => (
-                        <Link
-                            key={item.id}
-                            href={item.href}
-                            className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
-                                isActive(item.href)
-                                    ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
-                                    : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'
-                            }`}
-                        >
-                            <div className={`transition-transform ${isActive(item.href) ? 'scale-105' : ''}`}>
-                                {item.icon}
-                            </div>
-                            <span className="text-[9px] font-bold tracking-wider">
-                                {item.mobileLabel}
-                            </span>
-                        </Link>
-                    ))}
+                    {mobileTabs.map(item => {
+                        if (item.id === 'menu') {
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setMenuOpen(!menuOpen)}
+                                    className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
+                                        menuOpen
+                                            ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
+                                            : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'
+                                    }`}
+                                >
+                                    <div className={`transition-transform ${menuOpen ? 'scale-105' : ''}`}>
+                                        {item.icon}
+                                    </div>
+                                    <span className="text-[9px] font-bold tracking-wider">
+                                        {item.mobileLabel}
+                                    </span>
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={item.id}
+                                href={item.href}
+                                className={`flex flex-col items-center justify-center gap-1 py-2 min-h-[44px] min-w-[44px] px-3.5 rounded-xl transition-all relative ${
+                                    isActive(item.href)
+                                        ? 'text-white bg-emerald-700/60 dark:bg-emerald-900/40 shadow-inner'
+                                        : 'text-emerald-100 hover:text-white opacity-80 hover:opacity-100'
+                                }`}
+                            >
+                                <div className={`transition-transform ${isActive(item.href) ? 'scale-105' : ''}`}>
+                                    {item.icon}
+                                </div>
+                                <span className="text-[9px] font-bold tracking-wider">
+                                    {item.mobileLabel}
+                                </span>
+                            </Link>
+                        );
+                    })}
                 </div>
             </nav>
 

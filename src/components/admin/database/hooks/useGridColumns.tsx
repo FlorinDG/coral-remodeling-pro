@@ -18,6 +18,7 @@ import { currencyColumn } from '../columns/CurrencyColumn';
 import { variantsColumn } from '../columns/VariantsColumn';
 import { metaDateColumn } from '../columns/MetaDateColumn';
 import { checkboxColumnCustom } from '../columns/CheckboxColumn';
+import { locationColumn } from '../columns/LocationColumn';
 import type { Property, ViewPropertyState } from '../types';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
@@ -196,10 +197,9 @@ export function useGridColumns({
                 let baseColumn = textColumn;
 
                 if (prop.type === 'checkbox') {
-                    baseColumn = checkboxColumnCustom({
-                        propId: prop.id,
-                        onCommit: (rowId, value) => updatePageProperty(databaseId, rowId, prop.id, value)
-                    }) as any;
+                    baseColumn = checkboxColumnCustom({ propId: prop.id, onCommit: (rowId, val) => updatePageProperty(databaseIdRef, rowId, prop.id, val) }) as any;
+                } else if (prop.type === 'location') {
+                    baseColumn = locationColumn({ propId: prop.id, onCommit: (rowId, val) => updatePageProperty(databaseIdRef, rowId, prop.id, val) }) as any;
                 } else if (prop.type === 'select' || prop.type === 'multi_select') {
                     // Full-row column — no keyColumn wrapping needed.
                     // onCommit calls updatePageProperty directly, bypassing the
@@ -222,9 +222,9 @@ export function useGridColumns({
                 }
                 // More custom columns like Number will go here later
 
-                // Select/multi_select/checkbox use full row access:
+                // Select/multi_select/checkbox/location use full row access:
                 // they directly call onCommit — no keyColumn needed.
-                if (prop.type === 'select' || prop.type === 'multi_select' || prop.type === 'checkbox') {
+                if (prop.type === 'select' || prop.type === 'multi_select' || prop.type === 'checkbox' || prop.type === 'location') {
                     return {
                         ...baseColumn,
                         title: GhostHeader,

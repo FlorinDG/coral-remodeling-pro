@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { useTenant } from '@/context/TenantContext';
 import { Page, PropertyValue } from '@/components/admin/database/types';
+import { getDatabaseRoute } from '@/lib/databaseRoute';
+
 import { TaskSidebar } from './TaskSidebar';
 import { TaskListView } from './TaskListView';
 import { TaskQuickAdd, ParsedTask } from './TaskQuickAdd';
@@ -401,7 +403,7 @@ export default function TaskModuleShell() {
                             onUpdate={handleUpdate}
                             onDelete={handleDelete}
                             onOpenFullPage={(pageId) => {
-                                router.push(`/admin/database/${db.id}/${pageId}`);
+                                router.push(getDatabaseRoute(db.id, pageId));
                             }}
                         />
                     </div>

@@ -80,8 +80,8 @@ function CustomDropdown({ value, options, onChange, className = '' }: {
         const handleClick = (e: MouseEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('mousedown', handleClick, true);
+        return () => document.removeEventListener('mousedown', handleClick, true);
     }, []);
 
     return (
@@ -726,7 +726,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                             {quotationFinancials.total > 0 ? `€${quotationFinancials.total.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
                                         </p>
                                         {linkedQuotation && (
-                                            <a href={`/${locale}/admin/quotations`} className="text-[9px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition-colors">
+                                            <a href={`/${locale}/admin/quotations/${linkedQuotation.id}`} className="text-[9px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition-colors">
                                                 <ExternalLink className="w-3 h-3" /> {String(linkedQuotation.properties?.['title'] || 'View Quote')}
                                             </a>
                                         )}
@@ -1390,7 +1390,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                             <Receipt className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
                                             <span className="text-[10px] text-neutral-500 font-semibold">Gebaseerd op offerte:</span>
                                             <a
-                                                href={`/${locale}/admin/quotations`}
+                                                href={`/${locale}/admin/quotations/${linkedQuotation.id}`}
                                                 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                                             >
                                                 {String(linkedQuotation.properties?.['title'] || 'Offerte')}

@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
 import { useShiftTasks } from '@/components/time-tracker/hooks/useTasks';
+import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useGeolocation, validateGeofence } from '@/components/time-tracker/hooks/useGeolocation';
 import { GeofenceWarningDialog } from './GeofenceWarningDialog';
@@ -39,7 +40,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
   const completedTasks = shiftTasks.filter(st => st.status === 'completed');
 
   const isClockedIn = activeEntry && shift?.clock_entry_id === activeEntry.id;
-  const shiftDate = parseISO(shift.shift_date);
+  const shiftDate = parseISO(shift.shiftDate);
   const isPast = isBefore(startOfDay(shiftDate), startOfDay(new Date()));
 
   return (
@@ -129,6 +130,7 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
 export function MySchedule() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { isManager } = useUserRoles();
   const { shifts, loading } = useScheduledShifts();
   const { activeEntry, clockIn, clockOut } = useClockEntries();
   const { location, requestLocation } = useGeolocation();
@@ -142,24 +144,23 @@ export function MySchedule() {
 
   // Date range: 1 week behind to 2 weeks ahead
   const today = startOfDay(new Date());
-  const rangeStart = subDays(today, 7);
-  const rangeEnd = addDays(today, 14);
+  const rangeStartStr = format(subDays(today, 7), 'yyyy-MM-dd');
+  const rangeEndStr = format(addDays(today, 14), 'yyyy-MM-dd');
 
   // Filter to user's shifts within the date range
   const filteredShifts = useMemo(() => {
     return shifts
-      .filter(s => s.user_id === user?.id)
+      .filter(s => s.userId === user?.id)
       .filter(s => {
-        const shiftDate = startOfDay(parseISO(s.shift_date));
-        return !isBefore(shiftDate, rangeStart) && !isAfter(shiftDate, rangeEnd);
+        return s.shiftDate >= rangeStartStr && s.shiftDate <= rangeEndStr;
       })
-      .sort((a, b) => a.shift_date.localeCompare(b.shift_date));
-  }, [shifts, user?.id, rangeStart, rangeEnd]);
+      .sort((a, b) => a.shiftDate.localeCompare(b.shiftDate));
+  }, [shifts, user?.id, rangeStartStr, rangeEndStr]);
 
   // Find the next upcoming shift (today or future)
   const nextShiftIndex = useMemo(() => {
     const todayStr = format(today, 'yyyy-MM-dd');
-    const idx = filteredShifts.findIndex(s => s.shift_date >= todayStr);
+    const idx = filteredShifts.findIndex(s => s.shiftDate >= todayStr);
     return idx >= 0 ? idx : filteredShifts.length - 1;
   }, [filteredShifts, today]);
 
@@ -288,7 +289,7 @@ export function MySchedule() {
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(user?.role || '') 
+            {isManager 
               ? 'Workforce/Team Schedule' 
               : t('schedule.mySchedule')}
           </CardTitle>
@@ -340,9 +341,9 @@ export function MySchedule() {
               <DialogHeader className="p-6 pb-2 border-b">
                 <DialogTitle className="flex items-center gap-2">
                   <Calendar className="w-5 h-5 text-muted-foreground" />
-                  {isToday(parseISO(selectedShift.shift_date)) 
+                  {isToday(parseISO(selectedShift.shiftDate)) 
                     ? t('schedule.today') 
-                    : format(parseISO(selectedShift.shift_date), 'EEE, d MMM yyyy')}
+                    : format(parseISO(selectedShift.shiftDate), 'EEE, d MMM yyyy')}
                 </DialogTitle>
                 <div className="flex flex-col gap-2 mt-4 text-sm">
                   <div className="flex items-center gap-3">

@@ -8,6 +8,7 @@ const BASE = '/api/hr';
 export async function hrFetch<T = any>(entity: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${BASE}/${entity}`, {
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         ...options,
     });
     if (!res.ok) {

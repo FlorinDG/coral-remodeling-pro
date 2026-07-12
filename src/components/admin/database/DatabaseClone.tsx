@@ -243,6 +243,15 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
 
   // ── Default hardcoded property schemas for free-tier CRM databases ──
   const DEFAULT_PROPERTIES_MAP: Record<string, Property[]> = useMemo(() => ({
+    'db-site-visits': [
+      { id: 'title',        name: 'Titel',            type: 'text' },
+      { id: 'client',       name: 'Klant',            type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
+      { id: 'contact',      name: 'Contactpersoon',   type: 'text' },
+      { id: 'scope',        name: 'Werf Scope',       type: 'text' },
+      { id: 'location',     name: 'Projectlocatie',   type: 'location' },
+      { id: 'notes',        name: 'Notities',         type: 'text' },
+      { id: 'photos',       name: 'Foto\'s',          type: 'text' },
+    ],
     'db-clients': [
       { id: 'title',    name: 'Naam',           type: 'text' },
       { id: 'email',    name: 'E-mail',          type: 'email' },
@@ -308,6 +317,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'opt-accepted', name: 'Aanvaard',   color: 'green' },
         { id: 'opt-rejected', name: 'Geweigerd',  color: 'red'   },
       ]}},
+      { id: 'location',    name: 'Projectlocatie',    type: 'location' },
       { id: 'date',        name: 'Vervaldatum',       type: 'date'     },
       { id: 'totalExVat',  name: 'Totaal excl. BTW',  type: 'currency' },
       { id: 'totalVat',    name: 'BTW',               type: 'currency' },
@@ -507,6 +517,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     ],
     'db-1': [
       { id: 'title',             name: 'Project Naam',      type: 'text' },
+      { id: 'location',          name: 'Location',          type: 'location' },
       { id: 'prop-client',       name: 'Klant',             type: 'relation', config: { relationDatabaseId: resolveDbId('db-clients'), relationDisplayPropertyId: 'title' } },
       { id: 'prop-project-quote', name: 'Offerte',          type: 'relation', config: { relationDatabaseId: resolveDbId('db-quotations'), relationDisplayPropertyId: 'title' } },
       { id: 'prop-execution-status', name: 'Execution Status', type: 'select', config: { options: [
@@ -874,8 +885,9 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     if (databaseId === 'db-bobex') parsedName = 'Bobex Pipeline';
     if (databaseId === 'db-payments-in') parsedName = 'Received Payments';
     if (databaseId === 'db-payments-out') parsedName = 'Outgoing Payments';
+    if (databaseId === 'db-site-visits') parsedName = 'Site Visits';
 
-    if (parsedName === 'New Workspace') {
+    if (!parsedName || parsedName.trim() === '' || parsedName === 'New Workspace' || parsedName === 'New Database' || parsedName === 'GlobalDatabase') {
       setAutoInitializing(false);
       return;
     }

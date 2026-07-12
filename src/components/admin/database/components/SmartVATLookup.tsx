@@ -76,8 +76,8 @@ export default function SmartVATLookup({ value, onChange, onImport }: SmartVATLo
                 setShowResults(false);
             }
         };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
+        document.addEventListener('mousedown', handler, true);
+        return () => document.removeEventListener('mousedown', handler, true);
     }, []);
 
     // Update dropdown position on scroll/resize

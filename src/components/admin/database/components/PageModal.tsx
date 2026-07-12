@@ -10,6 +10,8 @@ import { applyRollupAggregation } from '../columns/RollupColumn';
 import { evaluateFormula } from '../formulaEngine';
 import BlockEditor from './BlockEditor';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 const ProjectDetailView = dynamic(() => import('@/components/admin/database/components/ProjectDetailView'), { ssr: false });
 const PurchaseInvoiceEngine = dynamic(() => import('@/components/admin/expenses/PurchaseInvoiceEngine'), { ssr: false });
@@ -112,10 +114,10 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
             const inPortal = (target as Element)?.closest?.('[data-relation-portal]');
             if (!inRef && !inPortal) setIsOpen(false);
         };
-        document.addEventListener('mousedown', listener);
+        document.addEventListener('mousedown', listener, true);
         document.addEventListener('touchstart', listener);
         return () => {
-            document.removeEventListener('mousedown', listener);
+            document.removeEventListener('mousedown', listener, true);
             document.removeEventListener('touchstart', listener);
         };
     }, []);
@@ -241,8 +243,8 @@ const PropertySelectPicker = ({ value, options, onChange }: { value: string; opt
             const inPortal = (target as Element)?.closest?.('[data-select-portal]');
             if (!inRef && !inPortal) setOpen(false);
         };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
+        document.addEventListener('mousedown', handler, true);
+        return () => document.removeEventListener('mousedown', handler, true);
     }, [open]);
 
     return (
@@ -563,6 +565,8 @@ interface PageModalProps {
 
 export default function PageModal({ databaseId, pageId, onClose }: PageModalProps) {
 
+    const router = useRouter();
+    const locale = useLocale();
     const modalRef = useRef<HTMLDivElement>(null);
     const [animationDone, setAnimationDone] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -745,7 +749,7 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
             <div
                 className={`relative h-full bg-white dark:bg-[#191919] shadow-2xl flex flex-col overflow-y-auto flex-shrink-0 subpixel-antialiased ${isMobile || isMaximized ? 'w-full' : ''} ${animationDone ? '' : 'animate-in slide-in-from-right duration-300'}`}
-                style={isMobile ? { width: '100%', transform: animationDone ? 'translateZ(0)' : undefined } : (isMaximized ? { transform: animationDone ? 'translateZ(0)' : undefined } : { width: `${width}px`, transform: animationDone ? 'translateZ(0)' : undefined })}
+                style={isMobile ? { width: '100%' } : (isMaximized ? {} : { width: `${width}px` })}
             >
                 {!isMobile && !isMaximized && (
                     <div
@@ -1023,12 +1027,19 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                                                         ) : prop.type === 'rollup' ? (
                                                                             <PageRollupViewer databaseId={databaseId} pageId={pageId} property={prop} />
                                                                         ) : prop.type === 'formula' ? (
-                                                                            <div className="flex items-center gap-2 w-full px-2 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-md min-h-[36px]">
-                                                                                <Calculator className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                                                                                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                                                                    {String(evaluateFormula(prop.config?.formulaExpression || '', { rowProperties: page.properties, schema: database.properties }) || '—')}
-                                                                                </span>
-                                                                            </div>
+                                                                            (() => {
+                                                                                const result = evaluateFormula(prop.config?.formulaExpression || '', { rowProperties: page.properties, schema: database.properties });
+                                                                                const isError = result === '#ERROR!';
+                                                                                const displayValue = (result === null || result === undefined || result === '') ? '—' : String(result);
+                                                                                return (
+                                                                                    <div className="flex items-center gap-2 w-full px-2 py-1.5 bg-neutral-100 dark:bg-white/5 rounded-md min-h-[36px]">
+                                                                                        <Calculator className={`w-3.5 h-3.5 shrink-0 ${isError ? 'text-red-500' : 'text-neutral-400'}`} />
+                                                                                        <span className={`text-sm font-medium ${isError ? 'text-red-500' : 'text-neutral-700 dark:text-neutral-300'}`}>
+                                                                                            {displayValue}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                );
+                                                                            })()
                                                                         ) : prop.type === 'variants' ? (
                                                                             <VariantsPropertyEditor
                                                                                 databaseId={databaseId}
@@ -1246,12 +1257,15 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
                                     <p className="text-xs text-neutral-500 dark:text-neutral-400 max-w-sm mx-auto mb-6 leading-relaxed">
                                         Line items for this quotation cannot be edited in the basic property view.
                                     </p>
-                                    <a
-                                        href={`/nl/admin/quotations/${pageId}`}
+                                    <button
+                                        onClick={() => {
+                                            router.push(`/${locale}/admin/quotations/${pageId}`);
+                                            if (onClose) onClose();
+                                        }}
                                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-bold hover:opacity-90 transition-opacity shadow-sm"
                                     >
                                         Open Quotation Builder
-                                    </a>
+                                    </button>
                                 </div>
                             ) : (
                                 <BlockEditor databaseId={databaseId} pageId={pageId} />

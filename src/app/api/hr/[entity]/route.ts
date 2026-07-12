@@ -110,7 +110,9 @@ export async function GET(
 
     const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
     if ((entity === 'time-off' || entity === 'clock-entries' || entity === 'shifts') && !isAdminRole) {
-        where.userId = ctx.userId;
+        const { getAccessibleUserIds } = await import('../lib/team-scoping');
+        const accessibleIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+        where.userId = { in: accessibleIds };
     }
 
     // For shift-tasks and shift-attachments, scope by shiftId from query
@@ -119,10 +121,15 @@ export async function GET(
         if (shiftId) where.shiftId = shiftId;
     }
 
-    // For team-members, scope by teamId from query
+    // For team-members, scope by teamId from query, and ALWAYS scope by tenant
     if (entity === 'team-members') {
         const teamId = url.searchParams.get('teamId');
-        if (teamId) where.teamId = teamId;
+        if (teamId) {
+            where.teamId = teamId;
+            where.team = { tenantId: ctx.tenantId };
+        } else {
+            where.team = { tenantId: ctx.tenantId };
+        }
     }
 
     // ── VIRTUAL ENTITIES: ERP Projects & Tasks ───────────────────────────
@@ -137,15 +144,30 @@ export async function GET(
             if (entity === 'erp-projects') {
                 const projectDbId = locked['projects'] || 'db-1';
 
+                let projectWhere: any = { databaseId: projectDbId, database: { tenantId: ctx.tenantId } };
+                let internalProjectWhere: any = { tenantId: ctx.tenantId };
+
+                if (!isAdminRole) {
+                    const { getAccessibleUserIds } = await import('../lib/team-scoping');
+                    const accessibleIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+                    const shifts = await prisma.scheduledShift.findMany({
+                        where: { userId: { in: accessibleIds }, tenantId: ctx.tenantId },
+                        select: { projectId: true }
+                    });
+                    const allowedProjectIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
+                    projectWhere.id = { in: allowedProjectIds };
+                    internalProjectWhere.id = { in: allowedProjectIds };
+                }
+
                 // Fetch from GlobalPage (Dynamic DB)
                 const dynamicProjects = await prisma.globalPage.findMany({
-                    where: { databaseId: projectDbId, database: { tenantId: ctx.tenantId } },
+                    where: projectWhere,
                     select: { id: true, properties: true, createdAt: true }
                 });
 
                 // Fetch from InternalProject (Specialized Model)
                 const internalProjects = await prisma.internalProject.findMany({
-                    where: { tenantId: ctx.tenantId },
+                    where: internalProjectWhere,
                     select: { id: true, name: true, projectCode: true, createdAt: true }
                 });
 
@@ -187,9 +209,11 @@ export async function GET(
                     database: { tenantId: ctx.tenantId },
                 };
                 if (!isAdminRole) {
+                    const { getAccessibleUserIds } = await import('../lib/team-scoping');
+                    const accessibleIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
                     pageWhere.OR = [
-                        { assignedTo: { has: ctx.userId } },
-                        { createdBy: ctx.userId },
+                        { assignedTo: { hasSome: accessibleIds } },
+                        { createdBy: { in: accessibleIds } },
                     ];
                 }
 

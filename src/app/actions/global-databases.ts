@@ -22,6 +22,19 @@ export async function getGlobalDatabases(): Promise<Database[]> {
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return [];
 
+    let allowedProjectIds: string[] | null = null;
+    const userId = session?.user?.id;
+    if (userId) {
+        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+        if (dbUser?.role === 'TENANT_ENTERPRISE_WORKFORCE') {
+            const shifts = await prisma.scheduledShift.findMany({
+                where: { userId, tenantId },
+                select: { projectId: true }
+            });
+            allowedProjectIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
+        }
+    }
+
     try {
         const dbs = await prisma.globalDatabase.findMany({
             where: { tenantId },
@@ -56,6 +69,11 @@ export async function getGlobalDatabases(): Promise<Database[]> {
                 createdAt: page.createdAt.toISOString(),
                 updatedAt: page.updatedAt.toISOString(),
             }));
+
+            // Scope db-1 (projects) for workforce
+            if ((db.id === 'db-1' || db.id.startsWith('db-1')) && allowedProjectIds !== null) {
+                mappedPages = mappedPages.filter(p => allowedProjectIds!.includes(p.id));
+            }
 
             // Auto-sync employees into db-hr as virtual pages
             if (db.id === 'db-hr') {
@@ -145,7 +163,7 @@ export async function saveGlobalDatabase(db: Database) {
             create: {
                 id: safeId(db.id),
                 tenantId,
-                name: db.name,
+                name: (db.name && db.name !== 'GlobalDatabase') ? db.name : 'Untitled Database',
                 description: db.description,
                 icon: db.icon,
                 coverImage: db.coverImage,

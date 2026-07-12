@@ -343,6 +343,8 @@ export default async function middleware(req: NextRequest) {
             HR_OFFICER:      ['/admin/hr', '/admin/settings', '/admin/dashboard'],
             TEAMLEAD:        ['/admin/projects-management', '/admin/tasks', '/admin/calendar', '/admin/hr', '/admin/settings', '/admin/dashboard', '/admin/journal'],
             PROJECT_MANAGER: ['/admin/projects-management', '/admin/tasks', '/admin/calendar', '/admin/contacts', '/admin/settings', '/admin/dashboard', '/admin/journal'],
+            TENANT_ENTERPRISE_WORKFORCE: ['/workhub'],
+            crew:            ['/workhub'],
         };
         const roleAllowList = ROLE_ROUTE_ALLOWLISTS[role ?? ''];
         if (roleAllowList && isLoggedIn) {

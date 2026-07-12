@@ -135,8 +135,8 @@ function SearchableSelectDropdown<T>({
                 setOpen(false);
             }
         };
-        document.addEventListener('mousedown', clickAway);
-        return () => document.removeEventListener('mousedown', clickAway);
+        document.addEventListener('mousedown', clickAway, true);
+        return () => document.removeEventListener('mousedown', clickAway, true);
     }, [open]);
 
     const filtered = options.filter(opt =>

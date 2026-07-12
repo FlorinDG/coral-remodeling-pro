@@ -5,6 +5,8 @@ import { Page } from '@/components/admin/database/types';
 import { STATUS_CONFIG, PRIORITY_CONFIG, getDueDateDisplay, StatusIcon } from './TaskRow';
 import { CalendarDays, Paperclip } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
+
 
 interface TaskBoardViewProps {
     pages: Page[];
@@ -203,20 +205,16 @@ export function TaskBoardView({ pages, onUpdateStatus, onPageClick, onUpdateTitl
 
                                             {/* Due date — compact date input */}
                                             {onUpdateDue && (
-                                                <label className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 cursor-pointer hover:border-orange-300 dark:hover:border-orange-700 transition-colors" style={{ color: dueCfg.color || '#6b7280' }}>
-                                                    <CalendarDays className="w-3 h-3" />
-                                                    <span>{dueCfg.label || 'Set date'}</span>
-                                                    <input
-                                                        type="date"
-                                                        value={due || ''}
-                                                        onChange={(e) => {
-                                                            e.stopPropagation();
-                                                            onUpdateDue(page.id, e.target.value);
-                                                        }}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="absolute opacity-0 w-0 h-0 pointer-events-none"
-                                                    />
-                                                </label>
+                                                <CustomDatePicker
+                                                    value={due || ''}
+                                                    onChange={(val) => onUpdateDue(page.id, val)}
+                                                    customTrigger={
+                                                        <div className="flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded border border-neutral-200 dark:border-white/10 bg-neutral-50 dark:bg-white/5 cursor-pointer hover:border-orange-300 dark:hover:border-orange-700 transition-colors" style={{ color: dueCfg.color || '#6b7280' }}>
+                                                            <CalendarDays className="w-3 h-3" />
+                                                            <span>{dueCfg.label || 'Set date'}</span>
+                                                        </div>
+                                                    }
+                                                />
                                             )}
 
                                             {/* Attachment indicator */}

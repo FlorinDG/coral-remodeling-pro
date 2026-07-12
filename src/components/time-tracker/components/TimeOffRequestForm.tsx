@@ -27,6 +27,7 @@ import { CalendarDays, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/components/time-tracker/lib/utils';
 import { toast } from 'sonner';
+import { hrCreate } from '@/components/time-tracker/lib/hr-api';
 
 interface TimeOffRequestFormProps {
   open: boolean;
@@ -56,25 +57,38 @@ export function TimeOffRequestForm({ open, onClose }: TimeOffRequestFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validate() || !startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return;
 
-    // Here you would submit to Notion
-    console.log({ startDate, endDate, type, reason });
-    
-    toast.success('Time off request submitted!', {
-      description: `${format(startDate!, 'MMM d')} - ${format(endDate!, 'MMM d, yyyy')}`,
-    });
-    
-    // Reset form
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setType('vacation');
-    setReason('');
-    setErrors({});
-    onClose();
+    setSubmitting(true);
+    try {
+      await hrCreate('time-off', {
+        requestType: type,
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        notes: reason,
+      });
+
+      toast.success('Time off request submitted!', {
+        description: `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d, yyyy')}`,
+      });
+      
+      // Reset form
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setType('vacation');
+      setReason('');
+      setErrors({});
+      onClose();
+    } catch (err: any) {
+      toast.error('Failed to submit request', { description: err.message });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -191,11 +205,11 @@ export function TimeOffRequestForm({ open, onClose }: TimeOffRequestFormProps) {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit" className="flex-1">
-              Submit Request
+            <Button type="submit" className="flex-1" disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Submit Request'}
             </Button>
           </div>
         </form>

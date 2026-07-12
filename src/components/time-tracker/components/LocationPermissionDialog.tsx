@@ -15,11 +15,20 @@ interface LocationPermissionDialogProps {
   open: boolean;
   onClose: () => void;
   onGranted: () => void;
+  onDecline?: () => void;
 }
 
-export function LocationPermissionDialog({ open, onClose, onGranted }: LocationPermissionDialogProps) {
+export function LocationPermissionDialog({ open, onClose, onGranted, onDecline }: LocationPermissionDialogProps) {
   const handleAllow = () => {
     onGranted();
+  };
+
+  const handleDecline = () => {
+    if (onDecline) {
+      onDecline();
+    } else {
+      onClose();
+    }
   };
 
   return (
@@ -45,7 +54,7 @@ export function LocationPermissionDialog({ open, onClose, onGranted }: LocationP
         </div>
 
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-          <AlertDialogCancel onClick={onClose} className="w-full sm:w-auto">
+          <AlertDialogCancel onClick={handleDecline} className="w-full sm:w-auto">
             Maybe Later
           </AlertDialogCancel>
           <AlertDialogAction onClick={handleAllow} className="w-full sm:w-auto">

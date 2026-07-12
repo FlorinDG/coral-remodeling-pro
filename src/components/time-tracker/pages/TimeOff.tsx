@@ -25,9 +25,10 @@ import { format } from 'date-fns';
 
 import { useAppBasePath } from '@/components/time-tracker/hooks/useAppBasePath';
 
-const formatDateSafe = (dateVal: any) => {
-  if (!dateVal) return 'Unknown Date';
-  const d = new Date(dateVal);
+const formatDateSafe = (dateVal: any, fallbackDateVal?: any) => {
+  const val = dateVal || fallbackDateVal;
+  if (!val) return 'Unknown Date';
+  const d = new Date(val);
   if (isNaN(d.getTime())) return 'Invalid Date';
   return format(d, 'MMM d, yyyy');
 };
@@ -257,7 +258,7 @@ export default function TimeOff() {
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {formatDateSafe(request.startDate)} - {formatDateSafe(request.endDate)}
+                        {formatDateSafe(request.startDate, (request as any).start_date)} - {formatDateSafe(request.endDate, (request as any).end_date)}
                       </p>
                       {request.notes && (
                         <p className="text-sm text-muted-foreground mt-1">{request.notes}</p>

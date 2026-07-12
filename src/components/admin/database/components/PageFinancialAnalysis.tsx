@@ -23,8 +23,18 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
 
     const remaining = Math.max(0, effectiveBudget - costs);
     const deficit = Math.max(0, costs - effectiveBudget);
+    const isQuotation = databaseId === 'db-quotations' || databaseId.startsWith('db-quotations');
 
-    const data = [
+    const data = isQuotation ? [
+        {
+            name: 'Quotation Financials',
+            'Quoted Amount': quoted || effectiveBudget,
+            'Workforce Cost': costs * 0.4, // placeholder estimation if real data missing
+            'Material & Overhead': costs * 0.6, // placeholder estimation
+            'Total Cost': costs,
+            'Est. Margin': remaining,
+        }
+    ] : [
         {
             name: 'Project Financials',
             Budget: effectiveBudget,
@@ -39,7 +49,7 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
         <div className="mt-8 mb-8 pb-8 border-b border-neutral-100 dark:border-white/5">
             <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-500" />
-                Financial Analysis
+                {isQuotation ? 'Quotation Analysis' : 'Financial Analysis'}
             </h2>
             <div className="h-[250px] w-full bg-neutral-50 dark:bg-black/20 rounded-2xl border border-neutral-200 dark:border-white/10 p-4">
                 <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
@@ -58,44 +68,80 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                         />
 
                         <Legend verticalAlign="top" height={36} wrapperStyle={{ fontSize: '12px', fontWeight: 'bold' }} />
-                        <Bar dataKey="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        {quoted > 0 && quoted !== effectiveBudget && <Bar dataKey="Quoted" fill="#8b5cf6" radius={[4, 4, 0, 0]} />}
-                        <Bar dataKey="Costs" fill="#eab308" radius={[4, 4, 0, 0]} />
-                        {invoiced > 0 && <Bar dataKey="Invoiced" fill="#10b981" radius={[4, 4, 0, 0]} />}
-                        {deficit > 0 && <Bar dataKey="Deficit" fill="#ef4444" radius={[4, 4, 0, 0]} />}
-                        {deficit === 0 && <Bar dataKey="Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />}
+                        {isQuotation ? (
+                            <>
+                                <Bar dataKey="Quoted Amount" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Workforce Cost" stackId="costs" fill="#f59e0b" radius={[0, 0, 0, 0]} />
+                                <Bar dataKey="Material & Overhead" stackId="costs" fill="#eab308" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="Est. Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                            </>
+                        ) : (
+                            <>
+                                <Bar dataKey="Budget" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                {quoted > 0 && quoted !== effectiveBudget && <Bar dataKey="Quoted" fill="#8b5cf6" radius={[4, 4, 0, 0]} />}
+                                <Bar dataKey="Costs" fill="#eab308" radius={[4, 4, 0, 0]} />
+                                {invoiced > 0 && <Bar dataKey="Invoiced" fill="#10b981" radius={[4, 4, 0, 0]} />}
+                                {deficit > 0 && <Bar dataKey="Deficit" fill="#ef4444" radius={[4, 4, 0, 0]} />}
+                                {deficit === 0 && <Bar dataKey="Margin" fill="#22c55e" radius={[4, 4, 0, 0]} />}
+                            </>
+                        )}
                     </BarChart>
                 </ResponsiveContainer>
             </div>
 
             {/* Quick Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Budget</p>
-                    <p className="text-xl font-black text-orange-700 dark:text-orange-300 mt-0.5">€{effectiveBudget.toLocaleString()}</p>
-                </div>
-                {quoted > 0 && (
-                    <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Quoted</p>
-                        <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{quoted.toLocaleString()}</p>
-                    </div>
+                {isQuotation ? (
+                    <>
+                        <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Quoted Amount</p>
+                            <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{(quoted || effectiveBudget).toLocaleString()}</p>
+                        </div>
+                        <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Est. Total Cost</p>
+                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString()}</p>
+                        </div>
+                        <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Est. Margin</p>
+                            <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{remaining.toLocaleString()}</p>
+                        </div>
+                        <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Profit Margin %</p>
+                            <p className="text-xl font-black text-blue-700 dark:text-blue-300 mt-0.5">{quoted > 0 ? Math.round((remaining / quoted) * 100) : 0}%</p>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">Total Budget</p>
+                            <p className="text-xl font-black text-orange-700 dark:text-orange-300 mt-0.5">€{effectiveBudget.toLocaleString()}</p>
+                        </div>
+                        {quoted > 0 && (
+                            <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400">Quoted</p>
+                                <p className="text-xl font-black text-purple-700 dark:text-purple-300 mt-0.5">€{quoted.toLocaleString()}</p>
+                            </div>
+                        )}
+                        {invoiced > 0 && (
+                            <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Invoiced</p>
+                                <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{invoiced.toLocaleString()}</p>
+                            </div>
+                        )}
+                        <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Realized Costs</p>
+                            <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString()}</p>
+                        </div>
+                        <div className={`p-4 rounded-2xl border ${deficit > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
+                            <p className={`text-[10px] font-bold uppercase tracking-wider ${deficit > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Projected Margin</p>
+                            <p className={`text-xl font-black mt-0.5 ${deficit > 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
+                                {deficit > 0 ? `-€${deficit.toLocaleString()}` : `€${remaining.toLocaleString()}`}
+                            </p>
+                        </div>
+                    </>
                 )}
-                {invoiced > 0 && (
-                    <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Invoiced</p>
-                        <p className="text-xl font-black text-emerald-700 dark:text-emerald-300 mt-0.5">€{invoiced.toLocaleString()}</p>
-                    </div>
-                )}
-                <div className="p-4 bg-yellow-500/10 rounded-2xl border border-yellow-500/20">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Realized Costs</p>
-                    <p className="text-xl font-black text-yellow-700 dark:text-yellow-300 mt-0.5">€{costs.toLocaleString()}</p>
-                </div>
-                <div className={`p-4 rounded-2xl border ${deficit > 0 ? 'bg-red-500/10 border-red-500/20' : 'bg-green-500/10 border-green-500/20'}`}>
-                    <p className={`text-[10px] font-bold uppercase tracking-wider ${deficit > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>Projected Margin</p>
-                    <p className={`text-xl font-black mt-0.5 ${deficit > 0 ? 'text-red-700 dark:text-red-300' : 'text-green-700 dark:text-green-300'}`}>
-                        {deficit > 0 ? `-€${deficit.toLocaleString()}` : `€${remaining.toLocaleString()}`}
-                    </p>
-                </div>
+            </div>
+        </div>
             </div>
         </div>
     );

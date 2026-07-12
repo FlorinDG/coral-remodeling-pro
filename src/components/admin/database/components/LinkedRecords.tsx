@@ -1,3 +1,5 @@
+import { getDatabaseRoute } from '@/lib/databaseRoute';
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -12,6 +14,7 @@ interface LinkedRecordsProps {
     databaseId: string;
     pageId: string;
     isModal?: boolean;
+
 }
 
 export default function LinkedRecords({ databaseId, pageId, isModal = false }: LinkedRecordsProps) {
@@ -97,7 +100,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
         updatePageProperty(databaseId, pageId, prop.id, [...currentRelations, newPage.id]);
 
         // Navigate to the new page
-        router.push(`/${locale}/admin/database/${resolvedTargetDbId}/${newPage.id}`);
+        router.push(`/${locale}${getDatabaseRoute(resolvedTargetDbId, newPage.id)}`);
         setIsCreating(null);
         setIsOpen(false);
     };
@@ -261,8 +264,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                     ref={dropdownRef}
                 >
                     <button
-                        onPointerDown={(e) => {
-                            e.preventDefault();
+                        onClick={(e) => {
                             e.stopPropagation();
                             setIsOpen(!isOpen);
                         }}
@@ -473,7 +475,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             className="w-full flex items-center justify-between p-2 hover:bg-neutral-50 dark:hover:bg-white/[0.02] border border-neutral-100 dark:border-white/5 hover:border-neutral-200 dark:hover:border-white/10 rounded-xl transition-all group"
                                         >
                                             <button
-                                                onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
+                                                onClick={() => router.push(`/${locale}${getDatabaseRoute(lp.db.id, lp.page.id)}`)}
                                                 className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                             >
                                                 <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
@@ -486,7 +488,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                             
                                             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
-                                                    onClick={() => router.push(`/${locale}/admin/database/${lp.db.id}/${lp.page.id}`)}
+                                                    onClick={() => router.push(`/${locale}${getDatabaseRoute(lp.db.id, lp.page.id)}`)}
                                                     className="p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                                                     title="View Detail"
                                                 >
@@ -528,7 +530,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 className="w-full flex items-center justify-between p-2 hover:bg-orange-50/50 dark:hover:bg-orange-950/10 border border-neutral-100 dark:border-white/5 hover:border-orange-200 dark:hover:border-orange-800/30 rounded-xl transition-all group"
                             >
                                 <button
-                                    onClick={() => router.push(`/${locale}/admin/database/${bl.db.id}/${bl.page.id}`)}
+                                    onClick={() => router.push(`/${locale}${getDatabaseRoute(bl.db.id, bl.page.id)}`)}
                                     className="flex-1 flex items-center gap-2 min-w-0 text-left"
                                 >
                                     <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500 transition-colors truncate">
@@ -540,7 +542,7 @@ export default function LinkedRecords({ databaseId, pageId, isModal = false }: L
                                 </button>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => router.push(`/${locale}/admin/database/${bl.db.id}/${bl.page.id}`)}
+                                        onClick={() => router.push(`/${locale}${getDatabaseRoute(bl.db.id, bl.page.id)}`)}
                                         className="p-1 text-neutral-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950/20 rounded-lg transition-colors"
                                         title="View"
                                     >

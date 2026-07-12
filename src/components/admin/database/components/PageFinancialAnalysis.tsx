@@ -142,7 +142,5 @@ export default function PageFinancialAnalysis({ databaseId, pageId, costs: passe
                 )}
             </div>
         </div>
-            </div>
-        </div>
     );
 }

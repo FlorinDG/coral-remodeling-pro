@@ -17,16 +17,6 @@ import { parseRecurrenceRule } from './RecurrenceEngine';
 import { todayStr } from './hooks/useTaskFilter';
 import { RecurrenceSelector } from './RecurrenceSelector';
 
-interface TaskDetailPanelProps {
-    page: Page;
-    onClose: () => void;
-    onUpdate: (pageId: string, props: Partial<Record<string, unknown>>) => void;
-    onDelete: (pageId: string) => void;
-    onOpenFullPage?: (pageId: string) => void;
-}
-
-    );
-}
 
 interface TaskDetailPanelProps {
     page: Page;

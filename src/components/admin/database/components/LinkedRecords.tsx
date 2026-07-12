@@ -1,6 +1,6 @@
-import { getDatabaseRoute } from '@/lib/databaseRoute';
-
 "use client";
+
+import { getDatabaseRoute } from '@/lib/databaseRoute';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, Loader2, Plus, Link2, Search, X } from 'lucide-react';

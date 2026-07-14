@@ -274,10 +274,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         if (!invoice || !isHydrated) return;
         const blocks = invoice.blocks || [];
 
-        const vatMode = 'total' as 'lines' | 'total';
+        const vatIncluded = !!invoice.properties?.['vatIncluded'];
         const vatReg = (invoice.properties?.['vatRegime'] as string) || '21';
 
-        const totals = calculateInvoiceTotals(blocks, { vatCalcMode: vatMode, vatRegime: vatReg });
+        const totals = calculateInvoiceTotals(blocks, { vatIncluded, vatRegime: vatReg });
         const roundedEx = totals.subtotal;
         const roundedVat = totals.totalVAT;
         const roundedInc = totals.totalInclVAT;
@@ -368,9 +368,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
         const blks = invoice?.blocks || [];
-        const vatMode = 'total' as 'lines' | 'total';
+        const vatIncluded = !!invoice?.properties?.['vatIncluded'];
         const vatReg = (invoice?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blks, { vatCalcMode: vatMode, vatRegime: vatReg });
+        return calculateInvoiceTotals(blks, { vatIncluded, vatRegime: vatReg });
     }, [invoice]);
 
     if (!isHydrated) return <div className="flex h-screen items-center justify-center">Loading Engine...</div>;
@@ -381,7 +381,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     const rawProject = invoice.properties?.['project'];
     const projectId = Array.isArray(rawProject) ? (rawProject[0] || '') : (rawProject as string) || '';
     const betreft = (invoice.properties?.['betreft'] as string) || '';
-    const vatCalcMode = 'total' as 'lines' | 'total';
+    const vatIncluded = !!invoice.properties?.['vatIncluded'];
     const vatRegime = (invoice.properties?.['vatRegime'] as string) || '21';
     const invoiceStatus = (invoice.properties?.['status'] as string) || 'opt-draft';
     const isDraft = invoiceStatus === 'opt-draft';
@@ -750,7 +750,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
-                    vatCalcMode={'total'}
+                    vatIncluded={vatIncluded}
                     vatRegime={invoice?.properties?.['vatRegime'] as string}
                     structuredComm={invoice?.properties?.['structuredComm'] as string}
                     stripeCheckoutUrl={checkoutUrl}
@@ -837,7 +837,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
-                    vatCalcMode={'total'}
+                    vatIncluded={vatIncluded}
                     vatRegime={invoice?.properties?.['vatRegime'] as string}
                     structuredComm={invoice?.properties?.['structuredComm'] as string}
                 />
@@ -927,7 +927,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                     dueDate={dueDateProp}
                     docType={String(invoice?.properties?.['docType'] || '')}
-                    vatCalcMode={'total'}
+                    vatIncluded={vatIncluded}
                     vatRegime={invoice?.properties?.['vatRegime'] as string}
                     structuredComm={invoice?.properties?.['structuredComm'] as string}
                     stripeCheckoutUrl={checkoutUrl}
@@ -1554,7 +1554,6 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                             onUpdate={handleUpdateBlock}
                                             onDelete={handleDeleteBlock}
                                             onDuplicate={handleDuplicateBlock}
-                                            vatCalcMode={vatCalcMode}
                                             readOnly={isLocked || !isDraft}
                                         />
                                     ))}
@@ -1631,7 +1630,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         invoiceTitle={String(invoiceTitle)}
                         invoiceDate={invoice?.properties?.['invoiceDate'] as string}
                         dueDate={invoice?.properties?.['dueDate'] as string}
-                        vatCalcMode={vatCalcMode}
+                        vatIncluded={vatIncluded}
+                        onVatIncludedChange={(val) => handleUpdateProperty('vatIncluded', val)}
                         vatRegime={vatRegime}
                         onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
                         onInvoiceDateChange={(date) => handleUpdateProperty('invoiceDate', date)}
@@ -1711,7 +1711,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
-                                                vatCalcMode={'total'}
+                                                vatIncluded={vatIncluded}
                                                 vatRegime={invoice?.properties?.['vatRegime'] as string}
                                                 structuredComm={invoice?.properties?.['structuredComm'] as string}
                                                 stripeCheckoutUrl={checkoutUrl}
@@ -1758,7 +1758,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 deliveryDate={invoice?.properties?.['deliveryDate'] as string}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
-                                                vatCalcMode={'total'}
+                                                vatIncluded={vatIncluded}
                                                 vatRegime={invoice?.properties?.['vatRegime'] as string}
                                                 structuredComm={invoice?.properties?.['structuredComm'] as string}
                                                 stripeCheckoutUrl={checkoutUrl}

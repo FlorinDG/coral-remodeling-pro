@@ -13,6 +13,8 @@ interface QuotationFooterReportProps {
     onVatRegimeChange: (regime: string) => void;
     language?: string;
     onLanguageChange?: (lang: string) => void;
+    vatIncluded?: boolean;
+    onVatIncludedChange?: (included: boolean) => void;
 }
 
 type VatRegime = '21' | '12' | '6' | '0' | 'medecontractant';
@@ -26,6 +28,8 @@ export default function QuotationFooterReport({
     onVatRegimeChange,
     language = 'nl',
     onLanguageChange,
+    vatIncluded = false,
+    onVatIncludedChange,
 }: QuotationFooterReportProps) {
     const vatRegime = vatRegimeProp as VatRegime;
 
@@ -69,9 +73,11 @@ export default function QuotationFooterReport({
                         effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime);
                     }
 
+                    const base = vatIncluded ? (lineTotal / (1 + effectiveRate / 100)) : lineTotal;
+                    
                     const existing = vatMap.get(effectiveRate) || { base: 0, vat: 0 };
-                    existing.base += lineTotal;
-                    existing.vat += lineTotal * (effectiveRate / 100);
+                    existing.base += base;
+                    existing.vat += base * (effectiveRate / 100);
                     vatMap.set(effectiveRate, existing);
                 }
             });
@@ -239,24 +245,37 @@ export default function QuotationFooterReport({
                             ))}
                         </>
                     ) : (
-                        <div className="flex items-center justify-between px-5 py-2.5 border-t border-neutral-100 dark:border-white/5 gap-3">
-                            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_regime', language)}</span>
-                            <select
-                                value={vatRegime}
-                                onChange={(e) => onVatRegimeChange(e.target.value)}
-                                className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto"
-                                style={{
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <option value="21">{ti18n('footer_vat_21', language)}</option>
-                                <option value="12">{ti18n('footer_vat_12', language)}</option>
-                                <option value="6">{ti18n('footer_vat_6', language)}</option>
-                                <option value="0">{ti18n('footer_vat_0', language)}</option>
-                                <option value="medecontractant">{ti18n('footer_vat_medecontractant', language)}</option>
-                            </select>
-                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(totalVAT)}</span>
+                        <div className="flex flex-col border-t border-neutral-100 dark:border-white/5">
+                            <div className="flex items-center justify-between px-5 py-2.5 gap-3">
+                                <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">{ti18n('footer_vat_regime', language)}</span>
+                                <select
+                                    value={vatRegime}
+                                    onChange={(e) => onVatRegimeChange(e.target.value)}
+                                    className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto"
+                                    style={{
+                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)',
+                                        color: 'var(--brand-color, #d35400)',
+                                    }}
+                                >
+                                    <option value="21">{ti18n('footer_vat_21', language)}</option>
+                                    <option value="12">{ti18n('footer_vat_12', language)}</option>
+                                    <option value="6">{ti18n('footer_vat_6', language)}</option>
+                                    <option value="0">{ti18n('footer_vat_0', language)}</option>
+                                    <option value="medecontractant">{ti18n('footer_vat_medecontractant', language)}</option>
+                                </select>
+                                <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0 text-right min-w-[120px]">{formatCurrency(totalVAT)}</span>
+                            </div>
+                            <div className="flex items-center justify-end px-5 py-1.5 pb-2">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={vatIncluded}
+                                        onChange={(e) => onVatIncludedChange?.(e.target.checked)}
+                                        className="w-4 h-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)] cursor-pointer"
+                                    />
+                                    <span className="text-xs font-semibold text-neutral-500 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-300 transition-colors uppercase tracking-wider">Prices Include VAT</span>
+                                </label>
+                            </div>
                         </div>
                     )}
 

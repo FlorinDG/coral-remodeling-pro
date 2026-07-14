@@ -91,10 +91,12 @@ interface InvoicePDFProps {
     deliveryDate?: string;
     dueDate?: string;
     docType?: string;
-    vatCalcMode?: 'lines' | 'total';
+    vatIncluded?: boolean;
     vatRegime?: string;
     structuredComm?: string;
     stripeCheckoutUrl?: string;
+    showSubcomponents?: boolean;
+    hidePrices?: boolean;
 }
 
 function generateEpcQrPayload(companyName: string, iban: string, bic: string | undefined, amount: number, ogm: string, invoiceTitle: string) {
@@ -119,9 +121,11 @@ export const InvoicePDFTemplate = ({
     blocks, invoiceTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     invoiceDate, deliveryDate, dueDate, docType,
-    vatCalcMode = 'lines', vatRegime = '21',
+    vatIncluded = false, vatRegime = '21',
     structuredComm,
     stripeCheckoutUrl,
+    showSubcomponents = false,
+    hidePrices = false,
 }: InvoicePDFProps) => {
 
     const { companyName: rawCompanyName, commercialName, vatNumber, iban, logoUrl, brandColor, planType, street, postalCode, city, email, bic, stationeryUrl, documentMode, documentFont, documentFontSize } = tenantProfile || {};
@@ -226,7 +230,7 @@ export const InvoicePDFTemplate = ({
                     <View key={block.id} style={sectionStyle}>
                         <Text style={{ ...colDesc, ...textStyle }}>{cleanContent.toUpperCase()}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>
+                        {!hidePrices && <Text style={{ ...colTotal, ...textStyle, textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>}
                     </View>
                 );
             } else if (block.type === 'subsection' || block.type === 'post') {
@@ -234,7 +238,7 @@ export const InvoicePDFTemplate = ({
                     <View key={block.id} style={isStationery ? { ...baseRowStyle, backgroundColor: '#fafafa' } : s.subsectionRow}>
                         <Text style={{ ...colDesc, fontWeight: 'bold' }}>{cleanContent}</Text>
                         <Text style={colQty} /><Text style={colUnit} /><Text style={colPrice} />
-                        <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>
+                        {!hidePrices && <Text style={{ ...colTotal, fontWeight: 'bold', textAlign: 'right' }}>€ {blockTotal.toFixed(2)}</Text>}
                     </View>
                 );
             } else if (block.type === 'image') {
@@ -278,8 +282,8 @@ export const InvoicePDFTemplate = ({
                         </Text>
                         <Text style={colQty}>{block.quantity || 1}</Text>
                         <Text style={colUnit}>{block.unit || 'stk'}</Text>
-                        <Text style={colPrice}>€ {unitPrice.toFixed(2)}</Text>
-                        <Text style={colTotal}>€ {blockTotal.toFixed(2)}</Text>
+                        {!hidePrices && <Text style={colPrice}>€ {unitPrice.toFixed(2)}</Text>}
+                        {!hidePrices && <Text style={colTotal}>€ {blockTotal.toFixed(2)}</Text>}
                     </View>
                 );
             }
@@ -293,8 +297,8 @@ export const InvoicePDFTemplate = ({
 
     // Calculate VAT breakdown and totals using the shared calculator
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
-    }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState });
+    }, [blocks, vatIncluded, vatRegime, databaseStoreState]);
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
@@ -403,8 +407,8 @@ export const InvoicePDFTemplate = ({
                             <Text style={colDesc}>{t('description', lang)}</Text>
                             <Text style={colQty}>{t('qty', lang)}</Text>
                             <Text style={colUnit}>{t('unit', lang)}</Text>
-                            <Text style={colPrice}>{t('unit_price', lang)}</Text>
-                            <Text style={colTotal}>{t('total_excl', lang)}</Text>
+                            {!hidePrices && <Text style={colPrice}>{t('unit_price', lang)}</Text>}
+                            {!hidePrices && <Text style={colTotal}>{t('total_excl', lang)}</Text>}
                         </View>
 
                         {renderBlocks(blocks)}
@@ -433,99 +437,101 @@ export const InvoicePDFTemplate = ({
                             </View>
 
                             {/* Summary and Stripe Payment Section */}
-                            <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 12 }}>
-                                {/* Left Side: Payment Details (EPC QR + Bank Transfer / Stripe) */}
-                                {!isCreditNote && (
-                                    <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
-                                        {tenantProfile?.paymentProvider === 'stripe' && stripeCheckoutUrl ? (
-                                            <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
-                                                <View style={{ alignItems: 'center' as const, gap: 3 }}>
-                                                    <Image 
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stripeCheckoutUrl)}`}
-                                                        style={{ width: 55, height: 55, borderRadius: 3 }}
-                                                    />
-                                                    <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
-                                                        {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
-                                                    </Text>
-                                                </View>
-                                                <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
-                                                    <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                        {lang === 'fr' ? 'Paiement en ligne' : lang === 'en' ? 'Online Payment' : 'Online Betalen'}
-                                                    </Text>
-                                                    <View style={{ gap: 1 }}>
-                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                            {lang === 'fr' ? 'Scannez pour payer par carte de crédit ou Bancontact.' : lang === 'en' ? 'Scan to pay via credit card or Bancontact.' : 'Scan om te betalen met creditcard of Bancontact.'}
-                                                        </Text>
-                                                        <Text style={{ fontSize: 6.2, color: accent, fontWeight: 'bold' as const }}>
-                                                            {lang === 'fr' ? 'Lien de paiement sécurisé' : lang === 'en' ? 'Secure payment link' : 'Beveiligde betaallink'}
+                            {!hidePrices && (
+                                <View style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const, marginTop: 12 }}>
+                                    {/* Left Side: Payment Details (EPC QR + Bank Transfer / Stripe) */}
+                                    {!isCreditNote && (
+                                        <View style={{ flex: 1, marginRight: 24, flexDirection: 'column' as const, gap: 6, maxWidth: 260 }}>
+                                            {tenantProfile?.paymentProvider === 'stripe' && stripeCheckoutUrl ? (
+                                                <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                                    <View style={{ alignItems: 'center' as const, gap: 3 }}>
+                                                        <Image 
+                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(stripeCheckoutUrl)}`}
+                                                            style={{ width: 55, height: 55, borderRadius: 3 }}
+                                                        />
+                                                        <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
+                                                            {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
                                                         </Text>
                                                     </View>
-                                                </View>
-                                            </View>
-                                        ) : iban ? (
-                                            <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
-                                                <View style={{ alignItems: 'center' as const, gap: 3 }}>
-                                                    <Image 
-                                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
-                                                        style={{ width: 55, height: 55, borderRadius: 3 }}
-                                                    />
-                                                    <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
-                                                        {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
-                                                    </Text>
-                                                </View>
-                                                <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
-                                                    <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
-                                                        {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
-                                                    </Text>
-                                                    <View style={{ gap: 1 }}>
-                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                            {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
+                                                    <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
+                                                        <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                                            {lang === 'fr' ? 'Paiement en ligne' : lang === 'en' ? 'Online Payment' : 'Online Betalen'}
                                                         </Text>
-                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                            IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
-                                                        </Text>
-                                                        {bic && (
+                                                        <View style={{ gap: 1 }}>
                                                             <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                                BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                                {lang === 'fr' ? 'Scannez pour payer par carte de crédit ou Bancontact.' : lang === 'en' ? 'Scan to pay via credit card or Bancontact.' : 'Scan om te betalen met creditcard of Bancontact.'}
                                                             </Text>
-                                                        )}
-                                                        <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                            {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
-                                                        </Text>
-                                                        {ogmToDisplay && (
-                                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
-                                                                {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                            <Text style={{ fontSize: 6.2, color: accent, fontWeight: 'bold' as const }}>
+                                                                {lang === 'fr' ? 'Lien de paiement sécurisé' : lang === 'en' ? 'Secure payment link' : 'Beveiligde betaallink'}
                                                             </Text>
-                                                        )}
+                                                        </View>
                                                     </View>
                                                 </View>
-                                            </View>
-                                        ) : null}
-                                    </View>
-                                )}
-                                {(!isCreditNote && isProforma && !iban) && <View style={{ flex: 1 }} />}
-                                {isCreditNote && <View style={{ flex: 1 }} />}
-
-                                {/* Right Side: Totals Summary */}
-                                <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6, width: 240 }}>
-                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
-                                        <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
-                                        <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>
-                                    </View>
-                                    {vatBreakdown.map((v, i) => (
-                                        <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
-                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>
-                                                {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
-                                            </Text>
-                                            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {v.vat.toFixed(2)}</Text>
+                                            ) : iban ? (
+                                                <View style={{ padding: 6, backgroundColor: '#fcfcfc', border: '0.5px solid #e2e8f0', borderRadius: 6, flexDirection: 'row' as const, gap: 8, alignItems: 'center' as const }}>
+                                                    <View style={{ alignItems: 'center' as const, gap: 3 }}>
+                                                        <Image 
+                                                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(generateEpcQrPayload(companyName, iban, bic, totalInclTax, ogmToDisplay, invoiceTitle))}`}
+                                                            style={{ width: 55, height: 55, borderRadius: 3 }}
+                                                        />
+                                                        <Text style={{ fontSize: 4.5, color: '#697386', textAlign: 'center' }}>
+                                                            {lang === 'fr' ? 'Scanner pour payer' : lang === 'en' ? 'Scan to pay' : 'Scan om te betalen'}
+                                                        </Text>
+                                                    </View>
+                                                    <View style={{ flex: 1, flexDirection: 'column' as const, gap: 2 }}>
+                                                        <Text style={{ fontSize: 7.5, fontWeight: 'bold' as const, color: '#1a1f36' }}>
+                                                            {lang === 'fr' ? 'Virement bancaire SEPA' : lang === 'en' ? 'SEPA Bank Transfer' : 'SEPA Overschrijving'}
+                                                        </Text>
+                                                        <View style={{ gap: 1 }}>
+                                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                                {lang === 'fr' ? 'Bénéficiaire :' : lang === 'en' ? 'Beneficiary:' : 'Begunstigde:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{companyName}</Text>
+                                                            </Text>
+                                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                                IBAN: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{formatIban(iban)}</Text>
+                                                            </Text>
+                                                            {bic && (
+                                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                                    BIC: <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>{bic}</Text>
+                                                                </Text>
+                                                            )}
+                                                            <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                                {lang === 'fr' ? 'Montant :' : lang === 'en' ? 'Amount:' : 'Bedrag:'} <Text style={{ fontWeight: 'bold' as const, color: '#1a1f36' }}>€ {totalInclTax.toFixed(2)}</Text>
+                                                            </Text>
+                                                            {ogmToDisplay && (
+                                                                <Text style={{ fontSize: 6.2, color: '#4a5568' }}>
+                                                                    {lang === 'fr' ? 'Communication :' : lang === 'en' ? 'Reference:' : 'Mededeling:'} <Text style={{ fontWeight: 'bold' as const, color: accent }}>{ogmToDisplay}</Text>
+                                                                </Text>
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                </View>
+                                            ) : null}
                                         </View>
-                                    ))}
-                                    <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1.5px solid #111111', paddingVertical: 2 }}>
-                                        <Text style={{ fontSize: 11, color: '#111111', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', color: accent }}>€ {totalInclTax.toFixed(2)}</Text>
+                                    )}
+                                    {(!isCreditNote && isProforma && !iban) && <View style={{ flex: 1 }} />}
+                                    {isCreditNote && <View style={{ flex: 1 }} />}
+
+                                    {/* Right Side: Totals Summary */}
+                                    <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 6, width: 240 }}>
+                                        <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>{t('subtotal_excl', lang)}:</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {finalSubtotal.toFixed(2)}</Text>
+                                        </View>
+                                        {vatBreakdown.map((v, i) => (
+                                            <View key={i} style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', paddingVertical: 2 }}>
+                                                <Text style={{ fontSize: 10, color: '#333333', textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 'bold' }}>
+                                                    {v.isMedecontractant ? 'BTW VERLEGD' : `${t('vat', lang)} (${v.rate}%):`}
+                                                </Text>
+                                                <Text style={{ fontSize: 12, fontWeight: 'bold' }}>€ {v.vat.toFixed(2)}</Text>
+                                            </View>
+                                        ))}
+                                        <View style={{ flexDirection: 'row', width: 240, justifyContent: 'space-between', marginTop: 6, paddingTop: 6, borderTop: '1.5px solid #111111', paddingVertical: 2 }}>
+                                            <Text style={{ fontSize: 11, color: '#111111', fontWeight: 'bold', textTransform: 'uppercase' }}>{amountLabel}:</Text>
+                                            <Text style={{ fontSize: 18, fontWeight: 'bold', color: accent }}>€ {totalInclTax.toFixed(2)}</Text>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
+                            )}
                         </View>
                     </View>
 
@@ -634,6 +640,7 @@ export const InvoicePDFTemplate = ({
 
     // Grand total rendering
     const renderGrandTotal = () => {
+        if (hidePrices) return null;
         if (isT3) {
             return (
                 <View style={{ marginTop: 6, backgroundColor: navy, padding: 10, flexDirection: 'row', width: 265, justifyContent: 'space-between' }}>
@@ -697,8 +704,8 @@ export const InvoicePDFTemplate = ({
                     <Text style={colDesc}>{t('description', lang)}</Text>
                     <Text style={colQty}>{t('qty', lang)}</Text>
                     <Text style={colUnit}>{t('unit', lang)}</Text>
-                    <Text style={colPrice}>{t('unit_price', lang)}</Text>
-                    <Text style={colTotal}>{t('total_excl', lang)}</Text>
+                    {!hidePrices && <Text style={colPrice}>{t('unit_price', lang)}</Text>}
+                    {!hidePrices && <Text style={colTotal}>{t('total_excl', lang)}</Text>}
                 </View>
 
                 {/* Content */}

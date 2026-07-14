@@ -16,8 +16,8 @@ export interface InvoiceTotals {
 }
 
 interface CalculateTotalsOptions {
-    vatCalcMode?: 'lines' | 'total';
     vatRegime?: string;
+    vatIncluded?: boolean;
     databaseStoreState?: any;
 }
 
@@ -25,7 +25,7 @@ export function calculateInvoiceTotals(
     blocks: Block[],
     options: CalculateTotalsOptions = {}
 ): InvoiceTotals {
-    const { vatCalcMode = 'lines', vatRegime = '21', databaseStoreState } = options;
+    const { vatRegime = '21', vatIncluded = false, databaseStoreState } = options;
 
     let subtotal = 0;
     const vatMap = new Map<number, { base: number; isMedecontractant: boolean }>();
@@ -69,22 +69,14 @@ export function calculateInvoiceTotals(
                 const vDeltas = getVariantDeltas(b);
                 const lineGross = (price + vDeltas) * nextMultiplier;
 
-                const lineVatRate = b.vatRate ?? 21;
-                const isLineMedecontractant = !!b.vatMedecontractant;
+                const effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime || '21');
 
-                let effectiveRate: number;
-                if (vatCalcMode === 'lines') {
-                    effectiveRate = isLineMedecontractant ? 0 : lineVatRate;
-                } else {
-                    effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime || '21');
-                }
-
-                const base = b.vatIncluded ? (lineGross / (1 + effectiveRate / 100)) : lineGross;
+                const base = vatIncluded ? (lineGross / (1 + effectiveRate / 100)) : lineGross;
                 subtotal += base;
 
                 const existing = vatMap.get(effectiveRate) || { base: 0, isMedecontractant: false };
                 existing.base += base;
-                if (isLineMedecontractant || (vatCalcMode === 'total' && vatRegime === 'medecontractant')) {
+                if (vatRegime === 'medecontractant') {
                     existing.isMedecontractant = true;
                 }
                 vatMap.set(effectiveRate, existing);

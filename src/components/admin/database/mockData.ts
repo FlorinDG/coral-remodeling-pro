@@ -703,6 +703,28 @@ export const mockDatabases: Database[] = [
         properties: [
             { id: 'title', name: 'Invoice Number', type: 'text' },
             { id: 'prop-inv-client', name: 'Client', type: 'text' },
+            { 
+                id: 'prop-exp-category', 
+                name: 'Category', 
+                type: 'select', 
+                config: { 
+                    options: [
+                        { id: 'cat-1', name: 'Investeringen', color: 'blue' },
+                        { id: 'cat-2', name: 'Onderaannemingen', color: 'orange' },
+                        { id: 'cat-3', name: '(Handels)goederen', color: 'emerald' },
+                        { id: 'cat-4', name: 'Huur', color: 'purple' },
+                        { id: 'cat-5', name: 'Rollend materieel', color: 'red' },
+                        { id: 'cat-6', name: 'Algemene kosten', color: 'gray' },
+                        { id: 'cat-7', name: 'Gebouwen / lokalen / kantoren', color: 'stone' },
+                        { id: 'cat-8', name: 'Ereloon / commissies', color: 'indigo' },
+                        { id: 'cat-9', name: 'Personeel / uitzendkrachten', color: 'pink' },
+                        { id: 'cat-10', name: 'Opstartkosten', color: 'yellow' },
+                        { id: 'cat-11', name: 'Verzekeringen', color: 'teal' },
+                        { id: 'cat-12', name: 'Sociale bijdragen', color: 'cyan' },
+                    ]
+                } 
+            },
+            { id: 'prop-exp-cost-type', name: 'Cost Type', type: 'select' },
             { id: 'prop-inv-status', name: 'Status', type: 'select', config: { options: [{ id: 'opt-unpaid', name: 'Unpaid', color: 'red' }, { id: 'opt-paid', name: 'Paid', color: 'green' }] } },
             { id: 'prop-inv-amount', name: 'Amount', type: 'number', config: { format: 'euro' } }
         ],
@@ -720,7 +742,28 @@ export const mockDatabases: Database[] = [
         icon: '💳',
         properties: [
             { id: 'title', name: 'Receipt / Item', type: 'text' },
-            { id: 'prop-exp-category', name: 'Category', type: 'select', config: { options: [{ id: 'opt-equipment', name: 'Equipment', color: 'orange' }, { id: 'opt-software', name: 'Software', color: 'blue' }, { id: 'opt-travel', name: 'Travel', color: 'purple' }] } },
+            { 
+                id: 'prop-exp-category', 
+                name: 'Category', 
+                type: 'select', 
+                config: { 
+                    options: [
+                        { id: 'cat-1', name: 'Investeringen', color: 'blue' },
+                        { id: 'cat-2', name: 'Onderaannemingen', color: 'orange' },
+                        { id: 'cat-3', name: '(Handels)goederen', color: 'emerald' },
+                        { id: 'cat-4', name: 'Huur', color: 'purple' },
+                        { id: 'cat-5', name: 'Rollend materieel', color: 'red' },
+                        { id: 'cat-6', name: 'Algemene kosten', color: 'gray' },
+                        { id: 'cat-7', name: 'Gebouwen / lokalen / kantoren', color: 'stone' },
+                        { id: 'cat-8', name: 'Ereloon / commissies', color: 'indigo' },
+                        { id: 'cat-9', name: 'Personeel / uitzendkrachten', color: 'pink' },
+                        { id: 'cat-10', name: 'Opstartkosten', color: 'yellow' },
+                        { id: 'cat-11', name: 'Verzekeringen', color: 'teal' },
+                        { id: 'cat-12', name: 'Sociale bijdragen', color: 'cyan' },
+                    ]
+                } 
+            },
+            { id: 'prop-exp-cost-type', name: 'Cost Type', type: 'select' },
             { id: 'prop-exp-amount', name: 'Amount', type: 'number', config: { format: 'euro' } }
         ],
         pages: [],

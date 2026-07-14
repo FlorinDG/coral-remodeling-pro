@@ -11,6 +11,7 @@ import { useTenant } from '@/context/TenantContext';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import SelectDropdown from '@/components/admin/database/components/SelectDropdown';
+import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
 
 interface PurchaseInvoiceEngineProps {
     pageId: string;
@@ -27,6 +28,7 @@ interface InvoiceLine {
     vatRate: number;
     lineTotal: number;
     category?: string;
+    costType?: string;
     ledgerAccount?: string;
 }
 
@@ -203,6 +205,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         currency: '',
         vatRegime: '',
         category: '',
+        costType: '',
         ledgerAccount: '',
         notes: '',
         paidDate: '',
@@ -221,6 +224,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 vatRate: Number(b.properties?.vatRate || 0),
                 lineTotal: Number(b.properties?.lineTotal || 0),
                 category: String(b.properties?.category || ''),
+                costType: String(b.properties?.costType || ''),
                 ledgerAccount: String(b.properties?.ledgerAccount || ''),
             })) || [];
 
@@ -234,6 +238,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                     vatRate: l.vatRate || 0,
                     lineTotal: l.lineTotal || l.totalExVat || 0,
                     category: '',
+                    costType: '',
                     ledgerAccount: '',
                 }));
             }
@@ -276,7 +281,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 currency: String(page.properties.currency || ''),
                 vatRegime: String(page.properties.vatRegime || ''),
                 category: String(page.properties.category || ''),
-                ledgerAccount: String(page.properties.ledgerAccount || ''),
+                costType: String(page.properties.costType || ''),
+                status: String(page.properties['prop-inv-status'] || 'opt-draft'),
                 notes: String(page.properties.notes || ''),
                 paidDate: String(page.properties.paidDate || ''),
                 paymentMethod: String(page.properties.paymentMethod || ''),
@@ -344,6 +350,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 vatRate: parseFloat(String(line.vatRate)) || 0,
                 lineTotal: parseFloat(String(line.lineTotal)) || 0,
                 category: line.category || '',
+                costType: line.costType || '',
                 ledgerAccount: line.ledgerAccount || '',
             }
         }));
@@ -670,12 +677,35 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     {isEditing ? (
                                         <SelectDropdown
                                             value={editData.category || null}
-                                            options={getOptionsForProperty('category')}
-                                            onChange={(val) => setEditData(p => ({ ...p, category: val || '' }))}
+                                            options={EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }))}
+                                            onChange={(val) => setEditData(p => ({ ...p, category: val || '', costType: '' }))}
                                             placeholder={tPlaceholders('selectCategory')}
                                         />
                                     ) : (
-                                        <OptionDisplay value={page.properties.category as string} options={getOptionsForProperty('category')} />
+                                        <OptionDisplay value={page.properties.category as string} options={EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }))} />
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">Kostensoort (Cost Type)</label>
+                                    {isEditing ? (
+                                        <SelectDropdown
+                                            value={editData.costType || null}
+                                            options={COST_TYPES.filter(ct => ct.categoryId === editData.category).map(ct => ({ id: ct.id, name: ct.name, color: 'gray' }))}
+                                            onChange={(val) => {
+                                                setEditData(p => {
+                                                    const newData = { ...p, costType: val || '' };
+                                                    const ct = COST_TYPES.find(x => x.id === val);
+                                                    if (ct) {
+                                                        if (ct.medecontractant) newData.vatRegime = 'regime-mc';
+                                                        else if (ct.vatExempt) newData.vatRegime = 'regime-none';
+                                                    }
+                                                    return newData;
+                                                });
+                                            }}
+                                            placeholder="Select Cost Type..."
+                                        />
+                                    ) : (
+                                        <OptionDisplay value={page.properties.costType as string} options={COST_TYPES.map(c => ({ id: c.id, name: c.name, color: 'gray' }))} />
                                     )}
                                 </div>
                                 <InfoField
@@ -788,7 +818,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     <h3 className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Line Items</h3>
                                     {isEditing && (
                                         <button onClick={() => setEditData(p => {
-                                            const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0, category: '', ledgerAccount: '' }];
+                                            const newLines = [...p.lines, { id: `temp-${Date.now()}`, description: '', quantity: 1, unitCode: 'C62', unitPrice: 0, vatRate: 21, lineTotal: 0, category: '', costType: '', ledgerAccount: '' }];
                                             const computed = calculateHeaderTotalsFromLines(newLines);
                                             return { ...p, lines: newLines, ...computed };
                                         })} className="text-xs text-blue-500 hover:text-blue-600 font-medium">
@@ -824,15 +854,32 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                             <div className="flex flex-col gap-1 min-w-[120px]">
                                                                 <SelectDropdown
                                                                     value={line.category || null}
-                                                                    options={getOptionsForProperty('category')}
+                                                                    options={EXPENSE_CATEGORIES.map(c => ({ id: c.id, name: c.name, color: c.color }))}
                                                                     onChange={(val) => {
                                                                         const l = [...editData.lines];
                                                                         l[i].category = val || '';
+                                                                        l[i].costType = '';
                                                                         setEditData({ ...editData, lines: l });
                                                                     }}
                                                                     placeholder={tPlaceholders('category')}
                                                                     compact
                                                                 />
+                                                                {line.category && (
+                                                                    <SelectDropdown
+                                                                        value={line.costType || null}
+                                                                        options={COST_TYPES.filter(ct => ct.categoryId === line.category).map(ct => ({ id: ct.id, name: ct.name, color: 'gray' }))}
+                                                                        onChange={(val) => {
+                                                                            const l = [...editData.lines];
+                                                                            l[i].costType = val || '';
+                                                                            const ct = COST_TYPES.find(x => x.id === val);
+                                                                            // Inherit VAT regime optionally if needed, but per-line vatRate is numerical here.
+                                                                            // The app handles vatRate numerically per line. 
+                                                                            setEditData({ ...editData, lines: l });
+                                                                        }}
+                                                                        placeholder="Cost Type..."
+                                                                        compact
+                                                                    />
+                                                                )}
                                                                 <input
                                                                     type="text"
                                                                     value={line.ledgerAccount || ''}
@@ -849,13 +896,18 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                                             <div className="flex flex-col text-neutral-500 text-[10px]">
                                                                 {line.category ? (
                                                                     <span className="font-semibold text-neutral-700 dark:text-neutral-300">
-                                                                        {getOptionsForProperty('category').find(o => o.id === line.category)?.name || line.category}
+                                                                        {EXPENSE_CATEGORIES.find(o => o.id === line.category)?.name || line.category}
+                                                                    </span>
+                                                                ) : null}
+                                                                {line.costType ? (
+                                                                    <span className="text-neutral-600 dark:text-neutral-400">
+                                                                        {COST_TYPES.find(o => o.id === line.costType)?.name || line.costType}
                                                                     </span>
                                                                 ) : null}
                                                                 {line.ledgerAccount ? (
                                                                     <span>Rek: {line.ledgerAccount}</span>
                                                                 ) : null}
-                                                                {!line.category && !line.ledgerAccount && <span className="italic opacity-50">—</span>}
+                                                                {!line.category && !line.costType && !line.ledgerAccount && <span className="italic opacity-50">—</span>}
                                                             </div>
                                                         )}
                                                     </td>

@@ -49,7 +49,7 @@ interface QuotationPDFProps {
     templateId?: TemplateId;
     language?: string;
     showSubcomponents?: boolean;
-    vatCalcMode?: 'lines' | 'total';
+    vatIncluded?: boolean;
     vatRegime?: string;
     billingRule?: string;
     paymentTerms?: string;
@@ -59,7 +59,7 @@ export const QuotationPDFTemplate = ({
     blocks, quotationTitle, betreft, clientInfo, projectId, grandTotalExcl, grandTotalIncl, vatAmount,
     databaseStoreState, tenantProfile, templateId = 't1', language = 'nl',
     showSubcomponents = false,
-    vatCalcMode = 'lines',
+    vatIncluded = false,
     vatRegime = '21',
     billingRule,
     paymentTerms,
@@ -266,8 +266,8 @@ export const QuotationPDFTemplate = ({
     };
 
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime, databaseStoreState });
-    }, [blocks, vatCalcMode, vatRegime, databaseStoreState]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime, databaseStoreState });
+    }, [blocks, vatIncluded, vatRegime, databaseStoreState]);
 
     const finalSubtotal = blocks && blocks.length > 0 ? totals.subtotal : grandTotalExcl;
     const vatBreakdown = totals.vatBreakdown;
@@ -277,63 +277,23 @@ export const QuotationPDFTemplate = ({
     const hasVat6 = vatBreakdown.some(v => v.rate === 6);
 
     const renderVatRows = (boxWidth: number) => {
-        if (vatCalcMode === 'lines') {
-            if (vatBreakdown.length === 0) {
-                return (
-                    <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
-                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{t('vat', lang)} (21%):</Text>
-                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  0.00</Text>
-                    </View>
-                );
-            }
-            return vatBreakdown.map(({ rate, vat }) => {
-                const label = `${t('vat', lang)} (${rate === 0 ? (hasLineMedecontractant ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : '0%') : `${rate}%`}):`;
-                return (
-                    <View key={rate} style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between', marginTop: 2 }}>
-                        <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
-                        <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {vat.toFixed(2)}</Text>
-                    </View>
-                );
-            });
-        } else {
-            const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
-            return (
-                <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
-                    <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
-                    <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
-                </View>
-            );
-        }
+        const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
+        return (
+            <View style={{ flexDirection: 'row', width: boxWidth, justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 8.5, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</Text>
+                <Text style={{ fontSize: 10, fontWeight: 'bold' }}>€  {taxAmount.toFixed(2)}</Text>
+            </View>
+        );
     };
 
     const renderVatRowsDynamic = () => {
-        if (vatCalcMode === 'lines') {
-            if (vatBreakdown.length === 0) {
-                return (
-                    <View style={s.summaryRow}>
-                        <Text style={s.summaryLabel}>{t('vat', lang)} (21%):</Text>
-                        <Text style={s.summaryValue}>€  0.00</Text>
-                    </View>
-                );
-            }
-            return vatBreakdown.map(({ rate, vat }) => {
-                const label = `${t('vat', lang)} (${rate === 0 ? (hasLineMedecontractant ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : '0%') : `${rate}%`}):`;
-                return (
-                    <View key={rate} style={s.summaryRow}>
-                        <Text style={s.summaryLabel}>{label}</Text>
-                        <Text style={s.summaryValue}>€  {vat.toFixed(2)}</Text>
-                    </View>
-                );
-            });
-        } else {
-            const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
-            return (
-                <View style={s.summaryRow}>
-                    <Text style={s.summaryLabel}>{label}</Text>
-                    <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
-                </View>
-            );
-        }
+        const label = `${t('vat', lang)} (${vatRegime === 'medecontractant' ? (lang === 'fr' ? 'Autoliquidation' : lang === 'en' ? 'Reverse charge' : 'Verlegd') : `${vatRegime}%`}):`;
+        return (
+            <View style={s.summaryRow}>
+                <Text style={s.summaryLabel}>{label}</Text>
+                <Text style={s.summaryValue}>€  {taxAmount.toFixed(2)}</Text>
+            </View>
+        );
     };
 
     const padH = isStationery ? 40 : (isT1 || isT4 ? 28 : 40);
@@ -431,7 +391,7 @@ export const QuotationPDFTemplate = ({
                         {/* Legal texts — above totals */}
                         <View wrap={false}>
                             {/* Medecontractant Legal Notice */}
-                            {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                            {(vatRegime === 'medecontractant') && (
                                 <View style={{ marginTop: 24, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
                                     <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                                         {t('footer_medecontractant_legal', lang)}
@@ -625,7 +585,7 @@ export const QuotationPDFTemplate = ({
 
                 <View wrap={false}>
                     {/* Medecontractant Legal Notice */}
-                    {(vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant)) && (
+                    {(vatRegime === 'medecontractant') && (
                         <View style={{ marginTop: 24, marginHorizontal: isT1 || isT4 ? 32 : 8, padding: 10, backgroundColor: '#fafafa', borderLeft: `3px solid ${accent}`, borderRadius: 4 }}>
                             <Text style={{ fontSize: 8, color: '#555555', fontStyle: 'italic', lineHeight: 1.4 }}>
                                 {t('footer_medecontractant_legal', lang)}

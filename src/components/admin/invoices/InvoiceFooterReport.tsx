@@ -17,7 +17,8 @@ interface InvoiceFooterReportProps {
     invoiceTitle?: string;
     invoiceDate?: string;
     dueDate?: string;
-    vatCalcMode: 'lines' | 'total';
+    vatIncluded?: boolean;
+    onVatIncludedChange?: (included: boolean) => void;
     vatRegime: string;
     onVatRegimeChange: (regime: string) => void;
     onInvoiceDateChange?: (date: string) => void;
@@ -38,7 +39,8 @@ export default function InvoiceFooterReport({
     invoiceTitle,
     invoiceDate,
     dueDate,
-    vatCalcMode,
+    vatIncluded = false,
+    onVatIncludedChange,
     vatRegime: vatRegimeProp,
     onVatRegimeChange,
     onInvoiceDateChange,
@@ -55,15 +57,13 @@ export default function InvoiceFooterReport({
     const vatRegime = vatRegimeProp as VatRegime;
 
     const totals = useMemo(() => {
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode, vatRegime });
-    }, [blocks, vatCalcMode, vatRegime]);
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime });
+    }, [blocks, vatIncluded, vatRegime]);
 
-    const { subtotal, vatBreakdown, totalVAT, totalInclVAT, hasLineMedecontractant } = {
+    const { subtotal, totalVAT, totalInclVAT } = {
         subtotal: totals.subtotal,
-        vatBreakdown: totals.vatBreakdown,
         totalVAT: totals.totalVAT,
         totalInclVAT: totals.totalInclVAT,
-        hasLineMedecontractant: totals.hasMedecontractant,
     };
 
     const lineCount = useMemo(() => {
@@ -82,7 +82,7 @@ export default function InvoiceFooterReport({
         return count;
     }, [blocks]);
 
-    const showMedecontractant = vatRegime === 'medecontractant' || (vatCalcMode === 'lines' && hasLineMedecontractant);
+    const showMedecontractant = vatRegime === 'medecontractant';
 
     const formatCurrency = (val: number) => {
         return new Intl.NumberFormat('nl-BE', {
@@ -92,7 +92,7 @@ export default function InvoiceFooterReport({
         }).format(val);
     };
 
-    const isLinesMode = vatCalcMode === 'lines';
+
 
     return (
         <div className="w-full mt-10 pt-6 border-t border-dashed border-neutral-300 dark:border-neutral-700">
@@ -223,45 +223,40 @@ export default function InvoiceFooterReport({
                     </div>
 
                     {/* BTW rows */}
-                    {isLinesMode ? (
-                        <>
-                            {vatBreakdown.map(({ rate, base, vat }) => (
-                                <div key={rate} className="flex items-center justify-between px-5 py-2 border-t border-neutral-100 dark:border-white/5 gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">BTW</span>
-                                        <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300">
-                                            {rate === 0 ? (hasLineMedecontractant ? 'Verlegd' : '0%') : `${rate}%`}
-                                        </span>
-                                        <span className="text-[11px] text-neutral-400 tabular-nums">
-                                            (op {formatCurrency(base)})
-                                        </span>
-                                    </div>
-                                    <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(vat)}</span>
-                                </div>
-                            ))}
-                        </>
-                    ) : (
-                        <div className="flex items-center justify-between px-5 py-2.5 border-t border-neutral-100 dark:border-white/5 gap-3">
-                            <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">BTW Regime</span>
-                            <select
-                                value={vatRegime}
-                                onChange={(e) => onVatRegimeChange(e.target.value)}
-                                disabled={isLocked}
-                                className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto disabled:opacity-70 disabled:cursor-default"
-                                style={{
-                                    borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)',
-                                    color: 'var(--brand-color, #d35400)',
-                                }}
-                            >
-                                <option value="21">21% — Standaard</option>
-                                <option value="12">12% — Sociaal woning</option>
-                                <option value="6">6% — Renovatie (&gt;10j)</option>
-                                <option value="0">0% — Vrijgesteld</option>
-                                <option value="medecontractant">Medecontractant (verlegde BTW)</option>
-                            </select>
-                            <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
+                        <div className="flex flex-col border-t border-neutral-100 dark:border-white/5">
+                            <div className="flex items-center justify-between px-5 py-2.5 gap-3">
+                                <span className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest shrink-0">BTW Regime</span>
+                                <select
+                                    value={vatRegime}
+                                    onChange={(e) => onVatRegimeChange(e.target.value)}
+                                    disabled={isLocked}
+                                    className="text-[13px] font-semibold bg-white dark:bg-neutral-900 border rounded-md px-2 py-1 focus:outline-none cursor-pointer appearance-auto disabled:opacity-70 disabled:cursor-default"
+                                    style={{
+                                        borderColor: 'color-mix(in srgb, var(--brand-color, #d35400) 30%, transparent)',
+                                        color: 'var(--brand-color, #d35400)',
+                                    }}
+                                >
+                                    <option value="21">21% — Standaard</option>
+                                    <option value="12">12% — Sociaal woning</option>
+                                    <option value="6">6% — Renovatie (&gt;10j)</option>
+                                    <option value="0">0% — Vrijgesteld</option>
+                                    <option value="medecontractant">Medecontractant (verlegde BTW)</option>
+                                </select>
+                                <span className="text-[13px] font-semibold text-neutral-600 dark:text-neutral-300 tabular-nums shrink-0">{formatCurrency(totalVAT)}</span>
+                            </div>
+                            <div className="flex items-center justify-end px-5 py-1.5 pb-2">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={vatIncluded}
+                                        onChange={(e) => onVatIncludedChange?.(e.target.checked)}
+                                        disabled={isLocked}
+                                        className="w-4 h-4 rounded border-neutral-300 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)] cursor-pointer disabled:opacity-70"
+                                    />
+                                    <span className="text-xs font-semibold text-neutral-500 group-hover:text-neutral-700 dark:text-neutral-400 dark:group-hover:text-neutral-300 transition-colors uppercase tracking-wider">Prices Include VAT</span>
+                                </label>
+                            </div>
                         </div>
-                    )}
 
                     {/* Grand Total */}
                     <div

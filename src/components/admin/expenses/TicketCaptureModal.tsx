@@ -33,6 +33,7 @@ interface TicketFormData {
     amount: string;
     vatAmount: string;
     category: string;
+    costType: string;
     currency: string;
     paymentMethod: string;
     project: string;
@@ -50,17 +51,7 @@ interface ScanResult {
     extracted: Record<string, any>;
 }
 
-const CATEGORIES = [
-    { id: 'cat-fuel', label: 'Fuel', icon: '⛽' },
-    { id: 'cat-restaurant', label: 'Restaurant', icon: '🍽️' },
-    { id: 'cat-office', label: 'Office Supplies', icon: '📎' },
-    { id: 'cat-tools', label: 'Tools', icon: '🔧' },
-    { id: 'cat-materials', label: 'Materials', icon: '🧱' },
-    { id: 'cat-parking', label: 'Parking', icon: '🅿️' },
-    { id: 'cat-transport', label: 'Transport', icon: '🚗' },
-    { id: 'cat-other', label: 'Other', icon: '📦' },
-];
-
+import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
 const PAYMENT_METHODS = [
     { id: 'pm-cash', label: 'Cash' },
     { id: 'pm-card', label: 'Card' },
@@ -112,6 +103,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
         amount: '',
         vatAmount: '',
         category: '',
+        costType: '',
         currency: 'cur-eur',
         paymentMethod: 'pm-card',
         project: '',
@@ -365,6 +357,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         date: form.date,
                         amount: parsedAmount,
                         category: form.category || '',
+                        costType: form.costType || '',
                         currency: form.currency,
                         paymentMethod: form.paymentMethod,
                         receiptUrl: receiptUrl,
@@ -413,6 +406,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     date: form.date,
                     amount: parsedAmount,
                     category: form.category || currentProps.category,
+                    costType: form.costType || currentProps.costType,
                     paymentMethod: form.paymentMethod,
                 };
                 if (form.project) updatedProps.project = [form.project];
@@ -898,39 +892,52 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                     </>
                                 )}
 
-                                {/* Category and Payment (Tickets only) */}
+                                {/* Payment (Tickets only) */}
                                 {!isInvoiceMode && (
-                                    <>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment Method</label>
-                                            <SearchableSelect
-                                                options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
-                                                value={form.paymentMethod}
-                                                onChange={(v) => updateForm('paymentMethod', v)}
-                                                placeholder={tPlaceholders('method')}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-2 uppercase tracking-wider">Category</label>
-                                            <div className="grid grid-cols-4 gap-2">
-                                                {CATEGORIES.map(cat => (
-                                                    <button
-                                                        key={cat.id}
-                                                        type="button"
-                                                        onClick={() => updateForm('category', cat.id)}
-                                                        className={`flex flex-col items-center gap-1 py-2 px-1 rounded-xl border text-xs font-medium transition-all ${
-                                                            form.category === cat.id
-                                                                ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400'
-                                                                : 'border-neutral-200 dark:border-white/10 text-neutral-600 dark:text-neutral-400 hover:border-orange-300 dark:hover:border-orange-600 hover:bg-orange-50/50 dark:hover:bg-orange-950/10'
-                                                        }`}
-                                                    >
-                                                        <span className="text-base">{cat.icon}</span>
-                                                        <span className="leading-tight text-center">{cat.label}</span>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Payment Method</label>
+                                        <SearchableSelect
+                                            options={PAYMENT_METHODS.map(pm => ({ value: pm.id, label: pm.label }))}
+                                            value={form.paymentMethod}
+                                            onChange={(v) => updateForm('paymentMethod', v)}
+                                            placeholder={tPlaceholders('method')}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Category & Cost Type (Both) */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Expense Category</label>
+                                    <SearchableSelect
+                                        options={EXPENSE_CATEGORIES.map(cat => ({ value: cat.id, label: cat.name }))}
+                                        value={form.category}
+                                        onChange={(v) => {
+                                            updateForm('category', v);
+                                            updateForm('costType', ''); // reset
+                                        }}
+                                        placeholder="Select Main Category..."
+                                    />
+                                </div>
+                                {form.category && (
+                                    <div>
+                                        <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Cost Type</label>
+                                        <SearchableSelect
+                                            options={COST_TYPES.filter(ct => ct.categoryId === form.category).map(ct => ({ value: ct.id, label: ct.name }))}
+                                            value={form.costType}
+                                            onChange={(v) => {
+                                                updateForm('costType', v);
+                                                const ct = COST_TYPES.find(x => x.id === v);
+                                                if (ct) {
+                                                    if (ct.medecontractant) {
+                                                        updateForm('vatRegime', 'regime-mc');
+                                                    } else if (ct.vatExempt) {
+                                                        updateForm('vatRegime', 'regime-none');
+                                                    }
+                                                }
+                                            }}
+                                            placeholder="Select Cost Type..."
+                                        />
+                                    </div>
                                 )}
 
                                 {/* Project */}

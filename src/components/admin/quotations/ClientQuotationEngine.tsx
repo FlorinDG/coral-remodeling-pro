@@ -254,10 +254,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         if (!quotation || !isHydrated) return;
         const currentBlocks = quotation.blocks || [];
 
-        const vatMode = 'total' as 'lines' | 'total';
+        const vatIncluded = !!quotation.properties?.['vatIncluded'];
         const vatReg = (quotation.properties?.['vatRegime'] as string) || '21';
 
-        const totals = calculateInvoiceTotals(currentBlocks, { vatCalcMode: vatMode, vatRegime: vatReg });
+        const totals = calculateInvoiceTotals(currentBlocks, { vatIncluded, vatRegime: vatReg });
         const roundedEx = totals.subtotal;
         const roundedVat = totals.totalVAT;
         const roundedInc = totals.totalInclVAT;
@@ -279,9 +279,9 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     // Calculate totals using the shared calculator
     const totals = useMemo(() => {
-        const vatMode = 'total' as 'lines' | 'total';
+        const vatIncluded = !!quotation?.properties?.['vatIncluded'];
         const vatReg = (quotation?.properties?.['vatRegime'] as string) || '21';
-        return calculateInvoiceTotals(blocks || [], { vatCalcMode: vatMode, vatRegime: vatReg });
+        return calculateInvoiceTotals(blocks || [], { vatIncluded, vatRegime: vatReg });
     }, [blocks, quotation]);
 
     const grandTotalExcl = totals.subtotal;
@@ -312,7 +312,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const betreft = (quotation.properties?.['betreft'] as string) || '';
     const quotationStatus = (quotation.properties?.['status'] as string) || '';
     const quotationDate = (quotation.properties?.['date'] as string) || '';
-    const vatCalcMode = 'total' as 'lines' | 'total';
+    const vatIncluded = !!quotation.properties?.['vatIncluded'];
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
@@ -493,7 +493,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
-                    vatCalcMode={vatCalcMode}
+                    vatIncluded={vatIncluded}
                     vatRegime={vatRegime}
                     billingRule={billingRule}
                     paymentTerms={paymentTerms}
@@ -572,7 +572,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
-                    vatCalcMode={vatCalcMode}
+                    vatIncluded={vatIncluded}
                     vatRegime={vatRegime}
                     billingRule={billingRule}
                     paymentTerms={paymentTerms}
@@ -730,7 +730,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             betreft: `Addendum: ${betreft || quotationTitle}`,
             status: 'opt-draft',
             parentQuoteId: id,
-            vatCalcMode: vatCalcMode,
+            vatIncluded: vatIncluded,
             vatRegime: vatRegime,
         });
         if (newPage) {
@@ -1072,7 +1072,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                             blocks={blocks}
                             quotationTitle={String(quotationTitle)}
                             expiryDate={quotationDate}
-                            vatCalcMode={vatCalcMode}
+                            vatIncluded={vatIncluded}
+                            onVatIncludedChange={(val) => handleUpdateProperty('vatIncluded', val)}
                             vatRegime={vatRegime}
                             onVatRegimeChange={(regime) => handleUpdateProperty('vatRegime', regime)}
                             language={docLanguage}

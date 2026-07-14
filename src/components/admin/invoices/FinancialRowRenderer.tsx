@@ -10,7 +10,8 @@ interface FinancialRowRendererProps {
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;
     childrenTotal?: number;
-    vatCalcMode?: 'lines' | 'total';
+    hasLibraryAccess?: boolean;
+    language?: string;
 }
 
 const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBlur, onFocus }: { value: string, onChange: (val: string) => void, onSearch?: (val: string) => void, placeholder?: string, className?: string, onBlur?: () => void, onFocus?: () => void }) => {
@@ -59,7 +60,7 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     );
 };
 
-export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, vatCalcMode = 'lines' }: FinancialRowRendererProps) {
+export default function FinancialRowRenderer({ block, databaseId, onUpdate, childrenTotal, hasLibraryAccess = true, language = 'nl' }: FinancialRowRendererProps) {
     const getDatabase = useDatabaseStore(state => state.getDatabase);
     const [isSaving, setIsSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -450,7 +451,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                     {/* 4. Unit Price excl. VAT (EENHEIDSPRIJS) */}
                     <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative transition-opacity ${childrenTotal !== undefined ? 'opacity-40' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Prijs</label>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Price</label>
                         <div className="relative w-24 @[600px]:w-full flex justify-end items-center">
                             <span className="absolute left-0 top-[3px] text-xs font-semibold text-neutral-400 pointer-events-none select-none">€</span>
                             <input
@@ -479,34 +480,6 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                             />
                             <span className="absolute right-0 top-0.5 text-xs text-neutral-400 font-medium font-sans cursor-default">€</span>
                         </div>
-                    </div>
-
-                    {/* 5. BTW Rate per line */}
-                    <div className={`flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[90px] shrink-0 self-start mt-0.5 transition-opacity ${vatCalcMode === 'total' ? 'opacity-30 pointer-events-none' : ''} border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0`}>
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">BTW</label>
-                        {vatCalcMode === 'total' ? (
-                            <span className="text-xs text-neutral-400 py-1 pr-4 @[600px]:pr-0">—</span>
-                        ) : (
-                            <select
-                                value={block.vatMedecontractant ? 'mc' : (block.vatRate ?? 21)}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val === 'mc') {
-                                        onUpdate({ vatRate: 0, vatMedecontractant: true });
-                                    } else {
-                                        onUpdate({ vatRate: parseFloat(val), vatMedecontractant: false });
-                                    }
-                                }}
-                                className="bg-transparent border-none text-base text-neutral-500 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
-                                style={{ textAlign: 'right', textAlignLast: 'right' }}
-                            >
-                                <option value={21}>21%</option>
-                                <option value={12}>12%</option>
-                                <option value={6}>6%</option>
-                                <option value={0}>0%</option>
-                                <option value="mc">Verlegd</option>
-                            </select>
-                        )}
                     </div>
 
                     {/* 6. Total excl. VAT = Qty × Unit Price */}

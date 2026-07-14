@@ -252,7 +252,7 @@ export default function BlockEditor({ databaseId, pageId }: BlockEditorProps) {
     };
 
     const startJournal = () => {
-        setShowOnboarding(false);
+        
         updatePageBlocks(databaseId, pageId, [{ id: uuidv4(), type: 'paragraph', content: '' }]);
         setTimeout(() => {
             const firstBlock = document.querySelector<HTMLTextAreaElement>('[id^="block-"]');

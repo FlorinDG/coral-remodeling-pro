@@ -86,7 +86,9 @@ export interface Block {
 
     // --- Invoice Engine Fields ---
     unitPrice?: number;   // Unit price excl. VAT (invoice-specific, replaces verkoopPrice column)
-    // vatRate, vatMedecontractant, vatIncluded are removed per BTW pivot.
+    vatRate?: number;
+    vatMedecontractant?: boolean;
+    vatIncluded?: boolean;
 
     children?: Block[]; // Compound nesting architecture (essential for `section` / `subsection` / `post` blocks)
 

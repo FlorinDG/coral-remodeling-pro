@@ -48,10 +48,10 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
     // Fetch related shifts
     const shiftsData = await prisma.scheduledShift.findMany({
         where: {
-            clockEntryId: { in: clockEntryIds.length > 0 ? clockEntryIds : ['no-match'] }
+            id: { in: clockEntryIds.length > 0 ? clockEntryIds : ['no-match'] }
         },
         select: {
-            clockEntryId: true,
+            id: true,
             projectId: true,
             // project: { select: { name: true } } // project relation doesn't exist on scheduledShift in prisma? Let's check schema.
         }
@@ -85,8 +85,8 @@ export async function getTimesheetData(targetUserId: string, startIso: string, e
 
     const shiftProjectMap = new Map<string, { project_id: string | null; project_name: string | null }>();
     shiftsData.forEach(shift => {
-        if (shift.clockEntryId) {
-            shiftProjectMap.set(shift.clockEntryId, {
+        if (shift.id) {
+            shiftProjectMap.set(shift.id, {
                 project_id: shift.projectId,
                 project_name: shift.projectId ? (projectNames[shift.projectId] || 'Unknown Project') : null
             });
@@ -265,7 +265,7 @@ export async function submitLateEntry(params: {
                 entityType: 'clock_entry',
                 requestType: 'manual_hours',
                 requestData: {
-                    clockEntryId: clockEntry.id,
+                    id: clockEntry.id,
                     clockInTime,
                     clockOutTime,
                     taskDescription,

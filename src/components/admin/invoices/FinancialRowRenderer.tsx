@@ -6,6 +6,7 @@ import { Database as DatabaseIcon, Check, Search, X } from 'lucide-react';
 import { parseDecimal, formatDecimal } from '@/lib/decimal-parser';
 
 interface FinancialRowRendererProps {
+    vatCalcMode?: "total" | "lines";
     block: Block;
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;

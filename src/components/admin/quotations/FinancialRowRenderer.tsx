@@ -13,6 +13,7 @@ const LABOR_RATES: Record<string, number> = {
 };
 
 interface FinancialRowRendererProps {
+    vatCalcMode?: "total" | "lines";
     block: Block;
     databaseId: 'db-articles' | 'db-bestek' | string;
     onUpdate: (updates: Partial<Block>) => void;

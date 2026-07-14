@@ -67,7 +67,7 @@ export default function WorkHubShell({
 
     const userName = session?.user?.name || 'User';
     const firstName = userName.split(' ')[0];
-    const userRole = session?.user?.role;
+    const userRole = session?.user?.role as any;
     const isWorkforce = userRole === ROLES.TENANT_ENTERPRISE_WORKFORCE || userRole === 'TENANT_PRO_WORKFORCE' || userRole === 'crew';
 
     const filteredPrimaryItems = PRIMARY_ITEMS.filter(item => {

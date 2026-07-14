@@ -269,7 +269,7 @@ export default function DocumentTemplatesModule() {
                         email: profile.email || 'client@example.com',
                     }}
                     projectId="preview"
-                    grandTotal={PREVIEW_TOTAL}
+                    grandTotalIncl={PREVIEW_TOTAL}
                     databaseStoreState={{ databases: [] }}
                     tenantProfile={profile}
                     templateId={displayTemplate as any}

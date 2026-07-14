@@ -16,6 +16,7 @@ export interface InvoiceTotals {
 }
 
 interface CalculateTotalsOptions {
+    vatCalcMode?: "total" | "lines";
     vatRegime?: string;
     vatIncluded?: boolean;
     databaseStoreState?: any;

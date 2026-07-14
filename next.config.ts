@@ -15,7 +15,7 @@ const nextConfig: any = {
   },
   serverExternalPackages: ['canvas'],
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
     ignoreDuringBuilds: true,

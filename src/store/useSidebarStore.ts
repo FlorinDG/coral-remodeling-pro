@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import {
     LayoutDashboard,
@@ -19,6 +18,7 @@ import {
     Briefcase,
     TrendingUp,
     PenLine,
+    UserCog,
 } from 'lucide-react';
 
 export type SidebarItem = {
@@ -51,6 +51,7 @@ export const getIconComponent = (iconName: string) => {
         case 'Settings': return Settings;
         case 'TrendingUp': return TrendingUp;
         case 'PenLine': return PenLine;
+        case 'UserCog': return UserCog;
         default: return LayoutDashboard;
     }
 };
@@ -85,12 +86,7 @@ interface SidebarStore {
 export const useSidebarStore = create<SidebarStore>((set) => ({
     items: defaultSidebarItems,
     removedIds: [],
-    setItems: (items) => set(() => {
-        const currentIds = new Set(items.map(i => i.id));
-        const removedIds = defaultSidebarItems
-            .map(di => di.id)
-            .filter(id => !currentIds.has(id));
-        return { items, removedIds };
-    }),
+    // Disable reordering to enforce canonical order
+    setItems: () => set({ items: defaultSidebarItems, removedIds: [] }),
     resetToDefault: () => set({ items: defaultSidebarItems, removedIds: [] }),
 }));

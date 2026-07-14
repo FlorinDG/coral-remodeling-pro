@@ -1012,7 +1012,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 onDelete={handleDeleteBlock}
                                                 onDuplicate={handleDuplicateBlock}
                                                 hasLibraryAccess={hasLibraryAccess}
-                                                vatCalcMode={vatCalcMode}
+                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 language={docLanguage}
                                                 isDraggingGlobal={isDraggingGlobal}
                                             />
@@ -1069,6 +1069,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
                         {/* Phase 10: Financial Summary & Profitability */}
                         <QuotationFooterReport
+                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                             blocks={blocks}
                             quotationTitle={String(quotationTitle)}
                             expiryDate={quotationDate}
@@ -1149,7 +1150,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 showSubcomponents={false}
-                                                vatCalcMode={vatCalcMode}
+                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
                                                 billingRule={billingRule}
                                                 paymentTerms={paymentTerms}
@@ -1192,7 +1193,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 showSubcomponents={false}
-                                                vatCalcMode={vatCalcMode}
+                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                 vatRegime={vatRegime}
                                                 billingRule={billingRule}
                                                 paymentTerms={paymentTerms}
@@ -1315,7 +1316,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                         templateId={tenant?.documentTemplate || 't1'}
                                                         language={docLanguage}
                                                         showSubcomponents={true}
-                                                        vatCalcMode={vatCalcMode}
+                                                        vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
                                                         vatRegime={vatRegime}
                                                         billingRule={billingRule}
                                                         paymentTerms={paymentTerms}

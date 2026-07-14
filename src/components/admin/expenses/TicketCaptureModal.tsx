@@ -71,9 +71,9 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
-    const pages = useDatabaseStore(s => s.pages);
-    const projects = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-1'), [pages]);
-    const suppliers = React.useMemo(() => Object.values(pages || {}).filter(p => p.databaseId === 'db-suppliers'), [pages]);
+    const pages = useDatabaseStore(s => (s as any).pages);
+    const projects = React.useMemo(() => Object.values(pages || {}).filter((p: any) => p.databaseId === 'db-1'), [pages]);
+    const suppliers = React.useMemo(() => Object.values(pages || {}).filter((p: any) => p.databaseId === 'db-suppliers'), [pages]);
 
     const [animationDone, setAnimationDone] = useState(false);
     const router = useRouter();
@@ -137,6 +137,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             amount: '',
             vatAmount: '',
             category: '',
+            costType: '',
             currency: 'cur-eur',
             paymentMethod: 'pm-card',
             project: '',
@@ -654,7 +655,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                             {isInvoiceMode ? 'Supplier' : 'Merchant'}
                                         </label>
                                         <SearchableSelect
-                                            options={suppliers.map(s => ({ value: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown', label: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown' }))}
+                                            options={suppliers.map((s: any) => ({ value: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown', label: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown' }))}
                                             value={form.merchant}
                                             onChange={val => updateForm('merchant', val)}
                                             placeholder={isInvoiceMode ? 'Select supplier' : 'Select merchant'}
@@ -944,7 +945,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 <div>
                                     <label className="block text-xs font-semibold text-neutral-500 dark:text-neutral-400 mb-1.5 uppercase tracking-wider">Project</label>
                                     <SearchableSelect
-                                        options={projects.map(p => ({ value: p.id, label: String(p.properties.title || 'Untitled') }))}
+                                        options={projects.map((p: any) => ({ value: p.id, label: String(p.properties.title || 'Untitled') }))}
                                         value={form.project}
                                         onChange={(v) => updateForm('project', v)}
                                         placeholder="Link to project"

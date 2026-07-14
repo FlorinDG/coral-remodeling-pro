@@ -592,7 +592,7 @@ export function ApprovalManager() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleBulkAction}
+              onClick={() => handleBulkAction(bulkConfirmAction as 'approve' | 'reject')}
               className={bulkConfirmAction === 'reject' ? 'bg-destructive hover:bg-destructive/90' : ''}
               disabled={bulkProcessing}
             >

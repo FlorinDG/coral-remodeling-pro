@@ -13,6 +13,28 @@
 
 ---
 
+## 📱 WORKHUB PERFORMANCE — MOBILE SPACE OPTIMIZATION (Florin live on mobile, 2026-07-12)
+On `/workhub/timesheets` (renders `src/components/time-tracker/pages/Performance.tsx`), the top ~60% of a phone screen is redundant chrome before any stat appears, and the stats waste half the width.
+- [ ] **WORKHUB-PERF-SPACE** 🟨 —
+  1. **Remove the duplicate app banner:** `Performance.tsx:185 <Header />` renders "WorkHub / Time & Task Management" + language globe + avatar — a full duplicate of the top WorkHub bar (which already shows "WorkHub · Andrei Purcel"). Hide it in the embedded/workhub context (add an `embedded`/`hideHeader` prop, or drop `<Header/>` here). Move the language globe to the top bar or Menu if it isn't already there.
+  2. **One title, not two:** the page (`workhub/timesheets/page.tsx:29`) prints `Timesheets & Reports` AND `Performance.tsx:199` prints `Performance`. Keep one (recommend dropping the page-level h1, keep the component's, or merge).
+  3. **Stat cards 2-up on mobile:** `Performance.tsx:325` grid is `grid-cols-1 sm:grid-cols-2 ...` → on a phone every StatCard is full-width (one giant "Days Present 0" card). Change mobile to `grid-cols-2` and reduce StatCard padding/height so several stats show above the fold.
+  4. **Minor:** tighten vertical gaps (`mb-8`→`mb-4` around the stat grid); the second "Back to Dashboard" at L444 is redundant with the bottom nav — consider dropping it.
+  - Verify on a phone viewport: a stat is visible without scrolling; stats render 2 per row; no duplicated WorkHub banner or double title.
+
+## 🔗 INCOMING-INVOICE NOTIFICATION LANDS ON A MOCK PAGE (Florin live, 2026-07-12)
+Florin clicked "view" on a Peppol/incoming-invoice notification → landed on **Workspace Databases** (`/admin/dynamic-db`), an empty mock grid, not the invoice. Planner traced the full chain (3 faults in a row):
+1. Notification href (`src/app/api/peppol/inbox/route.ts` ~L400) = `` `/nl/admin/database/db-expenses/${pageId}` `` (also hardcodes `/nl/` locale).
+2. The redirect router `src/app/[locale]/admin/database/[databaseId]/[pageId]/page.tsx` switch-maps db → module page but has **no `db-expenses` case** → hits `default:` → `` `/admin/dynamic-db?open=${pageId}` ``.
+3. `src/app/[locale]/admin/dynamic-db/page.tsx` is a **placeholder** (comment: "Render the first DB (our mock)"): it renders `databases[0]` and **ignores `?open`** → empty grid, nothing actionable. Matches Florin's "just mock UI, nothing clickable".
+
+- [ ] **NOTIF-INCOMING-INVOICE-DEEPLINK** 🟧 — make the notification open the actual purchase invoice:
+  1. **Router:** add to the record redirect router — `else if (databaseId.startsWith('db-expenses')) cleanDbId = 'db-expenses';` and `case 'db-expenses': parentPath = ` `/admin/financials/expenses/invoices?open=${pageId}` `; break;`. (Incoming invoices + credit notes both live in `db-expenses` → both covered.)
+  2. **Wire `?open=`:** the purchase-invoices page (`src/app/[locale]/admin/financials/expenses/invoices/page.tsx`) currently does NOT read `?open` (Planner grep: no handler). Add it: read the `open` search param and open that record in `PurchaseInvoiceEngine`. Without this the link lands on the grid, not the specific invoice. (Mirror how income invoices open a record.)
+  3. **Locale:** drop the hardcoded `/nl/` in the notification `href` (use the tenant/user locale, or a locale-relative path the `[locale]` route resolves) so FR/EN users don't get forced to nl.
+  - Verify: click a Peppol-invoice notification → opens THAT purchase invoice in the engine, correct locale; a credit-note notification opens its record too.
+- [ ] **ROUTER-DEFAULT-NO-DEADEND** 🟨 — SYSTEMIC (same root that bit here): the router `default:` dumps ANY unmapped db id onto `/admin/dynamic-db`, a mock that ignores `?open`. Any db not in the switch dead-ends the same way (db-expenses today, the next one tomorrow). Fix the fallback to open the record in its REAL database record view instead of the mock, and either finish or stop routing to `/admin/dynamic-db` (it's a placeholder rendering `databases[0]`). Verify: a record link for a db with no explicit case still opens the right record, never the empty mock.
+
 ## 🧮 PER-LINE "BTW INCLUDED" CHECKBOX in the invoice/quotation calc engine (Florin 2026-07-12)
 Florin: on each LINE ITEM, replace the per-line BTW **select** with a **checkbox**. Checked = the line amount is VAT-INCLUSIVE (extract the VAT out of it). Unchecked = the amount is the VAT-EXCLUSIVE base (VAT added on top — current behaviour).
 

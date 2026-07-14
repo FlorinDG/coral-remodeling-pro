@@ -113,7 +113,7 @@ export function UserManager() {
     }
   };
 
-  const handleUserUpdate = (updatedUser: UserProfile) => {
+  const handleUserUpdate = (updatedUser: any) => {
     setUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
     setSelectedUser(updatedUser);
   };

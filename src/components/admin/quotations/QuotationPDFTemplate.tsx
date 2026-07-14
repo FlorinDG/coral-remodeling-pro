@@ -37,7 +37,8 @@ interface ClientInfo {
 
 interface QuotationPDFProps {
     blocks: Block[];
-    quotationTitle: string;
+    vatCalcMode?: 'lines' | 'total';
+    quotationTitle?: string;
     betreft: string;
     clientInfo: ClientInfo;
     projectId: string;

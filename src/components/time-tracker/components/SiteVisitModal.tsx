@@ -45,7 +45,7 @@ export function SiteVisitModal({ open, onClose, projectId, projectName }: SiteVi
   const quotesDbId = resolveDbId('db-quotations');
   
   const clients = useMemo(() => {
-    return databases[clientsDbId]?.pages || [];
+    return databases[clientsDbId as any]?.pages || [];
   }, [databases, clientsDbId]);
 
   const handleCaptureLocation = async () => {
@@ -167,7 +167,7 @@ export function SiteVisitModal({ open, onClose, projectId, projectName }: SiteVi
                 onChange={(e) => setClientId(e.target.value)}
               >
                 <option value="">Select a client...</option>
-                {clients.map(c => (
+                {clients.map((c: any) => (
                   <option key={c.id} value={c.id}>
                     {c.properties.title as string || 'Unnamed'}
                   </option>

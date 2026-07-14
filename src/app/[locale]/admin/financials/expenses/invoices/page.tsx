@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import dynamic from 'next/dynamic';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredFinancialTabs } from "@/config/tabs";
@@ -39,7 +40,9 @@ export default function ExpensesInvoicesPage() {
 
     const [syncing, setSyncing] = useState(false);
     const [syncResult, setSyncResult] = useState<{ count: number; error?: string } | null>(null);
-    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+    const searchParams = useSearchParams();
+    const openParam = searchParams.get("open");
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(openParam);
     const [showScanUpload, setShowScanUpload] = useState(false);
     const [quotaWarning, setQuotaWarning] = useState<{
         overQuota: boolean; current: number; limit: number; plan: string;

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import ModuleTabs from "@/components/admin/ModuleTabs";
-import { useSidebarStore } from "@/store/useSidebarStore";
+
 import {
     DndContext,
     closestCenter,
@@ -151,7 +151,7 @@ export default function SidebarOrderSettings() {
                     <div className="bg-neutral-50 dark:bg-black/50 border border-neutral-200 dark:border-white/10 rounded-xl p-6">
                         <DndContext
                             id="dnd-tabs"
-                            sensors={sensors}
+                            
                             collisionDetection={closestCenter}
                             onDragEnd={handleTabDragEnd}
                             modifiers={[restrictToVerticalAxis, restrictToParentElement]}

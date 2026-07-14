@@ -375,7 +375,7 @@ export async function PATCH(
                             clockInTime: new Date(reqData.clockInTime),
                             clockOutTime: new Date(reqData.clockOutTime),
                             taskDescription: reqData.taskDescription || '',
-                            notes: reqData.includeLocation && reqData.location ? `Location: ${reqData.location.address}` : undefined,
+                            
                             approvalStatus: 'approved',
                             approvedBy: approval.reviewedBy || ctx.userId,
                             approvedAt: approval.reviewedAt ? new Date(approval.reviewedAt) : new Date()
@@ -387,9 +387,9 @@ export async function PATCH(
                                 tenantId: approval.tenantId,
                                 userId: approval.userId,
                                 projectId: reqData.projectId,
-                                clockEntryId: entry.id,
-                                startTime: new Date(reqData.clockInTime),
-                                endTime: new Date(reqData.clockOutTime),
+                                id: entry.id,
+                                shiftStart: new Date(reqData.clockInTime).toISOString(), shiftDate: new Date(reqData.clockInTime).toISOString(),
+                                shiftEnd: new Date(reqData.clockOutTime).toISOString(),
                                 status: 'completed',
                             }
                         });

@@ -19,7 +19,8 @@ export default async function DatabaseRecordPage({ params }: Props) {
     else if (databaseId.startsWith('db-tickets')) cleanDbId = 'db-tickets';
     else if (databaseId.startsWith('db-1')) cleanDbId = 'db-1';
     else if (databaseId.startsWith('db-tasks')) cleanDbId = 'db-tasks';
-    else if (databaseId.startsWith('db-invoices')) cleanDbId = 'db-invoices';
+    else if (databaseId.startsWith("db-expenses")) cleanDbId = "db-expenses";
+    else if (databaseId.startsWith("db-invoices")) cleanDbId = "db-invoices";
     else if (databaseId.startsWith('db-quotations')) cleanDbId = 'db-quotations';
 
     let parentPath = '';
@@ -53,11 +54,14 @@ export default async function DatabaseRecordPage({ params }: Props) {
         case 'db-invoices':
             parentPath = `/admin/financials/income/invoices/${pageId}`;
             break;
+        case 'db-expenses':
+            parentPath = `/admin/financials/expenses/invoices?open=${pageId}`;
+            break;
         case 'db-quotations':
             parentPath = `/admin/quotations/${pageId}`;
             break;
         default:
-            parentPath = `/admin/dynamic-db?open=${pageId}`;
+            parentPath = `/admin/database/${cleanDbId}?open=${pageId}`;
             break;
     }
 

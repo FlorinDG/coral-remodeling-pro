@@ -14,7 +14,7 @@ import { generatePdfBlob } from '@/lib/generate-pdf';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { getInvoiceById } from '@/app/actions/get-invoice';
 import { sendInvoiceToClient, checkClientPeppol } from '@/app/actions/send-invoice';
-import { ensureStripeCheckoutUrl } from '@/app/actions/stripe-checkout';
+import { ensureStripeCheckoutUrl } from '@/app/actions/stripe-payments';
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
@@ -412,12 +412,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         let checkoutUrl = invObj.properties?.['stripeCheckoutUrl'] as string;
 
         if (paymentProvider === 'stripe' && !checkoutUrl && !isCreditNote && !isProforma) {
-            toast.loading('Generating secure online payment link...', { id: 'stripe-checkout-gen' });
+            toast.loading('Generating secure online payment link...', { id: 'stripe-payments-gen' });
             try {
                 const { createInvoiceCheckout } = await import('@/app/actions/stripe-payments');
                 const res = await createInvoiceCheckout(id);
                 if (res.success && res.url) {
-                    toast.success('Payment link generated!', { id: 'stripe-checkout-gen' });
+                    toast.success('Payment link generated!', { id: 'stripe-payments-gen' });
                     checkoutUrl = res.url;
                     // update local store
                     updatePageProperty(invoicesDbId, id, 'stripeCheckoutUrl', res.url);
@@ -427,11 +427,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         stripeCheckoutUrl: res.url
                     };
                 } else {
-                    toast.error(res.error || 'Failed to generate online payment link.', { id: 'stripe-checkout-gen' });
+                    toast.error(res.error || 'Failed to generate online payment link.', { id: 'stripe-payments-gen' });
                 }
             } catch (err: any) {
                 console.error(err);
-                toast.error('Failed to generate online payment link.', { id: 'stripe-checkout-gen' });
+                toast.error('Failed to generate online payment link.', { id: 'stripe-payments-gen' });
             }
         }
         return checkoutUrl;
@@ -747,12 +747,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
-                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
-                    vatRegime={invoice?.properties?.['vatRegime'] as string}
-                    structuredComm={invoice?.properties?.['structuredComm'] as string}
+                    vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                     stripeCheckoutUrl={checkoutUrl}
                 />
             );
@@ -834,12 +834,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     invoiceDate={invoice?.properties?.['invoiceDate'] as string}
-                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
                     dueDate={invoice?.properties?.['dueDate'] as string}
                     docType={String(invoice.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
-                    vatRegime={invoice?.properties?.['vatRegime'] as string}
-                    structuredComm={invoice?.properties?.['structuredComm'] as string}
+                    vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                 />
             );
 
@@ -924,12 +924,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
                     invoiceDate={invoiceDateProp}
-                    deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                    deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
                     dueDate={dueDateProp}
                     docType={String(invoice?.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
-                    vatRegime={invoice?.properties?.['vatRegime'] as string}
-                    structuredComm={invoice?.properties?.['structuredComm'] as string}
+                    vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                    structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                     stripeCheckoutUrl={checkoutUrl}
                 />
             );
@@ -1642,7 +1642,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         isLocked={isLocked}
                         language={docLanguage}
                         onLanguageChange={(lang) => handleUpdateProperty('docLanguage', lang)}
-                        structuredComm={invoice?.properties?.['structuredComm'] as string}
+                        structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                     />
 
                     <div className="mt-8">
@@ -1708,12 +1708,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 invoiceDate={invoice?.properties?.['invoiceDate'] as string}
-                                                deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                                                deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
                                                 vatIncluded={vatIncluded}
-                                                vatRegime={invoice?.properties?.['vatRegime'] as string}
-                                                structuredComm={invoice?.properties?.['structuredComm'] as string}
+                                                vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                                                structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                                                 stripeCheckoutUrl={checkoutUrl}
                                             />
                                         );
@@ -1755,12 +1755,12 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                                                 templateId={tenant?.documentTemplate || 't1'}
                                                 language={docLanguage}
                                                 invoiceDate={invoice?.properties?.['invoiceDate'] as string}
-                                                deliveryDate={invoice?.properties?.['deliveryDate'] as string}
+                                                deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
                                                 dueDate={invoice?.properties?.['dueDate'] as string}
                                                 docType={String(invoice.properties?.['docType'] || '')}
                                                 vatIncluded={vatIncluded}
-                                                vatRegime={invoice?.properties?.['vatRegime'] as string}
-                                                structuredComm={invoice?.properties?.['structuredComm'] as string}
+                                                vatRegime={String(invoice?.properties?.["vatRegime"] || "")}
+                                                structuredComm={String(invoice?.properties?.["structuredComm"] || "")}
                                                 stripeCheckoutUrl={checkoutUrl}
                                             />
                                         );

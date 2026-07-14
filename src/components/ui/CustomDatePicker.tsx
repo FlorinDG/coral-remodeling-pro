@@ -151,7 +151,7 @@ export function CustomDatePicker({ value, onChange, min, placeholder = 'Select d
 
     const minDateStr = min ? min : '';
 
-    const days = [];
+    const days: any[] = [];
 
     // Prev month days
     for (let i = firstDayIndex - 1; i >= 0; i--) {

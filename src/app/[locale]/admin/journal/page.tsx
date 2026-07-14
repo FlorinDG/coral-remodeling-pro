@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useDatabaseStore } from '@/components/admin/database/store';
-import { Block, Block } from '@/components/admin/database/types';
+import { Block } from '@/components/admin/database/types';
 import { 
     PenLine, Search, Loader2, User, Calendar, Briefcase, 
     Users, Layout, Table, Plus, X,
@@ -351,7 +351,7 @@ export default function JournalModulePage() {
                                 useDatabaseStore.getState().createPage(GENERAL_DB_ID, {
                                     title: `Note — ${format(new Date(), 'dd MMM yyyy, HH:mm')}`,
                                     author: authorName || 'System',
-                                }, undefined, undefined, newDraftId);
+                                }, newDraftId);
                             }}
                             className="bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl flex items-center gap-1.5 px-4 py-2 uppercase tracking-wider text-xs shadow-sm hover:shadow transition-all"
                         >

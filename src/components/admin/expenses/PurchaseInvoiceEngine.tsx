@@ -281,8 +281,8 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 currency: String(page.properties.currency || ''),
                 vatRegime: String(page.properties.vatRegime || ''),
                 category: String(page.properties.category || ''),
-                costType: String(page.properties.costType || ''),
-                status: String(page.properties['prop-inv-status'] || 'opt-draft'),
+                costType: String(page.properties.costType || ""), ledgerAccount: String(page.properties.ledgerAccount || ""),
+                
                 notes: String(page.properties.notes || ''),
                 paidDate: String(page.properties.paidDate || ''),
                 paymentMethod: String(page.properties.paymentMethod || ''),
@@ -1203,7 +1203,7 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     </div>
                                 )}
                                 <div className="mt-8">
-                                    <RecordAttachments recordType="expense" recordId={id} />
+                                    <RecordAttachments recordType="expense" recordId={pageId} />
                                 </div>
                             </div>
                         )}

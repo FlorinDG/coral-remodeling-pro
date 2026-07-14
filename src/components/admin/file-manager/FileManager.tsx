@@ -14,6 +14,7 @@ import FileViewerModal from './FileViewerModal';
 const FileDisplayArea = ({
     nodes,
     onFileView,
+    onDeleteFile,
     viewMode
 }: {
     nodes: FileNode[],

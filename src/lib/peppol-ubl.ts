@@ -16,6 +16,7 @@ interface UBLLineItem {
 }
 
 interface UBLInvoiceData {
+    pdfBase64?: string;
     invoiceId: string;
     issueDate: string;       // YYYY-MM-DD
     dueDate: string;         // YYYY-MM-DD

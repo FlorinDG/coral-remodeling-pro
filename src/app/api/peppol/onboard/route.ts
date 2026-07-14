@@ -187,7 +187,7 @@ export async function GET() {
             if (liveStatus && !liveStatus.registered && tenant.peppolId && tenant.eInvoiceApiKey) {
                 try {
                     const lookup = await lookupPeppolParticipant(tenant.peppolId, tenant.eInvoiceApiKey);
-                    if (lookup && lookup.is_valid) {
+                    if (lookup && lookup.classification === 'registered') {
                         liveStatus.registered = true;
                         liveStatus.status = 'ACTIVE (External SMP)';
                     }

@@ -8,7 +8,7 @@ export const NOTION_COLORS = [
   { name: 'blue',    value: '#3b82f6', bg: '#dbeafe' },
   { name: 'red',     value: '#ef4444', bg: '#fee2e2' },
   { name: 'amber',   value: '#f59e0b', bg: '#fef3c7' },
-  { name: 'green',   value: '#22c55e', bg: '#dcfce7' },
+  { name: 'green',   value: '#339989', bg: '#33998920' },
   { name: 'violet',  value: '#8b5cf6', bg: '#ede9fe' },
   { name: 'pink',    value: '#ec4899', bg: '#fce7f3' },
   { name: 'teal',    value: '#14b8a6', bg: '#ccfbf1' },

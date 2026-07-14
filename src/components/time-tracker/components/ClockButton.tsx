@@ -215,7 +215,7 @@ function ClockButtonComponent() {
       <div className="w-full flex flex-col items-center gap-4 md:gap-6">
         {isClockedIn && (
           <div className="animate-fade-in hidden md:block">
-            <div className="bg-secondary/20 border border-secondary/30 rounded-2xl px-8 py-4 animate-timer-glow">
+            <div className="bg-secondary/20 border border-secondary/30 rounded-2xl px-8 py-4">
               <p className="text-sm font-medium text-muted-foreground mb-1 text-center">{t('clock.timeElapsed')}</p>
               <p className="timer-display text-4xl md:text-5xl font-bold text-primary tracking-wider">
                 {formattedTime}
@@ -232,7 +232,7 @@ function ClockButtonComponent() {
             className={`
               w-full max-w-sm h-16 md:h-20 px-6 md:px-12 text-base md:text-xl font-bold rounded-xl md:rounded-2xl transition-all duration-300 shadow-md hover:scale-[1.02] active:scale-[0.98]
               ${isClockedIn 
-                ? 'btn-clock-out bg-rose-600 hover:bg-rose-500 text-white animate-pulse' 
+                ? 'btn-clock-out bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white' 
                 : 'btn-clock-in bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white'
               }
             `}

@@ -362,11 +362,11 @@ export function MySchedule() {
               <div className="p-6 bg-neutral-50 dark:bg-neutral-900 flex flex-col items-center">
                 {activeEntry && selectedShift.clock_entry_id === activeEntry.id ? (
                   <>
-                    <div className="text-4xl font-mono font-bold text-[var(--brand-color,#d35400)] mb-4 tracking-wider animate-pulse">
+                    <div className="text-4xl font-mono font-bold text-[var(--brand-color,#d35400)] mb-4 tracking-wider">
                       {elapsedTime}
                     </div>
                     <Button 
-                      className="w-full h-16 text-lg font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-md transition-all active:scale-95"
+                      className="w-full h-16 text-lg font-bold bg-[var(--brand-color,#d35400)] hover:brightness-110 text-white shadow-md transition-all active:scale-95"
                       onClick={handleClockOut}
                       disabled={isClockingOut}
                     >

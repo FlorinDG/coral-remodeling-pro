@@ -16,7 +16,7 @@ export async function POST(req: Request) {
         const tenantId = (session!.user as any).tenantId;
 
         const body = await req.json();
-        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, isCreditNote, parentInvoiceId, structuredComm, pdfBase64 } = body;
+        const { invoiceId, blocks, client, invoiceTitle, betreft, invoiceDate, dueDate, vatRegime, isCreditNote, parentInvoiceId, structuredComm, pdfBase64, peppolScheme } = body;
 
         // 1. Fetch Tenant (Sender) details from Prisma
         const tenant = await prisma.tenant.findUnique({
@@ -320,9 +320,14 @@ export async function POST(req: Request) {
             sendParams.set('sender_peppol_scheme', '0208');
             sendParams.set('sender_peppol_id', vendorVat.replace('BE', ''));
         }
-        if (customerVat && customerVat.startsWith('BE')) {
-            sendParams.set('receiver_peppol_scheme', '0208');
-            sendParams.set('receiver_peppol_id', customerVat.replace('BE', ''));
+        if (customerVat) {
+            const scheme = peppolScheme || '0208';
+            sendParams.set('receiver_peppol_scheme', scheme);
+            if (scheme === '0208') {
+                sendParams.set('receiver_peppol_id', customerVat.replace('BE', ''));
+            } else {
+                sendParams.set('receiver_peppol_id', customerVat.startsWith('BE') ? customerVat : `BE${customerVat}`);
+            }
         }
         // In test mode, the API needs an email for UBL delivery
         // Pass vendor email as fallback destination

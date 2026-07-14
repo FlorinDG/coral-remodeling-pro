@@ -191,14 +191,44 @@ export async function registerPeppol(tenantId: string, peppolId: string, company
 // ── Peppol Lookup ──
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export async function lookupPeppolParticipant(peppolId: string, tenantApiKey: string): Promise<any> {
-    const res = await fetch(`${BASE_URL}/api/validate/peppol-id?peppol_id=${encodeURIComponent(peppolId)}`, {
-        headers: {
-            'Authorization': `Bearer ${tenantApiKey}`,
-        },
-    });
-    if (!res.ok) return null;
-    return res.json();
+export async function lookupPeppolParticipant(peppolId: string, tenantApiKey: string): Promise<{ classification: 'registered'|'not_registered'|'inconclusive', raw?: any }> {
+    try {
+        const res = await fetch(`${BASE_URL}/api/validate/peppol-id?peppol_id=${encodeURIComponent(peppolId)}`, {
+            headers: {
+                'Authorization': `Bearer ${tenantApiKey}`,
+            },
+        });
+        
+        if (res.status === 404) {
+            return { classification: 'not_registered' };
+        }
+        
+        if (!res.ok) {
+            return { classification: 'inconclusive' };
+        }
+        
+        const body = await res.json();
+        console.log('[peppol-lookup]', peppolId, res.status, JSON.stringify(body));
+        
+        const isRegistered = !!(
+            body.participant_id ||
+            body.registered === true ||
+            body.is_registered === true ||
+            body.valid === true ||
+            body.exists === true ||
+            body.smp === true ||
+            (Array.isArray(body.participants) && body.participants.length > 0) ||
+            (Array.isArray(body.document_types) && body.document_types.length > 0) ||
+            (Array.isArray(body.supported_document_types) && body.supported_document_types.length > 0)
+        );
+
+        return {
+            classification: isRegistered ? 'registered' : 'inconclusive',
+            raw: body
+        };
+    } catch (e) {
+        return { classification: 'inconclusive' };
+    }
 }
 
 // ── Tenant API (Document Operations) ──

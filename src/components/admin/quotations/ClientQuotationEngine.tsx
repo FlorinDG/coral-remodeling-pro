@@ -473,11 +473,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             const clientRecord = clients.find(c => c.id === clientId);
             const clientEmail = String(clientRecord?.email || '');
 
-            if (!clientEmail || clientEmail === 'undefined') {
-                toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
-                setIsSending(false);
-                return;
-            }
+            // Email check removed from here to allow Peppol sends without email
 
             const doc = (
                 <QuotationPDFTemplate
@@ -522,6 +518,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const clientEmail = String(clientRecord?.email || '');
         const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
         const projectName = betreft || quotationTitle || 'Offerte';
+
+        if (!clientEmail || clientEmail === 'undefined') {
+            toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
+            return;
+        }
 
         setIsSending(true);
         try {

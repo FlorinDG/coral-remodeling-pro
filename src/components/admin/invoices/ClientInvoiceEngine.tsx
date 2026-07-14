@@ -346,21 +346,29 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         return tenant?.documentLanguage || 'nl';
     }, [invoice, clients, clientId, tenant?.documentLanguage]);
 
-    const [peppolStatusMessage, setPeppolStatusMessage] = useState<string | null>(null);
+    const [peppolDisabledReason, setPeppolDisabledReason] = useState<string | null>(null);
+    const [peppolUnknownWarning, setPeppolUnknownWarning] = useState<string | null>(null);
+    const [peppolResolvedScheme, setPeppolResolvedScheme] = useState<'0208' | '9925' | undefined>(undefined);
 
     useEffect(() => {
+        setPeppolDisabledReason(null);
+        setPeppolUnknownWarning(null);
+        setPeppolResolvedScheme(undefined);
+
         if (!clientRecord?.vatNumber) {
-            setPeppolStatusMessage('Geen BTW nummer gekend voor deze klant.');
+            setPeppolDisabledReason('Geen BTW nummer gekend voor deze klant.');
             return;
         }
         checkClientPeppol(clientRecord.vatNumber).then(res => {
-            if (res.isRegistered) {
-                setPeppolStatusMessage(null); // All good
+            if (res.status === 'registered') {
+                setPeppolResolvedScheme(res.scheme as '0208' | '9925');
+            } else if (res.status === 'unknown') {
+                setPeppolUnknownWarning(res.message || 'Peppol-status niet bevestigd — verzenden op eigen risico');
             } else {
-                setPeppolStatusMessage(res.message || 'Klant is niet geregistreerd op Peppol.');
+                setPeppolDisabledReason(res.message || 'Klant is niet geregistreerd op Peppol.');
             }
         }).catch(() => {
-            setPeppolStatusMessage('Fout bij verifiëren van Peppol status.');
+            setPeppolUnknownWarning('Fout bij verifiëren van Peppol status.');
         });
     }, [clientRecord?.vatNumber]);
 
@@ -725,11 +733,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             const clientName = String(`${clientRecord?.firstName || ''} ${clientRecord?.lastName || ''}`.trim() || 'Klant');
             const projectName = betreft || invoiceTitle || 'Factuur';
 
-            if (!clientEmail || clientEmail === 'undefined') {
-                toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
-                setIsSending(false);
-                return;
-            }
+            // Email check removed from here to allow Peppol sends without email
 
             const doc = (
                 <InvoicePDFTemplate
@@ -782,6 +786,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
         const remainingDue = Math.max(0, grandTotalIncl - creditedTotal);
         const displayTotal = isCreditNote ? grandTotalIncl : remainingDue;
         const formattedTotal = new Intl.NumberFormat('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(displayTotal);
+
+        if (!clientEmail || clientEmail === 'undefined') {
+            toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
+            return;
+        }
 
         setIsSending(true);
         try {
@@ -953,6 +962,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
                     parentInvoiceId,
+                    peppolScheme: peppolResolvedScheme,
                     client: {
                         firstName: selectedClient.firstName,
                         lastName: selectedClient.lastName,
@@ -1025,6 +1035,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     structuredComm: invoice?.properties?.['structuredComm'] as string | undefined,
                     isCreditNote,
                     parentInvoiceId,
+                    peppolScheme: peppolResolvedScheme,
                     client: {
                         firstName: selectedClient.firstName,
                         lastName: selectedClient.lastName,
@@ -1936,7 +1947,8 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     setShowSendModal(false);
                     await handleSendPeppol();
                 }}
-                peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : peppolStatusMessage}
+                peppolDisabledReason={(!clientId || isLocked || isProforma) ? 'Factuur kan momenteel niet via Peppol worden verzonden.' : peppolDisabledReason}
+                peppolUnknownWarning={peppolUnknownWarning}
                 clientEmail={clients.find(c => c.id === clientId)?.email || ''}
                 defaultSubject={`${t('subject_invoice', docLanguage)}: ${betreft || invoiceTitle} — ${tenant?.commercialName || tenant?.companyName || 'Coral'}`}
                 defaultBody={t('email_invoice_body', docLanguage)}

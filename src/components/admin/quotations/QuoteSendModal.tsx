@@ -18,6 +18,7 @@ interface QuoteSendModalProps {
     documentFileName: string;
     isSending: boolean;
     peppolDisabledReason?: string | null;
+    peppolUnknownWarning?: string | null;
 }
 
 export function QuoteSendModal({
@@ -33,11 +34,17 @@ export function QuoteSendModal({
     documentType,
     documentFileName,
     isSending,
-    peppolDisabledReason
+    peppolDisabledReason,
+    peppolUnknownWarning
 }: QuoteSendModalProps) {
     const [subject, setSubject] = useState(defaultSubject);
     const [body, setBody] = useState(defaultBody);
-    const [channel, setChannel] = useState<'email' | 'peppol'>('email');
+    const [channel, setChannel] = useState<'email' | 'peppol'>(() => {
+        if (onSendPeppol && (!clientEmail || clientEmail === 'undefined') && !peppolDisabledReason) {
+            return 'peppol';
+        }
+        return 'email';
+    });
     const [availableFiles, setAvailableFiles] = useState<{ key: string, filename: string, size: number }[]>([]);
     const [selectedFileKeys, setSelectedFileKeys] = useState<Set<string>>(new Set());
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
@@ -108,10 +115,15 @@ export function QuoteSendModal({
         if (isOpen) {
             setSubject(defaultSubject);
             setBody(defaultBody);
+            if (onSendPeppol && (!clientEmail || clientEmail === 'undefined') && !peppolDisabledReason) {
+                setChannel('peppol');
+            } else {
+                setChannel('email');
+            }
             setSelectedFileKeys(new Set());
             loadFiles();
         }
-    }, [isOpen, defaultSubject, defaultBody, loadFiles]);
+    }, [isOpen, defaultSubject, defaultBody, loadFiles, onSendPeppol, clientEmail, peppolDisabledReason]);
 
     if (!isOpen) return null;
 
@@ -172,6 +184,13 @@ export function QuoteSendModal({
                                         <span className="text-red-500 font-medium flex items-center justify-center gap-2">
                                             <X className="w-4 h-4" /> {peppolDisabledReason}
                                         </span>
+                                    ) : peppolUnknownWarning ? (
+                                        <>
+                                            <span className="text-orange-500 font-medium flex items-center justify-center gap-2 mb-2">
+                                                <X className="w-4 h-4" /> {peppolUnknownWarning}
+                                            </span>
+                                            "Dit document wordt veilig elektronisch verzonden naar uw klant via het Peppol netwerk. Bijlagen en berichttekst worden genegeerd."
+                                        </>
                                     ) : (
                                         "Dit document wordt veilig elektronisch verzonden naar uw klant via het Peppol netwerk. Bijlagen en berichttekst worden genegeerd."
                                     )}

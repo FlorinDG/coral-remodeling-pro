@@ -67,8 +67,7 @@ export function calculateInvoiceTotals(
             if (b.type === 'line' || b.type === 'article' || b.type === 'bestek') {
                 const price = (b.unitPrice !== undefined ? b.unitPrice : b.verkoopPrice) ?? 0;
                 const vDeltas = getVariantDeltas(b);
-                const lineTotal = (price + vDeltas) * nextMultiplier;
-                subtotal += lineTotal;
+                const lineGross = (price + vDeltas) * nextMultiplier;
 
                 const lineVatRate = b.vatRate ?? 21;
                 const isLineMedecontractant = !!b.vatMedecontractant;
@@ -80,8 +79,11 @@ export function calculateInvoiceTotals(
                     effectiveRate = vatRegime === 'medecontractant' ? 0 : parseFloat(vatRegime || '21');
                 }
 
+                const base = b.vatIncluded ? (lineGross / (1 + effectiveRate / 100)) : lineGross;
+                subtotal += base;
+
                 const existing = vatMap.get(effectiveRate) || { base: 0, isMedecontractant: false };
-                existing.base += lineTotal;
+                existing.base += base;
                 if (isLineMedecontractant || (vatCalcMode === 'total' && vatRegime === 'medecontractant')) {
                     existing.isMedecontractant = true;
                 }

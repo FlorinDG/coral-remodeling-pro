@@ -88,6 +88,7 @@ export interface Block {
     unitPrice?: number;   // Unit price excl. VAT (invoice-specific, replaces verkoopPrice column)
     vatRate?: number;     // Per-line VAT rate: 21, 12, 6, 0 (default 21)
     vatMedecontractant?: boolean; // Per-line medecontractant flag (BTW verlegd → 0%)
+    vatIncluded?: boolean; // Per-line VAT inclusive flag
 
     children?: Block[]; // Compound nesting architecture (essential for `section` / `subsection` / `post` blocks)
 

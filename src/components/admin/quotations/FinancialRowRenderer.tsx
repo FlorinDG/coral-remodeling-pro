@@ -770,7 +770,9 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
                     {/* 6. Total (TOTAL HT) */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[100px] shrink-0 self-start mt-0.5 relative border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
-                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">Total</label>
+                        <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-right @[600px]:pr-4 cursor-default">
+                            Total {block.vatIncluded && <span className="text-[9px] text-orange-500 tracking-normal normal-case opacity-80 ml-0.5">(incl)</span>}
+                        </label>
                         <div className="w-24 @[600px]:w-full flex justify-end items-center opacity-80 group-focus-within:opacity-100 transition-opacity pr-1 py-0.5">
                             <span className={`font-normal text-lg tracking-tight ${childrenTotal !== undefined ? 'text-orange-600 dark:text-orange-400' : 'text-black dark:text-white tabular-nums'}`}>
                                 {childrenTotal !== undefined
@@ -781,21 +783,32 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                         </div>
                     </div>
 
-                    {/* 7. Per-line VAT rate selector (only visible in 'per line' mode) */}
+                    {/* 7. Per-line VAT rate selector & Inclusive toggle (only visible in 'per line' mode) */}
                     {vatCalcMode === 'lines' && (
                         <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[58px] shrink-0 self-start mt-0.5 py-1.5 @[600px]:py-0">
                             <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center" title={t('vat', language)}>{t('vat', language)}</label>
-                            <select
-                                value={block.vatRate ?? 21}
-                                onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
-                                className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
-                                style={{ textAlign: 'right', textAlignLast: 'right' }}
-                            >
-                                <option value={21}>21%</option>
-                                <option value={12}>12%</option>
-                                <option value={6}>6%</option>
-                                <option value={0}>0%</option>
-                            </select>
+                            <div className="flex flex-col items-end @[600px]:items-center gap-1">
+                                <select
+                                    value={block.vatRate ?? 21}
+                                    onChange={(e) => onUpdate({ vatRate: parseInt(e.target.value) })}
+                                    className="bg-transparent border-none text-base text-neutral-600 dark:text-neutral-300 focus:outline-none focus:ring-0 font-medium cursor-pointer appearance-none text-right @[600px]:text-center py-0.5 pr-1 pl-0 w-24 @[600px]:w-full"
+                                    style={{ textAlign: 'right', textAlignLast: 'right' }}
+                                >
+                                    <option value={21}>21%</option>
+                                    <option value={12}>12%</option>
+                                    <option value={6}>6%</option>
+                                    <option value={0}>0%</option>
+                                </select>
+                                <label className="flex items-center gap-1 cursor-pointer text-[9px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors -mt-1 pb-1">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={!!block.vatIncluded}
+                                        onChange={(e) => onUpdate({ vatIncluded: e.target.checked })}
+                                        className="w-3 h-3 rounded-[2px] border-neutral-300 dark:border-neutral-700 text-[var(--brand-color,#d35400)] focus:ring-[var(--brand-color,#d35400)] cursor-pointer bg-transparent"
+                                    />
+                                    <span className="whitespace-nowrap uppercase tracking-wider font-bold">Incl.</span>
+                                </label>
+                            </div>
                         </div>
                     )}
                 </div>

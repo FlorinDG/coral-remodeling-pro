@@ -13,8 +13,7 @@ import InvoiceFooterReport from './InvoiceFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { getInvoiceById } from '@/app/actions/get-invoice';
-import { sendInvoiceToClient, checkClientPeppol } from '@/app/actions/send-invoice';
-import { ensureStripeCheckoutUrl } from '@/app/actions/stripe-payments';
+import { checkClientPeppol, sendInvoiceToClient } from '@/app/actions/send-invoice';
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
 import { updateInvoiceContact } from '@/app/actions/update-invoice';
 import { createPrismaInvoice } from '@/app/actions/create-invoice';
@@ -923,9 +922,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     tenantProfile={tenant}
                     templateId={tenant?.documentTemplate || 't1'}
                     language={docLanguage}
-                    invoiceDate={invoiceDateProp}
+                    invoiceDate={String(invoiceDateProp)}
                     deliveryDate={String(invoice?.properties?.["deliveryDate"] || "")}
-                    dueDate={dueDateProp}
+                    dueDate={String(dueDateProp)}
                     docType={String(invoice?.properties?.['docType'] || '')}
                     vatIncluded={vatIncluded}
                     vatRegime={String(invoice?.properties?.["vatRegime"] || "")}

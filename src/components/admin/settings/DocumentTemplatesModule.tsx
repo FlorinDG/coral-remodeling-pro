@@ -262,6 +262,8 @@ export default function DocumentTemplatesModule() {
                     blocks={PREVIEW_BLOCKS}
                     quotationTitle="OFF-2026-001"
                     betreft="Sample preview — Interior renovation project"
+                    grandTotalExcl={0}
+                    vatAmount={0}
                     clientInfo={{
                         name: profile.companyName || 'Sample Client BV',
                         address: `${profile.street || 'Example Street 42'}, ${profile.postalCode || '1000'} ${profile.city || 'Brussels'}`,

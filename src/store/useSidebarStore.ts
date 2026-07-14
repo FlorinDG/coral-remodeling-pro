@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import {
     LayoutDashboard,
     Globe,
@@ -58,17 +57,17 @@ export const getIconComponent = (iconName: string) => {
 
 export const defaultSidebarItems: SidebarItem[] = [
     { id: 'dashboard',  iconName: 'LayoutDashboard', label: 'DASHBOARD',  href: '/admin/dashboard' },
-    { id: 'journal',    iconName: 'PenLine',          label: 'JOURNAL',    href: '/admin/journal' },
-    { id: 'email',      iconName: 'Mail',             label: 'EMAIL',      href: '/admin/email' },
-    { id: 'financials', iconName: 'Landmark',         label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
-    { id: 'library',    iconName: 'Library',          label: 'LIBRARY',    href: '/admin/library/articles' },
-    { id: 'contacts',   iconName: 'Users',            label: 'CONTACTS',   href: '/admin/contacts' },
-    { id: 'suppliers',  iconName: 'Truck',            label: 'SUPPLIERS',  href: '/admin/suppliers' },
     { id: 'sales',      iconName: 'TrendingUp',       label: 'SALES',      href: '/admin/crm' },
     { id: 'quotations', iconName: 'FileSignature',    label: 'QUOTATIONS', href: '/admin/quotations' },
     { id: 'projects',   iconName: 'Briefcase',        label: 'PROJECTS',   href: '/admin/projects-management' },
-    { id: 'portals',    iconName: 'UsersRound',       label: 'PORTALS',    href: '/admin/portals' },
+    { id: 'financials', iconName: 'Landmark',         label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
+    { id: 'contacts',   iconName: 'Users',            label: 'CONTACTS',   href: '/admin/contacts' },
+    { id: 'suppliers',  iconName: 'Truck',            label: 'SUPPLIERS',  href: '/admin/suppliers' },
     { id: 'hr',         iconName: 'CircleDollarSign', label: 'HR',         href: '/admin/hr/time-tracker' },
+    { id: 'portals',    iconName: 'UsersRound',       label: 'PORTALS',    href: '/admin/portals' },
+    { id: 'library',    iconName: 'Library',          label: 'LIBRARY',    href: '/admin/library/articles' },
+    { id: 'journal',    iconName: 'PenLine',          label: 'JOURNAL',    href: '/admin/journal' },
+    { id: 'email',      iconName: 'Mail',             label: 'EMAIL',      href: '/admin/email' },
     { id: 'calendar',   iconName: 'Calendar',         label: 'CALENDAR',   href: '/admin/calendar' },
     { id: 'tasks',      iconName: 'BriefcaseBusiness',label: 'TASKS',      href: '/admin/tasks' },
     { id: 'files',      iconName: 'Library',          label: 'FILES',      href: '/admin/files' },
@@ -83,49 +82,15 @@ interface SidebarStore {
     resetToDefault: () => void;
 }
 
-export const useSidebarStore = create<SidebarStore>()(
-    persist(
-        (set) => ({
-            items: defaultSidebarItems,
-            removedIds: [],
-            setItems: (items) => set(() => {
-                const currentIds = new Set(items.map(i => i.id));
-                const removedIds = defaultSidebarItems
-                    .map(di => di.id)
-                    .filter(id => !currentIds.has(id));
-                return { items, removedIds };
-            }),
-            resetToDefault: () => set({ items: defaultSidebarItems, removedIds: [] }),
-        }),
-        {
-            name: 'admin-sidebar-storage',
-            version: 21, // bump: non-destructive migration
-            migrate: (persistedState: any, version: number) => {
-                const state = persistedState || {};
-                let items = Array.isArray(state.items) ? [...state.items] : [];
-                const removedIds = new Set(Array.isArray(state.removedIds) ? state.removedIds : []);
-
-                if (items.length === 0) {
-                    items = [...defaultSidebarItems];
-                } else {
-                    const existingIds = new Set(items.map(i => i.id));
-                    
-                    defaultSidebarItems.forEach((defaultItem, defaultIndex) => {
-                        if (!existingIds.has(defaultItem.id) && !removedIds.has(defaultItem.id)) {
-                            // Insert missing item near its original default position
-                            const insertAt = Math.min(defaultIndex, items.length);
-                            items.splice(insertAt, 0, defaultItem);
-                            existingIds.add(defaultItem.id);
-                        }
-                    });
-                }
-
-                return {
-                    ...state,
-                    items,
-                    removedIds: Array.from(removedIds)
-                } as SidebarStore;
-            }
-        }
-    )
-);
+export const useSidebarStore = create<SidebarStore>((set) => ({
+    items: defaultSidebarItems,
+    removedIds: [],
+    setItems: (items) => set(() => {
+        const currentIds = new Set(items.map(i => i.id));
+        const removedIds = defaultSidebarItems
+            .map(di => di.id)
+            .filter(id => !currentIds.has(id));
+        return { items, removedIds };
+    }),
+    resetToDefault: () => set({ items: defaultSidebarItems, removedIds: [] }),
+}));

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useGeolocation } from '@/components/time-tracker/hooks/useGeolocation';
 import { toast } from 'sonner';
 import { useDatabaseStore } from '@/components/admin/database/store';
+import { useTenant } from '@/context/TenantContext';
 import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
@@ -36,7 +37,7 @@ export function SiteVisitModal({ open, onClose, projectId, projectName }: SiteVi
   const { requestLocation, loading: locationLoading, location } = useGeolocation();
   const { userId } = useUserRoles();
   const createPage = useDatabaseStore(state => state.createPage);
-  const resolveDbId = useDatabaseStore(state => state.resolveDbId);
+  const { resolveDbId } = useTenant();
   const databases = useDatabaseStore(state => state.databases);
   
   const clientsDbId = resolveDbId('db-clients');

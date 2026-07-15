@@ -55,7 +55,7 @@ export default function Index({ embedded = false }: IndexProps) {
 
           <div className="animate-fade-in flex flex-col items-center justify-center gap-4" style={{ animationDelay: '200ms' }}>
             <ClockButton />
-            {(user?.role === 'TENANT_ENTERPRISE_OWNER' || user?.role === 'TENANT_ENTERPRISE_ADMIN') && (
+            {(profile?.role === 'TENANT_ENTERPRISE_OWNER' || profile?.role === 'TENANT_ENTERPRISE_ADMIN') && (
               <Button variant="outline" className="rounded-full" onClick={() => setSiteVisitOpen(true)}>
                 <MapPin className="w-4 h-4 mr-2" />
                 Record Site Visit
@@ -64,7 +64,7 @@ export default function Index({ embedded = false }: IndexProps) {
           </div>
         </section>
 
-        {(user?.role === 'TENANT_ENTERPRISE_OWNER' || user?.role === 'TENANT_ENTERPRISE_ADMIN') && (
+        {(profile?.role === 'TENANT_ENTERPRISE_OWNER' || profile?.role === 'TENANT_ENTERPRISE_ADMIN') && (
           <SiteVisitModal 
             open={siteVisitOpen} 
             onClose={() => setSiteVisitOpen(false)} 

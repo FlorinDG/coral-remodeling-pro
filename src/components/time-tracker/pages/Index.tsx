@@ -10,6 +10,7 @@ import { MySchedule } from '@/components/time-tracker/components/MySchedule';
 import { Announcements } from '@/components/time-tracker/components/Announcements';
 import { Documents } from '@/components/time-tracker/components/Documents';
 import { useAuth } from '@/components/time-tracker/contexts/AuthContext';
+import { useUserRoles } from '@/components/time-tracker/hooks/useUserRoles';
 import { Button } from '@/components/ui/button';
 import { MapPin } from 'lucide-react';
 import { SiteVisitModal } from '@/components/time-tracker/components/SiteVisitModal';
@@ -22,6 +23,7 @@ interface IndexProps {
 export default function Index({ embedded = false }: IndexProps) {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
+  const { isAdmin } = useUserRoles();
   const [siteVisitOpen, setSiteVisitOpen] = useState(false);
 
   // Native push notifications callout removed per user request.
@@ -55,7 +57,7 @@ export default function Index({ embedded = false }: IndexProps) {
 
           <div className="animate-fade-in flex flex-col items-center justify-center gap-4" style={{ animationDelay: '200ms' }}>
             <ClockButton />
-            {(profile?.role === 'TENANT_ENTERPRISE_OWNER' || profile?.role === 'TENANT_ENTERPRISE_ADMIN') && (
+            {isAdmin && (
               <Button variant="outline" className="rounded-full" onClick={() => setSiteVisitOpen(true)}>
                 <MapPin className="w-4 h-4 mr-2" />
                 Record Site Visit
@@ -64,7 +66,7 @@ export default function Index({ embedded = false }: IndexProps) {
           </div>
         </section>
 
-        {(profile?.role === 'TENANT_ENTERPRISE_OWNER' || profile?.role === 'TENANT_ENTERPRISE_ADMIN') && (
+        {isAdmin && (
           <SiteVisitModal 
             open={siteVisitOpen} 
             onClose={() => setSiteVisitOpen(false)} 

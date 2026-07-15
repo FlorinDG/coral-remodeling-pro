@@ -40,6 +40,29 @@ export interface ClockEntry {
   updated_at?: string;
 }
 
+function addSnake(e: ClockEntry): ClockEntry {
+  return {
+    ...e,
+    user_id: e.userId,
+    clock_in_time: e.clockInTime,
+    clock_out_time: e.clockOutTime,
+    shiftId: e.shiftId,
+    clock_in_latitude: e.clockInLatitude,
+    clock_in_longitude: e.clockInLongitude,
+    clock_out_latitude: e.clockOutLatitude,
+    clock_out_longitude: e.clockOutLongitude,
+    task_description: e.taskDescription,
+    requires_approval: e.requiresApproval,
+    approval_status: e.approvalStatus,
+    approved_by: e.approvedBy,
+    approved_at: e.approvedAt,
+    created_at: e.createdAt,
+    updated_at: e.updatedAt,
+    no_break: e.noBreak,
+    photos: e.photos,
+  };
+}
+
 export function useClockEntries() {
   const queryClient = useQueryClient();
 

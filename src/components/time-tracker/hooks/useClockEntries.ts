@@ -43,7 +43,7 @@ export interface ClockEntry {
 export function useClockEntries() {
   const queryClient = useQueryClient();
 
-  const { data: entries = [], isLoading: loading, error, refetch } = useQuery({
+  const { data: entries = [] as ClockEntry[], isLoading: loading, error, refetch } = useQuery<ClockEntry[]>({
     queryKey: ['clock-entries'],
     queryFn: async () => {
       const data = await hrList<ClockEntry>('clock-entries');

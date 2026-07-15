@@ -17,17 +17,9 @@ const queryClient = new QueryClient();
 export default function WorkHubHomePage() {
     return (
         <div className="time-tracker-theme">
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider>
-                    <AuthProvider>
-                        <TooltipProvider>
-                            <div className="max-w-4xl mx-auto px-4 py-4">
-                                <Index embedded={true} />
-                            </div>
-                        </TooltipProvider>
-                    </AuthProvider>
-                </ThemeProvider>
-            </QueryClientProvider>
+            <div className="max-w-4xl mx-auto px-4 py-4">
+                <Index embedded={true} />
+            </div>
         </div>
     );
 }

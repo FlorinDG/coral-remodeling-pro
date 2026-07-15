@@ -1,5 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
+import { hrList, hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hrList, hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 
 export interface ClockEntry {
@@ -40,99 +42,68 @@ export interface ClockEntry {
 }
 
 export function useClockEntries() {
-  const [entries, setEntries] = useState<ClockEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const queryClient = useQueryClient();
 
-  function addSnake(e: ClockEntry): ClockEntry {
-    return {
-      ...e,
-      user_id: e.userId,
-      clock_in_time: e.clockInTime,
-      clock_out_time: e.clockOutTime,
-      shiftId: e.shiftId,
-      clock_in_latitude: e.clockInLatitude,
-      clock_in_longitude: e.clockInLongitude,
-      clock_out_latitude: e.clockOutLatitude,
-      clock_out_longitude: e.clockOutLongitude,
-      task_description: e.taskDescription,
-      requires_approval: e.requiresApproval,
-      approval_status: e.approvalStatus,
-      approved_by: e.approvedBy,
-      approved_at: e.approvedAt,
-      created_at: e.createdAt,
-      updated_at: e.updatedAt,
-      no_break: e.noBreak,
-      photos: e.photos,
-    };
-  }
-
-  const fetchEntries = useCallback(async () => {
-    try {
-      setLoading(true);
+  const { data: entries = [], isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['clock-entries'],
+    queryFn: async () => {
       const data = await hrList<ClockEntry>('clock-entries');
-      setEntries(data.map(addSnake));
-      setError(null);
-    } catch (err: any) {
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+      return data.map(addSnake);
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
   const activeEntry = useMemo(() => {
     return entries.find(e => !e.clockOutTime) || null;
   }, [entries]);
 
-  const clockIn = useCallback(async (data: {
-    clockInLatitude?: number;
-    clockInLongitude?: number;
-    taskDescription?: string;
-    shiftId?: string;
-  }) => {
-    try {
+  const clockInMutation = useMutation({
+    mutationFn: async (data: {
+      clockInLatitude?: number;
+      clockInLongitude?: number;
+      taskDescription?: string;
+      shiftId?: string;
+    }) => {
       const entry = await hrCreate<ClockEntry>('clock-entries', {
         clockInTime: new Date().toISOString(),
         ...data,
       });
-      const enriched = addSnake(entry);
-      setEntries(prev => [enriched, ...prev]);
-      return { data: enriched, error: null };
-    } catch (err: any) {
-      return { data: null, error: err };
+      return addSnake(entry);
+    },
+    onSuccess: (newEntry) => {
+      queryClient.setQueryData<ClockEntry[]>(['clock-entries'], (old = []) => [newEntry, ...old]);
+      queryClient.invalidateQueries({ queryKey: ['clock-entries'] });
     }
-  }, []);
+  });
 
-  const clockOut = useCallback(async (data?: {
-    clockOutLatitude?: number;
-    clockOutLongitude?: number;
-    taskDescription?: string;
-    photos?: File[];
-    noBreak?: boolean;
-  }) => {
-    if (!activeEntry) return { data: null, error: new Error('No active entry') };
-    try {
+  const clockOutMutation = useMutation({
+    mutationFn: async (data?: {
+      clockOutLatitude?: number;
+      clockOutLongitude?: number;
+      taskDescription?: string;
+      photos?: File[];
+      noBreak?: boolean;
+    }) => {
+      const currentEntries = queryClient.getQueryData<ClockEntry[]>(['clock-entries']) || [];
+      const currentActive = currentEntries.find(e => !e.clockOutTime);
+      if (!currentActive) throw new Error('No active entry');
+
       let photoUrls: string[] = [];
-      
-      // Upload photos if any
       if (data?.photos && data.photos.length > 0) {
         const uploadPromises = data.photos.map(async (file) => {
           const formData = new FormData();
           formData.append('file', file);
           
           const { uploadFileAction } = await import('@/app/actions/files');
-          const result = await uploadFileAction(formData, 'hr', activeEntry.id);
+          const result = await uploadFileAction(formData, 'hr', currentActive.id);
           if (!result.success || !result.key) throw new Error(result.error || 'Upload failed');
           return result.key;
         });
         photoUrls = await Promise.all(uploadPromises);
       }
 
-      const updated = await hrUpdate<ClockEntry>('clock-entries', activeEntry.id, {
+      const updated = await hrUpdate<ClockEntry>('clock-entries', currentActive.id, {
         clockOutTime: new Date().toISOString(),
         taskDescription: data?.taskDescription,
         clockOutLatitude: data?.clockOutLatitude,
@@ -140,22 +111,42 @@ export function useClockEntries() {
         photos: photoUrls.length > 0 ? photoUrls : undefined,
         noBreak: data?.noBreak,
       });
-      const enriched = addSnake(updated);
-      setEntries(prev => prev.map(e => e.id === enriched.id ? enriched : e));
-      return { data: enriched, error: null };
+      return addSnake(updated);
+    },
+    onSuccess: (updatedEntry) => {
+      queryClient.setQueryData<ClockEntry[]>(['clock-entries'], (old = []) => 
+        old.map(e => e.id === updatedEntry.id ? updatedEntry : e)
+      );
+      queryClient.invalidateQueries({ queryKey: ['clock-entries'] });
+    }
+  });
+
+  const clockIn = async (data: any) => {
+    try {
+      const res = await clockInMutation.mutateAsync(data);
+      return { data: res, error: null };
+    } catch (err: any) {
+      return { data: null, error: err };
+    }
+  };
+
+  const clockOut = async (data?: any) => {
+    try {
+      const res = await clockOutMutation.mutateAsync(data);
+      return { data: res, error: null };
     } catch (err: any) {
       console.error('[useClockEntries] Clock out error:', err);
       return { data: null, error: err };
     }
-  }, [activeEntry]);
+  };
 
   return {
     entries,
     activeEntry,
     loading,
-    error,
+    error: error as Error | null,
     clockIn,
     clockOut,
-    refetch: fetchEntries,
+    refetch,
   };
 }

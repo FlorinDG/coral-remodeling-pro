@@ -17,18 +17,10 @@ const queryClient = new QueryClient();
 export default function WorkHubSchedulePage() {
     return (
         <div className="time-tracker-theme">
-            <QueryClientProvider client={queryClient}>
-                <ThemeProvider>
-                    <AuthProvider>
-                        <TooltipProvider>
-                            <div className="max-w-6xl mx-auto px-4 py-4">
-                                <h1 className="text-xl font-black tracking-tight mb-4 text-neutral-900 dark:text-white">Workforce Schedule</h1>
-                                <ScheduleView />
-                            </div>
-                        </TooltipProvider>
-                    </AuthProvider>
-                </ThemeProvider>
-            </QueryClientProvider>
+            <div className="max-w-6xl mx-auto px-4 py-4">
+                <h1 className="text-xl font-black tracking-tight mb-4 text-neutral-900 dark:text-white">Workforce Schedule</h1>
+                <ScheduleView />
+            </div>
         </div>
     );
 }

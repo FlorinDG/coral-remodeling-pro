@@ -2,6 +2,7 @@ import AuthProvider from "@/components/AuthProvider";
 import { getGlobalDatabases } from "@/app/actions/global-databases";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import WorkHubShell from "@/components/workhub/WorkHubShell";
+import { WorkHubProviders } from "@/components/workhub/WorkHubProviders";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
 import { provisionLockedDatabases } from "@/lib/provisionTenantDbs";
@@ -95,19 +96,23 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
 
         return (
             <AuthProvider>
-                <GlobalDatabaseSyncer databases={databases} />
-                <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
-                    {children}
-                </WorkHubShell>
+                <WorkHubProviders>
+                    <GlobalDatabaseSyncer databases={databases} />
+                    <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
+                        {children}
+                    </WorkHubShell>
+                </WorkHubProviders>
             </AuthProvider>
         );
     } catch (e) {
         console.error('[workhub layout] Fetch failed:', e);
         return (
             <AuthProvider>
-                <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
-                    {children}
-                </WorkHubShell>
+                <WorkHubProviders>
+                    <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds}>
+                        {children}
+                    </WorkHubShell>
+                </WorkHubProviders>
             </AuthProvider>
         );
     }

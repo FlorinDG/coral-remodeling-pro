@@ -64,7 +64,7 @@ export const defaultSidebarItems: SidebarItem[] = [
     { id: 'financials', iconName: 'Landmark',         label: 'FINANCIALS', href: '/admin/financials/expenses/invoices' },
     { id: 'contacts',   iconName: 'Users',            label: 'CONTACTS',   href: '/admin/contacts' },
     { id: 'suppliers',  iconName: 'Truck',            label: 'SUPPLIERS',  href: '/admin/suppliers' },
-    { id: 'hr',         iconName: 'CircleDollarSign', label: 'HR',         href: '/admin/hr/time-tracker' },
+    { id: 'hr',         iconName: 'CircleDollarSign', label: 'HR',         href: '/workhub' },
     { id: 'portals',    iconName: 'UsersRound',       label: 'PORTALS',    href: '/admin/portals' },
     { id: 'library',    iconName: 'Library',          label: 'LIBRARY',    href: '/admin/library/articles' },
     { id: 'journal',    iconName: 'PenLine',          label: 'JOURNAL',    href: '/admin/journal' },

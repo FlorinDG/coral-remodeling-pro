@@ -382,7 +382,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
 
     return (
         <div className="@container flex flex-col w-full border-b border-neutral-200 dark:border-neutral-800 bg-transparent group focus-within:bg-neutral-50/50 dark:focus-within:bg-[#111] transition-colors pb-0">
-            <div className="flex flex-col @[980px]:flex-row items-stretch @[980px]:items-start w-full pt-1 pb-0.5 px-2 gap-4">
+            <div className="flex flex-col @[820px]:flex-row items-stretch @[820px]:items-start w-full pt-1 pb-0.5 px-2 gap-4">
 
                 {/* 1. Item Name & Rich Text Context */}
                 <div className="flex flex-col gap-0.5 flex-1 shrink relative mt-0.5 min-w-[280px] w-full">
@@ -544,7 +544,7 @@ export default function FinancialRowRenderer({ block, databaseId, onUpdate, chil
                 })()}
 
                 {/* Metric columns group that wraps on narrow screens */}
-                <div className="flex flex-col @[600px]:flex-row items-stretch @[600px]:items-center gap-2 @[600px]:gap-3 w-full @[980px]:w-auto mt-2.5 @[980px]:mt-0">
+                <div className="flex flex-col @[600px]:flex-row items-stretch @[600px]:items-center gap-2 @[600px]:gap-3 w-full @[820px]:w-auto mt-2.5 @[820px]:mt-0">
                     {/* 1.5 Type / Category Selector */}
                     <div className="flex flex-row items-center justify-between w-full @[600px]:flex-col @[600px]:gap-0.5 @[600px]:w-[75px] shrink-0 self-start mt-0.5 border-b border-neutral-200/60 dark:border-neutral-850 @[600px]:border-b-0 py-1.5 @[600px]:py-0">
                         <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest text-left @[600px]:text-center">Type</label>

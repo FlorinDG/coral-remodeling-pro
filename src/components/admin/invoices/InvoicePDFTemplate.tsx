@@ -38,13 +38,7 @@ function resolveDocType(invoiceTitle: string, lang: string, docType?: string) {
         amountLabel: isCreditNote
             ? (lang === 'nl' ? 'Te vergoeden bedrag' : lang === 'fr' ? 'Montant \u00e0 rembourser' : 'Amount to Refund')
             : t('amount_due', lang),
-        legalText: isCreditNote
-            ? (lang === 'nl'
-                ? 'Deze creditnota vervangt het oorspronkelijk gefactureerd bedrag en wordt verrekend met de volgende factuur of terugbetaald.'
-                : lang === 'fr'
-                    ? 'Cette note de cr\u00e9dit remplace le montant initialement factur\u00e9 et sera d\u00e9duite de la prochaine facture ou rembours\u00e9e.'
-                    : 'This credit note replaces the originally invoiced amount and will be deducted from the next invoice or refunded.')
-            : undefined,
+        legalText: undefined, // credit notes carry no payment legal line (Florin 2026-07-12); regular-invoice legal text comes from MEDECONTRACTANT_TEXT etc.
     };
 }
 
@@ -153,7 +147,7 @@ export const InvoicePDFTemplate = ({
     const lang = language;
     const accent = brandColor || '#d35400';
     const { isCreditNote, isProforma, docTitle, amountLabel, legalText } = resolveDocType(invoiceTitle, lang, docType);
-    const ogmToDisplay = structuredComm || generateOGM(invoiceTitle);
+    const ogmToDisplay = isCreditNote ? '' : (structuredComm || generateOGM(invoiceTitle)); // no structured payment communication on credit notes (Florin 2026-07-12)
 
     const isT1 = templateId === 't1';
     const isT3 = templateId === 't3';

@@ -145,6 +145,7 @@ export default function PDFImportModal({
                 discountPercent: discount,
                 margePercent: 0,
                 verkoopPrice: nettoPrice,
+                unitPrice: nettoPrice, // invoice engine's unit-price column reads block.unitPrice (Block type L88); without this it renders blank while the total falls back to verkoopPrice
                 quantity: item.quantity || 1,
                 unit: item.unit || 'stk',
                 calculationType: (item.calculationType as Block['calculationType']) || 'materieel',

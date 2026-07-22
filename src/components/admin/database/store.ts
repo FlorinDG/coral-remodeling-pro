@@ -28,28 +28,7 @@ const isBaseDb = (id: string, base: string) => {
  */
 const syncPage = (page: Page | undefined, parentDb?: Database) => {
     if (!page) return;
-    const store = useDatabaseStore.getState();
-    store._syncStart();
-
-    const doSave = () => saveGlobalPage(page)
-        .then(result => {
-            if (result?.success === false) {
-                console.warn('[syncPage] Server rejected page save:', result.error);
-                // Retry once after 3s
-                setTimeout(() => saveGlobalPage(page)
-                    .then(() => store._syncDone())
-                    .catch(() => store._syncError()), 3000);
-            } else {
-                store._syncDone();
-            }
-        })
-        .catch(() => store._syncError());
-
-    if (parentDb) {
-        saveGlobalDatabase(parentDb).then(doSave).catch(doSave);
-    } else {
-        doSave();
-    }
+    useDatabaseStore.getState()._enqueueSync(page.id, page.databaseId, parentDb);
 };
 
 /**
@@ -59,24 +38,7 @@ const syncPage = (page: Page | undefined, parentDb?: Database) => {
 const syncPagesBatch = (pages: Page[], parentDb?: Database) => {
     if (!pages.length) return;
     const store = useDatabaseStore.getState();
-    store._syncStart();
-
-    const doSave = () => saveGlobalPagesBatch(pages)
-        .then(result => {
-            if (result?.success === false) {
-                console.warn('[syncPagesBatch] Server rejected batch save:', result.error);
-                store._syncError();
-            } else {
-                store._syncDone();
-            }
-        })
-        .catch(() => store._syncError());
-
-    if (parentDb) {
-        saveGlobalDatabase(parentDb).then(doSave).catch(doSave);
-    } else {
-        doSave();
-    }
+    pages.forEach(p => store._enqueueSync(p.id, p.databaseId, parentDb));
 };
 
 /**
@@ -114,6 +76,14 @@ const idbStorage: StateStorage = {
 };
 
 // ── Undo system ─────────────────────────────────────────────────────────────
+export interface SyncEntry {
+    pageId: string;
+    databaseId: string;
+    tenantId: string | null;
+    userId: string | null;
+    retryCount: number;
+}
+
 type UndoEntry =
     | { type: 'updatePageProperty'; databaseId: string; pageId: string; propertyId: string; oldValue: any }
     | { type: 'deletePage'; databaseId: string; page: Page }
@@ -127,11 +97,17 @@ interface DatabaseState {
     hydrateDatabases: (databases: Database[]) => void;
 
     // Sync status (for UI indicators)
-    syncStatus: 'idle' | 'saving' | 'error';
+    syncQueue: SyncEntry[];
+    sessionTenantId: string | null;
+    sessionUserId: string | null;
+    setSession: (tenantId: string | null, userId: string | null) => void;
+    syncStatus: 'idle' | 'saving' | 'retrying' | 'error' | 'conflict';
     pendingSyncs: number;
-    _syncStart: () => void;
-    _syncDone: () => void;
-    _syncError: () => void;
+    _enqueueSync: (pageId: string, databaseId: string, parentDb?: Database) => void;
+    _dequeueSync: (pageId: string) => void;
+    _incrementRetry: (pageId: string) => void;
+    _processSyncQueue: () => void;
+    clearStore: () => void;
 
     // Undo
     undoStack: UndoEntry[];
@@ -196,19 +172,116 @@ export const useDatabaseStore = create<DatabaseState>()(
             databases: [],
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
+            syncQueue: [] as SyncEntry[],
+            sessionTenantId: null as string | null,
+            sessionUserId: null as string | null,
             undoStack: [] as UndoEntry[],
             ungatedSchemas: [] as string[],
             _hasHydrated: false,
 
-            _syncStart: () => set(s => ({ pendingSyncs: s.pendingSyncs + 1, syncStatus: 'saving' as const })),
-            _syncDone: () => set(s => {
-                const next = s.pendingSyncs - 1;
-                return { pendingSyncs: Math.max(0, next), syncStatus: next <= 0 ? 'idle' as const : 'saving' as const };
-            }),
-            _syncError: () => set(s => ({
-                pendingSyncs: Math.max(0, s.pendingSyncs - 1),
-                syncStatus: 'error' as const
-            })),
+            setSession: (tenantId, userId) => {
+                const currentTenant = get().sessionTenantId;
+                if (currentTenant && currentTenant !== tenantId) {
+                    get().clearStore();
+                }
+                set({ sessionTenantId: tenantId, sessionUserId: userId });
+            },
+
+            clearStore: () => set({ databases: [], syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [] }),
+
+            _enqueueSync: (pageId, databaseId, parentDb) => {
+                set(s => {
+                    const existing = s.syncQueue.find(e => e.pageId === pageId);
+                    if (existing) {
+                        return { syncStatus: 'saving' as const };
+                    }
+                    return {
+                        syncQueue: [...s.syncQueue, { pageId, databaseId, tenantId: s.sessionTenantId, userId: s.sessionUserId, retryCount: 0 }],
+                        syncStatus: 'saving' as const,
+                        pendingSyncs: s.pendingSyncs + 1
+                    };
+                });
+                if (parentDb) {
+                    saveGlobalDatabase(parentDb)
+                        .then(() => get()._processSyncQueue())
+                        .catch(() => get()._processSyncQueue());
+                } else {
+                    get()._processSyncQueue();
+                }
+            },
+
+            _dequeueSync: (pageId) => {
+                set(s => {
+                    const nextQueue = s.syncQueue.filter(e => e.pageId !== pageId);
+                    return {
+                        syncQueue: nextQueue,
+                        pendingSyncs: Math.max(0, s.pendingSyncs - 1),
+                        syncStatus: nextQueue.length === 0 ? 'idle' as const : s.syncStatus
+                    };
+                });
+            },
+
+            _incrementRetry: (pageId) => {
+                set(s => {
+                    const nextQueue = s.syncQueue.map(e => e.pageId === pageId ? { ...e, retryCount: e.retryCount + 1 } : e);
+                    const item = nextQueue.find(e => e.pageId === pageId);
+                    if (item && item.retryCount >= 5) {
+                        return { syncQueue: nextQueue, syncStatus: 'error' as const };
+                    }
+                    return { syncQueue: nextQueue, syncStatus: 'retrying' as const };
+                });
+            },
+
+            _processSyncQueue: async () => {
+                const store = get();
+                if (store.syncQueue.length === 0) return;
+                
+                const entry = store.syncQueue[0];
+                if (entry.retryCount >= 5) {
+                    set({ syncStatus: 'error' as const });
+                    return;
+                }
+
+                const db = get().databases.find(d => d.id === entry.databaseId);
+                const page = db?.pages.find((p: Page) => p.id === entry.pageId);
+                if (!page) {
+                    get()._dequeueSync(entry.pageId);
+                    get()._processSyncQueue();
+                    return;
+                }
+
+                try {
+                    const result = await saveGlobalPage(page);
+                    if (result.success && result.updatedAt) {
+                        set(s => ({
+                            databases: s.databases.map(d => d.id === entry.databaseId ? {
+                                ...d,
+                                pages: d.pages.map((p: Page) => p.id === entry.pageId ? { ...p, baseUpdatedAt: result.updatedAt } : p)
+                            } : d)
+                        }));
+                        get()._dequeueSync(entry.pageId);
+                    } else if (result.errorCode === 'STALE_WRITE') {
+                        console.warn('STALE WRITE CONFLICT DETECTED FOR PAGE', entry.pageId);
+                        set({ syncStatus: 'conflict' as const });
+                        get()._dequeueSync(entry.pageId);
+                        
+                        if (typeof window !== 'undefined') {
+                            const event = new CustomEvent('coral-sync-conflict', { detail: { pageId: entry.pageId, databaseId: entry.databaseId, page } });
+                            window.dispatchEvent(event);
+                        }
+                    } else {
+                        get()._incrementRetry(entry.pageId);
+                        setTimeout(() => get()._processSyncQueue(), 3000 * Math.pow(2, entry.retryCount));
+                        return;
+                    }
+                } catch (e) {
+                    get()._incrementRetry(entry.pageId);
+                    setTimeout(() => get()._processSyncQueue(), 3000 * Math.pow(2, entry.retryCount));
+                    return;
+                }
+                
+                setTimeout(() => get()._processSyncQueue(), 100);
+            },
 
             _pushUndo: (entry) => set(s => ({
                 undoStack: [...s.undoStack.slice(-(UNDO_STACK_LIMIT - 1)), entry]
@@ -281,12 +354,15 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             hydrateDatabases: (serverDatabases) => {
-                // Preserve local view preferences (column widths, visibility, order)
-                // from the IDB-persisted store. Server is authoritative for schema &
-                // pages, but view-level presentation state lives client-side.
                 const localDbs = get().databases;
+                const syncQueue = get().syncQueue || [];
+                const dirtyPageIds = new Set(syncQueue.map(e => e.pageId));
+
                 const localViewStateMap = new Map<string, Map<string, ViewPropertyState[]>>();
+                const localPagesMap = new Map<string, Page>();
+
                 localDbs.forEach(db => {
+                    db.pages.forEach((p: Page) => localPagesMap.set(p.id, p));
                     if (!db.views?.length) return;
                     const viewMap = new Map<string, ViewPropertyState[]>();
                     db.views.forEach((v: DatabaseView) => {
@@ -299,31 +375,48 @@ export const useDatabaseStore = create<DatabaseState>()(
 
                 const merged = serverDatabases.map(serverDb => {
                     const localViewMap = localViewStateMap.get(serverDb.id);
-                    if (!localViewMap || !serverDb.views?.length) return serverDb;
+                    
+                    // KEEP LOCAL IF DIRTY logic
+                    const serverPagesMap = new Map(serverDb.pages.map((p: Page) => [p.id, p]));
+                    const mergedPages: Page[] = [];
+                    
+                    // 1. For all pages on server, if we have local dirty, use local. Else use server.
+                    serverDb.pages.forEach((sp: Page) => {
+                        if (dirtyPageIds.has(sp.id)) {
+                            // Page is dirty locally, DO NOT OVERWRITE
+                            mergedPages.push(localPagesMap.get(sp.id) || sp);
+                        } else {
+                            // Keep server version, but preserve baseUpdatedAt if we had it
+                            const lp = localPagesMap.get(sp.id);
+                            mergedPages.push({ ...sp, baseUpdatedAt: lp?.baseUpdatedAt || sp.updatedAt });
+                        }
+                    });
+                    
+                    // 2. Add local pages that are dirty but haven't reached server yet
+                    localDbs.find(d => d.id === serverDb.id)?.pages.forEach((lp: Page) => {
+                        if (dirtyPageIds.has(lp.id) && !serverPagesMap.has(lp.id)) {
+                            mergedPages.push(lp);
+                        }
+                    });
+
+                    const viewsMerged = serverDb.views?.map(view => {
+                        const localState = localViewMap?.get(view.id);
+                        if (!localState?.length) return view;
+                        const serverState = view.propertiesState || [];
+                        const serverMap = new Map(serverState.map(ps => [ps.propertyId, ps]));
+                        const mergedState = localState.map(ls => {
+                            const ss = serverMap.get(ls.propertyId);
+                            return { ...ss, ...ls };
+                        });
+                        localState.forEach(ls => serverMap.delete(ls.propertyId));
+                        serverMap.forEach(ss => mergedState.push(ss));
+                        return { ...view, propertiesState: mergedState };
+                    }) || serverDb.views;
 
                     return {
                         ...serverDb,
-                        views: serverDb.views.map(view => {
-                            const localState = localViewMap.get(view.id);
-                            if (!localState?.length) return view;
-
-                            // Merge: local widths win, server provides the structural baseline
-                            const serverState = view.propertiesState || [];
-                            const serverMap = new Map(serverState.map(ps => [ps.propertyId, ps]));
-
-                            // Start from local state (preserves widths/order set by user)
-                            const mergedState = localState.map(ls => {
-                                const ss = serverMap.get(ls.propertyId);
-                                // Keep local width/order/hidden, but fall back to server if local is missing
-                                return { ...ss, ...ls };
-                            });
-
-                            // Add any server-only properties not in local (new columns)
-                            localState.forEach(ls => serverMap.delete(ls.propertyId));
-                            serverMap.forEach(ss => mergedState.push(ss));
-
-                            return { ...view, propertiesState: mergedState };
-                        }),
+                        pages: mergedPages,
+                        views: viewsMerged,
                     };
                 });
 
@@ -1397,7 +1490,7 @@ export const useDatabaseStore = create<DatabaseState>()(
         }),
         {
             name: 'coral-database-storage-v4', // Nuclear Option to abandon all legacy schemas
-            version: 4,
+            version: 5,
             storage: createJSONStorage(() => idbStorage),
             partialize: (state) => {
                 // Exclude transient runtime-only fields from persistence

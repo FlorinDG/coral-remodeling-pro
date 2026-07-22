@@ -155,7 +155,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} />
+            <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={session?.user?.id} />
             <AdminLayout
                 activeModules={activeModules}
                 planType={planType}

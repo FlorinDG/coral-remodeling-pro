@@ -125,6 +125,7 @@ export interface Page {
     blocks: Block[]; // The rich text content inside the page
     createdAt: string;
     updatedAt: string;
+    baseUpdatedAt?: string; // Phase 12: Last known server updatedAt for optimistic concurrency control
     createdBy: string;
     lastEditedBy: string;
     driveFolderId?: string; // Phase 7.1: Maps this row to a specific Google Drive folder

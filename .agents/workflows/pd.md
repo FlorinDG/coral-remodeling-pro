@@ -336,6 +336,34 @@ Missing from any one = invisible gap in enforcement.
 - **Schema self-healing**: `DatabaseClone useEffect` resets canonical properties on hydrate
 - **4 entry points blocked**: Add column, Delete column, Rename column, Change type
 
+### 🔴 HARD RULE — DATA SAFETY ON LIVE TENANT DATA (added 2026-07-12; Coral now holds real production books across tenants)
+**Context:** Coral has 50+ real invoices + 295 receipts incoming + multiple tenants. A careless schema/data change now destroys real accounting data, for everyone. This rule BINDS the cron coder.
+1. **Additive-only by default.** New system-DB properties are added ONLY by extending the canonical definition in `DatabaseClone` (additive; existing records read `null`), deployed via the gated pipeline. New Postgres columns must be **nullable, no destructive default backfill**. This is the ONLY sanctioned schema-growth path.
+2. **NEVER, on a system DB / live data, without a fresh backup + explicit Florin approval:** drop / rename / re-type a canonical property or a Postgres column; transform or backfill existing rows; run `prisma migrate` against production; alter the self-healing canonical set in a way that overwrites existing tenant values. Self-healing + live data means a canonical-property change can silently wipe real data — treat it as radioactive.
+3. **Migrations are Florin-gated (like develop→main).** The coder may WRITE a migration; it is RUN only by Florin, only AFTER a fresh DB snapshot, and only after a dry-run on a data copy (preview/branch). The cron coder NEVER runs a prod migration.
+4. **Multi-tenant safety.** Any data migration is idempotent, dry-run on ONE tenant, verified, then rolled out — never a blind all-tenant transform. No cross-tenant bleed.
+5. **Backup before any migration.** Take a Neon branch/PITR snapshot first; verify the restore path exists. No backup → no migration.
+6. **UI rewrites that change how records are read/written** must preserve the existing on-disk shape (read old + new; never a save path that corrupts existing records). Verify against a copy of real data before shipping.
+> **Posture shift:** the app has moved from "empty, move fast" to "real books, protect them." When a task's blast radius touches system-DB schema or existing rows, it stops being a normal coder task and becomes a Florin-gated, backup-first operation.
+
+### 🔒 HARD RULE — TENANT-PARTITION ALL BROWSER-PERSISTED / SHARED CLIENT STATE (added 2026-07-12)
+CoralOS leans heavily on **browser-persisted, browser-shared client state** — the IDB-persisted Zustand database store, the (planned) durable sync queue, the shared React-Query cache. Any of these that is made **more durable or more shared** becomes a **cross-tenant leak vector** unless it's bound to a tenant. Reflex rule for EVERY such change:
+1. **Key/partition by `tenantId`** (and `userId` where per-user) — cache keys, store namespaces, queued-write tags. Never a generic key that spans tenants.
+2. **Reset/clear on session boundary** — logout, tenant-switch, and impersonation start+stop must clear the store / queue / query cache so no previous tenant's state survives.
+3. **Server writes trust the SESSION tenant** — every write + optimistic-concurrency read scoped `WHERE …tenantId = <session>`; never the client-supplied id alone.
+4. **Impersonation isolation** — a superadmin impersonating a tenant must not let cached/queued state bleed back to the real tenant on exit.
+> Rule of thumb: "durable OR shared client state" + "no tenant tag" = a leak. If a fix makes writes more reliable or a cache more shared, it MUST ship with the matching tenant partition + clear-on-switch, or it turns a data-loss bug into a data-leak bug (strictly worse). Applies to DATA-PERSIST-INTEGRITY, ADMIN-QUERYCLIENT-PROVIDER, and anything future touching the store/cache/queue.
+
+### ✅ PRE-PROMOTION BACKUP CHECKPOINT (run every time before develop→main)
+Muscle-memory checklist — do this before promoting to production, no exceptions:
+1. **Snapshot.** Take a Neon branch / PITR snapshot of prod. Note its name + timestamp.
+2. **Note the commits.** Record the commit hash being promoted (the known-green one) AND the current `main` hash (your rollback target).
+3. **Green?** Confirm that exact commit is build-green on develop/preview — never promote a mid-red intermediate.
+4. **Blast-radius check.** Does this promotion include any schema/data change? Additive-only (new nullable field via canonical def) → OK. Drop/rename/re-type/backfill/`prisma migrate` → STOP: that's a Florin-gated, backup-first migration, not a promotion.
+5. **Promote** develop→main.
+6. **Smoke test on prod.** Load it and watch it work: an invoice opens, a receipt opens, login/gating for a workforce user. "Nothing is done until I watch it work."
+7. **Rollback ready.** If broken: revert `main` to the noted previous hash; if data was touched, restore from the step-1 snapshot.
+
 ---
 
 ### PDF Watermark Rules

@@ -195,9 +195,6 @@ export async function saveGlobalPage(page: Page) {
 
     try {
         // Security: ensure the page belongs to a database owned by this tenant.
-        // If the database isn't in Postgres yet (race condition on first session),
-        // we allow the write — the DB will be created shortly after by syncDb.
-        // We do NOT block on DB existence: the tenantId session is the real auth boundary.
         const parentDb = await prisma.globalDatabase.findUnique({
             where: { id: page.databaseId },
             select: { tenantId: true }
@@ -209,8 +206,22 @@ export async function saveGlobalPage(page: Page) {
             return { success: false, error: 'Unauthorized DB access' };
         }
 
-        // If parentDb is null, the DB hasn't been written yet (first-session race).
-        // We still proceed — the DB upsert from syncDb will land shortly after.
+        // Optimistic Concurrency Control
+        const existingPage = await prisma.globalPage.findUnique({
+            where: { id: page.id },
+            select: { updatedAt: true }
+        });
+
+        if (existingPage && page.baseUpdatedAt) {
+            const serverTime = existingPage.updatedAt.getTime();
+            const clientTime = new Date(page.baseUpdatedAt).getTime();
+            if (serverTime !== clientTime) {
+                console.warn(`[saveGlobalPage] STALE_WRITE for page ${page.id}. Server: ${serverTime}, Client: ${clientTime}`);
+                return { success: false, error: 'STALE_WRITE', errorCode: 'STALE_WRITE' };
+            }
+        }
+
+        const newUpdatedAt = new Date();
 
         await prisma.globalPage.upsert({
             where: { id: page.id },
@@ -222,7 +233,7 @@ export async function saveGlobalPage(page: Page) {
                 blocks: page.blocks as any,
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
-                updatedAt: new Date(),
+                updatedAt: newUpdatedAt,
             },
             create: {
                 id: page.id,
@@ -235,13 +246,13 @@ export async function saveGlobalPage(page: Page) {
                 createdBy: page.createdBy || 'admin',
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
+                updatedAt: newUpdatedAt,
             }
         });
 
         revalidatePath('/admin', 'layout');
-        return { success: true };
+        return { success: true, updatedAt: newUpdatedAt.toISOString() };
     } catch (e: any) {
-        // Surface the full error in Vercel logs so sync failures are visible
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
     }
@@ -256,7 +267,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
     const session = await auth();
     const tenantId = session?.user?.tenantId;
     if (!tenantId) return { success: false, error: 'Unauthorized' };
-    if (!pages.length) return { success: true, count: 0 };
+    if (!pages.length) return { success: true, count: 0, results: [] };
 
     try {
         // Verify tenant ownership of the target database(s)
@@ -271,46 +282,66 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
             }
         }
 
-        // Use $transaction for atomicity — batch upserts in groups of 100
-        // to stay under Postgres query parameter limits (65535 max params)
-        const BATCH_SIZE = 100;
-        for (let i = 0; i < pages.length; i += BATCH_SIZE) {
-            const chunk = pages.slice(i, i + BATCH_SIZE);
-            await prisma.$transaction(
-                chunk.map(page =>
-                    prisma.globalPage.upsert({
-                        where: { id: page.id },
-                        update: {
-                            coverImage: page.coverImage,
-                            icon: page.icon,
-                            properties: page.properties as any,
-                            order: page.order,
-                            blocks: page.blocks as any,
-                            lastEditedBy: page.lastEditedBy || 'admin',
-                            driveFolderId: page.driveFolderId,
-                            updatedAt: new Date(),
-                        },
-                        create: {
-                            id: page.id,
-                            databaseId: page.databaseId,
-                            coverImage: page.coverImage,
-                            icon: page.icon,
-                            properties: page.properties as any,
-                            order: page.order,
-                            blocks: page.blocks as any,
-                            createdBy: page.createdBy || 'admin',
-                            lastEditedBy: page.lastEditedBy || 'admin',
-                            driveFolderId: page.driveFolderId,
-                        }
-                    })
-                )
-            );
+        const newUpdatedAt = new Date();
+        const results = [];
+        
+        // Process sequentially to allow partial success and granular OCC
+        for (const page of pages) {
+            try {
+                // Optimistic Concurrency Control
+                const existingPage = await prisma.globalPage.findUnique({
+                    where: { id: page.id },
+                    select: { updatedAt: true }
+                });
+
+                if (existingPage && page.baseUpdatedAt) {
+                    const serverTime = existingPage.updatedAt.getTime();
+                    const clientTime = new Date(page.baseUpdatedAt).getTime();
+                    if (serverTime !== clientTime) {
+                        results.push({ id: page.id, success: false, errorCode: 'STALE_WRITE' });
+                        continue;
+                    }
+                }
+
+                await prisma.globalPage.upsert({
+                    where: { id: page.id },
+                    update: {
+                        coverImage: page.coverImage,
+                        icon: page.icon,
+                        properties: page.properties as any,
+                        order: page.order,
+                        blocks: page.blocks as any,
+                        lastEditedBy: page.lastEditedBy || 'admin',
+                        driveFolderId: page.driveFolderId,
+                        updatedAt: newUpdatedAt,
+                    },
+                    create: {
+                        id: page.id,
+                        databaseId: page.databaseId,
+                        coverImage: page.coverImage,
+                        icon: page.icon,
+                        properties: page.properties as any,
+                        order: page.order,
+                        blocks: page.blocks as any,
+                        createdBy: page.createdBy || 'admin',
+                        lastEditedBy: page.lastEditedBy || 'admin',
+                        driveFolderId: page.driveFolderId,
+                        updatedAt: newUpdatedAt,
+                    }
+                });
+                
+                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString() });
+            } catch (pageError: any) {
+                console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);
+                results.push({ id: page.id, success: false, error: pageError?.message ?? String(pageError) });
+            }
         }
 
         revalidatePath('/admin', 'layout');
-        return { success: true, count: pages.length };
+        const successCount = results.filter(r => r.success).length;
+        return { success: true, count: successCount, results };
     } catch (e: any) {
-        console.error(`[saveGlobalPagesBatch] Failed to save ${pages.length} pages:`, e?.message ?? e);
+        console.error(`[saveGlobalPagesBatch] Failed batch completely:`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
     }
 }

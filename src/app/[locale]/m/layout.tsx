@@ -12,11 +12,13 @@ export default async function MobileLayout({ children }: { children: React.React
     let lockedDbIds: Record<string, string> = {};
     let fullTenant: any                     = null;
     let tenantId: string | null             = null;
+    let userId: string | null               = null;
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
 
     try {
         const session = await auth();
         tenantId = session?.user?.tenantId ?? null;
+        userId = session?.user?.id ?? null;
         if (session?.user) {
             if ((session.user as any).activeModules) activeModules = (session.user as any).activeModules;
             if ((session.user as any).planType)      planType      = (session.user as any).planType;
@@ -102,7 +104,7 @@ export default async function MobileLayout({ children }: { children: React.React
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} />
+            <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={userId} />
             <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                 {children}
             </MobileShell>

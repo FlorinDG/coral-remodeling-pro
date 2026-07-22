@@ -97,7 +97,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         return (
             <AuthProvider>
                 <WorkHubProviders>
-                    <GlobalDatabaseSyncer databases={databases} />
+                    <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={session?.user?.id} />
                     <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                         {children}
                     </WorkHubShell>

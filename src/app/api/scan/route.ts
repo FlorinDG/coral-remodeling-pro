@@ -29,6 +29,27 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no expl
   "totalExVat": number or null,
   "totalVat": number or null,
   "totalIncVat": number or null,
+  "structuredCommunication": "string (OGM format e.g. +++xxx/xxxx/xxxxx+++) or null",
+  "supplierIban": "string or null",
+  "supplierBic": "string or null",
+  "documentType": "string (invoice or credit_note)",
+  "reverseCharge": boolean (true if reverse charge / medecontractant / btw verlegd is explicitly mentioned),
+  "subject": "string or null",
+  "orderReference": "string or null",
+  "deliveryDate": "YYYY-MM-DD or null",
+  "supplierAddress": {
+    "street": "string or null",
+    "postalCode": "string or null",
+    "city": "string or null",
+    "country": "string or null"
+  },
+  "vatBreakdown": [
+    {
+      "rate": number (e.g. 21, 6, 0),
+      "base": number,
+      "vat": number
+    }
+  ],
   "lines": [
     {
       "description": "string",
@@ -36,7 +57,9 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no expl
       "unitCode": "string (e.g. stk, m, m2, uur)",
       "unitPrice": number,
       "vatRate": number (e.g. 21, 6, 0),
-      "lineTotal": number
+      "lineTotal": number,
+      "articleCode": "string or null",
+      "discountPercent": number or null
     }
   ]
 }
@@ -44,7 +67,8 @@ Rules:
 - All monetary values are numbers (no currency symbols).
 - Dates must be YYYY-MM-DD. Belgian format is DD/MM/YYYY — convert it.
 - If a field is truly absent, use null. Never invent data.
-- lines[] may be empty [] if no line items are visible.`;
+- lines[] may be empty [] if no line items are visible.
+- vatBreakdown[] may be empty [] if no per-rate breakdown is visible.`;
 
 const TICKET_SYSTEM_PROMPT = `You are an expert extracting structured data from expense receipts and tickets.
 Return ONLY a valid JSON object matching this exact schema (no markdown, no explanation):

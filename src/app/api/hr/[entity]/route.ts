@@ -248,10 +248,40 @@ export async function GET(
     if (!model) return NextResponse.json({ error: `Unknown entity: ${entity}` }, { status: 400 });
 
     try {
-        const records = await model.findMany({
+        let records = await model.findMany({
             where,
             orderBy: { createdAt: 'desc' },
         });
+
+        // Enrich user names for clock-entries and time-off
+        if (entity === 'clock-entries' || entity === 'time-off') {
+            const userIds = [...new Set(records.map((r: any) => r.userId).filter(Boolean))] as string[];
+            if (userIds.length > 0) {
+                const users = await prisma.user.findMany({
+                    where: { id: { in: userIds } },
+                    select: { id: true, name: true, email: true }
+                });
+                const employees = await prisma.employee.findMany({
+                    where: { userId: { in: userIds } },
+                    select: { userId: true, firstName: true, lastName: true }
+                });
+                
+                const userMap = new Map(users.map(u => [u.id, u]));
+                const empMap = new Map(employees.map(e => [e.userId, e]));
+                
+                records = records.map((r: any) => {
+                    const u = userMap.get(r.userId);
+                    const e = empMap.get(r.userId);
+                    let userName = r.userId?.slice(0, 8) || 'System';
+                    if (u?.name) userName = u.name;
+                    else if (e?.firstName || e?.lastName) userName = `${e.firstName || ''} ${e.lastName || ''}`.trim();
+                    else if (u?.email) userName = u.email;
+                    
+                    return { ...r, userName };
+                });
+            }
+        }
+
         return NextResponse.json(records);
     } catch (error: unknown) {
         console.error(`[HR API] GET ${entity} error:`, error);

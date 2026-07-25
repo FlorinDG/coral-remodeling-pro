@@ -13,7 +13,7 @@ const nextConfig: any = {
       bodySizeLimit: '20mb',
     },
   },
-  serverExternalPackages: ['canvas'],
+  serverExternalPackages: ['canvas', 'pdf-parse'],
   typescript: {
     ignoreBuildErrors: false,
   },

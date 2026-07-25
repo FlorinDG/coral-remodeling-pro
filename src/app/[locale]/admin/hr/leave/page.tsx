@@ -14,16 +14,33 @@ async function getLeaveData(tenantId: string) {
         take: 50,
     });
 
-    // Get employee names for user IDs
-    const userIds = [...new Set(requests.map(r => r.userId))];
-    const employees = await prisma.employee.findMany({
-        where: { tenantId, id: { in: userIds } },
-        select: { id: true, firstName: true, lastName: true },
-    });
-    // Also try to look up by the HR database pages (if employees are stored there)
+    const userIds = [...new Set(requests.map(r => r.userId).filter(Boolean))] as string[];
     const nameMap = new Map<string, string>();
-    for (const e of employees) {
-        nameMap.set(e.id, `${e.firstName} ${e.lastName}`);
+    
+    if (userIds.length > 0) {
+        const users = await prisma.user.findMany({
+            where: { id: { in: userIds } },
+            select: { id: true, name: true, email: true }
+        });
+        const employees = await prisma.employee.findMany({
+            where: { userId: { in: userIds } },
+            select: { userId: true, firstName: true, lastName: true }
+        });
+        
+        const userMap = new Map(users.map(u => [u.id, u]));
+        const empMap = new Map(employees.map(e => [e.userId, e]));
+
+        for (const uid of userIds) {
+            const u = userMap.get(uid);
+            const e = empMap.get(uid);
+            let userName = uid.slice(0, 8) || 'System';
+            
+            if (u?.name) userName = u.name;
+            else if (e?.firstName || e?.lastName) userName = `${e.firstName || ''} ${e.lastName || ''}`.trim();
+            else if (u?.email) userName = u.email;
+            
+            nameMap.set(uid, userName);
+        }
     }
 
     return { requests, nameMap };

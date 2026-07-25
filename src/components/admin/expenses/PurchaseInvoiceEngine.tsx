@@ -211,6 +211,11 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
         paidDate: '',
         paymentMethod: '',
         project: [] as string[],
+        supplierIban: '',
+        supplierBic: '',
+        reverseCharge: false,
+        vatBreakdown: '',
+        supplierAddress: '',
     });
 
     useEffect(() => {
@@ -281,12 +286,17 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                 currency: String(page.properties.currency || ''),
                 vatRegime: String(page.properties.vatRegime || ''),
                 category: String(page.properties.category || ''),
-                costType: String(page.properties.costType || ""), ledgerAccount: String(page.properties.ledgerAccount || ""),
-                
+                costType: String(page.properties.costType || ""), 
+                ledgerAccount: String(page.properties.ledgerAccount || ""),
                 notes: String(page.properties.notes || ''),
                 paidDate: String(page.properties.paidDate || ''),
                 paymentMethod: String(page.properties.paymentMethod || ''),
                 project: Array.isArray(page.properties.project) ? page.properties.project.map(String) : [],
+                supplierIban: String(page.properties.supplierIban || ''),
+                supplierBic: String(page.properties.supplierBic || ''),
+                reverseCharge: Boolean(page.properties.reverseCharge || false),
+                vatBreakdown: typeof page.properties.vatBreakdown === 'string' ? page.properties.vatBreakdown : (page.properties.vatBreakdown ? JSON.stringify(page.properties.vatBreakdown) : ''),
+                supplierAddress: String(page.properties.supplierAddress || ''),
             });
 
             // If this is a Peppol doc, fetch details
@@ -612,6 +622,24 @@ export default function PurchaseInvoiceEngine({ pageId, onClose, databaseId }: P
                                     value={isEditing ? String(editData.ourRef || '') : String(page.properties.ourRef || '') || '—'}
                                     editable={isEditing}
                                     onChange={v => setEditData(p => ({ ...p, ourRef: v }))}
+                                />
+                                <InfoField
+                                    label="IBAN"
+                                    value={isEditing ? String(editData.supplierIban || '') : String(page.properties.supplierIban || '') || '—'}
+                                    editable={isEditing}
+                                    onChange={v => setEditData(p => ({ ...p, supplierIban: v }))}
+                                />
+                                <InfoField
+                                    label="BIC"
+                                    value={isEditing ? String(editData.supplierBic || '') : String(page.properties.supplierBic || '') || '—'}
+                                    editable={isEditing}
+                                    onChange={v => setEditData(p => ({ ...p, supplierBic: v }))}
+                                />
+                                <InfoField
+                                    label="Btw Verlegd / Medecontractant"
+                                    value={isEditing ? (editData.reverseCharge ? 'Ja' : 'Nee') : (page.properties.reverseCharge ? 'Ja' : 'Nee')}
+                                    editable={isEditing}
+                                    onChange={v => setEditData(p => ({ ...p, reverseCharge: v === 'Ja' || v === 'true' || v === true as unknown as string }))}
                                 />
                                 <InfoField
                                     label="Factuurdatum"

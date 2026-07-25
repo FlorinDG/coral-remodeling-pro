@@ -56,8 +56,34 @@
 
 ### Still open
 - **`ocrConfidence` threshold** + which engine signal (Mindee/Veryfi confidence vs the AI extraction's own certainty).
-- **`ocrConfidence` threshold** + which engine signal (Mindee/Veryfi confidence vs the AI extraction's own certainty).
 - **Reconciliation tolerance** (rounding cents) for the amounts-match gate.
 - **Status labels** — confirm NL wording above.
-- **Intake channels** — multi-file/drag now; later a dedicated **email-to-inbox** address for suppliers/forwarding (phase 2)?
 - **Scan-quota UX** — surface "X of Y scans used, batch will consume N" before running a big batch.
+
+---
+
+## PART 5 — EMAIL-TO-INBOX INTAKE (the Billit "mail a receipt" feature) — Planner spec 2026-07-25
+**Florin:** "Billit lets you *mail* a receipt — the system scans it and puts it in a waiting chamber for approval. It used to work for invoices too, but Peppol changed that."
+
+**The insight:** email intake is just a **new intake mouth** on the pipeline that already exists. A mailed attachment → OCR (RCPT-L2) → confirmation gate (RCPT-L3) → the **same "Inbox / Te verwerken" review zone** (RCPT-L4) → human approve → post (RCPT-L5). No new downstream. This is `RCPT-L1-EMAIL`, a sibling of `RCPT-L1-MULTI`.
+
+**Why receipts and not invoices anymore (the Peppol point):** structured invoices now arrive over the **Peppol** network (machine-readable, already routed — see Peppol inbound work). Email intake is therefore aimed at what Peppol does NOT cover: **kassabonnen / receipts** and **PDF invoices from small suppliers not yet on Peppol**. The scan engine's TICKET-vs-INVOICE classification already sorts these, so accept both — just don't position it as the invoice channel.
+
+### FLOW
+Supplier/Florin/crew forwards or mails a document to the tenant's private intake address → email provider POSTs a webhook → we resolve the address to exactly one tenant → for **each attachment** (pdf/jpg/png/heic): server-first create a `db-expenses` record `reviewStatus = In verwerking`, `source = email`, store the file to Blob (`t_{tenant}/expense/{id}/`), stamp email provenance (from-address, subject, received-at, provider messageId) → enqueue through the existing OCR pipeline → gate → lands in the waiting chamber. Multiple attachments in one mail = multiple records. Email body (if any) captured as the record note.
+
+### CODER SUBTASKS
+- **`RCPT-L1-EMAIL-ADDR`** — per-tenant **unguessable inbound address**. Generate a random token address, e.g. `bonnetjes.<token>@in.coralos.app` (token = random, NOT the tenant slug — slug is guessable and would let anyone inject documents into a known tenant's books). Store `inboxToken` on the tenant, surface it in **Settings → Expenses/Scan** with copy-button + a "regenerate" action (rotating invalidates the old address). Verify: two tenants get distinct tokens; regenerating changes the address.
+- **`RCPT-L1-EMAIL-HOOK`** — inbound webhook `POST /api/inbox/receipt` (mirror the existing `api/stripe/webhook` signature-verify pattern): (a) **verify the provider signature/secret** — reject unsigned; (b) resolve the recipient token → `tenantId`; **unknown/invalid token → drop + log, NEVER fall back to a default tenant** (standing tenant-isolation rule; an unresolved address must not write anywhere); (c) for each attachment create the record as above under the resolved `tenantId`; (d) idempotency: skip if the provider `messageId` was already ingested (same mail delivered twice). Verify: a signed test mail with 2 attachments to tenant A's address creates 2 records on tenant A only; a mail to a bogus token creates nothing.
+- **`RCPT-L1-EMAIL-SENDER`** — sender handling. Default: **accept any sender** but if the from-address isn't a known tenant user / configured supplier, tag `reviewReason = onbekende afzender (unknown sender)` so the human sees it in the zone — never auto-confirm an unknown-sender mail regardless of OCR. Optional per-tenant **allowlist toggle** (Settings): when on, only accept mail from listed addresses, silently drop the rest. Verify: unknown-sender mail lands in the zone flagged; with allowlist on, an off-list mail is dropped.
+- **`RCPT-L1-EMAIL-DEDUP`** — reuse the FIN-10 / strict dedup helper on the ingested content (date+number+supplier for invoices; date+amount+shop for tickets) so a receipt mailed *and* also bulk-dropped doesn't double-post → `Na te kijken: mogelijk duplicaat`. Plus the messageId guard above for the transport layer.
+- **`RCPT-L1-EMAIL-ACK`** *(optional, phase 2b)* — auto-reply to the sender: "Received N document(s), now in your review inbox." Sending mail is a side-effect + costs a send; make it a Settings toggle, default OFF.
+
+### PROVENANCE (add to the status schema in RCPT-L4-STATUS)
+Add a `source` property to `db-expenses` (`manual | scan | email | peppol`) and email-meta fields (`sourceEmailFrom`, `sourceEmailSubject`, `sourceReceivedAt`, `sourceMessageId`). Lets the zone show a ✉ badge + "from x@… on <date>" and supports the dedup/idempotency guards.
+
+### DECISIONS (Florin)
+- **Address scheme** — random token address per tenant (recommended, above), vs tenant-slug address (guessable, rejected). Confirm.
+- **Inbound email provider** — outbound is already **Resend** (`billing@coral-group.be`, `src/lib/trial.ts`), and **Resend now supports Inbound email** → use it: same vendor, same verified domain, one API key, a webhook that mirrors the Stripe pattern. Just add MX on a subdomain (`in.coral-group.be` / `in.coralos.app`). Fallbacks if Resend Inbound falls short: Postmark Inbound or Cloudflare Email Routing→Worker. This is the one true infra prerequisite — the rest is code. (NB: an in-app IMAP/SMTP client also exists — a "forward to a watched folder" poll is a possible alt path, but a dedicated inbound address is cleaner and is what Billit does.)
+- **Sender allowlist** — default accept-any-and-flag (recommended) vs strict allowlist. Confirm default.
+- **Ack email** — send a "received" reply, yes/no (default no).

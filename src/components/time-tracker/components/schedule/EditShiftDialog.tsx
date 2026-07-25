@@ -23,17 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import SearchableSelect from "@/components/ui/SearchableSelect";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+
 import {
   Popover,
   PopoverContent,
@@ -503,26 +493,14 @@ export function EditShiftDialog({
 
               <DialogFooter className="hidden md:flex mt-6">
                 {canManage && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button type="button" variant="destructive" size="sm">
-                        <Trash2 className="h-4 w-4 mr-1" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Shift?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. The shift will be permanently removed.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <Button type="button" variant="destructive" size="sm" onClick={() => {
+                    if (window.confirm("Delete Shift?\nThis action cannot be undone. The shift will be permanently removed.")) {
+                      handleDelete();
+                    }
+                  }}>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
                 )}
                 <Button type="submit" disabled={loading || !canManage}>
                   {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

@@ -283,7 +283,8 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         if (!expensesDb) return [];
         return expensesDb.pages.filter(p => {
             const projRel = p.properties['project'];
-            return Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId;
+            const isApproved = p.properties['reviewStatus'] === 'Goedgekeurd';
+            return isApproved && (Array.isArray(projRel) ? projRel.includes(pageId) : projRel === pageId);
         });
     }, [expensesDb, pageId]);
 

@@ -800,6 +800,34 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
                     </button>
                     )}
 
+                    {/* Bulk Approve (only for Inbox) */}
+                    {database.id === 'db-expenses' && activeViewId === 'vw-expenses-inbox' && selectedRowIds.size > 0 && (
+                        <button
+                            onClick={() => {
+                                const notReady = Array.from(selectedRowIds).filter(rid => {
+                                    const row = rowData.find(r => r.id === rid);
+                                    return row && row.properties.reviewStatus !== 'Klaar';
+                                });
+                                if (notReady.length > 0) {
+                                    alert('You can only bulk-approve records that are marked as "Klaar". Fix the others first.');
+                                    return;
+                                }
+                                if (window.confirm(`Approve ${selectedRowIds.size} records? They will be posted to the ledger.`)) {
+                                    Array.from(selectedRowIds).forEach(rid => {
+                                        updatePageProperty(database.id, rid, 'reviewStatus', 'Goedgekeurd');
+                                    });
+                                    setSelectedRowIds(new Set());
+                                }
+                            }}
+                            className="flex items-center justify-center p-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 rounded transition mr-1"
+                            title={`Approve ${selectedRowIds.size} Selected Rows`}
+                        >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            <span>Approve</span>
+                            <span className="font-semibold ml-1 leading-none">{selectedRowIds.size}</span>
+                        </button>
+                    )}
+
                     {/* Bulk delete — only show if not blanket-blocked.
                         For callback-based preventDelete, filter out non-deletable rows before executing. */}
                     {preventDelete !== true && !isAccountant && !isBestekReadOnly && (

@@ -26,8 +26,8 @@ const PurchaseInvoiceEngine = dynamic(
     { ssr: false }
 );
 
-const TicketCaptureModal = dynamic(
-    () => import('@/components/admin/expenses/TicketCaptureModal'),
+const AiDocumentImportModal = dynamic(
+    () => import('@/components/admin/expenses/AiDocumentImportModal'),
     { ssr: false }
 );
 
@@ -243,11 +243,11 @@ export default function ExpensesInvoicesPage() {
                 />
             )}
 
-            {/* Scan / Upload invoice modal (reuses ticket capture flow, saves to db-expenses) */}
+            {/* Scan / Upload invoice modal */}
             {showScanUpload && (
-                <TicketCaptureModal
-                    onClose={() => setShowScanUpload(false)}
+                <AiDocumentImportModal
                     targetDatabaseId="db-expenses"
+                    onClose={() => setShowScanUpload(false)}
                 />
             )}
         </div>

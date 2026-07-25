@@ -257,6 +257,9 @@ export default async function AdminDashboard({ params }: { params: Promise<{ loc
 
         for (const page of purchasePages) {
             const props = page.properties as Record<string, any>;
+            const reviewStatus = props['reviewStatus'];
+            if (reviewStatus && reviewStatus !== 'Goedgekeurd') continue;
+
             const amount = Number(props['totalIncVat'] ?? props['total'] ?? props['amount'] ?? 0);
             if (!amount) continue;
             const m = page.createdAt.getMonth();

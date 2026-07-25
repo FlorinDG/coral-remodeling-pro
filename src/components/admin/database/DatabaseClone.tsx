@@ -386,7 +386,19 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         { id: 'src-peppol', name: 'Peppol',       color: 'blue'   },
         { id: 'src-manual', name: 'Manueel',      color: 'gray'   },
         { id: 'src-pdf',    name: 'PDF Import',   color: 'purple' },
+        { id: 'src-scan',   name: 'Scan / OCR',   color: 'pink'   },
+        { id: 'src-email',  name: 'Email',        color: 'orange' },
       ]}},
+      { id: 'reviewStatus', name: 'Review Status', type: 'select', config: { options: [
+        { id: 'In verwerking', name: 'In verwerking', color: 'blue'   },
+        { id: 'In wachtrij',   name: 'In wachtrij',   color: 'gray'   },
+        { id: 'Na te kijken',  name: 'Na te kijken',  color: 'orange' },
+        { id: 'Klaar',         name: 'Klaar',         color: 'green'  },
+        { id: 'Goedgekeurd',   name: 'Goedgekeurd',   color: 'purple' },
+        { id: 'Mislukt',       name: 'Mislukt',       color: 'red'    },
+      ]}},
+      { id: 'reviewReason', name: 'Review Reden', type: 'text' },
+      { id: 'ocrConfidence', name: 'OCR Betrouwbaarheid', type: 'percent' },
       { id: 'status',      name: 'Status', type: 'select', config: { options: [
         { id: 'opt-draft',    name: 'Concept',    color: 'gray'   },
         { id: 'opt-unpaid',   name: 'Onbetaald',  color: 'orange' },
@@ -832,17 +844,49 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       }
     }
 
-    // Migrate: db-expenses docType population
+    // Migrate: db-expenses docType and reviewStatus population
     if (databaseId === 'db-expenses') {
       const store = useDatabaseStore.getState();
       database.pages.forEach(page => {
+        let needsUpdate = false;
+        
+        // Migrate docType
         const currentDocType = page.properties['docType'];
         if (!currentDocType) {
           const isCN = page.properties['source'] === 'src-credit-note' || page.properties['status'] === 'opt-credited' || String(page.properties['title'] || '').startsWith('CN-');
-          const newType = isCN ? 'opt-credit-note' : 'opt-invoice';
-          store.updatePageProperty(resolvedId, page.id, 'docType', newType);
+          page.properties['docType'] = isCN ? 'opt-credit-note' : 'opt-invoice';
+          needsUpdate = true;
+        }
+
+        // Migrate reviewStatus
+        if (!page.properties['reviewStatus']) {
+          page.properties['reviewStatus'] = 'Goedgekeurd';
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          store.updatePage(resolvedId, page.id, { properties: page.properties });
         }
       });
+
+      // Migrate: add Inbox view if missing
+      const hasInbox = database.views.some(v => v.id === 'vw-expenses-inbox');
+      if (!hasInbox) {
+        store.addView(resolvedId, {
+          id: 'vw-expenses-inbox',
+          name: 'Inbox / Te verwerken',
+          type: 'table',
+          filterGroups: [{
+            id: 'fg-inbox',
+            operator: 'and',
+            filters: [{
+              propertyId: 'reviewStatus',
+              operator: '!=',
+              value: 'Goedgekeurd'
+            }]
+          }]
+        });
+      }
     }
   }, [hydrated, database, databaseId, resolvedId, isLockedSchemaDB, isUngated, DEFAULT_PROPERTIES_MAP, locale, resolveDbId]);
 

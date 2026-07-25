@@ -293,9 +293,14 @@ export async function POST(req: Request) {
 
         // ── Parse form data ───────────────────────────────────────────────────
         const formData = await req.formData();
-        const file = formData.get('file') as File | null;
+        const file = formData.get('file') as File;
+        const targetDb = formData.get('targetDb') as string || 'db-tickets';
         const overrideDuplicate = formData.get('overrideDuplicate') === 'true';
-        let targetDb = (formData.get('targetDb') as string) || 'db-tickets';
+        const existingPageId = formData.get('pageId') as string | null;
+
+        if (!file && !existingPageId) {
+            return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
+        }
         const isInvoice = targetDb === 'db-expenses' || targetDb.startsWith('db-expenses');
 
         // SCHEMA-1a: Resolve system DB to the tenant's canonical scoped ID
@@ -470,16 +475,37 @@ export async function POST(req: Request) {
         }
 
         // ── Build page properties ─────────────────────────────────────────────
-        const pageId = uuidv4();
         let properties: Record<string, any>;
+        
+        let reviewStatus = 'Na te kijken';
+        let reviewReason = '';
+        let ocrConfidence = 1.0; // Todo: map engine confidence
 
         if (isInvoice) {
+            const amountsReconcile = 
+                extracted.totalExVat != null && 
+                extracted.totalVat != null && 
+                extracted.totalIncVat != null &&
+                Math.abs((extracted.totalExVat + extracted.totalVat) - extracted.totalIncVat) < 0.05;
+
+            const hasRequiredFields = !!(extracted.supplierName && extracted.issueDate && extracted.totalIncVat != null);
+
+            if (amountsReconcile && hasRequiredFields && extracted.supplierVat) {
+                reviewStatus = 'Klaar';
+            } else {
+                if (!amountsReconcile) reviewReason = 'Bedragen komen niet overeen';
+                else if (!hasRequiredFields) reviewReason = 'Ontbrekende velden';
+            }
+
             properties = {
                 title: extracted.invoiceNumber || `INV-${new Date().toISOString().slice(0, 10)}`,
                 supplierName: extracted.supplierName || '',
                 supplierVat: extracted.supplierVat || '',
-                source: 'src-pdf',
+                source: 'src-scan',
                 status: 'opt-draft',
+                reviewStatus,
+                reviewReason,
+                ocrConfidence,
                 invoiceDate: extracted.issueDate || '',
                 dueDate: extracted.dueDate || '',
                 totalExVat: extracted.totalExVat ?? 0,
@@ -499,23 +525,35 @@ export async function POST(req: Request) {
                 currency: 'cur-eur',
                 paymentMethod: 'pm-card',
                 notes: '',
-                receiptUrl: '',
+                source: 'src-scan',
+                reviewStatus: 'Na te kijken',
                 vatDeductiblePct: 0, // RECEIPTS ARE NOT VAT DEDUCTIBLE
             };
         }
 
-        // ── Save to Postgres ──────────────────────────────────────────────────
-        const savedPage = await prisma.globalPage.create({
-            data: {
-                id: pageId,
-                databaseId: targetDb,
-                properties,
-                order: 0,
-                blocks: [],
-                createdBy: 'scan',
-                lastEditedBy: 'scan',
-            }
-        });
+        // ── Save or Update Postgres ───────────────────────────────────────────
+        let savedPage;
+        if (existingPageId) {
+            savedPage = await prisma.globalPage.update({
+                where: { id: existingPageId },
+                data: {
+                    properties,
+                    lastEditedBy: 'scan',
+                }
+            });
+        } else {
+            savedPage = await prisma.globalPage.create({
+                data: {
+                    id: uuidv4(),
+                    databaseId: targetDb,
+                    properties,
+                    order: 0,
+                    blocks: [],
+                    createdBy: 'scan',
+                    lastEditedBy: 'scan',
+                }
+            });
+        }
 
         // ── Consume Quota ─────────────────────────────────────────────────────
         const finalQuota = await checkAndIncrementQuota(tenantId, true);

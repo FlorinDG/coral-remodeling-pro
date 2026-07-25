@@ -240,7 +240,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
             avgLabourRate,
             lineCount,
         };
-    }, [linkedQuotation]);
+    }, [linkedQuotations]);
 
     // ── Actual Labour from Clock Entries ──────────────────────────────────
     const { entries: clockEntries } = useClockEntries();

@@ -52,12 +52,14 @@ Return ONLY a valid JSON object matching this exact schema (no markdown, no expl
   "merchant": "string or null",
   "date": "YYYY-MM-DD or null",
   "totalAmount": number or null,
-  "category": "one of: cat-fuel, cat-restaurant, cat-office, cat-tools, cat-materials, cat-parking, cat-transport, cat-other — or null"
+  "category": "one of: cat-fuel, cat-restaurant, cat-office, cat-tools, cat-materials, cat-parking, cat-transport, cat-other — or null",
+  "vatDeductiblePct": 0
 }
 Rules:
 - All monetary values are numbers (no currency symbols).
 - Dates: Belgian format is DD/MM/YYYY — convert to YYYY-MM-DD.
 - For category, use context clues (e.g. restaurant name → cat-restaurant, gas station → cat-fuel).
+- CRITICAL: 'totalAmount' must be the FINAL total paid (totaal / te betalen / total, incl VAT). If the ticket shows netto + btw + totaal, take the totaal. NEVER take the netto or a subtotal.
 - If a field is absent, use null.`;
 
 // ─── PDF Helpers (pdfjs-dist) ─────────────────────────────────────────────────
@@ -474,6 +476,7 @@ export async function POST(req: Request) {
                 paymentMethod: 'pm-card',
                 notes: '',
                 receiptUrl: '',
+                vatDeductiblePct: 0, // RECEIPTS ARE NOT VAT DEDUCTIBLE
             };
         }
 

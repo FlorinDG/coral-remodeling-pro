@@ -1,3 +1,4 @@
+import { DocumentViewerCard } from "./DocumentViewerCard";
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -195,6 +196,13 @@ export default function RecordDetailPage({ databaseId, pageId, locale }: RecordD
                 <div className="flex-1 overflow-y-auto p-4 lg:p-6 bg-neutral-50 dark:bg-[#0a0a0a]">
                     <div className="flex flex-col gap-4 max-w-[1600px] mx-auto">
                         
+                        {/* Conditional Receipt/Document Preview */}
+                        {page.properties?.['receiptUrl'] && (
+                            <ErrorBoundary componentName="DocumentViewerCard">
+                                <DocumentViewerCard url={String(page.properties['receiptUrl'])} />
+                            </ErrorBoundary>
+                        )}
+
                         {/* Row 1: Stats + Context (side by side on wide, stacked on narrow) */}
                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                             {/* Stats */}

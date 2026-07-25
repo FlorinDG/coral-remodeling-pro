@@ -460,6 +460,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'receiptUrl', name: 'Bonnetje',  type: 'url'  },
       { id: 'notes',      name: 'Notities', type: 'text' },
       { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
+      { id: 'vatDeductiblePct', name: 'BTW Aftrekbaarheid (%)', type: 'number' },
       { id: 'accountantExportedAt', name: 'Verzonden naar boekhouder', type: 'checkbox' },
     ],
     'db-crm': [

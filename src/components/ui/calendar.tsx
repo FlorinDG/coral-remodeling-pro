@@ -11,6 +11,9 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      captionLayout="dropdown"
+      startMonth={new Date(1970, 0)}
+      endMonth={new Date(new Date().getFullYear() + 5, 11)}
       className={cn("p-3", className)}
       classNames={{
         /* Layout wrappers */
@@ -18,6 +21,9 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
         month: "flex flex-col gap-4",
         month_caption: "flex justify-center pt-1 relative items-center h-10",
         caption_label: "text-sm font-semibold text-neutral-900 dark:text-white",
+        dropdowns: "flex items-center gap-1",
+        dropdown: "text-sm font-semibold bg-transparent border-none outline-none focus:ring-0 text-neutral-900 dark:text-white cursor-pointer hover:bg-neutral-100 dark:hover:bg-white/10 rounded px-1 appearance-none bg-none",
+        dropdown_icon: "hidden",
 
         /* Navigation */
         nav: "flex items-center gap-1",

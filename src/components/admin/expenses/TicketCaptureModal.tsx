@@ -71,9 +71,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
 
     const addConfirmedPage = useDatabaseStore(s => s.addConfirmedPage);
     const isInvoiceMode = targetDatabaseId === 'db-expenses';
-    const pages = useDatabaseStore(s => (s as any).pages);
-    const projects = React.useMemo(() => Object.values(pages || {}).filter((p: any) => p.databaseId === 'db-1'), [pages]);
-    const suppliers = React.useMemo(() => Object.values(pages || {}).filter((p: any) => p.databaseId === 'db-suppliers'), [pages]);
+    const projects = useDatabaseStore(s => s.databases.find(db => db.id === 'db-1')?.pages || []);
+    const suppliers = useDatabaseStore(s => s.databases.find(db => db.id === 'db-suppliers')?.pages || []);
 
     const [animationDone, setAnimationDone] = useState(false);
     const router = useRouter();
@@ -309,7 +308,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                 fd.append('file', lastFileRef.current);
                 const uploadRes = await uploadFileAction(fd, isInvoiceMode ? 'purchase-invoice' : 'receipt');
                 if (uploadRes.success && uploadRes.key) {
-                    receiptUrl = uploadRes.key;
+                    receiptUrl = `/api/files/${encodeURIComponent(uploadRes.key)}`;
                 } else {
                     console.warn('[TicketCaptureModal] Blob upload failed', uploadRes.error);
                 }
@@ -490,7 +489,13 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                     {(previewUrl || step === 'capture') && step !== 'done' && step !== 'saving' && (
                         <div className="hidden md:flex w-1/2 lg:w-3/5 border-r border-neutral-200 dark:border-white/10 bg-neutral-100/50 dark:bg-neutral-950 p-6 flex-col min-h-0 relative">
                             {previewUrl ? (
-                                <div className="flex-1 rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 shadow-sm relative">
+                                <div className="flex-1 rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 shadow-sm relative group">
+                                    <button
+                                        onClick={reset}
+                                        className="absolute top-4 right-4 z-10 px-3 py-1.5 bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black text-neutral-700 dark:text-neutral-200 text-xs font-semibold rounded-lg shadow-sm border border-neutral-200 dark:border-white/10 backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                        Choose another file
+                                    </button>
                                     {lastFileRef.current?.type === 'application/pdf' ? (
                                         <iframe src={previewUrl} className="w-full h-full border-0 absolute inset-0" />
                                     ) : (
@@ -689,7 +694,16 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                             {isInvoiceMode ? 'Supplier' : 'Merchant'}
                                         </label>
                                         <SearchableSelect
-                                            options={suppliers.map((s: any) => ({ value: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown', label: (s.properties?.['f_companyName'] as string) || s.title || 'Unknown' }))}
+                                            options={(() => {
+                                                const opts = suppliers.map((s: any) => {
+                                                    const name = (s.properties?.['f_companyName'] as string) || s.title || 'Unknown';
+                                                    return { value: name, label: name };
+                                                });
+                                                if (form.merchant && !opts.some(o => o.value === form.merchant)) {
+                                                    opts.unshift({ value: form.merchant, label: `${form.merchant} (Scanned)` });
+                                                }
+                                                return opts;
+                                            })()}
                                             value={form.merchant}
                                             onChange={val => updateForm('merchant', val)}
                                             placeholder={isInvoiceMode ? 'Select supplier' : 'Select merchant'}
@@ -1000,10 +1014,10 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 {/* Actions */}
                                 <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-white/10 mt-6 sticky bottom-0 bg-white dark:bg-neutral-900 pb-2">
                                     <button
-                                        onClick={() => { setScanResult(null); setStep('capture'); setScanError(''); lastFileRef.current = null; }}
+                                        onClick={reset}
                                         className="flex-1 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
                                     >
-                                        ← Back
+                                        Reset
                                     </button>
                                     {isStrictDuplicate ? (
                                         <button

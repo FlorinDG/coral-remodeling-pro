@@ -21,7 +21,8 @@ export type PropertyType =
     | 'last_edited_time'
     | 'last_edited_by'
     | 'variants'
-    | 'location';
+    | 'location'
+    | 'computed';
 
 export interface SelectOption {
     id: string;
@@ -38,6 +39,7 @@ export interface PropertyConfig {
     rollupTargetPropertyId?: string;
     rollupAggregation?: 'show_original' | 'extract_numbers' | 'sum' | 'count' | 'average'; // Defines calculation over fetched array
     formulaExpression?: string; // For formulas
+    computeFn?: (row: any, allDatabases: any[]) => any; // For computed columns
 }
 
 export interface Property {

@@ -147,6 +147,11 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             if (tenant.logoUrl) setLogoUrl(tenant.logoUrl);
         }
 
+        // Finish tenant guarding (clear react-query cache on tenant change)
+        if (tenant?.id) {
+            queryClient.clear();
+        }
+
         // Listen for brand color changes from DocumentTemplatesModule
         const handleBrandColorChanged = (e: Event) => {
             const color = (e as CustomEvent<string>).detail;

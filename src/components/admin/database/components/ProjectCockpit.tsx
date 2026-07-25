@@ -2,9 +2,10 @@
 import React, { useMemo } from 'react';
 import { 
     CheckCircle2, Circle, Clock, FileText, Flag, Receipt, Hammer, 
-    ArrowUpRight, ListTodo, Layers, Paperclip, CalendarDays, TrendingUp
+    ArrowUpRight, ListTodo, Layers, Paperclip, CalendarDays, TrendingUp, Users, FileCheck
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 
 interface ProjectCockpitProps {
     databaseId: string;
@@ -16,6 +17,10 @@ interface ProjectCockpitProps {
     quotationFinancials: any;
     locale: string;
     setActiveTab: (tab: string) => void;
+    actualLaborHours: number;
+    actualLaborCost: number;
+    linkedQuotations?: any[];
+    supplierQuotations?: any[];
 }
 
 export default function ProjectCockpit({
@@ -27,44 +32,55 @@ export default function ProjectCockpit({
     projectExpenses,
     quotationFinancials,
     locale,
-    setActiveTab
+    setActiveTab,
+    actualLaborHours,
+    actualLaborCost,
+    linkedQuotations = [],
+    supplierQuotations = []
 }: ProjectCockpitProps) {
     const t = useTranslations('Database');
 
     // ── Calculate KPIs ──────────────────────────────────────────
     const totalTasks = projectTasks.length;
-    const doneTasks = projectTasks.filter(t => t.properties?.['prop-task-status'] === 'opt-done').length;
+    const doneTasks = projectTasks.filter(t => t.properties?.['prop-task-status'] === 't-done').length;
     const progressPercent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
+    // Financial Truth Calculations
     const budget = Number(project.properties?.['budget'] || 0);
-    // Expenses (from linked invoices/expenses). In the current logic, actualMaterialCost is the sum of projectExpenses totalExVat
-    const actualMaterialCost = projectExpenses.reduce((sum, exp) => sum + (Number(exp.properties?.['totalExVat'] || 0)), 0);
-    // Let's assume invoiced total as well for revenue
-    const invoicedTotal = projectInvoices.reduce((sum, inv) => sum + (Number(inv.properties?.['totalExVat'] || 0)), 0);
+    const contractRevenue = quotationFinancials.total || 0;
     
-    // We'll define "Budget Spent" as actualMaterialCost vs budget for now, unless budget implies something else.
-    // The spec says "Budget spent % = prop-budget vs sum of project-linked expenses/invoices"
-    // We'll combine expenses for spent.
-    const budgetSpentPercent = budget > 0 ? Math.round((actualMaterialCost / budget) * 100) : 0;
+    // Revenue Ladder
+    const invoicedTotal = projectInvoices.reduce((sum, inv) => sum + (Number(inv.properties?.['totalExVat'] || 0)), 0);
+    const paidRevenue = 0; // TBD when payments DB exists
 
-    // Schedule variance: planed end vs projected.
-    // For now, we just display the end date.
+    // Cost Ladder
+    const actualMaterialCost = projectExpenses.reduce((sum, exp) => sum + (Number(exp.properties?.['totalExVat'] || 0)), 0);
+    const totalActualCost = actualMaterialCost + actualLaborCost;
+    const committedCost = 0; // TBD when PO module exists
+    
+    // Margins
+    const quotedMargin = contractRevenue - budget;
+    const forecastCost = Math.max(budget, totalActualCost + committedCost);
+    const forecastMargin = contractRevenue - forecastCost;
+    const forecastMarginPercent = contractRevenue > 0 ? Math.round((forecastMargin / contractRevenue) * 100) : 0;
+    const realizedMargin = invoicedTotal - totalActualCost; // Cash reference
+    const budgetSpentPercent = budget > 0 ? Math.round((totalActualCost / budget) * 100) : 0;
+
+    // Schedule variance
     const endDate = project.properties?.['prop-end-date'] ? String(project.properties?.['prop-end-date']) : 'Not set';
 
-    // Group tasks into a hierarchy (tree)
-    // We group them by status for simplicity if there's no tree structure
     const tasksByStatus = useMemo(() => {
         const groups: Record<string, any[]> = {
-            'opt-to-do': [],
-            'opt-in-prog': [],
-            'opt-done': [],
+            't-todo': [],
+            't-prog': [],
+            't-done': [],
         };
         projectTasks.forEach(task => {
-            const status = task.properties?.['prop-task-status'] || 'opt-to-do';
+            const status = task.properties?.['prop-task-status'] || 't-todo';
             if (groups[status]) {
                 groups[status].push(task);
             } else {
-                groups['opt-to-do'].push(task);
+                groups['t-todo'].push(task);
             }
         });
         return groups;
@@ -73,70 +89,39 @@ export default function ProjectCockpit({
     return (
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4">
             
-            {/* ── Left Rail: Status & Tasks Tree ──────────────────────────────── */}
+            {/* ── Left Rail: Context & Documents ──────────────────────────────── */}
             <div className="xl:col-span-1 flex flex-col gap-6">
+                
+                {/* 1. Status & Tasks */}
                 <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm">
                     <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                        <Flag className="w-4 h-4 text-[#d75d00]" /> Project Status
-                    </h3>
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm font-bold text-neutral-900 dark:text-white">Active</span>
-                        <span className="px-2 py-1 bg-[#d75d00]/10 text-[#d75d00] rounded-lg text-xs font-bold uppercase">On Track</span>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5">
-                                <span>Progress</span>
-                                <span className="text-emerald-500">{progressPercent}%</span>
-                            </div>
-                            <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-1.5">
-                                <span>Budget Spent</span>
-                                <span className={budgetSpentPercent > 100 ? 'text-red-500' : 'text-amber-500'}>{budgetSpentPercent}%</span>
-                            </div>
-                            <div className="h-2 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden">
-                                <div className={`h-full transition-all duration-1000 ${budgetSpentPercent > 100 ? 'bg-red-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, budgetSpentPercent)}%` }} />
-                            </div>
-                            <div className="flex justify-between text-[10px] font-mono text-neutral-400 mt-1">
-                                <span>€{actualMaterialCost.toLocaleString()} spent</span>
-                                <span>€{budget.toLocaleString()} total</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex-1">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
-                        <ListTodo className="w-4 h-4 text-indigo-500" /> Task Hierarchy
+                        <ListTodo className="w-4 h-4 text-indigo-500" /> Tasks ({totalTasks})
                     </h3>
                     <div className="space-y-4">
-                        {['opt-to-do', 'opt-in-prog', 'opt-done'].map(status => {
+                        {['t-todo', 't-prog', 't-done'].map(status => {
                             const groupTasks = tasksByStatus[status] || [];
                             const labels = {
-                                'opt-to-do': 'To Do',
-                                'opt-in-prog': 'In Progress',
-                                'opt-done': 'Done'
+                                't-todo': 'To Do',
+                                't-prog': 'In Progress',
+                                't-done': 'Done'
                             };
                             if (groupTasks.length === 0) return null;
                             return (
                                 <div key={status} className="space-y-2">
-                                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500">{labels[status as keyof typeof labels]}</h4>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 flex justify-between">
+                                        <span>{labels[status as keyof typeof labels]}</span>
+                                        <span>{groupTasks.length}</span>
+                                    </h4>
                                     <div className="space-y-1.5">
-                                        {groupTasks.slice(0, 5).map(task => (
+                                        {groupTasks.slice(0, 3).map(task => (
                                             <div key={task.id} className="flex items-center gap-2 text-sm p-1.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setActiveTab('tasks')}>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${status === 'opt-done' ? 'bg-emerald-500' : status === 'opt-in-prog' ? 'bg-blue-500' : 'bg-neutral-400'}`} />
+                                                <div className={`w-1.5 h-1.5 rounded-full ${status === 't-done' ? 'bg-emerald-500' : status === 't-prog' ? 'bg-blue-500' : 'bg-neutral-400'}`} />
                                                 <span className="truncate font-medium text-neutral-700 dark:text-neutral-300 text-xs">{task.properties?.['title'] || 'Untitled'}</span>
                                             </div>
                                         ))}
-                                        {groupTasks.length > 5 && (
+                                        {groupTasks.length > 3 && (
                                             <div className="text-[10px] font-bold text-indigo-500 pl-4 cursor-pointer" onClick={() => setActiveTab('tasks')}>
-                                                + {groupTasks.length - 5} more tasks
+                                                + {groupTasks.length - 3} more
                                             </div>
                                         )}
                                     </div>
@@ -144,101 +129,179 @@ export default function ProjectCockpit({
                             );
                         })}
                         {totalTasks === 0 && (
-                            <p className="text-xs text-neutral-500 italic">No tasks created yet.</p>
+                            <p className="text-[11px] text-neutral-400 italic">No tasks created yet.</p>
                         )}
                     </div>
                 </div>
+
+                {/* 2. Crew & Hours */}
+                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-blue-500" /> Crew & Hours
+                    </h3>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-neutral-500 text-[11px] font-bold uppercase tracking-wider">Quoted Hours</span>
+                            <span className="font-bold font-mono">{quotationFinancials.labourHours}h</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-neutral-500 text-[11px] font-bold uppercase tracking-wider">Actual Hours</span>
+                            <span className={`font-bold font-mono ${actualLaborHours > quotationFinancials.labourHours ? 'text-red-500' : 'text-emerald-500'}`}>{actualLaborHours}h</span>
+                        </div>
+                        <div className="h-1.5 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden mt-1">
+                            <div 
+                                className={`h-full transition-all duration-1000 ${actualLaborHours > quotationFinancials.labourHours ? 'bg-red-500' : 'bg-emerald-500'}`} 
+                                style={{ width: `${Math.min(100, quotationFinancials.labourHours > 0 ? (actualLaborHours / quotationFinancials.labourHours) * 100 : 0)}%` }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Documents Rollup */}
+                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-4 flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-amber-500" /> Documents
+                    </h3>
+                    <div className="space-y-4">
+                        {linkedQuotations.length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">Quotes ({linkedQuotations.length})</h4>
+                                <div className="space-y-1.5">
+                                    {linkedQuotations.map(q => (
+                                        <Link key={q.id} href={`/admin/quotations/${q.id}`} className="flex justify-between items-center p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 text-xs transition-colors">
+                                            <span className="truncate font-medium text-indigo-600 dark:text-indigo-400">{q.properties?.['title'] || 'Quote'}</span>
+                                            <ArrowUpRight className="w-3 h-3 text-neutral-400" />
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {projectInvoices.length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2 mt-2">Sales Invoices ({projectInvoices.length})</h4>
+                                <div className="space-y-1.5">
+                                    {projectInvoices.map(inv => (
+                                        <Link key={inv.id} href={`/admin/invoices/${inv.id}`} className="flex justify-between items-center p-2 rounded-lg hover:bg-neutral-50 dark:hover:bg-white/5 text-xs transition-colors">
+                                            <span className="truncate font-medium text-emerald-600 dark:text-emerald-400">{inv.properties?.['title'] || 'Invoice'}</span>
+                                            <span className="font-mono text-[10px] font-bold">€{Number(inv.properties?.['totalExVat'] || 0).toLocaleString()}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
             </div>
 
             {/* ── Main Cockpit Area ────────────────────────────────────────── */}
             <div className="xl:col-span-3 flex flex-col gap-6">
                 
-                {/* ── Top KPI Row ────────────────────────────────────────── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ── Hero Row ────────────────────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Overall Progress</span>
-                            <TrendingUp className="w-4 h-4 text-emerald-500 opacity-50" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Live Margin</span>
+                            <TrendingUp className="w-4 h-4 text-indigo-500 opacity-50" />
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black tabular-nums text-neutral-900 dark:text-white">{progressPercent}%</span>
-                            <span className="text-xs font-bold text-neutral-500">{doneTasks} / {totalTasks} tasks</span>
+                            <span className="text-2xl font-black tabular-nums text-neutral-900 dark:text-white">€{forecastMargin.toLocaleString()}</span>
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase tracking-widest mt-1 block ${forecastMarginPercent >= 20 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                            {forecastMarginPercent}% FORECAST
+                        </span>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Progress</span>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 opacity-50" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black tabular-nums text-neutral-900 dark:text-white">{progressPercent}%</span>
+                        </div>
+                        <div className="h-1.5 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden mt-2">
+                            <div className="h-full bg-emerald-500 transition-all duration-1000" style={{ width: `${progressPercent}%` }} />
                         </div>
                     </div>
 
                     <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Schedule</span>
-                            <CalendarDays className="w-4 h-4 text-blue-500 opacity-50" />
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-3xl font-black tabular-nums text-neutral-900 dark:text-white truncate">{endDate}</span>
-                        </div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-1 block">Planned End Date</span>
-                    </div>
-
-                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Budget Spent</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">Cost vs Budget</span>
                             <Receipt className="w-4 h-4 text-amber-500 opacity-50" />
                         </div>
                         <div className="flex items-baseline gap-2">
-                            <span className={`text-3xl font-black tabular-nums ${budgetSpentPercent > 100 ? 'text-red-500' : 'text-neutral-900 dark:text-white'}`}>{budgetSpentPercent}%</span>
-                            <span className="text-xs font-bold text-neutral-500">of €{budget.toLocaleString()}</span>
+                            <span className={`text-2xl font-black tabular-nums ${budgetSpentPercent > 100 ? 'text-red-500' : 'text-neutral-900 dark:text-white'}`}>{budgetSpentPercent}%</span>
                         </div>
+                        <div className="h-1.5 bg-neutral-100 dark:bg-white/5 rounded-full overflow-hidden mt-2">
+                            <div className={`h-full transition-all duration-1000 ${budgetSpentPercent > 100 ? 'bg-red-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(100, budgetSpentPercent)}%` }} />
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-500">Timeline</span>
+                            <CalendarDays className="w-4 h-4 text-blue-500 opacity-50" />
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                            <span className="text-xl font-black tabular-nums text-neutral-900 dark:text-white truncate">{endDate}</span>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mt-2 block">Planned End</span>
                     </div>
                 </div>
 
-                {/* ── Bottom Module Cards ────────────────────────────────────────── */}
-                <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mt-2 px-2">Project Modules</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* ── Ladders (Revenue vs Cost) ──────────────────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     
-                    <button 
-                        onClick={() => setActiveTab('tasks')}
-                        className="group flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl hover:border-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/10 transition-all text-left"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <ListTodo className="w-5 h-5" />
+                    {/* Revenue Ladder */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-emerald-500 flex items-center gap-2">
+                            <TrendingUp className="w-4 h-4" /> Revenue Pipeline
+                        </h3>
+                        
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">1. Quoted / Contract</span>
+                            <span className="font-mono font-black text-sm">€{contractRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
-                        <span className="font-bold text-neutral-900 dark:text-white mb-1">Schedule & Tasks</span>
-                        <span className="text-xs font-medium text-neutral-500">{totalTasks} tasks tracked</span>
-                    </button>
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5 opacity-50">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">2. Ordered (PO In)</span>
+                            <span className="font-mono font-black text-sm text-neutral-400">TBD</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500">3. Invoiced</span>
+                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">€{invoicedTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 opacity-50">4. Paid</span>
+                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400 opacity-50">TBD</span>
+                        </div>
+                    </div>
 
-                    <button 
-                        onClick={() => setActiveTab('files')}
-                        className="group flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl hover:border-rose-500/50 hover:shadow-xl hover:shadow-rose-500/10 transition-all text-left"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Paperclip className="w-5 h-5" />
+                    {/* Cost Ladder */}
+                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
+                            <Receipt className="w-4 h-4" /> Cost Tracking
+                        </h3>
+                        
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">1. Budget</span>
+                            <span className="font-mono font-black text-sm">€{budget.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
-                        <span className="font-bold text-neutral-900 dark:text-white mb-1">Documents & Media</span>
-                        <span className="text-xs font-medium text-neutral-500">View project files</span>
-                    </button>
-
-                    <button 
-                        onClick={() => setActiveTab('vorderingen')}
-                        className="group flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all text-left"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Receipt className="w-5 h-5" />
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5 opacity-50">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">2. Committed (PO Out)</span>
+                            <span className="font-mono font-black text-sm text-neutral-400">€0</span>
                         </div>
-                        <span className="font-bold text-neutral-900 dark:text-white mb-1">Invoicing</span>
-                        <span className="text-xs font-medium text-neutral-500">{projectInvoices.length} invoices generated</span>
-                    </button>
-
-                    <a 
-                        href={`/${locale}/admin/suppliers/quotations?project=${pageId}`}
-                        className="group flex flex-col p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-3xl hover:border-orange-500/50 hover:shadow-xl hover:shadow-orange-500/10 transition-all text-left"
-                    >
-                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                            <Hammer className="w-5 h-5" />
+                        <div className="flex justify-between items-center py-2 border-b border-neutral-100 dark:border-white/5">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">3. Actual (Inv + Labor)</span>
+                            <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400">€{totalActualCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
-                        <span className="font-bold text-neutral-900 dark:text-white mb-1">Procurement</span>
-                        <span className="text-xs font-medium text-neutral-500">Supplier Quotes</span>
-                    </a>
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500 opacity-50">4. Paid</span>
+                            <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400 opacity-50">TBD</span>
+                        </div>
+                    </div>
 
                 </div>
-
             </div>
         </div>
     );

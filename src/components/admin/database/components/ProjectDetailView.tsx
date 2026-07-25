@@ -189,16 +189,16 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         return [];
     }, [page?.properties]);
 
-    const linkedQuotation = useMemo(() => {
-        if (linkedQuoteIds.length === 0) return null;
+    const linkedQuotations = useMemo(() => {
+        if (linkedQuoteIds.length === 0) return [];
         return allDatabases
             .filter(d => d.id === quotationsDbId || d.id.startsWith('db-quotations'))
             .flatMap(d => d.pages)
-            .find(p => linkedQuoteIds.includes(p.id)) || null;
+            .filter(p => linkedQuoteIds.includes(p.id));
     }, [allDatabases, linkedQuoteIds, quotationsDbId]);
 
     const quotationFinancials = useMemo(() => {
-        if (!linkedQuotation) return { total: 0, materialCost: 0, labourHours: 0, avgLabourRate: 0, lineCount: 0 };
+        if (linkedQuotations.length === 0) return { total: 0, materialCost: 0, labourHours: 0, avgLabourRate: 0, lineCount: 0 };
 
         let total = 0;
         let materialCost = 0;
@@ -226,7 +226,10 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                 if (block.children) traverse(block.children);
             });
         };
-        traverse(linkedQuotation.blocks || []);
+        
+        linkedQuotations.forEach(quote => {
+            traverse(quote.blocks || []);
+        });
 
         const avgLabourRate = labourHours > 0 ? Math.round((labourCostWeighted / labourHours) * 100) / 100 : 35;
 
@@ -710,432 +713,21 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
 
                 {/* ── Tab Content ─────────────────────────────────────────── */}
                 {activeTab === 'overview' && (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                        {/* P&L Dashboard — spans 2 columns */}
-                        <div className="xl:col-span-2 flex flex-col gap-4">
-
-                            {/* ── Revenue Card ──────────────────────────────────────── */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <Receipt className="w-4 h-4 text-emerald-500" /> Revenue
-                                </div>
-                                <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider">Contract Value</p>
-                                        <p className="text-lg font-black text-neutral-900 dark:text-white tabular-nums font-mono">
-                                            {quotationFinancials.total > 0 ? `€${quotationFinancials.total.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}` : '—'}
-                                        </p>
-                                        {linkedQuotation && (
-                                            <a href={`/${locale}/admin/quotations/${linkedQuotation.id}`} className="text-[9px] font-semibold text-indigo-500 hover:text-indigo-400 flex items-center gap-1 transition-colors">
-                                                <ExternalLink className="w-3 h-3" /> {String(linkedQuotation.properties?.['title'] || 'View Quote')}
-                                            </a>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-500">Invoiced</p>
-                                        <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums font-mono">
-                                            €{invoicedTotal.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                        {quotationFinancials.total > 0 && (
-                                            <p className="text-[9px] font-bold text-emerald-500">{Math.round((invoicedTotal / quotationFinancials.total) * 100)}%</p>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-green-500">Paid</p>
-                                        <p className="text-lg font-black text-green-600 dark:text-green-400 tabular-nums font-mono">
-                                            €{paidRevenueAmount.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-500">Outstanding</p>
-                                        <p className={`text-lg font-black tabular-nums font-mono ${invoicedTotal - paidRevenueAmount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                                            €{Math.max(0, invoicedTotal - paidRevenueAmount).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500">To Invoice</p>
-                                        <p className={`text-lg font-black tabular-nums font-mono ${remainingToInvoice > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                                            €{Math.max(0, remainingToInvoice).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                        </p>
-                                    </div>
-                                </div>
-                                {/* Invoiced progress bar */}
-                                {quotationFinancials.total > 0 && (
-                                    <div className="px-5 pb-4">
-                                        <div className="w-full h-2.5 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                                            <div className="h-full rounded-full flex overflow-hidden">
-                                                <div
-                                                    className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-700 ease-out"
-                                                    style={{ width: `${Math.min(100, Math.round((invoicedTotal / quotationFinancials.total) * 100))}%` }}
-                                                />
-                                                {draftTotal > 0 && (
-                                                    <div
-                                                        className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-700 ease-out"
-                                                        style={{ width: `${Math.min(100 - Math.round((invoicedTotal / quotationFinancials.total) * 100), Math.round((draftTotal / quotationFinancials.total) * 100))}%` }}
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-4 mt-1.5 text-[9px] font-semibold text-neutral-500">
-                                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Invoiced</span>
-                                            {draftTotal > 0 && <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Draft</span>}
-                                            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-neutral-300 dark:bg-neutral-600" /> Remaining</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* ── Cost & Margin Row ─────────────────────────────────── */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Costs Card */}
-                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                        <Clock className="w-4 h-4 text-amber-500" /> Costs
-                                    </div>
-                                    <div className="p-5 space-y-3">
-                                        {quotationFinancials.total > 0 && (
-                                            <div className="space-y-1.5">
-                                                <p className="text-[9px] font-bold uppercase tracking-widest text-indigo-500 flex items-center gap-1">
-                                                    <Receipt className="w-3 h-3" /> Estimated (from Quote)
-                                                </p>
-                                                {quotationFinancials.materialCost > 0 && (
-                                                    <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                                        <span>Material</span>
-                                                        <span className="font-mono">€{quotationFinancials.materialCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                {quotationFinancials.labourHours > 0 && (
-                                                    <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                                        <span>Labour (est.)</span>
-                                                        <span className="font-mono">{quotationFinancials.labourHours}h × €{quotationFinancials.avgLabourRate}/h</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                        <div className="space-y-1.5 pt-2 border-t border-neutral-100 dark:border-white/5">
-                                            <p className="text-[9px] font-bold uppercase tracking-widest text-amber-500 flex items-center gap-1">
-                                                <Clock className="w-3 h-3" /> Actual Costs
-                                            </p>
-                                            <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                                <span>Materials & Expenses</span>
-                                                <span className="font-mono">€{actualMaterialCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500">
-                                                <span>Labour (clocked)</span>
-                                                <span className="font-mono">{actualLaborHours}h — €{actualLaborCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-xs font-black text-neutral-800 dark:text-neutral-200 pt-1 border-t border-dashed border-neutral-200 dark:border-neutral-800">
-                                                <span>Total Costs</span>
-                                                <span className="font-mono text-amber-500">€{totalActualCost.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center text-[10px] font-bold text-neutral-500 pt-1">
-                                                <span>Paid Expenses</span>
-                                                <span className="font-mono text-green-600 dark:text-green-400">€{paidExpensesAmount.toLocaleString('nl-BE', { minimumFractionDigits: 2 })}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Margin Card */}
-                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                        <TrendingUp className="w-4 h-4 text-emerald-500" /> Margin
-                                    </div>
-                                    <div className="p-5">
-                                        {quotationFinancials.total > 0 ? (() => {
-                                            const margin = quotationFinancials.total - totalActualCost;
-                                            const marginPercent = Math.round((margin / quotationFinancials.total) * 100);
-                                            const isHealthy = margin >= 0;
-                                            const usedPercent = Math.min(100, Math.round((totalActualCost / quotationFinancials.total) * 100));
-                                            return (
-                                                <div className="space-y-3">
-                                                    <div className="flex items-baseline justify-between">
-                                                        <span className={`text-2xl font-black tabular-nums font-mono ${isHealthy ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                            {isHealthy ? '' : '-'}€{Math.abs(margin).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                        </span>
-                                                        <span className={`text-sm font-bold ${isHealthy ? 'text-emerald-500' : 'text-red-500'}`}>
-                                                            {marginPercent}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="w-full h-3 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full transition-all duration-700 ease-out ${isHealthy ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-red-500'}`}
-                                                            style={{ width: `${usedPercent}%` }}
-                                                        />
-                                                    </div>
-                                                    <p className={`text-[10px] font-bold flex items-center gap-1 ${isHealthy ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                        {isHealthy ? '✅' : '⚠️'} {isHealthy ? `${marginPercent}% margin remaining` : `${Math.abs(marginPercent)}% over budget`}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })() : (
-                                            <div className="flex flex-col items-center py-6 text-neutral-400">
-                                                <TrendingUp className="w-6 h-6 opacity-30 mb-2" />
-                                                <p className="text-xs font-medium">Link a quotation to see margins</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* ── Compact Task Summary (link to Tasks tab) ──────────── */}
-                            <button
-                                onClick={() => setActiveTab('tasks')}
-                                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm hover:border-neutral-300 dark:hover:border-white/20 transition-colors text-left w-full"
-                            >
-                                <div className="px-5 py-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                        <ListTodo className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Tasks
-                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500">{taskStats.total}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-4 text-[10px] font-bold">
-                                            <span className="text-emerald-500">{taskStats.done} done</span>
-                                            <span className="text-blue-500">{taskStats.busy} busy</span>
-                                            <span className="text-neutral-400">{taskStats.todo} todo</span>
-                                        </div>
-                                        <div className="w-24 h-2 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full rounded-full transition-all duration-500"
-                                                style={{
-                                                    width: `${taskStats.progress}%`,
-                                                    background: taskStats.progress === 100
-                                                        ? 'linear-gradient(90deg, #10b981, #059669)'
-                                                        : 'linear-gradient(90deg, var(--brand-color, #d35400), color-mix(in srgb, var(--brand-color, #d35400) 70%, #f59e0b))'
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-xs font-black text-neutral-900 dark:text-white">{taskStats.progress}%</span>
-                                        <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400" />
-                                    </div>
-                                </div>
-                            </button>
-                        </div>
-
-                        {/* Supplier Quotations */}
-                        <div className="xl:col-span-2">
-                            <SupplierQuotationsCard 
-                                projectId={pageId}
-                                quotations={supplierQuotations}
-                                suppliers={suppliers}
-                                onUpdate={(newQuotations) => {
-                                    if (updatePageProperty) {
-                                        updatePageProperty(databaseId, pageId, 'supplierQuotations', newQuotations);
-                                    }
-                                }}
-                            />
-                        </div>
-
-                        {/* Right sidebar — Project Info */}
-                        <div className="flex flex-col gap-4">
-                            {/* Date Range Card */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <CalendarDays className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Schedule
-                                </div>
-                                <div className="p-4 space-y-3">
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Planned Start</p>
-                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedStart)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Planned End</p>
-                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(plannedEnd)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Actual Start</p>
-                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualStart)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-wider mb-0.5">Actual End</p>
-                                            <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{formatDate(actualEnd)}</p>
-                                        </div>
-                                    </div>
-
-                                    {location && (
-                                        <div className="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-white/5">
-                                            <MapPin className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                                            <span className="text-xs text-neutral-600 dark:text-neutral-300 truncate">{location}</span>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Billing Rule Card */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <BarChart3 className="w-4 h-4 text-emerald-500" /> Billing
-                                </div>
-                                <div className="p-4 space-y-2">
-                                    <CustomDropdown
-                                        value={billingRule}
-                                        options={BILLING_RULE_OPTIONS}
-                                        onChange={(v) => updatePageProperty(databaseId, pageId, 'prop-billing-rule', v)}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Linked Projects */}
-                            {(() => {
-                                const linkedProjIds = (() => {
-                                    const raw = page.properties['prop-linked-projects'];
-                                    if (Array.isArray(raw)) return raw as string[];
-                                    if (typeof raw === 'string' && raw) return [raw];
-                                    return [];
-                                })();
-                                const projectsDb = allDatabases.find(d => d.id === databaseId);
-                                const linkedProjects = linkedProjIds.map(id => projectsDb?.pages.find(p => p.id === id)).filter(Boolean) as any[];
-
-                                const TYPE_BADGE_MAP: Record<string, { label: string; color: string; bg: string }> = {
-                                    'type-operations': { label: 'OPS', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                                    'type-admin': { label: 'ADM', color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
-                                    'type-bizdev': { label: 'BIZ', color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                                };
-
-                                if (linkedProjects.length === 0) return null;
-
-                                return (
-                                    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                        <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                            <Layers className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Linked Projects
-                                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 ml-1">{linkedProjects.length}</span>
-                                        </div>
-                                        <div className="divide-y divide-neutral-100 dark:divide-white/5">
-                                            {linkedProjects.map((proj: any) => {
-                                                const projType = String(proj.properties['prop-project-type'] || '');
-                                                const badge = TYPE_BADGE_MAP[projType];
-                                                const projExecStatus = String(proj.properties['prop-execution-status'] || '');
-                                                const projStatusInfo = EXEC_STATUS_MAP[projExecStatus] || EXEC_STATUS_MAP['opt-to-do'];
-                                                return (
-                                                    <a
-                                                        key={proj.id}
-                                                        href={`/${locale}/admin/database/${databaseId}/${proj.id}`}
-                                                        className="flex items-center gap-3 px-5 py-3 hover:bg-neutral-50 dark:hover:bg-white/[0.02] transition-colors"
-                                                    >
-                                                        <div className={`${projStatusInfo.color} flex-shrink-0`}>{projStatusInfo.icon}</div>
-                                                        <span className="flex-1 text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">
-                                                            {String(proj.properties['title'] || 'Untitled')}
-                                                        </span>
-                                                        {badge && (
-                                                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${badge.bg} ${badge.color}`}>
-                                                                {badge.label}
-                                                            </span>
-                                                        )}
-                                                        <ArrowUpRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
-                                                    </a>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Connected Records */}
-                            <ErrorBoundary componentName="LinkedRecords">
-                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm relative">
-                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                        <Layers className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Connected
-                                    </div>
-                                    <div className="p-4 max-h-[300px] overflow-y-auto">
-                                        <LinkedRecords databaseId={databaseId} pageId={pageId} />
-                                    </div>
-                                </div>
-                            </ErrorBoundary>
-
-                            {/* Financials */}
-                            <ErrorBoundary componentName="PageFinancialAnalysis">
-                                <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                    <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                        <TrendingUp className="w-4 h-4" style={{ color: 'var(--brand-color, #d35400)' }} /> Financials
-                                    </div>
-                                    <div className="p-4">
-                                        <PageFinancialAnalysis databaseId={databaseId} pageId={pageId} costs={totalActualCost} quotationTotal={quotationFinancials.total} invoicedTotal={invoicedTotal + draftTotal} />
-                                    </div>
-                                </div>
-                            </ErrorBoundary>
-
-                            {/* Linked Financial Documents */}
-                            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="px-5 py-3 border-b border-neutral-200 dark:border-white/10 bg-neutral-50/80 dark:bg-white/5 flex items-center gap-2 font-bold text-[11px] uppercase tracking-widest text-neutral-600 dark:text-neutral-400">
-                                    <Receipt className="w-4 h-4 text-orange-500" /> Linked Financial Documents
-                                </div>
-                                <div className="p-0 divide-y divide-neutral-100 dark:divide-white/5 max-h-[400px] overflow-y-auto">
-                                    {projectInvoices.length === 0 && projectExpenses.length === 0 && projectPaymentsIn.length === 0 && projectPaymentsOut.length === 0 && (
-                                        <div className="p-6 text-center text-xs text-neutral-500 italic">No financial documents linked yet.</div>
-                                    )}
-
-                                    {projectInvoices.length > 0 && (
-                                        <div className="p-4 space-y-2">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-emerald-500 mb-2">Sales Invoices ({projectInvoices.length})</h4>
-                                            {projectInvoices.map(doc => (
-                                                <a key={doc.id} href={`/${locale}/admin/database/${invoicesDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Untitled')}</span>
-                                                        <span className="text-[10px] text-neutral-500">{doc.properties['invoiceDate'] ? String(doc.properties['invoiceDate']) : 'No date'}</span>
-                                                    </div>
-                                                    <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-300">
-                                                        €{Number(doc.properties['totalIncVat'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {projectExpenses.length > 0 && (
-                                        <div className="p-4 space-y-2">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2">Purchase Invoices / Expenses ({projectExpenses.length})</h4>
-                                            {projectExpenses.map(doc => (
-                                                <a key={doc.id} href={`/${locale}/admin/database/${expensesDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Untitled')}</span>
-                                                        <span className="text-[10px] text-neutral-500">{String(doc.properties['betreft'] || 'No description')}</span>
-                                                    </div>
-                                                    <span className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-300">
-                                                        €{Number(doc.properties['totalIncVat'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {projectPaymentsIn.length > 0 && (
-                                        <div className="p-4 space-y-2">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-blue-500 mb-2">Payments Received ({projectPaymentsIn.length})</h4>
-                                            {projectPaymentsIn.map(doc => (
-                                                <a key={doc.id} href={`/${locale}/admin/database/${paymentsInDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Payment')}</span>
-                                                        <span className="text-[10px] text-neutral-500">{doc.properties['date'] ? String(doc.properties['date']) : 'No date'}</span>
-                                                    </div>
-                                                    <span className="text-sm font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                                                        +€{Number(doc.properties['amount'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {projectPaymentsOut.length > 0 && (
-                                        <div className="p-4 space-y-2">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-pink-500 mb-2">Payments Sent ({projectPaymentsOut.length})</h4>
-                                            {projectPaymentsOut.map(doc => (
-                                                <a key={doc.id} href={`/${locale}/admin/database/${paymentsOutDbId}/${doc.id}`} className="flex items-center justify-between p-2 rounded-xl border border-neutral-200 dark:border-white/10 hover:bg-neutral-50 dark:hover:bg-white/5 transition group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 group-hover:text-orange-500">{String(doc.properties['title'] || 'Payment')}</span>
-                                                        <span className="text-[10px] text-neutral-500">{doc.properties['date'] ? String(doc.properties['date']) : 'No date'}</span>
-                                                    </div>
-                                                    <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400">
-                                                        -€{Number(doc.properties['amount'] || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2 })}
-                                                    </span>
-                                                </a>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <ProjectCockpit
+                        databaseId={databaseId}
+                        pageId={pageId}
+                        project={page}
+                        projectTasks={projectTasks}
+                        projectInvoices={projectInvoices}
+                        projectExpenses={projectExpenses}
+                        quotationFinancials={quotationFinancials}
+                        locale={locale}
+                        setActiveTab={setActiveTab}
+                        actualLaborHours={actualLaborHours}
+                        actualLaborCost={actualLaborCost}
+                        linkedQuotations={linkedQuotations}
+                        supplierQuotations={supplierQuotations}
+                    />
                 )}
 
                 {/* ── Tasks Tab ───────────────────────────────────────────── */}

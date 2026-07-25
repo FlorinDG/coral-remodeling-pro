@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 import { del } from 'idb-keyval';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Link, usePathname } from "@/i18n/routing";
 import {
     LogOut,
@@ -40,6 +41,8 @@ import { hrTabs, relationsTabs, frontendTabs, financialTabs, settingsTabs } from
 import { SCHEMA_VERSION } from "@/lib/schema-version";
 
 const ALL_TABS = [...hrTabs, ...relationsTabs, ...frontendTabs, ...financialTabs, ...settingsTabs];
+
+const queryClient = new QueryClient();
 
 import { Lock } from "lucide-react";
 import { TenantProvider } from "@/context/TenantContext";
@@ -239,10 +242,11 @@ export default function AdminLayout({ children, activeModules = [], planType = '
     );
 
     return (
-        <div
-            className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden"
-            style={{ '--brand-color': brandColor } as React.CSSProperties}
-        >
+        <QueryClientProvider client={queryClient}>
+            <div
+                className="min-h-screen w-full max-w-[100vw] bg-white dark:bg-black text-neutral-900 dark:text-white flex overflow-hidden"
+                style={{ '--brand-color': brandColor } as React.CSSProperties}
+            >
             {/* Sidebar — hidden on mobile, replaced by MobileBottomNav */}
             <aside className={`${isSidebarOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-200 dark:border-white/10 hidden md:flex flex-col fixed inset-y-0 left-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl`}>
                 <div className="p-4 flex items-center gap-3">
@@ -572,6 +576,7 @@ export default function AdminLayout({ children, activeModules = [], planType = '
             <NotificationWatcher />
             <EnvBadge />
             <Toaster position="top-right" richColors closeButton />
-        </div>
+            </div>
+        </QueryClientProvider>
     );
 }

@@ -216,15 +216,20 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             const data = await res.json();
 
             if (!res.ok || !data.success) {
-                // EXPENSE-UPLOAD-FIX: graceful degradation to manual entry instead of returning early and blocking
-                setScanError(data.error || 'Scan failed. Please enter details manually.');
-                setScanResult(null);
-                setStep('review');
-                return;
+                if (res.status === 409 && data?.isDuplicate) {
+                    setScanResult(data);
+                    setScanError('');
+                } else {
+                    // EXPENSE-UPLOAD-FIX: graceful degradation to manual entry instead of returning early and blocking
+                    setScanError(data.error || 'Scan failed. Please enter details manually.');
+                    setScanResult(null);
+                    setStep('review');
+                    return;
+                }
+            } else {
+                setScanResult(data);
+                setScanError('');
             }
-
-            setScanResult(data);
-            setScanError('');
 
             // Pre-fill form from extracted fields
             const ext = data.extracted || {};
@@ -322,8 +327,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
             totalVat: ((parseDecimal(l.quantity) || 1) * (parseDecimal(l.unitPrice) || 0)) * ((parseDecimal(l.vatRate) || 21) / 100),
         }));
 
-        if (!scanResult) {
-            // Manual entry — server-first
+        if (!scanResult || scanResult.isDuplicate) {
+            // Manual entry (or duplicate override) — server-first
             try {
                 if (isInvoiceMode) {
                     const result = await createPageServerFirst(targetDatabaseId, {
@@ -436,6 +441,8 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
     };
 
     const isLoading = step === 'capture' && !scanError && lastFileRef.current !== null;
+    const isStrictDuplicate = scanResult?.isDuplicate === true;
+    const isPossibleMatch = scanResult?.dedupResult?.status === 'possible';
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
@@ -619,6 +626,33 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         {/* ── REVIEW / FORM STEP ── */}
                         {step === 'review' && (
                             <div className="space-y-6">
+
+                                {isStrictDuplicate && (
+                                    <div className="flex items-start gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/50 rounded-xl px-4 py-3 animate-in fade-in slide-in-from-top-4">
+                                        <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-800 dark:text-red-300">Exact Duplicate Detected</p>
+                                            <p className="text-xs text-red-700 dark:text-red-400/80 mt-0.5">
+                                                This document exactly matches an existing record ({scanResult.dedupResult?.matchedFields?.join(', ')}). 
+                                                It was <strong>not saved</strong> to prevent duplication.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {isPossibleMatch && (
+                                    <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/50 rounded-xl px-4 py-3">
+                                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-amber-800 dark:text-amber-500">Possible Duplicate</p>
+                                            <p className="text-xs text-amber-700 dark:text-amber-400/80 mt-0.5">
+                                                This document shares fields with an existing record ({scanResult.dedupResult?.matchedFields?.join(', ')}). 
+                                                Review carefully before saving.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Scan Error / Degradation banner */}
                                 {scanError && !scanResult && (
                                     <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl px-4 py-3">
@@ -971,12 +1005,21 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                     >
                                         ← Back
                                     </button>
-                                    <button
-                                        onClick={handleSave}
-                                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
-                                    >
-                                        {scanResult ? 'Confirm & Save' : 'Save'}
-                                    </button>
+                                    {isStrictDuplicate ? (
+                                        <button
+                                            onClick={handleSave}
+                                            className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-all shadow-sm shadow-red-500/20"
+                                        >
+                                            Not a duplicate, save anyway
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={handleSave}
+                                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white text-sm font-semibold hover:from-orange-600 hover:to-amber-600 transition-all shadow-sm shadow-orange-500/20"
+                                        >
+                                            {scanResult ? 'Confirm & Save' : 'Save'}
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}

@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma';
 import { v4 as uuidv4 } from 'uuid';
 import { isSystemDatabase } from '@/lib/systemDatabases';
 import { getLockedDbId } from '@/lib/lockedDbUtils';
+import { checkDuplicateExpense } from '@/lib/expense-dedup';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Increased — pdfjs page render can take longer
@@ -267,6 +268,7 @@ export async function POST(req: Request) {
         // ── Parse form data ───────────────────────────────────────────────────
         const formData = await req.formData();
         const file = formData.get('file') as File | null;
+        const overrideDuplicate = formData.get('overrideDuplicate') === 'true';
         let targetDb = (formData.get('targetDb') as string) || 'db-tickets';
         const isInvoice = targetDb === 'db-expenses' || targetDb.startsWith('db-expenses');
 
@@ -391,6 +393,32 @@ export async function POST(req: Request) {
             }
         }
 
+        // ── Deduplication Check ───────────────────────────────────────────────
+        const extractedForDedup = {
+            isInvoice,
+            date: isInvoice ? extracted.issueDate : extracted.date,
+            documentNumber: isInvoice ? extracted.invoiceNumber : undefined,
+            supplierName: isInvoice ? extracted.supplierName : extracted.merchant,
+            supplierVat: isInvoice ? extracted.supplierVat : undefined,
+            amount: isInvoice ? extracted.totalIncVat : extracted.totalAmount,
+        };
+
+        const dedupResult = await checkDuplicateExpense(prisma, tenantId, targetDb, extractedForDedup);
+
+        if (dedupResult.status === 'duplicate' && !overrideDuplicate) {
+            // It's a strict duplicate. We must block saving and return early.
+            // We'll consume the quota since we did perform OCR.
+            const finalQuota = await checkAndIncrementQuota(tenantId, true);
+            return NextResponse.json({
+                error: 'Duplicate document detected',
+                code: 'DUPLICATE_DETECTED',
+                isDuplicate: true,
+                dedupResult,
+                extracted, // so the UI can still show the extracted data if the user wants to override
+                remaining: finalQuota.remaining
+            }, { status: 409 });
+        }
+
         // ── Ensure parent DB exists ───────────────────────────────────────────
         const existingDb = await prisma.globalDatabase.findUnique({
             where: { id: targetDb },
@@ -482,6 +510,7 @@ export async function POST(req: Request) {
                 lastEditedBy: savedPage.lastEditedBy,
             },
             extracted,
+            dedupResult,
         });
 
     } catch (e: any) {

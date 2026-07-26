@@ -285,6 +285,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     return { 
                                         ...p, 
                                         baseUpdatedAt: result.updatedAt,
+                                        baseBlocksHash: JSON.stringify(page.blocks || []),
                                         dirtyBase: newDirtyBase,
                                         dirtyBaseBlocks: newDirtyBaseBlocks
                                     };
@@ -443,7 +444,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             mergedPages.push(localPagesMap.get(sp.id) || sp);
                         } else {
                             // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
-                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt });
+                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt, baseBlocksHash: JSON.stringify(sp.blocks || []) });
                         }
                     });
                     

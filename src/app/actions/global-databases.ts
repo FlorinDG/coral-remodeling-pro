@@ -209,7 +209,12 @@ export async function saveGlobalPage(page: Page) {
         // Optimistic Concurrency Control
         const existingPage = await prisma.globalPage.findUnique({
             where: { id: page.id },
-            select: { updatedAt: true, properties: true, lastEditedBy: true }
+            select: { 
+                updatedAt: true, 
+                properties: true, 
+                lastEditedBy: true,
+                blocks: true 
+            }
         });
 
         let finalProperties = page.properties;
@@ -222,9 +227,17 @@ export async function saveGlobalPage(page: Page) {
                 // Time mismatch: Attempt field-level 3-way merge
                 let hasHardConflict = false;
                 
-                // 1. Guard blocks: if client edited blocks and server time advanced, that's a hard conflict.
+                // 1. Guard blocks: if client edited blocks and server time advanced, check if server blocks actually changed.
                 if (page.dirtyBaseBlocks) {
-                    hasHardConflict = true;
+                    const serverBlocksHash = JSON.stringify(existingPage.blocks || []);
+                    if (page.baseBlocksHash) {
+                        if (serverBlocksHash !== page.baseBlocksHash) {
+                            hasHardConflict = true;
+                        }
+                    } else {
+                        // Back-compat: no hash means we must assume a hard conflict
+                        hasHardConflict = true;
+                    }
                 }
 
                 // 2. Merge properties

@@ -32,18 +32,18 @@ export default function SortableQuotationRow(props: SortableQuotationRowProps) {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        marginLeft: `${depth * 24}px`,
         opacity: isDragging ? 0.4 : 1,
     };
 
     return (
         <div ref={setNodeRef} style={style} className={`relative group w-full ${props.isDraggingGlobal && !isDragging ? 'opacity-90' : ''}`}>
-            {/* The grip menu / add child menu will go here if needed, or we just pass attributes down */}
-            <QuotationRow
-                {...props}
-                dragHandleProps={{ ...attributes, ...listeners }}
-                isDragging={isDragging}
-            />
+            <div style={{ paddingLeft: `${depth * 24}px` }}>
+                <QuotationRow
+                    {...props}
+                    dragHandleProps={{ ...attributes, ...listeners }}
+                    isDragging={isDragging}
+                />
+            </div>
         </div>
     );
 }

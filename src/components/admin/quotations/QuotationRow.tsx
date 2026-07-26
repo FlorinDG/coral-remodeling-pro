@@ -426,23 +426,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                             className={`flex flex-col w-full gap-1 mt-1 rounded-lg transition-all`}
                                         >
 
-                                            {/* Recursive Child Mounting */}
-                                            {(block.children || []).map((child, childIndex) => (
-                                                <QuotationRow
-                                                    key={child.id}
-                                                    block={child}
-                                                    index={childIndex}
-                                                    onUpdate={handleChildUpdate}
-                                                    onDelete={handleChildDelete}
-                                                    onDuplicate={handleChildDuplicate}
-                                                    hasLibraryAccess={hasLibraryAccess}
-                                                    vatCalcMode={vatCalcMode}
-                                                    language={language}
-                                                    isDraggingGlobal={isDraggingGlobal}
-                                                    isInactive={currentInactive}
-                                                    depth={depth + 1}
-                                                />
-                                            ))}
+                                            {/* Children are rendered by the flat list via ClientQuotationEngine */}
 
                                             {/* Contextual Spawners for deep depths */}
                                             <div className="flex items-center gap-2 mt-1 py-1">
@@ -825,24 +809,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         <div
                                             className={`flex flex-col p-2 gap-2 border-l-4 border-orange-200 dark:border-orange-900/40 ml-1 rounded-sm min-h-[150px] bg-neutral-50 dark:bg-[#151515] transition-all`}
                                         >
-                                            {(block.children || []).map((child, childIndex) => child && (
-                                                <QuotationRow
-                                                    key={child.id}
-                                                    block={child}
-                                                    index={childIndex}
-                                                    onUpdate={handleChildUpdate}
-                                                    onDelete={handleChildDelete}
-                                                    onDuplicate={handleChildDuplicate}
-                                                    hasLibraryAccess={hasLibraryAccess}
-                                                    vatCalcMode={vatCalcMode}
-                                                    language={language}
-                                                    isDraggingGlobal={isDraggingGlobal}
-                                                    isInactive={currentInactive}
-                                                    depth={depth + 1}
-                                                />
-                                            ))}
-
-                                            {/* Modal Spawners */}
+                                            {/* Children are rendered by the flat list via ClientQuotationEngine. Modal only allows adding/editing root-level post details now, or we can just leave spawners. */}                                            {/* Modal Spawners */}
                                             <div className="flex flex-wrap items-center gap-2 mt-4 ml-2 py-2 border-t border-neutral-200 dark:border-neutral-800">
                                                 <button onClick={() => handleAddChild('article')} className="text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors px-3 py-1.5 rounded-md hover:bg-neutral-200 dark:hover:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">
                                                     <Box className="w-3.5 h-3.5" /> Calculator Article

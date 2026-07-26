@@ -43,10 +43,11 @@ export function assertTreeInvariants(before: Block[], after: Block[]): boolean {
 
 export function flattenBlocks(blocks: Block[], parentId: string | null = null, depth: number = 0): FlattenedBlock[] {
     return blocks.reduce<FlattenedBlock[]>((acc, block, index) => {
+        const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
         return [
             ...acc,
             { ...block, parentId, depth, index },
-            ...flattenBlocks(block.children || [], block.id, depth + 1),
+            ...(isContainer ? flattenBlocks(block.children || [], block.id, depth + 1) : []),
         ];
     }, []);
 }

@@ -35,20 +35,20 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
             setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'uploading' } : j));
             try {
                 // 1. Create stub
-                const page = await createPageServerFirst(targetDatabaseId, { 
+                const pageRes = await createPageServerFirst(targetDatabaseId, { 
                     title: job.file.name, 
                     reviewStatus: 'In verwerking', 
                     source: 'src-scan' 
                 });
 
-                if (!page) throw new Error("Failed to create record");
+                if (!pageRes.success || !pageRes.page) throw new Error("Failed to create record");
 
                 // 2. Upload file
                 const fd = new FormData();
                 fd.append('file', job.file);
-                const uploadRes = await uploadFileAction(fd, targetDatabaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', page.id);
+                const uploadRes = await uploadFileAction(fd, targetDatabaseId === 'db-expenses' ? 'purchase-invoice' : 'receipt', pageRes.page.id);
                 
-                if (uploadRes.error) throw new Error("Upload failed");
+                if (!uploadRes.success) throw new Error("Upload failed");
 
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'processing' } : j));
 
@@ -56,7 +56,7 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                 const scanFd = new FormData();
                 scanFd.append('file', job.file);
                 scanFd.append('targetDb', targetDatabaseId);
-                scanFd.append('pageId', page.id);
+                scanFd.append('pageId', pageRes.page.id);
 
                 const scanRes = await fetch('/api/scan', { method: 'POST', body: scanFd });
                 const scanData = await scanRes.json();

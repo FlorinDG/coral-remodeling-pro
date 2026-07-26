@@ -978,15 +978,15 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                                     </div>
 
                                     {/* Linked Quotation Reference */}
-                                    {linkedQuotation && (
+                                    {linkedQuotations.length > 0 && (
                                         <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-200/30 dark:border-indigo-500/10 rounded-lg">
                                             <Receipt className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
                                             <span className="text-[10px] text-neutral-500 font-semibold">Gebaseerd op offerte:</span>
                                             <a
-                                                href={`/${locale}/admin/quotations/${linkedQuotation.id}`}
+                                                href={`/${locale}/admin/quotations/${linkedQuotations[0].id}`}
                                                 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
                                             >
-                                                {String(linkedQuotation.properties?.['title'] || 'Offerte')}
+                                                {String(linkedQuotations[0].properties?.['title'] || 'Offerte')}
                                                 <ExternalLink className="w-3 h-3" />
                                             </a>
                                         </div>

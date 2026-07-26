@@ -123,7 +123,7 @@ interface DatabaseState {
     updateDatabaseOrder: (sourceIndex: number, destinationIndex: number) => void;
 
     // View Operations
-    addView: (databaseId: string, view: Omit<DatabaseView, 'id'>) => void;
+    addView: (databaseId: string, view: Omit<DatabaseView, 'id'> & { id?: string }) => void;
     updateView: (databaseId: string, viewId: string, updates: Partial<DatabaseView>) => void;
     updateViewPropertyState: (databaseId: string, viewId: string, propertyId: string, updates: Partial<ViewPropertyState>) => void;
     updateViewPropertyOrder: (databaseId: string, viewId: string, sourceIndex: number, destinationIndex: number) => void;
@@ -520,7 +520,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id === databaseId) {
-                            const newView: DatabaseView = { filters: [], sorts: [], ...view, id: uuidv4() };
+                            const newView: DatabaseView = { filters: [], sorts: [], id: uuidv4(), ...view };
                             return { ...db, views: [...(db.views || []), newView] };
                         }
                         return db;

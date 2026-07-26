@@ -417,7 +417,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
       { id: 'supplierIban', name: 'IBAN', type: 'text' },
       { id: 'supplierBic',  name: 'BIC', type: 'text' },
       { id: 'reverseCharge', name: 'Btw Verlegd / Medecontractant', type: 'checkbox' },
-      { id: 'vatBreakdown', name: 'BTW Uitsplitsing', type: 'json' },
+      { id: 'vatBreakdown', name: 'BTW Uitsplitsing', type: 'text' },
       { id: 'supplierAddress', name: 'Adres Leverancier', type: 'text' },
       { id: 'peppolDocId', name: 'Peppol Doc ID',     type: 'text'     },
       { id: 'receiptUrl',  name: 'Origineel Document', type: 'url'     },
@@ -865,7 +865,7 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
         }
 
         if (needsUpdate) {
-          store.updatePage(resolvedId, page.id, { properties: page.properties });
+          store.updatePages(resolvedId, [{ id: page.id, properties: page.properties }]);
         }
       });
 
@@ -880,8 +880,9 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
             id: 'fg-inbox',
             operator: 'and',
             filters: [{
+              id: 'flt-not-approved',
               propertyId: 'reviewStatus',
-              operator: '!=',
+              operator: 'does_not_equal',
               value: 'Goedgekeurd'
             }]
           }]

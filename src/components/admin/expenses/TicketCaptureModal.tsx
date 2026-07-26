@@ -49,6 +49,8 @@ interface TicketFormData {
 interface ScanResult {
     page: Page;
     extracted: Record<string, any>;
+    isDuplicate?: boolean;
+    dedupResult?: any;
 }
 
 import { EXPENSE_CATEGORIES, COST_TYPES } from '@/lib/expense-taxonomy';
@@ -344,11 +346,11 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                         vatRegime: form.vatRegime,
                         supplierVat: form.supplierVat,
                         supplier: [],
-                        supplierIban: scanResult?.extracted?.supplierIban || undefined,
-                        supplierBic: scanResult?.extracted?.supplierBic || undefined,
+                        supplierIban: scanResult?.extracted?.supplierIban || null,
+                        supplierBic: scanResult?.extracted?.supplierBic || null,
                         reverseCharge: scanResult?.extracted?.reverseCharge || false,
-                        vatBreakdown: scanResult?.extracted?.vatBreakdown || undefined,
-                        supplierAddress: scanResult?.extracted?.supplierAddress ? JSON.stringify(scanResult.extracted.supplierAddress) : undefined,
+                        vatBreakdown: scanResult?.extracted?.vatBreakdown ? JSON.stringify(scanResult.extracted.vatBreakdown) : null,
+                        supplierAddress: scanResult?.extracted?.supplierAddress ? JSON.stringify(scanResult.extracted.supplierAddress) : null,
                         totalExVat: parsedAmount,
                         totalVat: parsedVat,
                         totalIncVat: parsedAmount + parsedVat,
@@ -503,7 +505,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                             {previewUrl ? (
                                 <div className="flex-1 rounded-xl overflow-hidden bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 shadow-sm relative group">
                                     <button
-                                        onClick={reset}
+                                        onClick={handleResetFlow}
                                         className="absolute top-4 right-4 z-10 px-3 py-1.5 bg-white/90 dark:bg-black/90 hover:bg-white dark:hover:bg-black text-neutral-700 dark:text-neutral-200 text-xs font-semibold rounded-lg shadow-sm border border-neutral-200 dark:border-white/10 backdrop-blur opacity-0 group-hover:opacity-100 transition-opacity"
                                     >
                                         Choose another file
@@ -1026,7 +1028,7 @@ export default function TicketCaptureModal({ onClose, targetDatabaseId = 'db-tic
                                 {/* Actions */}
                                 <div className="flex gap-3 pt-4 border-t border-neutral-200 dark:border-white/10 mt-6 sticky bottom-0 bg-white dark:bg-neutral-900 pb-2">
                                     <button
-                                        onClick={reset}
+                                        onClick={handleResetFlow}
                                         className="flex-1 py-2.5 rounded-xl border border-neutral-200 dark:border-white/10 text-sm font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5 transition-all"
                                     >
                                         Reset

@@ -196,6 +196,7 @@ export interface DatabaseView {
         timelineScale?: 'day' | 'week' | 'month' | 'quarter';
     };
     filters?: FilterRule[]; // View-specific filters
+    filterGroups?: FilterGroup[]; // Advanced OR/AND nested filters
     sorts?: SortRule[];     // View-specific sorts
     propertiesState?: ViewPropertyState[]; // Track column widths, visibility, order per view
 }

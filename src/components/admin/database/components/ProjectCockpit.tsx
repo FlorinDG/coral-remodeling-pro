@@ -16,7 +16,7 @@ interface ProjectCockpitProps {
     projectExpenses: any[];
     quotationFinancials: any;
     locale: string;
-    setActiveTab: (tab: string) => void;
+    setActiveTab: (tab: any) => void;
     actualLaborHours: number;
     actualLaborCost: number;
     linkedQuotations?: any[];

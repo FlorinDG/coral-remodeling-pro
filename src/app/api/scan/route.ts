@@ -294,7 +294,7 @@ export async function POST(req: Request) {
         // ── Parse form data ───────────────────────────────────────────────────
         const formData = await req.formData();
         const file = formData.get('file') as File;
-        const targetDb = formData.get('targetDb') as string || 'db-tickets';
+        let targetDb = formData.get('targetDb') as string || 'db-tickets';
         const overrideDuplicate = formData.get('overrideDuplicate') === 'true';
         const existingPageId = formData.get('pageId') as string | null;
 

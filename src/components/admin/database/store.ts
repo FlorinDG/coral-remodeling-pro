@@ -88,6 +88,7 @@ type UndoEntry =
     | { type: 'updatePageProperty'; databaseId: string; pageId: string; propertyId: string; oldValue: any }
     | { type: 'deletePage'; databaseId: string; page: Page }
     | { type: 'deletePages'; databaseId: string; pages: Page[] }
+    | { type: 'updatePage'; databaseId: string; page: Page }
     | { type: 'clearDatabase'; databaseId: string; pages: Page[] };
 
 const UNDO_STACK_LIMIT = 50;
@@ -318,6 +319,23 @@ export const useDatabaseStore = create<DatabaseState>()(
                         }));
                         const db = get().databases.find(d => d.id === entry.databaseId);
                         if (db) syncPage(db.pages.find((p: Page) => p.id === entry.pageId));
+                        break;
+                    }
+                    case 'updatePage': {
+                        set(s => ({
+                            databases: s.databases.map(db => {
+                                if (db.id !== entry.databaseId) return db;
+                                return {
+                                    ...db,
+                                    pages: db.pages.map((page: Page) => {
+                                        if (page.id !== entry.page.id) return page;
+                                        return { ...entry.page, dirtyBase: entry.page.properties };
+                                    }),
+                                    updatedAt: new Date().toISOString()
+                                };
+                            })
+                        }));
+                        syncPage(entry.page);
                         break;
                     }
                     case 'deletePage': {

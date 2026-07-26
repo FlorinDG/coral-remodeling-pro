@@ -6,9 +6,13 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { useDatabaseStore } from '@/components/admin/database/store';
 import { ArrowLeft, User, Briefcase, FileText, Calendar, PanelRight, ExternalLink, FilePlus2, Receipt, Undo2, ClipboardCheck, Database, ChevronsUpDown, Scissors, Eye, MoreHorizontal } from 'lucide-react';
 import { useTenant } from '@/context/TenantContext';
-import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
+import { DndContext, DragOverlay, closestCenter, DragEndEvent, DragStartEvent, DragMoveEvent, defaultDropAnimationSideEffects } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useAppDndSensors } from '@/lib/dnd-sensors';
+import { flattenBlocks, buildBlocks, assertTreeInvariants, getBlockProjection, FlattenedBlock } from '@/lib/block-tree-dnd';
 import { Page, Block, PropertyValue } from '@/components/admin/database/types';
 import QuotationRow from './QuotationRow';
+import SortableQuotationRow from './SortableQuotationRow';
 import QuotationFooterReport from './QuotationFooterReport';
 import { generatePdfBlob } from '@/lib/generate-pdf';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
@@ -83,6 +87,10 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
     const [showSendModal, setShowSendModal] = useState(false);
     const [sendModalPdfBase64, setSendModalPdfBase64] = useState<string>('');
+    const sensors = useAppDndSensors();
+
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [projected, setProjected] = useState<{ depth: number; maxDepth: number; minDepth: number; parentId: string | null } | null>(null);
 
     // Universal Transactional Undo History Setup
     const [history, setHistory] = useState<Block[][]>([]);
@@ -117,6 +125,8 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const clientsDb = useDatabaseStore(state => state.databases.find(d => d.id === clientsDbId));
 
     const blocks = useMemo(() => quotation?.blocks || [], [quotation?.blocks]);
+    const flatBlocks = useMemo(() => flattenBlocks(blocks), [blocks]);
+    const activeItem = useMemo(() => activeId ? flatBlocks.find(i => i.id === activeId) : null, [activeId, flatBlocks]);
 
     useEffect(() => {
         historyRef.current = history;
@@ -329,85 +339,79 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
-    const handleDragEnd = (result: DropResult) => {
-        setIsDraggingGlobal(false);
-        if (!result.destination) return;
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(String(event.active.id));
+        setIsDraggingGlobal(true);
+        setProjected(null);
+        // We push undo when the drag starts successfully
+        savePendingHistoryImmediate();
+    };
 
-        const { source, destination, draggableId } = result;
-
-        if (source.droppableId === destination.droppableId && source.index === destination.index) {
+    const handleDragMove = (event: DragMoveEvent) => {
+        const { active, over, delta } = event;
+        if (!over) {
+            setProjected(null);
             return;
         }
 
-        // Deep clone tree to execute physical refactoring
-        const newBlocks = JSON.parse(JSON.stringify(blocks)) as Block[];
+        const INDENT_WIDTH = 24;
+        // Require a deliberate horizontal threshold before re-parenting
+        // Delta must be larger than a small bump (e.g. 10px) to consider indenting
+        let dragOffset = delta.x;
+        if (Math.abs(delta.x) < 15) dragOffset = 0;
 
-        // Phase 11: Recursive Extractor
-        let movedBlock: Block | null = null;
-        const extractNode = (nodes: Block[]) => {
-            for (let i = 0; i < nodes.length; i++) {
-                if (nodes[i].id === draggableId) {
-                    movedBlock = nodes.splice(i, 1)[0];
-                    return true;
-                }
-                if (nodes[i].children && extractNode(nodes[i].children!)) return true;
-            }
-            return false;
-        };
+        const projection = getBlockProjection(
+            flatBlocks,
+            active.id,
+            over.id,
+            dragOffset,
+            INDENT_WIDTH
+        );
 
-        const findNode = (nodes: Block[], targetId: string): Block | null => {
-            for (const node of nodes) {
-                if (node.id === targetId) return node;
-                if (node.children) {
-                    const found = findNode(node.children, targetId);
-                    if (found) return found;
-                }
-            }
-            return null;
-        };
+        setProjected(projection);
+    };
 
-        extractNode(newBlocks);
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveId(null);
+        setIsDraggingGlobal(false);
+        setProjected(null);
 
-        if (movedBlock) {
-            // Hierarchy Protection: Prevent containers from being nested inside calculation lines
-            if (destination.droppableId !== 'root') {
-                const parentBlock = findNode(blocks, destination.droppableId);
-                if (parentBlock) {
-                    const isParentContainer = parentBlock.type === 'section' || parentBlock.type === 'subsection' || parentBlock.type === 'post';
-                    const isMovedContainer = (movedBlock as Block).type === 'section' || (movedBlock as Block).type === 'subsection' || (movedBlock as Block).type === 'post';
-                    
-                    if (!isParentContainer && isMovedContainer) {
-                        toast.error('Mappen/secties kunnen niet in een calculatieregel worden geplaatst.');
-                        return;
-                    }
-                }
-            }
+        if (!over || active.id === over.id) return;
 
-            // Phase 11: Recursive Injector
-            const insertNode = (nodes: Block[], parentId: string) => {
-                if (parentId === 'root') {
-                    nodes.splice(destination.index, 0, movedBlock!);
-                    return true;
-                }
-                for (let i = 0; i < nodes.length; i++) {
-                    if (nodes[i].id === parentId) {
-                        nodes[i].children = nodes[i].children || [];
-                        nodes[i].children!.splice(destination.index, 0, movedBlock!);
-                        return true;
-                    }
-                    if (nodes[i].children && insertNode(nodes[i].children!, parentId)) return true;
-                }
-                return false;
-            };
+        const projection = projected || getBlockProjection(
+            flatBlocks,
+            active.id,
+            over.id,
+            event.delta.x,
+            24
+        );
 
-            const inserted = insertNode(newBlocks, destination.droppableId);
-            // Boundary & Deletion Protection: Only update blocks array if insertion was fully successful
-            if (inserted) {
-                savePendingHistoryImmediate();
+        const newFlattened = [...flatBlocks];
+        const activeIndex = newFlattened.findIndex(i => i.id === active.id);
+        const overIndex = newFlattened.findIndex(i => i.id === over.id);
+
+        if (activeIndex !== -1 && overIndex !== -1) {
+            const activeItem = newFlattened.splice(activeIndex, 1)[0];
+            newFlattened.splice(overIndex, 0, { ...activeItem, depth: projection.depth, parentId: projection.parentId });
+            
+            // Build tree
+            const rebuilt = buildBlocks(newFlattened);
+            
+            // Run invariants
+            if (assertTreeInvariants(blocks, rebuilt)) {
                 pushToHistory(blocks);
-                updatePageBlocks(quotationsDbId, id, newBlocks);
+                updatePageBlocks(quotationsDbId, id, rebuilt);
+            } else {
+                toast.error('Verplaatsen mislukt: document integriteit geschonden.');
             }
         }
+    };
+
+    const handleDragCancel = () => {
+        setActiveId(null);
+        setIsDraggingGlobal(false);
+        setProjected(null);
     };
 
     const handleDeleteBlock = (blockId: string) => {
@@ -996,33 +1000,53 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                     <div className="w-full max-w-[1400px] mx-auto flex flex-col gap-1 pb-32">
 
                         {/* Mathematical Blocks */}
-                        <DragDropContext onDragStart={() => setIsDraggingGlobal(true)} onDragEnd={handleDragEnd}>
-                            <Droppable droppableId="root" type="block">
-                                {(provided) => (
-                                    <div
-                                        {...provided.droppableProps}
-                                        ref={provided.innerRef}
-                                        className="flex flex-col gap-1 w-full"
-                                    >
-                                        {blocks.map((block, index) => (
-                                            <QuotationRow
-                                                key={block.id}
-                                                block={block}
-                                                index={index}
-                                                onUpdate={handleUpdateBlock}
-                                                onDelete={handleDeleteBlock}
-                                                onDuplicate={handleDuplicateBlock}
-                                                hasLibraryAccess={hasLibraryAccess}
-                                                vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
-                                                language={docLanguage}
-                                                isDraggingGlobal={isDraggingGlobal}
-                                            />
-                                        ))}
-                                        {provided.placeholder}
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            onDragStart={handleDragStart}
+                            onDragMove={handleDragMove}
+                            onDragEnd={handleDragEnd}
+                            onDragCancel={handleDragCancel}
+                        >
+                            <SortableContext items={flatBlocks.map(i => i.id)} strategy={verticalListSortingStrategy}>
+                                <div className="flex flex-col gap-1 w-full relative">
+                                    {flatBlocks.map((block, index) => (
+                                        <SortableQuotationRow
+                                            key={block.id}
+                                            block={block}
+                                            index={index}
+                                            depth={block.id === activeId && projected ? projected.depth : block.depth}
+                                            onUpdate={handleUpdateBlock}
+                                            onDelete={handleDeleteBlock}
+                                            onDuplicate={handleDuplicateBlock}
+                                            hasLibraryAccess={hasLibraryAccess}
+                                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
+                                            language={docLanguage}
+                                            isDraggingGlobal={isDraggingGlobal}
+                                        />
+                                    ))}
+                                </div>
+                            </SortableContext>
+                            
+                            <DragOverlay>
+                                {activeId && activeItem ? (
+                                    <div style={{ marginLeft: `${projected ? projected.depth * 24 : activeItem.depth * 24}px` }}>
+                                        <QuotationRow
+                                            block={activeItem}
+                                            index={activeItem.index}
+                                            onUpdate={() => {}}
+                                            onDelete={() => {}}
+                                            onDuplicate={() => {}}
+                                            hasLibraryAccess={hasLibraryAccess}
+                                            vatCalcMode={(tenant?.vatCalcMode as any) || 'lines'}
+                                            language={docLanguage}
+                                            isDraggingGlobal={true}
+                                            isDragging={true}
+                                        />
                                     </div>
-                                )}
-                            </Droppable>
-                        </DragDropContext>
+                                ) : null}
+                            </DragOverlay>
+                        </DndContext>
 
                         <div className="flex items-center gap-2 mt-2">
                             <button

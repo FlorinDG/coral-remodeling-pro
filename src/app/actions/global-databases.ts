@@ -234,18 +234,20 @@ export async function saveGlobalPage(page: Page) {
                     const dirtyBase = page.dirtyBase || {};
                     const mergedProps = { ...serverProps } as any;
 
+                    const DERIVED_PROPERTY_KEYS = new Set(['totalVat', 'totalExVat', 'totalIncVat', 'margin', 'totalCost', 'totalProfit']);
+
                     for (const key of Object.keys(clientProps)) {
                         const clientValStr = JSON.stringify(clientProps[key]);
                         const serverValStr = JSON.stringify(serverProps[key]);
                         const baseValStr = JSON.stringify(dirtyBase[key]);
 
                         if (clientValStr !== serverValStr) {
-                            if (serverValStr !== baseValStr && clientValStr !== baseValStr) {
+                            if (serverValStr !== baseValStr && clientValStr !== baseValStr && !DERIVED_PROPERTY_KEYS.has(key)) {
                                 // Both changed this property differently -> hard conflict
                                 hasHardConflict = true;
                                 break;
                             } else {
-                                // Only client changed this key (or server changed it to what client wants)
+                                // Only client changed this key (or server changed it to what client wants), or it's a derived key
                                 mergedProps[key] = clientProps[key];
                             }
                         }

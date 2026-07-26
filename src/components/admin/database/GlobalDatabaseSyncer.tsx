@@ -57,8 +57,9 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
             getGlobalPage(page.id).then((sp: any) => {
                 if (sp) {
                     setServerPage(sp);
+                    const DERIVED_PROPERTY_KEYS = new Set(['totalVat', 'totalExVat', 'totalIncVat', 'margin', 'totalCost', 'totalProfit']);
                     const cFields = Object.keys(page.properties).filter(k => 
-                        JSON.stringify(page.properties[k]) !== JSON.stringify(sp.properties[k])
+                        !DERIVED_PROPERTY_KEYS.has(k) && JSON.stringify(page.properties[k]) !== JSON.stringify(sp.properties[k])
                     );
                     setConflictFields(cFields);
                     const defaultRes: Record<string, boolean> = {};

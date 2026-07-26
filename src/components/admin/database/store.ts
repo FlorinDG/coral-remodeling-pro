@@ -257,7 +257,38 @@ export const useDatabaseStore = create<DatabaseState>()(
                         set(s => ({
                             databases: s.databases.map(d => d.id === entry.databaseId ? {
                                 ...d,
-                                pages: d.pages.map((p: Page) => p.id === entry.pageId ? { ...p, baseUpdatedAt: result.updatedAt } : p)
+                                pages: d.pages.map((p: Page) => {
+                                    if (p.id !== entry.pageId) return p;
+                                    
+                                    // OCC-8: Re-base dirty fields that were successfully saved
+                                    const newDirtyBase = { ...(p.dirtyBase || {}) };
+                                    if (page.dirtyBase) {
+                                        for (const key of Object.keys(page.dirtyBase)) {
+                                            if (JSON.stringify(p.properties[key]) === JSON.stringify(page.properties[key])) {
+                                                delete newDirtyBase[key];
+                                            } else {
+                                                newDirtyBase[key] = page.properties[key];
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Also re-base blocks if they were saved
+                                    let newDirtyBaseBlocks = p.dirtyBaseBlocks;
+                                    if (page.dirtyBaseBlocks) {
+                                        if (JSON.stringify(p.blocks) === JSON.stringify(page.blocks)) {
+                                            newDirtyBaseBlocks = false;
+                                        }
+                                        // If they were edited mid-flight, keep them dirty, but baseBlocksHash (if we used one) would re-base.
+                                        // For now, OCC-8 just focuses on properties delta.
+                                    }
+                                    
+                                    return { 
+                                        ...p, 
+                                        baseUpdatedAt: result.updatedAt,
+                                        dirtyBase: newDirtyBase,
+                                        dirtyBaseBlocks: newDirtyBaseBlocks
+                                    };
+                                })
                             } : d)
                         }));
                         get()._dequeueSync(entry.pageId);

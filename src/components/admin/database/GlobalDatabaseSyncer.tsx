@@ -14,6 +14,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { getGlobalPage } from '@/app/actions/global-databases';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface GlobalDatabaseSyncerProps {
     databases: Database[];
@@ -25,7 +27,13 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
     const [conflict, setConflict] = useState<{ page: Page, lastEditedBy?: string } | null>(null);
+    const [serverPage, setServerPage] = useState<any>(null);
+    const [isLoadingServerPage, setIsLoadingServerPage] = useState(false);
     
+    // keys that actually differ between client and server
+    const [conflictFields, setConflictFields] = useState<string[]>([]);
+    // true = keep mine, false = keep theirs
+    const [fieldResolutions, setFieldResolutions] = useState<Record<string, boolean>>({});
     useEffect(() => {
         serverDbs.current = databases;
     }, [databases]);
@@ -43,8 +51,25 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
             const detail = (e as CustomEvent).detail;
             const page = detail.page as Page;
             
-            // Show UI instead of blind download/reload
             setConflict({ page, lastEditedBy: detail.lastEditedBy });
+            setIsLoadingServerPage(true);
+            
+            getGlobalPage(page.id).then((sp: any) => {
+                if (sp) {
+                    setServerPage(sp);
+                    const cFields = Object.keys(page.properties).filter(k => 
+                        JSON.stringify(page.properties[k]) !== JSON.stringify(sp.properties[k])
+                    );
+                    setConflictFields(cFields);
+                    const defaultRes: Record<string, boolean> = {};
+                    cFields.forEach(f => defaultRes[f] = true); // Default to keep mine
+                    setFieldResolutions(defaultRes);
+                }
+                setIsLoadingServerPage(false);
+            }).catch(() => {
+                setIsLoadingServerPage(false);
+                toast.error('Kan de serverversie niet ophalen.');
+            });
         };
 
         const handleOnline = () => {
@@ -117,22 +142,119 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
         return unsub;
     }, []);
 
+    const handleResolve = () => {
+        if (!conflict || !serverPage) return;
+        
+        const mergedProps = { ...serverPage.properties };
+        for (const field of conflictFields) {
+            if (fieldResolutions[field]) {
+                mergedProps[field] = conflict.page.properties[field];
+            }
+        }
+        
+        const newPage = {
+            ...conflict.page,
+            properties: mergedProps,
+            // Re-baseline to the server's time
+            baseUpdatedAt: serverPage.updatedAt,
+            // Bump local updatedAt so it syncs immediately
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Push resolved page back to local store
+        useDatabaseStore.getState()._pushUndo({ type: 'updatePage', databaseId: conflict.page.databaseId, page: conflict.page });
+        
+        useDatabaseStore.setState(state => ({
+            databases: state.databases.map(db => {
+                if (db.id !== conflict.page.databaseId) return db;
+                return {
+                    ...db,
+                    pages: db.pages.map(p => p.id === newPage.id ? newPage : p)
+                }
+            }),
+            syncQueue: [...state.syncQueue, { 
+                type: 'upsert' as const, 
+                databaseId: conflict.page.databaseId, 
+                pageId: newPage.id, 
+                page: newPage as any,
+                tenantId: tenantId || '',
+                userId: userId || '',
+                retryCount: 0
+            }]
+        }));
+        
+        useDatabaseStore.getState()._processSyncQueue();
+        setConflict(null);
+        setServerPage(null);
+        toast.success('Conflict succesvol opgelost.');
+    };
+
+    const isSystem = conflict?.lastEditedBy?.toUpperCase() === 'SYSTEM' || conflict?.lastEditedBy?.startsWith('system:');
+
     return (
         <>
-            <Dialog open={!!conflict} onOpenChange={(o) => !o && setConflict(null)}>
-                <DialogContent>
+            <Dialog open={!!conflict} onOpenChange={(o) => {
+                if (!o) {
+                    setConflict(null);
+                    setServerPage(null);
+                }
+            }}>
+                <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Sync Conflict Detected</DialogTitle>
+                        <DialogTitle className="flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="w-5 h-5" /> Sync Conflict
+                        </DialogTitle>
                         <DialogDescription>
-                            {conflict?.lastEditedBy?.startsWith('system:') ? 
-                                'A background system process updated this record while you were editing it.' :
+                            {isSystem ? 
+                                'This record was updated by a background process while you were editing.' :
                                 'Someone else edited this page while you were working.'
                             }
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="text-sm py-4">
-                        We could not automatically merge your changes. Please review the latest version before applying your edits again. A backup of your unsaved edits is available to download.
-                    </div>
+                    
+                    {isLoadingServerPage ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                            <Loader2 className="w-6 h-6 animate-spin text-neutral-400 mb-2" />
+                            <p className="text-sm text-neutral-500">Fetching latest changes...</p>
+                        </div>
+                    ) : (
+                        <div className="text-sm py-4 space-y-4">
+                            <p className="text-neutral-600 dark:text-neutral-300">
+                                We could not automatically merge the changes. Please review the conflicting fields below and choose which version to keep.
+                            </p>
+                            
+                            {conflictFields.length > 0 ? (
+                                <div className="space-y-3 border rounded-lg p-3 bg-neutral-50 dark:bg-neutral-900/50">
+                                    {conflictFields.map(field => (
+                                        <div key={field} className="flex flex-col gap-2 p-3 bg-white dark:bg-neutral-800 rounded shadow-sm border border-neutral-100 dark:border-neutral-700">
+                                            <div className="font-semibold text-xs text-neutral-500 uppercase tracking-wider">{field}</div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div 
+                                                    className={`p-2 rounded border cursor-pointer transition-colors ${fieldResolutions[field] ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'}`}
+                                                    onClick={() => setFieldResolutions(prev => ({ ...prev, [field]: true }))}
+                                                >
+                                                    <div className="text-xs font-medium mb-1">Your Edit</div>
+                                                    <div className="text-sm truncate" title={String(conflict?.page?.properties[field])}>{String(conflict?.page?.properties[field]) || '-'}</div>
+                                                </div>
+                                                <div 
+                                                    className={`p-2 rounded border cursor-pointer transition-colors ${!fieldResolutions[field] ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'}`}
+                                                    onClick={() => setFieldResolutions(prev => ({ ...prev, [field]: false }))}
+                                                >
+                                                    <div className="text-xs font-medium mb-1">Latest Version</div>
+                                                    <div className="text-sm truncate" title={String(serverPage?.properties[field])}>{String(serverPage?.properties[field]) || '-'}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+                                    No conflicting fields found! The conflict was likely in document layout or blocks. Click "Resolve & Save" to force your version through.
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
                     <DialogFooter>
                         <Button variant="outline" onClick={() => {
                             if (!conflict?.page) return;
@@ -144,10 +266,9 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
                             a.click();
                             URL.revokeObjectURL(url);
                         }}>Download Backup</Button>
-                        <Button onClick={() => {
-                            setConflict(null);
-                            window.location.reload();
-                        }}>Reload Page</Button>
+                        <Button onClick={handleResolve} disabled={isLoadingServerPage} className="bg-brand-600 hover:bg-brand-700 text-white">
+                            Resolve & Save
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

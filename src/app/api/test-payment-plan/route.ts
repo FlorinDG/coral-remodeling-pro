@@ -75,7 +75,8 @@ export async function GET() {
             const { 'prop-payment-plan': _, ...rest } = currentProps;
             await prisma.globalPage.update({
                 where: { id: testQuote.id },
-                data: { properties: rest as any }
+                data: {
+                lastEditedBy: 'SYSTEM', properties: rest as any }
             });
         }
 

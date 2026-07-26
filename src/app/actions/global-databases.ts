@@ -470,3 +470,22 @@ export async function deleteGlobalDatabase(dbId: string) {
         return { success: false, error: e };
     }
 }
+
+export async function getGlobalPage(pageId: string) {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId) return null;
+    const page = await prisma.globalPage.findUnique({ 
+        where: { id: pageId },
+        include: { database: { select: { tenantId: true } } }
+    });
+    if (!page || page.database?.tenantId !== tenantId) return null;
+    return {
+        id: page.id,
+        databaseId: page.databaseId,
+        properties: page.properties,
+        blocks: page.blocks,
+        updatedAt: page.updatedAt,
+        lastEditedBy: page.lastEditedBy
+    };
+}

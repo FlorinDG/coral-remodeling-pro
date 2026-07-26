@@ -358,7 +358,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                             const serverProps = (existingPage.properties as Record<string, unknown>) || {};
                             const clientProps = page.properties;
                             const dirtyBase = page.dirtyBase || {};
-                            const mergedProps = { ...serverProps };
+                            const mergedProps = { ...serverProps } as any;
 
                             for (const key of Object.keys(clientProps)) {
                                 const clientValStr = JSON.stringify(clientProps[key]);

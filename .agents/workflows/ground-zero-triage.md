@@ -1,5 +1,61 @@
 # GROUND-ZERO TRIAGE — Florin app-comb feedback 2026-06-27
 
+## ✅ STATUS AUDIT (Planner code-verified sweep, 2026-07-26) — READ THIS FIRST
+Verified directly against `src/` on the current working tree. **Do not re-do the DONE items.**
+
+### DONE — verified in code (close these out)
+| Item | Evidence |
+|---|---|
+| **ADMIN-QUERYCLIENT-PROVIDER** | `AdminLayout.tsx:10,250,585` provider mounted app-wide; `:152` `queryClient.clear()` on tenant change. *(Residual: keys not tenant-namespaced — see OCC/tenant note below.)* |
+| **PEPPOL-SEND-FIX** | `send-invoice.ts:111-156` rewritten — `lookupPeppolParticipant`, tries **both** `0208:` and `9925:BE`, 3-state `registered/inconclusive/not_registered`. The `participant_id` false-negative is gone. |
+| **MOBILE-HOME-NOT-WORKHUB** | `MobileBottomNav.tsx` Home → `/m` (was `/admin/hr/time-tracker`). |
+| **SCHED-DELETE-CRASH** | `EditShiftDialog.tsx:497` nested `AlertDialog` replaced with `window.confirm` — no more Dialog-in-Dialog crash. |
+| **SCHED-MULTI-RECUR-VERIFY** | `CreateShiftForm.tsx` `scheduleType: single\|recurring\|leave` (L175), `recurringWeeks` (L166,447), leave branch (L482). Present and wired. |
+| **EXPENSE-CATEGORY-CONSOLIDATE** | Single source of truth live: both `PurchaseInvoiceEngine.tsx:14` and `TicketCaptureModal.tsx:56` import `EXPENSE_CATEGORIES, COST_TYPES` from `@/lib/expense-taxonomy`. |
+| **DEDUP-STRICT** | `src/lib/expense-dedup.ts` exists as the shared helper. |
+| **SCAN-EXTRACT-EXPAND** | `api/scan/route.ts:32` `structuredCommunication` (OGM), `:36` `reverseCharge`/medecontractant in the prompt. *(Spot-check IBAN/BIC + VAT-breakdown storage before closing fully.)* |
+| **SIDEBAR-ORDER-HARDCODE** | `useSidebarStore.ts:89` — reordering deliberately disabled to enforce canonical order. |
+| **ADDENDUM-PARENT-LINK** | `ClientQuotationEngine.tsx:724-733` addendum creates `parentQuoteId` + `ADD-` title. |
+| **PROJECT-TOTALS-AGGREGATE** | `ProjectDetailView.tsx:192` now `linkedQuotations` (plural `useMemo`) and `:230` `forEach` over **all** quotes — the first-only `.find` bug is fixed. *(Invoiced-source + committed-cost still pending under PROJ-3.)* |
+| **DATA-PERSIST-INTEGRITY** | Shipped: OCC (`global-databases.ts:209-222`), durable sync queue w/ retry+backoff (`store.ts:235-284`), dirty-page tracking on hydrate (`store.ts:385`). **Core goal met** — now needs the OCC-1..5 tuning below (it over-fires). |
+| **EXPENSE-CATEGORY-DB-WIRE** | *Partial→mostly done:* `category` is a real property on the expense DBs (`DatabaseClone.tsx:294,437,458`). **`costType` still not a DB property** — finish that half. |
+
+### STILL OPEN — verified ABSENT in code (these are the real queue)
+- **OCC-1..5** (new, top of file) — `store.ts:391` still `lp?.baseUpdatedAt || sp.updatedAt`; no system-write tagging, no field-merge, JSON-download UX, no no-op-write guards.
+- **ENGINE-DND-REBUILD** — still `@hello-pangea/dnd` in all four engine files (`ClientQuotationEngine`, `QuotationRow`, `ClientInvoiceEngine`, `InvoiceRow`). `@dnd-kit/*` IS installed in `package.json` but unused there — migration never happened.
+- **SCHED-ABSENCE-IN-GRID** — zero `TimeOff`/`absence`/`leave` references in `time-tracker/pages/Schedule.tsx`. Approved leave still invisible in the scheduler.
+- **ROUTER-DEFAULT-NO-DEADEND** — `lib/databaseRoute.ts:27` still `default: /admin/dynamic-db?open=…`.
+- **RECEIPT-BONNETJE→ATTACHMENTS** — `DatabaseClone.tsx:423` (`Origineel Document`) and `:478` (`Bonnetje`) are still `type: 'url'`; not moved to the attachments property.
+- **HR-TIMESHEETS-RICH-UI** — no `StatCard`/period filter in `admin/hr/timesheets/page.tsx`.
+- **DOC-TEMPLATE-POLISH** — no `Exo 2` / `IBM Plex` anywhere in `InvoicePDFTemplate.tsx`.
+- **VRIJETEKST-EDITOR-RESET** — `contentEditable` still in `QuotationRow.tsx` + `FinancialRowRenderer.tsx` (no TipTap migration).
+- **WORKHUB-SITEVISIT-OWNER-ONLY** — no role/owner gate found around `SiteVisitModal`.
+- **DOC-PROPOSAL** — no `PROP-` series in the engines.
+- **BUILD-TYPECHECK-GATE** ⚠️ — `package.json` HAS `test:compile` (`tsc --noEmit`) and `validate`, but **`build` does not run them**, so nothing blocks. Given three shipped missing-import crashes, wire typecheck into the build/CI gate. **Cheap, high value — recommend doing it first.**
+- Unverified by this sweep (need live/manual check): MODAL-HAZE-SUBPIXEL-FINAL, RECORD-DETAIL-PASTE-FOCUS, JOURNAL-EDITOR-REWORK, PORTAL-QUOTE-LINE-TOTAL, QUOTE-INVOICE-ENGINE-130 (the `CreateClientModal` import resolves correctly now — `invoices/CreateClientModal.tsx` exists and both engines import it, so the React #130 cause looks fixed; confirm live), ENGINE-CATEGORY-WRAPPERS, ENGINE-ADD-BLOCK-AFFORDANCES, BTW-LINE-INCL-CHECKBOX, NOTIF-INCOMING-INVOICE-DEEPLINK, PI-* items, WORKHUB-* polish items, SCAN-DATA-PERSIST, SCAN-MOBILE-CAMERA-FALLBACK, SCAN-MERCHANT→TITLE, CLOCK-OUT-LOCATION-CONSISTENCY, WORKHUB-INVITE-MOBILE.
+
+### 🟥 ENGINE-DND-REBUILD — PLANNER CONSTRAINTS (review of coder plan, 2026-07-26)
+Sortable-tree architecture APPROVED (`lib/sortable-tree.ts` + `lib/dnd-sensors.ts` already exist; `PointerSensor distance:5` correctly enables click-vs-drag for the handle menu). **These constraints are mandatory — this engine computes money.**
+1. **TYPE-AWARE PROJECTION (blocking).** `maxDepth = prevDepth + 1` is the generic dnd-kit example and is WRONG here. `BlockType` (`types.ts:66`) has 20+ members (`section`/`subsection`/`post`/`line`/`bestek`/`space`/`page-break`…). `getProjection` must consult an **allowed-parent-type table** (which child types may nest under which container types) and clamp to the nearest **legal** depth. Generic depth math permits `section` inside `line` → structurally invalid doc the totals engine + PDF renderer can't handle.
+2. **NO SILENT RE-PARENTING.** Horizontal drift moving a line between sections moves its cost into a different subtotal on a client-facing document. Require a **deliberate horizontal threshold** (well above the 5px activation) + a visible indent/parent guide before release.
+3. **INVARIANTS (blocking).** On every drop: **block count before === after**; if violated, ABORT the write + toast — never persist. `buildTree` silently dropping a `children` array is the realistic failure mode.
+4. **ACCEPTANCE TEST — a pure reorder must NEVER change the document total.** Single check that catches accidental re-parenting, lost children, and duplicated blocks.
+5. **UNDO (blocking).** `updatePageBlocks` (`store.ts:1270-1293`) sets blocks + `dirtyBaseBlocks` + syncs but **never calls `_pushUndo`** (unlike `deletePage`). Push an undo entry on every drop — making drag easier without undo makes mis-drops unrecoverable.
+6. **FOLD IN ENGINE-ADD-BLOCK-AFFORDANCES.** Same 4 files. Beyond the grip menu: a **`+` on a line under the drag handle** and **on the section/subsection bar next to the handle** (Florin's explicit spec). Don't reopen these files twice.
+7. **COMMIT TO A COLLISION STRATEGY + test the ORIGINAL symptom.** The reported bug was a *large gap between cursor and drop trigger* — typically scroll-container/transform offset (engines sit in scroll containers with `@[820px]` container queries). Verify: "drop indicator sits exactly under the cursor with the container scrolled mid-way."
+8. **PROCESS.** Live quotes → Neon snapshot before promotion (`pd.md`); test on a **copy of a real complex quote** (nested sections + addendum), not a 3-line fixture; one revertable commit.
+- *Useful overlap:* `dirtyBaseBlocks` already exists on the page — same flag gates the blocks-excluded-from-field-merge rule in OCC-3.
+
+**❌ V2 SIDE-BY-SIDE REBUILD — REJECTED (Planner, 2026-07-26).** Coder hit output-truncation editing `QuotationRow.tsx` (934 lines) and proposed building `ClientQuotationEngineV2` / `QuotationRowV2` from scratch, then swapping imports. **Do not do this.** Reasons:
+1. **The edit surface is 6 sites, not 934 lines** — `QuotationRow.tsx:178` (`dragHandleProps`), `:285-289` (`<Draggable>` + provided refs), and three `<Droppable>` pairs at `:425/474`, `:605/647`, `:856/904`. The rest is pricing/VAT/layout JSX the DnD change never touches. A tooling limit (truncation) must NOT drive architecture.
+2. **Rewrite trap** — those lines encode VAT regimes, `brutoPrice→marge→verkoopPrice`, container-query breakpoints, credit-note handling, i18n; several fixed *this month* (`@[820px]`, `unitPrice` mapping, credit-note OGM). A clean slate silently reintroduces production-paid bugs on client-facing documents.
+3. **Blast radius understated** — the plan named only `QuotationsPage.tsx`, but there are **5 entry points across 2 engines**: `/admin/quotations/[id]`, `/admin/financials/income/invoices/[id]`, `/admin/financials/income/credit-notes/[id]`, `/m/quotes/[id]`, `/m/invoices/[id]`. A partial swap = two divergent pricing engines live simultaneously.
+**DO INSTEAD:** targeted edits at the 6 sites; if truncation blocks, **one site per commit with a compile between each** (6 small revertable commits). Optionally extract a thin **`SortableBlockRow` wrapper** that owns `useSortable` and renders the existing `QuotationRow` unchanged (handle props passed down) — drag plumbing leaves the monolith without rebuilding its interior. If decomposition is wanted long-term it is a **separate, pure, behaviour-preserving extraction refactor done BEFORE** the DnD change — never both in one pass.
+
+### Suggested order
+1. **BUILD-TYPECHECK-GATE** (prevents the recurring crash class) → 2. **OCC-1-REBASELINE** (one line, stops your daily conflict toasts) → 3. rest of OCC-2..5 → 4. **PROJ-1..7** (`coral-project-module.md`) → 5. ENGINE-DND-REBUILD / SCHED-ABSENCE-IN-GRID.
+
+
 ## ☀️ MORNING REPORT (Planner overnight live sweep, 2026-07-05 → 06, green deploy `a14baa6`)
 **Build is GREEN and the whole stacked backlog is live and verified working — one page is still down.**
 
@@ -10,6 +66,55 @@
 ✅ **BUGS FOUND & QUEUED:** WORKHUB-LEAVE-DATES (leave requests save "Unknown Date" **FIXED IN c5948bf**); SCHEDULER-BATCH-FULL (approvals is a self-described SCAFFOLD, not the real Prisma workflow — needs full build); PORTAL-WELCOME-PLACEHOLDER (`{name}` + `Portal.tracking` raw strings **FIXED IN c5948bf**); TASKS-I18N-NAMES (sidebar shows raw `Tasks.sidebar.*` keys, still unfixed **FIXED IN c5948bf**). Not-a-bug: the delete-view "freeze" is just a native `window.confirm()` automation can't click.
 
 🧭 **NEXT (pending your morning input where noted):** once the useEffect fix deploys → live-verify the scheduler batch to full; then SITE-VISIT-TEMPLATE (upgraded spec queued) + WORKHUB-DECOUPLE (your v1 pick). Recurring theme worth acting on: 3 shipped missing-import/hook crashes now — the coder's pre-commit check isn't catching them.
+
+---
+
+## 🟥🟥 OCC-FALSE-CONFLICT — "Sync Conflict Detected" fires when NOBODY else edited (Florin live, 2026-07-26) — TOP OF QUEUE
+**Symptom:** editing a purchase-invoice record → toast *"Someone else edited this page while you were working"* → the page reloads the server version and dumps `conflict-backup-<id>.json` to browser downloads. **Florin was the only user.** Evidence record: `db-expenses-cmneyas2` page `d5736735…`, Partena Professional PF202600616409, props include `source: "src-peppol"`, `status: "opt-overdue"`, `accountantExportedAt: true`.
+
+**This is the DATA-PERSIST-INTEGRITY OCC guard misfiring.** The guard itself is correct and MUST NOT be removed — it is what stopped the silent data loss. The bug is that it treats *system/background* writes as *"someone else"*, and then never re-baselines.
+
+### ROOT CAUSE (two defects, both required to produce the bug)
+1. **~20 server-side paths write `prisma.globalPage.update()` directly, bypassing `saveGlobalPage`'s OCC** — and Prisma `@updatedAt` auto-bumps `updatedAt` on every one. The client's `baseUpdatedAt` silently goes stale with no user involved. Confirmed writers that touch THIS record: `api/cron/invoice-overdue` (flips `status → opt-overdue` on a schedule — the likely trigger), `api/financials/export` (sets `accountantExportedAt = true`), `api/peppol/inbox` (created it). Others: `actions/pages.ts` (payment matching + invoice status), `actions/tasks.ts`, `api/scan`, `api/cron/vat-backfill`, `accept-quote`, `accept-invoice`, `stripe/webhook`, `payment-plan-service`, `quote-service`, `api/admin/backfill-peppol`, `api/admin/schema-cleanup`, `api/portals/*`.
+2. **Hydration adopts server DATA but keeps the STALE `baseUpdatedAt`** — `store.ts:391`: `mergedPages.push({ ...sp, baseUpdatedAt: lp?.baseUpdatedAt || sp.updatedAt })`. For a clean (non-dirty) local page this is wrong: it takes the server's properties yet preserves the old local baseline, so the very next user edit is *guaranteed* to fail the `serverTime !== clientTime` check at `global-databases.ts:218`. **This is the defect that makes the false conflict permanent and reproducible** — once a background job touches a record, every subsequent edit to it conflicts until a full reload.
+
+### FIX — CODER SCOPE (ordered, one commit each; the guard STAYS — do not weaken or remove OCC)
+
+- [ ] **OCC-1-REBASELINE** 🟥 — **one-line fix, do this first, it alone stops the permanent-conflict loop.**
+  - File: `src/components/admin/database/store.ts` **line 391**, inside `hydrateDatabases`. The dirty check already happens at L385 (`dirtyPageIds.has(sp.id)`), so this `else` branch is by definition a **clean** page — it must adopt the server baseline.
+  - Change: `mergedPages.push({ ...sp, baseUpdatedAt: lp?.baseUpdatedAt || sp.updatedAt });` → `mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt });`
+  - `lp` becomes unused in that branch — remove the now-dead lookup if nothing else needs it.
+  - **Why:** taking the server's properties while keeping the old local baseline guarantees the next save fails OCC. Dirty pages (L387) keep their own baseline — unchanged, still protected.
+  - Verify: let `cron/invoice-overdue` (or a manual `globalPage.update`) touch a record → reload → edit a field → saves clean, no toast. Repeat 3× on the same record.
+
+- [ ] **OCC-2-SYSTEM-WRITE-TAG** 🟥 — mark non-human writes so they're never reported as "someone else."
+  - Set `lastEditedBy: 'system:<origin>'` on every server-side `prisma.globalPage.update()` that isn't a user edit. Origins + files: `system:cron-overdue` (`api/cron/invoice-overdue`, 2 sites), `system:cron-vat-backfill` (`api/cron/vat-backfill`), `system:accountant-export` (`api/financials/export`, 2 sites), `system:peppol` (`api/peppol/inbox`, `api/admin/backfill-peppol`), `system:scan` (`api/scan`), `system:payment-match` (`actions/pages.ts` payment/invoice-status sites), `system:stripe` (`api/stripe/webhook`), `system:quote-service` / `system:payment-plan` / `system:accept-quote` / `system:accept-invoice`, `system:schema-cleanup`.
+  - Return `lastEditedBy` from the OCC check on `STALE_WRITE` (`global-databases.ts` ~L220) so the client can word the message correctly.
+  - Verify: a cron-caused stale write reports a system origin, not a user.
+
+- [ ] **OCC-3-FIELD-MERGE** 🟧 — **the high-leverage one; do it in the same pass, not later.** Most of these toasts are non-collisions: the cron changed `status`, you edited `betreft`.
+  - **Payload:** add to `Page` (`types.ts`, alongside `baseUpdatedAt`) an optional `dirtyBase?: Record<string, unknown>` — a map of *only the property keys the user changed since the last successful sync* → **the value at that last sync** (the base). Populate it in the store's property-update path; clear it on successful sync (same place `baseUpdatedAt` is refreshed, `store.ts:259`).
+  - **Server-side 3-way merge** in `saveGlobalPage` (`global-databases.ts`, replacing the bare reject at L218-222): on `serverTime !== clientTime`, if `dirtyBase` is present —
+    - for each key in `dirtyBase`: if `serverProps[key]` deep-equals `dirtyBase[key]` → the server did NOT touch that key → safe to apply the client's value;
+    - if ANY key differs → **real conflict on that key** → return `STALE_WRITE` with `conflictFields: string[]` and the server's current values for them;
+    - if none differ → write `{ ...serverProps, ...clientDirtyValues }` (server row as the base, client's edited fields layered on) and return success with the new `updatedAt`. Do the read+merge+write in a **transaction** so a concurrent bump can't slip between.
+  - **`blocks` must be excluded from field-merge.** Engine line-trees can't be key-merged — if blocks are dirty on both sides that stays a hard conflict. Without that guard, "smart merging" would quietly corrupt quotes.
+  - Verify: cron sets `status=opt-overdue`, user simultaneously edits `betreft` → save succeeds silently, BOTH values present afterward. Then two sessions edit the SAME field → real conflict surfaces.
+
+- [ ] **OCC-4-CONFLICT-UX** 🟧 — replace the downloads-JSON escape hatch with real recovery.
+  - File: `src/components/admin/database/GlobalDatabaseSyncer.tsx` L31-52.
+  - Fix the false copy at L36-37 (hardcoded *"Someone else edited this page"* — untrue here). Word by origin: system → *"This record changed in the background (<origin>). Your edit was merged / needs review."*; human → *"<user> edited this record."* **Localize** (currently English-only; NL/FR/EN per `messages/*.json`).
+  - On a REAL conflict (post-OCC-3, only same-field collisions): show an in-app dialog listing each `conflictField` with **mine vs theirs** and **Keep mine / Keep theirs** per field, then re-save with a fresh baseline. Keep the JSON download as a silent last-resort fallback only.
+  - **Remove the blind `window.location.reload()` at L51** — a full reload on conflict is how unsynced edits to OTHER pages get discarded. Re-hydrate the affected record instead.
+  - Verify: a same-field conflict shows the dialog, both versions are visible and choosable, no page reload, no file in downloads.
+
+- [ ] **OCC-5-CRON-NO-OP-WRITES** 🟨 — stop gratuitous `updatedAt` bumps. Audit the cron/system writers and skip the write entirely when the computed value equals the stored one (`invoice-overdue` already checks status before writing — mirror that in `vat-backfill`, `backfill-peppol`, and the payment-match paths). Fewer bumps = fewer stale baselines.
+
+**Verify (whole cluster):** with the overdue cron AND an accountant export having touched a record, one user edits it repeatedly → every save succeeds, zero conflict toasts, nothing in downloads, and the cron's `status` + the user's field edits are BOTH present. Then force a genuine same-field collision in two sessions → in-app mine/theirs dialog, both versions recoverable, no reload.
+
+**Regression guard (must not break):** the original data-loss scenario stays covered — a genuine concurrent edit to the same field/blocks must still refuse to blind-overwrite. OCC-3 narrows *what counts as* a conflict; it must not narrow the protection on real ones.
+
+**Note:** the attached `conflict-backup-d5736735…json` contains the full pre-conflict page (properties intact, `blocks: []`) — nothing appears lost in this instance; the server version already carried the same values.
 
 ---
 

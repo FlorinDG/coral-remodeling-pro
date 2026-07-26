@@ -205,7 +205,10 @@ export async function GET(req: Request) {
                 if (isDirty) {
                     await prisma.globalPage.update({
                         where: { id: page.id },
-                        data: updateData,
+                        data: {
+                            ...updateData,
+                            lastEditedBy: 'system:peppol'
+                        },
                     });
                     updatedCount++;
                 }

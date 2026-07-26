@@ -120,7 +120,8 @@ export async function POST(req: Request) {
                         await prisma.globalPage.update({
                             where: { id: invoiceId },
                             data: {
-                                properties: updatedProps
+                                properties: updatedProps,
+                                lastEditedBy: 'system:stripe'
                             }
                         });
                         console.log(`[Stripe Webhook] Invoice ${invoiceId} marked as paid`);

@@ -297,8 +297,8 @@ export async function GET(req: Request) {
                                     postal: parsed.supplierPostal || '',
                                     country: parsed.supplierCountry || '',
                                 },
-                                createdBy: 'system',
-                                lastEditedBy: 'system',
+                                createdBy: 'system:peppol',
+                                lastEditedBy: 'system:peppol',
                             }
                         });
                         if (safeVat) vatToSupplier.set(safeVat, supplier.id);
@@ -377,8 +377,8 @@ export async function GET(req: Request) {
                     },
                     order,
                     blocks,
-                    createdBy: 'system',
-                    lastEditedBy: 'system',
+                    createdBy: 'system:peppol',
+                    lastEditedBy: 'system:peppol',
                 }
             });
 

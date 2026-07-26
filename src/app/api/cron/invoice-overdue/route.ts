@@ -50,6 +50,7 @@ export async function GET(req: Request) {
                         where: { id: page.id },
                         data: {
                             properties: { ...props, status: 'opt-overdue' },
+                            lastEditedBy: 'system:cron-overdue',
                         },
                     });
                     
@@ -98,6 +99,7 @@ export async function GET(req: Request) {
                         where: { id: page.id },
                         data: {
                             properties: { ...props, status: 'opt-overdue' },
+                            lastEditedBy: 'system:cron-overdue',
                         },
                     });
                     expensesUpdated++;

@@ -102,7 +102,8 @@ export async function autoCreateProjectFromQuote(quoteId: string, tenantId: stri
                 properties: {
                     ...props,
                     project: [projectId]
-                }
+                },
+                lastEditedBy: 'system:quote-service'
             }
         });
 

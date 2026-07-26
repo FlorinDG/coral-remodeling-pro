@@ -82,7 +82,10 @@ export async function PUT(request: Request) {
 
         const task = await prisma.globalPage.update({
             where: { id },
-            data: { properties: newProperties }
+            data: { 
+                properties: newProperties,
+                lastEditedBy: 'system:portal' 
+            }
         });
 
         const mappedTask = {

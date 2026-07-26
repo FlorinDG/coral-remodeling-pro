@@ -131,6 +131,8 @@ export interface Page {
     createdBy: string;
     lastEditedBy: string;
     driveFolderId?: string; // Phase 7.1: Maps this row to a specific Google Drive folder
+    dirtyBase?: Record<string, unknown>; // Tracks original base state of edited properties for 3-way merge
+    dirtyBaseBlocks?: boolean; // Tracks if blocks have been edited locally
 }
 
 export type FilterOperator =

@@ -4,6 +4,16 @@ import { useEffect, useRef } from 'react';
 import { useDatabaseStore } from './store';
 import { Database, Page } from './types';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface GlobalDatabaseSyncerProps {
     databases: Database[];
@@ -14,6 +24,7 @@ interface GlobalDatabaseSyncerProps {
 export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: GlobalDatabaseSyncerProps) {
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
+    const [conflict, setConflict] = useState<{ page: Page, lastEditedBy?: string } | null>(null);
     
     useEffect(() => {
         serverDbs.current = databases;
@@ -32,23 +43,8 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
             const detail = (e as CustomEvent).detail;
             const page = detail.page as Page;
             
-            // Show toast
-            toast.error('Sync Conflict Detected', {
-                description: `Someone else edited this page while you were working. We have reloaded the latest version, and a backup of your edits has been saved to your browser downloads.`,
-                duration: 10000,
-            });
-
-            // Trigger a download of the conflict data (recovery buffer)
-            const blob = new Blob([JSON.stringify(page, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `conflict-backup-${page.id}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            // Reload window to fetch latest server state safely
-            setTimeout(() => window.location.reload(), 3000);
+            // Show UI instead of blind download/reload
+            setConflict({ page, lastEditedBy: detail.lastEditedBy });
         };
 
         const handleOnline = () => {
@@ -121,5 +117,40 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
         return unsub;
     }, []);
 
-    return null;
+    return (
+        <>
+            <Dialog open={!!conflict} onOpenChange={(o) => !o && setConflict(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Sync Conflict Detected</DialogTitle>
+                        <DialogDescription>
+                            {conflict?.lastEditedBy?.startsWith('system:') ? 
+                                'A background system process updated this record while you were editing it.' :
+                                'Someone else edited this page while you were working.'
+                            }
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="text-sm py-4">
+                        We could not automatically merge your changes. Please review the latest version before applying your edits again. A backup of your unsaved edits is available to download.
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            if (!conflict?.page) return;
+                            const blob = new Blob([JSON.stringify(conflict.page, null, 2)], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `conflict-backup-${conflict.page.id}.json`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                        }}>Download Backup</Button>
+                        <Button onClick={() => {
+                            setConflict(null);
+                            window.location.reload();
+                        }}>Reload Page</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </>
+    );
 }

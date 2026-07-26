@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
 import { hrList, hrCreate, hrUpdate } from '@/components/time-tracker/lib/hr-api';
 
 export interface ClockEntry {
@@ -65,9 +66,12 @@ function addSnake(e: ClockEntry): ClockEntry {
 
 export function useClockEntries() {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const tenantId = session?.user?.tenantId || 'no-tenant';
+  const queryKey = ['clock-entries', tenantId];
 
   const { data: entries = [] as ClockEntry[], isLoading: loading, error, refetch } = useQuery<ClockEntry[]>({
-    queryKey: ['clock-entries'],
+    queryKey,
     queryFn: async () => {
       const data = await hrList<ClockEntry>('clock-entries');
       return data.map(addSnake);
@@ -94,8 +98,8 @@ export function useClockEntries() {
       return addSnake(entry);
     },
     onSuccess: (newEntry) => {
-      queryClient.setQueryData<ClockEntry[]>(['clock-entries'], (old = []) => [newEntry, ...old]);
-      queryClient.invalidateQueries({ queryKey: ['clock-entries'] });
+      queryClient.setQueryData<ClockEntry[]>(queryKey, (old = []) => [newEntry, ...old]);
+      queryClient.invalidateQueries({ queryKey });
     }
   });
 
@@ -107,7 +111,7 @@ export function useClockEntries() {
       photos?: File[];
       noBreak?: boolean;
     }) => {
-      const currentEntries = queryClient.getQueryData<ClockEntry[]>(['clock-entries']) || [];
+      const currentEntries = queryClient.getQueryData<ClockEntry[]>(queryKey) || [];
       const currentActive = currentEntries.find(e => !e.clockOutTime);
       if (!currentActive) throw new Error('No active entry');
 
@@ -136,10 +140,10 @@ export function useClockEntries() {
       return addSnake(updated);
     },
     onSuccess: (updatedEntry) => {
-      queryClient.setQueryData<ClockEntry[]>(['clock-entries'], (old = []) => 
+      queryClient.setQueryData<ClockEntry[]>(queryKey, (old = []) => 
         old.map(e => e.id === updatedEntry.id ? updatedEntry : e)
       );
-      queryClient.invalidateQueries({ queryKey: ['clock-entries'] });
+      queryClient.invalidateQueries({ queryKey });
     }
   });
 

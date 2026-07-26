@@ -262,7 +262,10 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
                 const newProps = { ...paymentPage.properties, invoice: [matchedInvoice.id] };
                 await prisma.globalPage.update({
                     where: { id: paymentPage.id },
-                    data: { properties: newProps as Prisma.InputJsonValue }
+                    data: { 
+                        properties: newProps as Prisma.InputJsonValue,
+                        lastEditedBy: 'system:payment-match'
+                    }
                 });
                 await recalculateInvoiceStatus(tenantId, matchedInvoice.id);
                 return;
@@ -288,7 +291,10 @@ async function handlePaymentMatching(tenantId: string, paymentPage: Page) {
                 const newProps = { ...paymentPage.properties, suggestedInvoice: [suggestedInvoice.id] };
                 await prisma.globalPage.update({
                     where: { id: paymentPage.id },
-                    data: { properties: newProps as Prisma.InputJsonValue }
+                    data: { 
+                        properties: newProps as Prisma.InputJsonValue,
+                        lastEditedBy: 'system:payment-match'
+                    }
                 });
             }
         }
@@ -338,7 +344,10 @@ async function recalculateInvoiceStatus(tenantId: string, invoiceId: string) {
         const updatedProps = { ...invProps, status: newStatus };
         await prisma.globalPage.update({
             where: { id: invoiceId },
-            data: { properties: updatedProps as Prisma.InputJsonValue }
+            data: { 
+                properties: updatedProps as Prisma.InputJsonValue,
+                lastEditedBy: 'system:payment-match'
+            }
         });
 
         if (newStatus === 'opt-paid') {

@@ -36,7 +36,8 @@ export async function acceptQuotation({ quoteId, signatureBase64, signatureMetho
                     signatureMethod,
                     consentName,
                     signedAt: new Date().toISOString()
-                }
+                },
+                lastEditedBy: 'system:accept-quote'
             }
         });
 

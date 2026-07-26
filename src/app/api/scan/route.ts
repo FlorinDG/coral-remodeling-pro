@@ -538,7 +538,7 @@ export async function POST(req: Request) {
                 where: { id: existingPageId },
                 data: {
                     properties,
-                    lastEditedBy: 'scan',
+                    lastEditedBy: 'system:scan',
                 }
             });
         } else {
@@ -549,8 +549,8 @@ export async function POST(req: Request) {
                     properties,
                     order: 0,
                     blocks: [],
-                    createdBy: 'scan',
-                    lastEditedBy: 'scan',
+                    createdBy: 'system:scan',
+                    lastEditedBy: 'system:scan',
                 }
             });
         }

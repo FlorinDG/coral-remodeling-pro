@@ -266,7 +266,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         get()._dequeueSync(entry.pageId);
                         
                         if (typeof window !== 'undefined') {
-                            const event = new CustomEvent('coral-sync-conflict', { detail: { pageId: entry.pageId, databaseId: entry.databaseId, page } });
+                            const event = new CustomEvent('coral-sync-conflict', { detail: { pageId: entry.pageId, databaseId: entry.databaseId, page, lastEditedBy: result.lastEditedBy } });
                             window.dispatchEvent(event);
                         }
                     } else {
@@ -301,9 +301,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 if (db.id !== entry.databaseId) return db;
                                 return {
                                     ...db,
-                                    pages: db.pages.map((p: Page) => {
-                                        if (p.id !== entry.pageId) return p;
-                                        return { ...p, properties: { ...p.properties, [entry.propertyId]: entry.oldValue }, updatedAt: new Date().toISOString() };
+                                    pages: db.pages.map((page: Page) => {
+                                        if (page.id !== entry.pageId) return page;
+                                        const newProps = { ...page.properties, [entry.propertyId]: entry.oldValue };
+                                        const dirtyBase = page.dirtyBase || page.properties;
+                                        return {
+                                            ...page,
+                                            properties: newProps,
+                                            dirtyBase,
+                                            updatedAt: new Date().toISOString()
+                                        };
                                     }),
                                     updatedAt: new Date().toISOString()
                                 };
@@ -386,9 +393,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                             // Page is dirty locally, DO NOT OVERWRITE
                             mergedPages.push(localPagesMap.get(sp.id) || sp);
                         } else {
-                            // Keep server version, but preserve baseUpdatedAt if we had it
-                            const lp = localPagesMap.get(sp.id);
-                            mergedPages.push({ ...sp, baseUpdatedAt: lp?.baseUpdatedAt || sp.updatedAt });
+                            // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
+                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt });
                         }
                     });
                     
@@ -951,6 +957,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 const updatedPage = {
                                     ...p,
                                     properties: { ...p.properties, ...updateMap.get(p.id) },
+                                    dirtyBase: p.dirtyBase || { ...p.properties },
                                     updatedAt: new Date().toISOString()
                                 };
                                 updatedPages.push(updatedPage);
@@ -987,6 +994,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 if (page.id !== pageId) return page;
 
                                 const newProps = { ...page.properties, [propertyId]: value };
+                                const dirtyBase = page.dirtyBase || { ...page.properties };
 
                                 // Project -> Client + Budget inference from Quotation
                                 if (isBaseDb(databaseId, 'db-1') && propertyId === 'prop-project-quote') {
@@ -1260,6 +1268,12 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             updatePageBlocks: (databaseId, pageId, blocks) => {
+                // Capture full page for undo before updating blocks
+                const oldPage = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+                if (oldPage) {
+                    get()._pushUndo({ type: 'updatePage', databaseId, page: { ...oldPage } });
+                }
+
                 set((state) => ({
                     databases: state.databases.map(db => {
                         if (db.id !== databaseId) return db;
@@ -1270,6 +1284,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 return {
                                     ...page,
                                     blocks,
+                                    dirtyBaseBlocks: true,
                                     updatedAt: new Date().toISOString()
                                 };
                             }),

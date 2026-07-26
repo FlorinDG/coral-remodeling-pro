@@ -209,15 +209,63 @@ export async function saveGlobalPage(page: Page) {
         // Optimistic Concurrency Control
         const existingPage = await prisma.globalPage.findUnique({
             where: { id: page.id },
-            select: { updatedAt: true }
+            select: { updatedAt: true, properties: true, lastEditedBy: true }
         });
+
+        let finalProperties = page.properties;
+        const finalBlocks = page.blocks;
 
         if (existingPage && page.baseUpdatedAt) {
             const serverTime = existingPage.updatedAt.getTime();
             const clientTime = new Date(page.baseUpdatedAt).getTime();
             if (serverTime !== clientTime) {
-                console.warn(`[saveGlobalPage] STALE_WRITE for page ${page.id}. Server: ${serverTime}, Client: ${clientTime}`);
-                return { success: false, error: 'STALE_WRITE', errorCode: 'STALE_WRITE' };
+                // Time mismatch: Attempt field-level 3-way merge
+                let hasHardConflict = false;
+                
+                // 1. Guard blocks: if client edited blocks and server time advanced, that's a hard conflict.
+                if (page.dirtyBaseBlocks) {
+                    hasHardConflict = true;
+                }
+
+                // 2. Merge properties
+                if (!hasHardConflict) {
+                    const serverProps = (existingPage.properties as Record<string, unknown>) || {};
+                    const clientProps = page.properties;
+                    const dirtyBase = page.dirtyBase || {};
+                    const mergedProps = { ...serverProps };
+
+                    for (const key of Object.keys(clientProps)) {
+                        const clientValStr = JSON.stringify(clientProps[key]);
+                        const serverValStr = JSON.stringify(serverProps[key]);
+                        const baseValStr = JSON.stringify(dirtyBase[key]);
+
+                        if (clientValStr !== serverValStr) {
+                            if (serverValStr !== baseValStr && clientValStr !== baseValStr) {
+                                // Both changed this property differently -> hard conflict
+                                hasHardConflict = true;
+                                break;
+                            } else {
+                                // Only client changed this key (or server changed it to what client wants)
+                                mergedProps[key] = clientProps[key];
+                            }
+                        }
+                    }
+                    if (!hasHardConflict) {
+                        finalProperties = mergedProps;
+                    }
+                }
+
+                if (hasHardConflict) {
+                    console.warn(`[saveGlobalPage] STALE_WRITE (Conflict) for page ${page.id}. Server: ${serverTime}, Client: ${clientTime}`);
+                    return { 
+                        success: false, 
+                        error: 'STALE_WRITE', 
+                        errorCode: 'STALE_WRITE',
+                        lastEditedBy: existingPage.lastEditedBy 
+                    };
+                } else {
+                    console.info(`[saveGlobalPage] Successfully merged stale write for page ${page.id}`);
+                }
             }
         }
 
@@ -228,9 +276,9 @@ export async function saveGlobalPage(page: Page) {
             update: {
                 coverImage: page.coverImage,
                 icon: page.icon,
-                properties: page.properties as any,
+                properties: finalProperties as any,
                 order: page.order,
-                blocks: page.blocks as any,
+                blocks: finalBlocks as any,
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
                 updatedAt: newUpdatedAt,
@@ -291,15 +339,50 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                 // Optimistic Concurrency Control
                 const existingPage = await prisma.globalPage.findUnique({
                     where: { id: page.id },
-                    select: { updatedAt: true }
+                    select: { updatedAt: true, properties: true, lastEditedBy: true }
                 });
+
+                let finalProperties = page.properties;
+                const finalBlocks = page.blocks;
 
                 if (existingPage && page.baseUpdatedAt) {
                     const serverTime = existingPage.updatedAt.getTime();
                     const clientTime = new Date(page.baseUpdatedAt).getTime();
                     if (serverTime !== clientTime) {
-                        results.push({ id: page.id, success: false, errorCode: 'STALE_WRITE' });
-                        continue;
+                        let hasHardConflict = false;
+                        if (page.dirtyBaseBlocks) {
+                            hasHardConflict = true;
+                        }
+                        
+                        if (!hasHardConflict) {
+                            const serverProps = (existingPage.properties as Record<string, unknown>) || {};
+                            const clientProps = page.properties;
+                            const dirtyBase = page.dirtyBase || {};
+                            const mergedProps = { ...serverProps };
+
+                            for (const key of Object.keys(clientProps)) {
+                                const clientValStr = JSON.stringify(clientProps[key]);
+                                const serverValStr = JSON.stringify(serverProps[key]);
+                                const baseValStr = JSON.stringify(dirtyBase[key]);
+
+                                if (clientValStr !== serverValStr) {
+                                    if (serverValStr !== baseValStr && clientValStr !== baseValStr) {
+                                        hasHardConflict = true;
+                                        break;
+                                    } else {
+                                        mergedProps[key] = clientProps[key];
+                                    }
+                                }
+                            }
+                            if (!hasHardConflict) {
+                                finalProperties = mergedProps;
+                            }
+                        }
+
+                        if (hasHardConflict) {
+                            results.push({ id: page.id, success: false, errorCode: 'STALE_WRITE', lastEditedBy: existingPage.lastEditedBy });
+                            continue;
+                        }
                     }
                 }
 
@@ -308,9 +391,9 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     update: {
                         coverImage: page.coverImage,
                         icon: page.icon,
-                        properties: page.properties as any,
+                        properties: finalProperties as any,
                         order: page.order,
-                        blocks: page.blocks as any,
+                        blocks: finalBlocks as any,
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
                         updatedAt: newUpdatedAt,

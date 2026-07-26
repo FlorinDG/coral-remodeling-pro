@@ -36,7 +36,8 @@ export async function updatePaymentPlanAction(pageId: string, plan: PaymentPlan)
                 properties: {
                     ...currentProps,
                     'prop-payment-plan': plan as any
-                }
+                },
+                lastEditedBy: 'system:payment-plan'
             }
         });
 

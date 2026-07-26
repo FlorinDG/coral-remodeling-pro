@@ -728,6 +728,9 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
                         actualLaborCost={actualLaborCost}
                         linkedQuotations={linkedQuotations}
                         supplierQuotations={supplierQuotations}
+                        paidRevenueAmount={paidRevenueAmount}
+                        paidExpensesAmount={paidExpensesAmount}
+                        projectShifts={projectShifts}
                     />
                 )}
 

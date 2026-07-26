@@ -8,14 +8,15 @@ import { useDatabaseStore } from '../store';
 import { SelectOption, Page, Property } from '../types';
 import {
     DndContext, closestCenter, DragOverlay, DragStartEvent, DragEndEvent,
-    useSensor, useSensors, PointerSensor, TouchSensor, KeyboardSensor,
     UniqueIdentifier,
     DragOverEvent,
     useDroppable,
     CollisionDetection,
     pointerWithin,
     rectIntersection,
+    defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
+import { useAppDndSensors } from '@/lib/dnd-sensors';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { Checkbox } from '@/components/common/Checkbox';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -560,11 +561,7 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
     const [activeType, setActiveType] = useState<'card' | 'column' | null>(null);
     const overColumnRef = useRef<string | null>(null);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-        useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
-        useSensor(KeyboardSensor)
-    );
+    const sensors = useAppDndSensors();
 
     // Derive config (null-safe)
     const view = database?.views.find(v => v.id === viewId);

@@ -22,13 +22,20 @@ export async function GET(req: Request) {
             const props = invoice.properties as Record<string, any>;
             if (props && props.vatRegime === 'medecontractant') {
                 const totalExVat = props.totalExVat || 0;
-                // For medecontractant, VAT is always 0 and totalIncl === totalExcl
+                // Skip if already correct
+                if (props.totalVat === 0 && props.totalIncVat === totalExVat) {
+                    continue;
+                }
+                
                 props.totalVat = 0;
                 props.totalIncVat = totalExVat;
 
                 await prisma.globalPage.update({
                     where: { id: invoice.id },
-                    data: { properties: props },
+                    data: { 
+                        properties: props,
+                        lastEditedBy: 'system:cron-vat-backfill'
+                    },
                 });
                 
                 updated.push({

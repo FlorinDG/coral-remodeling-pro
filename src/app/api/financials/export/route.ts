@@ -347,19 +347,29 @@ export async function GET(req: Request) {
         // 4. Update the accountantExportedAt property to true for flagged records
         for (const inv of filteredInvoices) {
             const props = (inv.properties as any) || {};
+            if (props.accountantExportedAt === true) continue; // no-op check
+            
             props.accountantExportedAt = true;
             await prisma.globalPage.update({
                 where: { id: inv.id },
-                data: { properties: props }
+                data: { 
+                    properties: props,
+                    lastEditedBy: 'system:accountant-export'
+                }
             });
         }
 
         for (const exp of filteredExpenses) {
             const props = (exp.properties as any) || {};
+            if (props.accountantExportedAt === true) continue; // no-op check
+            
             props.accountantExportedAt = true;
             await prisma.globalPage.update({
                 where: { id: exp.id },
-                data: { properties: props }
+                data: { 
+                    properties: props,
+                    lastEditedBy: 'system:accountant-export'
+                }
             });
         }
 

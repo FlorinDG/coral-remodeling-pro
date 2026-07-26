@@ -21,6 +21,9 @@ interface ProjectCockpitProps {
     actualLaborCost: number;
     linkedQuotations?: any[];
     supplierQuotations?: any[];
+    paidRevenueAmount?: number;
+    paidExpensesAmount?: number;
+    projectShifts?: any[];
 }
 
 export default function ProjectCockpit({
@@ -36,7 +39,10 @@ export default function ProjectCockpit({
     actualLaborHours,
     actualLaborCost,
     linkedQuotations = [],
-    supplierQuotations = []
+    supplierQuotations = [],
+    paidRevenueAmount = 0,
+    paidExpensesAmount = 0,
+    projectShifts = []
 }: ProjectCockpitProps) {
     const t = useTranslations('Database');
 
@@ -51,7 +57,7 @@ export default function ProjectCockpit({
     
     // Revenue Ladder
     const invoicedTotal = projectInvoices.reduce((sum, inv) => sum + (Number(inv.properties?.['totalExVat'] || 0)), 0);
-    const paidRevenue = 0; // TBD when payments DB exists
+    const paidRevenue = paidRevenueAmount;
 
     // Cost Ladder
     const actualMaterialCost = projectExpenses.reduce((sum, exp) => sum + (Number(exp.properties?.['totalExVat'] || 0)), 0);
@@ -154,6 +160,21 @@ export default function ProjectCockpit({
                                 style={{ width: `${Math.min(100, quotationFinancials.labourHours > 0 ? (actualLaborHours / quotationFinancials.labourHours) * 100 : 0)}%` }} 
                             />
                         </div>
+                        {projectShifts.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-white/5">
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">Scheduled Shifts</h4>
+                                <div className="space-y-1.5 max-h-[150px] overflow-y-auto">
+                                    {projectShifts.map((shift: any) => (
+                                        <div key={shift.id} className="flex justify-between items-center p-1.5 rounded bg-neutral-50 dark:bg-white/5 text-[10px]">
+                                            <span className="font-medium text-neutral-700 dark:text-neutral-300">
+                                                {new Date(shift.date || shift.shift_date).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                            </span>
+                                            <span className="text-neutral-500">{shift.workerIds?.length || shift.worker_ids?.length || 0} assigned</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -185,6 +206,19 @@ export default function ProjectCockpit({
                                             <span className="truncate font-medium text-emerald-600 dark:text-emerald-400">{inv.properties?.['title'] || 'Invoice'}</span>
                                             <span className="font-mono text-[10px] font-bold">€{Number(inv.properties?.['totalExVat'] || 0).toLocaleString()}</span>
                                         </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {projectExpenses.length > 0 && (
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2 mt-2">Purchase Invoices ({projectExpenses.length})</h4>
+                                <div className="space-y-1.5">
+                                    {projectExpenses.map(exp => (
+                                        <div key={exp.id} className="flex justify-between items-center p-2 rounded-lg bg-neutral-50 dark:bg-white/5 text-xs">
+                                            <span className="truncate font-medium text-amber-600 dark:text-amber-400">{exp.properties?.['title'] || 'Expense'}</span>
+                                            <span className="font-mono text-[10px] font-bold">€{Number(exp.properties?.['totalExVat'] || 0).toLocaleString()}</span>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -272,8 +306,8 @@ export default function ProjectCockpit({
                             <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">€{invoicedTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 opacity-50">4. Paid</span>
-                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400 opacity-50">TBD</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500">4. Paid</span>
+                            <span className="font-mono font-black text-sm text-emerald-600 dark:text-emerald-400">€{paidRevenue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                     </div>
 
@@ -296,8 +330,8 @@ export default function ProjectCockpit({
                             <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400">€{totalActualCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500 opacity-50">4. Paid</span>
-                            <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400 opacity-50">TBD</span>
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-amber-500">4. Paid</span>
+                            <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400">€{paidExpensesAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                         </div>
                     </div>
 

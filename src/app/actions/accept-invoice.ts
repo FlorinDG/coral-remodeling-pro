@@ -36,7 +36,8 @@ export async function acceptInvoice({ invoiceId, signatureBase64, signatureMetho
                     signatureMethod,
                     consentName,
                     signedAt: new Date().toISOString()
-                }
+                },
+                lastEditedBy: 'system:accept-invoice'
             }
         });
 

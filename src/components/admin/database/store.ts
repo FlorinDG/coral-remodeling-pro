@@ -272,25 +272,15 @@ export const useDatabaseStore = create<DatabaseState>()(
                                         }
                                     }
                                     
-                                    // Also re-base blocks if they were saved
-                                    let newDirtyBaseBlocks = p.dirtyBaseBlocks;
-                                    if (page.dirtyBaseBlocks) {
-                                        if (JSON.stringify(p.blocks) === JSON.stringify(page.blocks)) {
-                                            newDirtyBaseBlocks = false;
-                                        }
-                                        // If they were edited mid-flight, keep them dirty, but baseBlocksHash (if we used one) would re-base.
-                                        // For now, OCC-8 just focuses on properties delta.
-                                    }
                                     
-                                        if (result.blocksHash !== undefined) {
-                                            p.baseBlocksHash = result.blocksHash;
+                                        if (result.blocksVersion !== undefined) {
+                                            p.blocksVersion = result.blocksVersion;
                                         }
 
                                         return { 
                                             ...p, 
                                             baseUpdatedAt: result.updatedAt,
-                                            dirtyBase: newDirtyBase,
-                                            dirtyBaseBlocks: newDirtyBaseBlocks
+                                            dirtyBase: newDirtyBase
                                         };
                                 })
                             } : d)
@@ -448,8 +438,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                         } else {
                             // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
                             const newPage = { ...sp, baseUpdatedAt: sp.updatedAt };
-                            if ((sp as any).blocksHash !== undefined) {
-                                newPage.baseBlocksHash = (sp as any).blocksHash;
+                            if ((sp as any).blocksVersion !== undefined) {
+                                newPage.blocksVersion = (sp as any).blocksVersion;
                             }
                             mergedPages.push(newPage);
                         }
@@ -844,6 +834,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         order: db.pages.length,
                         properties: fullProperties,
                         blocks: initialBlocks ? cloneBlocks(initialBlocks) : [],
+                        blocksVersion: 1,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         createdBy: 'system',
@@ -871,6 +862,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         order: 0,
                         properties: initialProperties,
                         blocks: initialBlocks ? cloneBlocks(initialBlocks) : [],
+                        blocksVersion: 1,
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         createdBy: 'system',
@@ -980,6 +972,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     order: db.pages.length + index,
                                     properties: pProps,
                                     blocks: [],
+                                    blocksVersion: 1,
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString(),
                                     createdBy: 'system',
@@ -1341,7 +1334,6 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 return {
                                     ...page,
                                     blocks,
-                                    dirtyBaseBlocks: true,
                                     updatedAt: new Date().toISOString()
                                 };
                             }),

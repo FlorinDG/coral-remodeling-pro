@@ -63,7 +63,7 @@ export async function getGlobalDatabases(): Promise<Database[]> {
                 properties: (page.properties as any) || {},
                 order: page.order ?? 0,
                 blocks: (page.blocks as unknown as Block[]) || [],
-                blocksHash: JSON.stringify(page.blocks || []),
+                blocksVersion: page.blocksVersion ?? 1,
                 driveFolderId: page.driveFolderId || undefined,
                 createdBy: page.createdBy,
                 lastEditedBy: page.lastEditedBy,
@@ -92,7 +92,7 @@ export async function getGlobalDatabases(): Promise<Database[]> {
                     },
                     order: 0,
                     blocks: [],
-                    blocksHash: JSON.stringify([]),
+                    blocksVersion: 1,
                     driveFolderId: undefined,
                     createdBy: 'system',
                     lastEditedBy: 'system',
@@ -215,7 +215,7 @@ export async function saveGlobalPage(page: Page) {
                 updatedAt: true, 
                 properties: true, 
                 lastEditedBy: true,
-                blocks: true 
+                blocksVersion: true 
             }
         });
 
@@ -229,17 +229,9 @@ export async function saveGlobalPage(page: Page) {
                 // Time mismatch: Attempt field-level 3-way merge
                 let hasHardConflict = false;
                 
-                // 1. Guard blocks: if client edited blocks and server time advanced, check if server blocks actually changed.
-                if (page.dirtyBaseBlocks) {
-                    const serverBlocksHash = JSON.stringify(existingPage.blocks || []);
-                    if (page.baseBlocksHash) {
-                        if (serverBlocksHash !== page.baseBlocksHash) {
-                            hasHardConflict = true;
-                        }
-                    } else {
-                        // Back-compat: no hash means we must assume a hard conflict
-                        hasHardConflict = true;
-                    }
+                // 1. Guard blocks: exact version match required
+                if (existingPage.blocksVersion !== page.blocksVersion) {
+                    hasHardConflict = true;
                 }
 
                 // 2. Merge properties
@@ -309,6 +301,8 @@ export async function saveGlobalPage(page: Page) {
 
         const newUpdatedAt = new Date();
 
+        const newBlocksVersion = (existingPage?.blocksVersion || 1) + 1;
+
         const saved = await prisma.globalPage.upsert({
             where: { id: page.id },
             update: {
@@ -317,6 +311,7 @@ export async function saveGlobalPage(page: Page) {
                 properties: finalProperties as any,
                 order: page.order,
                 blocks: finalBlocks as any,
+                blocksVersion: newBlocksVersion,
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
                 updatedAt: newUpdatedAt,
@@ -329,16 +324,17 @@ export async function saveGlobalPage(page: Page) {
                 properties: page.properties as any,
                 order: page.order,
                 blocks: page.blocks as any,
+                blocksVersion: 1,
                 createdBy: page.createdBy || 'admin',
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
                 updatedAt: newUpdatedAt,
             },
-            select: { blocks: true }
+            select: { blocksVersion: true }
         });
 
         revalidatePath('/admin', 'layout');
-        return { success: true, updatedAt: newUpdatedAt.toISOString(), blocksHash: JSON.stringify(saved.blocks || []) };
+        return { success: true, updatedAt: newUpdatedAt.toISOString(), blocksVersion: saved.blocksVersion };
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -378,7 +374,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                 // Optimistic Concurrency Control
                 const existingPage = await prisma.globalPage.findUnique({
                     where: { id: page.id },
-                    select: { updatedAt: true, properties: true, lastEditedBy: true }
+                    select: { updatedAt: true, properties: true, lastEditedBy: true, blocksVersion: true }
                 });
 
                 let finalProperties = page.properties;
@@ -389,7 +385,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     const clientTime = new Date(page.baseUpdatedAt).getTime();
                     if (serverTime !== clientTime) {
                         let hasHardConflict = false;
-                        if (page.dirtyBaseBlocks) {
+                        if (existingPage.blocksVersion !== page.blocksVersion) {
                             hasHardConflict = true;
                         }
                         
@@ -446,6 +442,8 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     }
                 }
 
+                const newBlocksVersion = (existingPage?.blocksVersion || 1) + 1;
+
                 const saved = await prisma.globalPage.upsert({
                     where: { id: page.id },
                     update: {
@@ -454,6 +452,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         properties: finalProperties as any,
                         order: page.order,
                         blocks: finalBlocks as any,
+                        blocksVersion: newBlocksVersion,
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
                         updatedAt: newUpdatedAt,
@@ -466,15 +465,16 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         properties: page.properties as any,
                         order: page.order,
                         blocks: page.blocks as any,
+                        blocksVersion: 1,
                         createdBy: page.createdBy || 'admin',
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
                         updatedAt: newUpdatedAt,
                     },
-                    select: { blocks: true }
+                    select: { blocksVersion: true }
                 });
                 
-                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString(), blocksHash: JSON.stringify(saved.blocks || []) });
+                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString(), blocksVersion: saved.blocksVersion });
             } catch (pageError: any) {
                 console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);
                 results.push({ id: page.id, success: false, error: pageError?.message ?? String(pageError) });

@@ -164,7 +164,7 @@ export const mockPages: Page[] = [
             'prop-client-relation': ['page-client-1'],
             'prop-supplier-relation': ['page-supplier-1']
         },
-        blocks: [],
+        blocks: [], blocksVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'system',
@@ -187,7 +187,7 @@ export const mockPages: Page[] = [
             'prop-client-relation': [],
             'prop-supplier-relation': []
         },
-        blocks: [],
+        blocks: [], blocksVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'system',
@@ -211,7 +211,7 @@ export const mockClientPages: Page[] = [
             'prop-address-main': 'Brussels, Belgium',
             'prop-vat-number': 'BE0123.456.789'
         },
-        blocks: [],
+        blocks: [], blocksVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'system',
@@ -233,7 +233,7 @@ export const mockClientPages: Page[] = [
             'prop-address-main': 'Antwerp, Belgium',
             'prop-portal-access': false
         },
-        blocks: [],
+        blocks: [], blocksVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'system',
@@ -254,7 +254,7 @@ export const mockClientPages: Page[] = [
             'prop-address-main': 'Ghent, Belgium',
             'prop-vat-number': 'BE0987.654.321'
         },
-        blocks: [],
+        blocks: [], blocksVersion: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: 'system',
@@ -415,7 +415,7 @@ export const mockDatabases: Database[] = [
                     'title': 'Euro-Marble Supply Group',
                     'prop-supplier-email': 'orders@euro-marble.com'
                 },
-                blocks: [],
+                blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 createdBy: 'system',
@@ -428,7 +428,7 @@ export const mockDatabases: Database[] = [
                     'title': 'Premium Woodworks BV',
                     'prop-supplier-email': 'sales@premiumwood.be'
                 },
-                blocks: [],
+                blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
                 createdBy: 'system',
@@ -590,7 +590,7 @@ export const mockDatabases: Database[] = [
         ],
         pages: [
             {
-                id: 'task-sample-1', databaseId: 'db-tasks', blocks: [],
+                id: 'task-sample-1', databaseId: 'db-tasks', blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 createdBy: 'system', lastEditedBy: 'system', order: 0,
                 properties: {
@@ -605,7 +605,7 @@ export const mockDatabases: Database[] = [
                 }
             },
             {
-                id: 'task-sample-2', databaseId: 'db-tasks', blocks: [],
+                id: 'task-sample-2', databaseId: 'db-tasks', blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 createdBy: 'system', lastEditedBy: 'system', order: 1,
                 properties: {
@@ -620,7 +620,7 @@ export const mockDatabases: Database[] = [
                 }
             },
             {
-                id: 'task-sample-3', databaseId: 'db-tasks', blocks: [],
+                id: 'task-sample-3', databaseId: 'db-tasks', blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 createdBy: 'system', lastEditedBy: 'system', order: 2,
                 properties: {
@@ -635,7 +635,7 @@ export const mockDatabases: Database[] = [
                 }
             },
             {
-                id: 'task-sample-4', databaseId: 'db-tasks', blocks: [],
+                id: 'task-sample-4', databaseId: 'db-tasks', blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 createdBy: 'system', lastEditedBy: 'system', order: 3,
                 properties: {
@@ -651,7 +651,7 @@ export const mockDatabases: Database[] = [
                 }
             },
             {
-                id: 'task-sample-5', databaseId: 'db-tasks', blocks: [],
+                id: 'task-sample-5', databaseId: 'db-tasks', blocks: [], blocksVersion: 1,
                 createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
                 createdBy: 'system', lastEditedBy: 'system', order: 4,
                 properties: {
@@ -786,15 +786,15 @@ export const mockDatabases: Database[] = [
         ],
         pages: [
             {
-                id: '11111111-1111-1111-1111-111111111111', databaseId: 'db-hr', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: '11111111-1111-1111-1111-111111111111', databaseId: 'db-hr', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'Florin', 'prop-hr-role': 'Project Manager', 'prop-hr-department': 'opt-mgmt', 'prop-hr-status': 'opt-active' }
             },
             {
-                id: '22222222-2222-2222-2222-222222222222', databaseId: 'db-hr', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: '22222222-2222-2222-2222-222222222222', databaseId: 'db-hr', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'Alex', 'prop-hr-role': 'Designer', 'prop-hr-department': 'opt-design', 'prop-hr-status': 'opt-active' }
             },
             {
-                id: '33333333-3333-3333-3333-333333333333', databaseId: 'db-hr', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: '33333333-3333-3333-3333-333333333333', databaseId: 'db-hr', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'John (On Leave)', 'prop-hr-role': 'Builder', 'prop-hr-department': 'opt-build', 'prop-hr-status': 'opt-inactive' }
             }
         ],
@@ -835,15 +835,15 @@ export const mockDatabases: Database[] = [
         ],
         pages: [
             {
-                id: 'page-art-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: 'page-art-1', databaseId: 'db-articles', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'Gyproc Platen 12mm', 'prop-art-desc': 'Standard gypsum board for interior walls.', 'prop-art-bruto': 12.50, 'prop-art-remise': 20, 'prop-art-margin': 65, 'prop-art-verkoop': 16.50, 'prop-art-unit': 'u-m2', 'prop-art-packaging': 'opt-plaat', 'prop-art-coverage': 3.12, 'prop-art-min-order': 3.12 }
             },
             {
-                id: 'page-art-2', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: 'page-art-2', databaseId: 'db-articles', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: { 'title': 'Isolatie 10cm', 'prop-art-desc': 'Acoustic thermal fiberglass insulation wrap.', 'prop-art-bruto': 8.00, 'prop-art-remise': 15, 'prop-art-margin': 65, 'prop-art-verkoop': 11.20, 'prop-art-unit': 'u-m2' }
             },
             {
-                id: 'page-art-drain-1', databaseId: 'db-articles', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: 'page-art-drain-1', databaseId: 'db-articles', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: {
                     'title': 'Shower Drain',
                     'prop-art-desc': 'Premium drainage channel.',
@@ -898,7 +898,7 @@ export const mockDatabases: Database[] = [
         ],
         pages: [
             {
-                id: 'page-bst-1', databaseId: 'db-bestek', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: 'page-bst-1', databaseId: 'db-bestek', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: {
                     'title': 'Gyproc plafond plaatsen',
                     'prop-bst-nr': 'AF-001',
@@ -911,7 +911,7 @@ export const mockDatabases: Database[] = [
                 }
             },
             {
-                id: 'page-bst-2', databaseId: 'db-bestek', blocks: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
+                id: 'page-bst-2', databaseId: 'db-bestek', blocks: [], blocksVersion: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), createdBy: 'system', lastEditedBy: 'system',
                 properties: {
                     'title': 'Doucheput plaatsen',
                     'prop-bst-nr': 'SAN-001',

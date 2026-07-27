@@ -153,6 +153,7 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                             docType: inv.type === 'CREDIT_NOTE' ? 'opt-credit-note' : (inv.type === 'PROFORMA' ? 'opt-proforma' : 'opt-invoice'),
                         },
                         blocks: [],
+                        blocksVersion: 1,
                     });
                 }
             }

@@ -166,7 +166,7 @@ export async function GET(req: Request) {
         );
 
         const pdfBuffer = await renderToBuffer(MyDocument);
-        return new NextResponse(pdfBuffer, {
+        return new NextResponse(pdfBuffer as any, {
             status: 200,
             headers: {
                 'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.pdf"`,
@@ -182,7 +182,7 @@ export async function GET(req: Request) {
 
         const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
         
-        return new NextResponse(buf, {
+        return new NextResponse(buf as any, {
             status: 200,
             headers: {
                 'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.xlsx"`,

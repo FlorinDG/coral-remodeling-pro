@@ -164,6 +164,32 @@ Sortable-tree architecture APPROVED (`lib/sortable-tree.ts` + `lib/dnd-sensors.t
   **Rationale:** a full-width pulsing red button while clocked in signals an alarm for what is the *normal* state of a working day. Red should mean something is wrong.
   Verify: clocked-in state is steady brand colour in light AND dark mode, no pulsing, and the change survives because only one system sets the colour.
 
+## 🟩 HR "DATA LOSS" — INVESTIGATED, **NOTHING WAS DELETED** (Planner, live Neon query 2026-07-27 19:05)
+**Correction to the record:** the coder did **NOT** nuke schedule or timesheet entries. Verified directly against production:
+| Table | Rows | Note |
+|---|---|---|
+| `ScheduledShift` | **69** | **14** fall inside the 20 Jul–2 Aug window the matrix displays |
+| `ClockEntry` | **20** | **all 20 closed** (`clockOutTime` set), 0 open, oldest 20 May, newest 26 Jul 17:22 |
+| `TimeOffRequest` / `Employee` / `GlobalPage` | 3 / 7 / 9 776 | GlobalPage newest = today 17:02 |
+
+### ROOT CAUSE — identity split-brain (the already-specced `WORKHUB-SHIFT-USERID-MISMATCH`)
+```
+ScheduledShift.userId → matches User.id: 29 | matches Employee.id: 37 | matches neither: 3
+ClockEntry.userId     → matches User.id: 16 | matches Employee.id:  1 | matches neither: 3
+```
+The DB is split across **two id systems**. The scheduler matrix / WorkHub join on `User.id`, so **37 of 69 shifts can't match any displayed row** and appear missing. **The backfill was never applied** — that's why it's still split. The empty Timesheets page ("Nog geen voltooide werkbonnen gevonden") is a **fetch/filter bug in the new reporting code**, since all 20 entries are complete.
+
+### 🚫 DO NOT RESTORE
+The newest snapshot is **a day old**; restoring would **destroy today's legitimate work** (GlobalPage newest = today 17:02 — quote/invoice edits) **and would not fix anything**, because the split-brain predates it. PITR window is only **6 hours** (Launch plan); snapshots exist at ~1 day and ~12 days.
+
+### FIX ORDER
+- [ ] **HR-1** — run **`GET /api/admin/backfill-worker-ids`** (dry-run). Expect ~**38** rows to fix (37 shifts + 1 clock entry) plus a list of **unfixable** rows (employees with `userId = NULL`) and the **6 orphans** (3 shifts + 3 clock entries matching neither table — these need manual attribution, report them, never guess).
+- [ ] **HR-2** — review, then **POST** to apply (Florin-gated). This alone should surface the 37 hidden shifts.
+- [ ] **HR-3** — fix the **Timesheets page fetch/filter** — 20 complete entries exist but none render. Independent of ids; do not assume HR-2 fixes it.
+- [ ] **HR-4** — the **Approvals** page is not under the module tab bar and shows no detail; the **Reports** page **crashes** ("Failed to load reports"). Both were built outside the established module-tab pattern. Re-judge them only **after** HR-2/HR-3 — "0 openstaand" was largely a consequence of invisible data. Requirement stands: this is detailed activity software, not a status meme — approvals must show worker, date, duration, project, reason-for-approval, and the werkbon detail.
+- [ ] **HR-5 (ops, Florin)** — extend the **PITR window** beyond 6 h and set a **snapshot schedule** (currently manual). A 6-hour recovery window is thin for live invoicing.
+- [ ] **HR-6 (process)** — the schema change was applied via **`prisma db push`** (only one migration file exists, from 27 Jun, yet the new `ClockEntry` columns are live). **Close the loophole:** no agent runs ANY schema-mutating prisma command (`db push`, `migrate dev/reset`, `--force-reset`, `--accept-data-loss`) against ANY database. Agents write migration files; Florin runs them after a snapshot. Add to `pd.md`.
+
 ## 🗄️ DATABASE SCHEMA — visibility control (Florin 2026-07-26)
 
 - [ ] **DB-SCHEMA-VISIBILITY-BTN** 🟨 — in the **database schema editor**, add a **visibility (show/hide) toggle next to the trash icon** on each property row, so a column can be hidden from the schema panel directly instead of hunting for the properties dropdown. Use the eye / eye-off icons already imported in `PropertiesDropdown.tsx:4` (`Eye`, `EyeOff`) for consistency. It writes the same `updateViewPropertyState(dbId, viewId, propId, { hidden })` the dropdown uses — **do not introduce a second visibility mechanism.** Target: `DbPropertiesPanel.tsx` (the row that currently renders the delete control). Note the panel is view-scoped: if the schema editor isn't bound to a specific view, decide whether the toggle applies to the **active view** (recommended, matches the dropdown) or all views — label it accordingly so it isn't ambiguous.

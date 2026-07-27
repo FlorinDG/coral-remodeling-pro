@@ -785,6 +785,49 @@
     "emptyState": {
       "title": "Aucune tâche ici",
       "description": "Tout est clair ! Vous n'avez aucune tâche dans cette vue."
+    },
+    "Hr": {
+      "timesheets": {
+        "title": "Feuilles de temps",
+        "subtitle": "Aperçu des entrées de travail terminées et des rapports générés.",
+        "manualAdd": "Ajouter Manuellement",
+        "allMembers": "Tous les Employés",
+        "workforceMember": "Employé",
+        "export": "Exporter",
+        "exportPdf": "Exporter en PDF",
+        "exportXlsx": "Exporter en XLSX",
+        "exportCsv": "Exporter en CSV",
+        "timeOptions": "Options de temps",
+        "customDateRange": "Extraire une plage de dates.",
+        "date": "Date",
+        "member": "Employé",
+        "duration": "Durée",
+        "description": "Description",
+        "status": "Statut",
+        "media": "Média",
+        "actions": "Actions",
+        "noDescription": "Aucune description",
+        "approved": "Approuvé",
+        "denied": "Refusé",
+        "pending": "À évaluer",
+        "markedForCheck": "À évaluer",
+        "viewTimesheet": "Voir la Feuille",
+        "noEntries": "Aucune feuille de temps trouvée.",
+        "loading": "Chargement...",
+        "approve": "Approuver",
+        "deny": "Refuser",
+        "stillClockedIn": "Toujours pointé",
+        "notAttributed": "Non attribué",
+        "billable": "Facturable",
+        "internal": "Interne",
+        "sourceClocked": "Pointé",
+        "sourceManual": "Manuel",
+        "sourceAdjusted": "Ajusté",
+        "system": "Système",
+        "na": "N/D",
+        "hoursShort": "h",
+        "minutesShort": "m"
+      }
     }
   }
 }

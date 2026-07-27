@@ -786,6 +786,49 @@
     "emptyState": {
       "title": "No tasks here",
       "description": "All clear! You don't have any tasks in this view."
+    },
+    "Hr": {
+      "timesheets": {
+        "title": "Timesheets",
+        "subtitle": "Overview of completed work entries and generated reports.",
+        "manualAdd": "Add Manually",
+        "allMembers": "All Members",
+        "workforceMember": "Workforce Member",
+        "export": "Export",
+        "exportPdf": "Export as PDF",
+        "exportXlsx": "Export as XLSX",
+        "exportCsv": "Export as CSV",
+        "timeOptions": "Time Options",
+        "customDateRange": "Extract a custom date range.",
+        "date": "Date",
+        "member": "Member",
+        "duration": "Duration",
+        "description": "Description",
+        "status": "Status",
+        "media": "Media",
+        "actions": "Actions",
+        "noDescription": "No description",
+        "approved": "Approved",
+        "denied": "Denied",
+        "pending": "To be reviewed",
+        "markedForCheck": "To be reviewed",
+        "viewTimesheet": "View Timesheet",
+        "noEntries": "No completed timesheets found.",
+        "loading": "Loading timesheets...",
+        "approve": "Approve",
+        "deny": "Deny",
+        "stillClockedIn": "Still clocked in",
+        "notAttributed": "Not attributed",
+        "billable": "Billable",
+        "internal": "Internal",
+        "sourceClocked": "Clocked",
+        "sourceManual": "Manual",
+        "sourceAdjusted": "Adjusted",
+        "system": "System",
+        "na": "N/A",
+        "hoursShort": "h",
+        "minutesShort": "m"
+      }
     }
   }
 }

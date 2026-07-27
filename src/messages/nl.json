@@ -786,6 +786,49 @@
     "emptyState": {
       "title": "Geen taken hier",
       "description": "Alles is duidelijk! Je hebt geen taken in deze weergave."
+    },
+    "Hr": {
+      "timesheets": {
+        "title": "Timesheets / Werkbonnen",
+        "subtitle": "Overzicht van voltooide werkbonnen en gegenereerde rapporten.",
+        "manualAdd": "Manueel Toevoegen",
+        "allMembers": "Alle Medewerkers",
+        "workforceMember": "Medewerker",
+        "export": "Export",
+        "exportPdf": "Exporteer als PDF",
+        "exportXlsx": "Exporteer als XLSX",
+        "exportCsv": "Exporteer als CSV",
+        "timeOptions": "Tijd Opties",
+        "customDateRange": "Kies een aangepast datumbereik.",
+        "date": "Datum",
+        "member": "Medewerker",
+        "duration": "Duur",
+        "description": "Omschrijving",
+        "status": "Status",
+        "media": "Media",
+        "actions": "Acties",
+        "noDescription": "Geen omschrijving",
+        "approved": "Goedgekeurd",
+        "denied": "Geweigerd",
+        "pending": "Te beoordelen",
+        "markedForCheck": "Te beoordelen",
+        "viewTimesheet": "Bekijk Werkbon",
+        "noEntries": "Nog geen voltooide werkbonnen gevonden.",
+        "loading": "Laden van werkbonnen...",
+        "approve": "Goedkeuren",
+        "deny": "Afwijzen",
+        "stillClockedIn": "Loopt nog",
+        "notAttributed": "Niet toegewezen",
+        "billable": "Factureerbaar",
+        "internal": "Intern",
+        "sourceClocked": "Geklokt",
+        "sourceManual": "Handmatig",
+        "sourceAdjusted": "Aangepast",
+        "system": "Systeem",
+        "na": "N/B",
+        "hoursShort": "u",
+        "minutesShort": "m"
+      }
     }
   }
 }

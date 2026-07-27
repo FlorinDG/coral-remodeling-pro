@@ -93,12 +93,12 @@ export async function GET(req: Request) {
         orderBy: { clockInTime: 'asc' }
     });
 
-    // We also need employees to get names & cost rates
-    const employees = await prisma.employee.findMany({
-        where: { tenantId: ctx.tenantId, userId: { in: targetUserIds } },
-        select: { userId: true, firstName: true, lastName: true, hourlyCost: true }
+    // We also need employees to get names. User table is the unified source of truth.
+    const users = await prisma.user.findMany({
+        where: { tenantId: ctx.tenantId, id: { in: targetUserIds } },
+        select: { id: true, name: true }
     });
-    const empMap = new Map(employees.map(e => [e.userId, e]));
+    const userMap = new Map(users.map(u => [u.id, u]));
 
     // We need projects for names
     const projects = await prisma.hrProject.findMany({
@@ -122,8 +122,8 @@ export async function GET(req: Request) {
 
     for (const rawEntry of entries) {
         const entry = rawEntry as ExtendedClockEntry;
-        const emp = empMap.get(entry.userId);
-        const workerName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : 'Unknown';
+        const user = userMap.get(entry.userId);
+        const workerName = user?.name ? user.name : 'Unknown';
         
         const proj = entry.projectId ? projMap.get(entry.projectId) : null;
         const projectName = proj ? proj.name : (entry.projectId ? 'Unknown Project' : 'Unattributed');

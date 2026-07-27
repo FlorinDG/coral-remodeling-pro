@@ -2,8 +2,6 @@ export const hrTabs = [
     { label: 'HR DASHBOARD', href: '/admin/hr', id: 'hr-dashboard' },
     { label: 'WORKFORCE SCHEDULER', href: '/admin/hr/time-tracker/schedule', id: 'scheduler' },
     { label: 'TIMESHEETS', href: '/admin/hr/timesheets', id: 'timesheets' },
-    { label: 'REPORTS', href: '/admin/hr/timesheets/reports', id: 'reports' },
-    { label: 'APPROVALS', href: '/admin/hr/timesheets/approvals', id: 'approvals' },
     { label: 'LEAVE MANAGEMENT', href: '/admin/hr/leave', id: 'leave' },
     { label: 'EMPLOYEES', href: '/admin/hr/employees', id: 'employees' }
 ];

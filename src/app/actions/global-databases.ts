@@ -251,13 +251,34 @@ export async function saveGlobalPage(page: Page) {
 
                     const DERIVED_PROPERTY_KEYS = new Set(['totalVat', 'totalExVat', 'totalIncVat', 'margin', 'totalCost', 'totalProfit']);
 
-                    for (const key of Object.keys(clientProps)) {
-                        const clientValStr = JSON.stringify(clientProps[key]);
-                        const serverValStr = JSON.stringify(serverProps[key]);
-                        const baseValStr = JSON.stringify(dirtyBase[key]);
+                    const isDeepEqual = (a: any, b: any): boolean => {
+                        if (a === b) return true;
+                        if (a && b && typeof a === 'object' && typeof b === 'object') {
+                            if (Array.isArray(a)) {
+                                if (!Array.isArray(b) || a.length !== b.length) return false;
+                                for (let i = 0; i < a.length; i++) {
+                                    if (!isDeepEqual(a[i], b[i])) return false;
+                                }
+                                return true;
+                            }
+                            const keysA = Object.keys(a);
+                            const keysB = Object.keys(b);
+                            if (keysA.length !== keysB.length) return false;
+                            for (const key of keysA) {
+                                if (!keysB.includes(key) || !isDeepEqual(a[key], b[key])) return false;
+                            }
+                            return true;
+                        }
+                        return false;
+                    };
 
-                        if (clientValStr !== serverValStr) {
-                            if (serverValStr !== baseValStr && clientValStr !== baseValStr && !DERIVED_PROPERTY_KEYS.has(key)) {
+                    for (const key of Object.keys(clientProps)) {
+                        const isClientSameAsServer = isDeepEqual(clientProps[key], serverProps[key]);
+                        const isServerSameAsBase = isDeepEqual(serverProps[key], dirtyBase[key]);
+                        const isClientSameAsBase = isDeepEqual(clientProps[key], dirtyBase[key]);
+
+                        if (!isClientSameAsServer) {
+                            if (!isServerSameAsBase && !isClientSameAsBase && !DERIVED_PROPERTY_KEYS.has(key)) {
                                 // Both changed this property differently -> hard conflict
                                 hasHardConflict = true;
                                 break;
@@ -377,14 +398,35 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                             const clientProps = page.properties;
                             const dirtyBase = page.dirtyBase || {};
                             const mergedProps = { ...serverProps } as any;
+                            
+                            const isDeepEqual = (a: any, b: any): boolean => {
+                                if (a === b) return true;
+                                if (a && b && typeof a === 'object' && typeof b === 'object') {
+                                    if (Array.isArray(a)) {
+                                        if (!Array.isArray(b) || a.length !== b.length) return false;
+                                        for (let i = 0; i < a.length; i++) {
+                                            if (!isDeepEqual(a[i], b[i])) return false;
+                                        }
+                                        return true;
+                                    }
+                                    const keysA = Object.keys(a);
+                                    const keysB = Object.keys(b);
+                                    if (keysA.length !== keysB.length) return false;
+                                    for (const key of keysA) {
+                                        if (!keysB.includes(key) || !isDeepEqual(a[key], b[key])) return false;
+                                    }
+                                    return true;
+                                }
+                                return false;
+                            };
 
                             for (const key of Object.keys(clientProps)) {
-                                const clientValStr = JSON.stringify(clientProps[key]);
-                                const serverValStr = JSON.stringify(serverProps[key]);
-                                const baseValStr = JSON.stringify(dirtyBase[key]);
+                                const isClientSameAsServer = isDeepEqual(clientProps[key], serverProps[key]);
+                                const isServerSameAsBase = isDeepEqual(serverProps[key], dirtyBase[key]);
+                                const isClientSameAsBase = isDeepEqual(clientProps[key], dirtyBase[key]);
 
-                                if (clientValStr !== serverValStr) {
-                                    if (serverValStr !== baseValStr && clientValStr !== baseValStr) {
+                                if (!isClientSameAsServer) {
+                                    if (!isServerSameAsBase && !isClientSameAsBase) {
                                         hasHardConflict = true;
                                         break;
                                     } else {

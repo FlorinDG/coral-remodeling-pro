@@ -58,8 +58,28 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
                 if (sp) {
                     setServerPage(sp);
                     const DERIVED_PROPERTY_KEYS = new Set(['totalVat', 'totalExVat', 'totalIncVat', 'margin', 'totalCost', 'totalProfit']);
+                    const isDeepEqual = (a: any, b: any): boolean => {
+                        if (a === b) return true;
+                        if (a && b && typeof a === 'object' && typeof b === 'object') {
+                            if (Array.isArray(a)) {
+                                if (!Array.isArray(b) || a.length !== b.length) return false;
+                                for (let i = 0; i < a.length; i++) {
+                                    if (!isDeepEqual(a[i], b[i])) return false;
+                                }
+                                return true;
+                            }
+                            const keysA = Object.keys(a);
+                            const keysB = Object.keys(b);
+                            if (keysA.length !== keysB.length) return false;
+                            for (const key of keysA) {
+                                if (!keysB.includes(key) || !isDeepEqual(a[key], b[key])) return false;
+                            }
+                            return true;
+                        }
+                        return false;
+                    };
                     const cFields = Object.keys(page.properties).filter(k => 
-                        !DERIVED_PROPERTY_KEYS.has(k) && JSON.stringify(page.properties[k]) !== JSON.stringify(sp.properties[k])
+                        !DERIVED_PROPERTY_KEYS.has(k) && !isDeepEqual(page.properties[k], sp.properties[k])
                     );
                     setConflictFields(cFields);
                     const defaultRes: Record<string, boolean> = {};

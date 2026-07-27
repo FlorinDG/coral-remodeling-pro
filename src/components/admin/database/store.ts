@@ -444,7 +444,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                             mergedPages.push(localPagesMap.get(sp.id) || sp);
                         } else {
                             // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
-                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt, baseBlocksHash: JSON.stringify(sp.blocks || []) });
+                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt, baseBlocksHash: (sp as any).blocksHash ?? JSON.stringify(sp.blocks || []) });
                         }
                     });
                     

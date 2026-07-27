@@ -54,7 +54,8 @@ export default function TimesheetReportsPage() {
     const [selectedWorkerName, setSelectedWorkerName] = useState('');
     const [selectedWorkerRate, setSelectedWorkerRate] = useState<number | null>(null);
 
-    const fetchReport = async () => {
+    useEffect(() => {
+        const fetchReport = async () => {
             setLoading(true);
             try {
                 let url = '/api/hr/timesheet-reports';
@@ -157,6 +158,7 @@ export default function TimesheetReportsPage() {
                         </PDFDownloadLink>
                     )}
                 </div>
+            </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

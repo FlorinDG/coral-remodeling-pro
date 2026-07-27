@@ -4,6 +4,13 @@ import prisma from '@/lib/prisma';
 import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import * as XLSX from 'xlsx';
+import { ClockEntry } from '@prisma/client';
+
+type ExtendedClockEntry = ClockEntry & {
+    projectId?: string | null;
+    billable?: boolean;
+    costRateApplied?: number | null;
+};
 
 async function getContext(req: Request) {
     const session = await auth();
@@ -76,7 +83,7 @@ export async function GET(req: Request) {
     // Generate Excel File
     if (format === 'xlsx') {
         const rawData = entries.map((rawEntry) => {
-            const entry = rawEntry as any;
+            const entry = rawEntry as ExtendedClockEntry;
             const emp = empMap.get(entry.userId);
             const workerName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : 'Unknown';
             const proj = entry.projectId ? projMap.get(entry.projectId) : null;

@@ -4,6 +4,14 @@ import prisma from '@/lib/prisma';
 import { getAccessibleUserIds } from '@/app/api/hr/lib/team-scoping';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { resolveWorkerUserId } from '@/lib/resolveWorkerIdentity';
+import { ClockEntry } from '@prisma/client';
+
+type ExtendedClockEntry = ClockEntry & {
+    projectId?: string | null;
+    billable?: boolean;
+    costRateApplied?: number | null;
+    noBreak?: boolean;
+};
 
 async function getContext(req: Request) {
     const session = await auth();
@@ -113,7 +121,7 @@ export async function GET(req: Request) {
     const byDayMap = new Map<string, any>();
 
     for (const rawEntry of entries) {
-        const entry = rawEntry as any;
+        const entry = rawEntry as ExtendedClockEntry;
         const emp = empMap.get(entry.userId);
         const workerName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : 'Unknown';
         

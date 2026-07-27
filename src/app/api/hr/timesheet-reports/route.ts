@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     const toParam = url.searchParams.get('to');
     
     // RBAC: Only get data for users this requester is allowed to see
-    const allowedUserIds = await getAccessibleUserIds(ctx.userId, ctx.tenantId, ctx.role);
+    const allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
     
     // Filtering
     const requestedWorkerIds = url.searchParams.getAll('workerIds[]');
@@ -93,10 +93,10 @@ export async function GET(req: Request) {
     const empMap = new Map(employees.map(e => [e.userId, e]));
 
     // We need projects for names
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.hrProject.findMany({
         where: { tenantId: ctx.tenantId }
     });
-    const projMap = new Map(projects.map(p => [p.id, p]));
+    const projMap = new Map(projects.map((p: any) => [p.id, p]));
 
     // Process entries and build rollups
     const processedEntries = [];
@@ -112,7 +112,8 @@ export async function GET(req: Request) {
     const byWorkerProjectMap = new Map<string, any>();
     const byDayMap = new Map<string, any>();
 
-    for (const entry of entries) {
+    for (const rawEntry of entries) {
+        const entry = rawEntry as any;
         const emp = empMap.get(entry.userId);
         const workerName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : 'Unknown';
         

@@ -30,7 +30,7 @@ export async function GET(req: Request) {
     const requestedProjectIds = url.searchParams.getAll('projectIds[]');
 
     // RBAC: Only get data for users this requester is allowed to see
-    const allowedUserIds = await getAccessibleUserIds(ctx.userId, ctx.tenantId, ctx.role);
+    const allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
     
     let targetUserIds = allowedUserIds;
     if (requestedWorkerIds.length > 0) {
@@ -68,14 +68,15 @@ export async function GET(req: Request) {
     });
     const empMap = new Map(employees.map(e => [e.userId, e]));
 
-    const projects = await prisma.project.findMany({
+    const projects = await prisma.hrProject.findMany({
         where: { tenantId: ctx.tenantId }
     });
-    const projMap = new Map(projects.map(p => [p.id, p]));
+    const projMap = new Map(projects.map((p: any) => [p.id, p]));
 
     // Generate Excel File
     if (format === 'xlsx') {
-        const rawData = entries.map(entry => {
+        const rawData = entries.map((rawEntry) => {
+            const entry = rawEntry as any;
             const emp = empMap.get(entry.userId);
             const workerName = emp ? `${emp.firstName} ${emp.lastName}`.trim() : 'Unknown';
             const proj = entry.projectId ? projMap.get(entry.projectId) : null;

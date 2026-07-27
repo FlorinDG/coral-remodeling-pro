@@ -28,6 +28,7 @@ interface ClockEntry {
     taskDescription: string | null;
     approvalStatus: string | null;
     photos: string[] | null;
+    noBreak?: boolean;
     user?: Employee;
 }
 

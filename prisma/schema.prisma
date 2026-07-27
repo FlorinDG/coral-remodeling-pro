@@ -9,6 +9,8 @@ datasource db {
 }
 
 model Tenant {
+  rateChangeAudits RateChangeAudit[]
+
   id                         String                  @id @default(cuid())
   companyName                String
   vatNumber                  String?
@@ -297,6 +299,9 @@ model Session {
 }
 
 model User {
+  actedRateChanges RateChangeAudit[] @relation("RateChangeActor")
+  workerRateChanges RateChangeAudit[] @relation("RateChangeWorker")
+
   id                        String                     @id @default(cuid())
   tenantId                  String?
   name                      String?
@@ -1001,4 +1006,25 @@ model HrDocumentAcknowledgment {
 enum PortalAudience { 
   CUSTOMER
   CONTRACTOR 
+}
+
+model RateChangeAudit {
+  id             String   @id @default(cuid())
+  tenantId       String
+  actedBy        String   // userId who did the action
+  targetWorkerId String   // userId of the worker whose rates changed
+  timestamp      DateTime @default(now())
+  scope          String   // 'THIS_ENTRY', 'FUTURE', 'PAST', 'ALL'
+  oldRate        Float
+  newRate        Float
+  affectedCount  Int      // how many entries were modified
+  snapshot       Json     // Array of { entryId, oldRate } to support Undo
+  revertedAt     DateTime? // If this action was undone
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actor  User   @relation("RateChangeActor", fields: [actedBy], references: [id], onDelete: Cascade)
+  worker User   @relation("RateChangeWorker", fields: [targetWorkerId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, timestamp])
+  @@index([targetWorkerId])
 }

@@ -24,20 +24,26 @@ interface Props {
 export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
     const [loading, setLoading] = useState(false);
     const [employees, setEmployees] = useState<Employee[]>([]);
+    const [projects, setProjects] = useState<any[]>([]);
     
     // Form state
     const [userId, setUserId] = useState('');
+    const [projectId, setProjectId] = useState('');
     const [date, setDate] = useState('');
     const [startTime, setStartTime] = useState('08:00');
     const [endTime, setEndTime] = useState('17:00');
     const [description, setDescription] = useState('');
 
     useEffect(() => {
-        if (open && employees.length === 0) {
-            hrList<Employee>('employees').then(data => setEmployees(data)).catch(console.error);
-        }
         if (open) {
             setDate(new Date().toISOString().split('T')[0]);
+            
+            if (employees.length === 0) {
+                hrList<Employee>('employees').then(data => setEmployees(data)).catch(console.error);
+            }
+            if (projects.length === 0) {
+                hrList<any>('projects').then(data => setProjects(data)).catch(console.error);
+            }
         }
     }, [open]);
 
@@ -52,6 +58,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
             
             await hrCreate('clock-entries', {
                 userId,
+                projectId: projectId || null,
                 clockInTime,
                 clockOutTime,
                 taskDescription: description,
@@ -63,6 +70,7 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
             
             // Reset
             setUserId('');
+            setProjectId('');
             setDescription('');
         } catch (err) {
             console.error('Failed to create manual entry:', err);
@@ -95,6 +103,23 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                                         ⚠ {employees.filter(emp => !emp.userId).length} medewerker(s) zonder gekoppeld account
                                     </div>
                                 )}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label>Project (Optioneel)</Label>
+                        <Select value={projectId} onValueChange={setProjectId}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecteer een project" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">— Geen project —</SelectItem>
+                                {projects.map(proj => (
+                                    <SelectItem key={proj.id} value={proj.id}>
+                                        {proj.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

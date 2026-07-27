@@ -331,6 +331,37 @@ export async function POST(
         data.userId = ctx.userId;
     }
 
+    // ── PRE-CREATE Automations ───────────────────────────────────────
+    if (entity === 'clock-entries') {
+        // TS-8: Stamp hourly cost from Employee profile at time of creation
+        try {
+            const employee = await prisma.employee.findFirst({
+                where: { userId: data.userId as string, tenantId: ctx.tenantId },
+                select: { hourlyCost: true }
+            });
+            if (employee?.hourlyCost !== undefined && employee?.hourlyCost !== null) {
+                data.costRateApplied = employee.hourlyCost;
+            }
+        } catch (err) {
+            console.error('Failed to stamp hourly cost:', err);
+        }
+
+        // TS-3: Inherit projectId from ScheduledShift if clocked in via a shift
+        if (data.shiftId && !data.projectId) {
+            try {
+                const shift = await prisma.scheduledShift.findUnique({
+                    where: { id: data.shiftId as string },
+                    select: { projectId: true }
+                });
+                if (shift?.projectId) {
+                    data.projectId = shift.projectId;
+                }
+            } catch (err) {
+                console.error('Failed to inherit projectId from shift:', err);
+            }
+        }
+    }
+
     try {
         const record = await model.create({ data });
 

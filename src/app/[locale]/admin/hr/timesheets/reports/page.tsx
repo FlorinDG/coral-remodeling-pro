@@ -4,8 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { hrList } from '@/components/time-tracker/lib/hr-api';
 import { formatWorkDuration } from '@/lib/computeWorkedDuration';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, subWeeks, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import ModuleTabs from "@/components/admin/ModuleTabs";
+import { hrTabs } from "@/config/tabs";
+import { Download, Edit2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { RateRestampFlyout } from './RateRestampFlyout';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { TimesheetPDF } from './TimesheetPDF';
 
 interface ReportSummary {
     totalHours: number;
@@ -41,16 +48,48 @@ export default function TimesheetReportsPage() {
     // Filters
     const [dateRange, setDateRange] = useState('thisMonth');
 
-    useEffect(() => {
-        const fetchReport = async () => {
+    // Restamp Flyout State
+    const [restampOpen, setRestampOpen] = useState(false);
+    const [selectedWorkerId, setSelectedWorkerId] = useState('');
+    const [selectedWorkerName, setSelectedWorkerName] = useState('');
+    const [selectedWorkerRate, setSelectedWorkerRate] = useState<number | null>(null);
+
+    const fetchReport = async () => {
             setLoading(true);
             try {
-                // In a real app we'd build the query string. Hardcoded to last 30 days for now.
-                const from = new Date();
-                from.setDate(from.getDate() - 30);
-                const to = new Date();
+                let url = '/api/hr/timesheet-reports';
                 
-                const response = await fetch(`/api/hr/timesheet-reports?from=${from.toISOString()}&to=${to.toISOString()}`);
+                if (dateRange !== 'all') {
+                    const now = new Date();
+                    let from: Date, to: Date;
+                    
+                    switch (dateRange) {
+                        case 'thisWeek':
+                            from = startOfWeek(now, { weekStartsOn: 1 });
+                            to = endOfWeek(now, { weekStartsOn: 1 });
+                            break;
+                        case 'lastWeek':
+                            const lastW = subWeeks(now, 1);
+                            from = startOfWeek(lastW, { weekStartsOn: 1 });
+                            to = endOfWeek(lastW, { weekStartsOn: 1 });
+                            break;
+                        case 'thisMonth':
+                            from = startOfMonth(now);
+                            to = endOfMonth(now);
+                            break;
+                        case 'lastMonth':
+                            const lastM = subMonths(now, 1);
+                            from = startOfMonth(lastM);
+                            to = endOfMonth(lastM);
+                            break;
+                        default:
+                            from = startOfMonth(now);
+                            to = endOfMonth(now);
+                    }
+                    url += `?from=${from.toISOString()}&to=${to.toISOString()}`;
+                }
+                
+                const response = await fetch(url);
                 const result = await response.json();
                 setData(result);
             } catch (err) {
@@ -61,7 +100,18 @@ export default function TimesheetReportsPage() {
         };
 
         fetchReport();
+
+        const handleRefetch = () => fetchReport();
+        window.addEventListener('refetch-reports', handleRefetch);
+        return () => window.removeEventListener('refetch-reports', handleRefetch);
     }, [dateRange]);
+
+    const handleOpenRestamp = (workerId: string, workerName: string, currentRate: number | null) => {
+        setSelectedWorkerId(workerId);
+        setSelectedWorkerName(workerName);
+        setSelectedWorkerRate(currentRate);
+        setRestampOpen(true);
+    };
 
     if (loading) {
         return <div className="p-8 text-center text-neutral-500">Loading reports...</div>;
@@ -72,13 +122,15 @@ export default function TimesheetReportsPage() {
     }
 
     return (
-        <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
-            <div className="flex justify-between items-center">
-                <div>
+        <div className="flex flex-col w-full h-full">
+            <ModuleTabs tabs={hrTabs} groupId="hr" />
+            <div className="p-6 space-y-6 max-w-[1400px] mx-auto w-full">
+                <div className="flex justify-between items-center">
+                    <div>
                     <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">Rapportages</h1>
                     <p className="text-sm text-neutral-500 mt-1">Geregistreerde uren en kosten</p>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                     <select 
                         value={dateRange}
                         onChange={(e) => setDateRange(e.target.value)}
@@ -90,6 +142,20 @@ export default function TimesheetReportsPage() {
                         <option value="lastMonth">Vorige maand</option>
                         <option value="all">Alle tijd</option>
                     </select>
+
+                    {data && data.entries && (
+                        <PDFDownloadLink
+                            document={<TimesheetPDF reportData={data} dateRangeLabel={dateRange} />}
+                            fileName={`werkbon_${dateRange}.pdf`}
+                        >
+                            {({ loading: pdfLoading }) => (
+                                <Button variant="outline" size="sm" disabled={pdfLoading} className="h-[38px]">
+                                    <Download className="w-4 h-4 mr-2" />
+                                    {pdfLoading ? 'Loading...' : 'PDF Export'}
+                                </Button>
+                            )}
+                        </PDFDownloadLink>
+                    )}
                 </div>
             </div>
 
@@ -136,22 +202,31 @@ export default function TimesheetReportsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-neutral-50 dark:bg-neutral-800/50 text-neutral-500">
-                                <tr>
-                                    <th className="px-4 py-3 font-medium rounded-l-lg">Medewerker</th>
-                                    <th className="px-4 py-3 font-medium">Totaal Uren</th>
-                                    <th className="px-4 py-3 font-medium">Facturabel</th>
-                                    <th className="px-4 py-3 font-medium rounded-r-lg">Intern</th>
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="pb-2 font-medium">Medewerker</th>
+                                    <th className="pb-2 font-medium text-right">Totaal Uren</th>
+                                    <th className="pb-2 font-medium text-right">Factureerbaar</th>
+                                    <th className="pb-2 font-medium text-right">Acties</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                                {data.rollups.byWorker.map((worker) => (
-                                    <tr key={worker.userId} className="hover:bg-neutral-50/50 dark:hover:bg-white/[0.02]">
-                                        <td className="px-4 py-3 font-medium">{worker.workerName}</td>
-                                        <td className="px-4 py-3">{worker.hours.toFixed(1)}u</td>
-                                        <td className="px-4 py-3 text-green-600">{worker.billableHours.toFixed(1)}u</td>
-                                        <td className="px-4 py-3 text-neutral-500">{(worker.hours - worker.billableHours).toFixed(1)}u</td>
+                            <tbody className="divide-y">
+                                {data.rollups.byWorker.map((worker: any) => (
+                                    <tr key={worker.userId}>
+                                        <td className="py-3">{worker.workerName}</td>
+                                        <td className="py-3 text-right">{formatWorkDuration({ totalMinutes: worker.hours * 60 } as any)}</td>
+                                        <td className="py-3 text-right">{formatWorkDuration({ totalMinutes: worker.billableHours * 60 } as any)}</td>
+                                        <td className="py-3 text-right">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm" 
+                                                onClick={() => handleOpenRestamp(worker.userId, worker.workerName, null)}
+                                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                            >
+                                                <Edit2 className="w-3 h-3 mr-1" /> Tarief
+                                            </Button>
+                                        </td>
                                     </tr>
                                 ))}
                                 {data.rollups.byWorker.length === 0 && (
@@ -164,6 +239,19 @@ export default function TimesheetReportsPage() {
                     </div>
                 </CardContent>
             </Card>
+            
+            <RateRestampFlyout 
+                open={restampOpen}
+                onOpenChange={setRestampOpen}
+                workerId={selectedWorkerId}
+                workerName={selectedWorkerName}
+                currentRate={selectedWorkerRate}
+                onSuccess={() => {
+                    // Refetch the report to see the new rates take effect
+                    const ev = new CustomEvent('refetch-reports');
+                    window.dispatchEvent(ev);
+                }}
+            />
         </div>
     );
 }

@@ -273,6 +273,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                     
                                     
+                                    // Reset dirtyBaseBlocks if it was set
+                                    let newDirtyBaseBlocks = p.dirtyBaseBlocks;
+                                    if (page.dirtyBaseBlocks) {
+                                        newDirtyBaseBlocks = false;
+                                    }
+                                    
                                         if (result.blocksVersion !== undefined) {
                                             p.blocksVersion = result.blocksVersion;
                                         }
@@ -280,7 +286,8 @@ export const useDatabaseStore = create<DatabaseState>()(
                                         return { 
                                             ...p, 
                                             baseUpdatedAt: result.updatedAt,
-                                            dirtyBase: newDirtyBase
+                                            dirtyBase: newDirtyBase,
+                                            dirtyBaseBlocks: newDirtyBaseBlocks
                                         };
                                 })
                             } : d)
@@ -1334,6 +1341,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 return {
                                     ...page,
                                     blocks,
+                                    dirtyBaseBlocks: true,
                                     updatedAt: new Date().toISOString()
                                 };
                             }),

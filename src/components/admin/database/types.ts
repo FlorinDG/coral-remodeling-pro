@@ -132,6 +132,7 @@ export interface Page {
     lastEditedBy: string;
     driveFolderId?: string; // Phase 7.1: Maps this row to a specific Google Drive folder
     dirtyBase?: Record<string, unknown>; // Tracks original base state of edited properties for 3-way merge
+    dirtyBaseBlocks?: boolean; // True if the client edited blocks. Used to conditionally check/increment blocksVersion
     blocksVersion: number; // Integer version for optimistic concurrency control on blocks
 }
 

@@ -229,8 +229,8 @@ export async function saveGlobalPage(page: Page) {
                 // Time mismatch: Attempt field-level 3-way merge
                 let hasHardConflict = false;
                 
-                // 1. Guard blocks: exact version match required
-                if (existingPage.blocksVersion !== page.blocksVersion) {
+                // 1. Guard blocks: exact version match required only if we are writing blocks
+                if (page.dirtyBaseBlocks && existingPage.blocksVersion !== page.blocksVersion) {
                     hasHardConflict = true;
                 }
 
@@ -301,7 +301,9 @@ export async function saveGlobalPage(page: Page) {
 
         const newUpdatedAt = new Date();
 
-        const newBlocksVersion = (existingPage?.blocksVersion || 1) + 1;
+        const newBlocksVersion = page.dirtyBaseBlocks 
+            ? (existingPage?.blocksVersion || 1) + 1 
+            : (existingPage?.blocksVersion || 1);
 
         const saved = await prisma.globalPage.upsert({
             where: { id: page.id },
@@ -385,7 +387,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     const clientTime = new Date(page.baseUpdatedAt).getTime();
                     if (serverTime !== clientTime) {
                         let hasHardConflict = false;
-                        if (existingPage.blocksVersion !== page.blocksVersion) {
+                        if (page.dirtyBaseBlocks && existingPage.blocksVersion !== page.blocksVersion) {
                             hasHardConflict = true;
                         }
                         
@@ -442,7 +444,9 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     }
                 }
 
-                const newBlocksVersion = (existingPage?.blocksVersion || 1) + 1;
+                const newBlocksVersion = page.dirtyBaseBlocks 
+                    ? (existingPage?.blocksVersion || 1) + 1 
+                    : (existingPage?.blocksVersion || 1);
 
                 const saved = await prisma.globalPage.upsert({
                     where: { id: page.id },

@@ -175,6 +175,26 @@ Sortable-tree architecture APPROVED (`lib/sortable-tree.ts` + `lib/dnd-sensors.t
   **Before starting — one decisive log (5 min, confirms the diagnosis):** at `global-databases.ts:234` on conflict, log `serverBlocksHash.length`, `page.baseBlocksHash?.length` and the first 80 chars of each. Reproduce once, read the Vercel log: differing only in key order ⇒ serialisation; client value `undefined`/stale-shaped ⇒ the `??` fallback. Either way OCC-11 is the fix — the log just confirms which symptom we're retiring.
   - Verify: edit a quote's lines continuously for 60s → zero conflict dialogs. Cron/export touches the record → block editing still merges. Two sessions editing the SAME quote's blocks → real conflict still raised, and the (now visible) **Resolve & Save** works.
 
+- [ ] **OCC-12-BLOCKSVERSION-LOST-ITS-QUALIFIERS** 🟥🟥 (Florin: *"OCC-11 didn't cut it either"* — 2026-07-27)
+  **OCC-11 landed but with BOTH qualifiers dropped, which inverts its meaning.** The approach is fine; the implementation made it a row-version instead of a blocks-version.
+  1. **`global-databases.ts:304` increments unconditionally:** `const newBlocksVersion = (existingPage?.blocksVersion || 1) + 1;` — so a **property-only** edit, a cron, or the accountant export all bump it. `blocksVersion` now tracks *every write*, which is exactly what `updatedAt` already did ⇒ **the original OCC-1 defect rebuilt under a new column.** Spec said "on every write **that touches blocks**".
+  2. **`:233` dropped the dirty guard:** `if (existingPage.blocksVersion !== page.blocksVersion)` — spec was `page.dirtyBaseBlocks && …`. Without it a client that never touched blocks still hard-conflicts.
+  ⇒ Combined: *anything* writes → version bumps → **every** subsequent edit conflicts regardless of whether blocks were involved. Permanent, guaranteed, matches the observed behaviour.
+  **FIX (two lines, no schema change — the column is already there):**
+  ```js
+  // :304 — only bump when blocks actually changed (isDeepEqual already exists in this file)
+  const blocksChanged = !isDeepEqual(finalBlocks, existingPage?.blocks ?? []);
+  const newBlocksVersion = blocksChanged
+      ? (existingPage?.blocksVersion || 1) + 1
+      : (existingPage?.blocksVersion || 1);
+  // :233 — restore the dirty guard
+  if (page.dirtyBaseBlocks && existingPage.blocksVersion !== page.blocksVersion) { hasHardConflict = true; }
+  ```
+  Apply the same two corrections to the **batch path** (`:388`, `:445`) — it has the identical unconditional increment and missing guard.
+  3. **Secondary:** `store.ts:277` does `p.blocksVersion = result.blocksVersion` — a direct mutation of the previous state object inside a `.map()`. Return a new object like the surrounding code.
+  - Verify: property-only edit (or a cron write) → `blocksVersion` **unchanged**; edit blocks → increments by exactly 1; continuous editing for 60s → zero dialogs; two sessions editing the same blocks → real conflict still raised.
+  > **Planner note:** three OCC block-guard attempts have now failed the same way — each spec was right, each implementation dropped a qualifier. For the next one, require the coder to **quote the spec's conditional verbatim in the PR/commit message** and show the implemented line beside it.
+
 **Verify (whole cluster):** with the overdue cron AND an accountant export having touched a record, one user edits it repeatedly → every save succeeds, zero conflict toasts, nothing in downloads, and the cron's `status` + the user's field edits are BOTH present. Then force a genuine same-field collision in two sessions → in-app mine/theirs dialog, both versions recoverable, no reload.
 
 **Regression guard (must not break):** the original data-loss scenario stays covered — a genuine concurrent edit to the same field/blocks must still refuse to blind-overwrite. OCC-3 narrows *what counts as* a conflict; it must not narrow the protection on real ones.

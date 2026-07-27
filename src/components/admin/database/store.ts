@@ -285,7 +285,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     return { 
                                         ...p, 
                                         baseUpdatedAt: result.updatedAt,
-                                        baseBlocksHash: JSON.stringify(page.blocks || []),
+                                        baseBlocksHash: result.blocksHash ?? JSON.stringify(page.blocks || []),
                                         dirtyBase: newDirtyBase,
                                         dirtyBaseBlocks: newDirtyBaseBlocks
                                     };

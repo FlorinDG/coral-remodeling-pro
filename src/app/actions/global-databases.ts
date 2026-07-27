@@ -286,7 +286,7 @@ export async function saveGlobalPage(page: Page) {
 
         const newUpdatedAt = new Date();
 
-        await prisma.globalPage.upsert({
+        const saved = await prisma.globalPage.upsert({
             where: { id: page.id },
             update: {
                 coverImage: page.coverImage,
@@ -310,11 +310,12 @@ export async function saveGlobalPage(page: Page) {
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
                 updatedAt: newUpdatedAt,
-            }
+            },
+            select: { blocks: true }
         });
 
         revalidatePath('/admin', 'layout');
-        return { success: true, updatedAt: newUpdatedAt.toISOString() };
+        return { success: true, updatedAt: newUpdatedAt.toISOString(), blocksHash: JSON.stringify(saved.blocks || []) };
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -401,7 +402,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                     }
                 }
 
-                await prisma.globalPage.upsert({
+                const saved = await prisma.globalPage.upsert({
                     where: { id: page.id },
                     update: {
                         coverImage: page.coverImage,
@@ -425,10 +426,11 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
                         updatedAt: newUpdatedAt,
-                    }
+                    },
+                    select: { blocks: true }
                 });
                 
-                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString() });
+                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString(), blocksHash: JSON.stringify(saved.blocks || []) });
             } catch (pageError: any) {
                 console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);
                 results.push({ id: page.id, success: false, error: pageError?.message ?? String(pageError) });

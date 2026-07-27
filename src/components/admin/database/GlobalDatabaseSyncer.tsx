@@ -267,7 +267,7 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
                             a.click();
                             URL.revokeObjectURL(url);
                         }}>Download Backup</Button>
-                        <Button onClick={handleResolve} disabled={isLoadingServerPage} className="bg-brand-600 hover:bg-brand-700 text-white">
+                        <Button onClick={handleResolve} disabled={isLoadingServerPage} className="bg-[var(--brand-color,#d35400)] hover:opacity-90 text-white">
                             Resolve & Save
                         </Button>
                     </DialogFooter>

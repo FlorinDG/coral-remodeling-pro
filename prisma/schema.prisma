@@ -734,6 +734,7 @@ model GlobalPage {
   properties    Json           @default("{}")
   order         Float?
   blocks        Json           @default("[]")
+  blocksVersion Int            @default(1)
   createdBy     String
   lastEditedBy  String
   driveFolderId String?

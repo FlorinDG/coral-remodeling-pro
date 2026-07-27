@@ -282,13 +282,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                         // For now, OCC-8 just focuses on properties delta.
                                     }
                                     
-                                    return { 
-                                        ...p, 
-                                        baseUpdatedAt: result.updatedAt,
-                                        baseBlocksHash: result.blocksHash ?? JSON.stringify(page.blocks || []),
-                                        dirtyBase: newDirtyBase,
-                                        dirtyBaseBlocks: newDirtyBaseBlocks
-                                    };
+                                        if (result.blocksHash !== undefined) {
+                                            p.baseBlocksHash = result.blocksHash;
+                                        }
+
+                                        return { 
+                                            ...p, 
+                                            baseUpdatedAt: result.updatedAt,
+                                            dirtyBase: newDirtyBase,
+                                            dirtyBaseBlocks: newDirtyBaseBlocks
+                                        };
                                 })
                             } : d)
                         }));
@@ -444,7 +447,11 @@ export const useDatabaseStore = create<DatabaseState>()(
                             mergedPages.push(localPagesMap.get(sp.id) || sp);
                         } else {
                             // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
-                            mergedPages.push({ ...sp, baseUpdatedAt: sp.updatedAt, baseBlocksHash: (sp as any).blocksHash ?? JSON.stringify(sp.blocks || []) });
+                            const newPage = { ...sp, baseUpdatedAt: sp.updatedAt };
+                            if ((sp as any).blocksHash !== undefined) {
+                                newPage.baseBlocksHash = (sp as any).blocksHash;
+                            }
+                            mergedPages.push(newPage);
                         }
                     });
                     

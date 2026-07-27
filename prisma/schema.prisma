@@ -770,6 +770,8 @@ model ClockEntry {
   billable          Boolean   @default(true)
   source            String    @default("clocked")
   costRateApplied   Float?
+  accountantExportedAt DateTime?
+
   costRatePrevious  Float?
   createdBy         String?
   tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)

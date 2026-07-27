@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface Employee {
     id: string;
+    userId?: string | null;
     firstName: string;
     lastName: string;
 }
@@ -84,11 +85,16 @@ export function ManualEntryModal({ open, onOpenChange, onSuccess }: Props) {
                                 <SelectValue placeholder="Selecteer een medewerker" />
                             </SelectTrigger>
                             <SelectContent>
-                                {employees.map(emp => (
-                                    <SelectItem key={emp.id} value={emp.id}>
+                                {employees.filter(emp => emp.userId).map(emp => (
+                                    <SelectItem key={emp.id} value={emp.userId!}>
                                         {emp.firstName} {emp.lastName}
                                     </SelectItem>
                                 ))}
+                                {employees.some(emp => !emp.userId) && (
+                                    <div className="px-2 py-1.5 text-[10px] text-amber-600 dark:text-amber-400">
+                                        ⚠ {employees.filter(emp => !emp.userId).length} medewerker(s) zonder gekoppeld account
+                                    </div>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>

@@ -59,6 +59,7 @@ export function ScheduleManagement() {
       try {
         const employees = await hrList<{
           id: string;
+          userId?: string | null;
           firstName: string;
           lastName: string;
           status: string;
@@ -67,9 +68,9 @@ export function ScheduleManagement() {
         }>('employees');
 
         const activeWorkers = employees
-          .filter(e => e.schedule !== false)
+          .filter(e => e.schedule !== false && e.userId) // Only employees with linked user accounts
           .map(e => ({
-            id: e.id,
+            id: e.userId!, // Use User.id, not Employee.id
             full_name: `${e.firstName} ${e.lastName}`,
             hourly_rate: e.hourlyCost,
           }))

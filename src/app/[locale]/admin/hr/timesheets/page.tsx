@@ -6,6 +6,7 @@ import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X,
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
+import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { Link } from '@/i18n/routing';
 import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
@@ -110,9 +111,9 @@ export default function TimesheetsPage() {
                             {entries.map(entry => {
                                 const start = new Date(entry.clockInTime);
                                 const end = entry.clockOutTime ? new Date(entry.clockOutTime) : null;
-                                const durationMs = end ? end.getTime() - start.getTime() : 0;
-                                const durationHrs = Math.floor(durationMs / (1000 * 60 * 60));
-                                const durationMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+                                const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
+                                const durationHrs = duration.hours;
+                                const durationMins = duration.minutes;
                                 
                                 const photoCount = Array.isArray(entry.photos) ? entry.photos.length : 0;
 

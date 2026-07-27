@@ -11,6 +11,7 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import dynamic from 'next/dynamic';
 import { useClockEntries } from '@/components/time-tracker/hooks/useClockEntries';
 import { useScheduledShifts } from '@/components/time-tracker/hooks/useScheduledShifts';
+import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import {
     CheckCircle2, Circle, Clock, AlertTriangle, Pause, XCircle,
     CalendarDays, MapPin, TrendingUp, ListTodo, Plus,
@@ -259,13 +260,8 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
         let total = 0;
         projectClockEntries.forEach(entry => {
             if (entry.clockOutTime) {
-                const start = new Date(entry.clockInTime).getTime();
-                const end = new Date(entry.clockOutTime).getTime();
-                let hours = (end - start) / (1000 * 60 * 60);
-                if (!entry.noBreak && hours > 4) {
-                    hours = Math.max(0, hours - 0.5);
-                }
-                total += hours;
+                const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
+                total += (duration.totalMinutes / 60);
             }
         });
         return Math.round(total * 100) / 100;

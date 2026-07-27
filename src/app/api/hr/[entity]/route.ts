@@ -269,12 +269,26 @@ export async function GET(
                 const userMap = new Map(users.map(u => [u.id, u]));
                 const empMap = new Map(employees.map(e => [e.userId, e]));
                 
+                // Fallback: some legacy rows may hold Employee.id instead of User.id
+                // Build a second lookup for those cases
+                const unresolvedIds = userIds.filter(id => !userMap.has(id) && !empMap.has(id));
+                const legacyEmpMap = new Map<string, { firstName: string; lastName: string }>();
+                if (unresolvedIds.length > 0) {
+                    const legacyEmployees = await prisma.employee.findMany({
+                        where: { id: { in: unresolvedIds } },
+                        select: { id: true, firstName: true, lastName: true }
+                    });
+                    legacyEmployees.forEach(e => legacyEmpMap.set(e.id, e));
+                }
+                
                 records = records.map((r: any) => {
                     const u = userMap.get(r.userId);
                     const e = empMap.get(r.userId);
+                    const legacy = legacyEmpMap.get(r.userId);
                     let userName = r.userId?.slice(0, 8) || 'System';
                     if (u?.name) userName = u.name;
                     else if (e?.firstName || e?.lastName) userName = `${e.firstName || ''} ${e.lastName || ''}`.trim();
+                    else if (legacy) userName = `${legacy.firstName || ''} ${legacy.lastName || ''}`.trim();
                     else if (u?.email) userName = u.email;
                     
                     return { ...r, userName };

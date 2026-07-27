@@ -102,7 +102,7 @@ export function useScheduledShifts() {
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
         hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects').catch(() => []),
-        hrList<{ id: string; firstName: string; lastName: string }>('employees').catch(() => []),
+        hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees').catch(() => []),
         hrList<any>('time-off').catch(() => []),
       ]);
 
@@ -122,7 +122,13 @@ export function useScheduledShifts() {
 
       const allProjects = [...projectsData, ...normalizedErpProjects];
       const projectMap = new Map(allProjects.map(p => [p.id, p]));
-      const employeeMap = new Map(employeesData.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
+      // Build lookup keyed by User.id (canonical) AND Employee.id (legacy fallback)
+      const employeeMap = new Map<string, string>();
+      employeesData.forEach(e => {
+        const name = `${e.firstName} ${e.lastName}`;
+        if (e.userId) employeeMap.set(e.userId, name);  // Primary: keyed by User.id
+        employeeMap.set(e.id, name);                     // Fallback: keyed by Employee.id
+      });
 
       const validShifts = shiftsData.filter(s => {
         const uid = s.userId || s.user_id;

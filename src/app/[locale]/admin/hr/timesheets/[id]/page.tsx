@@ -11,6 +11,7 @@ import { Link } from '@/i18n/routing';
 
 interface Employee {
     id: string;
+    userId?: string | null;
     firstName: string;
     lastName: string;
     email: string;
@@ -58,7 +59,9 @@ export default function WerkbonDetailPage() {
 
                 const rawEntry = entriesData.find(e => e.id === id);
                 if (rawEntry) {
-                    const employee = employeesData.find((e) => e.id === rawEntry.userId);
+                    // Match by Employee.userId (correct) or Employee.id (legacy pre-backfill rows)
+                    const employee = employeesData.find((e) => e.userId === rawEntry.userId)
+                        || employeesData.find((e) => e.id === rawEntry.userId);
                     // Find project if linked via shift
                     // For now we'll assume it's just the raw entry
                     setEntry({

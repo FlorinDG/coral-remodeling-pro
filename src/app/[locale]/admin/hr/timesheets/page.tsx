@@ -104,11 +104,19 @@ function TimesheetsContent() {
         setError(null);
         try {
             const currentParams = new URLSearchParams(searchParams.toString());
+            let needsRedirect = false;
+            
             if (!currentParams.has('from') || !currentParams.has('to')) {
                 const now = new Date();
-                currentParams.set('from', formatISO(startOfMonth(now)));
-                currentParams.set('to', formatISO(endOfMonth(now)));
+                currentParams.set('from', format(startOfMonth(now), 'yyyy-MM-dd'));
+                currentParams.set('to', format(endOfMonth(now), 'yyyy-MM-dd'));
                 currentParams.set('period', 'thisMonth');
+                needsRedirect = true;
+            }
+            
+            if (needsRedirect) {
+                router.replace(`${pathname}?${currentParams.toString()}`);
+                return; // The redirect will re-trigger the effect
             }
             
             const qs = `?${currentParams.toString()}`;

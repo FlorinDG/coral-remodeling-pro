@@ -165,7 +165,6 @@ export async function updateTaskStatus(pageId: string, status: string) {
         data: {
             properties: updatedProps,
             lastEditedBy: userId,
-            updatedAt: new Date(),
         }
     });
 

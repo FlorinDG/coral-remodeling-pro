@@ -184,7 +184,6 @@ export async function updatePageServerFirst(
             data: {
                 properties: properties as Prisma.InputJsonValue,
                 lastEditedBy: 'user',
-                updatedAt: new Date(),
             }
         });
 

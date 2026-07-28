@@ -301,7 +301,7 @@ export async function saveGlobalPage(page: Page) {
             }
         }
 
-        const newUpdatedAt = new Date();
+
 
         const newBlocksVersion = page.dirtyBaseBlocks 
             ? (existingPage?.blocksVersion || 1) + 1 
@@ -318,7 +318,6 @@ export async function saveGlobalPage(page: Page) {
                 blocksVersion: newBlocksVersion,
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
-                updatedAt: newUpdatedAt,
             },
             create: {
                 id: page.id,
@@ -332,13 +331,12 @@ export async function saveGlobalPage(page: Page) {
                 createdBy: page.createdBy || 'admin',
                 lastEditedBy: page.lastEditedBy || 'admin',
                 driveFolderId: page.driveFolderId,
-                updatedAt: newUpdatedAt,
             },
-            select: { blocksVersion: true }
+            select: { blocksVersion: true, updatedAt: true }
         });
 
         revalidatePath('/admin', 'layout');
-        return { success: true, updatedAt: newUpdatedAt.toISOString(), blocksVersion: saved.blocksVersion };
+        return { success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion };
     } catch (e: any) {
         console.error(`[saveGlobalPage] Failed to save page ${page.id} (db: ${page.databaseId}):`, e?.message ?? e);
         return { success: false, error: e?.message ?? String(e) };
@@ -369,7 +367,7 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
             }
         }
 
-        const newUpdatedAt = new Date();
+
         const results = [];
         
         // Process sequentially to allow partial success and granular OCC
@@ -468,7 +466,6 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         blocksVersion: newBlocksVersion,
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
-                        updatedAt: newUpdatedAt,
                     },
                     create: {
                         id: page.id,
@@ -482,12 +479,11 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         createdBy: page.createdBy || 'admin',
                         lastEditedBy: page.lastEditedBy || 'admin',
                         driveFolderId: page.driveFolderId,
-                        updatedAt: newUpdatedAt,
                     },
-                    select: { blocksVersion: true }
+                    select: { blocksVersion: true, updatedAt: true }
                 });
                 
-                results.push({ id: page.id, success: true, updatedAt: newUpdatedAt.toISOString(), blocksVersion: saved.blocksVersion });
+                results.push({ id: page.id, success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion });
             } catch (pageError: any) {
                 console.error(`[saveGlobalPagesBatch] Failed for page ${page.id}:`, pageError);
                 results.push({ id: page.id, success: false, error: pageError?.message ?? String(pageError) });

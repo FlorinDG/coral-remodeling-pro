@@ -48,20 +48,30 @@ export async function GET(req: Request) {
     const requestedProjectIds = url.searchParams.getAll('projectIds[]');
 
     // RBAC: Only get data for users this requester is allowed to see
-    const allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
+    let allowedUserIds: string[] | null = null;
+    if (!isAdminRole) {
+        allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+    }
     
     let targetUserIds = allowedUserIds;
     if (requestedWorkerIds.length > 0) {
-        targetUserIds = requestedWorkerIds.filter(id => allowedUserIds.includes(id));
-        if (targetUserIds.length === 0) {
-            return new NextResponse('No accessible users', { status: 403 });
+        if (allowedUserIds) {
+            targetUserIds = requestedWorkerIds.filter(id => allowedUserIds!.includes(id));
+            if (targetUserIds.length === 0) {
+                return new NextResponse('No accessible users', { status: 403 });
+            }
+        } else {
+            targetUserIds = requestedWorkerIds;
         }
     }
 
     const where: any = {
         tenantId: ctx.tenantId,
-        userId: { in: targetUserIds },
     };
+    if (targetUserIds) {
+        where.userId = { in: targetUserIds };
+    }
 
     if (fromParam && toParam) {
         where.clockInTime = {
@@ -80,8 +90,12 @@ export async function GET(req: Request) {
         orderBy: { clockInTime: 'asc' }
     });
 
+    const employeesWhere: any = { tenantId: ctx.tenantId };
+    if (targetUserIds) {
+        employeesWhere.userId = { in: targetUserIds };
+    }
     const employees = await prisma.employee.findMany({
-        where: { tenantId: ctx.tenantId, userId: { in: targetUserIds } },
+        where: employeesWhere,
         select: { userId: true, firstName: true, lastName: true, hourlyCost: true }
     });
     const empMap = new Map(employees.map(e => [e.userId, e]));

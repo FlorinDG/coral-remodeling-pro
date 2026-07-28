@@ -33,7 +33,11 @@ export async function GET(req: Request) {
     const toParam = url.searchParams.get('to');
     
     // RBAC: Only get data for users this requester is allowed to see
-    const allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+    const isAdminRole = ['TENANT_ADMIN', 'SUPERADMIN', 'ACCOUNTANT', 'APP_MANAGER', 'TENANT_OWNER', 'TENANT_PRO_OWNER', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_ADMIN'].includes(ctx.role);
+    let allowedUserIds: string[] | null = null;
+    if (!isAdminRole) {
+        allowedUserIds = await getAccessibleUserIds(ctx.tenantId, ctx.userId);
+    }
     
     // Filtering
     const requestedWorkerIds = url.searchParams.getAll('workerIds[]');
@@ -45,20 +49,26 @@ export async function GET(req: Request) {
     let targetUserIds = allowedUserIds;
     if (requestedWorkerIds.length > 0) {
         // Intersect requested with allowed
-        targetUserIds = requestedWorkerIds.filter(id => allowedUserIds.includes(id));
-        if (targetUserIds.length === 0) {
-            return NextResponse.json({
-                entries: [],
-                rollups: { byWorker: [], byProject: [], byWorkerProject: [], byDay: [] },
-                summary: { totalHours: 0, billableHours: 0, internalHours: 0, approvedHours: 0, pendingHours: 0, openEntries: 0 }
-            });
+        if (allowedUserIds) {
+            targetUserIds = requestedWorkerIds.filter(id => allowedUserIds!.includes(id));
+            if (targetUserIds.length === 0) {
+                return NextResponse.json({
+                    entries: [],
+                    rollups: { byWorker: [], byProject: [], byWorkerProject: [], byDay: [] },
+                    summary: { totalHours: 0, billableHours: 0, internalHours: 0, approvedHours: 0, pendingHours: 0, openEntries: 0 }
+                });
+            }
+        } else {
+            targetUserIds = requestedWorkerIds;
         }
     }
 
     const where: any = {
         tenantId: ctx.tenantId,
-        userId: { in: targetUserIds },
     };
+    if (targetUserIds) {
+        where.userId = { in: targetUserIds };
+    }
 
     if (fromParam && toParam) {
         where.clockInTime = {
@@ -94,8 +104,12 @@ export async function GET(req: Request) {
     });
 
     // We also need employees to get names. User table is the unified source of truth.
+    const usersWhere: any = { tenantId: ctx.tenantId };
+    if (targetUserIds) {
+        usersWhere.id = { in: targetUserIds };
+    }
     const users = await prisma.user.findMany({
-        where: { tenantId: ctx.tenantId, id: { in: targetUserIds } },
+        where: usersWhere,
         select: { id: true, name: true }
     });
     const userMap = new Map(users.map(u => [u.id, u]));

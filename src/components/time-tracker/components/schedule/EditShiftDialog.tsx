@@ -2,7 +2,7 @@
 "use client";
 // @ts-nocheck — Legacy component, progressive migration to camelCase
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Trash2, Paperclip, Upload, FolderOpen, X, FileText, Image, Download, ListTodo, Plus, Check, Trash, Calendar as CalendarIcon, Repeat } from 'lucide-react';
 import { useTasks, useShiftTasks, Task } from '@/components/time-tracker/hooks/useTasks';
 import { AttachmentLink, AttachmentImage } from '@/components/ui/attachment-link';
 import { Button } from '@/components/ui/button';

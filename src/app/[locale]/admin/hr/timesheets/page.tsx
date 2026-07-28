@@ -87,7 +87,7 @@ function TimesheetsContent() {
             await fetchData();
         } catch (err) {
             console.error(err);
-            alert('Bulk action failed');
+            alert(t('bulkActionFailed'));
         } finally {
             setLoading(false);
         }
@@ -217,16 +217,16 @@ function TimesheetsContent() {
                     <div className="flex items-center gap-3">
                         {selectedEntries.size > 0 && (
                             <div className="flex items-center gap-2 mr-4 bg-orange-50 border border-orange-200 px-3 py-1.5 rounded-xl">
-                                <span className="text-sm font-bold text-orange-800">{selectedEntries.size} selected</span>
-                                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white ml-2" onClick={() => handleBulkAction('approved')}>Approve Selected</Button>
-                                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleBulkAction('denied')}>Deny Selected</Button>
+                                <span className="text-sm font-bold text-orange-800">{t('selectedCount', { count: selectedEntries.size })}</span>
+                                <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700 text-white ml-2" onClick={() => handleBulkAction('approved')}>{t('bulkApprove')}</Button>
+                                <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200 hover:bg-red-50" onClick={() => handleBulkAction('denied')}>{t('bulkDeny')}</Button>
                             </div>
                         )}
                         
                         <div className="bg-neutral-100 dark:bg-neutral-800 p-1 rounded-xl flex items-center text-sm font-medium">
-                            <button onClick={() => setGroupBy('flat')} className={`px-3 py-1 rounded-lg ${groupBy === 'flat' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>Flat</button>
-                            <button onClick={() => setGroupBy('worker')} className={`px-3 py-1 rounded-lg ${groupBy === 'worker' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>By Worker</button>
-                            <button onClick={() => setGroupBy('project')} className={`px-3 py-1 rounded-lg ${groupBy === 'project' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>By Project</button>
+                            <button onClick={() => setGroupBy('flat')} className={`px-3 py-1 rounded-lg ${groupBy === 'flat' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>{t('flat')}</button>
+                            <button onClick={() => setGroupBy('worker')} className={`px-3 py-1 rounded-lg ${groupBy === 'worker' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>{t('byWorker')}</button>
+                            <button onClick={() => setGroupBy('project')} className={`px-3 py-1 rounded-lg ${groupBy === 'project' ? 'bg-white shadow-sm text-black' : 'text-neutral-500 hover:text-black'}`}>{t('byProject')}</button>
                         </div>
                     </div>
                 </div>

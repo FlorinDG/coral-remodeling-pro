@@ -61,22 +61,22 @@ export function TimesheetFilterBar() {
         <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm mb-6">
             <Select onValueChange={handlePeriodChange}>
                 <SelectTrigger className="w-[180px] h-9 rounded-xl">
-                    <SelectValue placeholder="Period" />
+                    <SelectValue placeholder={t('period')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="thisWeek">This Week</SelectItem>
-                    <SelectItem value="lastWeek">Last Week</SelectItem>
-                    <SelectItem value="thisMonth">This Month</SelectItem>
-                    <SelectItem value="lastMonth">Last Month</SelectItem>
+                    <SelectItem value="thisWeek">{t('periodThisWeek')}</SelectItem>
+                    <SelectItem value="lastWeek">{t('periodLastWeek')}</SelectItem>
+                    <SelectItem value="thisMonth">{t('periodThisMonth')}</SelectItem>
+                    <SelectItem value="lastMonth">{t('periodLastMonth')}</SelectItem>
                 </SelectContent>
             </Select>
 
             <Select value={searchParams.get('workerIds[]') || 'all'} onValueChange={(val) => updateFilter('workerIds[]', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[200px] h-9 rounded-xl">
-                    <SelectValue placeholder="Worker" />
+                    <SelectValue placeholder={t('workforceMember')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Workers</SelectItem>
+                    <SelectItem value="all">{t('allWorkers')}</SelectItem>
                     {workers.map(w => (
                         <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                     ))}
@@ -85,10 +85,10 @@ export function TimesheetFilterBar() {
 
             <Select value={searchParams.get('projectIds[]') || 'all'} onValueChange={(val) => updateFilter('projectIds[]', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[200px] h-9 rounded-xl">
-                    <SelectValue placeholder="Project" />
+                    <SelectValue placeholder={t('project')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Projects</SelectItem>
+                    <SelectItem value="all">{t('allProjects')}</SelectItem>
                     {projects.map(p => (
                         <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
@@ -97,10 +97,10 @@ export function TimesheetFilterBar() {
 
             <Select value={searchParams.get('billable') || 'all'} onValueChange={(val) => updateFilter('billable', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[140px] h-9 rounded-xl">
-                    <SelectValue placeholder="Billable" />
+                    <SelectValue placeholder={t('billable')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="all">{t('all')}</SelectItem>
                     <SelectItem value="true">{t('billable')}</SelectItem>
                     <SelectItem value="false">{t('internal')}</SelectItem>
                 </SelectContent>
@@ -108,10 +108,10 @@ export function TimesheetFilterBar() {
             
             <Select value={searchParams.get('source') || 'all'} onValueChange={(val) => updateFilter('source', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[140px] h-9 rounded-xl">
-                    <SelectValue placeholder="Source" />
+                    <SelectValue placeholder={t('source')} />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="all">All Sources</SelectItem>
+                    <SelectItem value="all">{t('allSources')}</SelectItem>
                     <SelectItem value="clocked">{t('sourceClocked')}</SelectItem>
                     <SelectItem value="manual">{t('sourceManual')}</SelectItem>
                     <SelectItem value="adjusted">{t('sourceAdjusted')}</SelectItem>

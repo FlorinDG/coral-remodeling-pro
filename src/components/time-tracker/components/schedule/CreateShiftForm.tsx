@@ -1,7 +1,7 @@
 // @ts-nocheck
 "use client";
 // @ts-nocheck — Legacy component, progressive migration to camelCase
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Loader2, Repeat, Save, FileText, Paperclip, X, Upload, FolderOpen, CheckSquare, Circle, CheckCircle2, Calendar as CalendarIcon } from 'lucide-react';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Button } from '@/components/ui/button';

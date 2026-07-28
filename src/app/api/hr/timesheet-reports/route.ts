@@ -103,6 +103,13 @@ export async function GET(req: Request) {
         orderBy: { clockInTime: 'asc' }
     });
 
+    // Count entries without date bounds to see if they exist outside the period
+    const whereWithoutDates = { ...where };
+    delete whereWithoutDates.clockInTime;
+    const outsidePeriodCount = await prisma.clockEntry.count({
+        where: whereWithoutDates
+    });
+
     // We also need employees to get names. User table is the unified source of truth.
     const usersWhere: any = { tenantId: ctx.tenantId };
     if (targetUserIds) {
@@ -147,12 +154,19 @@ export async function GET(req: Request) {
 
         const dayStr = entry.clockInTime.toISOString().split('T')[0];
 
+        const flags: string[] = [];
+        if (entry.source === 'manual') flags.push('manual');
+        if (entry.source === 'adjusted') flags.push('adjusted');
+        if (!entry.clockOutTime) flags.push('missing clock-out');
+        // Basic inference for late/off-geofence could go here if we fetch shift details
+
         const processed = {
             ...entry,
             workerName,
             projectName,
             duration,
-            hoursDecimal
+            hoursDecimal,
+            flags
         };
         processedEntries.push(processed);
 
@@ -219,6 +233,7 @@ export async function GET(req: Request) {
             approvedHours: Math.round(approvedHours * 100) / 100,
             pendingHours: Math.round(pendingHours * 100) / 100,
             openEntries,
+            outsidePeriodCount,
         }
     });
 }

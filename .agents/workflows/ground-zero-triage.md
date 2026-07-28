@@ -306,6 +306,27 @@ The newest snapshot is **a day old**; restoring would **destroy today's legitima
   4. **Give `syncDb` a real failure path** — it is fire-and-forget with `.catch(console.error)` (`store.ts:10-12`), so a failed save of a user-visible setting is completely silent. Surface a toast / sync-status like the page-sync path does. (Independent defect; fix regardless.)
   Verify: unhide `betreft` on Purchase Invoices → reload → still visible; a brand-new tenant still gets the three columns hidden by default on first load.
 
+## 🟥 WORKHUB — only ADMIN sees shifts; workforce users see none (Florin live, 2026-07-28)
+**Symptom:** after the backfill, Florin sees schedules in WorkHub on his own account, but **Andrei — and any other workforce user — sees nothing.**
+**Data is CORRECT (verified in prod):** Andrei's shifts are keyed to his real `User.id` (`andrei@coral-group.be`) and his `Employee` row is linked (`emp_unlinked = false`). Same for Florin Holban and Vasile Ucraina. **This is a read-path bug, not a data bug — do not touch the data.**
+- [ ] **WORKHUB-SHIFTS-FILTERED-BY-EMPLOYEE-MAP** 🟥🟥 — `components/time-tracker/hooks/useScheduledShifts.ts:133-136`:
+  ```js
+  const validShifts = shiftsData.filter(s => {
+    const uid = s.userId || s.user_id;
+    return uid && employeeMap.has(uid);   // shift DROPPED if worker not in the map
+  });
+  ```
+  `employeeMap` is built from `hrList('employees')` (`:105`) — **wrapped in `.catch(() => [])`**. A workforce user cannot list the full employee roster, so that call fails, silently yields `[]`, the map is empty, and **every shift is filtered out as "invalid."** An admin can list employees ⇒ map populates ⇒ shifts render. That is the entire difference between the two accounts.
+  **Two stacked defects:**
+  1. **A display lookup used as a validity filter.** `employeeMap` exists to resolve names; using membership in it to decide whether a shift *exists* lets a permissions boundary silently delete legitimate records.
+  2. **`.catch(() => [])` turns a permission error into a wrong answer** — not "couldn't load employees" but "there are no employees", cascading to "there are no shifts". Exactly the silent-failure class in `pd.md` → FORCING FUNCTIONS #1.
+  **FIX:**
+  1. **Stop filtering shifts by `employeeMap`.** Render every shift returned by the API; use the map only for the display name with an `Onbekend` fallback.
+  2. **Return `userName` from the shifts API server-side** — `api/hr/[entity]/route.ts:275-280` already does this for `clock-entries`; mirror it for `shifts`. This removes the client-side join entirely and is the durable fix.
+  3. **Don't swallow the employees error** — surface it instead of defaulting to `[]`.
+  4. **Sweep for the same pattern:** any `.catch(() => [])` whose result is later used to *filter* rather than *decorate*. Same anti-pattern family as the four employee-id/user-id bugs.
+  - Verify: log in as Andrei → his shifts appear with correct times and names; as Vasile likewise; admin still sees all. Temporarily break the employees endpoint → shifts still render, names show `Onbekend`, and an error is surfaced.
+
 ## 🗓️ SCHEDULER — series + date ranges (Florin 2026-07-26: *"these options are normal in regular scheduling software"* — he's right; the current workarounds are a smell)
 
 - [ ] **🟥 LEAVE-MODEL-DUPLICATION (found while specing the above — fix this FIRST, it blocks the rest)** — there are **two parallel, unconnected representations of "who is off"**:

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns';
+import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, isValid } from 'date-fns';
 import { hrFetch } from '@/components/time-tracker/lib/hr-api';
 import { useTranslations } from 'next-intl';
+import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 
 export function TimesheetFilterBar() {
     const t = useTranslations('Hr.timesheets');
@@ -16,6 +17,13 @@ export function TimesheetFilterBar() {
 
     const [workers, setWorkers] = useState<{ id: string; name: string }[]>([]);
     const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
+    
+    // Custom date range state
+    const currentFrom = searchParams.get('from');
+    const currentTo = searchParams.get('to');
+    const isCustom = searchParams.get('period') === 'custom';
+    const [customFrom, setCustomFrom] = useState(currentFrom || '');
+    const [customTo, setCustomTo] = useState(currentTo || '');
 
     useEffect(() => {
         hrFetch('employees').then((res: any[]) => {
@@ -39,6 +47,14 @@ export function TimesheetFilterBar() {
     const handlePeriodChange = (val: string) => {
         const now = new Date();
         const params = new URLSearchParams(searchParams.toString());
+        
+        if (val === 'custom') {
+            params.set('period', 'custom');
+            router.push(`${pathname}?${params.toString()}`, { scroll: false });
+            return;
+        }
+        
+        params.delete('period');
         if (val === 'thisWeek') {
             params.set('from', formatISO(startOfWeek(now, { weekStartsOn: 1 })));
             params.set('to', formatISO(endOfWeek(now, { weekStartsOn: 1 })));
@@ -57,9 +73,22 @@ export function TimesheetFilterBar() {
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
+    useEffect(() => {
+        if (isCustom && customFrom && customTo && isValid(new Date(customFrom)) && isValid(new Date(customTo))) {
+            if (customFrom <= customTo) {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('from', formatISO(new Date(customFrom)));
+                params.set('to', formatISO(new Date(customTo)));
+                router.push(`${pathname}?${params.toString()}`, { scroll: false });
+            }
+        }
+    }, [customFrom, customTo, isCustom]);
+
+    const activePeriod = searchParams.get('period') || 'thisMonth'; // We will change default to thisMonth in page.tsx
+
     return (
-        <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-white/10 rounded-2xl p-4 shadow-sm mb-6">
-            <Select onValueChange={handlePeriodChange}>
+        <div className="flex flex-wrap items-center gap-3">
+            <Select value={activePeriod} onValueChange={handlePeriodChange}>
                 <SelectTrigger className="w-[180px] h-9 rounded-xl">
                     <SelectValue placeholder={t('period')} />
                 </SelectTrigger>
@@ -68,8 +97,32 @@ export function TimesheetFilterBar() {
                     <SelectItem value="lastWeek">{t('periodLastWeek')}</SelectItem>
                     <SelectItem value="thisMonth">{t('periodThisMonth')}</SelectItem>
                     <SelectItem value="lastMonth">{t('periodLastMonth')}</SelectItem>
+                    <SelectItem value="custom">
+                        {isCustom && customFrom && customTo && isValid(new Date(customFrom)) && isValid(new Date(customTo)) 
+                            ? `${formatISO(new Date(customFrom), { representation: 'date' })} – ${formatISO(new Date(customTo), { representation: 'date' })}`
+                            : t('periodCustom', { fallback: 'Custom range' })}
+                    </SelectItem>
                 </SelectContent>
             </Select>
+
+            {isCustom && (
+                <div className="flex items-center gap-2">
+                    <CustomDatePicker 
+                        value={customFrom}
+                        onChange={setCustomFrom}
+                        placeholder={t('from', { fallback: 'From' })}
+                        triggerClassName="w-[130px]"
+                    />
+                    <span className="text-neutral-400 text-xs">to</span>
+                    <CustomDatePicker 
+                        value={customTo}
+                        onChange={setCustomTo}
+                        min={customFrom}
+                        placeholder={t('to', { fallback: 'To' })}
+                        triggerClassName="w-[130px]"
+                    />
+                </div>
+            )}
 
             <Select value={searchParams.get('workerIds[]') || 'all'} onValueChange={(val) => updateFilter('workerIds[]', val === 'all' ? null : val)}>
                 <SelectTrigger className="w-[200px] h-9 rounded-xl">

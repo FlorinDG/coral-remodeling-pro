@@ -136,10 +136,19 @@ export async function GET(req: Request) {
         };
     });
 
+    // Build a readable filter string for headers
+    const filterParts = [];
+    if (fromParam && toParam) filterParts.push(`Period: ${fromParam} to ${toParam}`);
+    else filterParts.push(`Period: All time`);
+    if (requestedWorkerIds.length > 0) filterParts.push(`Workers: ${requestedWorkerIds.length} selected`);
+    if (requestedProjectIds.length > 0) filterParts.push(`Projects: ${requestedProjectIds.length} selected`);
+    const filterDescription = `Filters active - ${filterParts.join(' | ')}`;
+
     if (format === 'csv') {
         const Papa = require('papaparse');
         const csvString = Papa.unparse(rawData);
-        return new NextResponse(csvString, {
+        const finalCsv = `${filterDescription}\n\n${csvString}`;
+        return new NextResponse(finalCsv, {
             status: 200,
             headers: {
                 'Content-Disposition': `attachment; filename="timesheet-export-${new Date().toISOString().split('T')[0]}.csv"`,
@@ -153,6 +162,7 @@ export async function GET(req: Request) {
             <Document>
                 <Page size="A4" style={styles.page}>
                     <Text style={styles.title}>Timesheet Export</Text>
+                    <Text style={{ fontSize: 10, marginBottom: 15, color: '#666' }}>{filterDescription}</Text>
                     <View style={styles.table}>
                         <View style={styles.tableRow}>
                             <View style={styles.tableCol}><Text style={styles.tableHeader}>Date</Text></View>
@@ -191,7 +201,18 @@ export async function GET(req: Request) {
 
     if (format === 'xlsx') {
         const wb = XLSX.utils.book_new();
-        const wsRaw = XLSX.utils.json_to_sheet(rawData);
+        
+        // Convert to array of arrays so we can prepend the header row easily
+        const headerRow = Object.keys(rawData[0] || {});
+        const dataRows = rawData.map(r => Object.values(r));
+        const sheetData = [
+            [filterDescription],
+            [],
+            headerRow,
+            ...dataRows
+        ];
+        
+        const wsRaw = XLSX.utils.aoa_to_sheet(sheetData);
         XLSX.utils.book_append_sheet(wb, wsRaw, "Alle Uren");
 
         const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });

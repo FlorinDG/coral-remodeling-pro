@@ -104,10 +104,11 @@ interface DatabaseState {
     setSession: (tenantId: string | null, userId: string | null) => void;
     syncStatus: 'idle' | 'saving' | 'retrying' | 'error' | 'conflict';
     pendingSyncs: number;
+    isProcessingQueue: boolean;
     _enqueueSync: (pageId: string, databaseId: string, parentDb?: Database) => void;
     _dequeueSync: (pageId: string) => void;
     _incrementRetry: (pageId: string) => void;
-    _processSyncQueue: () => void;
+    _processSyncQueue: () => Promise<void>;
     clearStore: () => void;
 
     // Undo
@@ -174,6 +175,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
             syncQueue: [] as SyncEntry[],
+            isProcessingQueue: false,
             sessionTenantId: null as string | null,
             sessionUserId: null as string | null,
             undoStack: [] as UndoEntry[],
@@ -188,7 +190,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set({ sessionTenantId: tenantId, sessionUserId: userId });
             },
 
-            clearStore: () => set({ databases: [], syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [] }),
+            clearStore: () => set({ databases: [], syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [], isProcessingQueue: false }),
 
             _enqueueSync: (pageId, databaseId, parentDb) => {
                 set(s => {
@@ -235,103 +237,118 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             _processSyncQueue: async () => {
                 const store = get();
+                if (store.isProcessingQueue) return;
                 if (store.syncQueue.length === 0) return;
                 
-                const entry = store.syncQueue[0];
-                if (entry.retryCount >= 5) {
-                    set({ syncStatus: 'error' as const });
-                    return;
-                }
-
-                const db = get().databases.find(d => d.id === entry.databaseId);
-                const page = db?.pages.find((p: Page) => p.id === entry.pageId);
-                if (!page) {
-                    get()._dequeueSync(entry.pageId);
-                    get()._processSyncQueue();
-                    return;
-                }
-
-                try {
-                    const result = await saveGlobalPage(page);
-                    if (result.success && result.updatedAt) {
-                        set(s => ({
-                            databases: s.databases.map(d => d.id === entry.databaseId ? {
-                                ...d,
-                                pages: d.pages.map((p: Page) => {
-                                    if (p.id !== entry.pageId) return p;
-                                    
-                                    // OCC-8: Re-base dirty fields that were successfully saved
-                                    const newDirtyBase = { ...(p.dirtyBase || {}) };
-                                    if (page.dirtyBase) {
-                                        for (const key of Object.keys(page.dirtyBase)) {
-                                            if (JSON.stringify(p.properties[key]) === JSON.stringify(page.properties[key])) {
-                                                delete newDirtyBase[key];
-                                            } else {
-                                                newDirtyBase[key] = page.properties[key];
-                                            }
-                                        }
-                                    }
-                                    
-                                    
-                                    // Reset dirtyBaseBlocks if it was set
-                                    let newDirtyBaseBlocks = p.dirtyBaseBlocks;
-                                    if (page.dirtyBaseBlocks) {
-                                        newDirtyBaseBlocks = false;
-                                    }
-                                    
-                                        if (result.blocksVersion !== undefined) {
-                                            p.blocksVersion = result.blocksVersion;
-                                        }
-
-                                        return { 
-                                            ...p, 
-                                            baseUpdatedAt: result.updatedAt,
-                                            dirtyBase: newDirtyBase,
-                                            dirtyBaseBlocks: newDirtyBaseBlocks
-                                        };
-                                })
-                            } : d)
-                        }));
-                        get()._dequeueSync(entry.pageId);
-                    } else if (result.errorCode === 'STALE_WRITE') {
-                        console.warn('STALE WRITE CONFLICT DETECTED FOR PAGE', entry.pageId);
-                        
-                        // OCC-13: Always adopt server baseline on conflict while keeping user's content and dirtyBaseBlocks
-                        if (result.serverUpdatedAt) {
-                            set(s => ({
-                                databases: s.databases.map(d => d.id === entry.databaseId ? {
-                                    ...d,
-                                    pages: d.pages.map((p: Page) => {
-                                        if (p.id !== entry.pageId) return p;
-                                        return { 
-                                            ...p, 
-                                            baseUpdatedAt: result.serverUpdatedAt,
-                                            blocksVersion: result.serverBlocksVersion !== undefined ? result.serverBlocksVersion : p.blocksVersion
-                                        };
-                                    })
-                                } : d)
-                            }));
-                        }
-
-                        set({ syncStatus: 'conflict' as const });
-                        get()._dequeueSync(entry.pageId);
-                        
-                        if (typeof window !== 'undefined') {
-                            const event = new CustomEvent('coral-sync-conflict', { detail: { pageId: entry.pageId, databaseId: entry.databaseId, page, lastEditedBy: result.lastEditedBy } });
-                            window.dispatchEvent(event);
-                        }
-                    } else {
-                        get()._incrementRetry(entry.pageId);
-                        setTimeout(() => get()._processSyncQueue(), 3000 * Math.pow(2, entry.retryCount));
-                        return;
-                    }
-                } catch (e) {
-                    get()._incrementRetry(entry.pageId);
-                    setTimeout(() => get()._processSyncQueue(), 3000 * Math.pow(2, entry.retryCount));
-                    return;
-                }
+                set({ isProcessingQueue: true });
                 
-                setTimeout(() => get()._processSyncQueue(), 100);
+                try {
+                    while (get().syncQueue.length > 0) {
+                        const storeNow = get();
+                        const entry = storeNow.syncQueue[0];
+                        if (entry.retryCount >= 5) {
+                            set({ syncStatus: 'error' as const });
+                            break;
+                        }
+
+                        const db = storeNow.databases.find(d => d.id === entry.databaseId);
+                        const page = db?.pages.find((p: Page) => p.id === entry.pageId);
+                        if (!page) {
+                            get()._dequeueSync(entry.pageId);
+                            continue;
+                        }
+
+                        try {
+                            const result = await saveGlobalPage(page);
+                            if (result.success && result.updatedAt) {
+                                set(s => ({
+                                    databases: s.databases.map(d => d.id === entry.databaseId ? {
+                                        ...d,
+                                        pages: d.pages.map((p: Page) => {
+                                            if (p.id !== entry.pageId) return p;
+                                            
+                                            // OCC-8: Re-base dirty fields that were successfully saved
+                                            const newDirtyBase = { ...(p.dirtyBase || {}) };
+                                            if (page.dirtyBase) {
+                                                for (const key of Object.keys(page.dirtyBase)) {
+                                                    if (JSON.stringify(p.properties[key]) === JSON.stringify(page.properties[key])) {
+                                                        delete newDirtyBase[key];
+                                                    } else {
+                                                        newDirtyBase[key] = page.properties[key];
+                                                    }
+                                                }
+                                            }
+                                            
+                                            // Reset dirtyBaseBlocks if it was set
+                                            let newDirtyBaseBlocks = p.dirtyBaseBlocks;
+                                            if (page.dirtyBaseBlocks) {
+                                                newDirtyBaseBlocks = false;
+                                            }
+                                            
+                                            if (result.blocksVersion !== undefined) {
+                                                p.blocksVersion = result.blocksVersion;
+                                            }
+
+                                            return { 
+                                                ...p, 
+                                                baseUpdatedAt: result.updatedAt,
+                                                dirtyBase: newDirtyBase,
+                                                dirtyBaseBlocks: newDirtyBaseBlocks
+                                            };
+                                        })
+                                    } : d)
+                                }));
+                                get()._dequeueSync(entry.pageId);
+                            } else if (result.errorCode === 'STALE_WRITE') {
+                                console.warn('STALE WRITE CONFLICT DETECTED FOR PAGE', entry.pageId);
+                                
+                                // OCC-13: Always adopt server baseline on conflict while keeping user's content and dirtyBaseBlocks
+                                if (result.serverUpdatedAt) {
+                                    set(s => ({
+                                        databases: s.databases.map(d => d.id === entry.databaseId ? {
+                                            ...d,
+                                            pages: d.pages.map((p: Page) => {
+                                                if (p.id !== entry.pageId) return p;
+                                                return { 
+                                                    ...p, 
+                                                    baseUpdatedAt: result.serverUpdatedAt,
+                                                    blocksVersion: result.serverBlocksVersion !== undefined ? result.serverBlocksVersion : p.blocksVersion
+                                                };
+                                            })
+                                        } : d)
+                                    }));
+                                }
+
+                                set({ syncStatus: 'conflict' as const });
+                                get()._dequeueSync(entry.pageId);
+                                
+                                if (typeof window !== 'undefined') {
+                                    const event = new CustomEvent('coral-sync-conflict', { detail: { pageId: entry.pageId, databaseId: entry.databaseId, page, lastEditedBy: result.lastEditedBy } });
+                                    window.dispatchEvent(event);
+                                }
+                            } else {
+                                get()._incrementRetry(entry.pageId);
+                                const currentEntry = get().syncQueue.find(e => e.pageId === entry.pageId);
+                                if (currentEntry) {
+                                    await new Promise(r => setTimeout(r, 3000 * Math.pow(2, currentEntry.retryCount)));
+                                    continue;
+                                }
+                            }
+                        } catch (e) {
+                            get()._incrementRetry(entry.pageId);
+                            const currentEntry = get().syncQueue.find(e => e.pageId === entry.pageId);
+                            if (currentEntry) {
+                                await new Promise(r => setTimeout(r, 3000 * Math.pow(2, currentEntry.retryCount)));
+                                continue;
+                            }
+                        }
+                        
+                        // Let React/state flush
+                        await new Promise(r => setTimeout(r, 50));
+                    }
+                } finally {
+                    set({ isProcessingQueue: false });
+                }
             },
 
             _pushUndo: (entry) => set(s => ({

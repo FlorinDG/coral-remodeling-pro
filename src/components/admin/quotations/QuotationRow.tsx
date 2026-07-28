@@ -10,6 +10,57 @@ import FinancialRowRenderer from './FinancialRowRenderer';
 // Removed unused dnd imports
 import { useDatabaseStore } from '@/components/admin/database/store';
 
+function UncontrolledContentEditable({
+    initialContent,
+    onChange,
+    onBlur,
+    className,
+    placeholder,
+}: {
+    initialContent: string;
+    onChange: (html: string) => void;
+    onBlur?: () => void;
+    className?: string;
+    placeholder?: string;
+}) {
+    const ref = React.useRef<HTMLDivElement>(null);
+    const contentRef = React.useRef(initialContent);
+    const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
+
+    React.useEffect(() => {
+        if (ref.current && ref.current.innerHTML !== contentRef.current) {
+            if (document.activeElement !== ref.current) {
+                ref.current.innerHTML = initialContent;
+                contentRef.current = initialContent;
+            }
+        }
+    }, [initialContent]);
+
+    return (
+        <div
+            ref={ref}
+            contentEditable
+            suppressContentEditableWarning
+            className={className}
+            data-placeholder={placeholder}
+            style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+            onInput={(e) => {
+                const html = e.currentTarget.innerHTML;
+                contentRef.current = html;
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                timeoutRef.current = setTimeout(() => {
+                    onChange(html);
+                }, 500);
+            }}
+            onBlur={() => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                onChange(ref.current?.innerHTML || '');
+                if (onBlur) onBlur();
+            }}
+        />
+    );
+}
+
 interface QuotationRowProps {
     block: Block;
     index: number;
@@ -688,14 +739,11 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                                     >1. List</button>
                                                 </div>
                                                 {/* Editable area */}
-                                                <div
-                                                    contentEditable
-                                                    suppressContentEditableWarning
-                                                    dangerouslySetInnerHTML={{ __html: block.content || '' }}
-                                                    onBlur={(e) => onUpdate(block.id, { content: e.currentTarget.innerHTML })}
+                                                <UncontrolledContentEditable
+                                                    initialContent={block.content || ''}
+                                                    onChange={(html) => onUpdate(block.id, { content: html })}
                                                     className="w-full min-h-[80px] bg-neutral-50/80 dark:bg-black/30 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 text-sm leading-relaxed focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 prose prose-sm dark:prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5"
-                                                    data-placeholder="Vrije tekst — wordt niet meegerekend in de financials..."
-                                                    style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                                                    placeholder="Vrije tekst — wordt niet meegerekend in de financials..."
                                                 />
                                                 <p className="text-[10px] text-neutral-400 italic px-1">
                                                     ✎ Vrij tekstveld — verschijnt op de offerte maar telt niet mee in de berekeningen

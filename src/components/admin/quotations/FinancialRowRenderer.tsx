@@ -26,7 +26,9 @@ const RichTextInput = ({ value, onChange, onSearch, placeholder, className, onBl
     const ref = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
         if (ref.current && value !== ref.current.innerHTML) {
-            ref.current.innerHTML = value;
+            if (document.activeElement !== ref.current) {
+                ref.current.innerHTML = value;
+            }
         }
     }, [value]);
     return (

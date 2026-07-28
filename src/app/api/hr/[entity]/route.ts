@@ -253,8 +253,8 @@ export async function GET(
             orderBy: { createdAt: 'desc' },
         });
 
-        // Enrich user names for clock-entries and time-off
-        if (entity === 'clock-entries' || entity === 'time-off') {
+        // Enrich user names for clock-entries, time-off, and shifts
+        if (entity === 'clock-entries' || entity === 'time-off' || entity === 'shifts') {
             const userIds = [...new Set(records.map((r: any) => r.userId).filter(Boolean))] as string[];
             if (userIds.length > 0) {
                 const users = await prisma.user.findMany({

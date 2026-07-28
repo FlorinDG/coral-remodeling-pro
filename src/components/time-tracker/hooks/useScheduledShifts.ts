@@ -102,8 +102,8 @@ export function useScheduledShifts() {
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
         hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects').catch(() => []),
-        hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees').catch(() => []),
-        hrList<any>('time-off').catch(() => []),
+        hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'),
+        hrList<any>('time-off'),
       ]);
 
       // Normalize ERP projects to match Project interface
@@ -130,16 +130,11 @@ export function useScheduledShifts() {
         employeeMap.set(e.id, name);                     // Fallback: keyed by Employee.id
       });
 
-      const validShifts = shiftsData.filter(s => {
-        const uid = s.userId || s.user_id;
-        return uid && employeeMap.has(uid);
-      });
-
       // Expand approved time-off requests into shadow shifts
       const shadowShifts: ScheduledShift[] = [];
       const approvedTimeOff = timeOffData.filter(t => t.status === 'approved');
       approvedTimeOff.forEach(t => {
-        if (!t.userId || !employeeMap.has(t.userId)) return;
+        if (!t.userId) return;
         if (!t.startDate || !t.endDate) return;
         
         try {
@@ -169,12 +164,12 @@ export function useScheduledShifts() {
         } catch (e) {}
       });
 
-      const allValidShifts = [...validShifts, ...shadowShifts];
+      const allValidShifts = [...shiftsData, ...shadowShifts];
 
       const enriched = allValidShifts.map(s => addSnakeCase({
         ...s,
         project: s.projectId ? projectMap.get(s.projectId) || null : null,
-        profile: { full_name: employeeMap.get(s.userId || s.user_id || '')! },
+        profile: { full_name: (s as any).userName || employeeMap.get(s.userId || s.user_id || '') || 'Onbekend' },
       }));
 
       setRawShifts(enriched);

@@ -30,17 +30,34 @@
 
 ---
 
-## TARGET LAYOUT (top → bottom)
-1. **Header:** title + `Manueel Toevoegen` (existing) + **Export** dropdown (XLSX · CSV · PDF).
-2. **Filter bar (always visible):** period presets (`Deze week · Vorige week · Deze maand · Vorige maand · Aangepast`) → custom opens a range picker · **worker** multi-select · **project** multi-select · **billable** · **source**. Filters drive the table, the rollups **and** the export.
-3. **StatCards:** `Totaal uren` · `Factureerbaar / Intern` · `Goedgekeurd / Te beoordelen` · `Niet toegewezen uren`. **No overtime metric** (decided — not a concept in this system).
-4. **Quick-filter chips** (these replace the deleted pages): **`Te beoordelen`** (with **count badge**) · `Goedgekeurd` · `Alles`.
-5. **Grouping toggle:** `Plat · Per medewerker · Per project`. Grouped rows show a **subtotal per group**; expandable to entries. *Grouping + subtotals IS the report.*
+## TARGET LAYOUT — REVISED FOR DENSITY (Florin, 2026-07-27: *"move the 4 statistics cards into the space between title and buttons · move all filters into the wide card · gain some space for the table"*)
+**Problem with the first render:** four stacked full-width bands (header → filter card → chips+grouping row → StatCards row) consume the top half of the screen before a single entry appears. The table — the actual content — is pushed below the fold.
+
+**Two bands only, then the table:**
+
+1. **HEADER BAND — title (left) · stats (centre) · actions (right), all on one row.**
+   - Left: `Timesheets / Work Orders` + subtitle.
+   - **Centre: the 4 stats, inline** — `Total hours` · `Billable / Internal` · `Approved / To review` · `Unattributed`. ⚠️ **They must be re-styled as compact inline stats, not the current bordered cards** — four full cards will not fit beside a title. Use a small uppercase label above a bold value, separated by thin dividers, no borders/boxes. Keep the existing colour semantics (green approved, orange to-review, red unattributed).
+   - Right: `Export` · `Add manually`.
+   - On narrow viewports the stats wrap to their own row — never squeeze the title.
+2. **ONE FILTER CARD — everything that narrows the view lives here.** Currently the chips and grouping toggle sit on a separate row; fold them in:
+   - Row A: **Period** (presets + **custom range via `CustomDatePicker`**, TSP-B3) · **Worker** · **Project** · **Billable** · **Source**.
+   - Row B (same card): **status chips** `All · To review` *(count badge)* `· Approved` on the left, **grouping toggle** `Flat · By worker · By project` right-aligned.
+   - Rationale: one card = "what am I looking at", everything below it = the answer.
+3. **TABLE — gets all remaining vertical space.** Should begin within the first screenful. Sticky header on scroll; the page scrolls, not an inner container.
+
+**Content unchanged from the original spec** — this is purely spatial. Stats, chips, grouping, filters and the table columns all keep the behaviour specced below; only their placement changes. **No overtime metric** (decided).
 6. **Table:** Datum · Medewerker · Duur · Project (or **`Niet toegewezen`**) · Factureerbaar · Omschrijving · Status · Bron · Media · Acties. In approved/denied views also **Goedgekeurd door** + **Goedgekeurd op**.
 7. **Row actions:** approve / deny inline on pending rows; row click → `timesheets/[id]` werkbon detail.
 8. **Bulk:** multi-select → bulk approve/deny, with an explicit confirmation stating the effect (*"Approve 14 entries, 62.5 h"*). Never a silent bulk write.
 
 ---
+
+## 🟥 BLOCKERS FOUND ON FIRST RENDER (2026-07-27)
+- [ ] **TSP-B1 · NO ADMIN BYPASS IN `timesheet-reports` — owner sees only their OWN hours** 🟥🟥 (this is why the table looks empty / shows only a few rows). `timesheet-reports/route.ts:36,60` applies `where.userId = { in: getAccessibleUserIds(...) }` **unconditionally**, and `getAccessibleUserIds` returns **only the caller's own id** unless they lead an `HrTeam`. So a TENANT_OWNER is scoped like a workforce user. The older `api/hr/[entity]/route.ts:111-116` has the correct bypass — **mirror it**: `isAdminRole` ⇒ all tenant users; team lead ⇒ their team; workforce ⇒ self only. **Also audit `timesheet-export`** for the same omission — an export silently containing only your own hours is worse than an empty one, because it looks complete.
+- [ ] **TSP-B2 · i18n KEYS NEVER ADDED** 🟥 — the page calls `useTranslations('Hr.timesheets')` (`page.tsx:40`) but the `Hr.timesheets.*` keys don't exist in `messages/{en,nl,fr}.json`, so next-intl renders the key paths (`Hr.timesheets.title`, `HR.TIMESHEETS.TOTALHOURS`). Same class as `TASKS-I18N-NAMES`. Add the full block in all three languages using the **confirmed NL labels** below. **Also:** "Period", "All Workers", "All Projects", "Flat", "By Worker" are currently **hardcoded English** — half-translated is worse than either; route everything through i18n.
+- [ ] **TSP-B3 · DATE-RANGE PICKER (Florin request)** 🟧 — the Period control must include a **custom date-range picker**, not just presets. **Reuse the existing `src/components/ui/CustomDatePicker.tsx`** — do not introduce another calendar component or a third date-picking pattern. Selecting a range sets `from`/`to` in the URL params that already drive the API.
+- [ ] **TSP-B4 · SMARTER DEFAULT + HONEST EMPTY STATE** 🟨 — default to **this month** (or last 30 days), not this week: on a Monday the week-to-date view is near-empty and reads as breakage. And distinguish the **three** empty cases: *request failed* · *no entries at all* · **_no entries in this period, but N exist outside it_** — the last one with a one-click widen. (Third variant not previously specced; it's what made today's first render ambiguous.)
 
 ## BUILD STEPS (in order, each independently shippable)
 

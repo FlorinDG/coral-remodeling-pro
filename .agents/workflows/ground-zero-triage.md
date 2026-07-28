@@ -195,6 +195,44 @@ Sortable-tree architecture APPROVED (`lib/sortable-tree.ts` + `lib/dnd-sensors.t
   - Verify: property-only edit (or a cron write) → `blocksVersion` **unchanged**; edit blocks → increments by exactly 1; continuous editing for 60s → zero dialogs; two sessions editing the same blocks → real conflict still raised.
   > **Planner note:** three OCC block-guard attempts have now failed the same way — each spec was right, each implementation dropped a qualifier. For the next one, require the coder to **quote the spec's conditional verbatim in the PR/commit message** and show the implemented line beside it.
 
+- [ ] **OCC-13-CONFLICT-DEADLOCK — THE ACTUAL ROOT CAUSE** 🟥🟥🟥 (Planner, 2026-07-27, after OCC-9/11/12 all failed to change the behaviour)
+  **Why the previous three fixes changed nothing: the comparison was never the problem after the first divergence. Once the client's `blocksVersion` differs from the server's, NOTHING can restore a valid baseline — the conflict is self-sustaining.** Three paths, all broken:
+  1. **`global-databases.ts:290-294`** — the `STALE_WRITE` response returns only `errorCode` + `lastEditedBy`. **No `blocksVersion`, no `updatedAt`.** The client is told it's stale but not what the truth is.
+  2. **`store.ts` hydrate, "KEEP LOCAL IF DIRTY"** — for a dirty page it pushes the **local page wholesale**, preserving its stale `blocksVersion`/`baseUpdatedAt`. A page stuck in conflict is by definition dirty ⇒ never refreshed.
+  3. **`GlobalDatabaseSyncer.tsx handleResolve:180`** — sets `baseUpdatedAt: serverPage.updatedAt` but **never sets `blocksVersion`** ⇒ "Resolve & Save" fixes half the baseline and the next save conflicts again on the other half.
+  ⇒ Save fails → success path (the only place the version updates) never runs → hydrate keeps the stale copy → resolve doesn't fix it. **Permanent deadlock.** Entry point: any page cached in IDB before `blocksVersion` existed carries `undefined`/`1` against a higher server value.
+  **THE DESIGN ERROR (fix this, not the comparison):** *"keep local if dirty"* correctly preserves the user's **content**, but it also preserves **baseline metadata**. These are different things — content belongs to the user, the baseline (`baseUpdatedAt`, `blocksVersion`) is a **fact about the server** and must ALWAYS come from the server.
+  **FIX:**
+  1. **Return the truth on conflict:** add `serverUpdatedAt` and `serverBlocksVersion` to every `STALE_WRITE` response (single **and** batch path, `:441`).
+  2. **Always adopt server baseline on conflict** — on receiving `STALE_WRITE`, update the local page's `baseUpdatedAt` + `blocksVersion` from the response **while keeping the user's content and `dirtyBaseBlocks`**. The very next save then has a valid baseline; if the user's blocks genuinely differ, the merge/"Resolve & Save" decides — but the loop is broken.
+  3. **Hydration: split content from baseline.** For dirty pages keep local `properties`/`blocks`, but **always take `baseUpdatedAt` and `blocksVersion` from the server row**. One-line change, kills the whole class.
+  4. **`handleResolve`** must set `blocksVersion: serverPage.blocksVersion` alongside `baseUpdatedAt`.
+  - Verify: force a divergence (edit a record, let a cron touch it) → first save may conflict → **the second save succeeds** (no infinite loop). "Resolve & Save" writes through and subsequent edits are clean. A genuine two-session blocks conflict still raises once, then resolves.
+  > **Process note:** OCC-9/11/12 each re-engineered the *comparison* while the *recovery path* stayed broken. When a guard fires repeatedly, check whether the system can ever return to a good state — a correct comparison against a baseline that can never be refreshed will fail forever.
+
+- [ ] **OCC-14-RETURNED-TIMESTAMP-IS-NOT-THE-PERSISTED-ONE — THE GATE** 🟥🟥🟥 (Planner, 2026-07-27, after OCC-9/11/12/13 all landed without changing the symptom)
+  **`GlobalPage.updatedAt` is `@updatedAt`** — Prisma owns it and generates its own value at query execution. The code nonetheless passes `updatedAt: newUpdatedAt` in the upsert **and then returns `newUpdatedAt.toISOString()`** (`global-databases.ts:341`) instead of **`saved.updatedAt`**. The client therefore stores a `baseUpdatedAt` that is **not what the database holds**.
+  ⇒ On the next save `serverTime !== clientTime` is **always true** (off by the ms between `new Date()` and the actual write) ⇒ **every save enters the merge path** ⇒ properties merge cleanly (hence *"No conflicting fields found"* on every single dialog) ⇒ the blocks guard fires because `dirtyBaseBlocks` is always true in the engine ⇒ **conflict, systematically, from the first save.**
+  **This is why OCC-9/11/12/13 changed nothing: the blocks comparison was never the gate — the timestamp check was.** Each of those fixed a genuine defect further down a path that was already doomed upstream.
+  **FIX (one line, both paths):**
+  ```js
+  // :341 single path — return what was PERSISTED, not what was intended
+  return { success: true, updatedAt: saved.updatedAt.toISOString(), blocksVersion: saved.blocksVersion };
+  // same for the batch path (~:460) — use saved.updatedAt, never newUpdatedAt
+  ```
+  Also **remove the explicit `updatedAt: newUpdatedAt` from the upsert payload** — `@updatedAt` owns that column; writing it manually while Prisma overrides it is what created the divergence. Apply identically wherever else a server action returns a self-generated `updatedAt` to the client (audit `actions/pages.ts`, `actions/tasks.ts`).
+  - Verify: save a quote once, then immediately again with no other writer → **second save does not conflict**. The existing log (`[saveGlobalPage] STALE_WRITE … Server: X, Client: Y`) should stop appearing; while diagnosing, X and Y differing by a few ms is the signature of this bug.
+  > **Process lesson (add to `pd.md` forcing functions):** the server logged `Server: <t> Client: <t>` on every conflict for the entire investigation. **Four theories were built by reading code when one log line held the answer.** When a guard fires repeatedly, read the runtime evidence BEFORE modelling the mechanism.
+
+- [ ] **OCC-15-SYNC-QUEUE-HAS-NO-SINGLE-FLIGHT-LOCK** 🟥🟥 (Florin, 2026-07-27, **after OCC-14 fixed the general case**: *"I edited a quote, deleted lines, no protest. The sync issue fires when I edit text."*)
+  **The symptom pattern is the diagnosis:** a bulk action (delete lines) = **one** save and never conflicts; typing = **many** saves faster than they complete.
+  **Cause:** `_enqueueSync` calls `_processSyncQueue()` on every enqueue (`store.ts:207-210`), and `_processSyncQueue` is `async` with an `await saveGlobalPage(...)` inside — **with no `isProcessing` guard anywhere**. Rapid edits therefore spawn **concurrent** queue processors. Save A and Save B both start with `baseUpdatedAt = T0`; A completes and moves the server to T1 and re-bases the client; **B is already in flight carrying T0**, arrives stale, and conflicts. A classic missing mutex.
+  **FIX:**
+  1. **Single-flight lock (essential).** Add `isProcessingQueue` to the store: `_processSyncQueue` returns immediately if it's already running; the active invocation loops until the queue is empty, then clears the flag (in a `finally`, so an error can't strand it).
+  2. **Coalesce per `pageId`.** `_enqueueSync` must not add a second entry for a page already queued (and not in flight) — the queue holds *pages to save*, not *edits*; the save reads current state at send time regardless.
+  3. **Debounce the text commit.** The rich-text/free-text editor should not call `updatePageBlocks` per keystroke — commit on ~500 ms idle, or on pause/blur. Overlaps with `VRIJETEKST-EDITOR-RESET`; do them together.
+  - Verify: type continuously in a free-text block for 60 s → zero conflict dialogs, and exactly **one** save lands after you stop (not dozens). Delete lines → still clean. Genuine two-session conflict → still raised.
+
 **Verify (whole cluster):** with the overdue cron AND an accountant export having touched a record, one user edits it repeatedly → every save succeeds, zero conflict toasts, nothing in downloads, and the cron's `status` + the user's field edits are BOTH present. Then force a genuine same-field collision in two sessions → in-app mine/theirs dialog, both versions recoverable, no reload.
 
 **Regression guard (must not break):** the original data-loss scenario stays covered — a genuine concurrent edit to the same field/blocks must still refuse to blind-overwrite. OCC-3 narrows *what counts as* a conflict; it must not narrow the protection on real ones.

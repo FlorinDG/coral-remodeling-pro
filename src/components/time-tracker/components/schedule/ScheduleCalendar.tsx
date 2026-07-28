@@ -251,25 +251,25 @@ function DesktopCalendarView({ shifts, currentMonth, onShiftClick }: {
             )}
             <div className="space-y-0.5 mt-0.5">
               {dayShifts.slice(0, holiday ? 2 : 3).map(shift => {
-                const projectColor = shift.project?.color ? getNotionColor(shift.project.color) : getNotionColor('blue');
+                const isLeave = shift.status === 'leave' || shift.status === 'Leave';
+                const projectColor = isLeave ? { bg: 'rgba(147, 51, 234, 0.1)', value: '#9333ea' } : (shift.project?.color ? getNotionColor(shift.project.color) : getNotionColor('blue'));
+                const title = shift.shiftName || shift.projectName || shift.project?.name || (isLeave ? 'Leave' : `Shift`);
+                
                 return (
                   <div
                     key={shift.id}
                     onClick={() => onShiftClick?.(shift)}
-                    className="text-xs px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80"
+                    className="text-[10px] px-1.5 py-0.5 rounded truncate cursor-pointer hover:opacity-80 flex items-center gap-1"
                     style={{ 
                       backgroundColor: projectColor.bg,
-                      color: projectColor.value
+                      color: projectColor.value,
+                      border: isLeave ? '1px solid rgba(147, 51, 234, 0.2)' : undefined
                     }}
                   >
-                    {formatTime(shift.shift_start)}
-                    {shift.profile?.full_name && (
-                      <span className="font-semibold"> · {shift.profile.full_name}</span>
-                    )}
-                    {shift.project?.name ? (
-                      <span className="text-muted-foreground"> · {shift.project.name}</span>
-                    ) : (
-                      ' Shift'
+                    {isLeave ? '🌴 ' : ''}
+                    <span className={cn("font-bold", isLeave && "uppercase tracking-wide")}>{title}</span>
+                    {(shift.profile?.full_name || shift.userName) && (
+                      <span className="opacity-75 truncate"> · {shift.profile?.full_name || shift.userName}</span>
                     )}
                   </div>
                 );

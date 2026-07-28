@@ -70,19 +70,25 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
               )}
             </div>
 
+            {/* Title */}
+            <div className="flex items-center gap-3 text-lg font-bold mt-1">
+              {(shift.status === 'leave' || shift.status === 'Leave') ? '🌴 ' : ''}
+              <span>{shift.shiftName || shift.projectName || (shift.project?.name || '').replace(/^\[ERP\]\s*/i, '') || ((shift.status === 'leave' || shift.status === 'Leave') ? 'Leave' : 'Shift')}</span>
+            </div>
+
             {/* Time */}
-            <div className="flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-3 text-sm mt-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span>
                 {formatTime(shift.shift_start)} - {formatTime(shift.shift_end)}
               </span>
             </div>
 
-            {/* Project/Location */}
-            {shift.project && (
-              <div className="flex items-start gap-3 text-sm">
+            {/* Location */}
+            {shift.project?.address && (
+              <div className="flex items-start gap-3 text-sm mt-2">
                 <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                <span className="leading-tight">{(shift.project.address || shift.project.name || '').replace(/^\[ERP\]\s*/i, '')}</span>
+                <span className="leading-tight">{shift.project.address}</span>
               </div>
             )}
           </div>

@@ -544,22 +544,30 @@ export function ScheduleMatrixView({
                                         <GripVertical className="h-3.5 w-3.5 opacity-0 group-hover/cell:opacity-40 flex-shrink-0 mt-0.5 print:hidden text-neutral-400" />
                                       )}
                                       <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                          <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getStatusDot(status))} />
-                                          <span className="font-bold text-neutral-900 dark:text-white">
-                                            {formatTime(ss)}–{formatTime(se)}
-                                          </span>
-                                        </div>
-                                        {shift.project ? (
-                                          <div className="text-[10px] font-medium text-neutral-500 truncate mb-1">
-                                            {shift.project.name}
-                                          </div>
-                                        ) : (status === 'leave' || status === 'Leave') ? (
-                                          <div className="text-[10px] font-extrabold text-purple-600 dark:text-purple-400 truncate mb-1 uppercase tracking-wider flex items-center gap-1">
-                                            🌴 {shift.notes || 'Leave'}
-                                          </div>
-                                        ) : null}
-                                        <div className="text-[10px] font-black text-neutral-400">{hours.toFixed(1)}h</div>
+                                        {(() => {
+                                          const isLeave = status === 'leave' || status === 'Leave';
+                                          const title = shift.shiftName || shift.projectName || shift.project?.name || (isLeave ? 'Leave' : `${formatTime(ss)}–${formatTime(se)}`);
+                                          const showTimeSecondary = title !== `${formatTime(ss)}–${formatTime(se)}`;
+                                          
+                                          return (
+                                            <>
+                                              <div className="flex items-center gap-1.5 mb-0.5">
+                                                <div className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", getStatusDot(status))} />
+                                                <span className={cn("font-bold truncate", isLeave ? "text-purple-700 dark:text-purple-400 tracking-wide uppercase text-[10px]" : "text-neutral-900 dark:text-white")} title={title}>
+                                                  {isLeave ? `🌴 ${title}` : title}
+                                                </span>
+                                              </div>
+                                              {showTimeSecondary ? (
+                                                <div className="flex justify-between items-center mb-1">
+                                                  <span className="text-[10px] font-medium text-neutral-500 truncate">{formatTime(ss)}–{formatTime(se)}</span>
+                                                  <span className="text-[10px] font-black text-neutral-400">{hours.toFixed(1)}h</span>
+                                                </div>
+                                              ) : (
+                                                <div className="text-[10px] font-black text-neutral-400 mt-1">{hours.toFixed(1)}h</div>
+                                              )}
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                     </div>
                                   </div>

@@ -64,6 +64,13 @@ export interface ScheduledShift {
   created_at?: string;
   updated_at?: string;
   notion_page_id?: string | null;
+  seriesId?: string | null;
+  // Synthetic absence block fields
+  isSynthetic?: boolean;
+  sourceType?: string;
+  sourceId?: string;
+  // Enriched fields
+  projectName?: string;
 }
 
 /** Inject snake_case aliases into a shift for legacy components */
@@ -101,7 +108,7 @@ export function useScheduledShifts() {
       const [shiftsData, projectsData, erpProjectsData, employeesData, timeOffData] = await Promise.all([
         hrList<ScheduledShift>('shifts'),
         hrList<Project>('projects'),
-        hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects').catch(() => []),
+        hrList<{ id: string; name: string; address?: string; latitude?: number; longitude?: number }>('erp-projects'),
         hrList<{ id: string; userId?: string | null; firstName: string; lastName: string }>('employees'),
         hrList<any>('time-off'),
       ]);
@@ -130,41 +137,7 @@ export function useScheduledShifts() {
         employeeMap.set(e.id, name);                     // Fallback: keyed by Employee.id
       });
 
-      // Expand approved time-off requests into shadow shifts
-      const shadowShifts: ScheduledShift[] = [];
-      const approvedTimeOff = timeOffData.filter(t => t.status === 'approved');
-      approvedTimeOff.forEach(t => {
-        if (!t.userId) return;
-        if (!t.startDate || !t.endDate) return;
-        
-        try {
-            const start = new Date(t.startDate);
-            const end = new Date(t.endDate);
-            // Cap at 30 days to avoid infinite loops on bad data
-            let days = 0;
-            for (let d = new Date(start); d <= end && days < 30; d.setDate(d.getDate() + 1), days++) {
-                const shiftDate = d.toISOString().split('T')[0];
-                shadowShifts.push({
-                    id: `leave-${t.id}-${shiftDate}`,
-                    userId: t.userId,
-                    shiftDate: shiftDate,
-                    shiftStart: '08:00',
-                    shiftEnd: '17:00',
-                    shiftName: t.requestType || 'Leave',
-                    projectId: null,
-                    role: null,
-                    notes: t.notes || null,
-                    status: 'leave',
-                    createdBy: 'system',
-                    lastEditedBy: 'system',
-                    createdAt: t.createdAt || new Date().toISOString(),
-                    updatedAt: t.updatedAt || new Date().toISOString(),
-                });
-            }
-        } catch (e) {}
-      });
-
-      const allValidShifts = [...shiftsData, ...shadowShifts];
+      const allValidShifts = [...shiftsData];
 
       const enriched = allValidShifts.map(s => addSnakeCase({
         ...s,

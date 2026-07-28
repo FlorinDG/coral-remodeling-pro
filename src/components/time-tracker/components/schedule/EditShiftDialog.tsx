@@ -36,7 +36,8 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { ScheduledShift, Project, NOTION_COLORS } from '@/components/time-tracker/hooks/useScheduledShifts';
-import { useScheduleAttachments, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
+import { useScheduleAttachments, ProjectAttachment, ScheduleAttachment } from '@/components/time-tracker/hooks/useScheduleAttachments';
+import { ScopePicker, EditScope } from '@/components/ui/ScopePicker';
 import { hrList, hrCreate, hrUpdate, hrDelete } from '@/components/time-tracker/lib/hr-api';
 import { toast } from 'sonner';
 import { listRecordFiles } from '@/app/actions/files';
@@ -69,8 +70,10 @@ interface EditShiftDialogProps {
     project_id?: string | null;
     role?: string | null;
     notes?: string | null;
-  }) => Promise<void>;
-  onDeleteShift: (shiftId: string) => Promise<void>;
+    seriesId?: string;
+  }, scope?: EditScope) => Promise<void>;
+  onCreateShift?: (shift: any) => Promise<any>;
+  onDeleteShift: (shiftId: string, scope?: EditScope) => Promise<void>;
   onStatusChange: (shiftId: string, status: string) => Promise<void>;
   canManage?: boolean;
 }
@@ -115,6 +118,7 @@ export function EditShiftDialog({
   projects,
   workers,
   onUpdateShift,
+  onCreateShift,
   onDeleteShift,
   onStatusChange,
   canManage,
@@ -129,6 +133,10 @@ export function EditShiftDialog({
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState('');
   const [activeTab, setActiveTab] = useState('details');
+  const [editScope, setEditScope] = useState<EditScope>('occurrence');
+  const [isConvertingToRecurring, setIsConvertingToRecurring] = useState(false);
+  const [recurringWeeks, setRecurringWeeks] = useState(4);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   
   // Attachments
   const { 
@@ -163,6 +171,7 @@ export function EditShiftDialog({
       setRole(shift.role || '');
       setNotes(shift.notes || '');
       setStatus(shift.status);
+      setEditScope('occurrence');
       setActiveTab('details');
     }
   }, [shift]);
@@ -300,8 +309,51 @@ export function EditShiftDialog({
     e.preventDefault();
     if (!shift) return;
 
+    if (isConvertingToRecurring && selectedDays.length === 0) {
+      toast.error('Select at least one day for recurring shifts');
+      return;
+    }
+
     setLoading(true);
     try {
+      let seriesId = shift.seriesId;
+      
+      if (isConvertingToRecurring && onCreateShift) {
+        seriesId = Math.random().toString(36).substring(2, 9);
+        const startDate = new Date(shiftDate);
+        const shiftsToCreate: Array<any> = [];
+
+        for (let week = 0; week < recurringWeeks; week++) {
+          for (const dayOfWeek of selectedDays) {
+            const date = new Date(startDate);
+            const currentDay = date.getDay();
+            let daysToAdd = dayOfWeek - currentDay;
+            if (daysToAdd < 0) daysToAdd += 7;
+            date.setDate(date.getDate() + daysToAdd + (week * 7));
+            
+            const dateStr = date.toISOString().split('T')[0];
+            // Don't create a duplicate of the exact same day
+            if (dateStr === shiftDate) continue;
+
+            shiftsToCreate.push({
+              user_id: userId,
+              project_id: projectId || null,
+              shift_date: dateStr,
+              shift_start: shiftStart,
+              shift_end: shiftEnd,
+              role: role || null,
+              notes: notes || null,
+              seriesId,
+              status
+            });
+          }
+        }
+
+        for (const s of shiftsToCreate) {
+          await onCreateShift(s);
+        }
+      }
+
       await onUpdateShift(shift.id, {
         user_id: userId,
         project_id: projectId || null,
@@ -310,13 +362,14 @@ export function EditShiftDialog({
         shift_end: shiftEnd,
         role: role || null,
         notes: notes || null,
-      });
+        ...(seriesId ? { seriesId } : {})
+      }, editScope);
 
       if (status !== shift.status) {
         await onStatusChange(shift.id, status);
       }
 
-      toast.success('Shift updated');
+      toast.success(isConvertingToRecurring ? 'Shift converted to recurring' : 'Shift updated');
       onOpenChange(false);
     } catch {
       toast.error('Failed to update shift');
@@ -330,7 +383,7 @@ export function EditShiftDialog({
 
     setLoading(true);
     try {
-      await onDeleteShift(shift.id);
+      await onDeleteShift(shift.id, editScope);
       toast.success('Shift deleted');
       onOpenChange(false);
     } catch {
@@ -490,6 +543,57 @@ export function EditShiftDialog({
                   disabled={!canManage}
                 />
               </div>
+
+              {canManage && !shift?.seriesId && !isConvertingToRecurring && (
+                <div className="pt-4 border-t mt-6">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsConvertingToRecurring(true)} className="w-full">
+                    <Repeat className="h-4 w-4 mr-2" /> Make Recurring
+                  </Button>
+                </div>
+              )}
+              {isConvertingToRecurring && (
+                <div className="space-y-4 p-4 border rounded-md bg-muted/50 mt-6 relative">
+                  <Button type="button" variant="ghost" size="sm" className="absolute top-2 right-2 h-6 w-6 p-0" onClick={() => setIsConvertingToRecurring(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                  <Label className="text-base font-semibold">Make Recurring</Label>
+                  
+                  <div>
+                    <Label>Repeat for (weeks)</Label>
+                    <Input type="number" min={1} max={52} value={recurringWeeks} onChange={e => setRecurringWeeks(parseInt(e.target.value) || 1)} className="mt-1" />
+                  </div>
+                  
+                  <div>
+                    <Label>Days of week</Label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d, i) => (
+                        <Badge 
+                          key={d} 
+                          variant={selectedDays.includes(i) ? 'default' : 'outline'}
+                          className="cursor-pointer px-3 py-1 text-sm"
+                          onClick={() => setSelectedDays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                        >
+                          {d}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground italic">
+                    Will generate {selectedDays.length * recurringWeeks} additional shifts.
+                  </div>
+                </div>
+              )}
+
+              {canManage && shift?.seriesId && (
+                <div className="pt-4 border-t mt-6">
+                  <ScopePicker 
+                    value={editScope} 
+                    onChange={setEditScope} 
+                    seriesId={shift?.seriesId}
+                    actionName="Apply changes to"
+                  />
+                </div>
+              )}
 
               <DialogFooter className="hidden md:flex mt-6">
                 {canManage && (

@@ -253,6 +253,48 @@ export async function GET(
             orderBy: { createdAt: 'desc' },
         });
 
+        if (entity === 'shifts') {
+            const timeOffWhere = { ...where, status: 'approved' };
+            const approvedTimeOff = await prisma.timeOffRequest.findMany({
+                where: timeOffWhere,
+                orderBy: { createdAt: 'desc' },
+            });
+            
+            const shadowShifts: any[] = [];
+            for (const t of approvedTimeOff) {
+                if (!t.userId || !t.startDate || !t.endDate) continue;
+                try {
+                    const start = new Date(t.startDate);
+                    const end = new Date(t.endDate);
+                    
+                    let days = 0;
+                    for (let d = new Date(start); d <= end && days <= 365; d.setDate(d.getDate() + 1), days++) {
+                        const shiftDate = d.toISOString().split('T')[0];
+                        shadowShifts.push({
+                            id: `leave-${t.id}-${shiftDate}`,
+                            userId: t.userId,
+                            shiftDate: shiftDate,
+                            shiftStart: '08:00',
+                            shiftEnd: '17:00',
+                            shiftName: t.requestType || 'Leave',
+                            projectId: null,
+                            role: null,
+                            notes: t.notes || null,
+                            status: 'leave',
+                            createdBy: 'system',
+                            lastEditedBy: 'system',
+                            createdAt: t.createdAt,
+                            updatedAt: t.updatedAt,
+                            isSynthetic: true,
+                            sourceType: 'timeoff',
+                            sourceId: t.id
+                        });
+                    }
+                } catch (e) {}
+            }
+            records = [...records, ...shadowShifts];
+        }
+
         // Enrich user names for clock-entries, time-off, and shifts
         if (entity === 'clock-entries' || entity === 'time-off' || entity === 'shifts') {
             const userIds = [...new Set(records.map((r: any) => r.userId).filter(Boolean))] as string[];
@@ -294,8 +336,27 @@ export async function GET(
                     return { ...r, userName };
                 });
             }
+            
+            // SCH-7: Project name enrichment for shifts
+            if (entity === 'shifts') {
+                const projectIds = [...new Set(records.map((r: any) => r.projectId).filter(Boolean))] as string[];
+                if (projectIds.length > 0) {
+                    const projects = await prisma.hrProject.findMany({
+                        where: { id: { in: projectIds } },
+                        select: { id: true, name: true }
+                    });
+                    const projectMap = new Map(projects.map((p: any) => [p.id, p.name]));
+                    records = records.map((r: any) => {
+                        let projectName = (r.projectId ? projectMap.get(r.projectId) : undefined) as string | undefined;
+                        if (projectName && projectName.startsWith('[ERP] ')) {
+                            projectName = projectName.replace('[ERP] ', '');
+                        }
+                        return { ...r, projectName };
+                    });
+                }
+            }
         }
-
+        
         return NextResponse.json(records);
     } catch (error: unknown) {
         console.error(`[HR API] GET ${entity} error:`, error);
@@ -329,6 +390,44 @@ export async function POST(
     const entitiesWithUserId = ['clock-entries', 'shifts', 'shift-templates', 'worker-schedules', 'time-off'];
     if (!data.userId && entitiesWithUserId.includes(entity)) {
         data.userId = ctx.userId;
+    }
+
+    // SCH-1: Reroute shift creations with status 'leave' to TimeOffRequest
+    if (entity === 'shifts' && data.status === 'leave') {
+        try {
+            const isAdminRole = ctx.role === 'admin' || ctx.role === 'owner';
+            const leaveBody = {
+                tenantId: ctx.tenantId,
+                userId: data.userId as string,
+                requestType: (data.shiftName as string) || 'vacation',
+                startDate: data.shiftDate as string,
+                endDate: data.shiftDate as string,
+                status: isAdminRole ? 'approved' : 'pending',
+                notes: data.notes as string | undefined
+            };
+            const t = await prisma.timeOffRequest.create({ data: leaveBody });
+            const synthetic = {
+                id: `leave-${t.id}-${t.startDate}`,
+                userId: t.userId,
+                shiftDate: t.startDate,
+                shiftStart: '08:00',
+                shiftEnd: '17:00',
+                shiftName: t.requestType,
+                projectId: null,
+                role: null,
+                notes: t.notes || null,
+                status: 'leave',
+                isSynthetic: true,
+                sourceType: 'timeoff',
+                sourceId: t.id,
+                createdAt: t.createdAt,
+                updatedAt: t.updatedAt,
+            };
+            return NextResponse.json(synthetic, { status: 201 });
+        } catch (error: unknown) {
+            console.error(`[HR API] POST shifts (leave reroute) error:`, error);
+            return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+        }
     }
 
     // ── PRE-CREATE Automations ───────────────────────────────────────
@@ -398,6 +497,10 @@ export async function PATCH(
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    if (id.startsWith('leave-')) {
+        return NextResponse.json({ error: 'Cannot mutate synthetic absence blocks directly' }, { status: 400 });
+    }
 
     // Verify tenant ownership before mutation
     try {
@@ -524,6 +627,10 @@ export async function DELETE(
     const url = new URL(req.url);
     const id = url.searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'id required' }, { status: 400 });
+
+    if (id.startsWith('leave-')) {
+        return NextResponse.json({ error: 'Cannot delete synthetic absence blocks directly' }, { status: 400 });
+    }
 
     // Verify tenant ownership before deletion
     try {

@@ -382,6 +382,17 @@ CoralOS leans heavily on **browser-persisted, browser-shared client state** — 
 5. **Same rule for claims about the codebase.** Before asserting a file/line/behaviour exists, open it. Assertions from memory are how wrong plans get approved.
 > **Copy-paste directive for the coder:** *"After every file you edit: re-read the file as it now stands, check your own imports, hook imports, declaration order, dangling references, JSX balance and prop call-sites, then run `tsc --noEmit` and lint. Report what you verified, not what you intended. If an edit was truncated or partially applied, say so and stop."*
 
+### 🧭 DESIGN PRINCIPLE — THE USER IS THE AUTHORITY (Florin, 2026-07-28)
+> *"Automation is good, but the user remains the ultimate authority. The software is the tool, not the other way around. We build software for human use, not inviting humans for software use."*
+
+This governs every *"should the system decide this?"* question. The answer is: **the system surfaces, the person decides.**
+1. **Surface, don't filter.** Don't suppress information because the software judged it unimportant (a price change below some delta, a "probably fine" duplicate, a low-confidence scan). Show it; let Florin dismiss it in a second. A hidden signal can't be reconsidered.
+2. **No hard-coded thresholds or policies.** If a cut-off is ever wanted, it is a **user setting**, never a constant compiled into behaviour. Ship without it until asked.
+3. **Automate the work, not the judgement.** Matching, extracting, aggregating, drafting — automate freely. **Deciding** — approving hours, posting to the books, repricing the library, sending a protest, paying an invoice — stays a human action. (Already applied: receipts never auto-post; protests never auto-send; articles never auto-reprice; invoice lines never auto-match.)
+4. **Defaults must be the least-destructive option**, and reversible where possible.
+5. **Don't infer intent from how something was phrased.** If a requirement is ambiguous, ask plainly or implement the literal reading and say which. Reading between the lines of the person you're building for is not analysis, it's presumption.
+> Practical test: if a feature would be described as *"the system will handle that for you"* on something with money, hours, or a client attached — stop. It should read *"the system shows you, you decide."*
+
 ### ✅ PRE-PROMOTION BACKUP CHECKPOINT (run every time before develop→main)
 Muscle-memory checklist — do this before promoting to production, no exceptions:
 1. **Snapshot.** Take a Neon branch / PITR snapshot of prod. Note its name + timestamp.

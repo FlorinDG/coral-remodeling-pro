@@ -312,6 +312,7 @@ export function ScheduleManagement() {
         workers={workers}
         onUpdateShift={handleUpdateShift}
         onDeleteShift={handleDelete}
+        onCreateShift={createShift}
         onStatusChange={handleStatusChange}
         canManage={canManage}
       />

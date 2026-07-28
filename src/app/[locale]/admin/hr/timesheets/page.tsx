@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { hrFetch, hrUpdate } from '@/components/time-tracker/lib/hr-api';
-import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X, Clock, Hourglass, Plus } from 'lucide-react';
-import { formatISO, startOfWeek, endOfWeek } from 'date-fns';
+import { Loader2, FileText, Download, AlertCircle, Image as ImageIcon, Check, X, Clock, Hourglass, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { formatISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { computeWorkedDuration } from '@/lib/computeWorkedDuration';
 import { Link, usePathname, useRouter } from '@/i18n/routing';
@@ -382,14 +382,14 @@ function TimesheetsContent() {
                                         <td colSpan={7} className="px-6 py-4 text-sm">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold flex items-center gap-2">
-                                                    {expandedGroups.has(worker.userId) ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
+                                                    {expandedGroups[worker.userId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {worker.workerName}
                                                 </span>
                                                 <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{worker.hours.toFixed(2)} {t('hoursShort')}</span>
                                             </div>
                                         </td>
                                     </tr>
-                                    {expandedGroups.has(worker.userId) && entries.filter((e: any) => e.userId === worker.userId).map((entry: any) => renderRow(entry))}
+                                    {expandedGroups[worker.userId] && entries.filter((e: any) => e.userId === worker.userId).map((entry: any) => renderRow(entry))}
                                 </React.Fragment>
                             ))}
                             
@@ -400,14 +400,14 @@ function TimesheetsContent() {
                                         <td colSpan={7} className="px-6 py-4 text-sm">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold flex items-center gap-2">
-                                                    {expandedGroups.has(project.projectId) ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
+                                                    {expandedGroups[project.projectId] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {project.projectName}
                                                 </span>
                                                 <span className="font-medium bg-neutral-200 dark:bg-neutral-700 px-3 py-1 rounded-lg">{project.hours.toFixed(2)} {t('hoursShort')}</span>
                                             </div>
                                         </td>
                                     </tr>
-                                    {expandedGroups.has(project.projectId) && entries.filter((e: any) => e.projectId === project.projectId).map((entry: any) => renderRow(entry))}
+                                    {expandedGroups[project.projectId] && entries.filter((e: any) => e.projectId === project.projectId).map((entry: any) => renderRow(entry))}
                                 </React.Fragment>
                             ))}
 
@@ -418,7 +418,7 @@ function TimesheetsContent() {
                                         <td colSpan={7} className="px-6 py-4 text-sm">
                                             <div className="flex items-center justify-between">
                                                 <span className="font-bold text-red-700 dark:text-red-400 flex items-center gap-2">
-                                                    {expandedGroups.has('unassigned') ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
+                                                    {expandedGroups['unassigned'] ? <ChevronDown className="w-4 h-4"/> : <ChevronRight className="w-4 h-4"/>}
                                                     {t('unassignedProject', { fallback: 'Niet toegewezen uren' })}
                                                 </span>
                                                 <div className="flex items-center gap-3">
@@ -430,7 +430,7 @@ function TimesheetsContent() {
                                             </div>
                                         </td>
                                     </tr>
-                                    {expandedGroups.has('unassigned') && entries.filter((e: any) => !e.projectId).map((entry: any) => renderRow(entry))}
+                                    {expandedGroups['unassigned'] && entries.filter((e: any) => !e.projectId).map((entry: any) => renderRow(entry))}
                                 </React.Fragment>
                             )}
                         </tbody>

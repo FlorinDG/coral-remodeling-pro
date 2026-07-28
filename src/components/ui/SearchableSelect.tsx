@@ -20,6 +20,7 @@ interface SearchableSelectProps {
     disabled?: boolean;
     borderless?: boolean;
     usePortal?: boolean;
+    portalContainer?: HTMLElement | null;
     onCreate?: (searchValue: string) => void;
 }
 
@@ -34,6 +35,7 @@ export default function SearchableSelect({
     disabled = false,
     borderless = false,
     usePortal = true,
+    portalContainer,
     onCreate,
 }: SearchableSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
@@ -258,7 +260,7 @@ export default function SearchableSelect({
                         >
                             {dropdownContent}
                         </div>,
-                        document.body
+                        portalContainer || document.body
                     );
                 }
 

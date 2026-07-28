@@ -176,8 +176,9 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
         const newPage = {
             ...conflict.page,
             properties: mergedProps,
-            // Re-baseline to the server's time
+            // Re-baseline to the server's time and blocksVersion
             baseUpdatedAt: serverPage.updatedAt,
+            blocksVersion: serverPage.blocksVersion,
             // Bump local updatedAt so it syncs immediately
             updatedAt: new Date().toISOString()
         };

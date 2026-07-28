@@ -295,6 +295,24 @@ export const useDatabaseStore = create<DatabaseState>()(
                         get()._dequeueSync(entry.pageId);
                     } else if (result.errorCode === 'STALE_WRITE') {
                         console.warn('STALE WRITE CONFLICT DETECTED FOR PAGE', entry.pageId);
+                        
+                        // OCC-13: Always adopt server baseline on conflict while keeping user's content and dirtyBaseBlocks
+                        if (result.serverUpdatedAt) {
+                            set(s => ({
+                                databases: s.databases.map(d => d.id === entry.databaseId ? {
+                                    ...d,
+                                    pages: d.pages.map((p: Page) => {
+                                        if (p.id !== entry.pageId) return p;
+                                        return { 
+                                            ...p, 
+                                            baseUpdatedAt: result.serverUpdatedAt,
+                                            blocksVersion: result.serverBlocksVersion !== undefined ? result.serverBlocksVersion : p.blocksVersion
+                                        };
+                                    })
+                                } : d)
+                            }));
+                        }
+
                         set({ syncStatus: 'conflict' as const });
                         get()._dequeueSync(entry.pageId);
                         
@@ -440,8 +458,13 @@ export const useDatabaseStore = create<DatabaseState>()(
                     // 1. For all pages on server, if we have local dirty, use local. Else use server.
                     serverDb.pages.forEach((sp: Page) => {
                         if (dirtyPageIds.has(sp.id)) {
-                            // Page is dirty locally, DO NOT OVERWRITE
-                            mergedPages.push(localPagesMap.get(sp.id) || sp);
+                            // Page is dirty locally. OCC-13: Keep local properties/blocks, but take baseUpdatedAt and blocksVersion from server row
+                            const localPage = localPagesMap.get(sp.id) || sp;
+                            const newLocalPage = { ...localPage, baseUpdatedAt: sp.updatedAt };
+                            if ((sp as any).blocksVersion !== undefined) {
+                                newLocalPage.blocksVersion = (sp as any).blocksVersion;
+                            }
+                            mergedPages.push(newLocalPage);
                         } else {
                             // Keep server version, adopt server's baseUpdatedAt to prevent false stale writes
                             const newPage = { ...sp, baseUpdatedAt: sp.updatedAt };

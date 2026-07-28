@@ -291,7 +291,9 @@ export async function saveGlobalPage(page: Page) {
                         success: false, 
                         error: 'STALE_WRITE', 
                         errorCode: 'STALE_WRITE',
-                        lastEditedBy: existingPage.lastEditedBy 
+                        lastEditedBy: existingPage.lastEditedBy,
+                        serverUpdatedAt: existingPage.updatedAt.toISOString(),
+                        serverBlocksVersion: existingPage.blocksVersion
                     };
                 } else {
                     console.info(`[saveGlobalPage] Successfully merged stale write for page ${page.id}`);
@@ -438,7 +440,14 @@ export async function saveGlobalPagesBatch(pages: Page[]) {
                         }
 
                         if (hasHardConflict) {
-                            results.push({ id: page.id, success: false, errorCode: 'STALE_WRITE', lastEditedBy: existingPage.lastEditedBy });
+                            results.push({ 
+                                id: page.id, 
+                                success: false, 
+                                errorCode: 'STALE_WRITE', 
+                                lastEditedBy: existingPage.lastEditedBy,
+                                serverUpdatedAt: existingPage.updatedAt.toISOString(),
+                                serverBlocksVersion: existingPage.blocksVersion 
+                            });
                             continue;
                         }
                     }

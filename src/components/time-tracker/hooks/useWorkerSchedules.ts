@@ -26,18 +26,21 @@ export function useWorkerSchedules() {
   const [schedules, setSchedules] = useState<WorkerSchedule[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSchedules = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const [scheduleData, employeeData] = await Promise.all([
         hrList<WorkerSchedule>('worker-schedules'),
-        hrList<{ id: string; firstName: string; lastName: string; status: string; schedule?: boolean }>('employees').catch(() => [])
+        hrList<{ id: string; firstName: string; lastName: string; status: string; schedule?: boolean }>('employees')
       ]);
       setSchedules(scheduleData);
       setEmployees(employeeData.filter(e => e.schedule !== false));
-    } catch (err) {
+    } catch (err: any) {
       console.error('[useWorkerSchedules] error:', err);
+      setError(err.message || 'Failed to fetch schedules or employees');
     } finally {
       setLoading(false);
     }
@@ -99,6 +102,7 @@ export function useWorkerSchedules() {
     allWorkers,
     DAY_NAMES,
     loading,
+    error,
     createSchedule,
     updateSchedule,
     deleteSchedule,

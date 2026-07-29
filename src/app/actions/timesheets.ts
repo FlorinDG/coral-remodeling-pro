@@ -128,17 +128,17 @@ export async function getProjectScheduledShifts(projectId: string) {
 
     const employees = await prisma.employee.findMany({
         where: {
-            id: { in: employeeIds },
+            userId: { in: employeeIds },
             tenantId
         },
         select: {
-            id: true,
+            userId: true,
             firstName: true,
             lastName: true
         }
     });
 
-    const empMap = new Map(employees.map(e => [e.id, `${e.firstName} ${e.lastName}`]));
+    const empMap = new Map(employees.map(e => [e.userId, `${e.firstName} ${e.lastName}`]));
 
     return shifts.map(s => ({
         id: s.id,

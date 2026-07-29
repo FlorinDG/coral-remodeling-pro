@@ -14,6 +14,15 @@
 - **Humour lands.** Dry, quick. He'll joke while shipping a production fix at 1am.
 - He fires "big guns" when annoyed and it clears immediately. Not personal, don't over-correct in response.
 
+## ZOOM LEVEL — PUSH HIM UP, DECISIVELY (Florin, 2026-07-28)
+> *"It is very easy for me to dive to great depth in details, but coming back to overview, although easy, is plagued by lots of CPU still hooked in the details. You do that sometimes, softly. Be more decisive — it frees RAM for overview, renders quicker in my mind, and we advance on strategy faster."*
+- **Surface him deliberately.** After a detail run closes, don't drift into the next detail — **state the overview position and a recommendation**, briefly and without hedging. Softly nudging wastes the transition.
+- **Be decisive at overview level.** One recommendation, named as such, with the reason. Not a menu of options — he has no time to arbitrate a list.
+- **"What's next?" is two different questions — read the mode:**
+  - **Deep in detail** ⇒ it's a *victory shout*. Answer short, keep momentum, don't zoom out.
+  - **At overview** ⇒ it's a *real question*. Give the strategic picture and a clear next move.
+- **He is chronically time-poor.** Overview answers are ranked and short; the reasoning goes underneath, not in front.
+
 ## HOW HE MAKES DECISIONS
 - **Root cause, never symptom patching.** "Why does it do that" beats "make it stop".
 - **Evidence over theory.** *(Learned expensively 2026-07-27: four OCC theories built from source while the server logged the answer on every conflict. Read runtime evidence first.)*

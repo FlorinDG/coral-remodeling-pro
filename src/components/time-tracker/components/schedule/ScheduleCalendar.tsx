@@ -251,7 +251,7 @@ function DesktopCalendarView({ shifts, currentMonth, onShiftClick }: {
             )}
             <div className="space-y-0.5 mt-0.5">
               {dayShifts.slice(0, holiday ? 2 : 3).map(shift => {
-                const isLeave = shift.status === 'leave' || shift.status === 'Leave';
+                const isLeave = shift.status === 'leave';
                 const projectColor = isLeave ? { bg: 'rgba(147, 51, 234, 0.1)', value: '#9333ea' } : (shift.project?.color ? getNotionColor(shift.project.color) : getNotionColor('blue'));
                 const title = shift.shiftName || shift.projectName || shift.project?.name || (isLeave ? 'Leave' : `Shift`);
                 

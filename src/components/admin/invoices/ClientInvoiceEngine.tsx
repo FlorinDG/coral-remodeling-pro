@@ -157,7 +157,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     });
                 }
             }
-        }).catch(console.error);
+        }).catch(err => {
+            console.error(err);
+            toast.error('Failed to trigger background update');
+        });
     }, [isHydrated, invoice, hydrationAttempted, id, invoicesDbId]);
 
     // Lazy backfill: generate structuredComm if missing on the loaded invoice
@@ -368,8 +371,9 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             } else {
                 setPeppolDisabledReason(res.message || 'Klant is niet geregistreerd op Peppol.');
             }
-        }).catch(() => {
-            setPeppolUnknownWarning('Fout bij verifiëren van Peppol status.');
+        }).catch((err) => {
+            console.error(err);
+            toast.error('Fout bij verifiëren van Peppol status.');
         });
     }, [clientRecord?.vatNumber]);
 
@@ -599,7 +603,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                         entityType: 'invoice',
                         entityId: invoice.id,
                         href: `/nl/admin/financials/income/invoices/${invoice.id}`
-                    }).catch(e => console.error(e));
+                    }).catch(err => {
+                        console.error(err);
+                        toast.error('Failed to fetch contact details');
+                    });
                 }
             }
         }
@@ -618,7 +625,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
 
         // Persist client relationship to Prisma
         if (key === 'client') {
-            updateInvoiceContact(id, value).catch(console.error);
+            updateInvoiceContact(id, value).catch(err => {
+                console.error(err);
+                toast.error('Failed to update invoice contact on server');
+            });
         }
         if (key === 'docType') {
             if (value === 'opt-proforma') {
@@ -628,7 +638,10 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
                     if (result.success && result.number) {
                         updatePageProperty(invoicesDbId, invoice.id, 'title', result.number);
                     }
-                }).catch(console.error);
+                }).catch(err => {
+                    console.error(err);
+                    toast.error('Failed to fetch next document number');
+                });
             } else if (value === 'opt-credit-note' && String(invoice.properties['title']) === 'Proforma') {
                 updatePageProperty(invoicesDbId, invoice.id, 'title', `CN-${invoice.id.substring(0, 8).toUpperCase()}`);
             }

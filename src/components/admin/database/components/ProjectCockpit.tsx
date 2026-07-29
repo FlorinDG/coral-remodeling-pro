@@ -167,9 +167,9 @@ export default function ProjectCockpit({
                                     {projectShifts.map((shift: any) => (
                                         <div key={shift.id} className="flex justify-between items-center p-1.5 rounded bg-neutral-50 dark:bg-white/5 text-[10px]">
                                             <span className="font-medium text-neutral-700 dark:text-neutral-300">
-                                                {new Date(shift.date || shift.shift_date).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                                {new Date(shift.shiftDate).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
                                             </span>
-                                            <span className="text-neutral-500">{shift.workerIds?.length || shift.worker_ids?.length || 0} assigned</span>
+                                            <span className="text-neutral-500">{shift.workerIds?.length || 0} assigned</span>
                                         </div>
                                     ))}
                                 </div>

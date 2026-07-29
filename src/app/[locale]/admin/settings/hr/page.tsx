@@ -5,7 +5,7 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { getFilteredSettingsTabs } from '@/config/tabs';
 import { useTenant } from '@/context/TenantContext';
 import { usePageTitle } from '@/hooks/usePageTitle';
-import { HardHat, Save, Loader2, Check } from 'lucide-react';
+import { HardHat, Save, Loader2, Check, ShieldAlert, ArrowLeft } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
 
@@ -19,6 +19,7 @@ export default function HRSettingsPage() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [unlocking, setUnlocking] = useState(false);
 
     useEffect(() => {
         if (tenant) {
@@ -40,6 +41,21 @@ export default function HRSettingsPage() {
         await refreshTenant();
         router.refresh();
         setTimeout(() => setSaved(false), 2000);
+    };
+
+    const handleEnableEditGuard = async () => {
+        setUnlocking(true);
+        try {
+            await fetch('/api/hr/timesheet-unlock', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'enable' })
+            });
+            router.back();
+        } catch (err) {
+            console.error(err);
+            setUnlocking(false);
+        }
     };
 
     if (loading) return (
@@ -84,6 +100,25 @@ export default function HRSettingsPage() {
                                 ))}
                             </div>
                             <p className="text-xs text-neutral-400 mt-2">Used for overtime calculations and attendance tracking.</p>
+                        </div>
+                        
+                        {/* Edit Guard Unlock */}
+                        <div className="bg-orange-50 dark:bg-orange-900/10 rounded-2xl border border-orange-200 dark:border-orange-500/20 p-5">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-orange-800 dark:text-orange-400 mb-2 flex items-center gap-2">
+                                <ShieldAlert className="w-4 h-4" />
+                                Edit Approved Timesheets
+                            </label>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                                Approved timesheets are read-only to prevent accidental payroll discrepancies. You can temporarily unlock them for 30 minutes to make adjustments.
+                            </p>
+                            <button
+                                onClick={handleEnableEditGuard}
+                                disabled={unlocking}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-600 text-white text-sm font-bold hover:bg-orange-700 disabled:opacity-50 transition-all"
+                            >
+                                {unlocking ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowLeft className="w-4 h-4" />}
+                                Allow editing approved hours
+                            </button>
                         </div>
 
                         <button

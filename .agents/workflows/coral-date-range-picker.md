@@ -11,6 +11,11 @@ The timesheets filter renders raw ISO timestamps in the date fields: `2026-07-01
 1. `formatDateDisplay(value)` (`:213`) can't parse it ⇒ the raw string is printed in the trigger.
 2. `isSelected` never matches ⇒ **the chosen day isn't highlighted in the calendar either** (the less obvious half).
 
+**Also observed (Florin, live):** selecting *Custom* causes a **full reload/redraw**, the two pickers appear, **format dates US-style**, behave erratically, and vanish with another redraw when a preset is chosen.
+- The **redraw** is the pickers mounting/unmounting on `isCustom` — the filter bar re-renders (probably re-keyed or remounted by a URL-param change) instead of the flyout simply opening. Part B removes this entirely: one persistent control, nothing appears or disappears.
+- **US-style dates** confirm the format bug — an unparsed value falls through to `toLocaleDateString()`/`Date` default formatting (`M/D/YYYY`). Locale must be explicit (`nl-BE` / `fr-BE` / `en-GB`, `date-fns` locale), **never** the runtime default.
+- Treat the redraw as evidence that the two-field approach is the wrong shape, not as a separate bug to patch.
+
 **FIX (independent of Part B, do it either way):** one boundary, one format. The picker's contract is `YYYY-MM-DD`; the **filter bar** converts to/from the API's ISO range (`from` = start-of-day, `to` = end-of-day, in the tenant's timezone) at the point it builds the query. Never pass timestamps into a date-only component.
 
 ---

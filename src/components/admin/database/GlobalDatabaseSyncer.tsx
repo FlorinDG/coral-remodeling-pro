@@ -252,7 +252,7 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
                                             <div className="font-semibold text-xs text-neutral-500 uppercase tracking-wider">{field}</div>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div 
-                                                    className={`p-2 rounded border cursor-pointer transition-colors ${fieldResolutions[field] ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20' : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'}`}
+                                                    className={`p-2 rounded border cursor-pointer transition-colors ${fieldResolutions[field] ? 'border-[var(--brand-color,#d35400)] bg-[var(--brand-color,#d35400)]/10 dark:bg-[var(--brand-color,#d35400)]/20' : 'border-neutral-200 hover:bg-neutral-50 dark:border-neutral-700 dark:hover:bg-neutral-800'}`}
                                                     onClick={() => setFieldResolutions(prev => ({ ...prev, [field]: true }))}
                                                 >
                                                     <div className="text-xs font-medium mb-1">Your Edit</div>

@@ -354,6 +354,21 @@ CoralOS leans heavily on **browser-persisted, browser-shared client state** — 
 2. **Reset/clear on session boundary** — logout, tenant-switch, and impersonation start+stop must clear the store / queue / query cache so no previous tenant's state survives.
 3. **Server writes trust the SESSION tenant** — every write + optimistic-concurrency read scoped `WHERE …tenantId = <session>`; never the client-supplied id alone.
 4. **Impersonation isolation** — a superadmin impersonating a tenant must not let cached/queued state bleed back to the real tenant on exit.
+#### ✅ TENANT + GATING CHECKLIST — run against EVERY feature before it ships (Florin, 2026-07-28: *"make sure ALL OF THIS is multi-tenant capable and properly gated"*)
+Not optional, not per-spec prose. If a line can't be answered, the feature isn't done.
+1. **Tenant from the session, never from the client.** No `tenantId` accepted as a query param, body field or header. On a fan-out/report endpoint a client-supplied tenant is a total-read primitive.
+2. **Every read AND write scoped** `WHERE tenantId = <session>` — including each source in a multi-source query. `GlobalPage`-backed data scopes via `database.tenantId` (mirror `global-databases.ts:196-207`). *One unscoped source leaks that whole layer.*
+3. **Settings and toggles are per-tenant** — never global, never per-deployment. (Applies to the approved-hours edit unlock, notification thresholds, scan quota, automation rules.)
+4. **Persisted / shared client state keyed by tenant** and cleared on logout, tenant switch, and impersonation start+stop — IDB stores, Zustand persist names, React Query keys, sync queues. *(Past breaches: `calendar-storage-v1`, `coral-database-storage-v4`, untagged query keys.)*
+5. **Intra-tenant RBAC, enforced server-side.** Isolation is necessary, not sufficient. Owner/admin · team lead (their team) · workforce (self only). Never enforced by hiding UI. Sensitive fields — **cost rates, other workers' absences, financials** — are role-gated on the server.
+6. **Exports and downloads inherit the caller's scope.** A lead's "export all" silently means *their team*. An export that looks complete but isn't is worse than one that fails.
+7. **Files, attachments, photos, documents** served through the authenticated route with a tenant check — never a bare blob key or public URL. *(Past: `RECEIPT-BONNETJE-LINK`.)*
+8. **Deeplinks and record ids verified on open** — a foreign-tenant id must 404, not render.
+9. **Outbound side-effects carry the right tenant** — email (protest, intake), Peppol sends, webhooks. Never another tenant's document on an outgoing mail.
+10. **External account bindings are per (user × tenant)**, not per user — OAuth tokens (Google, Resend inbound) must not surface across tenants, and are **unavailable during impersonation**.
+11. **Impersonation is a boundary**, not a convenience: nothing cached, queued or unlocked may bleed back to the real tenant on exit.
+12. **Audit rows record `tenantId` + actor** — approvals, rate restamps, admin edits, protests, migrations.
+
 > Rule of thumb: "durable OR shared client state" + "no tenant tag" = a leak. If a fix makes writes more reliable or a cache more shared, it MUST ship with the matching tenant partition + clear-on-switch, or it turns a data-loss bug into a data-leak bug (strictly worse). Applies to DATA-PERSIST-INTEGRITY, ADMIN-QUERYCLIENT-PROVIDER, and anything future touching the store/cache/queue.
 
 ### 🔔 HARD RULE — FORCING FUNCTIONS: THE SYSTEM MUST DO THE NOTICING (added 2026-07-27)

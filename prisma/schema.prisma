@@ -770,6 +770,7 @@ model ClockEntry {
   projectId         String?
   billable          Boolean   @default(true)
   source            String    @default("clocked")
+  editedAfterApproval Boolean @default(false)
   costRateApplied   Float?
   accountantExportedAt DateTime?
 
@@ -1033,4 +1034,21 @@ model RateChangeAudit {
 
   @@index([tenantId, timestamp])
   @@index([targetWorkerId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  actorUserId  String
+  entityType   String   // 'clockEntry' | 'article' | 'expense' | 'globalPage' …
+  entityId     String
+  action       String   // 'update' | 'forceClockOut' | 'approve' | 'unapprove' | 'delete' | 'restampRate'
+  field        String?  // null for whole-record actions
+  before       Json?
+  after        Json?
+  reason       String?  // e.g. 'edited-after-approval'
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
 }

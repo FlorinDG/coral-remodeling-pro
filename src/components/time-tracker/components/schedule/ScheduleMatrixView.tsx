@@ -530,7 +530,7 @@ export function ScheduleMatrixView({
                                       "hover:shadow-sm hover:border-primary/40",
                                       projectColor
                                         ? "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-white/10"
-                                        : (status === 'leave' || status === 'Leave')
+                                        : (status === 'leave')
                                           ? "bg-purple-50/60 dark:bg-purple-950/20 border-purple-200 dark:border-purple-900/30"
                                           : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-white/10"
                                     )}
@@ -545,7 +545,7 @@ export function ScheduleMatrixView({
                                       )}
                                       <div className="flex-1 min-w-0">
                                         {(() => {
-                                          const isLeave = status === 'leave' || status === 'Leave';
+                                          const isLeave = status === 'leave';
                                           const title = shift.shiftName || shift.projectName || shift.project?.name || (isLeave ? 'Leave' : `${formatTime(ss)}–${formatTime(se)}`);
                                           const showTimeSecondary = title !== `${formatTime(ss)}–${formatTime(se)}`;
                                           

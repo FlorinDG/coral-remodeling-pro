@@ -482,6 +482,32 @@ export async function POST(
     }
 }
 
+import { cookies } from 'next/headers';
+
+async function verifyUnlockCookie(tenantId: string, userId: string): Promise<boolean> {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('timesheet_unlock')?.value;
+    if (!token) return false;
+
+    const parts = token.split('.');
+    if (parts.length !== 2) return false;
+    
+    const [payloadBase64, signature] = parts;
+    const AUTH_SECRET = process.env.AUTH_SECRET || 'fallback-secret-for-dev';
+    const expectedSignature = crypto.createHmac('sha256', AUTH_SECRET).update(Buffer.from(payloadBase64, 'base64').toString('utf-8')).digest('hex');
+    
+    if (signature !== expectedSignature) return false;
+
+    try {
+        const payload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString('utf-8'));
+        if (payload.tenantId !== tenantId || payload.userId !== userId) return false;
+        if (Date.now() > payload.exp) return false;
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 // ── PATCH ──────────────────────────────────────────────────────────────────
 export async function PATCH(
     req: Request,
@@ -537,7 +563,61 @@ export async function PATCH(
     const data = sanitize(body);
 
     try {
-        const record = await model.update({ where: { id }, data });
+        let record;
+
+        // --- CLOCK ENTRIES INTERCEPT: Audit and Edit Guard ---
+        if (entity === 'clock-entries') {
+            const existingEntry = await prisma.clockEntry.findUnique({ where: { id } });
+            if (!existingEntry || existingEntry.tenantId !== ctx.tenantId) {
+                return NextResponse.json({ error: 'Not found' }, { status: 404 });
+            }
+
+            // Edit Guard check
+            if (existingEntry.approvalStatus === 'approved') {
+                const isForceClockOut = !existingEntry.clockOutTime && data.clockOutTime;
+                if (!isForceClockOut) {
+                    const isUnlocked = await verifyUnlockCookie(ctx.tenantId, ctx.userId);
+                    if (!isUnlocked) {
+                        return NextResponse.json({ error: 'Editing approved entries requires unlock' }, { status: 403 });
+                    }
+                    data.editedAfterApproval = true;
+                }
+            }
+
+            // Audit log generation
+            const auditPayload: any = {
+                tenantId: ctx.tenantId,
+                actorUserId: ctx.userId,
+                entityType: 'clockEntry',
+                entityId: id,
+                action: 'update',
+                before: existingEntry,
+                after: { ...existingEntry, ...data },
+                reason: data.editedAfterApproval ? 'edited-after-approval' : null,
+            };
+
+            // Force source = 'Aangepast' if not just approving/unapproving
+            const isJustApproval = Object.keys(data).every(k => ['approvalStatus', 'approvedBy', 'approvedAt', 'editedAfterApproval'].includes(k));
+            if (!isJustApproval) {
+                data.source = 'Aangepast';
+                auditPayload.after.source = 'Aangepast';
+            }
+
+            if (data.approvalStatus && data.approvalStatus !== existingEntry.approvalStatus) {
+                auditPayload.action = data.approvalStatus === 'approved' ? 'approve' : 'unapprove';
+            } else if (!existingEntry.clockOutTime && data.clockOutTime) {
+                auditPayload.action = 'forceClockOut';
+            }
+
+            // Execute in transaction
+            const [updated] = await prisma.$transaction([
+                prisma.clockEntry.update({ where: { id }, data }),
+                prisma.auditLog.create({ data: auditPayload })
+            ]);
+            record = updated;
+        } else {
+            record = await model.update({ where: { id }, data });
+        }
 
         // ── PATCH Automations ──────────────────────────────────────────
         // Approval of manual hours -> creates actual ClockEntry

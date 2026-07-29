@@ -72,8 +72,8 @@ function ShiftCard({ shift, isNextShift, activeEntry, onClick }: ShiftCardProps)
 
             {/* Title */}
             <div className="flex items-center gap-3 text-lg font-bold mt-1">
-              {(shift.status === 'leave' || shift.status === 'Leave') ? '🌴 ' : ''}
-              <span>{shift.shiftName || shift.projectName || (shift.project?.name || '').replace(/^\[ERP\]\s*/i, '') || ((shift.status === 'leave' || shift.status === 'Leave') ? 'Leave' : 'Shift')}</span>
+              {shift.status === 'leave' ? '🌴 ' : ''}
+              <span>{shift.shiftName || shift.projectName || (shift.project?.name || '').replace(/^\[ERP\]\s*/i, '') || (shift.status === 'leave' ? 'Leave' : 'Shift')}</span>
             </div>
 
             {/* Time */}

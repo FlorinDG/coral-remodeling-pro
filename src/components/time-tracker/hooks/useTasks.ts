@@ -159,6 +159,7 @@ export function useTasks(projectId?: string | null) {
 export function useShiftTasks(shiftId?: string | null) {
     const [shiftTasks, setShiftTasks] = useState<ShiftTask[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchShiftTasks = useCallback(async () => {
         if (!shiftId) {
@@ -170,7 +171,7 @@ export function useShiftTasks(shiftId?: string | null) {
             const data = await hrList<ShiftTask>('shift-tasks', { shiftId });
 
             // Hydrate task details from erp-tasks in a single batch call
-            const allErpTasks = await hrList<{ id: string; name: string; priority: string; status: string }>('erp-tasks').catch(() => []);
+            const allErpTasks = await hrList<{ id: string; name: string; priority: string; status: string }>('erp-tasks');
             const taskMap = new Map(allErpTasks.map(t => [t.id, t]));
 
             const enriched = data.map(st => ({
@@ -192,8 +193,9 @@ export function useShiftTasks(shiftId?: string | null) {
             }));
 
             setShiftTasks(enriched);
-        } catch (err) {
+        } catch (err: any) {
             console.error('[useShiftTasks] Failed to fetch shift tasks:', err);
+            setError(err.message || 'Failed to fetch shift tasks or ERP tasks');
         } finally {
             setLoading(false);
         }
@@ -301,6 +303,7 @@ export function useShiftTasks(shiftId?: string | null) {
     return {
         shiftTasks,
         loading,
+        error,
         assignTask,
         removeTask,
         completeShiftTask,

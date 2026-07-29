@@ -13,6 +13,7 @@ import ModuleTabs from "@/components/admin/ModuleTabs";
 import { hrTabs } from "@/config/tabs";
 import { ManualEntryModal } from './ManualEntryModal';
 import { TimesheetFilterBar } from './TimesheetFilterBar';
+import { TimesheetEntryDetail } from '@/components/time-tracker/components/timesheets/TimesheetEntryDetail';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { nl } from 'date-fns/locale';
 import { format } from 'date-fns';
@@ -52,6 +53,39 @@ function TimesheetsContent() {
     const [groupBy, setGroupBy] = useState<'flat' | 'worker' | 'project'>('flat');
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
     const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+    const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
+    const [unlockState, setUnlockState] = useState<{ valid: boolean, expiresAt: number | null }>({ valid: false, expiresAt: null });
+    const [nowMs, setNowMs] = useState(Date.now());
+
+    useEffect(() => {
+        const i = setInterval(() => setNowMs(Date.now()), 1000);
+        return () => clearInterval(i);
+    }, []);
+
+    const fetchUnlockState = async () => {
+        try {
+            const res = await fetch('/api/hr/timesheet-unlock');
+            if (res.ok) {
+                const data = await res.json();
+                setUnlockState({ valid: data.valid, expiresAt: data.expiresAt });
+            }
+        } catch (err) {
+            console.error('Failed to fetch unlock state', err);
+        }
+    };
+
+    const disableUnlock = async () => {
+        try {
+            await fetch('/api/hr/timesheet-unlock', { method: 'POST', body: JSON.stringify({ action: 'disable' }), headers: { 'Content-Type': 'application/json' }});
+            setUnlockState({ valid: false, expiresAt: null });
+        } catch (err) {
+            console.error('Failed to disable unlock', err);
+        }
+    };
+
+    useEffect(() => {
+        fetchUnlockState();
+    }, []);
 
     const toggleGroup = (id: string) => setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
 
@@ -174,8 +208,9 @@ function TimesheetsContent() {
         const duration = computeWorkedDuration(entry.clockInTime, entry.clockOutTime, entry.noBreak || false);
         
         return (
-            <tr key={entry.id} className="hover:bg-neutral-50/50 dark:hover:bg-white/5 transition-colors group">
-                <td className="px-6 py-4">
+            <React.Fragment key={entry.id}>
+            <tr className="hover:bg-neutral-50/50 dark:hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => setExpandedRowId(expandedRowId === entry.id ? null : entry.id)}>
+                <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                     <input 
                         type="checkbox" 
                         className="rounded border-neutral-300"
@@ -238,15 +273,25 @@ function TimesheetsContent() {
                         {entry.approvalStatus !== 'denied' && (
                             <Button size="sm" variant="ghost" onClick={() => handleApproval(entry.id, 'denied')} className="h-8 text-red-600 hover:text-red-700 hover:bg-red-50">{t('deny')}</Button>
                         )}
-                        <Link href={`/admin/hr/timesheets/${entry.id}`}>
-                            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-2">
-                                <FileText className="w-3.5 h-3.5" />
-                                {t('viewTimesheet')}
-                            </Button>
-                        </Link>
+                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-[10px] font-bold uppercase tracking-wider ml-2" onClick={(e) => { e.stopPropagation(); setExpandedRowId(expandedRowId === entry.id ? null : entry.id); }}>
+                            <FileText className="w-3.5 h-3.5" />
+                            {expandedRowId === entry.id ? 'Hide Detail' : t('viewTimesheet')}
+                        </Button>
                     </div>
                 </td>
             </tr>
+            {expandedRowId === entry.id && (
+                <tr key={`${entry.id}-detail`} className="bg-neutral-50 dark:bg-white/5 border-b border-neutral-200 dark:border-white/10">
+                    <td colSpan={7} className="p-0">
+                        <TimesheetEntryDetail 
+                            entry={entry} 
+                            onUpdate={(updated) => setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, ...updated } : e))} 
+                            unlockTokenValid={unlockState.valid && (!unlockState.expiresAt || unlockState.expiresAt > nowMs)} 
+                        />
+                    </td>
+                </tr>
+            )}
+        </React.Fragment>
         );
     };
 
@@ -260,6 +305,24 @@ function TimesheetsContent() {
                             <h1 className="text-2xl font-black tracking-tight">{t('title')}</h1>
                             <p className="text-sm text-neutral-500">{t('subtitle')}</p>
                         </div>
+                        {unlockState.valid && unlockState.expiresAt && unlockState.expiresAt > nowMs && (
+                            <button 
+                                onClick={disableUnlock}
+                                aria-pressed="true"
+                                className={`
+                                    ml-4 px-4 py-2 rounded-lg font-bold text-sm text-left leading-tight shadow-sm border transition-colors cursor-pointer
+                                    ${(unlockState.expiresAt - nowMs) < 300000 
+                                        ? 'bg-red-100 text-red-800 border-red-300 hover:bg-red-200' 
+                                        : 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'}
+                                `}
+                            >
+                                {t('editingApprovedOn', { fallback: 'Editing of approved hours is ON' })}<br/>
+                                <span className="font-normal text-xs">
+                                    {(unlockState.expiresAt - nowMs) < 300000 ? 'Expires in ' : 'Expires in '} 
+                                    {Math.ceil((unlockState.expiresAt - nowMs) / 60000)} min — click to turn off
+                                </span>
+                            </button>
+                        )}
                         {summary && !error && (
                             <div className="flex flex-wrap items-center gap-4 xl:gap-6 text-sm">
                                 <div className="flex flex-col">

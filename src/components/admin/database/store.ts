@@ -5,10 +5,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
+import { toast } from 'sonner';
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI
 const syncDb = (db: Database | undefined) => {
-    if (db) saveGlobalDatabase(db).catch(console.error);
+    if (db) saveGlobalDatabase(db).catch((err) => {
+        console.error(err);
+        toast.error('Failed to save database configuration');
+    });
 };
 
 
@@ -578,10 +582,17 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             deleteDatabase: (id) => {
+                const dbToRestore = get().databases.find(db => db.id === id);
                 set((state) => ({
                     databases: state.databases.filter(db => db.id !== id)
                 }));
-                deleteGlobalDatabase(id).catch(console.error);
+                deleteGlobalDatabase(id).catch((err) => {
+                    console.error(err);
+                    toast.error('Failed to delete database on server');
+                    if (dbToRestore) {
+                        set((state) => ({ databases: [...state.databases, dbToRestore] }));
+                    }
+                });
             },
 
             clearDatabase: (databaseId) => {
@@ -602,7 +613,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }));
 
                 // Propagate each deletion to Prisma
-                pageIds.forEach((pid: string) => deleteGlobalPage(pid).catch(console.error));
+                pageIds.forEach((pid: string) => deleteGlobalPage(pid).catch((err) => {
+                    console.error(err);
+                    toast.error('Failed to clear some pages on server');
+                }));
             },
 
             getDatabase: (id) => {
@@ -1412,7 +1426,20 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                deleteGlobalPage(pageId).catch(console.error);
+                const pageToRestore = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+                deleteGlobalPage(pageId).catch((err) => {
+                    console.error(err);
+                    toast.error('Failed to delete row on server');
+                    if (pageToRestore) {
+                        set((state) => ({
+                            databases: state.databases.map(d =>
+                                d.id === databaseId
+                                    ? { ...d, pages: [...d.pages, pageToRestore] }
+                                    : d
+                            )
+                        }));
+                    }
+                });
             },
 
             deletePages: (databaseId, pageIds) => {
@@ -1434,7 +1461,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                     })
                 }));
                 // Propagate each deletion to Prisma
-                pageIds.forEach(pid => deleteGlobalPage(pid).catch(console.error));
+                pageIds.forEach(pid => deleteGlobalPage(pid).catch((err) => {
+                    console.error(err);
+                    toast.error('Failed to delete some rows on server');
+                }));
             },
 
             updatePageOrder: (databaseId: string, sourceIndex: number, destinationIndex: number) => {

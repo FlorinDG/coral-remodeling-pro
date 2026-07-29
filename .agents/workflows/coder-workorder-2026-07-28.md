@@ -67,6 +67,19 @@ Spec: `coral-timesheets-page.md` (layout section is **revised** — read it fres
 
 ---
 
+# 🔒 TENANT + GATING — APPLIES TO EVERY ITEM ON THIS ORDER
+Florin, 2026-07-28: *"make sure ALL OF THIS is multi-tenant capable and properly gated."*
+**Run `pd.md` → TENANT + GATING CHECKLIST (12 points) against every feature before calling it done.** Not a per-spec paragraph to skim — a list to answer.
+Highest-risk surfaces in the current queue, each already a past or potential breach:
+- **Timesheet reports / exports** — fan-out over many tables; exports must inherit the caller's RBAC scope.
+- **Approved-hours edit unlock** — a **per-tenant** setting with a **server-side** expiry check; never global, never trusted from the client.
+- **Entry detail** — locations, photos and documents served via the authenticated file route with a tenant check.
+- **Cost rates** — owner/admin only, server-enforced, never visible to a foreman in a column or an export.
+- **Article library + supplier prices** — search and creation strictly tenant-scoped; never suggest another tenant's articles.
+- **Protest mail** — the attached invoice must belong to the sending tenant; recipient resolved from that tenant's supplier record.
+- **Scheduler** — synthetic absence records inherit the same scoping as real shifts.
+- **Date range picker / filter state** — URL params are fine, but the API must still derive tenant from the session.
+
 # STANDING RULES (from `pd.md` — these now bind)
 1. **Read back every file you edit** before reporting it done; check your own imports, hook imports, declaration order, dangling references, JSX balance, prop call-sites. Then `tsc --noEmit` + lint. **Report what you verified, not what you intended.** If an edit was truncated, say so and stop.
 2. **No agent runs any schema-mutating Prisma command** (`db push`, `migrate *`, `--force-reset`, `--accept-data-loss`) against any database. Emit reviewable SQL / a migration file; Florin runs it. **`--accept-data-loss` is a stop sign, not a convenience flag** — additive columns never need it.

@@ -57,9 +57,34 @@ const cloneBlocks = (blocks: Block[]): Block[] => {
 };
 
 
+let setItemTimeout: NodeJS.Timeout | null = null;
+const pendingSetItem: Map<string, string> = new Map();
+
+const flushIdb = () => {
+    if (setItemTimeout) {
+        clearTimeout(setItemTimeout);
+        setItemTimeout = null;
+    }
+    const promises = Array.from(pendingSetItem.entries()).map(([name, value]) => set(name, value));
+    pendingSetItem.clear();
+    Promise.all(promises).catch(console.error);
+};
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', flushIdb);
+    window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            flushIdb();
+        }
+    });
+}
+
 // Custom IndexedDB storage object to bypass the 5MB browser localStorage limit
 const idbStorage: StateStorage = {
     getItem: async (name: string): Promise<string | null> => {
+        if (pendingSetItem.has(name)) {
+            return pendingSetItem.get(name)!;
+        }
         let value = await get(name);
         // Silent migration: if IndexedDB is empty but legacy data exists, instantly rescue it over
         if (!value) {
@@ -71,9 +96,16 @@ const idbStorage: StateStorage = {
         return value || null;
     },
     setItem: async (name: string, value: string): Promise<void> => {
-        await set(name, value);
+        pendingSetItem.set(name, value);
+        if (setItemTimeout) {
+            clearTimeout(setItemTimeout);
+        }
+        setItemTimeout = setTimeout(() => {
+            flushIdb();
+        }, 1500);
     },
     removeItem: async (name: string): Promise<void> => {
+        pendingSetItem.delete(name);
         await del(name);
         localStorage.removeItem(name); // Cleanup legacy trace
     },

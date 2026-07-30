@@ -62,6 +62,27 @@
 
 ---
 
+## PART 4b — 🟥 RCPT-L4-HANDOFF — the import completes but never tells the user (Florin live, 2026-07-29)
+**Symptom:** *"it uploads successfully, as it appears, but does not go to the next step."*
+
+**The pipeline is FINE — verified end to end.** `AiDocumentImportModal.tsx:38-68` creates the stub (`reviewStatus: 'In verwerking'`, `source: 'src-scan'`), uploads the file, calls `/api/scan`, and the scan **already sets the gate outcome** — `reviewStatus = 'Klaar'` or `'Na te kijken'` with a specific `reviewReason` (`api/scan/route.ts:480-507`). RCPT-L1/L2/L3 are implemented. **Do not rebuild any of that.**
+
+**What's missing is only the client handoff:**
+1. **No completion prop.** The modal exposes `onClose` only; the page renders it with `onClose` alone (`financials/expenses/invoices/page.tsx:248-251`). The parent cannot know a job finished.
+2. **The store is never told.** `createPageServerFirst` writes server-side; the Zustand store that drives the grid is not updated, so the new record is invisible until a full reload.
+3. **No navigation** to `Inbox / Te verwerken`, where the record now lives.
+4. **The per-file status throws away the useful information.** It shows a generic `Done` when the scan already returned `Klaar` / `Na te kijken` + reason.
+
+### FIX
+- [ ] **RCPT-L4b-1 · `onComplete` handoff** 🟥 — add `onComplete(summary)` to the modal; the parent refreshes the store and switches to the **Inbox / Te verwerken** view. Summary shape: `{ total, ready, needsReview, failed }`.
+- [ ] **RCPT-L4b-2 · Live store update** 🟥 — after each job, insert/refresh the created page in the store so the grid updates **as documents complete**, not on reload. (Server-first create + no client sync is the same gap that made column visibility "not stick" — see `pd.md` FORCING FUNCTIONS #1.)
+- [ ] **RCPT-L4b-3 · Show the real outcome per file** 🟧 — replace `Done` with the scan's own verdict: **`Klaar`** (green) or **`Na te kijken — <reviewReason>`** (amber, e.g. *"Bedragen komen niet overeen"*, *"Ontbrekende velden"*), `Mislukt` + error (red). The data is already in the scan response; it's the difference between "something happened" and "this one needs your eyes".
+- [ ] **RCPT-L4b-4 · A closing action, not an auto-close** 🟧 — when all jobs finish, show a one-line summary and a primary button **"Bekijk in Inbox (N)"** which closes the modal and lands on the filtered Inbox view. **Do not auto-close** — the per-file outcomes are the point of the screen (`pd.md`: the system surfaces, the user decides).
+- [ ] **RCPT-L4b-5 · Localise** 🟨 — all of the above strings in `en/nl/fr` per the LOCALISATION DIRECTIVE. The modal is currently hardcoded English (`AI Document Import`, `Drop multiple invoices or receipts`, `Click or drag files here`, `Done`).
+- **Verify:** drop one PDF → it appears in the grid within seconds without a reload → its per-file row shows `Klaar` or `Na te kijken` with the reason → "Bekijk in Inbox (1)" lands on the record → the same holds for a 5-file drop, sequentially.
+
+---
+
 ## PART 5 — EMAIL-TO-INBOX INTAKE (the Billit "mail a receipt" feature) — Planner spec 2026-07-25
 **Florin:** "Billit lets you *mail* a receipt — the system scans it and puts it in a waiting chamber for approval. It used to work for invoices too, but Peppol changed that."
 

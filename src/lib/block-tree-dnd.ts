@@ -1,6 +1,6 @@
 import { arrayMove } from '@dnd-kit/sortable';
 import type { UniqueIdentifier } from '@dnd-kit/core';
-import { Block } from '@/components/admin/database/types';
+import type { Block } from '@/components/admin/database/types';
 
 export interface FlattenedBlock extends Block {
     parentId: string | null;
@@ -57,7 +57,14 @@ export function buildBlocks(flattenedItems: FlattenedBlock[]): Block[] {
     const nodes: Record<string, { id: string; children: Block[]; [key: string]: any }> = {
         [root.id]: root,
     };
-    const items = flattenedItems.map((item) => ({ ...item, children: [] }));
+    // Containers get their children rebuilt from the flattened list, so they start empty.
+    // NON-containers (e.g. a `line` carrying subcomponents/variants) were never flattened —
+    // their children must be carried through untouched, or a single drag silently deletes
+    // billable detail from the document. Guarded by tests/block-tree.test.ts.
+    const items = flattenedItems.map((item) => ({
+        ...item,
+        children: isContainer(item.type ?? '') ? [] : (item.children ?? []),
+    }));
 
     for (const item of items) {
         const { id, children, depth, parentId, index, ...rest } = item;

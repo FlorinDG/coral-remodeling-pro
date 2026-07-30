@@ -1,4 +1,4 @@
-import { Block } from '@/components/admin/database/types';
+import type { Block } from '@/components/admin/database/types';
 
 export interface VatBreakdownItem {
     rate: number;

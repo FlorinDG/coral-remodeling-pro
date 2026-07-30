@@ -397,6 +397,22 @@ Not optional, not per-spec prose. If a line can't be answered, the feature isn't
 5. **Same rule for claims about the codebase.** Before asserting a file/line/behaviour exists, open it. Assertions from memory are how wrong plans get approved.
 > **Copy-paste directive for the coder:** *"After every file you edit: re-read the file as it now stands, check your own imports, hook imports, declaration order, dangling references, JSX balance and prop call-sites, then run `tsc --noEmit` and lint. Report what you verified, not what you intended. If an edit was truncated or partially applied, say so and stop."*
 
+### 🌐 DIRECTIVE — LOCALISATION: A STRING NEVER SHIPS WITHOUT A VALUE (Florin, 2026-07-29)
+> *"The first translation will be good, acceptable or replaceable — but there IS one, and we can always edit one key."*
+
+**The rule:** a rough Dutch word is fine. A raw key on screen (`Hr.timesheets.title`) is a shipped defect. Perfection is optional; **presence is not**. Recurred three times in two days (timesheets page, entry-detail labels, untranslated toasts) — so it is enforced by mechanism, not intention.
+
+**The how — four mechanisms, in order of strength:**
+1. **Definition of done.** A UI change is not done until every `t()` key it introduces has a value in **en + nl + fr**. Same commit, no follow-up ticket. English written properly; NL/FR may be a first-pass draft — mark doubtful ones for Florin's review, but never leave them absent.
+2. **Automated guard — `tests/i18n.test.ts` (built, running).** Fails the suite when:
+   - any `t('…')` in `src/` resolves to a key that exists in **no** locale file *(this is the check that matters — parity was green while the timesheets page rendered every label as its own variable name, because the keys existed nowhere at all)*;
+   - `en`/`nl`/`fr` key sets drift apart;
+   - any locale contains an empty string value.
+   `ro` is tracked and reported but not enforced (currently 104 keys behind). Promote it by adding `'ro'` to `ACTIVE_LOCALES`.
+3. **Fallback chain, not key-path output.** Configure next-intl's `getMessageFallback` so a missing key renders the **English** string, never the dotted path. Worst case becomes an untranslated word — noticeable but usable — instead of debug output in front of a client.
+4. **No hardcoded user-facing strings.** Every visible string goes through `t()`. Half-translated is worse than either extreme: it looks correct in EN and broken in NL. *(Seen live: "Period", "All Workers", "Flat", "By worker" hardcoded beside translated siblings; toast `Verplaatsen mislukt: document integriteit geschonden` untranslated.)*
+> **Also applies to toasts, errors, empty states, confirmations and PDF/export labels** — not just visible chrome. Error paths are the least-translated and the most-seen-under-stress.
+
 ### 🧭 DESIGN PRINCIPLE — THE USER IS THE AUTHORITY (Florin, 2026-07-28)
 > *"Automation is good, but the user remains the ultimate authority. The software is the tool, not the other way around. We build software for human use, not inviting humans for software use."*
 

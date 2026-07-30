@@ -43,6 +43,7 @@
     ".next",
     ".next.nosync",
     "scripts",
-    "mcp-server"
+    "mcp-server",
+    "tests"
   ]
 }

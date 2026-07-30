@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useCallback } from 'react';
-import { X, Upload, Loader2, Sparkles, CheckCircle, FileText, AlertCircle } from 'lucide-react';
+import { X, Upload, Loader2, Sparkles, CheckCircle, FileText, AlertCircle, Inbox, ArrowRight } from 'lucide-react';
 import { createPageServerFirst } from '@/app/actions/pages';
 import { uploadFileAction } from '@/app/actions/files';
+import { useDatabaseStore } from '../database/store';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 interface AiDocumentImportModalProps {
     onClose: () => void;
     targetDatabaseId?: string;
+    onComplete?: () => void;
 }
 
 interface UploadJob {
@@ -15,12 +19,15 @@ interface UploadJob {
     file: File;
     status: 'pending' | 'uploading' | 'processing' | 'done' | 'error';
     error?: string;
+    verdict?: string;
 }
 
-export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-expenses' }: AiDocumentImportModalProps) {
+export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-expenses', onComplete }: AiDocumentImportModalProps) {
     const [jobs, setJobs] = useState<UploadJob[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
+    const locale = useLocale();
 
     const handleFiles = useCallback(async (files: File[]) => {
         const newJobs: UploadJob[] = files.map(file => ({
@@ -65,7 +72,14 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                     throw new Error(scanData.error || "Scan failed");
                 }
 
-                setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done' } : j));
+                if (scanData.page) {
+                    useDatabaseStore.getState().addConfirmedPage(scanData.page);
+                }
+                
+                const reviewStatus = scanData.page?.properties?.reviewStatus;
+                let verdictText = reviewStatus === 'Klaar' ? 'Klaar' : (reviewStatus ? `Na te kijken — ${reviewStatus}` : 'Klaar');
+
+                setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'done', verdict: verdictText } : j));
             } catch (err: any) {
                 setJobs(prev => prev.map(j => j.id === job.id ? { ...j, status: 'error', error: err.message } : j));
             }
@@ -145,11 +159,30 @@ export default function AiDocumentImportModal({ onClose, targetDatabaseId = 'db-
                                         {job.status === 'pending' && <span className="text-xs text-neutral-500">Waiting...</span>}
                                         {job.status === 'uploading' && <><Loader2 className="w-4 h-4 text-blue-500 animate-spin" /><span className="text-xs text-blue-500">Uploading...</span></>}
                                         {job.status === 'processing' && <><Loader2 className="w-4 h-4 text-indigo-500 animate-spin" /><span className="text-xs text-indigo-500">Scanning...</span></>}
-                                        {job.status === 'done' && <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-xs text-emerald-500">Done</span></>}
+                                        {job.status === 'done' && <><CheckCircle className="w-4 h-4 text-emerald-500" /><span className="text-xs text-emerald-500 truncate max-w-[180px]">{job.verdict || 'Klaar'}</span></>}
                                         {job.status === 'error' && <><AlertCircle className="w-4 h-4 text-red-500" /><span className="text-xs text-red-500 truncate max-w-[150px]">{job.error}</span></>}
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                    {jobs.filter(j => j.status === 'done').length > 0 && (
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    if (onComplete) {
+                                        onComplete();
+                                    } else {
+                                        router.push(`/${locale}/admin/database/${targetDatabaseId}`);
+                                    }
+                                    onClose();
+                                }}
+                                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            >
+                                <Inbox className="w-4 h-4" />
+                                Bekijk in Inbox ({jobs.filter(j => j.status === 'done').length})
+                                <ArrowRight className="w-4 h-4 opacity-70" />
+                            </button>
                         </div>
                     )}
                 </div>

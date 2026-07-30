@@ -823,7 +823,11 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
             if (response.success) {
                 // Auto-transition to "sent" status
                 handleUpdateProperty('status', 'opt-sent');
-                toast.success('Factuur is succesvol verzonden!');
+                let successMsg = 'Factuur is succesvol verzonden!';
+                if (response.attachments && response.attachments.length > 0) {
+                    successMsg += ` (${response.attachments.join(', ')})`;
+                }
+                toast.success(successMsg);
                 setShowSendModal(false);
             } else {
                 toast.error(`Fout bij verzenden: ${response.error}`);

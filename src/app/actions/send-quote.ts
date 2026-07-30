@@ -49,25 +49,21 @@ export async function sendQuotationToClient(
             const tenantId = session?.user?.tenantId;
             if (!tenantId) throw new Error('Unauthorized for attachments');
 
-            const { head } = await import('@vercel/blob');
-            const token = process.env.BLOB_READ_WRITE_TOKEN;
+            const { storage } = await import('@/lib/storage');
 
             for (const key of attachmentKeys) {
-                if (!key.startsWith(`t_${tenantId}/`)) continue; // Security check
+                if (!key.startsWith(`t_${tenantId}/`)) {
+                    throw new Error(`Unauthorized attachment key: ${key}`);
+                }
                 try {
-                    const meta = await head(key, { token });
-                    if (meta?.downloadUrl) {
-                        const res = await fetch(meta.downloadUrl);
-                        if (res.ok) {
-                            const buffer = Buffer.from(await res.arrayBuffer());
-                            emailAttachments.push({
-                                filename: key.split('/').pop() || key,
-                                content: buffer
-                            });
-                        }
-                    }
+                    const buffer = await storage.read(key);
+                    emailAttachments.push({
+                        filename: key.split('/').pop() || key,
+                        content: buffer
+                    });
                 } catch (err) {
                     console.error("Failed to fetch extra attachment:", key, err);
+                    throw new Error(`Failed to attach file ${key.split('/').pop() || key}. Email not sent.`);
                 }
             }
         }
@@ -96,7 +92,11 @@ export async function sendQuotationToClient(
             throw new Error(error.message);
         }
 
-        return { success: true, messageId: data?.id };
+        return { 
+            success: true, 
+            messageId: data?.id,
+            attachments: emailAttachments.map(a => a.filename)
+        };
 
     } catch (err: any) {
         console.error("Failed to execute quotation mail dispatch:", err);

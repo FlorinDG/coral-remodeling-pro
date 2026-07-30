@@ -20,6 +20,7 @@ export interface StorageListEntry {
 export interface StorageProvider {
     put(key: string, data: string | Buffer | Blob | ArrayBuffer | ReadableStream, opts?: StoragePutOptions): Promise<StoragePutResult>;
     get(key: string): string; // Returns the serving URL (/api/files/...)
+    read(key: string): Promise<Buffer>;
     delete(key: string): Promise<void>;
     list(prefix: string): Promise<StorageListEntry[]>;
 }
@@ -58,6 +59,23 @@ export class BlobStorageProvider implements StorageProvider {
     get(key: string): string {
         // Files are served through our authenticated route
         return `/api/files/${key}`;
+    }
+
+    async read(key: string): Promise<Buffer> {
+        const listResult: any = await vercelList({
+            prefix: key,
+            limit: 1,
+            token: this.token
+        });
+        
+        const blob = listResult.blobs.find((b: any) => b.pathname === key);
+        if (!blob) throw new Error(`Blob not found: ${key}`);
+        
+        const fetchUrl = blob.downloadUrl ?? blob.url;
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error(`Failed to fetch blob from URL: ${res.statusText}`);
+        
+        return Buffer.from(await res.arrayBuffer());
     }
 
     async delete(key: string): Promise<void> {

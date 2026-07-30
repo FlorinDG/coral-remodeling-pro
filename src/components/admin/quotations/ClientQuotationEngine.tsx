@@ -544,7 +544,11 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             );
 
             if (response.success) {
-                toast.success('Offerte is succesvol verzonden!');
+                let successMsg = 'Offerte is succesvol verzonden!';
+                if (response.attachments && response.attachments.length > 0) {
+                    successMsg += ` (${response.attachments.join(', ')})`;
+                }
+                toast.success(successMsg);
                 setShowSendModal(false);
                 handleUpdateProperty('status', 'opt-sent');
             } else {

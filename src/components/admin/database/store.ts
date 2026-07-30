@@ -1442,10 +1442,9 @@ export const useDatabaseStore = create<DatabaseState>()(
             },
 
             deletePage: (databaseId, pageId) => {
-                // Capture full page for undo before deleting
-                const deletedPage = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
-                if (deletedPage) {
-                    get()._pushUndo({ type: 'deletePage', databaseId, page: { ...deletedPage } });
+                const pageToRestore = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+                if (pageToRestore) {
+                    get()._pushUndo({ type: 'deletePage', databaseId, page: { ...pageToRestore } });
                 }
 
                 set((state) => ({
@@ -1458,7 +1457,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                         };
                     })
                 }));
-                const pageToRestore = get().databases.find(d => d.id === databaseId)?.pages.find((p: Page) => p.id === pageId);
+
                 deleteGlobalPage(pageId).catch((err) => {
                     console.error(err);
                     toast.error('Failed to delete row on server');
@@ -1496,6 +1495,18 @@ export const useDatabaseStore = create<DatabaseState>()(
                 pageIds.forEach(pid => deleteGlobalPage(pid).catch((err) => {
                     console.error(err);
                     toast.error('Failed to delete some rows on server');
+                    
+                    // Attempt partial restore of the specific failed page
+                    const failedPage = deletedPages.find(p => p.id === pid);
+                    if (failedPage) {
+                        set((state) => ({
+                            databases: state.databases.map(d =>
+                                d.id === databaseId
+                                    ? { ...d, pages: [...d.pages, failedPage] }
+                                    : d
+                            )
+                        }));
+                    }
                 }));
             },
 
@@ -1669,8 +1680,23 @@ export const useDatabaseStore = create<DatabaseState>()(
             partialize: (state) => {
                 // Exclude transient runtime-only fields from persistence
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { undoStack: _undoStack, _hasHydrated: _hydrated, ...rest } = state as any;
-                return rest as any;
+                const { undoStack: _undoStack, _hasHydrated: _hydrated, databases, ...rest } = state as any;
+                
+                // MEM-3: Stop persisting huge arrays of pages for all databases.
+                // We only persist pages that have offline (dirty) edits.
+                // For those dirty pages, we only persist blocks if the blocks themselves were edited.
+                // The rest will be loaded rapidly by hydrateDatabases from Postgres.
+                const strippedDatabases = databases.map((db: any) => ({
+                    ...db,
+                    pages: db.pages
+                        .filter((p: any) => p.dirtyBase || p.dirtyBaseBlocks)
+                        .map((p: any) => ({
+                            ...p,
+                            blocks: p.dirtyBaseBlocks ? p.blocks : undefined
+                        }))
+                }));
+
+                return { ...rest, databases: strippedDatabases } as any;
             },
             migrate: (persistedState: any, version: number) => {
                 if (version < 3) {

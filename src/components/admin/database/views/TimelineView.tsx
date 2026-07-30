@@ -181,16 +181,26 @@ export default function TimelineView({ databaseId, viewId, renderTabs }: Timelin
         setDragState({ pageId, type, startX: e.clientX, originalStart: bar.start, originalEnd: bar.end, currentDeltaDays: 0 });
     }, []);
 
+    const dragStateRef = useRef(dragState);
+    const isDragging = dragState !== null;
+    
     useEffect(() => {
-        if (!dragState) return;
+        dragStateRef.current = dragState;
+    }, [dragState]);
+
+    useEffect(() => {
+        if (!isDragging) return;
         const handleMouseMove = (e: MouseEvent) => {
-            const dx = e.clientX - dragState.startX;
+            const currentDrag = dragStateRef.current;
+            if (!currentDrag) return;
+            const dx = e.clientX - currentDrag.startX;
             const totalDays = differenceInDays(timelineEnd, timelineStart) || 1;
             setDragState(prev => prev ? { ...prev, currentDeltaDays: Math.round((dx / totalWidth) * totalDays) } : null);
         };
         const handleMouseUp = () => {
-            if (!dragState || !startDatePropId) return;
-            const { pageId, type, originalStart, originalEnd, currentDeltaDays: d } = dragState;
+            const currentDrag = dragStateRef.current;
+            if (!currentDrag || !startDatePropId) return;
+            const { pageId, type, originalStart, originalEnd, currentDeltaDays: d } = currentDrag;
             if (d !== 0) {
                 if (type === 'move') {
                     updatePageProperty(databaseId, pageId, startDatePropId, addDays(originalStart, d).toISOString());
@@ -206,7 +216,7 @@ export default function TimelineView({ databaseId, viewId, renderTabs }: Timelin
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
         return () => { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); };
-    }, [dragState, databaseId, startDatePropId, endDatePropId, timelineStart, timelineEnd, totalWidth, updatePageProperty]);
+    }, [isDragging, databaseId, startDatePropId, endDatePropId, timelineStart, timelineEnd, totalWidth, updatePageProperty]);
 
     const scaleOrder: Scale[] = useMemo(() => ['day', 'week', 'month', 'quarter'], []);
     const currentScaleIdx = scaleOrder.indexOf(scale);

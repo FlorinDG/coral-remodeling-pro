@@ -54,6 +54,7 @@ interface TenantProfile {
 
 export default function ClientQuotationEngine({ id, locale }: { id: string, locale: string }) {
     const tPlaceholders = useTranslations('Admin.placeholders');
+    const t = useTranslations();
     const router = useRouter();
     const pathname = usePathname();
     const isMobileRoute = pathname.includes('/m/');
@@ -198,7 +199,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         
         if (previousState) {
             updatePageBlocks(quotationsDbIdRef.current, idRef.current, previousState);
-            toast.success('Bewerking ongedaan gemaakt');
+            toast.success(t('Action undone'));
         }
     }, [savePendingHistoryImmediate, updatePageBlocks]);
 
@@ -403,7 +404,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 pushToHistory(blocks);
                 updatePageBlocks(quotationsDbId, id, rebuilt);
             } else {
-                toast.error('Verplaatsen mislukt: document integriteit geschonden.');
+                toast.error(t('Move failed: document integrity violated.'));
             }
         }
     };
@@ -470,7 +471,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
 
     const handleSendClick = async () => {
-        if (!clientId) return toast.warning('Selecteer eerst een klant om de offerte te versturen.');
+        if (!clientId) return toast.warning(t('Please select a client first to send the quotation.'));
 
         setIsSending(true);
         try {
@@ -512,7 +513,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             };
         } catch (error) {
             console.error(error);
-            toast.error('Er is iets misgegaan tijdens het genereren van de PDF.');
+            toast.error(t('Something went wrong while generating the PDF.'));
             setIsSending(false);
         }
     };
@@ -524,7 +525,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         const projectName = betreft || quotationTitle || 'Offerte';
 
         if (!clientEmail || clientEmail === 'undefined') {
-            toast.error('Deze klant heeft geen geregistreerd e-mailadres in de database.');
+            toast.error(t('This client has no registered email address in the database.'));
             return;
         }
 
@@ -552,18 +553,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 setShowSendModal(false);
                 handleUpdateProperty('status', 'opt-sent');
             } else {
-                toast.error(`Fout bij verzenden: ${response.error}`);
+                toast.error(t('Error sending: ') + response.error);
             }
         } catch (e) {
             console.error(e);
-            toast.error('Verzenden mislukt.');
+            toast.error(t('Failed to send.'));
         } finally {
             setIsSending(false);
         }
     };
 
     const handleSaveToDrive = async () => {
-        if (!clientId) return toast.warning('Selecteer eerst een klant om op te slaan.');
+        if (!clientId) return toast.warning(t('Please select a client first to save.'));
 
         setIsSavingToDrive(true);
         try {
@@ -598,20 +599,20 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             const result = await uploadFileAction(formData, 'quotation', quotation.id);
 
             if (result.success) {
-                toast.success('Succesvol opgeslagen in dossier!');
+                toast.success(t('Successfully saved to file!'));
             } else {
-                toast.error(`Opslaan mislukt: ${result.error}`);
+                toast.error(t('Failed to save: ') + result.error);
             }
         } catch (e: unknown) {
             console.error(e);
-            toast.error('Er is iets misgegaan tijdens het opslaan: ' + (e instanceof Error ? e.message : String(e)));
+            toast.error(t('Something went wrong while saving: ') + (e instanceof Error ? e.message : String(e)));
         } finally {
             setIsSavingToDrive(false);
         }
     };
 
     const handleHandover = () => {
-        if (!clientId) return toast.warning('Selecteer eerst een klant om het project te starten.');
+        if (!clientId) return toast.warning(t('Please select a client first to start the project.'));
 
         const projectDbId = resolveDbId('db-1');
         const tasksDbId = resolveDbId('db-tasks');
@@ -629,7 +630,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         });
 
         if (!newProject) {
-            toast.error('Project aanmaken mislukt.');
+            toast.error(t('Failed to create project.'));
             return;
         }
 
@@ -654,7 +655,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
         // 3. Link the quotation to the new project
         handleUpdateProperty('project', newProject.id);
 
-        toast.success('Project aangemaakt en taken toegewezen!');
+        toast.success(t('Project created and tasks assigned!'));
 
         // 4. Navigate to the newly created project
         if (isMobileRoute) {
@@ -666,7 +667,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
 
     // Convert accepted quotation → invoice
     const handleConvertToInvoice = async () => {
-        if (!clientId) return toast.warning('Selecteer eerst een klant.');
+        if (!clientId) return toast.warning(t('Please select a client first.'));
 
         const invoiceDbId = resolveDbId('db-invoices');
         const today = new Date().toISOString().split('T')[0];
@@ -679,7 +680,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 invoiceNumber = numResult.number;
             } else {
                 console.error('getNextDocumentNumber failed for invoice:', numResult.error);
-                toast.error(`Factuur nummer kon niet worden aangemaakt: ${numResult.error || 'onbekende fout'}. Controleer de nummeringsinstellingen.`);
+                toast.error(t('Invoice number could not be created: ') + numResult.error || 'onbekende fout' + t('. Check the numbering settings.'));
                 return;
             }
 
@@ -697,7 +698,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             });
 
             if (!newInvoice) {
-                toast.error('Factuur aanmaken mislukt.');
+                toast.error(t('Failed to create invoice.'));
                 return;
             }
 
@@ -717,7 +718,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                 updatePageBlocks(invoiceDbId, newInvoice.id, cloneBlocks(blocks));
             }
 
-            toast.success('Factuur aangemaakt vanuit offerte!');
+            toast.success(t('Invoice created from quotation!'));
             if (isMobileRoute) {
                 router.push(`/${locale}/m/invoices/${newInvoice.id}`);
             } else {
@@ -725,7 +726,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             }
         } catch (e) {
             console.error('Failed to convert quotation to invoice:', e);
-            toast.error('Factuur aanmaken mislukt door een systeemfout.');
+            toast.error(t('Failed to create invoice due to a system error.'));
         }
     };
 
@@ -743,14 +744,14 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
             vatRegime: vatRegime,
         });
         if (newPage) {
-            toast.success('Addendum aangemaakt!');
+            toast.success(t('Addendum created!'));
             if (isMobileRoute) {
                 router.push(`/${locale}/m/quotes/${newPage.id}`);
             } else {
                 router.push(`/${locale}/admin/quotations/${newPage.id}`);
             }
         } else {
-            toast.error('Addendum aanmaken mislukt.');
+            toast.error(t('Failed to create addendum.'));
         }
     };
 
@@ -1190,7 +1191,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         window.open(url, '_blank');
                                     } catch (e) {
                                         console.error('[PDF] preview failed:', e);
-                                        toast.error('PDF preview mislukt.');
+                                        toast.error(t('PDF preview failed.'));
                                     } finally {
                                         setIsPreviewing(false);
                                     }
@@ -1237,7 +1238,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                         setTimeout(() => URL.revokeObjectURL(url), 10000);
                                     } catch (e) {
                                         console.error('[PDF] export failed:', e);
-                                        toast.error('PDF genereren mislukt.');
+                                        toast.error(t('PDF generation failed.'));
                                     } finally {
                                         setIsDownloading(false);
                                     }
@@ -1360,7 +1361,7 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
                                                 setTimeout(() => URL.revokeObjectURL(url), 10000);
                                             } catch (e) {
                                                 console.error('[PDF] detailed export failed:', e);
-                                                toast.error('PDF genereren mislukt.');
+                                                toast.error(t('PDF generation failed.'));
                                             } finally {
                                                 setIsDownloading(false);
                                             }

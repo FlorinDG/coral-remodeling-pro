@@ -1,5 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { routing } from './routing';
+import enMessages from '../messages/en.json';
 
 export default getRequestConfig(async ({ requestLocale }) => {
     // This typically corresponds to the `[locale]` segment
@@ -12,6 +13,15 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
     return {
         locale,
-        messages: (await import(`../messages/${locale}.json`)).default
+        messages: (await import(`../messages/${locale}.json`)).default,
+        getMessageFallback({ namespace, key, error }) {
+            const path = namespace ? `${namespace}.${key}` : key;
+            if (error.code === 'MISSING_MESSAGE') {
+                const enStr = path.split('.').reduce((obj: any, k: string) => (obj || {})[k], enMessages);
+                if (typeof enStr === 'string') return enStr;
+                return path;
+            }
+            return path;
+        }
     };
 });

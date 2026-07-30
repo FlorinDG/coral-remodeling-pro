@@ -278,25 +278,34 @@ export default async function RootLayout({
                                     .then(function(reg) {
                                       console.log('[WorkHub] SW registered, scope:', reg.scope, 'version:', appVersion);
                                       // Check for SW updates on window focus
-                                      window.addEventListener('focus', function() {
-                                        reg.update().catch(function() {});
-                                      });
-                                      // Check for updates on visibility change (tab switch back)
-                                      document.addEventListener('visibilitychange', function() {
-                                        if (document.visibilityState === 'visible') {
+                                      if (!window.__coral_sw_focus) {
+                                        window.__coral_sw_focus = true;
+                                        window.addEventListener('focus', function() {
                                           reg.update().catch(function() {});
-                                        }
-                                      });
+                                        });
+                                      }
+                                      // Check for updates on visibility change (tab switch back)
+                                      if (!window.__coral_sw_vis) {
+                                        window.__coral_sw_vis = true;
+                                        document.addEventListener('visibilitychange', function() {
+                                          if (document.visibilityState === 'visible') {
+                                            reg.update().catch(function() {});
+                                          }
+                                        });
+                                      }
                                     })
                                     .catch(function(err) {
                                       console.warn('[WorkHub] SW registration failed:', err);
                                     });
 
                                   // When a new SW takes control, reload to get fresh assets
-                                  navigator.serviceWorker.addEventListener('controllerchange', function() {
-                                    console.log('[WorkHub] New SW controller — reloading for fresh assets');
-                                    window.location.reload();
-                                  });
+                                  if (!window.__coral_sw_ctrl) {
+                                    window.__coral_sw_ctrl = true;
+                                    navigator.serviceWorker.addEventListener('controllerchange', function() {
+                                      console.log('[WorkHub] New SW controller — reloading for fresh assets');
+                                      window.location.reload();
+                                    });
+                                  }
                                 }
                                 return; // Don't kill SW on work subdomain
                               }

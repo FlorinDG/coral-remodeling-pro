@@ -1,15 +1,13 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { hrUpdate } from '@/components/time-tracker/lib/hr-api';
 import { format, parseISO } from 'date-fns';
 import { nl, fr, enUS } from 'date-fns/locale';
 import { useLocale, useTranslations } from 'next-intl';
-import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X } from 'lucide-react';
+import { Loader2, MapPin, Clock, Edit2, ShieldAlert, X, FileText } from 'lucide-react';
 
 interface TimesheetEntryDetailProps {
-    entry: any; // using any temporarily to align with frontend types
+    entry: any;
     onUpdate: (updated: any) => void;
     unlockTokenValid: boolean;
 }
@@ -20,8 +18,10 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const dateFnsLocale = locale === 'nl' ? nl : locale === 'fr' ? fr : enUS;
 
     const [loading, setLoading] = useState(false);
-    const [editingClockOut, setEditingClockOut] = useState(false);
-    const [clockOutTime, setClockOutTime] = useState('');
+    const [editing, setEditing] = useState(false);
+    const [clockInTime, setClockInTime] = useState(entry.clockInTime ? new Date(entry.clockInTime).toISOString().substring(11, 16) : '');
+    const [clockOutTime, setClockOutTime] = useState(entry.clockOutTime ? new Date(entry.clockOutTime).toISOString().substring(11, 16) : '');
+    const [projectId, setProjectId] = useState(entry.projectId || '');
     const [error, setError] = useState('');
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
@@ -44,28 +44,27 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
     const canEdit = !isApproved || unlockTokenValid;
     const isRunning = !entry.clockOutTime;
 
-    // We never silently discard open form states!
-    const showUnlockWarning = isApproved && !unlockTokenValid && editingClockOut;
+    const showUnlockWarning = isApproved && !unlockTokenValid && editing;
 
-    const handleForceClockOut = async () => {
-        if (!clockOutTime) {
-            setError('Please enter a valid time');
-            return;
-        }
-
-        const dateBase = entry.clockInTime ? new Date(entry.clockInTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        const combined = new Date(`${dateBase}T${clockOutTime}:00`);
+    const handleSave = async () => {
+        const dateBaseIn = entry.clockInTime ? new Date(entry.clockInTime).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        const dateBaseOut = entry.clockOutTime ? new Date(entry.clockOutTime).toISOString().split('T')[0] : dateBaseIn;
+        
+        const combinedIn = clockInTime ? new Date(`${dateBaseIn}T${clockInTime}:00`) : null;
+        const combinedOut = clockOutTime ? new Date(`${dateBaseOut}T${clockOutTime}:00`) : null;
 
         setLoading(true);
         setError('');
         try {
             const updated = await hrUpdate('clock-entries', entry.id, {
-                clockOutTime: combined.toISOString(),
+                clockInTime: combinedIn?.toISOString(),
+                clockOutTime: combinedOut?.toISOString(),
+                projectId: projectId || null,
             });
             onUpdate(updated);
-            setEditingClockOut(false);
+            setEditing(false);
         } catch (err: any) {
-            setError(err.message || 'Failed to force clock-out');
+            setError(err.message || 'Failed to update entry');
         } finally {
             setLoading(false);
         }
@@ -85,41 +84,50 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 {/* TIMELINE */}
                 <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('timeline', { fallback: 'Timeline' })}</h4>
-                    <div className="text-sm">
-                        <span className="font-medium text-neutral-500">In:</span> {entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm', { locale: dateFnsLocale }) : '-'}
-                    </div>
-                    <div className="text-sm">
-                        <span className="font-medium text-neutral-500">Uit:</span> {entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm', { locale: dateFnsLocale }) : <span className="text-amber-600 font-semibold">{t('running', { fallback: 'Loopt nog' })}</span>}
-                    </div>
                     
-                    {isRunning && (
-                        <div className="pt-2">
-                            {editingClockOut ? (
-                                <div className="space-y-2">
-                                    <input 
-                                        type="time" 
-                                        value={clockOutTime} 
-                                        onChange={(e) => setClockOutTime(e.target.value)}
-                                        disabled={!canEdit && !isRunning}
-                                        className="border rounded px-2 py-1 text-sm bg-background w-full"
-                                    />
-                                    {error && <div className="text-red-500 text-xs">{error}</div>}
-                                    <div className="flex gap-2">
-                                        <Button size="sm" disabled={loading || (!canEdit && !isRunning)} onClick={handleForceClockOut}>
-                                            {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('save', { fallback: 'Save' })}
-                                        </Button>
-                                        <Button size="sm" variant="ghost" onClick={() => setEditingClockOut(false)}>
-                                            <X className="w-3 h-3" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setEditingClockOut(true)}>
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    {t('forceClockOut', { fallback: 'Klok stopzetten' })}
+                    {editing ? (
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-neutral-500">{t('in', { fallback: 'In' })}:</span>
+                                <input type="time" value={clockInTime} onChange={(e) => setClockInTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="font-medium text-neutral-500">{t('uit', { fallback: 'Uit' })}:</span>
+                                <input type="time" value={clockOutTime} onChange={(e) => setClockOutTime(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-24" />
+                            </div>
+                            {error && <div className="text-red-500 text-xs">{error}</div>}
+                            <div className="flex gap-2 pt-2">
+                                <Button size="sm" disabled={loading || !canEdit} onClick={handleSave}>
+                                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : t('save', { fallback: 'Save' })}
                                 </Button>
-                            )}
+                                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+                                    <X className="w-3 h-3" />
+                                </Button>
+                            </div>
                         </div>
+                    ) : (
+                        <>
+                            <div className="text-sm">
+                                <span className="font-medium text-neutral-500">{t('in', { fallback: 'In' })}:</span> {entry.clockInTime ? format(parseISO(entry.clockInTime), 'HH:mm', { locale: dateFnsLocale }) : '-'}
+                            </div>
+                            <div className="text-sm">
+                                <span className="font-medium text-neutral-500">{t('uit', { fallback: 'Uit' })}:</span> {entry.clockOutTime ? format(parseISO(entry.clockOutTime), 'HH:mm', { locale: dateFnsLocale }) : <span className="text-amber-600 font-semibold">{t('running', { fallback: 'Loopt nog' })}</span>}
+                            </div>
+                            
+                            <div className="pt-2 flex flex-col gap-2">
+                                <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => setEditing(true)}>
+                                    {isRunning ? <Clock className="w-3 h-3 mr-1" /> : <Edit2 className="w-3 h-3 mr-1" />}
+                                    {isRunning ? t('forceClockOut', { fallback: 'Klok stopzetten' }) : t('edit', { fallback: 'Bewerken' })}
+                                </Button>
+                                
+                                {entry.shiftId && (
+                                    <Button size="sm" variant="secondary" className="w-full text-xs" onClick={() => window.open(`/api/hr/werkbon?shiftId=${entry.shiftId}`, '_blank')}>
+                                        <FileText className="w-3 h-3 mr-1" />
+                                        {t('viewWorkOrder', { fallback: 'Bekijk werkbon' })}
+                                    </Button>
+                                )}
+                            </div>
+                        </>
                     )}
                 </div>
 
@@ -129,14 +137,14 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                     <div className="text-sm flex items-start gap-1">
                         <MapPin className="w-3 h-3 mt-1 text-green-600" />
                         <div>
-                            <span className="font-medium text-neutral-500 block">Start</span>
+                            <span className="font-medium text-neutral-500 block">{t('start', { fallback: 'Start' })}</span>
                             {entry.clockInLatitude ? `${entry.clockInLatitude}, ${entry.clockInLongitude}` : '-'}
                         </div>
                     </div>
                     <div className="text-sm flex items-start gap-1">
                         <MapPin className="w-3 h-3 mt-1 text-red-600" />
                         <div>
-                            <span className="font-medium text-neutral-500 block">End</span>
+                            <span className="font-medium text-neutral-500 block">{t('end', { fallback: 'End' })}</span>
                             {entry.clockOutLatitude ? `${entry.clockOutLatitude}, ${entry.clockOutLongitude}` : '-'}
                         </div>
                     </div>
@@ -145,14 +153,23 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 {/* ATTRIBUTION & CONTENT */}
                 <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('attribution', { fallback: 'Attribution' })}</h4>
+                    
+                    {editing ? (
+                        <div className="text-sm space-y-1">
+                            <span className="font-medium text-neutral-500 block">{t('project', { fallback: 'Project' })}:</span>
+                            <input type="text" value={projectId} onChange={(e) => setProjectId(e.target.value)} disabled={!canEdit} className="border rounded px-2 py-1 text-xs w-full" placeholder="Project ID" />
+                        </div>
+                    ) : (
+                        <div className="text-sm">
+                            <span className="font-medium text-neutral-500">{t('project', { fallback: 'Project' })}:</span> {entry.projectId || t('unassigned', { fallback: 'Niet toegewezen' })}
+                        </div>
+                    )}
+                    
                     <div className="text-sm">
-                        <span className="font-medium text-neutral-500">Project:</span> {entry.projectId || t('unassigned', { fallback: 'Niet toegewezen' })}
+                        <span className="font-medium text-neutral-500">{t('billable', { fallback: 'Billable' })}:</span> {entry.billable ? t('yes', { fallback: 'Yes' }) : t('no', { fallback: 'No' })}
                     </div>
                     <div className="text-sm">
-                        <span className="font-medium text-neutral-500">Billable:</span> {entry.billable ? 'Yes' : 'No'}
-                    </div>
-                    <div className="text-sm">
-                        <span className="font-medium text-neutral-500">Source:</span> {entry.source}
+                        <span className="font-medium text-neutral-500">{t('source', { fallback: 'Source' })}:</span> {entry.source}
                     </div>
                 </div>
 
@@ -160,25 +177,25 @@ export function TimesheetEntryDetail({ entry, onUpdate, unlockTokenValid }: Time
                 <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase text-muted-foreground">{t('approval', { fallback: 'Approval' })}</h4>
                     <div className="text-sm">
-                        <span className="font-medium text-neutral-500">Status:</span> {entry.approvalStatus || 'Pending'}
+                        <span className="font-medium text-neutral-500">{t('status', { fallback: 'Status' })}:</span> {entry.approvalStatus || 'Pending'}
                     </div>
                     {entry.editedAfterApproval && (
                         <div className="mt-1 inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-md">
                             <Edit2 className="w-3 h-3" />
-                            Edited after approval
+                            {t('editedAfterApproval', { fallback: 'Edited after approval' })}
                         </div>
                     )}
                     
                     {auditLogs.length > 0 && (
                         <div className="mt-4 border-t border-border pt-4">
-                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">Audit Trail</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 mb-2">{t('auditTrail', { fallback: 'Audit Trail' })}</h4>
                             <div className="space-y-3">
                                 {auditLogs.map((log) => (
                                     <div key={log.id} className="text-xs">
                                         <div className="font-semibold text-neutral-700 dark:text-neutral-300">
                                             {format(new Date(log.createdAt), 'dd MMM HH:mm')} — {log.action}
                                         </div>
-                                        {log.reason && <div className="text-neutral-500 italic">Reason: {log.reason}</div>}
+                                        {log.reason && <div className="text-neutral-500 italic">{t('reason', { fallback: 'Reason' })}: {log.reason}</div>}
                                     </div>
                                 ))}
                             </div>

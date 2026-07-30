@@ -344,8 +344,15 @@ export async function POST(req: Request) {
                 return NextResponse.json({ error: 'Invalid client-side OCR payload.' }, { status: 400 });
             }
         } else {
-            const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
             const buffer = Buffer.from(await file.arrayBuffer());
+            const isPdfExt = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+            const isPdfMagic = buffer.length > 4 && buffer.subarray(0, 5).toString('utf-8') === '%PDF-';
+
+            if (isPdfExt && !isPdfMagic) {
+                return NextResponse.json({ error: 'File has a .pdf extension but is not a valid PDF document.' }, { status: 422 });
+            }
+
+            const isPdf = isPdfExt || isPdfMagic;
 
             // ── Validate engine-specific API key ──────────────────────────────────
             if (ocrEngine === 'GPT4O' && !process.env.OPENAI_API_KEY) {

@@ -35,7 +35,7 @@ export async function sendInvoiceToClient(
         const magicLinkUrl = `${appUrl}/${lang}/invoice/${invoiceId}`;
         const finalSubject = subjectOverride || `${t('subject_invoice', lang)}: ${projectName} — ${company}`;
 
-        const emailAttachments = [
+        const emailAttachments: any[] = [
             {
                 filename: `${t('invoice', lang)}_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
                 content: pdfBuffer,

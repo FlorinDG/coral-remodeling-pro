@@ -35,7 +35,7 @@ export async function sendQuotationToClient(
         const magicLinkUrl = `${appUrl}/${lang}/quote/${quoteId}`;
         const finalSubject = subjectOverride || `${t('subject_quote', lang)}: ${projectName} — ${company}`;
 
-        const emailAttachments = [
+        const emailAttachments: any[] = [
             {
                 filename: `${t('quotation', lang)}_${projectName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
                 content: pdfBuffer,

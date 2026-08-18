@@ -327,7 +327,18 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     const vatRegime = (quotation.properties?.['vatRegime'] as string) || '21';
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
-        const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
+        const updateRecursive = (nodes: Block[]): Block[] => {
+            return nodes.map(b => {
+                if (b.id === blockId) {
+                    return { ...b, ...updates };
+                }
+                if (b.children) {
+                    return { ...b, children: updateRecursive(b.children) };
+                }
+                return b;
+            });
+        };
+        const newBlocks = updateRecursive(blocks);
         
         const structural = isStructuralChange(blocks, newBlocks);
         if (structural) {

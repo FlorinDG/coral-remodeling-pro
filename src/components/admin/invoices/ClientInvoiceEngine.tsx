@@ -495,7 +495,18 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     };
 
     const handleUpdateBlock = (blockId: string, updates: Partial<Block>) => {
-        const newBlocks = blocks.map(b => b.id === blockId ? { ...b, ...updates } : b);
+        const updateRecursive = (nodes: Block[]): Block[] => {
+            return nodes.map(b => {
+                if (b.id === blockId) {
+                    return { ...b, ...updates };
+                }
+                if (b.children) {
+                    return { ...b, children: updateRecursive(b.children) };
+                }
+                return b;
+            });
+        };
+        const newBlocks = updateRecursive(blocks);
         updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 
@@ -549,20 +560,37 @@ export default function ClientInvoiceEngine({ id, locale }: { id: string, locale
     };
 
     const handleDeleteBlock = (blockId: string) => {
-        const newBlocks = blocks.filter(b => b.id !== blockId);
+        const deleteRecursive = (nodes: Block[]): Block[] => {
+            return nodes.filter(b => b.id !== blockId).map(b => {
+                if (b.children) {
+                    return { ...b, children: deleteRecursive(b.children) };
+                }
+                return b;
+            });
+        };
+        const newBlocks = deleteRecursive(blocks);
         updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 
     const handleDuplicateBlock = (blockId: string) => {
-        const blockToDuplicate = blocks.find(b => b.id === blockId);
-        if (!blockToDuplicate) return;
+        const duplicateRecursive = (nodes: Block[]): Block[] => {
+            const result: Block[] = [];
+            for (const b of nodes) {
+                result.push({ ...b, children: b.children ? duplicateRecursive(b.children) : undefined });
+                if (b.id === blockId) {
+                    const clone = JSON.parse(JSON.stringify(b)) as Block;
+                    const assignNewIds = (n: Block) => {
+                        n.id = crypto.randomUUID();
+                        if (n.children) n.children.forEach(assignNewIds);
+                    };
+                    assignNewIds(clone);
+                    result.push(clone);
+                }
+            }
+            return result;
+        };
 
-        const newBlock: Block = { ...blockToDuplicate, id: crypto.randomUUID() };
-        const index = blocks.findIndex(b => b.id === blockId);
-
-        const newBlocks = [...blocks];
-        newBlocks.splice(index + 1, 0, newBlock);
-
+        const newBlocks = duplicateRecursive(blocks);
         updatePageBlocks(invoicesDbId, id, newBlocks);
     };
 

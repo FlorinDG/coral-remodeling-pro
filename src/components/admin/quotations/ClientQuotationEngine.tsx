@@ -416,24 +416,42 @@ export default function ClientQuotationEngine({ id, locale }: { id: string, loca
     };
 
     const handleDeleteBlock = (blockId: string) => {
+        const deleteRecursive = (nodes: Block[]): Block[] => {
+            return nodes.filter(b => b.id !== blockId).map(b => {
+                if (b.children) {
+                    return { ...b, children: deleteRecursive(b.children) };
+                }
+                return b;
+            });
+        };
         savePendingHistoryImmediate();
         pushToHistory(blocks);
-        const newBlocks = blocks.filter(b => b.id !== blockId);
+        const newBlocks = deleteRecursive(blocks);
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 
     const handleDuplicateBlock = (blockId: string) => {
-        const blockToDuplicate = blocks.find(b => b.id === blockId);
-        if (!blockToDuplicate) return;
-
         savePendingHistoryImmediate();
         pushToHistory(blocks);
-        const newBlock: Block = { ...blockToDuplicate, id: crypto.randomUUID() };
-        const index = blocks.findIndex(b => b.id === blockId);
 
-        const newBlocks = [...blocks];
-        newBlocks.splice(index + 1, 0, newBlock);
+        const duplicateRecursive = (nodes: Block[]): Block[] => {
+            const result: Block[] = [];
+            for (const b of nodes) {
+                result.push({ ...b, children: b.children ? duplicateRecursive(b.children) : undefined });
+                if (b.id === blockId) {
+                    const clone = JSON.parse(JSON.stringify(b)) as Block;
+                    const assignNewIds = (n: Block) => {
+                        n.id = crypto.randomUUID();
+                        if (n.children) n.children.forEach(assignNewIds);
+                    };
+                    assignNewIds(clone);
+                    result.push(clone);
+                }
+            }
+            return result;
+        };
 
+        const newBlocks = duplicateRecursive(blocks);
         updatePageBlocks(quotationsDbId, id, newBlocks);
     };
 

@@ -79,7 +79,7 @@ interface QuotationRowProps {
 
 export default function QuotationRow({ block, index, onUpdate, onDelete, onDuplicate, hasLibraryAccess = true, vatCalcMode = 'lines', language = 'nl', isDraggingGlobal = false, isInactive = false, dragHandleProps, isDragging = false, depth = 0 }: QuotationRowProps) {
     const currentInactive = isInactive || !!block.isOptional;
-    const [isExpanded, setIsExpanded] = useState(true);
+    const isExpanded = !(block.properties?.isCollapsed);
     const [isPostModalOpen, setIsPostModalOpen] = useState(false);
     const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -217,8 +217,13 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
     const handleAddChild = (forcedType: BlockType = 'line') => {
         const newId = crypto.randomUUID();
         const newChild: Block = { id: newId, type: forcedType, content: '' };
-        onUpdate(block.id, { children: [newChild, ...(block.children || [])] });
-        if (!isExpanded) setIsExpanded(true); // Auto-expand when pushing new children
+        
+        const updates: Partial<Block> = { children: [newChild, ...(block.children || [])] };
+        if (!isExpanded) {
+            updates.properties = { ...block.properties, isCollapsed: false };
+        }
+        
+        onUpdate(block.id, updates);
         setTimeout(() => {
             window.dispatchEvent(new CustomEvent('focus-block', { detail: { id: newId } }));
         }, 50);
@@ -368,7 +373,7 @@ export default function QuotationRow({ block, index, onUpdate, onDelete, onDupli
                                         {renderContextMenu()}
 
                                         <button
-                                            onClick={() => block.type === 'post' ? setIsPostModalOpen(true) : setIsExpanded(!isExpanded)}
+                                            onClick={() => block.type === 'post' ? setIsPostModalOpen(true) : onUpdate(block.id, { properties: { ...block.properties, isCollapsed: isExpanded } })}
                                             title={block.type === 'post' ? 'Open Post Editor Modal' : 'Toggle Expand'}
                                             className={`p-1 rounded transition-colors ${block.type === 'post' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 hover:bg-orange-200 shadow-sm' : block.type === 'section' ? 'hover:bg-white/20 text-white' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
                                         >

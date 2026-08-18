@@ -33,6 +33,7 @@ export default function SortableQuotationRow(props: SortableQuotationRowProps) {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
+        display: (block as any).isHidden ? 'none' : 'block',
     };
 
     return (

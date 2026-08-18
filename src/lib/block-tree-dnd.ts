@@ -6,6 +6,7 @@ export interface FlattenedBlock extends Block {
     parentId: string | null;
     depth: number;
     index: number;
+    isHidden?: boolean;
 }
 
 // ── Shared Core ─────────────────────────────────────────────────────────
@@ -41,13 +42,18 @@ export function assertTreeInvariants(before: Block[], after: Block[]): boolean {
     return true;
 }
 
-export function flattenBlocks(blocks: Block[], parentId: string | null = null, depth: number = 0): FlattenedBlock[] {
+
+
+export function flattenBlocks(blocks: Block[], parentId: string | null = null, depth: number = 0, isParentCollapsed: boolean = false): FlattenedBlock[] {
     return blocks.reduce<FlattenedBlock[]>((acc, block, index) => {
         const isContainer = block.type === 'section' || block.type === 'subsection' || block.type === 'post';
+        const isCollapsed = block.properties?.isCollapsed === true;
+        const hidden = isParentCollapsed;
+        
         return [
             ...acc,
-            { ...block, parentId, depth, index },
-            ...(isContainer ? flattenBlocks(block.children || [], block.id, depth + 1) : []),
+            { ...block, parentId, depth, index, isHidden: hidden },
+            ...(isContainer ? flattenBlocks(block.children || [], block.id, depth + 1, hidden || isCollapsed) : []),
         ];
     }, []);
 }

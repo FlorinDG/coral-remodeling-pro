@@ -151,6 +151,8 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 
 import PromotionalBanner from "@/components/PromotionalBanner";
 import CookieConsent from "@/components/CookieConsent";
+import { ServiceWorkerManager } from "@/components/ServiceWorkerManager";
+import { GlobalErrorHandler } from "@/components/GlobalErrorHandler";
 
 export default async function RootLayout({
     children,
@@ -255,80 +257,11 @@ export default async function RootLayout({
                         {/* Promotional banner — main site only */}
                         {isMainSite && <PromotionalBanner locale={locale} />}
                         <CookieConsent />
+                        <GlobalErrorHandler />
+                        <ServiceWorkerManager appVersion={process.env.VERCEL_GIT_COMMIT_SHA || 'dev'} />
                         {children}
                     </ThemeProvider>
                 </NextIntlClientProvider>
-
-                {/* Service worker lifecycle: WorkHub gets versioned SW, others get SW purge.
-                    CROSS-7c: Pass deploy SHA as cache-bust param. Listen for controllerchange
-                    to auto-reload when a new SW activates. Check for updates on focus. */}
-                <script
-                    dangerouslySetInnerHTML={{
-                        __html: `
-                          (function() {
-                            try {
-                              var subdomain = window.location.hostname;
-                              var appVersion = '${process.env.VERCEL_GIT_COMMIT_SHA || 'dev'}';
-
-                              // WorkHub subdomain: register versioned service worker
-                              if (subdomain.startsWith('work.')) {
-                                if ('serviceWorker' in navigator) {
-                                  // Pass version as query param — SW uses it for cache name
-                                  navigator.serviceWorker.register('/sw-workhub.js?v=' + appVersion, { scope: '/' })
-                                    .then(function(reg) {
-                                      console.log('[WorkHub] SW registered, scope:', reg.scope, 'version:', appVersion);
-                                      // Check for SW updates on window focus
-                                      if (!window.__coral_sw_focus) {
-                                        window.__coral_sw_focus = true;
-                                        window.addEventListener('focus', function() {
-                                          reg.update().catch(function() {});
-                                        });
-                                      }
-                                      // Check for updates on visibility change (tab switch back)
-                                      if (!window.__coral_sw_vis) {
-                                        window.__coral_sw_vis = true;
-                                        document.addEventListener('visibilitychange', function() {
-                                          if (document.visibilityState === 'visible') {
-                                            reg.update().catch(function() {});
-                                          }
-                                        });
-                                      }
-                                    })
-                                    .catch(function(err) {
-                                      console.warn('[WorkHub] SW registration failed:', err);
-                                    });
-
-                                  // When a new SW takes control, reload to get fresh assets
-                                  if (!window.__coral_sw_ctrl) {
-                                    window.__coral_sw_ctrl = true;
-                                    navigator.serviceWorker.addEventListener('controllerchange', function() {
-                                      console.log('[WorkHub] New SW controller — reloading for fresh assets');
-                                      window.location.reload();
-                                    });
-                                  }
-                                }
-                                return; // Don't kill SW on work subdomain
-                              }
-
-                              // Other subdomains: kill stale service workers
-                              if ('serviceWorker' in navigator) {
-                                navigator.serviceWorker.getRegistrations().then(function(regs) {
-                                  regs.forEach(function(r) { r.unregister(); });
-                                });
-                              }
-                              // Nuke all Cache API entries on ERP/storefront subdomains
-                              if (subdomain.startsWith('app.') || subdomain.startsWith('coral-sys.')) {
-                                if ('caches' in window) {
-                                  caches.keys().then(function(keys) {
-                                    keys.forEach(function(key) { caches.delete(key); });
-                                  });
-                                }
-                              }
-                            } catch(e) {}
-                          })();
-                        `
-                    }}
-                />
             </body>
         </html>
     );

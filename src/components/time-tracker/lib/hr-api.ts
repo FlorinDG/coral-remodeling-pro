@@ -1,3 +1,4 @@
+import { withRetry } from "@/lib/fetch-retry";
 /**
  * HR API client — replaces direct DB calls.
  * All hooks import from here instead of the legacy client.
@@ -20,7 +21,8 @@ export async function hrFetch<T = any>(entity: string, options?: RequestInit): P
 
 export async function hrList<T = any>(entity: string, params?: Record<string, string>): Promise<T[]> {
     const qs = params ? '?' + new URLSearchParams(params).toString() : '';
-    return hrFetch<T[]>(`${entity}${qs}`);
+    // Only wrap idempotent GET requests in withRetry
+    return withRetry(() => hrFetch<T[]>(`${entity}${qs}`));
 }
 
 export async function hrCreate<T = any>(entity: string, data: Record<string, any>): Promise<T> {

@@ -69,9 +69,19 @@ export const FEATURE_FLAGS = {
     // ── Payments ─────────────────────────────────────────────────────
     /** Stripe online payments for sales invoices (opt-in) */
     STRIPE_PAYMENTS:                { minTier: 'PRO'         as Tier },
+
+    // ── Architecture & Performance ─────────────────────────────────────
+    /** MEM-3: Lazy database page loading (schemas + lightweight index on initial render, pages on-demand) */
+    LAZY_DATABASE_PAGES:            { minTier: 'FREE'        as Tier },
 } as const;
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS;
+
+/**
+ * Architectural toggle for MEM-3 lazy database page loading.
+ * Can be reverted instantly in production by setting NEXT_PUBLIC_LAZY_DATA=false.
+ */
+export const IS_LAZY_DATA_ENABLED = process.env.NEXT_PUBLIC_LAZY_DATA !== 'false';
 
 /**
  * Check whether a given plan tier has access to a feature.

@@ -3,7 +3,7 @@ import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
 import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState, PageIndexEntry } from './types';
-import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
+import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage, getDatabasePages } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
 
@@ -145,6 +145,12 @@ interface DatabaseState {
     getPageIndexEntry: (id: string) => PageIndexEntry | undefined;
     getPageIndexEntriesByDatabase: (databaseId: string) => PageIndexEntry[];
 
+    // MEM-3: Lazy database page loading
+    loadedDatabaseIds: string[];
+    loadingDatabaseIds: string[];
+    loadDatabasePages: (databaseId: string) => Promise<Page[]>;
+    isDatabasePagesLoaded: (databaseId: string) => boolean;
+
     // Sync status (for UI indicators)
     syncQueue: SyncEntry[];
     sessionTenantId: string | null;
@@ -216,11 +222,16 @@ interface DatabaseState {
     isSchemaUngated: (databaseId: string) => boolean;
 }
 
+// In-flight request map for single-flight deduplication
+const inFlightPageLoads = new Map<string, Promise<Page[]>>();
+
 export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
             databases: [],
             pageIndex: {} as Record<string, PageIndexEntry>,
+            loadedDatabaseIds: [] as string[],
+            loadingDatabaseIds: [] as string[],
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
             syncQueue: [] as SyncEntry[],
@@ -230,6 +241,117 @@ export const useDatabaseStore = create<DatabaseState>()(
             undoStack: [],
             ungatedSchemas: [] as string[],
             _hasHydrated: false,
+
+            isDatabasePagesLoaded: (databaseId: string) => {
+                return get().loadedDatabaseIds.includes(databaseId);
+            },
+
+            loadDatabasePages: async (databaseId: string) => {
+                // If already loaded and not currently in flight, return existing in-memory pages
+                if (get().loadedDatabaseIds.includes(databaseId) && !inFlightPageLoads.has(databaseId)) {
+                    const db = get().databases.find(d => d.id === databaseId);
+                    return db?.pages || [];
+                }
+
+                // Single-flight deduplication: return existing in-flight promise if available
+                const existingPromise = inFlightPageLoads.get(databaseId);
+                if (existingPromise) {
+                    return existingPromise;
+                }
+
+                // Mark loading
+                set(s => ({
+                    loadingDatabaseIds: s.loadingDatabaseIds.includes(databaseId)
+                        ? s.loadingDatabaseIds
+                        : [...s.loadingDatabaseIds, databaseId]
+                }));
+
+                const fetchPromise = (async () => {
+                    try {
+                        const serverPages = await getDatabasePages(databaseId);
+
+                        // Dirty-page protection (Unsynced offline edits in syncQueue must never be evicted)
+                        const syncQueue = get().syncQueue || [];
+                        const dirtyPageIds = new Set(syncQueue.map(e => e.pageId));
+                        const localDb = get().databases.find(d => d.id === databaseId);
+                        const localPagesMap = new Map<string, Page>();
+                        localDb?.pages.forEach((p: Page) => {
+                            if (dirtyPageIds.has(p.id)) localPagesMap.set(p.id, p);
+                        });
+
+                        const mergedPages: Page[] = [];
+                        const serverIds = new Set<string>();
+
+                        serverPages.forEach((sp: Page) => {
+                            serverIds.add(sp.id);
+                            if (localPagesMap.has(sp.id)) {
+                                const localPage = localPagesMap.get(sp.id)!;
+                                mergedPages.push({
+                                    ...localPage,
+                                    baseUpdatedAt: sp.updatedAt,
+                                    blocksVersion: (sp as any).blocksVersion ?? localPage.blocksVersion,
+                                });
+                            } else {
+                                mergedPages.push({
+                                    ...sp,
+                                    baseUpdatedAt: sp.updatedAt,
+                                    blocksVersion: (sp as any).blocksVersion ?? 1,
+                                });
+                            }
+                        });
+
+                        // Keep local pages in syncQueue that haven't reached server yet
+                        localPagesMap.forEach((lp, pid) => {
+                            if (!serverIds.has(pid)) {
+                                mergedPages.push(lp);
+                            }
+                        });
+
+                        // Update store and sync pageIndex
+                        set(state => {
+                            const nextLoaded = state.loadedDatabaseIds.includes(databaseId)
+                                ? state.loadedDatabaseIds
+                                : [...state.loadedDatabaseIds, databaseId];
+                            const nextLoading = state.loadingDatabaseIds.filter(id => id !== databaseId);
+
+                            const updatedIndex = { ...state.pageIndex };
+                            mergedPages.forEach((p: Page) => {
+                                updatedIndex[p.id] = {
+                                    id: p.id,
+                                    databaseId,
+                                    title: extractPageTitle(p.properties),
+                                    updatedAt: p.updatedAt,
+                                };
+                            });
+
+                            return {
+                                databases: state.databases.map(db =>
+                                    db.id === databaseId
+                                        ? { ...db, pages: mergedPages }
+                                        : db
+                                ),
+                                loadedDatabaseIds: nextLoaded,
+                                loadingDatabaseIds: nextLoading,
+                                pageIndex: updatedIndex,
+                            };
+                        });
+
+                        return mergedPages;
+                    } catch (err: any) {
+                        set(s => ({
+                            loadingDatabaseIds: s.loadingDatabaseIds.filter(id => id !== databaseId)
+                        }));
+                        console.error(`[loadDatabasePages] Failed for ${databaseId}:`, err);
+                        toast.error(`Kon gegevens voor database niet laden: ${err?.message || 'Fout'}`);
+                        throw err;
+                    } finally {
+                        inFlightPageLoads.delete(databaseId);
+                    }
+                })();
+
+                inFlightPageLoads.set(databaseId, fetchPromise);
+                return fetchPromise;
+            },
 
             setSession: (tenantId, userId) => {
                 const currentTenant = get().sessionTenantId;
@@ -282,7 +404,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 return out;
             },
 
-            clearStore: () => set({ databases: [], pageIndex: {}, syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [], isProcessingQueue: false }),
+            clearStore: () => set({ databases: [], pageIndex: {}, loadedDatabaseIds: [], loadingDatabaseIds: [], syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [], isProcessingQueue: false }),
 
             _enqueueSync: (pageId, databaseId, parentDb) => {
                 set(s => {
@@ -680,7 +802,12 @@ export const useDatabaseStore = create<DatabaseState>()(
                     });
                 });
 
-                set({ databases: merged, pageIndex: nextIndex });
+                const dbsWithPages = merged.filter(d => d.pages && d.pages.length > 0).map(d => d.id);
+                set(s => ({
+                    databases: merged,
+                    pageIndex: nextIndex,
+                    loadedDatabaseIds: Array.from(new Set([...s.loadedDatabaseIds, ...dbsWithPages]))
+                }));
             },
 
             createDatabase: (name, description, specificId, properties) => {
@@ -1934,7 +2061,7 @@ export const useDatabaseStore = create<DatabaseState>()(
             partialize: (state) => {
                 // Exclude transient runtime-only fields from persistence
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { undoStack: _undoStack, _hasHydrated: _hydrated, databases, ...rest } = state as any;
+                const { undoStack: _undoStack, _hasHydrated: _hydrated, loadingDatabaseIds: _loading, databases, ...rest } = state as any;
                 
                 // MEM-3: Stop persisting huge arrays of pages for all databases.
                 // We only persist pages that have offline (dirty) edits.
@@ -2072,6 +2199,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                     ...currentState,
                     databases: mergedDbs,
                     pageIndex: persistedState.pageIndex ? { ...persistedState.pageIndex, ...currentState.pageIndex } : currentState.pageIndex,
+                    loadedDatabaseIds: mergedDbs.filter(d => d.pages && d.pages.length > 0).map(d => d.id),
                     _hasHydrated: true
                 };
             },

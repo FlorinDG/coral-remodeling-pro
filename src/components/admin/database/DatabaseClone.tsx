@@ -51,6 +51,18 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
   const { data: session } = useSession();
   const resolvedId = resolveDbId(databaseId);
   const database = useDatabaseStore(state => state.getDatabase(resolvedId));
+  const loadDatabasePages = useDatabaseStore(state => state.loadDatabasePages);
+  const isPagesLoaded = useDatabaseStore(state => state.loadedDatabaseIds.includes(resolvedId));
+  const isPagesLoading = useDatabaseStore(state => state.loadingDatabaseIds.includes(resolvedId));
+
+  useEffect(() => {
+    if (resolvedId && !isPagesLoaded && !isPagesLoading) {
+      loadDatabasePages(resolvedId).catch((err) => {
+        console.error(`[DatabaseClone] Failed to load pages for ${resolvedId}:`, err);
+      });
+    }
+  }, [resolvedId, isPagesLoaded, isPagesLoading, loadDatabasePages]);
+
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -948,11 +960,11 @@ export default function DatabaseClone({ databaseId, headerExtra, hideViewTabs, h
     useDatabaseStore.getState().createDatabase(parsedName, undefined, resolvedId, customProps);
   }, [database, databaseId, resolvedId, autoInitializing, hydrated, clientFetchAttempted, DEFAULT_PROPERTIES_MAP]);
 
-  if (!database) {
+  if (!database || (!isPagesLoaded && isPagesLoading && (!database.pages || database.pages.length === 0))) {
     return (
       <div className="flex flex-col items-center justify-center h-[500px] bg-white dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-white/10 p-8 text-center space-y-4 m-6">
         <div className="w-8 h-8 border-2 border-neutral-300 border-t-[var(--brand-color,#d35400)] rounded-full animate-spin" />
-        <p className="text-sm text-neutral-500 font-medium">Initializing workspace...</p>
+        <p className="text-sm text-neutral-500 font-medium">{!database ? 'Initializing workspace...' : 'Loading database records...'}</p>
       </div>
     );
   }

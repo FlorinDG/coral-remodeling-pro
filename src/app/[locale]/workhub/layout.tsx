@@ -1,5 +1,6 @@
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import WorkHubShell from "@/components/workhub/WorkHubShell";
 import { WorkHubProviders } from "@/components/workhub/WorkHubProviders";
@@ -77,7 +78,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
                     creditnoteNextNumber: true,
                 },
             }),
-            getGlobalDatabases(),
+            IS_LAZY_DATA_ENABLED ? getGlobalDatabaseSchemas() : getGlobalDatabases(),
             getGlobalPageIndex()
         ]);
 

@@ -1,5 +1,6 @@
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -97,9 +98,9 @@ export default async function MobileLayout({ children }: { children: React.React
         }
 
         try {
-            databases = await getGlobalDatabases();
+            databases = IS_LAZY_DATA_ENABLED ? await getGlobalDatabaseSchemas() : await getGlobalDatabases();
         } catch (e) {
-            console.error('[m/layout] getGlobalDatabases() failed:', e);
+            console.error('[m/layout] database fetch failed:', e);
         }
 
         try {

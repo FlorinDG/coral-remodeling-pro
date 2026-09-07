@@ -681,7 +681,18 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);
     const database = useDatabaseStore(state => state.getDatabase(databaseId));
     const updatePropertyOrder = useDatabaseStore(state => state.updatePropertyOrder);
+    const isPagesLoaded = useDatabaseStore(state => state.loadedDatabaseIds.includes(databaseId));
+    const isPagesLoading = useDatabaseStore(state => state.loadingDatabaseIds.includes(databaseId));
+    const loadDatabasePages = useDatabaseStore(state => state.loadDatabasePages);
     const page = database?.pages.find(p => p.id === pageId);
+
+    useEffect(() => {
+        if (databaseId && !isPagesLoaded && !isPagesLoading && !page) {
+            loadDatabasePages(databaseId).catch(err => {
+                console.error(`[PageModal] Failed to load pages for ${databaseId}:`, err);
+            });
+        }
+    }, [databaseId, isPagesLoaded, isPagesLoading, page, loadDatabasePages]);
 
     const [suggestions, setSuggestions] = useState<{ zip: string; city: string }[]>([]);
     const [activePropId, setActivePropId] = useState<string | null>(null);
@@ -755,8 +766,22 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
         toast.success('Bedrijfsgegevens geïmporteerd uit VIES register.', { id: 'vat-import' });
     };
 
-    if (!database || !page) return null;
     if (typeof document === 'undefined') return null;
+    if (!database) return null;
+    if (!page) {
+        if (isPagesLoading) {
+            return createPortal(
+                <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/50">
+                    <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 flex items-center gap-3 shadow-xl border border-neutral-200 dark:border-white/10">
+                        <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                        <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">Loading record...</span>
+                    </div>
+                </div>,
+                document.body
+            );
+        }
+        return null;
+    }
 
     return createPortal(
         <div 

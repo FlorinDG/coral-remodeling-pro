@@ -1,6 +1,7 @@
 import AdminLayout from "@/components/AdminLayout";
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalDatabaseSchemas, getGlobalPageIndex } from "@/app/actions/global-databases";
+import { IS_LAZY_DATA_ENABLED } from "@/lib/feature-flags";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -143,12 +144,12 @@ export default async function Layout({ children }: { children: React.ReactNode }
             console.error(`[layout] Tenant read FAILED for ${tenantId}:`, e);
         }
 
-        // 3b. Global databases — non-critical
+        // 3b. Global databases — schemas only under MEM-3 lazy loading flag
         try {
-            databases = await getGlobalDatabases();
-            console.log(`[layout] Databases: ${databases.length} loaded, ${databases.reduce((n, d) => n + d.pages.length, 0)} total pages`);
+            databases = IS_LAZY_DATA_ENABLED ? await getGlobalDatabaseSchemas() : await getGlobalDatabases();
+            console.log(`[layout] Databases: ${databases.length} loaded (lazy=${IS_LAZY_DATA_ENABLED}), ${databases.reduce((n, d) => n + d.pages.length, 0)} total pages`);
         } catch (e) {
-            console.error('[layout] getGlobalDatabases() FAILED:', e);
+            console.error('[layout] database fetch FAILED:', e);
         }
 
         try {

@@ -132,6 +132,155 @@ export async function getGlobalDatabases(): Promise<Database[]> {
 }
 
 /**
+ * MEM-3b: Fetches all database schemas for the tenant WITHOUT page content.
+ * Returns empty pages arrays, reducing server memory and network payload by 95%+.
+ */
+export async function getGlobalDatabaseSchemas(): Promise<Database[]> {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId) return [];
+
+    try {
+        const dbs = await prisma.globalDatabase.findMany({
+            where: { tenantId },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        return dbs.map(db => ({
+            id: db.id,
+            name: db.name,
+            description: db.description || null,
+            icon: db.icon || null,
+            coverImage: db.coverImage || null,
+            isTemplate: db.isTemplate,
+            folderId: db.folderId || undefined,
+            properties: (db.properties as unknown as Property[]) || [],
+            views: (db.views as unknown as DatabaseView[]) || [],
+            activeFilters: (db.activeFilters as any) || [],
+            activeSorts: (db.activeSorts as any) || [],
+            ownerId: db.ownerId,
+            createdAt: db.createdAt.toISOString(),
+            updatedAt: db.updatedAt.toISOString(),
+            pages: []
+        }));
+    } catch (e) {
+        console.error("Error fetching global database schemas:", e);
+        throw e;
+    }
+}
+
+/**
+ * MEM-3b: Fetches pages on-demand for a single database.
+ * Strict security verification: refuses untrusted databaseId if tenantId does not match.
+ * Never swallows errors with silent empty array to avoid false grid wipeouts.
+ */
+export async function getDatabasePages(databaseId: string): Promise<Page[]> {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId) {
+        throw new Error('Unauthorized');
+    }
+
+    // Security: verify database ownership before querying its pages
+    const parentDb = await prisma.globalDatabase.findUnique({
+        where: { id: databaseId },
+        select: { tenantId: true }
+    });
+
+    if (!parentDb || parentDb.tenantId !== tenantId) {
+        console.error(`[getDatabasePages] Security refusal: databaseId ${databaseId} owned by ${parentDb?.tenantId}, requested by tenant ${tenantId}`);
+        throw new Error('Unauthorized database access');
+    }
+
+    let allowedProjectIds: string[] | null = null;
+    const userId = session?.user?.id;
+    if (userId) {
+        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+        if (dbUser?.role === 'TENANT_ENTERPRISE_WORKFORCE') {
+            const shifts = await prisma.scheduledShift.findMany({
+                where: { userId, tenantId },
+                select: { projectId: true }
+            });
+            allowedProjectIds = Array.from(new Set(shifts.map(s => s.projectId).filter(Boolean))) as string[];
+        }
+    }
+
+    try {
+        const pages = await prisma.globalPage.findMany({
+            where: { databaseId },
+            orderBy: { order: 'asc' }
+        });
+
+        let mappedPages: Page[] = pages.map(page => ({
+            id: page.id,
+            databaseId: page.databaseId,
+            coverImage: page.coverImage || null,
+            icon: page.icon || null,
+            properties: (page.properties as any) || {},
+            order: page.order ?? 0,
+            blocks: (page.blocks as unknown as Block[]) || [],
+            blocksVersion: page.blocksVersion ?? 1,
+            driveFolderId: page.driveFolderId || undefined,
+            createdBy: page.createdBy,
+            lastEditedBy: page.lastEditedBy,
+            createdAt: page.createdAt.toISOString(),
+            updatedAt: page.updatedAt.toISOString(),
+        }));
+
+        // Scope db-1 (projects) for workforce
+        if ((databaseId === 'db-1' || databaseId.startsWith('db-1')) && allowedProjectIds !== null) {
+            mappedPages = mappedPages.filter(p => allowedProjectIds!.includes(p.id));
+        }
+
+        // Auto-sync employees into db-hr as virtual pages
+        if (databaseId === 'db-hr') {
+            const HR_EMPLOYEE_ROLES = [
+                'APP_MANAGER', 'TENANT_ADMIN', 'TENANT_FREE', 'TENANT_PRO_OWNER',
+                'TENANT_PRO_EMPLOYEE', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER',
+                'TENANT_ENTERPRISE_EMPLOYEE', 'TENANT_ENTERPRISE_WORKFORCE', 'BOOKKEEPING',
+                'TEAMLEAD', 'PROJECT_MANAGER', 'HR_OFFICER', 'OFFERTES'
+            ];
+            const users = await prisma.user.findMany({
+                where: { tenantId, role: { in: HR_EMPLOYEE_ROLES } },
+                select: { id: true, name: true, email: true, phone: true, role: true, employeeStatus: true, createdAt: true, updatedAt: true }
+            });
+
+            const virtualPages: Page[] = users.map(u => ({
+                id: u.id,
+                databaseId,
+                coverImage: null,
+                icon: 'user',
+                properties: {
+                    'title': u.name || 'Untitled',
+                    'prop-email': u.email,
+                    'prop-phone': u.phone || '',
+                    'prop-role': u.role,
+                    'status': u.employeeStatus === 'ON_LEAVE' ? 'opt-leave' : (u.employeeStatus === 'INACTIVE' ? 'opt-inactive' : 'opt-active')
+                },
+                order: 0,
+                blocks: [],
+                blocksVersion: 1,
+                driveFolderId: undefined,
+                createdBy: 'system',
+                lastEditedBy: 'system',
+                createdAt: u.createdAt.toISOString(),
+                updatedAt: u.updatedAt.toISOString(),
+            }));
+
+            const pageMap = new Map<string, Page>();
+            mappedPages.forEach(p => pageMap.set(p.id, p));
+            virtualPages.forEach(p => pageMap.set(p.id, p));
+            mappedPages = Array.from(pageMap.values());
+        }
+
+        return mappedPages;
+    } catch (e) {
+        console.error(`[getDatabasePages] Error fetching pages for ${databaseId}:`, e);
+        throw e;
+    }
+}
+
+/**
  * MEM-3a: Fetches lightweight index of all pages across databases.
  * Uses queryRaw for GlobalPage to extract only id, databaseId, title, updatedAt
  * without pulling megabytes of properties/blocks JSON.

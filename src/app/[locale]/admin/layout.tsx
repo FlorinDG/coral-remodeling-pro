@@ -1,6 +1,6 @@
 import AdminLayout from "@/components/AdminLayout";
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -60,6 +60,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
     // ── 3. Tenant DB read — INDEPENDENT of database fetch ───────────────────
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
+    let pageIndex: Awaited<ReturnType<typeof getGlobalPageIndex>> = [];
 
     if (tenantId) {
         // 3a. Tenant profile — critical path
@@ -149,13 +150,20 @@ export default async function Layout({ children }: { children: React.ReactNode }
         } catch (e) {
             console.error('[layout] getGlobalDatabases() FAILED:', e);
         }
+
+        try {
+            pageIndex = await getGlobalPageIndex();
+            console.log(`[layout] Page index: ${pageIndex.length} entries loaded`);
+        } catch (e) {
+            console.error('[layout] getGlobalPageIndex() FAILED:', e);
+        }
     } else {
         console.warn('[layout] No tenantId — skipping all DB reads');
     }
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={session?.user?.id} />
+            <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
             <AdminLayout
                 activeModules={activeModules}
                 planType={planType}

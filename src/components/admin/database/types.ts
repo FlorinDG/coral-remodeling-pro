@@ -136,6 +136,13 @@ export interface Page {
     blocksVersion: number; // Integer version for optimistic concurrency control on blocks
 }
 
+export interface PageIndexEntry {
+    id: string;
+    databaseId: string;
+    title: string;
+    updatedAt: string;
+}
+
 export type FilterOperator =
     | 'equals'
     | 'does_not_equal'

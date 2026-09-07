@@ -2,10 +2,15 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, StateStorage } from 'zustand/middleware';
 import { get, set, del } from 'idb-keyval';
 import { v4 as uuidv4 } from 'uuid';
-import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState } from './types';
+import { Database, Page, Property, PropertyValue, PropertyType, PropertyConfig, FilterRule, SortRule, Block, DatabaseView, ViewPropertyState, PageIndexEntry } from './types';
 import { saveGlobalDatabase, saveGlobalPage, saveGlobalPagesBatch, deleteGlobalDatabase, deleteGlobalPage } from '@/app/actions/global-databases';
 import { generateOGM } from '@/lib/ogm';
 import { toast } from 'sonner';
+
+export function extractPageTitle(properties: Record<string, any> | undefined): string {
+    if (!properties) return 'Untitled';
+    return String(properties.title || properties.name || properties['prop-title'] || 'Untitled');
+}
 
 // Helper to fire-and-forget syncs to Postgres without blocking UI
 const syncDb = (db: Database | undefined) => {
@@ -133,6 +138,13 @@ interface DatabaseState {
     databases: Database[];
     hydrateDatabases: (databases: Database[]) => void;
 
+    // MEM-3: Lightweight global page index
+    pageIndex: Record<string, PageIndexEntry>;
+    hydratePageIndex: (entries: PageIndexEntry[]) => void;
+    getPageLabel: (id: string, propertyId?: string) => string | undefined;
+    getPageIndexEntry: (id: string) => PageIndexEntry | undefined;
+    getPageIndexEntriesByDatabase: (databaseId: string) => PageIndexEntry[];
+
     // Sync status (for UI indicators)
     syncQueue: SyncEntry[];
     sessionTenantId: string | null;
@@ -208,13 +220,14 @@ export const useDatabaseStore = create<DatabaseState>()(
     persist(
         (set, get) => ({
             databases: [],
+            pageIndex: {} as Record<string, PageIndexEntry>,
             syncStatus: 'idle' as const,
             pendingSyncs: 0,
             syncQueue: [] as SyncEntry[],
             isProcessingQueue: false,
             sessionTenantId: null as string | null,
             sessionUserId: null as string | null,
-            undoStack: [] as UndoEntry[],
+            undoStack: [],
             ungatedSchemas: [] as string[],
             _hasHydrated: false,
 
@@ -226,7 +239,50 @@ export const useDatabaseStore = create<DatabaseState>()(
                 set({ sessionTenantId: tenantId, sessionUserId: userId });
             },
 
-            clearStore: () => set({ databases: [], syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [], isProcessingQueue: false }),
+            hydratePageIndex: (entries) => {
+                set(state => {
+                    const nextIndex = { ...state.pageIndex };
+                    entries.forEach(e => {
+                        const local = nextIndex[e.id];
+                        if (!local || new Date(e.updatedAt) >= new Date(local.updatedAt)) {
+                            nextIndex[e.id] = e;
+                        }
+                    });
+                    return { pageIndex: nextIndex };
+                });
+            },
+
+            getPageLabel: (id: string, propertyId?: string) => {
+                const entry = get().pageIndex[id];
+                if (entry && !propertyId) return entry.title;
+                for (const db of get().databases) {
+                    const p = db.pages.find((page: Page) => page.id === id);
+                    if (p) {
+                        if (propertyId && p.properties[propertyId]) {
+                            return String(p.properties[propertyId]);
+                        }
+                        return extractPageTitle(p.properties);
+                    }
+                }
+                return entry?.title;
+            },
+
+            getPageIndexEntry: (id: string) => {
+                return get().pageIndex[id];
+            },
+
+            getPageIndexEntriesByDatabase: (databaseId: string) => {
+                const out: PageIndexEntry[] = [];
+                const index = get().pageIndex;
+                for (const id in index) {
+                    if (index[id].databaseId === databaseId) {
+                        out.push(index[id]);
+                    }
+                }
+                return out;
+            },
+
+            clearStore: () => set({ databases: [], pageIndex: {}, syncQueue: [], syncStatus: 'idle', pendingSyncs: 0, undoStack: [], isProcessingQueue: false }),
 
             _enqueueSync: (pageId, databaseId, parentDb) => {
                 set(s => {
@@ -400,26 +456,40 @@ export const useDatabaseStore = create<DatabaseState>()(
                 switch (entry.type) {
                     case 'updatePageProperty': {
                         // Restore old property value
-                        set(s => ({
-                            databases: s.databases.map(db => {
-                                if (db.id !== entry.databaseId) return db;
-                                return {
-                                    ...db,
-                                    pages: db.pages.map((page: Page) => {
-                                        if (page.id !== entry.pageId) return page;
-                                        const newProps = { ...page.properties, [entry.propertyId]: entry.oldValue };
-                                        const dirtyBase = page.dirtyBase || page.properties;
-                                        return {
-                                            ...page,
-                                            properties: newProps,
-                                            dirtyBase,
-                                            updatedAt: new Date().toISOString()
-                                        };
-                                    }),
-                                    updatedAt: new Date().toISOString()
-                                };
-                            })
-                        }));
+                        set(s => {
+                            const nextIndex = { ...s.pageIndex };
+                            if (nextIndex[entry.pageId]) {
+                                const targetPage = s.databases.find(d => d.id === entry.databaseId)?.pages.find((p: Page) => p.id === entry.pageId);
+                                if (targetPage) {
+                                    nextIndex[entry.pageId] = {
+                                        ...nextIndex[entry.pageId],
+                                        title: extractPageTitle({ ...targetPage.properties, [entry.propertyId]: entry.oldValue }),
+                                        updatedAt: new Date().toISOString(),
+                                    };
+                                }
+                            }
+                            return {
+                                databases: s.databases.map(db => {
+                                    if (db.id !== entry.databaseId) return db;
+                                    return {
+                                        ...db,
+                                        pages: db.pages.map((page: Page) => {
+                                            if (page.id !== entry.pageId) return page;
+                                            const newProps = { ...page.properties, [entry.propertyId]: entry.oldValue };
+                                            const dirtyBase = page.dirtyBase || page.properties;
+                                            return {
+                                                ...page,
+                                                properties: newProps,
+                                                dirtyBase,
+                                                updatedAt: new Date().toISOString()
+                                            };
+                                        }),
+                                        updatedAt: new Date().toISOString()
+                                    };
+                                }),
+                                pageIndex: nextIndex
+                            };
+                        });
                         const db = get().databases.find(d => d.id === entry.databaseId);
                         if (db) syncPage(db.pages.find((p: Page) => p.id === entry.pageId));
                         break;
@@ -436,7 +506,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }),
                                     updatedAt: new Date().toISOString()
                                 };
-                            })
+                            }),
+                            pageIndex: {
+                                ...s.pageIndex,
+                                [entry.page.id]: {
+                                    id: entry.page.id,
+                                    databaseId: entry.databaseId,
+                                    title: extractPageTitle(entry.page.properties),
+                                    updatedAt: new Date().toISOString(),
+                                }
+                            }
                         }));
                         syncPage(entry.page);
                         break;
@@ -447,7 +526,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                             databases: s.databases.map(db => {
                                 if (db.id !== entry.databaseId) return db;
                                 return { ...db, pages: [...db.pages, entry.page], updatedAt: new Date().toISOString() };
-                            })
+                            }),
+                            pageIndex: {
+                                ...s.pageIndex,
+                                [entry.page.id]: {
+                                    id: entry.page.id,
+                                    databaseId: entry.databaseId,
+                                    title: extractPageTitle(entry.page.properties),
+                                    updatedAt: entry.page.updatedAt,
+                                }
+                            }
                         }));
                         const parentDb = get().databases.find(d => d.id === entry.databaseId);
                         syncPage(entry.page, parentDb);
@@ -455,11 +543,21 @@ export const useDatabaseStore = create<DatabaseState>()(
                     }
                     case 'deletePages': {
                         // Re-insert all deleted pages
+                        const restoredIndex: Record<string, PageIndexEntry> = {};
+                        entry.pages.forEach((p: Page) => {
+                            restoredIndex[p.id] = {
+                                id: p.id,
+                                databaseId: entry.databaseId,
+                                title: extractPageTitle(p.properties),
+                                updatedAt: p.updatedAt,
+                            };
+                        });
                         set(s => ({
                             databases: s.databases.map(db => {
                                 if (db.id !== entry.databaseId) return db;
                                 return { ...db, pages: [...db.pages, ...entry.pages], updatedAt: new Date().toISOString() };
-                            })
+                            }),
+                            pageIndex: { ...s.pageIndex, ...restoredIndex }
                         }));
                         const parentDb2 = get().databases.find(d => d.id === entry.databaseId);
                         syncPagesBatch(entry.pages, parentDb2);
@@ -467,11 +565,21 @@ export const useDatabaseStore = create<DatabaseState>()(
                     }
                     case 'clearDatabase': {
                         // Re-insert all cleared pages
+                        const restoredIndex2: Record<string, PageIndexEntry> = {};
+                        entry.pages.forEach((p: Page) => {
+                            restoredIndex2[p.id] = {
+                                id: p.id,
+                                databaseId: entry.databaseId,
+                                title: extractPageTitle(p.properties),
+                                updatedAt: p.updatedAt,
+                            };
+                        });
                         set(s => ({
                             databases: s.databases.map(db => {
                                 if (db.id !== entry.databaseId) return db;
                                 return { ...db, pages: [...db.pages, ...entry.pages], updatedAt: new Date().toISOString() };
-                            })
+                            }),
+                            pageIndex: { ...s.pageIndex, ...restoredIndex2 }
                         }));
                         const parentDb3 = get().databases.find(d => d.id === entry.databaseId);
                         syncPagesBatch(entry.pages, parentDb3);
@@ -556,7 +664,23 @@ export const useDatabaseStore = create<DatabaseState>()(
                     };
                 });
 
-                set({ databases: merged });
+                // Synchronize pageIndex for all merged pages
+                const nextIndex = { ...get().pageIndex };
+                merged.forEach(db => {
+                    db.pages.forEach((p: Page) => {
+                        const local = nextIndex[p.id];
+                        if (!local || new Date(p.updatedAt) >= new Date(local.updatedAt)) {
+                            nextIndex[p.id] = {
+                                id: p.id,
+                                databaseId: p.databaseId,
+                                title: extractPageTitle(p.properties),
+                                updatedAt: p.updatedAt,
+                            };
+                        }
+                    });
+                });
+
+                set({ databases: merged, pageIndex: nextIndex });
             },
 
             createDatabase: (name, description, specificId, properties) => {
@@ -615,14 +739,37 @@ export const useDatabaseStore = create<DatabaseState>()(
 
             deleteDatabase: (id) => {
                 const dbToRestore = get().databases.find(db => db.id === id);
-                set((state) => ({
-                    databases: state.databases.filter(db => db.id !== id)
-                }));
+                set((state) => {
+                    const nextIndex = { ...state.pageIndex };
+                    Object.keys(nextIndex).forEach(pid => {
+                        if (nextIndex[pid]?.databaseId === id) {
+                            delete nextIndex[pid];
+                        }
+                    });
+                    return {
+                        databases: state.databases.filter(db => db.id !== id),
+                        pageIndex: nextIndex
+                    };
+                });
                 deleteGlobalDatabase(id).catch((err) => {
                     console.error(err);
                     toast.error('Failed to delete database on server');
                     if (dbToRestore) {
-                        set((state) => ({ databases: [...state.databases, dbToRestore] }));
+                        set((state) => {
+                            const restoredIndex = { ...state.pageIndex };
+                            dbToRestore.pages.forEach((p: Page) => {
+                                restoredIndex[p.id] = {
+                                    id: p.id,
+                                    databaseId: id,
+                                    title: extractPageTitle(p.properties),
+                                    updatedAt: p.updatedAt || new Date().toISOString()
+                                };
+                            });
+                            return {
+                                databases: [...state.databases, dbToRestore],
+                                pageIndex: restoredIndex
+                            };
+                        });
                     }
                 });
             },
@@ -636,13 +783,18 @@ export const useDatabaseStore = create<DatabaseState>()(
                 }
                 const pageIds = allPages.map((p: Page) => p.id);
 
-                set((state) => ({
-                    databases: state.databases.map(d =>
-                        d.id === databaseId
-                            ? { ...d, pages: [] }
-                            : d
-                    )
-                }));
+                set((state) => {
+                    const nextIndex = { ...state.pageIndex };
+                    pageIds.forEach((pid: string) => delete nextIndex[pid]);
+                    return {
+                        databases: state.databases.map(d =>
+                            d.id === databaseId
+                                ? { ...d, pages: [] }
+                                : d
+                        ),
+                        pageIndex: nextIndex
+                    };
+                });
 
                 // Propagate each deletion to Prisma
                 pageIds.forEach((pid: string) => deleteGlobalPage(pid).catch((err) => {
@@ -942,7 +1094,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 pages: [...d.pages, newPage!],
                                 updatedAt: new Date().toISOString()
                             };
-                        })
+                        }),
+                        pageIndex: {
+                            ...state.pageIndex,
+                            [newPage!.id]: {
+                                id: newPage!.id,
+                                databaseId,
+                                title: extractPageTitle(newPage!.properties),
+                                updatedAt: newPage!.updatedAt,
+                            }
+                        }
                     };
                 });
 
@@ -1010,7 +1171,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 pages: [...db.pages, page],
                                 updatedAt: new Date().toISOString()
                             };
-                        })
+                        }),
+                        pageIndex: {
+                            ...state.pageIndex,
+                            [page.id]: {
+                                id: page.id,
+                                databaseId: page.databaseId,
+                                title: extractPageTitle(page.properties),
+                                updatedAt: page.updatedAt,
+                            }
+                        }
                     };
                 });
                 // Already in Postgres — no syncPage needed
@@ -1079,7 +1249,19 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 pages: [...db.pages, ...newPages],
                                 updatedAt: new Date().toISOString()
                             };
-                        })
+                        }),
+                        pageIndex: {
+                            ...state.pageIndex,
+                            ...createdPages.reduce((acc, p) => {
+                                acc[p.id] = {
+                                    id: p.id,
+                                    databaseId: p.databaseId,
+                                    title: extractPageTitle(p.properties),
+                                    updatedAt: p.updatedAt,
+                                };
+                                return acc;
+                            }, {} as Record<string, PageIndexEntry>)
+                        }
                     };
                 });
                 const parentDb = get().databases.find(d => d.id === databaseId);
@@ -1112,7 +1294,19 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 pages: newPages,
                                 updatedAt: new Date().toISOString()
                             };
-                        })
+                        }),
+                        pageIndex: {
+                            ...state.pageIndex,
+                            ...updatedPages.reduce((acc, p) => {
+                                acc[p.id] = {
+                                    id: p.id,
+                                    databaseId: p.databaseId,
+                                    title: extractPageTitle(p.properties),
+                                    updatedAt: p.updatedAt,
+                                };
+                                return acc;
+                            }, {} as Record<string, PageIndexEntry>)
+                        }
                     };
                 });
                 const parentDb = get().databases.find(d => d.id === databaseId);
@@ -1128,8 +1322,10 @@ export const useDatabaseStore = create<DatabaseState>()(
                     get()._pushUndo({ type: 'updatePageProperty', databaseId, pageId, propertyId, oldValue: oldPage.properties[propertyId] });
                 }
 
-                set((state) => ({
-                    databases: state.databases.map(db => {
+                let updatedTitle: string | undefined;
+                const now = new Date().toISOString();
+                set((state) => {
+                    const newDatabases = state.databases.map(db => {
                         if (db.id !== databaseId) return db;
                         return {
                             ...db,
@@ -1394,16 +1590,37 @@ export const useDatabaseStore = create<DatabaseState>()(
                                     }
                                 });
 
+                                 updatedTitle = extractPageTitle(newProps);
+
                                 return {
                                     ...page,
                                     properties: newProps,
-                                    updatedAt: new Date().toISOString()
+                                    updatedAt: now
                                 };
                             }),
-                            updatedAt: new Date().toISOString()
+                            updatedAt: now
                         };
-                    })
-                }));
+                    });
+
+                    const finalTitle = updatedTitle ?? (
+                        (propertyId === 'title' || propertyId === 'name' || propertyId === 'prop-title')
+                            ? String(value || 'Untitled')
+                            : (state.pageIndex[pageId]?.title || 'Untitled')
+                    );
+
+                    return {
+                        databases: newDatabases,
+                        pageIndex: {
+                            ...state.pageIndex,
+                            [pageId]: {
+                                id: pageId,
+                                databaseId,
+                                title: finalTitle,
+                                updatedAt: now,
+                            }
+                        }
+                    };
+                });
                 const db = get().databases.find(d => d.id === databaseId);
                 if (db) {
                     syncPage(db.pages.find((p: Page) => p.id === pageId));
@@ -1417,24 +1634,33 @@ export const useDatabaseStore = create<DatabaseState>()(
                     get()._pushUndo({ type: 'updatePage', databaseId, page: { ...oldPage } });
                 }
 
-                set((state) => ({
-                    databases: state.databases.map(db => {
-                        if (db.id !== databaseId) return db;
-                        return {
-                            ...db,
-                            pages: db.pages.map((page: Page) => {
-                                if (page.id !== pageId) return page;
-                                return {
-                                    ...page,
-                                    blocks,
-                                    dirtyBaseBlocks: true,
-                                    updatedAt: new Date().toISOString()
-                                };
-                            }),
-                            updatedAt: new Date().toISOString()
-                        };
-                    })
-                }));
+                set((state) => {
+                    const now = new Date().toISOString();
+                    const existingEntry = state.pageIndex[pageId];
+                    const nextIndex = existingEntry
+                        ? { ...state.pageIndex, [pageId]: { ...existingEntry, updatedAt: now } }
+                        : state.pageIndex;
+
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== databaseId) return db;
+                            return {
+                                ...db,
+                                pages: db.pages.map((page: Page) => {
+                                    if (page.id !== pageId) return page;
+                                    return {
+                                        ...page,
+                                        blocks,
+                                        dirtyBaseBlocks: true,
+                                        updatedAt: now
+                                    };
+                                }),
+                                updatedAt: now
+                            };
+                        }),
+                        pageIndex: nextIndex
+                    };
+                });
                 const db = get().databases.find(d => d.id === databaseId);
                 if (db) {
                     syncPage(db.pages.find((p: Page) => p.id === pageId));
@@ -1447,16 +1673,21 @@ export const useDatabaseStore = create<DatabaseState>()(
                     get()._pushUndo({ type: 'deletePage', databaseId, page: { ...pageToRestore } });
                 }
 
-                set((state) => ({
-                    databases: state.databases.map(db => {
-                        if (db.id !== databaseId) return db;
-                        return {
-                            ...db,
-                            pages: db.pages.filter((page: Page) => page.id !== pageId),
-                            updatedAt: new Date().toISOString()
-                        };
-                    })
-                }));
+                set((state) => {
+                    const nextIndex = { ...state.pageIndex };
+                    delete nextIndex[pageId];
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== databaseId) return db;
+                            return {
+                                ...db,
+                                pages: db.pages.filter((page: Page) => page.id !== pageId),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }),
+                        pageIndex: nextIndex
+                    };
+                });
 
                 deleteGlobalPage(pageId).catch((err) => {
                     console.error(err);
@@ -1467,7 +1698,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 d.id === databaseId
                                     ? { ...d, pages: [...d.pages, pageToRestore] }
                                     : d
-                            )
+                            ),
+                            pageIndex: {
+                                ...state.pageIndex,
+                                [pageToRestore.id]: {
+                                    id: pageToRestore.id,
+                                    databaseId: pageToRestore.databaseId,
+                                    title: extractPageTitle(pageToRestore.properties),
+                                    updatedAt: pageToRestore.updatedAt,
+                                }
+                            }
                         }));
                     }
                 });
@@ -1481,16 +1721,21 @@ export const useDatabaseStore = create<DatabaseState>()(
                     get()._pushUndo({ type: 'deletePages', databaseId, pages: deletedPages });
                 }
 
-                set((state) => ({
-                    databases: state.databases.map(db => {
-                        if (db.id !== databaseId) return db;
-                        return {
-                            ...db,
-                            pages: db.pages.filter((page: Page) => !pageIds.includes(page.id)),
-                            updatedAt: new Date().toISOString()
-                        };
-                    })
-                }));
+                set((state) => {
+                    const nextIndex = { ...state.pageIndex };
+                    pageIds.forEach(pid => delete nextIndex[pid]);
+                    return {
+                        databases: state.databases.map(db => {
+                            if (db.id !== databaseId) return db;
+                            return {
+                                ...db,
+                                pages: db.pages.filter((page: Page) => !pageIds.includes(page.id)),
+                                updatedAt: new Date().toISOString()
+                            };
+                        }),
+                        pageIndex: nextIndex
+                    };
+                });
                 // Propagate each deletion to Prisma
                 pageIds.forEach(pid => deleteGlobalPage(pid).catch((err) => {
                     console.error(err);
@@ -1504,7 +1749,16 @@ export const useDatabaseStore = create<DatabaseState>()(
                                 d.id === databaseId
                                     ? { ...d, pages: [...d.pages, failedPage] }
                                     : d
-                            )
+                            ),
+                            pageIndex: {
+                                ...state.pageIndex,
+                                [failedPage.id]: {
+                                    id: failedPage.id,
+                                    databaseId: failedPage.databaseId,
+                                    title: extractPageTitle(failedPage.properties),
+                                    updatedAt: failedPage.updatedAt,
+                                }
+                            }
                         }));
                     }
                 }));
@@ -1817,6 +2071,7 @@ export const useDatabaseStore = create<DatabaseState>()(
                 return {
                     ...currentState,
                     databases: mergedDbs,
+                    pageIndex: persistedState.pageIndex ? { ...persistedState.pageIndex, ...currentState.pageIndex } : currentState.pageIndex,
                     _hasHydrated: true
                 };
             },

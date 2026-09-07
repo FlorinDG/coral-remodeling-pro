@@ -1,7 +1,7 @@
 'use server';
 
 import prisma from '@/lib/prisma';
-import { Database, Page, Property, DatabaseView, Block } from '@/components/admin/database/types';
+import { Database, Page, Property, DatabaseView, Block, PageIndexEntry } from '@/components/admin/database/types';
 import { revalidatePath } from 'next/cache';
 
 import { auth } from '@/auth';
@@ -130,6 +130,62 @@ export async function getGlobalDatabases(): Promise<Database[]> {
         return [];
     }
 }
+
+/**
+ * MEM-3a: Fetches lightweight index of all pages across databases.
+ * Uses queryRaw for GlobalPage to extract only id, databaseId, title, updatedAt
+ * without pulling megabytes of properties/blocks JSON.
+ */
+export async function getGlobalPageIndex(): Promise<PageIndexEntry[]> {
+    const session = await auth();
+    const tenantId = session?.user?.tenantId;
+    if (!tenantId) return [];
+
+    try {
+        const rows = await prisma.$queryRaw<Array<{ id: string; databaseId: string; title: string | null; updatedAt: Date }>>`
+            SELECT p.id, p."databaseId",
+                   COALESCE(p.properties->>'title', p.properties->>'name', p.properties->>'prop-title', 'Untitled') AS title,
+                   p."updatedAt"
+            FROM "GlobalPage" p
+            JOIN "GlobalDatabase" d ON d.id = p."databaseId"
+            WHERE d."tenantId" = ${tenantId}
+        `;
+
+        const indexEntries: PageIndexEntry[] = rows.map(r => ({
+            id: r.id,
+            databaseId: r.databaseId,
+            title: r.title || 'Untitled',
+            updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt),
+        }));
+
+        // Include virtual users for db-hr so employee relation chips resolve
+        const HR_EMPLOYEE_ROLES = [
+            'APP_MANAGER', 'TENANT_ADMIN', 'TENANT_FREE', 'TENANT_PRO_OWNER',
+            'TENANT_PRO_EMPLOYEE', 'TENANT_ENTERPRISE_OWNER', 'TENANT_ENTERPRISE_MANAGER',
+            'TENANT_ENTERPRISE_EMPLOYEE', 'TENANT_ENTERPRISE_WORKFORCE', 'BOOKKEEPING',
+            'TEAMLEAD', 'PROJECT_MANAGER', 'HR_OFFICER', 'OFFERTES'
+        ];
+        const users = await prisma.user.findMany({
+            where: { tenantId, role: { in: HR_EMPLOYEE_ROLES } },
+            select: { id: true, name: true, email: true, updatedAt: true }
+        });
+
+        users.forEach(u => {
+            indexEntries.push({
+                id: u.id,
+                databaseId: 'db-hr',
+                title: u.name || u.email || 'Untitled',
+                updatedAt: u.updatedAt.toISOString(),
+            });
+        });
+
+        return indexEntries;
+    } catch (e) {
+        console.error('[getGlobalPageIndex] Failed to fetch page index:', e);
+        return [];
+    }
+}
+
 
 /**
  * Upserts a Database configuration (its schema, properties, views).

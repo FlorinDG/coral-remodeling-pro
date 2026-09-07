@@ -201,13 +201,18 @@ function InlinePropertyRenderer({ databaseId, page, property, updatePageProperty
     if (property.type === 'relation') {
         const relDbId = property.config?.relationDatabaseId;
         const relDb = getDatabase(relDbId);
+        const pageIndex = useDatabaseStore.getState().pageIndex;
         const relPageId = page.properties[property.id];
-        let relName = Array.isArray(relPageId) ? relPageId.join(', ') : relPageId;
-        if (relDb && relPageId) {
+        let relName = '';
+        if (relPageId) {
+            const resolveTitle = (rawId: any) => {
+                const id = String(rawId);
+                return pageIndex[id]?.title || relDb?.pages.find((p: any) => p.id === id)?.properties['title'] || id;
+            };
             if (Array.isArray(relPageId)) {
-                relName = relPageId.map(id => relDb.pages.find((p: any) => p.id === id)?.properties['title'] || id).join(', ');
+                relName = (relPageId as any[]).map(resolveTitle).join(', ');
             } else {
-                relName = relDb.pages.find((p: any) => p.id === relPageId)?.properties['title'] || relPageId;
+                relName = resolveTitle(relPageId);
             }
         }
         return (
@@ -573,11 +578,20 @@ export default function KanbanView({ databaseId, viewId, renderTabs, hardFilter,
         if (!isValidGroup || !groupProperty) return [];
         if (groupProperty.type === 'select' || groupProperty.type === 'multi_select') return groupProperty.config?.options || [];
         if (groupProperty.type === 'relation') {
-            const relDb = getDatabase(groupProperty.config?.relationDatabaseId as string);
-            if (!relDb) return [];
-            return relDb.pages.map(p => ({
-                id: p.id,
-                name: String(p.properties['title'] || p.id),
+            const relDbId = groupProperty.config?.relationDatabaseId as string;
+            const relDb = getDatabase(relDbId);
+            if (relDb?.pages && relDb.pages.length > 0) {
+                return relDb.pages.map(p => ({
+                    id: p.id,
+                    name: String(p.properties['title'] || p.id),
+                    color: 'default'
+                }));
+            }
+            const pageIndex = useDatabaseStore.getState().pageIndex;
+            const indexEntries = Object.values(pageIndex).filter(e => e.databaseId === relDbId);
+            return indexEntries.map(e => ({
+                id: e.id,
+                name: e.title || e.id,
                 color: 'default'
             }));
         }

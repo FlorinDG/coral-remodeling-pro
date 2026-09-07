@@ -1,5 +1,5 @@
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import WorkHubShell from "@/components/workhub/WorkHubShell";
 import { WorkHubProviders } from "@/components/workhub/WorkHubProviders";
@@ -28,7 +28,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
     let lockedDbIds: Record<string, string> = {};
 
     try {
-        const [tenant, databases] = await Promise.all([
+        const [tenant, databases, pageIndex] = await Promise.all([
             prisma.tenant.findUnique({
                 where: { id: tenantId },
                 select: {
@@ -77,7 +77,8 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
                     creditnoteNextNumber: true,
                 },
             }),
-            getGlobalDatabases()
+            getGlobalDatabases(),
+            getGlobalPageIndex()
         ]);
 
         let fullTenant = null;
@@ -97,7 +98,7 @@ export default async function WorkHubLayout({ children }: { children: React.Reac
         return (
             <AuthProvider>
                 <WorkHubProviders>
-                    <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={session?.user?.id} />
+                    <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={session?.user?.id} />
                     <WorkHubShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                         {children}
                     </WorkHubShell>

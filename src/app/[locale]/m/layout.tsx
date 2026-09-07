@@ -1,5 +1,5 @@
 import AuthProvider from "@/components/AuthProvider";
-import { getGlobalDatabases } from "@/app/actions/global-databases";
+import { getGlobalDatabases, getGlobalPageIndex } from "@/app/actions/global-databases";
 import GlobalDatabaseSyncer from "@/components/admin/database/GlobalDatabaseSyncer";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
@@ -14,6 +14,7 @@ export default async function MobileLayout({ children }: { children: React.React
     let tenantId: string | null             = null;
     let userId: string | null               = null;
     let databases: Awaited<ReturnType<typeof getGlobalDatabases>> = [];
+    let pageIndex: Awaited<ReturnType<typeof getGlobalPageIndex>> = [];
 
     try {
         const session = await auth();
@@ -100,11 +101,17 @@ export default async function MobileLayout({ children }: { children: React.React
         } catch (e) {
             console.error('[m/layout] getGlobalDatabases() failed:', e);
         }
+
+        try {
+            pageIndex = await getGlobalPageIndex();
+        } catch (e) {
+            console.error('[m/layout] getGlobalPageIndex() failed:', e);
+        }
     }
 
     return (
         <AuthProvider>
-            <GlobalDatabaseSyncer databases={databases} tenantId={tenantId} userId={userId} />
+            <GlobalDatabaseSyncer databases={databases} pageIndex={pageIndex} tenantId={tenantId} userId={userId} />
             <MobileShell activeModules={activeModules} planType={planType} lockedDbIds={lockedDbIds} tenant={fullTenant}>
                 {children}
             </MobileShell>

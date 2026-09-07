@@ -122,24 +122,46 @@ const PageRelationEditor = ({ databaseId, pageId, property }: { databaseId: stri
         };
     }, []);
 
+    const pageIndex = useDatabaseStore(state => state.pageIndex);
     const displayPropertyId = property.config?.relationDisplayPropertyId || 'title';
 
     const selectedTitles = React.useMemo(() => {
-        if (!targetDatabase || value.length === 0) return [];
+        if (value.length === 0) return [];
         return value.map(id => {
-            const dp = targetDatabase.pages.find(p => p.id === id);
+            const indexEntry = pageIndex[id];
+            if (indexEntry?.title) return indexEntry.title;
+            const dp = targetDatabase?.pages.find(p => p.id === id);
             return (dp?.properties[displayPropertyId] as string) || 'Untitled';
         });
-    }, [targetDatabase, value, displayPropertyId]);
+    }, [pageIndex, targetDatabase, value, displayPropertyId]);
 
     const filteredPages = React.useMemo(() => {
-        if (!targetDatabase) return [];
-        if (!search.trim()) return targetDatabase.pages;
-        return targetDatabase.pages.filter(p => {
-            const title = String(p.properties[displayPropertyId] || 'Untitled');
-            return title.toLowerCase().includes(search.toLowerCase());
-        });
-    }, [targetDatabase, search, displayPropertyId]);
+        if (targetDatabase?.pages && targetDatabase.pages.length > 0) {
+            if (!search.trim()) return targetDatabase.pages;
+            return targetDatabase.pages.filter(p => {
+                const title = String(p.properties[displayPropertyId] || p.properties?.title || 'Untitled');
+                return title.toLowerCase().includes(search.toLowerCase());
+            });
+        }
+        if (!targetDbId) return [];
+        const indexEntries = Object.values(pageIndex).filter(e => e.databaseId === targetDbId);
+        const filteredEntries = search.trim()
+            ? indexEntries.filter(e => (e.title || '').toLowerCase().includes(search.toLowerCase()))
+            : indexEntries;
+
+        return filteredEntries.map(e => ({
+            id: e.id,
+            databaseId: e.databaseId,
+            order: 0,
+            properties: { [displayPropertyId]: e.title, title: e.title },
+            blocks: [],
+            blocksVersion: 1,
+            createdAt: e.updatedAt,
+            updatedAt: e.updatedAt,
+            createdBy: 'system',
+            lastEditedBy: 'system'
+        }));
+    }, [targetDatabase, pageIndex, targetDbId, search, displayPropertyId]);
 
     return (
         <div ref={ref} className="relative w-full h-full flex items-center">

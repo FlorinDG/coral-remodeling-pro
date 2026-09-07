@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useDatabaseStore } from './store';
-import { Database, Page } from './types';
+import { Database, Page, PageIndexEntry } from './types';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import {
@@ -19,13 +19,15 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface GlobalDatabaseSyncerProps {
     databases: Database[];
+    pageIndex?: PageIndexEntry[];
     tenantId?: string | null;
     userId?: string | null;
 }
 
-export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: GlobalDatabaseSyncerProps) {
+export default function GlobalDatabaseSyncer({ databases, pageIndex, tenantId, userId }: GlobalDatabaseSyncerProps) {
     const hasHydrated = useRef(false);
     const serverDbs = useRef(databases);
+    const serverPageIndex = useRef(pageIndex);
     const [conflict, setConflict] = useState<{ page: Page, lastEditedBy?: string } | null>(null);
     const [serverPage, setServerPage] = useState<any>(null);
     const [isLoadingServerPage, setIsLoadingServerPage] = useState(false);
@@ -36,7 +38,8 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
     const [fieldResolutions, setFieldResolutions] = useState<Record<string, boolean>>({});
     useEffect(() => {
         serverDbs.current = databases;
-    }, [databases]);
+        serverPageIndex.current = pageIndex;
+    }, [databases, pageIndex]);
 
     // Update session info in store
     useEffect(() => {
@@ -120,6 +123,9 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
             hasHydrated.current = true;
             console.log(`[GlobalDatabaseSyncer] Hydrating ${dbs.length} databases: ${dbs.map(d => d.id).join(', ')}`);
             useDatabaseStore.getState().hydrateDatabases(dbs);
+            if (serverPageIndex.current && serverPageIndex.current.length > 0) {
+                useDatabaseStore.getState().hydratePageIndex(serverPageIndex.current);
+            }
 
             // SECURITY OVERRIDE: 
             // Forcefully overwrite db-1's and db-tasks' structural blueprints
@@ -194,6 +200,15 @@ export default function GlobalDatabaseSyncer({ databases, tenantId, userId }: Gl
                     pages: db.pages.map(p => p.id === newPage.id ? newPage : p)
                 }
             }),
+            pageIndex: {
+                ...state.pageIndex,
+                [newPage.id]: {
+                    id: newPage.id,
+                    databaseId: conflict.page.databaseId,
+                    title: (newPage.properties.title || newPage.properties.name || newPage.properties['prop-title'] || 'Untitled') as string,
+                    updatedAt: newPage.updatedAt,
+                }
+            },
             syncQueue: [...state.syncQueue, { 
                 type: 'upsert' as const, 
                 databaseId: conflict.page.databaseId, 

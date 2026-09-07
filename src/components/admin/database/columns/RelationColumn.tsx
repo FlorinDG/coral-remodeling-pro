@@ -72,29 +72,57 @@ const RelationComponent = ({ rowData, setRowData, focus, active, stopEditing, re
 
     // Subscribe to the target database to fetch titles
     const targetDatabase = useDatabaseStore(state => state.getDatabase(relationDatabaseId));
+    const pageIndex = useDatabaseStore(state => state.pageIndex);
 
     const selectedItems = useMemo(() => {
-        if (!targetDatabase || value.length === 0) return [];
+        if (value.length === 0) return [];
         return value.map(id => {
-            const page = targetDatabase.pages.find(p => p.id === id);
+            // Priority 1: pageIndex (O(1) lookup, works even if target database pages are not loaded!)
+            const indexEntry = pageIndex[id];
+            if (indexEntry?.title) {
+                return { id, title: indexEntry.title };
+            }
+            // Priority 2: fallback to targetDatabase in-memory pages
+            const page = targetDatabase?.pages.find(p => p.id === id);
+            const pageTitle = page?.properties?.[displayPropertyId] || page?.properties?.title || page?.properties?.name || page?.properties?.['prop-title'];
             return {
                 id,
-                title: (page?.properties[displayPropertyId] as string) || 'Untitled'
+                title: (pageTitle as string) || 'Untitled'
             };
         });
-    }, [targetDatabase, value, displayPropertyId]);
+    }, [pageIndex, targetDatabase, value, displayPropertyId]);
 
     const selectedTitles = useMemo(() => selectedItems.map(item => item.title), [selectedItems]);
 
     const filteredTargetPages = useMemo(() => {
-        if (!targetDatabase) return [];
-        if (!searchQuery.trim()) return targetDatabase.pages;
+        // If targetDatabase has loaded pages, use them
+        if (targetDatabase?.pages && targetDatabase.pages.length > 0) {
+            if (!searchQuery.trim()) return targetDatabase.pages;
+            return targetDatabase.pages.filter(page => {
+                const title = String(page.properties[displayPropertyId] || page.properties?.title || 'Untitled');
+                return title.toLowerCase().includes(searchQuery.toLowerCase());
+            });
+        }
 
-        return targetDatabase.pages.filter(page => {
-            const title = String(page.properties[displayPropertyId] || 'Untitled');
-            return title.toLowerCase().includes(searchQuery.toLowerCase());
-        });
-    }, [targetDatabase, searchQuery, displayPropertyId]);
+        // Fallback: Query pageIndex for entries belonging to relationDatabaseId
+        const indexEntries = Object.values(pageIndex).filter(e => e.databaseId === relationDatabaseId);
+        const filteredEntries = searchQuery.trim()
+            ? indexEntries.filter(e => (e.title || '').toLowerCase().includes(searchQuery.toLowerCase()))
+            : indexEntries;
+
+        return filteredEntries.map(e => ({
+            id: e.id,
+            databaseId: e.databaseId,
+            order: 0,
+            properties: { [displayPropertyId]: e.title, title: e.title },
+            blocks: [],
+            blocksVersion: 1,
+            createdAt: e.updatedAt,
+            updatedAt: e.updatedAt,
+            createdBy: 'system',
+            lastEditedBy: 'system'
+        }));
+    }, [targetDatabase, pageIndex, relationDatabaseId, searchQuery, displayPropertyId]);
 
     const router = useRouter();
     const locale = useLocale();

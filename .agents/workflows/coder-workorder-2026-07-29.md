@@ -67,7 +67,11 @@ New directive in `pd.md` → **LOCALISATION: A STRING NEVER SHIPS WITHOUT A VALU
 
 ---
 
-# BATCH E — INFRASTRUCTURE 🟨
+# BATCH E — INFRASTRUCTURE ✅ CLOSED (verified 2026-08-18)
+**Resolved.** `npx prisma migrate status` → *"3 migrations found … Database schema is up to date!"* — `_prisma_migrations` now exists and all three are recorded as applied (it did **not** exist on 2026-07-28). Drift check `migrate diff --from-schema-datasource → --to-schema-datamodel` returns **"This is an empty migration"** ⇒ **`schema.prisma` and the live database are fully in sync.**
+⇒ Normal workflow from here: schema change → `migrate dev --create-only` → review SQL → Florin runs `migrate deploy`. **No more hand-applied columns.** E2 (snapshot schedule) remains open.
+
+## Original E notes (kept for context)
 - **E1 · Baseline Prisma migrations (Florin runs).** `_prisma_migrations` **does not exist** — migrations have never run here; the schema came from `db push`. Anyone running `migrate deploy` gets a hard failure, and the new `add_audit_log` migration has no `IF NOT EXISTS` so it cannot execute against the current DB. Fix once:
   ```bash
   npx prisma migrate resolve --applied 20260301225314_init_cms
@@ -78,7 +82,41 @@ New directive in `pd.md` → **LOCALISATION: A STRING NEVER SHIPS WITHOUT A VALU
 
 ---
 
-# BATCH F — INVESTIGATE: CRASH AFTER LONG IDLE 🟧 (new, 2026-07-29)
+# BATCH F — IDLE CRASH + RESOURCE HYGIENE 🟧
+
+### NEW EVIDENCE (Vercel log, 2026-07-30 20:38, preview/develop)
+`POST /admin/financials/income/invoices/<id>` → **Status 200**, 1.41s. So the failing request is **not** server-side.
+But two facts from the same log:
+- **Fluid memory: 307 MB for ONE invoice page invocation**; middleware **213 MB / 2048 MB**. That is `getGlobalDatabases` doing `include: { pages: true }` — **9,776 pages with block trees pulled into server memory to render a single invoice**. ⇒ **MEM-3 is a server-cost problem too, not only a browser one.** It's also why the build needs `--max-old-space-size=4096`.
+- User agent is **Safari 26.5.2**. Florin's error is **`TypeError: Load failed`** — Safari's message for a **failed fetch** (dropped, aborted, or never completed). Next.js **server actions are POST fetches**, so a dead fetch surfaces exactly like this.
+
+### F1 · PUT A FLOOR UNDER FAILED FETCHES 🟥 — do this regardless of root cause
+There is **no global `unhandledrejection` handler anywhere in the app**. A failed server-action fetch currently has nothing beneath it, so a transient network drop takes the whole app down.
+- Add a global `unhandledrejection` / `error` handler.
+- Server-action and `hrFetch`/`fetch` wrappers: **retry once**, then surface *"connection lost — retrying"* rather than throwing into a render.
+- **Turns a crash into a hiccup** — Florin's stated acceptable trade: *"hiccups don't bother me as long as we don't spend days catching up."*
+
+### F2 · DIAGNOSE THE IDLE FAILURE (evidence first, no theorising)
+**Leading hypothesis (to test, not to assume):** Safari suspends background tabs; on wake an in-flight or newly-issued server-action fetch fails. Consistent with *"edits after a long idle seem to work"* — the local Zustand write succeeds, the sync fetch dies.
+Diagnostic:
+1. Safari → Develop → Web Inspector → **Network**, leave open, idle the app, then edit.
+2. Look for a **failed/cancelled POST** to the current route at the moment of failure + the console entry beside it. Note how long the tab was backgrounded.
+3. Secondary candidate: **Neon compute autosuspend** (Launch plan) — first query after idle hits a cold/dead connection. Check Prisma connection handling / warm-up.
+4. Tertiary: IndexedDB handle invalidated after a long background ⇒ a `persist` write throws. **Interacts with MEM-1 — land that first, then retest.**
+Ruled out already: session lifetime (no short `maxAge`), and it is not a silent hang — error boundaries exist, so something **throws during render**.
+
+### F3 · RESOURCE HYGIENE IS IN SCOPE (Florin, 2026-07-30)
+> *"Low-level cleanliness and machine resource optimisation is also part of our work."*
+Standing expectation, not a one-off ticket:
+- **Don't ship the whole tenant to render one screen** (MEM-3) — server memory, browser memory and transfer all pay for it.
+- **Don't re-serialise everything on every keystroke** (MEM-1/2).
+- Clean up listeners/timers on unmount (MEM-4); bound in-memory caches (MEM-5 undo stack).
+- Prefer server-side aggregation over shipping rows to the client to count them.
+- Watch invocation memory in the Vercel log after changes — **307 MB per invoice page is the current baseline to beat.**
+
+---
+
+## ORIGINAL NOTE — CRASH AFTER LONG IDLE (2026-07-29)
 **Florin:** *"if the app is idle for a long time it crashes. Edits after a long idle seem to work but the app just crashes."*
 
 **Get the evidence before theorising** — this is the discipline that was missing during the OCC saga (four theories built from source while the server was logging the answer).

@@ -899,5 +899,9 @@
       "hoursShort": "h",
       "minutesShort": "m"
     }
+  },
+  "Errors": {
+    "connectionLostRetrying": "Connection lost — retrying..."
   }
 }
+

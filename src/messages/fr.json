@@ -898,5 +898,9 @@
       "hoursShort": "h",
       "minutesShort": "min"
     }
+  },
+  "Errors": {
+    "connectionLostRetrying": "Connexion perdue — nouvelle tentative..."
   }
 }
+

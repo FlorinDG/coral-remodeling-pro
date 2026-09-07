@@ -787,5 +787,8 @@
       "title": "Nicio sarcină aici",
       "description": "Totul este clar! Nu ai nicio sarcină în această vizualizare."
     }
+  },
+  "Errors": {
+    "connectionLostRetrying": "Conexiune pierdută — se reîncearcă..."
   }
 }

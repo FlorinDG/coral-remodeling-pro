@@ -899,5 +899,9 @@
       "hoursShort": "u",
       "minutesShort": "m"
     }
+  },
+  "Errors": {
+    "connectionLostRetrying": "Verbinding verbroken — opnieuw proberen..."
   }
 }
+

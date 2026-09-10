@@ -1,4 +1,75 @@
-import { put, del, list as vercelList } from '@vercel/blob';
+import { put, del, list as vercelList, get } from '@vercel/blob';
+
+export async function streamToBuffer(stream: ReadableStream | NodeJS.ReadableStream | any): Promise<Buffer> {
+    if (!stream) {
+        throw new Error('Cannot convert empty stream to Buffer');
+    }
+    // Web ReadableStream (ReadableStreamDefaultReader)
+    if ('getReader' in stream && typeof (stream as any).getReader === 'function') {
+        const reader = (stream as ReadableStream<Uint8Array>).getReader();
+        const chunks: Uint8Array[] = [];
+        let totalLength = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+                chunks.push(value);
+                totalLength += value.length;
+            }
+        }
+        const result = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of chunks) {
+            result.set(chunk, offset);
+            offset += chunk.length;
+        }
+        return Buffer.from(result.buffer);
+    }
+
+    // Node.js stream
+    const chunks: any[] = [];
+    for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+}
+
+/**
+ * Normalizes document storage keys across legacy formats (C1):
+ * - "t_<tenantId>/..." -> trimmed key
+ * - "/api/files/..." -> strips prefix
+ * - "https://...public.blob.vercel-storage.com/t_.../..." -> extracts pathname
+ * - Invalid/unresolvable URLs -> returns null
+ * 
+ * If tenantId is supplied, validates that the resolved key starts with `t_${tenantId}/`.
+ */
+export function resolveDocumentKey(value: string | null | undefined, tenantId?: string): string | null {
+    if (!value || typeof value !== 'string') return null;
+    let key = value.trim();
+    if (!key) return null;
+
+    if (key.startsWith('/api/files/')) {
+        key = key.replace(/^\/api\/files\//, '');
+    } else if (key.startsWith('http://') || key.startsWith('https://')) {
+        try {
+            const parsed = new URL(key);
+            const pathname = parsed.pathname.startsWith('/') ? parsed.pathname.slice(1) : parsed.pathname;
+            if (pathname.startsWith('t_')) {
+                key = pathname;
+            } else {
+                return null;
+            }
+        } catch {
+            return null;
+        }
+    }
+
+    if (tenantId && !key.startsWith(`t_${tenantId}/`)) {
+        return null;
+    }
+
+    return key;
+}
 
 export interface StoragePutOptions {
     contentType?: string;
@@ -62,20 +133,9 @@ export class BlobStorageProvider implements StorageProvider {
     }
 
     async read(key: string): Promise<Buffer> {
-        const listResult: any = await vercelList({
-            prefix: key,
-            limit: 1,
-            token: this.token
-        });
-        
-        const blob = listResult.blobs.find((b: any) => b.pathname === key);
-        if (!blob) throw new Error(`Blob not found: ${key}`);
-        
-        const fetchUrl = blob.downloadUrl ?? blob.url;
-        const res = await fetch(fetchUrl);
-        if (!res.ok) throw new Error(`Failed to fetch blob from URL: ${res.statusText}`);
-        
-        return Buffer.from(await res.arrayBuffer());
+        const result = await get(key, { token: this.token, access: 'private' });
+        if (!result?.stream) throw new Error(`Blob not found or unreadable: ${key}`);
+        return await streamToBuffer(result.stream);
     }
 
     async delete(key: string): Promise<void> {

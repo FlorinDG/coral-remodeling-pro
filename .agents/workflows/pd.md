@@ -112,6 +112,26 @@ The silent failure mode: feature lands in View A, View B stays stale, and the di
 
 ---
 
+## ERROR-SURFACING DIRECTIVE (binding — Florin 2026-09-09)
+
+**A failure the user can see must name itself. No user-facing error may resolve to a constant string.**
+
+This is the companion to FORCING FUNCTIONS #1 (no silent failure). Silent failure hides that something broke; a **generic** failure admits it broke and hides *what* — which costs more, because it looks like information and isn't. "Failed to send" sent us hunting through Vercel's log UI for a string the code had already thrown away at the boundary.
+
+The rule, at every `catch` that reaches a toast, a returned `{ success: false }`, or an HTTP error body:
+
+1. **Never `err.message || "<constant>"`.** Chain to something that always identifies: `err?.message || err?.cause?.message || err?.name || String(err)`. `String(err)` is the floor — an object with no `message` still yields a discriminable string.
+2. **Include the error's `name`/class**, so a `TypeError` is distinguishable from an API rejection without a stack.
+3. **`console.error` the raw error too** — the log is the detail, the toast is the identity. Both, not either.
+4. **Never `.catch(() => [])` or `.catch(console.error)` on a user-visible path.** Already a standing rule; this directive is its other half.
+5. A generic string is acceptable **only** as a suffix after the specific one, never as a replacement.
+
+**Why it is worth a directive rather than a fix:** the specific bug is one line in one file, but the pattern has produced the same evening three times now — a symptom with no cause attached, then hours of modelling mechanisms against no evidence. Making failures self-describing is cheaper than any one investigation it prevents, and it compounds: every handler fixed is a future debugging session that never starts.
+
+**Test for compliance:** if you can predict the error text without knowing what went wrong, it is wrong.
+
+---
+
 ## The Three Domains Are the Same Problem
 
 | Domain | Deduction | Inference | Failure |

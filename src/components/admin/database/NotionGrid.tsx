@@ -639,7 +639,7 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         updatePageProperty,
     });
 
-    const handleAccountantExport = () => {
+    const handleAccountantExport = async () => {
         const now = new Date();
         let from = acctDateFrom;
         let to = acctDateTo;
@@ -691,7 +691,35 @@ export default function NotionGrid({ databaseId, viewId, renderTabs, lockedSchem
         if (from) url.searchParams.set('startDate', from);
         if (to) url.searchParams.set('endDate', to);
         
-        window.location.href = url.toString();
+        const toastId = toast.loading('Boekhouder export voorbereiden...');
+        try {
+            const res = await fetch(url.toString());
+            if (!res.ok) {
+                const data = await res.json().catch(() => null);
+                if (data?.failedDocuments && data.failedDocuments.length > 0) {
+                    const sample = data.failedDocuments.map((d: any) => `${d.title || d.id} (${d.type})`).slice(0, 5).join(', ');
+                    const overflow = data.failedDocuments.length > 5 ? ` (+${data.failedDocuments.length - 5} meer)` : '';
+                    toast.error(`Export mislukt: documenten ontbreken of onleesbaar: ${sample}${overflow}`, { id: toastId, duration: 8000 });
+                } else {
+                    toast.error(`Export mislukt: ${data?.error || res.statusText}`, { id: toastId });
+                }
+                return;
+            }
+
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `boekhouding_export_${from}_tot_${to}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            toast.success('Boekhouder export succesvol gedownload!', { id: toastId });
+        } catch (err: any) {
+            console.error('Accountant export download failed:', err);
+            toast.error('Boekhouder export mislukt: netwerk- of serverfout.', { id: toastId });
+        }
     };
 
     // processImportedData and handleImportFile stripped in favor of the unified <SpreadsheetImportModal>

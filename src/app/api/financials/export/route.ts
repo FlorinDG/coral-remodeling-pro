@@ -1,43 +1,10 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
-import { get as vercelBlobGet } from '@vercel/blob';
+import { storage, resolveDocumentKey } from '@/lib/storage';
 import JSZip from 'jszip';
 
 export const runtime = 'nodejs';
-
-async function streamToBuffer(stream: ReadableStream<Uint8Array>): Promise<Buffer> {
-    const reader = stream.getReader();
-    const chunks: Uint8Array[] = [];
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
-    }
-    const totalLength = chunks.reduce((acc, c) => acc + c.length, 0);
-    const result = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-        result.set(chunk, offset);
-        offset += chunk.length;
-    }
-    return Buffer.from(result.buffer);
-}
-
-async function fetchBlobFile(key: string): Promise<Buffer | null> {
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    if (!token) return null;
-    try {
-        const result = await vercelBlobGet(key, { token, access: 'private' });
-        if (result && result.stream) {
-            return await streamToBuffer(result.stream as any);
-        }
-        return null;
-    } catch (e) {
-        console.error(`Failed to fetch blob for key: ${key}`, e);
-        return null;
-    }
-}
 
 function cleanFileName(name: string): string {
     return name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
@@ -316,64 +283,129 @@ export async function GET(req: Request) {
 
         const pdfFolder = zip.folder('documenten');
 
-        // Fetch & add sales PDFs (if any)
+        interface FailedExportDoc {
+            id: string;
+            title: string;
+            type: 'verkoop' | 'aankoop';
+            key?: string;
+            error: string;
+        }
+
+        const failedDocuments: FailedExportDoc[] = [];
+
+        // Fetch & add sales PDFs (if any receiptUrl is provided)
         for (const inv of filteredInvoices) {
             const receiptUrl = (inv.properties as any)?.receiptUrl;
-            if (receiptUrl) {
-                const fileData = await fetchBlobFile(receiptUrl);
-                if (fileData) {
+            if (receiptUrl && typeof receiptUrl === 'string' && receiptUrl.trim() !== '') {
+                const invNum = (inv.properties as any)?.title || inv.id;
+                const resolvedKey = resolveDocumentKey(receiptUrl, tenantId);
+                if (!resolvedKey) {
+                    failedDocuments.push({
+                        id: inv.id,
+                        title: invNum,
+                        type: 'verkoop',
+                        error: `Document key kon niet worden herleid: ${receiptUrl}`
+                    });
+                    continue;
+                }
+
+                try {
+                    const fileData = await storage.read(resolvedKey);
+                    if (!fileData || fileData.length === 0) {
+                        throw new Error('Bestand is leeg');
+                    }
                     const clientName = getClientName(inv);
-                    const invNum = (inv.properties as any)?.title || inv.id;
                     const fileName = cleanFileName(`verkoop_${invNum}_${clientName}.pdf`);
                     pdfFolder?.file(fileName, fileData);
+                } catch (err: any) {
+                    failedDocuments.push({
+                        id: inv.id,
+                        title: invNum,
+                        type: 'verkoop',
+                        key: resolvedKey,
+                        error: err?.message || 'Bestand kon niet worden gelezen'
+                    });
                 }
             }
         }
 
-        // Fetch & add purchases PDFs
+        // Fetch & add purchases PDFs (if any receiptUrl is provided)
         for (const exp of filteredExpenses) {
             const receiptUrl = (exp.properties as any)?.receiptUrl;
-            if (receiptUrl) {
-                const fileData = await fetchBlobFile(receiptUrl);
-                if (fileData) {
+            if (receiptUrl && typeof receiptUrl === 'string' && receiptUrl.trim() !== '') {
+                const expNum = (exp.properties as any)?.title || exp.id;
+                const resolvedKey = resolveDocumentKey(receiptUrl, tenantId);
+                if (!resolvedKey) {
+                    failedDocuments.push({
+                        id: exp.id,
+                        title: expNum,
+                        type: 'aankoop',
+                        error: `Document key kon niet worden herleid: ${receiptUrl}`
+                    });
+                    continue;
+                }
+
+                try {
+                    const fileData = await storage.read(resolvedKey);
+                    if (!fileData || fileData.length === 0) {
+                        throw new Error('Bestand is leeg');
+                    }
                     const supplierName = getSupplierName(exp);
-                    const invNum = (exp.properties as any)?.title || exp.id;
-                    const fileName = cleanFileName(`aankoop_${invNum}_${supplierName}.pdf`);
+                    const fileName = cleanFileName(`aankoop_${expNum}_${supplierName}.pdf`);
                     pdfFolder?.file(fileName, fileData);
+                } catch (err: any) {
+                    failedDocuments.push({
+                        id: exp.id,
+                        title: expNum,
+                        type: 'aankoop',
+                        key: resolvedKey,
+                        error: err?.message || 'Bestand kon niet worden gelezen'
+                    });
                 }
             }
         }
 
-        // 4. Update the accountantExportedAt property to true for flagged records
-        for (const inv of filteredInvoices) {
-            const props = (inv.properties as any) || {};
-            if (props.accountantExportedAt === true) continue; // no-op check
-            
-            props.accountantExportedAt = true;
-            await prisma.globalPage.update({
-                where: { id: inv.id },
-                data: { 
-                    properties: props,
-                    lastEditedBy: 'system:accountant-export'
-                }
-            });
+        // STRICT / ALL-OR-NOTHING (BLOB-4): Abort if ANY document read or resolution failed
+        if (failedDocuments.length > 0) {
+            return NextResponse.json({
+                error: 'Boekhouder export mislukt: een of meer gekoppelde documenten konden niet worden gelezen.',
+                failedDocuments
+            }, { status: 422 });
         }
 
-        for (const exp of filteredExpenses) {
-            const props = (exp.properties as any) || {};
-            if (props.accountantExportedAt === true) continue; // no-op check
-            
-            props.accountantExportedAt = true;
-            await prisma.globalPage.update({
-                where: { id: exp.id },
-                data: { 
-                    properties: props,
-                    lastEditedBy: 'system:accountant-export'
-                }
-            });
-        }
-
+        // 4. Generate the ZIP buffer first (ensures ZIP generation succeeds before any DB write)
         const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+        // 5. Stamp accountantExportedAt = true only after ZIP successfully exists (atomic transaction)
+        const invoiceUpdates = filteredInvoices
+            .filter(inv => (inv.properties as any)?.accountantExportedAt !== true)
+            .map(inv => {
+                const props = { ...((inv.properties as any) || {}), accountantExportedAt: true };
+                return prisma.globalPage.update({
+                    where: { id: inv.id },
+                    data: {
+                        properties: props,
+                        lastEditedBy: 'system:accountant-export'
+                    }
+                });
+            });
+
+        const expenseUpdates = filteredExpenses
+            .filter(exp => (exp.properties as any)?.accountantExportedAt !== true)
+            .map(exp => {
+                const props = { ...((exp.properties as any) || {}), accountantExportedAt: true };
+                return prisma.globalPage.update({
+                    where: { id: exp.id },
+                    data: {
+                        properties: props,
+                        lastEditedBy: 'system:accountant-export'
+                    }
+                });
+            });
+
+        if (invoiceUpdates.length > 0 || expenseUpdates.length > 0) {
+            await prisma.$transaction([...invoiceUpdates, ...expenseUpdates]);
+        }
 
         return new NextResponse(new Uint8Array(zipBuffer), {
             status: 200,

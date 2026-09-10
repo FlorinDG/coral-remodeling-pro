@@ -100,7 +100,8 @@ export async function sendInvoiceToClient(
 
     } catch (err: any) {
         console.error("Failed to execute invoice mail dispatch:", err);
-        return { success: false, error: err.message || "Failed to send email." };
+        const detail = err?.message || err?.cause?.message || err?.name || String(err);
+        return { success: false, error: `[${err?.name ?? 'Error'}] ${detail}` };
     }
 }
 

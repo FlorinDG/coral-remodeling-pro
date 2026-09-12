@@ -23,7 +23,6 @@ import { Block, PropertyValue } from '../types';
 
 const JournalCard = dynamic(() => import('./JournalCard'), { ssr: false });
 import { RecordAttachments } from '@/components/shared/RecordAttachments';
-import { useOverlayEventShield } from '@/hooks/useOverlayEventShield';
 const LinkedRecords = dynamic(() => import('./LinkedRecords'), { ssr: false });
 const PageFinancialAnalysis = dynamic(() => import('./PageFinancialAnalysis'), { ssr: false });
 const SupplierQuotationsCard = dynamic(() => import('./SupplierQuotationsCard'), { ssr: false });
@@ -125,8 +124,6 @@ interface ProjectDetailViewProps {
 }
 
 export default function ProjectDetailView({ databaseId, pageId, locale, onClose }: ProjectDetailViewProps) {
-    const modalRef = useRef<HTMLDivElement>(null);
-    useOverlayEventShield(modalRef, !!onClose);
     const t = useTranslations('Admin.placeholders');
     const { resolveDbId, tenant } = useTenant();
     const router = useRouter();
@@ -1147,7 +1144,7 @@ export default function ProjectDetailView({ databaseId, pageId, locale, onClose 
 
     if (onClose) {
         return (
-            <div ref={modalRef} className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
                 <div className="relative w-full max-w-[95vw] h-[95vh] bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-neutral-200 dark:border-white/10 flex overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                     {content}
                 </div>

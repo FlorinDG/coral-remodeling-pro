@@ -112,6 +112,16 @@ The silent failure mode: feature lands in View A, View B stays stale, and the di
 
 ---
 
+## CODER-PROFILE DIRECTIVE (binding — Florin 2026-09-12)
+
+The coder is **Gemini 3.8 Flash at medium effort**, via Antigravity. Its measured profile is **excellent executor, weak decider**: near-frontier on long-horizon software engineering (DeepSWE 73.7%) and agentic terminal work (Terminal-bench 2.1 **89.4%**, above Opus 5), but roughly a third of frontier on open-ended agentic judgement (Terminal-bench 4.0 **19.1%** vs 51.8%). Knowledge cutoff **March 2026** — older than our installed stack. Output cap **64K tokens**.
+
+Every spec written for it must therefore: paste real API signatures rather than naming them · pin installed versions and require reading the types · decide all choices in advance and record the rejected ones · enumerate the data shapes that actually exist in production · number any order that is itself the fix · stay one-commit-per-item under the output cap · express acceptance criteria as runnable commands · state the prohibitions explicitly · **and be preceded by a Planner review of the coder's plan, with corrections written back into the spec.**
+
+Full rationale, evidence and the ten rules: **`coder-profile.md`**. Re-verify the profile whenever Florin changes the model or the effort level — Google has shipped three Flash models in six weeks.
+
+---
+
 ## ERROR-SURFACING DIRECTIVE (binding — Florin 2026-09-09)
 
 **A failure the user can see must name itself. No user-facing error may resolve to a constant string.**
@@ -129,6 +139,16 @@ The rule, at every `catch` that reaches a toast, a returned `{ success: false }`
 **Why it is worth a directive rather than a fix:** the specific bug is one line in one file, but the pattern has produced the same evening three times now — a symptom with no cause attached, then hours of modelling mechanisms against no evidence. Making failures self-describing is cheaper than any one investigation it prevents, and it compounds: every handler fixed is a future debugging session that never starts.
 
 **Test for compliance:** if you can predict the error text without knowing what went wrong, it is wrong.
+
+---
+
+## OVERLAY-EVENT-SHIELD DIRECTIVE (binding — Florin 2026-09-12)
+
+**An overlay that adopts the shield (`useOverlayEventShield`) must register its own document listeners in capture phase (`useCapture = true`).**
+
+The shield stops bubble-phase propagation at the overlay root to protect against third-party global document listeners (specifically `react-datasheet-grid`'s `useDocumentEventListener`). Any `document` listener registered in bubble phase will not receive events originating inside the shielded overlay.
+- Document-level listeners in shielded overlays (e.g. `mouseup`, `keydown` Escape) must pass `{ capture: true }` or `true` as the third argument to `addEventListener`.
+- The shield's document capture guard is strictly narrowed to clipboard events (`paste`, `copy`, `cut`) to prevent stray clipboard events from mutating background grid cells while focus is momentarily on `document.body`. Mouse and keyboard events outside the overlay are left untouched so external shortcuts, clicks, and click-away handlers descend normally.
 
 ---
 

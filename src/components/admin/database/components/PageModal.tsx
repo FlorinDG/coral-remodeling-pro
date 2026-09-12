@@ -655,11 +655,11 @@ export default function PageModal({ databaseId, pageId, onClose }: PageModalProp
 
         const onMouseUp = () => {
             document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
+            document.removeEventListener('mouseup', onMouseUp, true);
         };
 
         document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+        document.addEventListener('mouseup', onMouseUp, true);
     };
 
     const updatePageProperty = useDatabaseStore(state => state.updatePageProperty);

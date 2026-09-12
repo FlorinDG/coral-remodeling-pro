@@ -172,13 +172,16 @@ export default async function RootLayout({
     const isWorkHub = host.startsWith('work.');
 
     const rawPathname = headersList2.get('x-pathname') || '';
+    const isTasksRoute = /^\/(?:[a-z]{2}\/)?m\/tasks(?:\/|$)/.test(rawPathname);
     const isMobileRoute = /^\/(?:[a-z]{2}\/)?m(?:\/|$)/.test(rawPathname);
 
     return (
         <html lang={locale} className="scroll-smooth" suppressHydrationWarning>
             <head>
-                {/* Manifest: work subdomain gets WorkHub PWA manifest, mobile routes get manifest-mobile, others get CoralOS */}
-                {isWorkHub ? (
+                {/* Manifest: tasks gets Tasks PWA manifest, work subdomain gets WorkHub, mobile routes get manifest-mobile, others get CoralOS */}
+                {isTasksRoute ? (
+                    <link rel="manifest" href="/manifest-tasks.json" />
+                ) : isWorkHub ? (
                     <link rel="manifest" href="/manifest-workhub.json" />
                 ) : isMobileRoute ? (
                     <link rel="manifest" href="/manifest-mobile.json" />

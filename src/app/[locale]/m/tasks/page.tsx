@@ -59,10 +59,20 @@ export default function MobileTasksPage() {
     const createPage = useDatabaseStore(s => s.createPage);
     const updatePageProperty = useDatabaseStore(s => s.updatePageProperty);
     const deletePage = useDatabaseStore(s => s.deletePage);
+    const loadDatabasePages = useDatabaseStore(s => s.loadDatabasePages);
+    const loadedDatabaseIds = useDatabaseStore(s => s.loadedDatabaseIds);
+    const loadingDatabaseIds = useDatabaseStore(s => s.loadingDatabaseIds);
 
     // Reactive database lookup
     const db = useMemo(() => databases.find(d => d.id === tasksDbId), [databases, tasksDbId]);
     const allPages = useMemo(() => db?.pages || [], [db?.pages]);
+
+    // Scoped hydration: load db-tasks pages on-demand without pulling the whole 9,776-page workspace
+    useEffect(() => {
+        if (tasksDbId && !loadedDatabaseIds.includes(tasksDbId) && !loadingDatabaseIds.includes(tasksDbId)) {
+            loadDatabasePages(tasksDbId);
+        }
+    }, [tasksDbId, loadedDatabaseIds, loadingDatabaseIds, loadDatabasePages]);
 
     // Active tab: 'today' (landing view) or 'all'
     const [activeTab, setActiveTab] = useState<'today' | 'all'>('today');
@@ -71,6 +81,19 @@ export default function MobileTasksPage() {
     const [captureOpen, setCaptureOpen] = useState(false);
     const [captureTitle, setCaptureTitle] = useState('');
     const captureInputRef = useRef<HTMLInputElement>(null);
+
+    // Fast Capture query parameter support (?capture=1 opens directly into focused capture)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('capture') === '1') {
+                setCaptureOpen(true);
+                setTimeout(() => {
+                    captureInputRef.current?.focus();
+                }, 50);
+            }
+        }
+    }, []);
 
     // Pending 4-second Undo state for 1-tap completions
     const [pendingUndos, setPendingUndos] = useState<Record<string, PendingUndo>>({});
